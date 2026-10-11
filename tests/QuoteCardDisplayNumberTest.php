@@ -308,51 +308,59 @@ final class QuoteCardDisplayNumberTest
 
     public function testQdbStaticReleaseIncludesPublicListingsAndNumericQuoteAlias(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
-        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
-        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-' . bin2hex(random_bytes(6));
-        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-route-' . bin2hex(random_bytes(6));
-
-        putenv('FORUM_SITE_ID=qdb');
+        $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
         try {
-            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+            [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
+            $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+            $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-' . bin2hex(random_bytes(6));
+            $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-route-' . bin2hex(random_bytes(6));
+
+            putenv('FORUM_SITE_ID=qdb');
+            try {
+                (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
+
+            assertTrue(is_file($artifactRoot . '/latest.html'));
+            assertTrue(is_file($artifactRoot . '/latest/index.html'));
+            assertTrue(is_file($artifactRoot . '/top.html'));
+            assertTrue(is_file($artifactRoot . '/top/index.html'));
+            assertTrue(is_file($artifactRoot . '/leetness.html'));
+            assertTrue(is_file($artifactRoot . '/leetness/index.html'));
+            assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
+            assertTrue(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
+            assertTrue(is_file($artifactRoot . '/qdb/quotes/42.html'));
+            $regularThreadDetail = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
+            assertSame(
+                (string) file_get_contents($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'),
+                (string) file_get_contents($artifactRoot . '/qdb/quotes/42.html')
+            );
+            assertStringContains('<h1>Hello world</h1>', $regularThreadDetail);
+            assertStringNotContains('quote-card-permalink', $regularThreadDetail);
+            assertStringNotContains('quote-card-header-actions', $regularThreadDetail);
+
+            $generalTag = (string) file_get_contents($artifactRoot . '/tags/general.html');
+            assertStringContains('href="/threads/root-001"', $generalTag);
+            assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $generalTag);
+
+            mkdir($staticHtmlRoot, 0777, true);
+            symlink($artifactRoot, $staticHtmlRoot . '/current');
+            $controller = new FrontController(dirname(__DIR__), $repositoryRoot, $databasePath, $staticHtmlRoot, $artifactRoot);
+            $response = $this->renderFrontController($controller, '/tags/general');
+
+            assertStringContains('route-source: static-html', $response);
+            assertStringContains('href="/threads/root-001"', $response);
+            assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $response);
         } finally {
-            putenv('FORUM_SITE_ID');
+            putenv($previousStaticDetails === false
+                ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
         }
-
-        assertTrue(is_file($artifactRoot . '/latest.html'));
-        assertTrue(is_file($artifactRoot . '/latest/index.html'));
-        assertTrue(is_file($artifactRoot . '/top.html'));
-        assertTrue(is_file($artifactRoot . '/top/index.html'));
-        assertTrue(is_file($artifactRoot . '/leetness.html'));
-        assertTrue(is_file($artifactRoot . '/leetness/index.html'));
-        assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
-        assertTrue(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
-        assertTrue(is_file($artifactRoot . '/qdb/quotes/42.html'));
-        $regularThreadDetail = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
-        assertSame(
-            (string) file_get_contents($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'),
-            (string) file_get_contents($artifactRoot . '/qdb/quotes/42.html')
-        );
-        assertStringContains('<h1>Hello world</h1>', $regularThreadDetail);
-        assertStringNotContains('quote-card-permalink', $regularThreadDetail);
-        assertStringNotContains('quote-card-header-actions', $regularThreadDetail);
-
-        $generalTag = (string) file_get_contents($artifactRoot . '/tags/general.html');
-        assertStringContains('href="/threads/root-001"', $generalTag);
-        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $generalTag);
-
-        mkdir($staticHtmlRoot, 0777, true);
-        symlink($artifactRoot, $staticHtmlRoot . '/current');
-        $controller = new FrontController(dirname(__DIR__), $repositoryRoot, $databasePath, $staticHtmlRoot, $artifactRoot);
-        $response = $this->renderFrontController($controller, '/tags/general');
-
-        assertStringContains('route-source: static-html', $response);
-        assertStringContains('href="/threads/root-001"', $response);
-        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $response);
     }
 
-    public function testQdbStaticReleaseCanSkipIndividualDetailPages(): void
+    public function testQdbStaticReleaseSkipsIndividualDetailPagesByDefault(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -360,7 +368,7 @@ final class QuoteCardDisplayNumberTest
 
         $previousStaticDetailPages = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
         putenv('FORUM_SITE_ID=qdb');
-        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=false');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
         try {
             (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
         } finally {
