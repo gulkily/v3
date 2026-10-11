@@ -274,6 +274,80 @@ class IncrementalReadModelUpdater
         }
     }
 
+    /** @return array{timings:array<string,float>,changed_identity_ids:list<string>} */
+    public function applyApprovalSeedWrite(string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+        try {
+            $changed = $this->refreshApprovalDerivedState($pdo, $timings);
+            $this->measure($timings, 'refresh_approval_sensitive_post_reactions', fn () => $this->refreshApprovalSensitivePostReactions($pdo, $changed));
+            $this->writeMetadata($pdo, $commitSha);
+            if ($commitSha === 'no-git') {
+                $stmt = $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)');
+                $stmt->execute(['canonical_fingerprint', ReadModelMetadata::canonicalFingerprint($this->repositoryRoot)]);
+            }
+            $pdo->commit();
+            return ['timings' => $timings, 'changed_identity_ids' => $changed];
+        } catch (\Throwable $error) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $error;
+        }
+    }
+
+    /** @param array<string,float> $timings @return list<string> */
+    private function refreshApprovalDerivedState(PDO $pdo, array &$timings): array
+    {
+        $changedIdentityIds = $this->measure(
+            $timings,
+            'refresh_approval_state',
+            fn (): array => $this->refreshApprovalState($pdo)
+        );
+
+        if ($changedIdentityIds !== []) {
+            $this->measure(
+                $timings,
+                'refresh_approval_sensitive_thread_scores',
+                fn (): mixed => $this->refreshApprovalSensitiveThreadScores($pdo, $changedIdentityIds)
+            );
+            $this->measure(
+                $timings,
+                'refresh_changed_activity_authors',
+                fn (): mixed => $this->refreshActivityAuthors($pdo, $changedIdentityIds)
+            );
+        }
+        return $changedIdentityIds;
+    }
+
+    /** @param list<string> $identityIds */
+    private function refreshApprovalSensitivePostReactions(PDO $pdo, array $identityIds): void
+    {
+        if ($identityIds === []) {
+            return;
+        }
+        $targets = [];
+        $recordsByPost = [];
+        $identityLookup = array_fill_keys($identityIds, true);
+        foreach ($this->loadPostReactionRecords(null) as $record) {
+            $recordsByPost[$record->postId][] = $record;
+            if (isset($identityLookup[$record->authorIdentityId ?? ''])) {
+                $targets[$record->postId] = true;
+            }
+        }
+        $approved = $this->loadApprovedIdentityIds($pdo);
+        foreach (array_keys($targets) as $postId) {
+            $stmt = $pdo->prepare('SELECT author_label FROM posts WHERE post_id = ?');
+            $stmt->execute([$postId]);
+            $author = $stmt->fetchColumn();
+            if ($author !== false) {
+                $this->updatePostReactions($pdo, $postId, $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved));
+            }
+        }
+    }
+
     /**
      * @return array<string, float>
      */
@@ -295,24 +369,7 @@ class IncrementalReadModelUpdater
             );
             $this->measure($timings, 'update_thread', fn (): mixed => $this->updateThreadForReply($pdo, $record));
             $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson, $commitSha));
-            $changedIdentityIds = $this->measure(
-                $timings,
-                'refresh_approval_state',
-                fn (): array => $this->refreshApprovalState($pdo)
-            );
-
-            if ($changedIdentityIds !== []) {
-                $this->measure(
-                    $timings,
-                    'refresh_approval_sensitive_thread_scores',
-                    fn (): mixed => $this->refreshApprovalSensitiveThreadScores($pdo, $changedIdentityIds)
-                );
-                $this->measure(
-                    $timings,
-                    'refresh_changed_activity_authors',
-                    fn (): mixed => $this->refreshActivityAuthors($pdo, $changedIdentityIds)
-                );
-            }
+            $this->refreshApprovalDerivedState($pdo, $timings);
 
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
@@ -1151,56 +1208,30 @@ class IncrementalReadModelUpdater
      */
     private function refreshApprovalSensitiveThreadScores(PDO $pdo, array $changedIdentityIds): void
     {
-        $affectedThreadIds = $this->loadThreadIdsForLabelAuthors($changedIdentityIds);
+        $identityLookup = array_fill_keys($changedIdentityIds, true);
+        $affectedThreadIds = [];
+        $recordsByThread = [];
+        foreach ($this->loadThreadLabelRecords(null) as $record) {
+            $recordsByThread[$record->threadId][] = $record;
+            if (isset($identityLookup[$record->authorIdentityId ?? ''])) {
+                $affectedThreadIds[$record->threadId] = true;
+            }
+        }
         if ($affectedThreadIds === []) {
             return;
         }
 
         $approvedIdentityIds = $this->loadApprovedIdentityIds($pdo);
-        foreach ($affectedThreadIds as $threadId) {
+        foreach (array_keys($affectedThreadIds) as $threadId) {
             if (!$this->threadExists($pdo, $threadId)) {
                 continue;
             }
 
-            $records = $this->loadThreadLabelRecords($threadId);
+            $records = $recordsByThread[$threadId];
             $rootSeed = $this->loadRootImportedSeed($threadId);
             $labelState = $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count']);
             $this->updateThreadScoreTotal($pdo, $threadId, $labelState['score_total']);
         }
-    }
-
-    /**
-     * @param list<string> $identityIds
-     * @return list<string>
-     */
-    private function loadThreadIdsForLabelAuthors(array $identityIds): array
-    {
-        if ($identityIds === []) {
-            return [];
-        }
-
-        $identityLookup = array_fill_keys($identityIds, true);
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        $threadIds = [];
-
-        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            try {
-                $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
-            } catch (CanonicalRecordParseException) {
-                continue;
-            }
-
-            if ($record->authorIdentityId === null || !isset($identityLookup[$record->authorIdentityId])) {
-                continue;
-            }
-
-            $threadIds[$record->threadId] = true;
-        }
-
-        $result = array_keys($threadIds);
-        sort($result);
-
-        return $result;
     }
 
     private function threadExists(PDO $pdo, string $threadId): bool
@@ -1281,7 +1312,7 @@ class IncrementalReadModelUpdater
     /**
      * @return list<ThreadLabelRecord>
      */
-    private function loadThreadLabelRecords(string $threadId): array
+    private function loadThreadLabelRecords(?string $threadId): array
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
@@ -1292,7 +1323,7 @@ class IncrementalReadModelUpdater
                 continue;
             }
 
-            if ($record->threadId !== $threadId) {
+            if ($threadId !== null && $record->threadId !== $threadId) {
                 continue;
             }
 
@@ -1408,7 +1439,7 @@ class IncrementalReadModelUpdater
     /**
      * @return list<PostReactionRecord>
      */
-    private function loadPostReactionRecords(string $postId): array
+    private function loadPostReactionRecords(?string $postId): array
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
@@ -1419,7 +1450,7 @@ class IncrementalReadModelUpdater
                 continue;
             }
 
-            if ($record->postId !== $postId) {
+            if ($postId !== null && $record->postId !== $postId) {
                 continue;
             }
 

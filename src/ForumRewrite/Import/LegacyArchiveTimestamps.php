@@ -13,8 +13,13 @@ use RuntimeException;
 /** Reads source history only in a private, reconstructed bare repository. */
 final class LegacyArchiveTimestamps
 {
-    public function __construct(private readonly ?Closure $progress = null)
-    {
+    public function __construct(
+        private readonly ?Closure $progress = null,
+        private readonly int $maxConcurrentProcesses = 4,
+    ) {
+        if ($maxConcurrentProcesses < 1 || $maxConcurrentProcesses > 4) {
+            throw new RuntimeException('Legacy history concurrency must be between one and four.');
+        }
     }
 
     public static function isHistoryPath(string $path): bool
@@ -81,25 +86,40 @@ final class LegacyArchiveTimestamps
             $candidates[] = $path;
         }
         $progress->update(sprintf('Legacy timestamp scan complete: %d record files; %d posts need dates', count($paths), count($candidates)), true);
-        $progress->start(sprintf('Legacy timestamp recovery: 0/%d posts checked', count($candidates)));
-        foreach ($candidates as $index => $path) {
+        $progress->start(sprintf('Legacy timestamp recovery: checking %d posts with up to %d concurrent Git processes', count($candidates), $this->maxConcurrentProcesses));
+        // First verify every archived post against the tracked tip. Keep only tiny
+        // hashes/dates in memory; completed Git output is consumed immediately.
+        $queries = [];
+        foreach ($candidates as $path) {
+            $queries[$path] = ['rev-parse', '--verify', $head . ':' . $path];
+        }
+        $histories = [];
+        $verifiedHashes = [];
+        foreach ($this->gitBatch($history, $queries, $deadline, $progress, 'Legacy timestamp verification') as $path => $blob) {
+            $contents = (string) file_get_contents($root . '/' . $path);
+            if (trim($blob ?? '') === sha1('blob ' . strlen($contents) . "\0" . $contents)) {
+                $verifiedHashes[$path] = hash('sha256', $contents);
+                $histories[$path] = ['log', '--no-ext-diff', '--no-textconv', '--diff-filter=A', '--follow', '--format=%aI', $head, '--', $path];
+            }
+        }
+        $dates = [];
+        foreach ($this->gitBatch($history, $histories, $deadline, $progress, 'Legacy timestamp history lookup') as $path => $log) {
+            if ($log === null || trim($log) === '') { continue; }
+            $lines = explode("\n", trim($log));
+            $raw = end($lines);
+            if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/D', $raw) !== 1) { continue; }
+            $dates[$path] = (new \DateTimeImmutable($raw))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
+        }
+        // Apply in canonical path order, independent of worker completion order.
+        foreach ($candidates as $path) {
+            if (!isset($dates[$path])) { continue; }
             $id = basename($path, '.txt');
             $metadata = $root . '/' . LegacyPostTimestamp::path($id);
             if (file_exists($metadata)) { continue; }
             $contents = (string) file_get_contents($root . '/' . $path);
-            $message = sprintf('Legacy timestamp recovery: checking post %d/%d; %d dates recovered', $index + 1, count($candidates), $count);
-            $progress->update($message);
-            // Only assign history dates when the downloaded bytes match the tracked tip.
-            $blob = trim($this->git($history, ['rev-parse', '--verify', $head . ':' . $path], $deadline, $progress, $message) ?? '');
-            if ($blob !== sha1('blob ' . strlen($contents) . "\0" . $contents)) { continue; }
-            $log = $this->git($history, ['log', '--no-ext-diff', '--no-textconv', '--diff-filter=A', '--follow', '--format=%aI', $head, '--', $path], $deadline, $progress, $message);
-            if ($log === null || trim($log) === '') { continue; }
-            $dates = explode("\n", trim($log));
-            $raw = end($dates);
-            if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/D', $raw) !== 1) { continue; }
-            $date = (new \DateTimeImmutable($raw))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
+            if (hash('sha256', $contents) !== $verifiedHashes[$path]) { continue; }
             if (!is_dir(dirname($metadata))) { mkdir(dirname($metadata), 0700, true); }
-            if (file_put_contents($metadata, LegacyPostTimestamp::encode($id, $contents, $date)) === false) {
+            if (file_put_contents($metadata, LegacyPostTimestamp::encode($id, $contents, $dates[$path])) === false) {
                 throw new RuntimeException('Unable to retain legacy creation timestamp.');
             }
             $count++;
@@ -108,34 +128,63 @@ final class LegacyArchiveTimestamps
         return $count;
     }
 
-    private function git(string $directory, array $arguments, float $deadline, ImportProgress $progress, string $message): ?string
+    /** @return \Generator<string, ?string> Results arrive as jobs finish. */
+    private function gitBatch(string $directory, array $queries, float $deadline, ImportProgress $progress, string $phase): \Generator
     {
         // A fresh environment also blocks caller-provided Git configuration/objects.
         $env = ['PATH' => '/usr/bin:/bin', 'GIT_CONFIG_NOSYSTEM' => '1', 'GIT_CONFIG_GLOBAL' => '/dev/null',
             'GIT_NO_REPLACE_OBJECTS' => '1', 'GIT_TERMINAL_PROMPT' => '0', 'GIT_NO_LAZY_FETCH' => '1', 'LC_ALL' => 'C'];
-        $process = proc_open(['git', '--git-dir=' . $directory, '-c', 'protocol.allow=never', ...$arguments],
-            [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes, $directory, $env);
-        if (!is_resource($process)) { throw new RuntimeException('Unable to read isolated source history.'); }
-        stream_set_blocking($pipes[1], false);
-        $output = '';
+        $pending = new \ArrayIterator($queries);
+        $running = [];
+        $completed = 0;
+        $progress->update(sprintf('%s: 0/%d posts checked', $phase, count($queries)), true);
         try {
-            do {
-                $output .= stream_get_contents($pipes[1]);
-                if (microtime(true) > $deadline || strlen($output) > 1048576) {
-                    proc_terminate($process, 9);
+            while ($pending->valid() || $running !== []) {
+                if (microtime(true) > $deadline) {
                     throw new RuntimeException('Source history exceeds the 120 second or 1 MiB query output limit.');
                 }
-                $status = proc_get_status($process);
-                if (!$status['running']) {
-                    $output .= stream_get_contents($pipes[1]);
-                    return $status['exitcode'] === 0 ? $output : null;
+                while ($pending->valid() && count($running) < $this->maxConcurrentProcesses) {
+                    $path = $pending->key();
+                    $process = proc_open(['git', '--git-dir=' . $directory, '-c', 'protocol.allow=never', ...$pending->current()],
+                        [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes, $directory, $env);
+                    if (!is_resource($process)) { throw new RuntimeException('Unable to read isolated source history.'); }
+                    stream_set_blocking($pipes[1], false);
+                    $running[$path] = ['process' => $process, 'output' => $pipes[1], 'contents' => ''];
+                    $pending->next();
                 }
-                $progress->update($message);
-                usleep(10000);
-            } while (true);
+                foreach (array_keys($running) as $path) {
+                    $job = $running[$path];
+                    $job['contents'] .= stream_get_contents($job['output']);
+                    $status = proc_get_status($job['process']);
+                    if (!$status['running']) {
+                        $job['contents'] .= stream_get_contents($job['output']);
+                    }
+                    $running[$path] = $job;
+                    if (strlen($job['contents']) > 1048576) {
+                        throw new RuntimeException('Source history exceeds the 120 second or 1 MiB query output limit.');
+                    }
+                    if (!$status['running']) {
+                        $result = $status['exitcode'] === 0 ? $job['contents'] : null;
+                        fclose($job['output']);
+                        proc_close($job['process']);
+                        unset($job, $running[$path]);
+                        $completed++;
+                        yield $path => $result;
+                    }
+                    unset($job);
+                }
+                $progress->update(sprintf('%s: %d/%d posts checked; %d Git processes running', $phase, $completed, count($queries), count($running)));
+                if ($running !== []) { usleep(10000); }
+            }
         } finally {
-            fclose($pipes[1]);
-            proc_close($process);
+            // Includes timeouts, output limits, consumer exceptions and early exit.
+            // Stop all children before waiting on any one of them.
+            foreach ($running as $job) { proc_terminate($job['process'], 9); }
+            foreach ($running as $job) {
+                fclose($job['output']);
+                proc_close($job['process']);
+            }
         }
+        $progress->update(sprintf('%s complete: %d/%d posts checked', $phase, $completed, count($queries)), true);
     }
 }
