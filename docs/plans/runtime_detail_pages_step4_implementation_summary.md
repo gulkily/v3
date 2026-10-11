@@ -5,3 +5,9 @@
 - Changes: static detail pages default to disabled; existing flag description explains runtime rendering, opt-in, and full rebuild. Static-output tests explicitly enable details and restore the prior environment. Default CLI checks assert skipped batches, absent detail HTML, and retained offline snapshot; flag checks cover instance opt-in and environment precedence.
 - Verification: focused evaluator/QDB/CLI/layout/archive/Unicode tests via `php tests/run.php`: 47 run, 45 passed; layout also passed independently. `git diff --check` passed.
 - Notes: both failures reproduced on the unchanged planning-commit baseline: QDB welcome-copy assertion expects “⚑ Flag something that”; archive test fails because this PHP installation lacks the zip extension. Neither is introduced by the rendering default. No schema/signature changes or deployment performed.
+
+## Stage 2 - Release transition, reader links, and recovery
+
+- Changes: integration tests activate a static-detail release, replace it with the unconfigured runtime-default release, and assert old thread/post/QDB alias artifacts are absent. Verify runtime content, numeric quote redirects, missing-quote 404, hidden reply protection, and candidate cleanup/current-release preservation after an injected rendering failure.
+- Verification: QDB transition, three read-model candidate checks, and two web-routing checks passed; final forum transition/recovery/hidden-content check passed. Private lobby, private offline access, and two imported-publication recovery checks passed. Local HTTP smoke via PHP server and normal `./v3 build-static` passed five requests across zenmemes/QDB (thread, post, and numeric quote link). `git diff --check` passed.
+- Notes: no runtime routing or activation changes were needed. HTTP tests use isolated temporary repositories/releases; live hosting was not changed. Existing shared-only preservation coverage passed in Stage 1.

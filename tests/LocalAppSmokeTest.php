@@ -4161,6 +4161,67 @@ PHP;
         }
     }
 
+    public function testFullReleaseSwitchesStaticDetailsToRuntimeAndPreservesFailedBuildRecovery(): void
+    {
+        $staticRoot = sys_get_temp_dir() . '/forum-runtime-transition-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-runtime-public-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot, 0777, true);
+        $previous = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $this->databasePath,
+                new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $staticRoot);
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+            $staticRelease = $publisher->build($this->databasePath);
+            $publisher->activate($staticRelease);
+            assertTrue(is_file($staticRoot . '/current/threads/root-001.html'));
+            assertTrue(is_file($staticRoot . '/current/posts/reply-001.html'));
+
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+            $runtimeRelease = $publisher->build($this->databasePath);
+            $publisher->activate($runtimeRelease);
+            assertSame($runtimeRelease, realpath($staticRoot . '/current'));
+            assertFalse(is_file($staticRoot . '/current/threads/root-001.html'));
+            assertFalse(is_file($staticRoot . '/current/posts/reply-001.html'));
+            assertTrue(is_file($staticRoot . '/current/offline/snapshot.sqlite3'));
+            $controller = new FrontController(dirname(__DIR__), $this->repositoryRoot,
+                $this->databasePath, $staticRoot, $publicRoot);
+            foreach (['/threads/root-001' => 'First line preview.', '/posts/root-001' => 'First line preview.', '/posts/reply-001' => 'Reply body.'] as $path => $body) {
+                $response = $this->renderFrontController($controller, 'GET', $path, []);
+                assertSame(200, http_response_code());
+                assertStringContains($body, $response);
+                assertStringNotContains('route-source: static-html', $response);
+            }
+            assertStringContains('route-source: static-html',
+                $this->renderFrontController($controller, 'GET', '/', []));
+
+            $failed = false;
+            try {
+                $publisher->build($this->databasePath, static function (string $message): void {
+                    throw new RuntimeException('Simulated rendering failure.');
+                });
+            } catch (RuntimeException $exception) {
+                assertSame('Simulated rendering failure.', $exception->getMessage());
+                $failed = true;
+            }
+            assertTrue($failed);
+            assertSame($runtimeRelease, realpath($staticRoot . '/current'));
+            assertSame([], glob($staticRoot . '/.candidate-*'));
+            $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
+            assertSame(200, http_response_code());
+            $pdo = new PDO('sqlite:' . $this->databasePath);
+            $pdo->exec("UPDATE posts SET is_hidden = 1 WHERE post_id = 'reply-001'");
+            $hidden = $this->renderFrontController($controller, 'GET', '/posts/reply-001', []);
+            assertStringContains('Post Hidden', $hidden);
+            assertStringNotContains('Reply body.', $hidden);
+        } finally {
+            putenv($previous === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previous);
+            $this->deleteTree($staticRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testStaticArtifactHealthCheckDetectsMissingFingerprint(): void
     {
         $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-assets-' . bin2hex(random_bytes(6));

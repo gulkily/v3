@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Host\FrontController;
 use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\Host\StaticArtifactReleasePublisher;
 
 final class QuoteCardDisplayNumberTest
 {
@@ -363,29 +364,44 @@ final class QuoteCardDisplayNumberTest
     public function testQdbStaticReleaseSkipsIndividualDetailPagesByDefault(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
-        $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
+        $quoteId = 'thread-20030613104735-qdb-42';
+        $this->writeImportedQuote($repositoryRoot, $quoteId, 'The quoted body.');
         $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-qdb-static-no-details-' . bin2hex(random_bytes(6));
-
-        $previousStaticDetailPages = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        $previous = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        $previousSite = getenv('FORUM_SITE_ID');
         putenv('FORUM_SITE_ID=qdb');
-        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
         try {
-            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot))->build();
-        } finally {
-            if ($previousStaticDetailPages === false) {
-                putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
-            } else {
-                putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetailPages);
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+            (new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot . '/seed'))->build();
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $repositoryRoot, $artifactRoot);
+            $publisher->activate($publisher->build($databasePath));
+            assertTrue(is_file($artifactRoot . '/current/qdb/quotes/42.html'));
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+            $publisher->activate($publisher->build($databasePath));
+            foreach (['latest.html', 'top.html', 'leetness.html', 'offline/snapshot.sqlite3'] as $path) {
+                assertTrue(is_file($artifactRoot . '/current/' . $path));
             }
-            putenv('FORUM_SITE_ID');
+            foreach (['threads/' . $quoteId . '.html', 'posts/' . $quoteId . '.html', 'qdb/quotes/42.html'] as $path) {
+                assertFalse(is_file($artifactRoot . '/current/' . $path));
+            }
+            $controller = new FrontController(dirname(__DIR__), $repositoryRoot, $databasePath,
+                $artifactRoot, dirname(__DIR__) . '/public');
+            foreach (['/threads/' . $quoteId, '/posts/' . $quoteId] as $path) {
+                $response = $this->renderFrontController($controller, $path);
+                assertSame(200, http_response_code());
+                assertStringContains('The quoted body.', $response);
+                assertStringNotContains('route-source: static-html', $response);
+            }
+            $redirect = $this->renderFrontController($controller, '/42');
+            assertSame(302, http_response_code());
+            assertStringContains('href="/threads/' . $quoteId . '"', $redirect);
+            $this->renderFrontController($controller, '/999999');
+            assertSame(404, http_response_code());
+        } finally {
+            putenv($previous === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previous);
+            putenv($previousSite === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $previousSite);
         }
-
-        assertTrue(is_file($artifactRoot . '/latest.html'));
-        assertTrue(is_file($artifactRoot . '/top.html'));
-        assertTrue(is_file($artifactRoot . '/leetness.html'));
-        assertFalse(is_file($artifactRoot . '/threads/thread-20030613104735-qdb-42.html'));
-        assertFalse(is_file($artifactRoot . '/posts/thread-20030613104735-qdb-42.html'));
-        assertFalse(is_file($artifactRoot . '/qdb/quotes/42.html'));
     }
 
     public function testQdbListingPagesLoadTheVoteButtonAndIdentityLoaderScripts(): void
