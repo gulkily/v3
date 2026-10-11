@@ -6,6 +6,8 @@ or standalone plans remain at this level until they reach that threshold.
 
 ## Feature folders
 
+- [Immediate approval seed refresh](approval_seed_immediate_refresh/)
+
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
 - [Agent response direct preflight](agent_response_direct_preflight/)
 - [Agent response dropdown viewport fit](agent_response_dropdown_viewport_fit/)

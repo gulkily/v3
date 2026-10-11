@@ -1010,6 +1010,10 @@ final class ReadModelBuilder
             'thread_subject_invalid_count' => (string) $this->invalidThreadSubjectRecordCount,
         ]);
 
+        if ($metadata['repository_head'] === 'no-git') {
+            $metadata['canonical_fingerprint'] = ReadModelMetadata::canonicalFingerprint($this->repositoryRoot);
+        }
+
         foreach ($metadata as $key => $value) {
             $stmt->execute([
                 'key' => $key,

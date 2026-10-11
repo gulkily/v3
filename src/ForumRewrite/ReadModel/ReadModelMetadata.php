@@ -46,6 +46,29 @@ final class ReadModelMetadata
         return $exitCode === 0 ? trim(implode("\n", $output)) : 'git-error';
     }
 
+    /** Content evidence for repositories without Git history; no schema change. */
+    public static function canonicalFingerprint(string $repositoryRoot): string
+    {
+        $base = $repositoryRoot . '/records';
+        $files = [];
+        if (!is_dir($base)) {
+            return hash('sha256', json_encode($files, JSON_THROW_ON_ERROR));
+        }
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $relative = substr($file->getPathname(), strlen($base) + 1);
+                $hash = hash_file('sha256', $file->getPathname());
+                if ($hash === false) {
+                    throw new \RuntimeException('Unable to fingerprint canonical record: ' . $relative);
+                }
+                $files[$relative] = $hash;
+            }
+        }
+        ksort($files);
+        return hash('sha256', json_encode($files, JSON_THROW_ON_ERROR));
+    }
+
     public static function repositoryShortCommit(string $repositoryRoot): string
     {
         $output = [];
