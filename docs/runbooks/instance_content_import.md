@@ -78,7 +78,12 @@ For legacy posts without `Created-At`, the importer recovers the original Git
 addition date (following renames) only when archived bytes match the source
 history tip. It reads a temporary, isolated object store; source configuration,
 hooks, alternates, replacements, and history are never installed in the destination.
-History lookup has a separate 120-second budget and 1 MiB output limit per query.
+Legacy verification and history lookup use up to four concurrent Git processes.
+Each post still follows its own rename history; results are applied in canonical
+path order so completion order cannot change the saved metadata. History lookup
+has a shared 120-second budget and 1 MiB output limit per query. All outstanding
+workers are stopped if recovery fails. Progress includes completed lookups and
+the number of Git processes running.
 Recovered dates are committed as `records/post-timestamps/<post-id>.json`, bound
 to the exact post bytes by SHA-256. Rebuilds and subsequent imports use these
 portable dates before local Git history. Post and signature bytes stay unchanged.
