@@ -31,7 +31,12 @@
     }).then(function () {
       return request("/api/prepare_operator_action", fields);
     }).then(function (prepared) {
-      if (!window.confirm("Make " + prepared.account + " an operator? All approved keys can manage this instance and appoint other operators.")) {
+      var message = prepared.action === "revoke"
+        ? "Revoke this grant to " + prepared.account + "?\nAccounts losing operator access: "
+          + (prepared.affected_accounts.length ? prepared.affected_accounts.join(", ") : "none; alternate paths preserve access")
+          + ".\nUnrevoked downstream grants will resume if authority is restored."
+        : "Make " + prepared.account + " an operator? All approved keys can manage this instance and appoint other operators.";
+      if (!window.confirm(message)) {
         throw new Error("Cancelled. No operator access changed.");
       }
       return window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record).then(function (signature) {

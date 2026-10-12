@@ -79,6 +79,35 @@ final class WriteApiSmokeTest
             $before = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
             (new ReadModelBuilder($repo, $db, new CanonicalRecordRepository($repo)))->rebuild();
             assertSame($before['accounts'], \ForumRewrite\Operator\OperatorAuthority::load($pdo)['accounts']);
+            $_SESSION = ['authenticated_identity_id' => $users['operator-root']['identity_id']];
+            $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
+            $aliceGrant = array_values(array_filter($state['grants'], static fn ($g) => $g['account'] === 'operator-alice'))[0]['post_id'];
+            $_POST = ['action' => 'revoke', 'grant_id' => $aliceGrant];
+            $stale = json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true);
+            assertSame(['operator-alice', 'operator-bob'], $stale['affected_accounts']);
+            $_POST = ['target_identity_id' => $users['operator-bob']['identity_id']];
+            $alternate = json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true);
+            unlink($keys['operator-root']['home'] . '/approval-record.txt.asc');
+            $_POST = $alternate + ['detached_signature' => $this->signCanonicalRecord($keys['operator-root']['home'], $alternate['canonical_record'])];
+            assertSame('ok', json_decode($this->renderMethod($app, 'POST', '/api/finalize_operator_action'), true)['status']);
+            $_POST = $stale + ['detached_signature' => 'unused'];
+            $rejected = json_decode($this->renderMethod($app, 'POST', '/api/finalize_operator_action'), true);
+            assertStringContains('state changed', $rejected['error']);
+            foreach ([$aliceGrant, $alternate['post_id']] as $grantId) {
+                $_POST = ['action' => 'revoke', 'grant_id' => $grantId];
+                $prepared = json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true);
+                assertSame($grantId === $aliceGrant ? ['operator-alice'] : ['operator-bob'], $prepared['affected_accounts']);
+                unlink($keys['operator-root']['home'] . '/approval-record.txt.asc');
+                $_POST = $prepared + ['detached_signature' => $this->signCanonicalRecord($keys['operator-root']['home'], $prepared['canonical_record'])];
+                assertSame('ok', json_decode($this->renderMethod($app, 'POST', '/api/finalize_operator_action'), true)['status']);
+                // Prepared action replay cannot undo an accepted revocation.
+                assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/finalize_operator_action'), true)['status']);
+            }
+            $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
+            assertSame(false, isset($state['accounts']['operator-bob']));
+            assertSame(true, isset($state['protected']['operator-bob']));
+            $_POST = [];
+            assertStringContains('Revoke grant from', $this->renderMethod($app, 'GET', '/forte/user/operator-bob'));
             $_SESSION = [];
             $_POST = ['target_identity_id' => $users['operator-bob']['identity_id']];
             assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true)['status']);

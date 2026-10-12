@@ -8,6 +8,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Operator\OperatorAction;
 use ForumRewrite\Operator\OperatorAuthority;
+use ForumRewrite\Operator\OperatorGraph;
 use RuntimeException;
 
 trait OperatorWriteActions
@@ -19,10 +20,18 @@ trait OperatorWriteActions
             $state = OperatorAuthority::load($this->readModelPdo());
             $actor = $this->requireOperatorActor($state, $actorId);
             $action = (string) ($input['action'] ?? 'grant');
-            if ($action !== 'grant') {
+            if (!in_array($action, ['grant', 'revoke'], true)) {
                 throw new RuntimeException('Unsupported operator action.');
             }
-            $target = $state['profiles'][(string) ($input['target_identity_id'] ?? '')] ?? null;
+            $grantId = (string) ($input['grant_id'] ?? '');
+            $affected = [];
+            if ($action === 'revoke') {
+                $affected = OperatorGraph::preview($state, $grantId);
+                $targetId = $state['grants'][$grantId]['target_identity_id'];
+            } else {
+                $targetId = (string) ($input['target_identity_id'] ?? '');
+            }
+            $target = $state['profiles'][$targetId] ?? null;
             if ($target === null || (int) $target['is_approved'] !== 1 || isset($state['roots'][$target['username_token']])) {
                 throw new RuntimeException('Select an approved key of a non-root account.');
             }
@@ -34,6 +43,9 @@ trait OperatorWriteActions
                 . "Author-Identity-ID: {$actorId}\n\nOperator-Action: {$action}\n"
                 . "Operator-Account: {$target['username_token']}\nOperator-Sequence: {$sequence}\n"
                 . "Operator-Target-Identity: {$target['identity_id']}\n";
+            if ($action === 'revoke') {
+                $contents .= "Operator-Grant-ID: {$grantId}\n";
+            }
             OperatorAction::parse((new PostRecordParser())->parse($contents));
             $path = CanonicalPathResolver::datedPost($postId, $createdAt);
             $prepared = $this->storePreparedPost($path, $contents, [
@@ -41,7 +53,8 @@ trait OperatorWriteActions
                 'author_identity_id' => $actorId, 'revision' => $state['revision'],
             ]);
             return $prepared + ['status' => 'ok', 'post_id' => $postId, 'record_path' => $path,
-                'canonical_record' => $contents, 'account' => $target['username_token'], 'action' => $action];
+                'canonical_record' => $contents, 'account' => $target['username_token'], 'action' => $action,
+                'affected_accounts' => $affected];
         });
     }
 

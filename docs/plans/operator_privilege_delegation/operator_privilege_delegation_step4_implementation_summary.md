@@ -19,3 +19,8 @@
 - Changes: Added authenticated operator preparation/finalization endpoints, signed tagged bootstrap replies with exact identity/account/sequence binding, shared classic/Forte profile and username role controls, confirmation/browser signing, and attributed activity. Operator changes refresh derived state and retire generated presentations.
 - Verification: `php tests/run.php WriteApiSmokeTest::testSignedOperatorGrantFromUserPageAllowsOnwardDelegation` passed using real GPG keys/signatures, both site user entries, invalid-signature rejection, onward delegation, anonymous denial and full-rebuild parity. PHP/JavaScript syntax and `git diff --check` passed.
 - Notes: Preparation captures the complete account/operator revision; finalization rechecks it under the write lock. Grants are additional account relationships rather than transfers. Revocation controls follow in Stage 5.
+
+## Stage 5 - Previewed cascading revocation
+- Changes: Added signed grant-specific revocation by any current operator, shared classic/Forte controls, affected-account confirmation, alternate-path preservation and unchanged-state finalization. Root grants are not removable through this flow; accepted action replay is rejected.
+- Verification: Graph plus real-signed UI/API integration — 6 passed, including cascading preview, an intervening alternate grant causing stale-confirmation rejection, subsequent alternate-path preservation, cascading loss and replay rejection. JavaScript/PHP syntax and `git diff --check` passed.
+- Notes: Revocation preserves outgoing grants as suspended relationships; restoration and refresh-failure recovery follow in Stage 6.
