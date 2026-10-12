@@ -14,6 +14,10 @@
     <span>User: <?= $e($usernameToken) ?></span>
   </div>
   <div class="paned-standalone-body">
+<?php if (isset($operatorView)): ?>
+<?= $partial('partials/operator_role.php', ['operatorView' => $operatorView]) ?>
+<?php endif; ?>
+
 <?php if ($approvedProfiles === []): ?>
     <p>No approved profiles currently use this username.</p>
 <?php else: ?>

@@ -40,6 +40,27 @@ final class IdentityApprovalAndInvitationApiController
     ) {
     }
 
+    public function operatorAction(string $method, array $query, bool $finalize): void
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+        try {
+            $viewer = ($this->authenticatedViewerProfile)();
+            if ($viewer === null) {
+                throw new RuntimeException('Sign in with an approved operator key.');
+            }
+            $input = $this->routeServices->requestData($query);
+            $result = $finalize
+                ? $this->routeServices->writer()->finalizeOperatorAction($input, $viewer['identity_id'])
+                : $this->routeServices->writer()->prepareOperatorAction($input, $viewer['identity_id']);
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $error) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        }
+    }
+
     public function approveUser(string $method): void
     {
         if ($method !== 'POST') {

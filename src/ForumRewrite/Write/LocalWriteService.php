@@ -38,6 +38,7 @@ use RuntimeException;
 
 class LocalWriteService
 {
+    use OperatorWriteActions;
     private const HIDDEN_BOOTSTRAP_BOARD_TAGS = 'identity internal';
 
     /** @var (callable():void)|null */

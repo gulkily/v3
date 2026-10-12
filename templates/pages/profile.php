@@ -52,6 +52,9 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 <?php endif; ?>
     </p>
 <?php endif; ?>
+<?php if (isset($operatorView)): ?>
+<?= $partial('partials/operator_role.php', ['operatorView' => $operatorView]) ?>
+<?php endif; ?>
     <p><strong>Threads:</strong> <?= (int) $profile['thread_count'] ?></p>
     <p><strong>Posts:</strong> <?= (int) $profile['post_count'] ?></p>
     <p><strong>Username route:</strong> <a href="/user/<?= $e($profile['username_token']) ?>">/user/<?= $e($profile['username_token']) ?></a></p>

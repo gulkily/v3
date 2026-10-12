@@ -3,6 +3,10 @@
     <h1>User <?= $e($usernameToken) ?></h1>
   </article>
 
+<?php if (isset($operatorView)): ?>
+<?= $partial('partials/operator_role.php', ['operatorView' => $operatorView]) ?>
+<?php endif; ?>
+
 <?php if ($approvedProfiles === []): ?>
   <article class="card">
     <p>No approved profiles currently use this username.</p>

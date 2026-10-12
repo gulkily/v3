@@ -974,6 +974,10 @@ final class ReadModelBuilder
             return 'invitation';
         }
 
+        if (in_array('operator', $boardTags, true)) {
+            return 'identity';
+        }
+
         if (in_array('internal', $boardTags, true)) {
             return 'identity_bootstrap';
         }
@@ -989,6 +993,11 @@ final class ReadModelBuilder
     private function activityLabelForPost(array $post): string
     {
         $boardTags = json_decode($post['board_tags_json'], true);
+        if (is_array($boardTags) && in_array('operator', $boardTags, true)
+            && preg_match('/^Operator-Action: (grant|revoke)$/m', $post['body'], $action)
+            && preg_match('/^Operator-Account: ([A-Za-z0-9._:-]+)$/m', $post['body'], $account)) {
+            return 'Operator ' . $action[1] . ': ' . $account[1];
+        }
         if (is_array($boardTags) && in_array('invitation', $boardTags, true)
             && preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action)
             && preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $post['body'], $hash)) {

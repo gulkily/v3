@@ -383,6 +383,11 @@ final class Application
             return;
         }
 
+        if (in_array($path, ['/api/prepare_operator_action', '/api/finalize_operator_action'], true)) {
+            $this->identityApprovalAndInvitationApiController()->operatorAction($method, $query, $path === '/api/finalize_operator_action');
+            return;
+        }
+
         if ($path === '/api/prepare_approval') {
             $this->identityApprovalAndInvitationApiController()->prepareApproval($method, $query);
             return;

@@ -27,6 +27,67 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testSignedOperatorGrantFromUserPageAllowsOnwardDelegation(): void
+    {
+        [$repo, $db, $artifacts] = $this->createTempEnvironment();
+        $keys = [];
+        try {
+            $app = new Application(dirname(__DIR__), $repo, $db, $artifacts);
+            $users = [];
+            foreach (['operator-root', 'operator-alice', 'operator-bob'] as $name) {
+                $keys[$name] = $this->createSigningKey($name);
+                $_POST = ['public_key' => $keys[$name]['public_key']];
+                $reply = $this->renderMethod($app, 'POST', '/api/link_identity');
+                $users[$name] = [
+                    'identity_id' => $this->extractValue($reply, 'identity_id'),
+                    'profile_slug' => $this->extractValue($reply, 'profile_slug'),
+                    'bootstrap_thread_id' => $this->extractValue($reply, 'bootstrap_thread_id'),
+                    'bootstrap_post_id' => $this->extractValue($reply, 'bootstrap_post_id'),
+                ];
+            }
+            $_POST = [];
+            $this->seedApprovedIdentity($repo, $users['operator-root']['identity_id']);
+            $this->renderMethod($app, 'GET', '/');
+            $writer = new LocalWriteService($repo, $db, $artifacts, new CanonicalRecordRepository($repo));
+            foreach (['operator-alice', 'operator-bob'] as $name) {
+                $writer->approveUser([
+                    'approver_identity_id' => $users['operator-root']['identity_id'],
+                    'target_identity_id' => $users[$name]['identity_id'],
+                    'target_profile_slug' => $users[$name]['profile_slug'],
+                    'thread_id' => $users[$name]['bootstrap_thread_id'], 'parent_id' => $users[$name]['bootstrap_post_id'],
+                ]);
+            }
+            foreach ([['operator-root', 'operator-alice'], ['operator-alice', 'operator-bob']] as [$actor, $target]) {
+                $_SESSION = ['authenticated_identity_id' => $users[$actor]['identity_id']];
+                foreach (['/user/', '/forte/user/'] as $prefix) {
+                    assertStringContains('Make operator', $this->renderMethod($app, 'GET', $prefix . $target));
+                }
+                $_POST = ['target_identity_id' => $users[$target]['identity_id']];
+                $prepared = json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true, 512, JSON_THROW_ON_ERROR);
+                assertSame('ok', $prepared['status']);
+                $_POST = $prepared + ['detached_signature' => 'invalid'];
+                $invalid = json_decode($this->renderMethod($app, 'POST', '/api/finalize_operator_action'), true, 512, JSON_THROW_ON_ERROR);
+                assertSame('error', $invalid['status']);
+                $_POST = $prepared + ['detached_signature' => $this->signCanonicalRecord($keys[$actor]['home'], $prepared['canonical_record'])];
+                $result = json_decode($this->renderMethod($app, 'POST', '/api/finalize_operator_action'), true, 512, JSON_THROW_ON_ERROR);
+                assertSame('ok', $result['status']);
+                $_POST = [];
+                assertStringContains('Instance role:</strong> operator', $this->renderMethod($app, 'GET', '/user/' . $target));
+            }
+            assertStringContains('Operator grant: operator-bob', $this->renderMethod($app, 'GET', '/activity/'));
+            $pdo = new PDO('sqlite:' . $db);
+            $before = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
+            (new ReadModelBuilder($repo, $db, new CanonicalRecordRepository($repo)))->rebuild();
+            assertSame($before['accounts'], \ForumRewrite\Operator\OperatorAuthority::load($pdo)['accounts']);
+            $_SESSION = [];
+            $_POST = ['target_identity_id' => $users['operator-bob']['identity_id']];
+            assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true)['status']);
+        } finally {
+            $_POST = []; $_SESSION = []; $_COOKIE = [];
+            foreach ($keys as $key) { $this->deleteTree($key['home']); }
+        }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

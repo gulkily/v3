@@ -405,6 +405,7 @@ final class RouteServices
         if (!array_key_exists('viewerProfile', $pageData)) {
             $pageData['viewerProfile'] = $this->defaultViewerProfile();
         }
+        $this->operatorPageData($pageTemplate, $pageData, $scriptPaths);
         $publicAuthenticationResume = $allowPublicAuthenticationResume
             && !$this->approvedMembersOnlyEnabled
             && $pageData['viewerProfile'] === null;
@@ -418,6 +419,20 @@ final class RouteServices
             $this->routeSource,
             $publicAuthenticationResume,
         );
+    }
+
+    private function operatorPageData(string $template, array &$data, array &$scripts): void
+    {
+        if (!in_array($template, ['profile.php', 'forte_profile.php', 'username.php', 'forte_username.php'], true)) {
+            return;
+        }
+        $token = (string) ($data['usernameToken'] ?? $data['profile']['username_token'] ?? '');
+        $data['operatorView'] = \ForumRewrite\Operator\OperatorPresentation::account(
+            $this->pdo(), $token, (string) ($_SESSION['authenticated_identity_id'] ?? '')
+        );
+        if ($data['operatorView']['canManage']) {
+            $scripts = array_values(array_unique(array_merge($scripts, ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/operator_roles.js'])));
+        }
     }
 
     public function assetPath(string $path): string
@@ -442,6 +457,7 @@ final class RouteServices
             $pageData['viewerProfile'] = $this->defaultLenientViewerProfile();
         }
 
+        $this->operatorPageData($pageTemplate, $pageData, $scriptPaths);
         return $this->renderer->renderStandalonePage($pageTemplate, $pageData, $title, $bodyClass, $scriptPaths, $additionalCssPaths);
     }
 

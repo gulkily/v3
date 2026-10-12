@@ -1026,6 +1026,7 @@ class IncrementalReadModelUpdater
             return 'invitation';
         }
 
+        if (in_array('operator', $record->boardTags, true)) { return 'identity'; }
         if (in_array('internal', $record->boardTags, true)) {
             return 'identity_bootstrap';
         }
@@ -1083,6 +1084,11 @@ class IncrementalReadModelUpdater
 
     private function activityLabelForPost(PostRecord $record): string
     {
+        if (in_array('operator', $record->boardTags, true)
+            && preg_match('/^Operator-Action: (grant|revoke)$/m', $record->body, $action)
+            && preg_match('/^Operator-Account: ([A-Za-z0-9._:-]+)$/m', $record->body, $account)) {
+            return 'Operator ' . $action[1] . ': ' . $account[1];
+        }
         if (in_array('invitation', $record->boardTags, true)
             && preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $record->body, $action)
             && preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $record->body, $hash)) {
