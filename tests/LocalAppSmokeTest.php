@@ -1511,6 +1511,39 @@ PHP;
             assertSame(0, preg_match('/data-paned-thread-id="case-[0-5]"[^>]*\bhidden\b/s', $forte));
             $this->render($application, '/tags/UnKnOwN');
             assertSame(404, http_response_code());
+            $staticRoot = $root . '/static';
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $root, $staticRoot);
+            $release = $publisher->build($database);
+            $publisher->activate($release);
+            assertTrue(is_file($release . '/tags/php.html'));
+            assertSame(false, is_file($release . '/tags/PHP.html'));
+            assertSame(false, is_file($release . '/tags/Php.html'));
+            $controller = new FrontController(dirname(__DIR__), $root, $database, $staticRoot);
+            foreach (['php', 'PHP', 'Php/'] as $tag) {
+                $page = $this->renderFrontController($controller, 'GET', '/tags/' . $tag, []);
+                assertSame(200, http_response_code());
+                assertStringContains('route-source: static-html', $page);
+                assertStringContains('<h1>#php</h1>', $page);
+                for ($i = 0; $i < 6; $i++) {
+                    assertSame(1, substr_count($page, 'href="/threads/case-' . $i . '"'));
+                }
+            }
+            $privateFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+            try {
+                putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+                $private = $this->renderFrontController($controller, 'GET', '/tags/PHP', []);
+                assertStringNotContains('route-source: static-html', $private);
+                assertStringNotContains('Case thread 0', $private);
+            } finally {
+                $privateFlag === false ? putenv('FORUM_APPROVED_MEMBERS_ONLY') : putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $privateFlag);
+            }
+            unlink($release . '/tags/php.html');
+            $fallback = $this->renderFrontController($controller, 'GET', '/tags/PHP/', []);
+            assertSame(200, http_response_code());
+            assertStringContains('<h1>#php</h1>', $fallback);
+            assertStringNotContains('route-source: static-html', $fallback);
+            $this->renderFrontController($controller, 'GET', '/tags/UnKnOwN', []);
+            assertSame(404, http_response_code());
             assertSame($original, file_get_contents($root . '/records/posts/case-0.txt'));
         } finally {
             $this->deleteTree($root);
