@@ -1169,6 +1169,10 @@ class IncrementalReadModelUpdater
             'rebuild_reason' => 'write_incremental',
         ]);
 
+        if ($commitSha === 'no-git') {
+            $metadata['canonical_fingerprint'] = ReadModelMetadata::canonicalFingerprint($this->repositoryRoot);
+        }
+
         foreach ($metadata as $key => $value) {
             $stmt->execute([
                 'key' => $key,

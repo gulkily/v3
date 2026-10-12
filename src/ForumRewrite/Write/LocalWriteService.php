@@ -1630,7 +1630,7 @@ class LocalWriteService
         return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
             $this->assertWritableRepository();
             $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
-            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+            if (!\ForumRewrite\Operator\OperatorAuthority::allows($this->readModelPdo(), \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->readModelPdo(), $operatorIdentityId))) {
                 throw new RuntimeException('Feature flag changes require an approved operator identity.');
             }
             $key = $this->requireFeatureFlagKey((string) ($input['key'] ?? ''));
@@ -1689,7 +1689,7 @@ class LocalWriteService
             if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')) {
                 throw new RuntimeException('Prepared feature-flag change operator identity mismatch.');
             }
-            if (!$this->isApprovedIdentity($operatorIdentityId)) {
+            if (!\ForumRewrite\Operator\OperatorAuthority::allows($this->readModelPdo(), \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->readModelPdo(), $operatorIdentityId))) {
                 throw new RuntimeException('Feature flag changes require an approved operator identity.');
             }
             $canonicalRecord = (string) ($input['canonical_record'] ?? '');

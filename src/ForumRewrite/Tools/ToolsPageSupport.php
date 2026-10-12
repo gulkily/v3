@@ -159,14 +159,19 @@ final class ToolsPageSupport
      */
     public static function fetchSeedApprovedUsers(PDO $pdo): array
     {
-        $stmt = $pdo->query(
-            'SELECT username_token, MIN(username) AS username
-             FROM profiles
-             WHERE approved_by_label = \'root\'
-             GROUP BY username_token
-             ORDER BY username_token ASC'
-        );
-
-        return $stmt->fetchAll();
+        try {
+            $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
+        } catch (\Throwable) {
+            return [];
+        }
+        $users = [];
+        foreach ($state['profiles'] as $profile) {
+            $token = $profile['username_token'];
+            if (isset($state['accounts'][$token]) && (int) $profile['is_approved'] === 1) {
+                $users[$token] = ['username_token' => $token, 'username' => $profile['username']];
+            }
+        }
+        ksort($users);
+        return array_values($users);
     }
 }
