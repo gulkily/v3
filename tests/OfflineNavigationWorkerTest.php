@@ -21,9 +21,9 @@ global.self = {
 };
 const paths = [
   '/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001',
-  '/tags', '/tags/', '/tags/general', '/tags/bug-fix',
+  '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad',
   '/tools/outbox/',
-  '/compose/thread', '/profiles/alice', '/search/', '/tags/Bad', '/tags/bug/extra'
+  '/compose/thread', '/profiles/alice', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'
 ];
 vm.runInThisContext(source);
 const policy = Object.fromEntries(paths.map((path) => [
@@ -50,10 +50,10 @@ NODE;
     {
         $policy = $this->navigationPolicy();
 
-        foreach (['/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001', '/tags', '/tags/', '/tags/general', '/tags/bug-fix'] as $path) {
+        foreach (['/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001', '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad'] as $path) {
             assertSame(true, $policy[$path]);
         }
-        foreach (['/compose/thread', '/profiles/alice', '/search/', '/tags/Bad', '/tags/bug/extra'] as $path) {
+        foreach (['/compose/thread', '/profiles/alice', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'] as $path) {
             assertSame(false, $policy[$path]);
         }
     }
