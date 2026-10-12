@@ -79,3 +79,14 @@ requires restoring the import history; copying files alone is insufficient.
 Do not manufacture metadata from old FDP squash commits. Keep full subtree
 history available in maintenance clones. This procedure does not automatically
 migrate other repositories.
+
+## Forum handoffs
+
+New handoff drafts name Railspike and point to its workflow entrypoint. The
+`railspike` board tag or thread label is eligible alongside existing development
+tags, including `fdp`. Thread-label eligibility still applies only to the root
+post, and existing localhost and user-approval requirements remain in force.
+Existing drafts are not regenerated. The `fdp_step1` storage/API field remains
+for compatibility with both PHP previews, the browser preview, and older clients;
+this terminology change requires no data migration. Runner execution and approval
+behavior are unchanged.

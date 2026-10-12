@@ -723,6 +723,46 @@ PHP);
         }
     }
 
+    public function testLegacyFdpHandoffRemainsUnchangedThroughApiAndCards(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $response = $this->renderMethod($application, 'POST',
+                '/api/create_thread?board_tags=fdp&subject=Legacy%20handoff&body=Preserve%20existing%20work.');
+            $postId = $this->extractValue($response, 'post_id');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $created = json_decode($this->renderMethod($application, 'POST',
+                '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            assertSame('draft_ready', $created['handoff_status']);
+            assertStringContains('Railspike', $created['draft_text']);
+            // Represent a draft persisted before the migration; requesting it again must not regenerate it.
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $statement = $pdo->prepare('UPDATE codex_handoffs SET fdp_step1 = ?, draft_text = ? WHERE handoff_id = ?');
+            $statement->execute(['Legacy FDP assessment', 'Legacy FDP full draft', $created['handoff_id']]);
+            foreach (['GET', 'POST'] as $method) {
+                $stored = json_decode($this->renderMethod($application, $method,
+                    '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+                assertSame($created['handoff_id'], $stored['handoff_id']);
+                assertSame('Legacy FDP assessment', $stored['fdp_step1']);
+                assertSame('Legacy FDP full draft', $stored['draft_text']);
+            }
+            foreach (['/threads/', '/posts/'] as $route) {
+                assertStringContains('Legacy FDP assessment', $this->renderMethod($application, 'GET', $route . rawurlencode($postId)));
+            }
+            $approved = json_decode($this->renderMethod($application, 'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'), true);
+            assertSame('approved', $approved['handoff_status']);
+            assertSame('Legacy FDP full draft', $approved['draft_text']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
     public function testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -802,7 +842,7 @@ PHP);
                 $application,
                 'POST',
                 '/api/create_thread?board_tags=general&subject=Root%20Task%20Label&body='
-                . rawurlencode("Please prepare this for Codex.\n#task\n")
+                . rawurlencode("Please prepare this for Codex.\n#railspike\n")
             );
             $rootPostId = $this->extractValue($threadResponse, 'post_id');
 
@@ -810,7 +850,7 @@ PHP);
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($rootPostId));
             $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($rootPostId)), true);
 
-            assertStringContains('Labels: task', $threadPage);
+            assertStringContains('Labels: railspike', $threadPage);
             assertStringContains('data-action="request-codex-handoff"', $threadPage);
             assertSame('ok', $created['status']);
             assertSame('draft_ready', $created['handoff_status']);
@@ -835,18 +875,22 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Reply%20Task%20Label&body=This%20starts%20as%20a%20general%20thread.'
             );
             $threadId = $this->extractValue($threadResponse, 'thread_id');
-            $this->renderMethod(
+            $replyResponse = $this->renderMethod(
                 $application,
                 'POST',
                 '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($threadId) . '&body='
-                . rawurlencode("This reply marks the thread for implementation.\n#task\n")
+                . rawurlencode("This reply marks the thread for implementation.\n#railspike\n")
             );
 
             $_COOKIE = ['identity_hint' => 'guest'];
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
             $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($threadId)), true);
 
-            assertStringContains('Labels: task', $threadPage);
+            $replyId = $this->extractValue($replyResponse, 'post_id');
+            $replyHandoff = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($replyId)), true);
+            assertSame('error', $replyHandoff['status']);
+            assertStringContains('requires a development tag or thread label', $replyHandoff['error']);
+            assertStringContains('Labels: railspike', $threadPage);
             assertSame(1, substr_count($threadPage, 'data-action="request-codex-handoff"'));
             assertSame('ok', $created['status']);
             assertSame('draft_ready', $created['handoff_status']);
@@ -911,7 +955,7 @@ PHP);
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=feature&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
+                '/api/create_thread?board_tags=railspike&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 
@@ -939,6 +983,8 @@ PHP);
             assertStringContains('data-action="approve-codex-handoff"', $draftThreadPage);
             assertStringContains('data-action="reject-codex-handoff"', $draftThreadPage);
             assertStringContains('data-role="codex-handoff-preview"', $draftPostPage);
+            assertStringContains('Railspike', $draftThreadPage);
+            assertStringContains('Railspike', $draftPostPage);
         } finally {
             $_SERVER = $originalServer;
             $_COOKIE = [];
