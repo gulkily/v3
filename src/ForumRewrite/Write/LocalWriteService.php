@@ -318,6 +318,9 @@ class LocalWriteService
             $totalStartedAt = hrtime(true);
             $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($prepareToken);
+            if (!in_array($prepared['kind'] ?? '', ['thread', 'reply'], true)) {
+                throw new RuntimeException('Use the dedicated endpoint for this prepared action.');
+            }
 
             if (strtotime((string) $prepared['expires_at']) < time()) {
                 throw new RuntimeException('Prepared post has expired.');
@@ -1142,6 +1145,7 @@ class LocalWriteService
 
             $approverIdentityId = $this->requireOpenPgpIdentityId((string) ($input['approver_identity_id'] ?? ''), 'approver_identity_id');
             $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            \ForumRewrite\Operator\OperatorKeyPolicy::assertAllowed($this->readModelPdo(), $approverIdentityId, $targetIdentityId);
             $targetProfileSlug = $this->requireAsciiToken((string) ($input['target_profile_slug'] ?? ''), 'target_profile_slug');
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
@@ -1208,6 +1212,7 @@ class LocalWriteService
 
             $approverIdentityId = $this->requireOpenPgpIdentityId((string) ($input['approver_identity_id'] ?? ''), 'approver_identity_id');
             $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            \ForumRewrite\Operator\OperatorKeyPolicy::assertAllowed($this->readModelPdo(), $approverIdentityId, $targetIdentityId);
             $targetProfileSlug = $this->requireAsciiToken((string) ($input['target_profile_slug'] ?? ''), 'target_profile_slug');
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
@@ -1293,6 +1298,7 @@ class LocalWriteService
             $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($prepared['target_identity_id'] ?? ''), 'target_identity_id');
             $targetProfileSlug = $this->requireAsciiToken((string) ($prepared['target_profile_slug'] ?? ''), 'target_profile_slug');
 
+            \ForumRewrite\Operator\OperatorKeyPolicy::assertAllowed($this->readModelPdo(), $authorIdentityId, $targetIdentityId);
             if (!$this->isApprovedIdentity($authorIdentityId)) {
                 throw new RuntimeException('Only approved users can approve other users.');
             }
@@ -1490,6 +1496,7 @@ class LocalWriteService
                     || strtotime((string) $entry['issued']->expiresAt) <= time()) {
                     throw new RuntimeException('Invitation is invalid, expired, revoked, or already used.');
                 }
+                \ForumRewrite\Operator\OperatorKeyPolicy::assertAllowed($this->readModelPdo(), (string) $entry['issued']->post->authorIdentityId, $authorIdentityId);
             }
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
@@ -1527,6 +1534,7 @@ class LocalWriteService
             if ($entry === null || $entry['revoked'] !== null || $entry['redeemed'] !== null || strtotime((string) $entry['issued']->expiresAt) <= time()) {
                 throw new RuntimeException('Invitation is invalid, expired, revoked, or already used.');
             }
+            \ForumRewrite\Operator\OperatorKeyPolicy::assertAllowed($this->readModelPdo(), (string) $entry['issued']->post->authorIdentityId, $recipientIdentityId);
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $postId = $this->generateRecordId('reply');
@@ -2917,6 +2925,11 @@ class LocalWriteService
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? '';
         $normalized = trim($normalized);
 
+        $tags = explode(' ', $normalized);
+        if (in_array('operator', $tags, true) || (in_array('identity', $tags, true)
+            && array_intersect(['approval', 'invitation'], $tags) !== [])) {
+            throw new RuntimeException('Privileged identity tags require their dedicated signed action.');
+        }
         return $normalized !== '' ? $normalized : 'general';
     }
 

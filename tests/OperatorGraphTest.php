@@ -56,6 +56,18 @@ final class OperatorGraphTest
             assertSame(true, $threw);
         }
     }
+    public function testKeyProtectionPersistsDuringSuspension(): void
+    {
+        $profiles = $this->profiles();
+        $state = ['protected' => ['bob' => true], 'accounts' => ['root' => true]];
+        $policy = \ForumRewrite\Operator\OperatorKeyPolicy::class;
+        assertSame(false, $policy::permits($state, $profiles['alice'], $profiles['bob']));
+        assertSame(true, $policy::permits($state, $profiles['root'], $profiles['bob']));
+        assertSame(true, $policy::permits($state, $profiles['bob'], $profiles['bob']));
+        assertSame(true, $policy::permits($state, $profiles['alice'], $profiles['carol']));
+        $profiles['bob']['is_approved'] = 0;
+        assertSame(false, $policy::permits($state, $profiles['bob'], $profiles['bob']));
+    }
     public function testApprovedAccountKeyCanDelegateButPendingKeyCannot(): void
     {
         $profiles = $this->profiles();

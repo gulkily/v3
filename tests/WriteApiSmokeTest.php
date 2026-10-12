@@ -2655,6 +2655,7 @@ NODE;
             $this->renderMethod($application, 'GET', '/');
 
             $_COOKIE = ['identity_hint' => $identityId];
+            $_SESSION = ['authenticated_identity_id' => $identityId];
             $prepared = json_decode($this->renderMethod(
                 $application,
                 'POST',
@@ -2705,6 +2706,7 @@ NODE;
         } finally {
             $_POST = [];
             $_COOKIE = [];
+            $_SESSION = [];
             $this->deleteTree($signingKey['home']);
         }
     }
@@ -2766,6 +2768,7 @@ NODE;
             '/api/set_feature_flag?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
         $_COOKIE = ['identity_hint' => 'guest'];
+        $_SESSION = ['authenticated_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
         $unsigned = $this->renderMethod(
             $application,
             'POST',
@@ -2777,6 +2780,7 @@ NODE;
             '/api/prepare_feature_flag_change?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         ), true, 512, JSON_THROW_ON_ERROR);
         $_COOKIE = [];
+            $_SESSION = [];
 
         assertStringContains('error=Feature flag changes require a root-approved identity.', $unauthorized);
         assertStringContains('error=Feature flag changes require a browser signature.', $unsigned);
@@ -2834,6 +2838,7 @@ NODE;
             '/tools/feature-flags/?key=FORUM_APP_VERSION_NOTIFICATION&value=false'
         );
         $_COOKIE = ['identity_hint' => 'guest'];
+        $_SESSION = ['authenticated_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
         $form = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
         $redirect = $this->renderMethod(
             $application,
@@ -2842,6 +2847,7 @@ NODE;
         );
         $updated = $this->renderMethod($application, 'GET', '/tools/feature-flags/');
         $_COOKIE = [];
+            $_SESSION = [];
 
         assertStringNotContains('data-feature-flag-toggle', $anonymousForm);
         assertStringContains('title="Read-only &mdash; requires a root-approved identity to change."', $anonymousForm);
@@ -2859,6 +2865,7 @@ NODE;
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
 
         $_COOKIE = ['identity_hint' => 'guest'];
+        $_SESSION = ['authenticated_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
         $_POST = [
             'key' => 'FORUM_APP_VERSION_NOTIFICATION',
             'value' => 'disabled',
@@ -2867,6 +2874,7 @@ NODE;
             $redirect = $this->renderMethod($application, 'POST', '/tools/feature-flags/');
         } finally {
             $_COOKIE = [];
+            $_SESSION = [];
             $_POST = [];
         }
 

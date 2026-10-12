@@ -994,7 +994,8 @@ final class Application
         $canApprove = $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
-            && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+            && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id'])
+            && \ForumRewrite\Operator\OperatorKeyPolicy::allows($this->pdo(), $viewerProfile, $profile);
         $canPrivateMessage = $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) === 1
