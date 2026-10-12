@@ -24,6 +24,9 @@
     </div>
   </div>
   <div class="body">
+<?php if (isset($operatorView)): ?>
+<?= $partial('partials/operator_role.php', ['operatorView' => $operatorView]) ?>
+<?php endif; ?>
     <h3>Threads</h3>
 <?php if ($approvedThreads === []): ?>
     <p class="meta">No visible threads.</p>

@@ -26,7 +26,7 @@ $token = (string) $user['username_token'];
   tabindex="<?= $isTabStop ? '0' : '-1' ?>"
   <?= $visible ? '' : 'hidden' ?>
 >
-  <span class="paned-list-subject"><?= $e($user['username']) ?></span>
+  <span class="paned-list-subject"><?= $e($user['username']) ?><?php if (isset($user['operator_role']) && $user['operator_role'] !== 'member'): ?> (<?= $e($user['operator_role']) ?>)<?php endif; ?></span>
   <span class="paned-list-from"><?= (int) $user['thread_count'] ?></span>
   <span class="paned-list-date"><?= (int) $user['post_count'] ?></span>
   <span class="paned-list-active"><?= $relativeTimestamp((string) ($user['active_at'] ?? '')) ?></span>

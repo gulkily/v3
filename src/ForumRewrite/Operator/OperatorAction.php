@@ -11,7 +11,7 @@ final class OperatorAction
 {
     public static function isAction(PostRecord $post): bool
     {
-        return in_array('operator', $post->boardTags, true);
+        return in_array('identity', $post->boardTags, true) && in_array('operator', $post->boardTags, true);
     }
 
     public static function parse(PostRecord $post): array

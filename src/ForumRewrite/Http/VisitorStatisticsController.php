@@ -9,7 +9,7 @@ use Throwable;
 
 final class VisitorStatisticsController
 {
-    private const FORBIDDEN_MESSAGE = 'Visitor statistics require a server-authenticated root-approved identity.';
+    private const FORBIDDEN_MESSAGE = 'Visitor statistics require a server-authenticated approved operator identity.';
     /** @var array<string, array{hours:int,label:string}> */
     private const PERIOD_OPTIONS = [
         '24h' => ['hours' => 24, 'label' => 'Last 24 hours'],

@@ -4,8 +4,11 @@
   <p class="meta">This role applies to all approved keys for this username. Pending keys have no operator access.</p>
 <?php endif; ?>
 <?php foreach ($operatorView['grants'] as $id => $grant): ?>
-  <p class="meta">Grant from <?= $e($grant['from']) ?>: <?= $grant['revoked'] ? 'revoked' : 'unrevoked' ?>.
+  <p class="meta">Grant from <?= $e($grant['from']) ?>: <?= $grant['revoked'] ? 'revoked' : ($grant['effective'] ? 'active' : 'suspended') ?>.
     <a href="/posts/<?= $e($id) ?>">Signed grant</a>
+<?php if ($grant['revoked']): ?>
+    <a href="/posts/<?= $e($grant['revocation_id']) ?>">Signed revocation</a>
+<?php endif; ?>
   </p>
 <?php if ($operatorView['canManage'] && !$grant['revoked']): ?>
   <form data-operator-action-form>

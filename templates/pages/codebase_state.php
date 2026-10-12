@@ -56,7 +56,7 @@ $rowCountSources = [
     <h2>Instance</h2>
     <p><strong>Name:</strong> <?= $e($siteName) ?></p>
     <div class="codebase-source"><code><?= $e("grep '^Instance-Name:' state/local_repository/records/instance/public.txt") ?></code></div>
-    <p><strong>Admin:</strong>
+    <p><strong>Operators:</strong>
 <?php if ($admins === []): ?>
       none
 <?php else: ?>
@@ -65,7 +65,7 @@ $rowCountSources = [
 <?php endforeach; ?>
 <?php endif; ?>
     </p>
-    <div class="codebase-source"><code><?= $e("SELECT username_token, MIN(username) AS username FROM profiles WHERE approved_by_label = 'root' GROUP BY username_token ORDER BY username_token ASC;") ?></code></div>
+    <div class="codebase-source"><code><?= $e('Approved accounts reachable from canonical root seeds through unrevoked, signed operator grants.') ?></code></div>
   </article>
   <article class="card" data-role="codebase-state">
     <h2>Repository</h2>

@@ -73,6 +73,13 @@ final class WriteApiSmokeTest
                 assertSame('ok', $result['status']);
                 $_POST = [];
                 assertStringContains('Instance role:</strong> operator', $this->renderMethod($app, 'GET', '/user/' . $target));
+                assertStringContains('Operator-Role: operator', $this->renderMethod($app, 'GET', '/api/get_profile?profile_slug=' . $users[$target]['profile_slug']));
+                assertStringContains('Operator-Access: yes', $this->renderMethod($app, 'GET', '/api/get_profile?profile_slug=' . $users[$target]['profile_slug']));
+                assertStringContains('Instance role: operator', $this->renderMethod($app, 'GET', '/users/'));
+                assertStringContains('(operator)', $this->renderMethod($app, 'GET', '/forte/users/'));
+                $detail = json_decode($this->renderMethod($app, 'GET', '/api/forte_user_detail?username_token=' . $target), true);
+                assertStringContains('Instance role:</strong> operator', $detail['html']);
+
             }
             assertStringContains('Operator grant: operator-bob', $this->renderMethod($app, 'GET', '/activity/'));
             $pdo = new PDO('sqlite:' . $db);
@@ -106,6 +113,21 @@ final class WriteApiSmokeTest
             $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
             assertSame(false, isset($state['accounts']['operator-bob']));
             assertSame(true, isset($state['protected']['operator-bob']));
+            $_POST = [];
+            $pending = $this->linkGeneratedIdentity($app, 'operator-bob');
+            $member = $this->linkGeneratedIdentity($app, 'ordinary-member');
+            $writer->approveUser(['approver_identity_id' => $users['operator-root']['identity_id'],
+                'target_identity_id' => $member['identity_id'], 'target_profile_slug' => $member['profile_slug'],
+                'thread_id' => $member['bootstrap_thread_id'], 'parent_id' => $member['bootstrap_post_id']]);
+            $_SESSION = ['authenticated_identity_id' => $member['identity_id']];
+            $_POST = ['profile_slug' => $pending['profile_slug']];
+            $denied = json_decode($this->renderMethod($app, 'POST', '/api/prepare_approval'), true);
+            assertSame('error', $denied['status']);
+            assertStringContains('requires approval', $denied['error']);
+            $_POST = [];
+            assertStringContains('disabled title="Requires an operator', $this->renderMethod($app, 'GET', '/users/pending/'));
+            $_SESSION = ['authenticated_identity_id' => $users['operator-root']['identity_id']];
+
             $_POST = [];
             assertStringContains('Revoke grant from', $this->renderMethod($app, 'GET', '/forte/user/operator-bob'));
             $_POST = ['target_identity_id' => $users['operator-alice']['identity_id']];
@@ -2904,7 +2926,7 @@ NODE;
         $_COOKIE = [];
             $_SESSION = [];
 
-        assertStringContains('error=Feature flag changes require a root-approved identity.', $unauthorized);
+        assertStringContains('error=Feature flag changes require a approved operator identity.', $unauthorized);
         assertStringContains('error=Feature flag changes require a browser signature.', $unsigned);
         assertSame('ok', $prepared['status']);
         assertSame('yes', $prepared['wrote_record']);
@@ -2972,10 +2994,10 @@ NODE;
             $_SESSION = [];
 
         assertStringNotContains('data-feature-flag-toggle', $anonymousForm);
-        assertStringContains('title="Read-only &mdash; requires a root-approved identity to change."', $anonymousForm);
+        assertStringContains('title="Read-only &mdash; requires a approved operator identity to change."', $anonymousForm);
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
         assertStringContains('data-feature-flag-form', $form);
-        assertStringContains('Feature flag changes require a root-approved identity.', $unauthorized);
+        assertStringContains('Feature flag changes require a approved operator identity.', $unauthorized);
         assertStringContains('Feature flag changes require a browser signature.', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
         assertStringContains('data-role="feature-flag-source">default</span>', $updated);

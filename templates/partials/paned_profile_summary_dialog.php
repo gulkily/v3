@@ -10,6 +10,9 @@
     <div data-role="profile-summary-content" hidden>
       <p><strong>Approved:</strong> <span data-role="profile-summary-approved"></span></p>
       <p data-role="profile-summary-approved-by-row" hidden><strong>Approved by:</strong> <span data-role="profile-summary-approved-by"></span></p>
+      <p><strong>Instance role:</strong> <span data-role="profile-summary-operator-role"></span></p>
+      <p><strong>Operator grants:</strong> <span data-role="profile-summary-operator-grants"></span></p>
+      <p><strong>Operator access for this key:</strong> <span data-role="profile-summary-operator-access"></span></p>
       <p><strong>Threads:</strong> <span data-role="profile-summary-threads"></span></p>
       <p><strong>Posts:</strong> <span data-role="profile-summary-posts"></span></p>
       <p class="paned-standalone-back"><a data-role="profile-summary-full-link" href="#">View full profile</a></p>

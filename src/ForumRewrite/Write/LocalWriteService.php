@@ -2927,8 +2927,8 @@ class LocalWriteService
         $normalized = trim($normalized);
 
         $tags = explode(' ', $normalized);
-        if (in_array('operator', $tags, true) || (in_array('identity', $tags, true)
-            && array_intersect(['approval', 'invitation'], $tags) !== [])) {
+        if (in_array('identity', $tags, true)
+            && array_intersect(['operator', 'approval', 'invitation'], $tags) !== []) {
             throw new RuntimeException('Privileged identity tags require their dedicated signed action.');
         }
         return $normalized !== '' ? $normalized : 'general';

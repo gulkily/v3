@@ -55,7 +55,7 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
             </div>
           </td>
           <td class="pending-approvals-action-cell" data-label="Approve">
-            <button type="button" class="pending-approvals-action-button" data-action="approve-user" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
+            <button type="button" class="pending-approvals-action-button"<?= ($profile['can_approve'] ?? true) ? '' : ' disabled title="Requires an operator or an approved key of this account"' ?> data-action="approve-user" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
               Approve
             </button>
           </td>

@@ -423,14 +423,42 @@ final class RouteServices
 
     private function operatorPageData(string $template, array &$data, array &$scripts): void
     {
-        if (!in_array($template, ['profile.php', 'forte_profile.php', 'username.php', 'forte_username.php'], true)) {
+        $accountTemplates = ['profile.php', 'forte_profile.php', 'username.php', 'forte_username.php', 'partials/paned_user_detail_pane.php'];
+        if (!in_array($template, array_merge($accountTemplates, ['users.php', 'forte_users.php', 'users_pending.php', 'account_key.php']), true)) {
             return;
         }
-        $token = (string) ($data['usernameToken'] ?? $data['profile']['username_token'] ?? '');
-        $data['operatorView'] = \ForumRewrite\Operator\OperatorPresentation::account(
-            $this->pdo(), $token, (string) ($_SESSION['authenticated_identity_id'] ?? '')
-        );
-        if ($data['operatorView']['canManage']) {
+        $actorId = (string) ($_SESSION['authenticated_identity_id'] ?? '');
+        try { $state = \ForumRewrite\Operator\OperatorAuthority::load($this->pdo()); }
+        catch (\Throwable) { $state = null; }
+        foreach (['users', 'profiles'] as $collection) {
+            if (!isset($data[$collection])) { continue; }
+            foreach ($data[$collection] as &$row) {
+                $token = (string) ($row['username_token'] ?? '');
+                $row['operator_role'] = $state === null ? 'unavailable'
+                    : (isset($state['roots'][$token]) ? 'root operator'
+                    : (isset($state['accounts'][$token]) ? 'operator'
+                    : (isset($state['protected'][$token]) ? 'suspended operator' : 'member')));
+                if ($collection === 'profiles') {
+                    $actor = $state['profiles'][$actorId] ?? $data['viewerProfile'] ?? null;
+                    $row['can_approve'] = $state !== null && \ForumRewrite\Operator\OperatorKeyPolicy::permits($state, $actor, $row);
+                }
+            }
+            unset($row);
+        }
+        if ($template === 'account_key.php') {
+            $token = (string) ($data['viewerProfile']['username_token'] ?? '');
+        } elseif (in_array($template, $accountTemplates, true)) {
+            $token = (string) ($data['usernameToken'] ?? $data['profile']['username_token'] ?? '');
+        } else {
+            $token = '';
+        }
+        if ($token !== '') {
+            $data['operatorView'] = \ForumRewrite\Operator\OperatorPresentation::account($this->pdo(), $token, $actorId, $state);
+            if ($data['operatorView']['canManage']) {
+                $scripts = array_values(array_unique(array_merge($scripts, ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/operator_roles.js'])));
+            }
+        }
+        if ($template === 'forte_users.php' && $actorId !== '') {
             $scripts = array_values(array_unique(array_merge($scripts, ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/operator_roles.js'])));
         }
     }
@@ -481,6 +509,8 @@ final class RouteServices
     /** @param array<string, mixed> $data */
     public function renderFragment(string $partialPath, array $data): string
     {
+        $scripts = [];
+        $this->operatorPageData($partialPath, $data, $scripts);
         return $this->renderer->renderFragment($partialPath, $data);
     }
 

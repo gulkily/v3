@@ -75,7 +75,7 @@ try {
     ob_start();
     $application->handle('GET', '/tools/visitor-statistics/');
     $denied = (string) ob_get_clean();
-    if (!str_contains($denied, 'server-authenticated root-approved identity')) {
+    if (!str_contains($denied, 'server-authenticated approved operator identity')) {
         throw new RuntimeException('Identity-hint-only request was not denied.');
     }
 

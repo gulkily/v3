@@ -19,6 +19,9 @@
 <?php if ((string) ($user['username'] ?? '') === 'reply-agent'): ?>
     <p class="meta"><span class="agent-label">Automated reply agent</span></p>
 <?php endif; ?>
+<?php if (isset($user['operator_role']) && $user['operator_role'] !== 'member'): ?>
+    <p class="meta">Instance role: <?= $e($user['operator_role']) ?></p>
+<?php endif; ?>
     <p class="meta"><?= (int) $user['thread_count'] ?> threads, <?= (int) $user['post_count'] ?> posts</p>
   </article>
 <?php endforeach; ?>

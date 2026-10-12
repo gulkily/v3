@@ -33,6 +33,9 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
+<?php if (isset($operatorView)): ?>
+        <p class="meta">Instance role: <?= $e($operatorView['status']) ?>. Operator access requires an approved key.</p>
+<?php endif; ?>
       <details class="account-key-advanced">
         <summary>Advanced / technical details</summary>
         <div class="stack">

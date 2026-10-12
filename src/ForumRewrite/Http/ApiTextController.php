@@ -128,9 +128,13 @@ final class ApiTextController
 
         $approved = ((int) $profile['is_approved']) === 1 ? 'yes' : 'no';
         $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
+        $operator = \ForumRewrite\Operator\OperatorPresentation::account($this->routeServices->pdo(), $profile['username_token'], '');
+        $role = $operator['status'];
+        $operatorGrants = implode(', ', array_map(static fn ($g) => $g['from'] . ' (' . ($g['revoked'] ? 'revoked' : ($g['effective'] ? 'active' : 'suspended')) . ')', array_values($operator['grants'])));
+        $operatorAccess = $approved === 'yes' && in_array($role, ['operator', 'root operator'], true) ? 'yes' : 'no';
 
         $this->routeServices->sendText(
-            "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n",
+            "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nOperator-Role: {$role}\nOperator-Access: {$operatorAccess}\nOperator-Grants: {$operatorGrants}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n",
             200
         );
     }

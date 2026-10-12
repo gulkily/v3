@@ -865,6 +865,12 @@
           var username = parseColonValue(text, "Username");
           var approved = parseColonValue(text, "Approved") === "yes";
           var approvedBy = parseColonValue(text, "Approved-By");
+          var roleNode = profileSummaryDialog.querySelector('[data-role="profile-summary-operator-role"]');
+          var accessNode = profileSummaryDialog.querySelector('[data-role="profile-summary-operator-access"]');
+          if (roleNode) { roleNode.textContent = parseColonValue(text, "Operator-Role"); }
+          if (accessNode) { accessNode.textContent = parseColonValue(text, "Operator-Access"); }
+          var grantsNode = profileSummaryDialog.querySelector('[data-role="profile-summary-operator-grants"]');
+          if (grantsNode) { grantsNode.textContent = parseColonValue(text, "Operator-Grants") || "none"; }
           if (title) {
             title.textContent = username || "Profile";
           }
