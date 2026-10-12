@@ -19,6 +19,7 @@ or standalone plans remain at this level until they reach that threshold.
 - [Extension improvement cookbook](extension_improvement_cookbook/)
 - [Fast LLM post scoring](fast_llm_post_scoring/)
 - [Fast post scoring batch runner](fast_post_scoring_batch_runner/)
+- [FDP to Railspike](fdp_to_railspike/)
 - [Fastmod audit backfill](fastmod_audit_backfill/)
 - [Feature flag change attribution](feature_flag_change_attribution/)
 - [Feature flag lock explanation](feature_flag_lock_explanation/)
