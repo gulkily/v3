@@ -1,0 +1,57 @@
+# Railspike Failure Modes and Recovery
+
+Railspike is intentionally strict at the points where AI-assisted work most often becomes hard to review. Treat these as stop conditions, not workarounds.
+
+## Approval was skipped
+
+**Signal:** The agent starts a later step or changes implementation before the user explicitly says `Approved Step N`.
+
+**Recovery:** Stop. Review or revise the current artifact; do not keep later work as implicitly approved. Resume only from the last explicitly approved step. If implementation began before `Approved Step 3`, discard or set aside the unapproved implementation and return to planning.
+
+## Scope expands during Step 4
+
+**Signal:** A newly discovered requirement, new user flow, additional integration, schema change, or material risk is needed to finish a stage.
+
+**Recovery:** Do not fold it into the stage. Record the discovery in the Step 4 summary, finish only the still-valid approved scope if safe, and return to Step 2 (then Step 3) for the expanded work. A new branch or follow-up feature is often clearer.
+
+## The work is documentation-only
+
+**Signal:** The intended outcome is a document, not runtime behavior.
+
+**Recovery:** Step 2 must call it documentation-only, name the allowed documentation paths, intended audience/outcome, and prohibit application/runtime changes. Step 3 carries that boundary into its Completion Contract. Step 4 verifies document integrity, evidence, local links/paths, and changed-file scope; runtime, UI, deployment, migration, and release checks are marked not applicable with a reason.
+
+## Verification or a stage commit is missing
+
+**Signal:** A planned stage is implemented but its verification is not recorded, its Step 4 summary is not updated, or the work is mixed into a later commit.
+
+**Recovery:** Do not begin the next stage. Run the applicable check, update the current stage section, inspect `git status --short`, and create the missing stage-scoped commit. If later work is already mixed in, separate it into reviewable commits before continuing; record any limitation honestly.
+
+## A risk blocks a dependent stage
+
+**Signal:** A Step 2 or Step 3 risk has no accepted mitigation or its early validation fails.
+
+**Recovery:** Mark the dependent stage blocked. Resolve, reduce, or re-plan the risk before advancing. Do not make a speculative implementation change simply to keep the sequence moving.
+
+## Minimal pre-handoff check
+
+```bash
+git diff --check
+git status --short
+git log --oneline
+```
+
+Then confirm that the first Step 4 commit contains approved plans and only the [organization allowance](../RAILSPIKE.md#planning-artifacts), every completed stage has a summary update and commit, and the final artifact satisfies the Step 3 Completion Contract.
+
+## Plan organization is blocked
+
+**Signal:** Moving approved plans would overwrite an artifact, leave ambiguous destinations or broken references, or require substantive changes.
+
+**Recovery:** Stop before the planning commit or implementation. Inspect the existing feature folder, preserve filenames and approved content, and resolve collisions without overwriting files. Repair relative links, affected references, and this feature’s plan-index entry. Request renewed approval for substantive revisions. Inspect staged contents against the organization allowance; create the Step 4 summary only after the planning commit.
+
+## Debug state or logging is unclear
+
+**Signal:** Resumed work lacks a reliable mode setting, prior artifacts disagree, a diagnostic log cannot be saved, or a report repeats earlier findings.
+
+**Recovery:** Apply the [debug contract](../RAILSPIKE.md#railspike-debug-mode): prefer the latest explicit request and current artifact state; historical snapshots do not override them. If evidence cannot resolve resumed state, ask rather than silently defaulting off. Mode changes do not grant approval to proceed.
+
+If saving fails, report the failure without claiming the log was saved; resolve it before presenting diagnostics as logged. Preserve existing entries and append labeled corrections identifying the superseded entry; skip unchanged reports. Keep inapplicable or uncertain findings separate from redundant instructions. Disabled mode preserves the log without new diagnostics. Include saved additions only in the authorized planning/stage commit or final log-only handoff commit; never amend completed commits or use the allowance for unrelated files.
