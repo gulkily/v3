@@ -51,3 +51,8 @@
 - Changes: Corrected the operator-role authentication marker to request public session resume only when the authenticated identity is absent. Previously an authenticated user still had `data-public-auth-resume="true"`, causing the existing resume handler to navigate to the same profile URL on each load.
 - Verification: Authentication/browser-handler and real-signed classic/Forte integration checks — 13 passed; integration now verifies unauthenticated pages request resume and authenticated pages do not. `git diff --check` passed. The reported localhost profile returns HTTP 200 and includes the resume script, consistent with a client-side loop rather than an HTTP redirect.
 - Notes: Fix committed separately after handoff; refresh the profile page to obtain the corrected marker.
+
+## Stage 8 follow-up - Operator POST session resumption
+- Changes: Public-site operator grant/finalization and authenticated feature-flag POST routes now resume the persisted session cookie. Registered the new operator API routes in the application-route inventory. Previously profile GETs resumed sessions but these POSTs did not, causing the controller to report a missing signed-in identity.
+- Verification: Persisted-session subprocess regression, authority/authentication checks and signed grant integration — 12 passed; `git diff --check` passed. Read-only checks of the reported localhost accounts confirmed ilyag is root-approved with operator access, release-check is an approved member without operator grants, and the read model is ready.
+- Notes: Did not grant or change either live account's privileges. The user can retry the grant after refreshing the profile page.

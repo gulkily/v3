@@ -10,6 +10,49 @@ use ForumRewrite\ReadModel\ReadModelStaleMarker;
 
 final class OperatorAuthorityTest
 {
+    public function testPublicOperatorPostRoutesResumePersistedSession(): void
+    {
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+$dir = sys_get_temp_dir() . '/operator-session-' . bin2hex(random_bytes(6));
+mkdir($dir);
+$db = $dir . '/read.sqlite';
+$sid = 'operator-post-' . bin2hex(random_bytes(8));
+try {
+    session_id($sid);
+    session_start();
+    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+    session_write_close();
+    foreach (['/api/prepare_operator_action', '/api/finalize_operator_action', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change'] as $path) {
+        unset($_SESSION);
+        session_id($sid);
+        $_COOKIE = [session_name() => $sid];
+        $app = new ForumRewrite\Application($argv[1], $argv[2], $db);
+        ob_start();
+        $app->handle('POST', $path);
+        $result = json_decode(ob_get_clean(), true, 512, JSON_THROW_ON_ERROR);
+        if (session_status() !== PHP_SESSION_ACTIVE || ($_SESSION['authenticated_identity_id'] ?? '') !== 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954') {
+            throw new RuntimeException('Persisted operator session was not resumed: ' . $path);
+        }
+        // Fixture writes are disabled, but authorization must reach the writer.
+        if (!str_contains($result['error'] ?? '', 'Write APIs are disabled')) {
+            throw new RuntimeException('Operator request did not reach the writer: ' . $path . ': ' . json_encode($result));
+        }
+        session_write_close();
+    }
+} finally {
+    session_id($sid);
+    session_start();
+    session_destroy();
+    foreach (glob($dir . '/*') ?: [] as $file) { unlink($file); }
+    rmdir($dir);
+}
+PHP;
+        $command = 'php -r ' . escapeshellarg($script) . ' ' . escapeshellarg(dirname(__DIR__)) . ' ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1');
+        exec($command . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+    }
+
     public function testCanonicalRootsApplyToApprovedAccountKeysAndFailClosedWhenStale(): void
     {
         $dir = sys_get_temp_dir() . '/operator-authority-' . bin2hex(random_bytes(6));

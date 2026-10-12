@@ -1796,7 +1796,8 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
+            '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change',
+            '/api/prepare_operator_action', '/api/finalize_operator_action', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
@@ -2121,7 +2122,10 @@ final class Application
         }
 
         if ($method === 'POST') {
-            return $path === '/api/prepare_invitation';
+            return in_array($path, ['/api/prepare_invitation', '/api/prepare_operator_action',
+                '/api/finalize_operator_action', '/api/prepare_feature_flag_change',
+                '/api/finalize_feature_flag_change', '/api/set_feature_flag'], true)
+                || $path === '/tools/feature-flags/';
         }
 
         if ($method !== 'GET' || !$this->isApplicationRoute($path)) {
