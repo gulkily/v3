@@ -4,73 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMMAND="${1:-}"
 
-fdp_usage() {
-  cat <<'EOF'
-Usage:
-  ./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
-
-FDP updates are disabled; see docs/reference/railspike_workflow.md. The target
-repository must have no uncommitted changes. --remote-url is only needed to add
-or replace the fdp remote (for example, to repair an unexpected source or when
-testing against a fork). Without it, an existing fdp remote must point to the
-canonical GitHub source.
-EOF
-}
-
-fdp_sync() {
-  local repository_root="${ROOT}"
-  local remote_url="https://github.com/gulkily/fdp.git"
-  local remote_url_explicit=0
-  local argument
-
-  for argument in "$@"; do
-    case "${argument}" in
-      --repository-root=*)
-        repository_root="${argument#--repository-root=}"
-        ;;
-      --remote-url=*)
-        remote_url="${argument#--remote-url=}"
-        remote_url_explicit=1
-        ;;
-      -h|--help)
-        fdp_usage
-        return 0
-        ;;
-      *)
-        echo "Unknown fdp sync option: ${argument}" >&2
-        fdp_usage >&2
-        return 1
-        ;;
-    esac
-  done
-
-  if [[ -z "${repository_root}" || ! -d "${repository_root}" ]]; then
-    echo "FDP repository root is not a directory: ${repository_root}" >&2
-    return 1
-  fi
-  if [[ -z "${remote_url}" ]]; then
-    echo "FDP remote URL must not be empty." >&2
-    return 1
-  fi
-  repository_root="$(cd "${repository_root}" && pwd)"
-
-  if ! git -C "${repository_root}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    echo "FDP repository root is not a Git work tree: ${repository_root}" >&2
-    return 1
-  fi
-  if [[ -n "$(git -C "${repository_root}" status --porcelain)" ]]; then
-    echo "FDP sync requires a clean working tree: ${repository_root}" >&2
-    return 1
-  fi
-  if ! git -C "${repository_root}" cat-file -e HEAD:docs/fdp 2>/dev/null; then
-    echo "FDP sync requires an existing docs/fdp subtree: ${repository_root}" >&2
-    return 1
-  fi
-
-  echo "FDP is frozen. Follow docs/reference/railspike_workflow.md to migrate and update Railspike." >&2
-  return 1
-}
-
 if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "${COMMAND}" == "-h" ]]; then
   cat <<'EOF'
 Usage:
@@ -78,7 +11,8 @@ Usage:
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 tui
-  ./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
+  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/railspike.git]
+  ./v3 fdp sync ... (deprecated alias)
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
   ./v3 rebuild recover --confirm [repository_root] [database_path]
@@ -162,19 +96,21 @@ case "${COMMAND}" in
     shift
     exec bash "${ROOT}/scripts/terminal_operator_ui.sh" "$@"
     ;;
-  fdp)
+  railspike|fdp)
+    if [[ "${COMMAND}" == fdp ]]; then
+      echo 'Deprecated: use ./v3 railspike sync; FDP remains frozen.' >&2
+    fi
     shift
     case "${1:-}" in
       sync)
         shift
-        fdp_sync "$@"
+        exec bash "${ROOT}/scripts/railspike_sync.sh" "$@"
         ;;
       -h|--help|'')
-        fdp_usage
+        exec bash "${ROOT}/scripts/railspike_sync.sh" --help
         ;;
       *)
-        echo "Unknown fdp command: ${1}" >&2
-        fdp_usage >&2
+        echo "Unknown ${COMMAND} command: ${1}" >&2
         exit 1
         ;;
     esac

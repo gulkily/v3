@@ -28,6 +28,27 @@ process unless the user explicitly replans and approves a transition. Do not
 bulk-move or rewrite old plans. Legacy FDP links remain readable and identify
 the transition; they do not govern new work.
 
+## Update commands
+
+```bash
+./v3 railspike sync
+./v3 railspike sync --repository-root=/path/to/another/migrated/repository
+```
+
+`./v3 fdp sync` is a deprecated alias with the same options. It updates Railspike,
+never the frozen FDP reference. See the [CLI reference](v3_cli.md#synchronize-railspike-workflow-documentation).
+The command requires a clean repository root, validates the subtree metadata,
+and fetches `master`. It rejects an unexpected `railspike` remote unless you
+explicitly select a source with `--remote-url`. That selection is recorded only
+after success; forks must retain the recorded upstream history. No-op updates
+create no new commits. Failed validation does not modify files or configuration.
+Fetches may update Git objects and `FETCH_HEAD`, even if later validation fails.
+
+Review upstream changes before invoking sync: it creates commits without an
+interactive approval prompt. To inspect first, use the fetch/diff commands below,
+then run sync or the manual pull on the reviewed source. If upstream changes
+between review and fetch, review the resulting commit before integrating it.
+
 ## Manual subtree update
 
 Use a clean working tree on a maintenance branch. Review the upstream revision

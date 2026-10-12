@@ -32,11 +32,29 @@ Most data-touching commands accept optional positional `repository_root` and
 See [Local Run](../../README.md#local-run) in the README for the defaults
 and the bootstrap flow.
 
-## Workflow documentation updates
+## Synchronize Railspike workflow documentation
 
-FDP is frozen. During the Railspike migration, `./v3 fdp sync` refuses updates
-with transition guidance. Use the [project Railspike guide](railspike_workflow.md)
-for the pinned import, manual subtree updates, recovery, and existing-plan policy.
+```bash
+./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/railspike.git]
+./v3 fdp sync ... # deprecated alias; updates Railspike, never FDP
+```
+
+Updates the vendored `docs/railspike/` subtree from `master`, creating Git
+update commits. The target defaults to this checkout; `--repository-root`
+selects another already-migrated repository root. A clean working tree and
+complete subtree import history are required. Unmigrated targets receive
+migration guidance without modification.
+
+The default source is `https://github.com/gulkily/railspike.git`. An existing
+`railspike` remote must match it; `--remote-url` explicitly chooses another
+source or fork. The selected source is recorded as the `railspike` remote only
+after a successful merge (including a no-op). It must retain the recorded
+upstream revision in its `master` history. No `fdp` remote is changed.
+
+Review upstream before updating; the command does not pause for diff approval.
+For conflicts, resolve and commit or use `git merge --abort` in the target.
+See the [project workflow guide](railspike_workflow.md) for review, recovery,
+and existing-plan policy.
 
 ## Start the local dev server
 
