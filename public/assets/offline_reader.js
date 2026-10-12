@@ -151,7 +151,7 @@
       return [...new Set([...(thread.boardTags || []), ...(thread.labels || [])].map(snapshotPresentation.canonicalTag))];
     },
     tagGroups: function (database) {
-      var groups = {};
+      var groups = Object.create(null);
       snapshotPresentation.boardRows(database).forEach(function (thread) {
         snapshotPresentation.threadTags(thread).forEach(function (tag) {
           if (!groups[tag]) groups[tag] = { tag: tag, threads: [] };

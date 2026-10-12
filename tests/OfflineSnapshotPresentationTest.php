@@ -21,7 +21,8 @@ const rows = [
   ['t4', 'Four', '', 0, '2026-01-04T00:00:00Z', 'D', '2026-01-04T00:00:00Z', '[]', '["general"]', 0],
   ['t5', 'Five', '', 0, '2026-01-05T00:00:00Z', 'E', '2026-01-05T00:00:00Z', '[]', '["general"]', 0],
   ['t6', 'Six', '', 0, '2026-01-06T00:00:00Z', 'F', '2026-01-06T00:00:00Z', '[]', '["general"]', 0],
-  ['t7', 'Seven', '', 0, '2026-01-07T00:00:00Z', 'G', '2026-01-07T00:00:00Z', '[]', '["general"]', 0]
+  ['t7', 'Seven', '', 0, '2026-01-07T00:00:00Z', 'G', '2026-01-07T00:00:00Z', '[]', '["general"]', 0],
+  ['t8', 'Eight', '', 0, '2026-01-08T00:00:00Z', 'H', '2026-01-08T00:00:00Z', '["CONSTRUCTOR"]', '["constructor"]', 0]
 ];
 const database = { exec() { return [{ values: rows }]; } };
 const groups = window.forumOfflineSnapshot.tagGroups(database).map((group) => ({
@@ -59,6 +60,9 @@ NODE;
         assertSame(['t2', 't1'], $groups[1]['ids']);
         assertSame('bug', $groups[2]['tag']);
         assertSame(1, $groups[2]['count']);
+        assertSame('constructor', $groups[3]['tag']);
+        assertSame(1, $groups[3]['count']);
+        assertSame(['t8'], $groups[3]['ids']);
     }
 
     public function testBoardUrlsPreserveNormalRouteAndSelectedState(): void

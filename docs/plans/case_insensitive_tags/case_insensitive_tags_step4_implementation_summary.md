@@ -25,6 +25,12 @@ Feature branch: `feature/case-insensitive-tags`. Planning commit: `da3af89d`.
 - Browser verification: `/tmp/case-tags-browser/check.cjs` with Playwright and Chromium 1208 against an isolated PHP server/fixture: one online group, six detail threads; six Forte rows before/after history restoration; activated worker; offline `/tags/PhP/` rendered `#php` and six threads; offline back-link showed one group; reconnect/reload showed one group. Existing fingerprinted assets and worker install refresh supply the updated reader.
 - Notes: system Snap Chromium stalled during actionability/screenshot checks; using the locally installed Playwright Chromium completed the flow. No application workaround or snapshot-format change was needed.
 
+## Stage 3 follow-up - Safe offline tag keys
+
+- Changes: final review found that normalizing `CONSTRUCTOR` to `constructor` collided with an inherited JavaScript object property. Use a prototype-free grouping map and cover overlapping uppercase/lowercase constructor tags in the existing regression fixture.
+- Verification: offline presentation/worker suites passed again (16/16); regenerated the isolated static release and repeated the Chromium online/Forte/offline/reconnect flow successfully.
+- Notes: this is a corrective follow-up within Stage 3 scope, committed separately without amending earlier stages.
+
 ## Stage 4 - Static delivery and release verification
 
 - Changes: canonicalize static tag enumeration, route normalization, and front-controller lookup; publish only lowercase tag artifacts. Tests cover merged static content, private-site bypass, deleted-artifact dynamic fallback, and unknown tags.
@@ -42,4 +48,4 @@ php tests/run.php LocalAppSmokeTest::testTagBrowsingCombinesCaseVariantsWithoutD
 
 - After deploying the reviewed code through the existing release process, regenerate static artifacts with `./v3 build-static "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE_PATH" "$FORUM_STATIC_HTML_ROOT"`, using the target instance's configured paths. A full build replaces stale tag artifacts and fingerprints updated browser assets.
 - Verify `/tags/`, a mixed-case tag link, Forte history navigation, and an activated worker with offline navigation. Existing workers install updated source and refresh the reader assets; existing snapshots remain compatible.
-- To roll back, deploy the previous reviewed code release (or revert this feature's four implementation commits, newest first) and rerun the same static-build command. Allow the previous worker to activate/refresh. Stored tags require no recovery. Production rollout/rollback is outside this local implementation handoff.
+- To roll back, deploy the previous reviewed code release (or revert this feature's implementation commits (including the Stage 3 corrective follow-up), newest first) and rerun the same static-build command. Allow the previous worker to activate/refresh. Stored tags require no recovery. Production rollout/rollback is outside this local implementation handoff.
