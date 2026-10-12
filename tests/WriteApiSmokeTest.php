@@ -57,6 +57,15 @@ final class WriteApiSmokeTest
                     'thread_id' => $users[$name]['bootstrap_thread_id'], 'parent_id' => $users[$name]['bootstrap_post_id'],
                 ]);
             }
+            $_SESSION = [];
+            $_COOKIE = ['identity_hint' => $users['operator-root']['identity_id']];
+            foreach (['/user/operator-alice', '/forte/user/operator-alice'] as $route) {
+                $page = $this->renderMethod($app, 'GET', $route);
+                assertStringNotContains('Make operator', $page);
+                assertStringContains('data-public-auth-resume="true"', $page);
+                assertFingerprintedAsset($page, 'private_site_auth.js');
+            }
+            $_COOKIE = [];
             foreach ([['operator-root', 'operator-alice'], ['operator-alice', 'operator-bob']] as [$actor, $target]) {
                 $_SESSION = ['authenticated_identity_id' => $users[$actor]['identity_id']];
                 foreach (['/user/', '/forte/user/'] as $prefix) {
@@ -129,6 +138,10 @@ final class WriteApiSmokeTest
             $_SESSION = ['authenticated_identity_id' => $users['operator-root']['identity_id']];
 
             $_POST = [];
+            assertStringContains('Operator-Access: no', $this->renderMethod($app, 'GET', '/api/get_profile?profile_slug=' . $pending['profile_slug']));
+            $writer->approveUser(['approver_identity_id' => $users['operator-bob']['identity_id'],
+                'target_identity_id' => $pending['identity_id'], 'target_profile_slug' => $pending['profile_slug'],
+                'thread_id' => $pending['bootstrap_thread_id'], 'parent_id' => $pending['bootstrap_post_id']]);
             assertStringContains('Revoke grant from', $this->renderMethod($app, 'GET', '/forte/user/operator-bob'));
             $_POST = ['target_identity_id' => $users['operator-alice']['identity_id']];
             $restored = json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true);
@@ -138,6 +151,8 @@ final class WriteApiSmokeTest
             $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
             assertSame(true, isset($state['accounts']['operator-bob']));
             assertSame(true, $state['grants'][$alternate['post_id']]['revoked']);
+            assertSame(true, \ForumRewrite\Operator\OperatorAuthority::allows($pdo, $state['profiles'][$pending['identity_id']]));
+            assertStringContains('Operator-Access: yes', $this->renderMethod($app, 'GET', '/api/get_profile?profile_slug=' . $pending['profile_slug']));
             (new ReadModelBuilder($repo, $db, new CanonicalRecordRepository($repo)))->rebuild();
             assertSame($state['accounts'], \ForumRewrite\Operator\OperatorAuthority::load($pdo)['accounts']);
 
@@ -162,6 +177,13 @@ final class WriteApiSmokeTest
             assertSame($users['operator-bob']['identity_id'], $seed['identity_id']);
             $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
             assertSame(true, isset($state['roots']['operator-bob']));
+            $signaturePath = $repo . '/' . $restored['record_path'] . '.asc';
+            $originalSignature = file_get_contents($signaturePath);
+            file_put_contents($signaturePath, 'tampered');
+            assertSame(false, \ForumRewrite\Operator\OperatorAuthority::allows($pdo, $state['profiles'][$users['operator-root']['identity_id']]));
+            file_put_contents($signaturePath, $originalSignature);
+            assertSame(true, \ForumRewrite\Operator\OperatorAuthority::allows($pdo, $state['profiles'][$users['operator-root']['identity_id']]));
+
             $_SESSION = [];
             $_POST = ['target_identity_id' => $users['operator-bob']['identity_id']];
             assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true)['status']);
@@ -2926,7 +2948,7 @@ NODE;
         $_COOKIE = [];
             $_SESSION = [];
 
-        assertStringContains('error=Feature flag changes require a approved operator identity.', $unauthorized);
+        assertStringContains('error=Feature flag changes require an approved operator identity.', $unauthorized);
         assertStringContains('error=Feature flag changes require a browser signature.', $unsigned);
         assertSame('ok', $prepared['status']);
         assertSame('yes', $prepared['wrote_record']);
@@ -2994,10 +3016,10 @@ NODE;
             $_SESSION = [];
 
         assertStringNotContains('data-feature-flag-toggle', $anonymousForm);
-        assertStringContains('title="Read-only &mdash; requires a approved operator identity to change."', $anonymousForm);
+        assertStringContains('title="Read-only &mdash; requires an approved operator identity to change."', $anonymousForm);
         assertStringContains('method="post" action="/tools/feature-flags/"', $form);
         assertStringContains('data-feature-flag-form', $form);
-        assertStringContains('Feature flag changes require a approved operator identity.', $unauthorized);
+        assertStringContains('Feature flag changes require an approved operator identity.', $unauthorized);
         assertStringContains('Feature flag changes require a browser signature.', $redirect);
         assertStringContains('FORUM_APP_VERSION_NOTIFICATION', $updated);
         assertStringContains('data-role="feature-flag-source">default</span>', $updated);

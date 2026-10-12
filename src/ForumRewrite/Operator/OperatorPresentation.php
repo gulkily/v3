@@ -13,7 +13,7 @@ final class OperatorPresentation
         try {
             $state ??= OperatorAuthority::load($pdo);
         } catch (\Throwable) {
-            return ['status' => 'unavailable', 'token' => $token, 'canManage' => false, 'target' => null, 'grants' => []];
+            return ['actorIdentityId' => $actorId, 'status' => 'unavailable', 'token' => $token, 'canManage' => false, 'target' => null, 'grants' => []];
         }
         $actor = $state['profiles'][$actorId] ?? null;
         $target = null;
@@ -30,7 +30,7 @@ final class OperatorPresentation
         }
         unset($grant);
         return [
-            'status' => $status, 'token' => $token, 'target' => $target,
+            'actorIdentityId' => $actorId, 'status' => $status, 'token' => $token, 'target' => $target,
             'canManage' => $actor !== null && (int) $actor['is_approved'] === 1 && isset($state['accounts'][$actor['username_token']]),
             'grants' => $grants,
         ];

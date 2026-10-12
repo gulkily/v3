@@ -55,7 +55,7 @@ foreach ($flags as $flag) {
               </span>
 <?php endif; ?>
 <?php if ($isReadOnlyForViewer): ?>
-              <span class="feature-flag-info-icon" tabindex="0" title="Read-only &mdash; requires a approved operator identity to change." aria-label="Read-only, requires a approved operator identity to change.">&#9432;</span>
+              <span class="feature-flag-info-icon" tabindex="0" title="Read-only &mdash; requires an approved operator identity to change." aria-label="Read-only, requires an approved operator identity to change.">&#9432;</span>
 <?php endif; ?>
 <?php if (!$flag->isDefault() && $canEditFlag): ?>
               <form method="post" action="/tools/feature-flags/" class="inline-form feature-flag-reset-form" data-feature-flag-form>

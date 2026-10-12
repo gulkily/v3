@@ -235,6 +235,6 @@ command for a trusted identity and verify status:
 ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
 ```
 
- Seeding a previously delegated account establishes a root anchor
+Seeding a previously delegated account establishes a root anchor
 without removing its grant history. Adding keys to an account with operator
 history remains restricted even while its role is suspended.

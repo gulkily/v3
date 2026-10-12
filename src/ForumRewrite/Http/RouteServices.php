@@ -454,12 +454,12 @@ final class RouteServices
         }
         if ($token !== '') {
             $data['operatorView'] = \ForumRewrite\Operator\OperatorPresentation::account($this->pdo(), $token, $actorId, $state);
-            if ($data['operatorView']['canManage']) {
-                $scripts = array_values(array_unique(array_merge($scripts, ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/operator_roles.js'])));
+            if ($data['operatorView']['canManage'] || $actorId === '') {
+                $scripts = array_values(array_unique(array_merge($scripts, ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/operator_roles.js'])));
             }
         }
         if ($template === 'forte_users.php' && $actorId !== '') {
-            $scripts = array_values(array_unique(array_merge($scripts, ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/operator_roles.js'])));
+            $scripts = array_values(array_unique(array_merge($scripts, ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/operator_roles.js'])));
         }
     }
 

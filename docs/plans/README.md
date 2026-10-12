@@ -6,6 +6,7 @@ or standalone plans remain at this level until they reach that threshold.
 
 ## Feature folders
 
+- [Operator privilege delegation](operator_privilege_delegation/)
 - [Runtime detail pages](runtime_detail_pages/)
 
 - [Guided PHP setup fallback](guided_php_setup_fallback/)

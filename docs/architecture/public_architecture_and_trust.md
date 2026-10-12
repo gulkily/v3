@@ -14,6 +14,19 @@ If you choose browser identity, your browser generates an OpenPGP private key an
 
 Your visible identity is an `openpgp:<fingerprint>` value tied to the stored public key. The [identity bootstrap record](../specs/identity_bootstrap_record_v1.md) specifies how a public key, fingerprint, username, and first accepted identity event bind together. Readers can check the identity material and the record history themselves, with no opaque account database to trust.
 
+## Operator authority follows signed grants
+
+Administrator approval seeds establish root operator accounts. Operators can
+appoint other username accounts through signed, tagged replies to their
+bootstrap records. Every approved key of an authorized account shares the role;
+ordinary membership approval does not itself grant that role.
+
+Effective authority is reachability from root through unrevoked grants. Loss of
+a path suspends dependent authority without deleting the grants; restoring a path
+restores unrevoked descendants. Alternate paths preserve access and disconnected
+cycles do not. See [operator privilege delegation](../reference/operator_privilege_delegation.md)
+for grant controls, account-key protections and recovery.
+
 ## Where secrets live
 
 No secrets go in the public content repository, the application source, the public assets, or these docs. Member private keys stay in the browser. They never enter the forum record or the application checkout.

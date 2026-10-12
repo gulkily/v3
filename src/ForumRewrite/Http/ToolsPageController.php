@@ -200,7 +200,7 @@ final class ToolsPageController
 
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
         if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
-            $this->routeServices->sendText("error=Feature flag changes require a approved operator identity.\n", 403);
+            $this->routeServices->sendText("error=Feature flag changes require an approved operator identity.\n", 403);
             return;
         }
 
@@ -218,7 +218,7 @@ final class ToolsPageController
                 $this->routeServices->renderMessagePage(
                     'Forbidden',
                     'Forbidden',
-                    'Feature flag changes require a approved operator identity.',
+                    'Feature flag changes require an approved operator identity.',
                     'tools'
                 ),
                 403
@@ -230,7 +230,7 @@ final class ToolsPageController
             $this->routeServices->renderMessagePage(
                 'Feature Flag Signature Required',
                 'Feature Flag Signature Required',
-                'Feature flag changes require a browser signature. Enable JavaScript and use a approved operator browser identity.',
+                'Feature flag changes require a browser signature. Enable JavaScript and use an approved operator browser identity.',
                 'tools'
             ),
             400
@@ -248,7 +248,7 @@ final class ToolsPageController
         }
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
         if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Feature flag changes require a approved operator identity.'], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Feature flag changes require an approved operator identity.'], 403, $this->routeServices->noStoreHeaders());
             return;
         }
         try {
