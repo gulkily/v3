@@ -296,6 +296,7 @@ final class LocalAppSmokeTest
 
             assertStringContains('This is your profile.', $profile);
             assertStringContains('Board', $board);
+            assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);
             assertSame("status=authenticated\n", $authStatus);
         } finally {
@@ -716,6 +717,8 @@ PHP;
         try {
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
             foreach ([
+                '/tags/BuG',
+                '/tags/BUG/',
                 '/forte?selected=root-001',
                 '/forte/users/?page=2',
                 '/forte/activity/?view=content',
@@ -1463,6 +1466,47 @@ PHP;
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
+        }
+    }
+
+    public function testTagBrowsingCombinesCaseVariantsWithoutDuplicateThreads(): void
+    {
+        $root = sys_get_temp_dir() . '/forum-case-tags-' . bin2hex(random_bytes(6));
+        mkdir($root, 0700, true);
+        $this->copyDirectory($this->repositoryRoot, $root);
+        $database = $root . '/index.sqlite3';
+        try {
+            foreach (['PHP php', 'Php', 'php', 'PHP', 'Php', 'php'] as $i => $tags) {
+                file_put_contents($root . '/records/posts/case-' . $i . '.txt',
+                    "Post-ID: case-{$i}\nCreated-At: 2026-06-0" . ($i + 1) . "T12:00:00Z\nBoard-Tags: {$tags}\nSubject: Case thread {$i}\n\nCase body {$i}.\n");
+            }
+            file_put_contents($root . '/records/thread-labels/case-label.txt',
+                "Record-ID: case-label\nCreated-At: 2026-06-07T00:00:00Z\nThread-ID: case-0\nOperation: add\nLabels: Php PHP\nReason: Case fixture\n\n");
+            file_put_contents($root . '/records/posts/case-hidden.txt',
+                "Post-ID: case-hidden\nCreated-At: 2026-06-08T12:00:00Z\nBoard-Tags: identity PHP\nSubject: Hidden case thread\n\nHidden.\n");
+            $original = file_get_contents($root . '/records/posts/case-0.txt');
+            $application = new Application(dirname(__DIR__), $root, $database);
+            $index = $this->render($application, '/tags/');
+            assertSame(1, substr_count($index, 'href="/tags/php"'));
+            assertSame(5, substr_count($index, 'data-tag-preview-item="php"'));
+            assertStringContains('showing 5 newest of 6', $index);
+            foreach (['php', 'PHP', 'Php'] as $tag) {
+                foreach (['', '/'] as $slash) {
+                    $page = $this->render($application, '/tags/' . $tag . $slash);
+                    assertSame(200, http_response_code());
+                    assertStringContains('<h1>#php</h1>', $page);
+                    for ($i = 0; $i < 6; $i++) {
+                        assertSame(1, substr_count($page, 'href="/threads/case-' . $i . '"'));
+                    }
+                    assertStringNotContains('Hidden case thread', $page);
+                    assertStringContains('Back to Tags', $page);
+                }
+            }
+            $this->render($application, '/tags/UnKnOwN');
+            assertSame(404, http_response_code());
+            assertSame($original, file_get_contents($root . '/records/posts/case-0.txt'));
+        } finally {
+            $this->deleteTree($root);
         }
     }
 

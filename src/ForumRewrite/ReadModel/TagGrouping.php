@@ -41,6 +41,7 @@ final class TagGrouping
                     continue;
                 }
 
+                $tag = strtolower($tag);
                 $groups[$tag] ??= [
                     'tag' => $tag,
                     'count' => 0,
@@ -89,6 +90,7 @@ final class TagGrouping
      */
     public static function find(array $groups, string $tag): ?array
     {
+        $tag = strtolower($tag);
         foreach ($groups as $group) {
             if ($group['tag'] === $tag) {
                 return $group;
