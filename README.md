@@ -60,15 +60,17 @@ that stays accurate even as implementation details move around:
 
 - [Production Deployment Checklist](docs/plans/php_production_deployment_checklist_v1.md) — tracks remaining work between current state and a production launch; periodically re-reviewed rather than treated as done
 
-### Feature Development Process (`docs/fdp/`)
+### Development workflow (Railspike)
 
-- [FDP Overview](docs/fdp/README.md) — the 4-step (+ optional Step 1 assessment) workflow this project's feature work follows, vendored from an external template repo via `git subtree`
+- [Railspike](docs/railspike/RAILSPIKE.md) — the workflow for new work, vendored as a Git subtree.
+- [Project workflow and updates](docs/reference/railspike_workflow.md) — subtree operations, recovery, and the transition from FDP.
 
 ### Planning Docs (`docs/plans/`)
 
 The [planning index](docs/plans/README.md) lists feature folders for in-flight
-and historical planning documents. Features with four or more related artifacts
-have their own folders; smaller efforts and standalone plans remain at the root.
+and historical planning documents. New Railspike cycles move into feature folders after Step 3 approval and
+branching, before their planning commit. Existing FDP plans retain their original
+organization rules.
 Two cross-cutting plans are worth knowing about:
 
 - [Codebase Cleanup Audit Plan](docs/plans/codebase_cleanup_audit_plan_v1.md) — the plan behind the `Application.php` decomposition into per-domain namespaces

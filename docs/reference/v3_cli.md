@@ -32,23 +32,11 @@ Most data-touching commands accept optional positional `repository_root` and
 See [Local Run](../../README.md#local-run) in the README for the defaults
 and the bootstrap flow.
 
-## Synchronize the Feature Development Process documentation
+## Workflow documentation updates
 
-```
-./v3 fdp sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/fdp.git]
-```
-
-Updates the vendored `docs/fdp/` subtree from `gulkily/fdp`'s `main` branch and
-commits the resulting documentation update. Run it from a clean target working
-tree. By default it updates this checkout; use `--repository-root` to update
-another v3 copy from the same command. The command adds the `fdp` remote when
-missing. When it already exists, the command requires its source URL to be
-`https://github.com/gulkily/fdp.git`, preventing an accidental sync from a
-different local checkout or fork. Pass `--remote-url` only to intentionally
-replace that remote, such as when repairing it or testing a fork.
-
-The command also repairs legacy FDP imports whose recorded upstream commit was
-rewritten, so later syncs use the ordinary subtree pull workflow.
+FDP is frozen. During the Railspike migration, `./v3 fdp sync` refuses updates
+with transition guidance. Use the [project Railspike guide](railspike_workflow.md)
+for the pinned import, manual subtree updates, recovery, and existing-plan policy.
 
 ## Start the local dev server
 

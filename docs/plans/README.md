@@ -1,8 +1,9 @@
 # Feature Plans
 
 This directory holds planning artifacts for current and recently completed work.
-Each feature that has four or more related artifacts has its own folder; smaller
-or standalone plans remain at this level until they reach that threshold.
+New work follows [Railspike](../railspike/RAILSPIKE.md): after Step 3 approval
+and branching, organize that feature in its own folder before the planning commit.
+Existing FDP cycles keep their approved process; unrelated historical plans stay put.
 
 ## Feature folders
 
@@ -105,6 +106,6 @@ or standalone plans remain at this level until they reach that threshold.
 - [Backlog](backlog/) contains early-stage and uncommitted proposals, grouped by topic.
 - [Archive](archive/) contains completed planning cycles retained for historical reference.
 
-When a root-level feature reaches four related artifacts, move its documents into
-`docs/plans/{feature_name}/` and add the folder to this index. Update links
-throughout the repository as part of that move.
+When organizing a feature, use `docs/plans/{feature_name}/`, add it to this index,
+and repair its navigation and affected references. See the
+[transition guide](../reference/railspike_workflow.md) for existing FDP cycles.

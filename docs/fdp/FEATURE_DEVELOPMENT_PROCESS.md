@@ -1,5 +1,7 @@
 # Feature Development Process
 
+> **Legacy FDP reference — frozen.** New work uses [Railspike](../railspike/RAILSPIKE.md). See the [project transition and update guide](../reference/railspike_workflow.md). Existing FDP cycles, including this migration, retain the rules below unless explicitly replanned and approved.
+
 ## Overview
 Feature work flows through four tightly scoped steps with an optional solution assessment upfront. To keep the instructions inside the context window, the detailed guidance for each step now lives in separate files that you open only when you are ready for that step.
 

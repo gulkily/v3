@@ -1,5 +1,7 @@
 # Feature Development Process (FDP)
 
+> **Legacy FDP reference — frozen.** New work uses [Railspike](../railspike/RAILSPIKE.md). See the [project transition and update guide](../reference/railspike_workflow.md). Existing FDP cycles, including this migration, retain the rules below unless explicitly replanned and approved.
+
 FDP is a file-based, approval-gated workflow for keeping AI-assisted feature work scoped, reviewable, and verified.
 
 Use it with Claude Code, GitHub Copilot, or Codex when a feature needs a decision record and deliberate review points—not just a plausible patch.

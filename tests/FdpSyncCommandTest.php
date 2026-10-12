@@ -28,7 +28,7 @@ final class FdpSyncCommandTest
         assertStringContains('./v3 fdp sync', $stderr);
     }
 
-    public function testFdpSyncRejectsAnExistingNonCanonicalRemoteBeforeFetching(): void
+    public function testFdpSyncLeavesFrozenFdpAndRemoteUntouched(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/v3_fdp_sync_' . bin2hex(random_bytes(8));
         $unexpectedRemote = sys_get_temp_dir() . '/unexpected_fdp_source';
@@ -63,9 +63,8 @@ final class FdpSyncCommandTest
 
             assertSame(1, $exitCode);
             assertSame('', $stdout);
-            assertStringContains("FDP remote URL is not the canonical source: {$unexpectedRemote}", $stderr);
-            assertStringContains('Expected: https://github.com/gulkily/fdp.git', $stderr);
-            assertStringContains('--remote-url=https://github.com/gulkily/fdp.git', $stderr);
+            assertStringContains('FDP is frozen.', $stderr);
+            assertSame("seed\n", file_get_contents($repositoryRoot . '/docs/fdp/README.md'));
 
             [$urlCode, $urlOutput] = $this->runCommand($repositoryRoot, 'git remote get-url fdp');
             assertSame(0, $urlCode);
