@@ -69,7 +69,10 @@ final class WriteApiSmokeTest
             foreach ([['operator-root', 'operator-alice'], ['operator-alice', 'operator-bob']] as [$actor, $target]) {
                 $_SESSION = ['authenticated_identity_id' => $users[$actor]['identity_id']];
                 foreach (['/user/', '/forte/user/'] as $prefix) {
-                    assertStringContains('Make operator', $this->renderMethod($app, 'GET', $prefix . $target));
+                    $page = $this->renderMethod($app, 'GET', $prefix . $target);
+                    assertStringContains('Make operator', $page);
+                    assertStringNotContains('data-public-auth-resume="true"', $page);
+                    assertStringContains('data-public-auth-resume="false"', $page);
                 }
                 $_POST = ['target_identity_id' => $users[$target]['identity_id']];
                 $prepared = json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true, 512, JSON_THROW_ON_ERROR);

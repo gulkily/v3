@@ -1,4 +1,4 @@
-<section class="card stack" data-operator-role data-private-site-auth-state data-public-auth-resume="true" data-authenticated-identity-id="<?= $e($operatorView['actorIdentityId']) ?>">
+<section class="card stack" data-operator-role data-private-site-auth-state data-public-auth-resume="<?= $operatorView['actorIdentityId'] === '' ? 'true' : 'false' ?>" data-authenticated-identity-id="<?= $e($operatorView['actorIdentityId']) ?>">
   <p><strong>Instance role:</strong> <?= $e($operatorView['status']) ?></p>
 <?php if ($operatorView['status'] !== 'member' && $operatorView['status'] !== 'unavailable'): ?>
   <p class="meta">This role applies to all approved keys for this username. Pending keys have no operator access.</p>

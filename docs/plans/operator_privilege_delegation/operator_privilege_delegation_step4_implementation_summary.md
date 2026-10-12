@@ -46,3 +46,8 @@
 - Remote deployment, publishing and merging were not authorized and were not performed.
 - User guide: [Operator privilege delegation](../../reference/operator_privilege_delegation.md).
 - Recovery: [Operator recovery runbook](../../runbooks/operator_recovery.md#operator-grant-recovery).
+
+## Stage 8 follow-up - Authenticated profile redirect loop
+- Changes: Corrected the operator-role authentication marker to request public session resume only when the authenticated identity is absent. Previously an authenticated user still had `data-public-auth-resume="true"`, causing the existing resume handler to navigate to the same profile URL on each load.
+- Verification: Authentication/browser-handler and real-signed classic/Forte integration checks — 13 passed; integration now verifies unauthenticated pages request resume and authenticated pages do not. `git diff --check` passed. The reported localhost profile returns HTTP 200 and includes the resume script, consistent with a client-side loop rather than an HTTP redirect.
+- Notes: Fix committed separately after handoff; refresh the profile page to obtain the corrected marker.
