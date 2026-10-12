@@ -37,7 +37,7 @@ final class OperatorGraph
                 throw new RuntimeException('Operator history contains an unauthorized or incorrectly bound action.');
             }
             if ($event['action'] === 'grant') {
-                if (isset($grants[$event['post_id']]) || isset($roots[$event['account']])) {
+                if (isset($grants[$event['post_id']])) {
                     throw new RuntimeException('Invalid operator grant.');
                 }
                 $grants[$event['post_id']] = $event + [

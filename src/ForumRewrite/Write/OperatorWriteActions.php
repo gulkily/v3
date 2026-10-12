@@ -96,9 +96,9 @@ trait OperatorWriteActions
             $this->writeFile($path, $contents);
             $this->writeFile($path . '.asc', $signature);
             $commit = $this->commitCanonicalWrite([$path, $path . '.asc'], 'Operator ' . $event['action'] . ' for ' . $event['account'] . ' by ' . $actorId);
-            $this->refreshDerivedStateAfterCommit($commit['commit_sha']);
-            $this->invalidator()->invalidateApprovalSeed();
             $this->deletePreparedPost($token);
+            $this->invalidator()->invalidateApprovalSeed();
+            $this->refreshDerivedStateAfterCommit($commit['commit_sha']);
             return ['status' => 'ok', 'post_id' => $id, 'account' => $event['account'], 'commit_sha' => $commit['commit_sha']];
         });
     }

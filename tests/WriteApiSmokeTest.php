@@ -108,6 +108,38 @@ final class WriteApiSmokeTest
             assertSame(true, isset($state['protected']['operator-bob']));
             $_POST = [];
             assertStringContains('Revoke grant from', $this->renderMethod($app, 'GET', '/forte/user/operator-bob'));
+            $_POST = ['target_identity_id' => $users['operator-alice']['identity_id']];
+            $restored = json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true);
+            unlink($keys['operator-root']['home'] . '/approval-record.txt.asc');
+            $_POST = $restored + ['detached_signature' => $this->signCanonicalRecord($keys['operator-root']['home'], $restored['canonical_record'])];
+            assertSame('ok', json_decode($this->renderMethod($app, 'POST', '/api/finalize_operator_action'), true)['status']);
+            $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
+            assertSame(true, isset($state['accounts']['operator-bob']));
+            assertSame(true, $state['grants'][$alternate['post_id']]['revoked']);
+            (new ReadModelBuilder($repo, $db, new CanonicalRecordRepository($repo)))->rebuild();
+            assertSame($state['accounts'], \ForumRewrite\Operator\OperatorAuthority::load($pdo)['accounts']);
+
+            $broken = new class($repo, $db, $artifacts, new CanonicalRecordRepository($repo)) extends LocalWriteService {
+                protected function rebuildReadModel(): array { throw new RuntimeException('injected refresh failure'); }
+            };
+            $prepared = $broken->prepareOperatorAction(['target_identity_id' => $users['operator-bob']['identity_id']], $users['operator-root']['identity_id']);
+            unlink($keys['operator-root']['home'] . '/approval-record.txt.asc');
+            $input = $prepared + ['detached_signature' => $this->signCanonicalRecord($keys['operator-root']['home'], $prepared['canonical_record'])];
+            $threw = false;
+            try { $broken->finalizeOperatorAction($input, $users['operator-root']['identity_id']); }
+            catch (RuntimeException $error) {
+                $threw = true;
+                assertStringContains('Canonical write committed', $error->getMessage());
+            }
+            assertSame(true, $threw);
+            assertSame(false, \ForumRewrite\Operator\OperatorAuthority::allows($pdo, $state['profiles'][$users['operator-root']['identity_id']]));
+            (new ReadModelBuilder($repo, $db, new CanonicalRecordRepository($repo)))->rebuild();
+            (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->clear();
+            assertSame(true, \ForumRewrite\Operator\OperatorAuthority::allows($pdo, $state['profiles'][$users['operator-bob']['identity_id']]));
+            $seed = $writer->seedApprovedIdentity($users['operator-bob']['identity_id'], 'operator recovery test');
+            assertSame($users['operator-bob']['identity_id'], $seed['identity_id']);
+            $state = \ForumRewrite\Operator\OperatorAuthority::load($pdo);
+            assertSame(true, isset($state['roots']['operator-bob']));
             $_SESSION = [];
             $_POST = ['target_identity_id' => $users['operator-bob']['identity_id']];
             assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/prepare_operator_action'), true)['status']);

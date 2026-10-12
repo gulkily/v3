@@ -212,3 +212,29 @@ publication without redownloading or duplicating an already-created commit.
 Preserve `.git/instance-import/pending.json` and the referenced run directory;
 resolve reported local divergence before retrying. See the
 [instance content import recovery procedure](instance_content_import.md#recovery).
+
+## Operator grant recovery
+
+Operator roles apply to approved keys of a username account. A revoked incoming
+grant can suspend the account and downstream accounts without deleting their
+outgoing grants. Issue a new signed grant from a current operator to restore
+those unrevoked relationships; explicitly revoked grants remain revoked.
+Alternate active paths to root preserve access. Root accounts cannot be removed
+through delegated-grant controls.
+
+If a signed operator change reports that its canonical write committed but the
+read-model refresh failed, do not resubmit it. Operator access fails closed until
+derived state is repaired. Run the normal rebuild command above, check status,
+then review the account's role and signed activity. The committed action is
+recovered by rebuilding, without another signature or duplicate grant.
+
+If no usable operator key remains, use the existing administrator approval-seed
+command for a trusted identity and verify status:
+
+```bash
+./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
+```
+
+ Seeding a previously delegated account establishes a root anchor
+without removing its grant history. Adding keys to an account with operator
+history remains restricted even while its role is suspended.

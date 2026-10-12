@@ -24,3 +24,8 @@
 - Changes: Added signed grant-specific revocation by any current operator, shared classic/Forte controls, affected-account confirmation, alternate-path preservation and unchanged-state finalization. Root grants are not removable through this flow; accepted action replay is rejected.
 - Verification: Graph plus real-signed UI/API integration — 6 passed, including cascading preview, an intervening alternate grant causing stale-confirmation rejection, subsequent alternate-path preservation, cascading loss and replay rejection. JavaScript/PHP syntax and `git diff --check` passed.
 - Notes: Revocation preserves outgoing grants as suspended relationships; restoration and refresh-failure recovery follow in Stage 6.
+
+## Stage 6 - Restoration and persisted-write recovery
+- Changes: Confirmed restoration reactivates unrevoked descendants while preserving explicit revocations; root seeding of a previously delegated account no longer invalidates prior grants. Prepared actions are retired and presentations invalidated before refresh, so committed-but-failed refreshes cannot be resubmitted. Added operator recovery runbook guidance.
+- Verification: Real-signed grant/revoke/restore integration, injected refresh failure, rebuild repair, previously delegated root seeding, graph and approval-seed tests — 20 passed; `git diff --check` passed.
+- Notes: Administrator recovery uses the existing `./v3 approval seed` path. Canonical history survives failures; authorization remains closed while metadata/markers indicate stale state.
