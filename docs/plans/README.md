@@ -14,6 +14,7 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 - [Agent response harness simplification](agent_response_harness_simplification/)
 - [Agent response modes](agent_response_modes/)
 - [Automatic guest identity](automatic_guest_identity/)
+- [Case insensitive tags](case_insensitive_tags/)
 - [Compact unavailable private messages](private_message_unavailable/)
 - [Event feature gating](event_feature_gating/)
 - [Event time](event_time/)
