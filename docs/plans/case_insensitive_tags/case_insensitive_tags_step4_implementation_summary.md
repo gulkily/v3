@@ -11,3 +11,9 @@ Feature branch: `feature/case-insensitive-tags`. Planning commit: `da3af89d`.
 - Changes: merge ASCII case variants without changing stored content; normalize headings/links; recognize uppercase tag segments in dispatch and private-site route classification.
 - Verification: `php tests/run.php LocalAppSmokeTest::testTagBrowsingCombinesCaseVariantsWithoutDuplicateThreads LocalAppSmokeTest::testApprovedPrivateSessionCanViewOwnProfileAndBoard LocalAppSmokeTest::testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound PrivateSiteAuthTest` — 12 passed. Fixtures cover six unique threads, overlapping label/tag variants, five-item previews, hidden identity content, six URL forms, unknown tags, and unchanged source records. `git diff --check` passed.
 - Notes: access regression assertions belong in LocalAppSmokeTest, which exercises PHP routing; PrivateSiteAuthTest covers browser authentication and was run unchanged. The broader `LocalAppSmokeTest::testApplicationRendersCoreRoutes` fails on an unrelated account-key toolbar assertion, reproduced at planning baseline `da3af89d` in `/tmp/case-tags-baseline`. No schema or migration change.
+
+## Stage 2 - Forte browsing
+
+- Changes: reuse canonical grouping lookup for saved filters; lowercase/deduplicate row metadata; normalize URL filter state during browser history restoration. Original detail labels and reaction contracts remain unchanged.
+- Verification: `php tests/run.php ForteBoardReaderTest LocalAppSmokeTest::testTagBrowsingCombinesCaseVariantsWithoutDuplicateThreads LocalAppSmokeTest::testForteReplyLikesRenderAndRestoreViewerState` — 5 passed. Tests exercise server-selected mixed-case filters, all six visible rows, browser filter switching/history restoration, thread fetching, and reaction state. `git diff --check` passed.
+- Notes: browser interaction is exercised by the existing Node DOM harness here; end-to-end Chromium navigation is included in release verification.

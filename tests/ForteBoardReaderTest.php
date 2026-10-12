@@ -28,6 +28,7 @@ const vm = require("vm");
 const source = fs.readFileSync(process.argv[1], "utf8");
 const documentListeners = {};
 const fetches = [];
+const windowListeners = {};
 
 function createElement(attributes) {
   const listeners = {};
@@ -46,6 +47,8 @@ function createElement(attributes) {
     addEventListener(name, listener) { listeners[name] = listener; },
     querySelector() { return null; },
     querySelectorAll() { return []; },
+    appendChild() {},
+    scrollIntoView() {},
     insertAdjacentHTML() {}
   };
 }
@@ -53,6 +56,11 @@ function createElement(attributes) {
 const row = createElement({ "data-paned-thread-id": "root-002", "data-paned-thread-tags": "general" });
 row.closest = function(selector) { return selector === ".paned-list-row" ? row : null; };
 const folderTree = createElement();
+const generalFolder = createElement({ "data-paned-folder": "general" });
+generalFolder.closest = () => generalFolder;
+const otherFolder = createElement({ "data-paned-folder": "other" });
+otherFolder.closest = () => otherFolder;
+folderTree.querySelectorAll = () => [generalFolder, otherFolder];
 const listBody = createElement();
 listBody.querySelectorAll = function(selector) { return selector === ".paned-list-row" ? [row] : []; };
 const placeholder = createElement();
@@ -62,12 +70,12 @@ contentPane.querySelector = function(selector) {
 };
 
 global.window = {
-  location: { pathname: "/forte", search: "" },
-  addEventListener() {},
+  location: { pathname: "/forte", search: "?tag=GeNeRaL" },
+  addEventListener(name, listener) { windowListeners[name] = listener; },
   ForumThreadReactions: { bindWithin() {} }
 };
 global.location = window.location;
-global.history = { pushState() {}, replaceState() {} };
+global.history = { pushState(state, title, url) { location.search = new URL(url, "http://localhost").search; }, replaceState() {} };
 global.document = {
   addEventListener(name, listener) { documentListeners[name] = listener; },
   querySelector(selector) {
@@ -84,10 +92,22 @@ global.fetch = function(url) {
 
 vm.runInThisContext(source);
 documentListeners.DOMContentLoaded();
+windowListeners.popstate();
+const mixedCaseVisible = !row.hidden;
+folderTree.listeners.click({ target: otherFolder });
+const otherHidden = row.hidden;
+folderTree.listeners.click({ target: generalFolder });
+const switchedVisible = !row.hidden;
+location.search = "?tag=GENERAL";
+windowListeners.popstate();
+const historyVisible = !row.hidden && generalFolder.classList.contains("paned-folder-item--selected");
 listBody.listeners.click({ target: row });
-process.stdout.write(JSON.stringify({ fetches, selected: row.classList.contains("paned-list-row--selected"), placeholderHidden: placeholder.hidden }));
+process.stdout.write(JSON.stringify({ mixedCaseVisible, otherHidden, switchedVisible, historyVisible, fetches, selected: row.classList.contains("paned-list-row--selected"), placeholderHidden: placeholder.hidden }));
 NODE);
 
+        foreach (['mixedCaseVisible', 'otherHidden', 'switchedVisible', 'historyVisible'] as $check) {
+            assertSame(true, $result[$check]);
+        }
         assertSame(['/api/forte_thread_detail?thread_id=root-002'], $result['fetches']);
         assertSame(true, $result['selected']);
         assertSame(true, $result['placeholderHidden']);

@@ -1502,6 +1502,13 @@ PHP;
                     assertStringContains('Back to Tags', $page);
                 }
             }
+            $forte = $this->render($application, '/forte?tag=PhP&selected=case-0');
+            assertStringContains('data-paned-thread-tags="php"', $forte);
+            assertSame(6, substr_count($forte, 'data-paned-thread-tags="php"'));
+            assertStringContains('data-paned-folder="php"', $forte);
+            assertStringContains('paned-list-row paned-list-row--selected', $forte);
+            assertStringContains('data-paned-board-content-post-id="case-0"', $forte);
+            assertSame(0, preg_match('/data-paned-thread-id="case-[0-5]"[^>]*\bhidden\b/s', $forte));
             $this->render($application, '/tags/UnKnOwN');
             assertSame(404, http_response_code());
             assertSame($original, file_get_contents($root . '/records/posts/case-0.txt'));

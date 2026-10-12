@@ -26,8 +26,11 @@ $threadTags = static function (array $thread): array {
         }
 
         foreach ($values as $value) {
-            if (is_string($value) && $value !== '' && !in_array($value, $tags, true)) {
-                $tags[] = $value;
+            if (is_string($value) && $value !== '') {
+                $tag = strtolower($value);
+                if (!in_array($tag, $tags, true)) {
+                    $tags[] = $tag;
+                }
             }
         }
     }

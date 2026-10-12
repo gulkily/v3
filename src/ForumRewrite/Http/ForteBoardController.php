@@ -218,17 +218,7 @@ final class ForteBoardController
 
     private function resolveTag(string $requestedTag, array $tagGroups): string
     {
-        if ($requestedTag === '') {
-            return '';
-        }
-
-        foreach ($tagGroups as $group) {
-            if ($group['tag'] === $requestedTag) {
-                return $requestedTag;
-            }
-        }
-
-        return '';
+        return TagGrouping::find($tagGroups, $requestedTag)['tag'] ?? '';
     }
 
     /**
