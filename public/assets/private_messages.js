@@ -35,7 +35,7 @@
   }
 
   async function recipientKeys(token) {
-    const response = await fetch(`/api/private_messages/recipient_keys?username_token=${encodeURIComponent(usernameToken(token))}`, {
+    const response = await window.ForumPrivateMessageAvailability.request(`/api/private_messages/recipient_keys?username_token=${encodeURIComponent(usernameToken(token))}`, {
       credentials: "same-origin",
       headers: { Accept: "application/json" },
     });

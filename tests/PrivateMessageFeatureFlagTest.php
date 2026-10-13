@@ -12,6 +12,12 @@ use ForumRewrite\View\TemplateRenderer;
 
 final class PrivateMessageFeatureFlagTest
 {
+    public function testBrowserAvailabilityStopsRequestsWithoutTreatingAuthorizationAsShutdown(): void
+    {
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/private_message_availability.cjs') . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+    }
+
     public function testDisabledNamespaceDeniesEveryRouteWithoutTouchingPrivateStorage(): void
     {
         $root = sys_get_temp_dir() . '/messaging-gate-' . bin2hex(random_bytes(6));

@@ -61,6 +61,7 @@ global.fetch = async function(url, options) {
     }
   };
 };
+vm.runInThisContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[1]), 'private_message_availability.js'), 'utf8'));
 vm.runInThisContext(source);
 window.ForumPrivateMessages.prepareEnvelope({ plaintext: 'private prose', recipientUsernameToken: 'ilyag' })
   .then((result) => process.stdout.write(JSON.stringify({

@@ -156,6 +156,9 @@ final class TemplateRenderer
                 '/assets/private_message_history_sync.js',
             ]);
         }
+        if (array_filter($scriptPaths, static fn (string $path): bool => str_starts_with($path, '/assets/private_message'))) {
+            array_unshift($scriptPaths, '/assets/private_message_availability.js');
+        }
         $scriptPaths = array_values(array_unique($scriptPaths));
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {

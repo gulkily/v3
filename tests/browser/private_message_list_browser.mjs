@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { checkMessagingFeatureFlag } from './private_message_feature_flag.mjs';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -288,6 +289,8 @@ try {
   await page.bringToFront();
   console.log('Checking checkUnavailableBoundaries');
   await checkUnavailableBoundaries(page, base, seed, unavailable, incoming);
+  console.log('Checking messaging feature flag recovery');
+  await checkMessagingFeatureFlag(page, context, base, seed);
   assert.deepEqual(errors, []);
   await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'hidden recipient controls in empty/populated Messages and aliases, user-directory entry and first send, normal entry, inline encrypted replies, lost send acknowledgment/newer draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list/history snapshots, exact history coverage and anchoring within 5px, history restart/concurrent send, unread counts beyond 25 rows, signed read receipts, visible-window acknowledgment, unread 2-to-1 transition, hidden tabs/early navigation, backdated arrivals, lost read acknowledgment with pending send/newer draft, two-device convergence, reversed refreshes, identity changes, back navigation, authorization/no-store; compact unavailable groups, twenty-to-one collapse, sixty-message history joins, details/retry, real decryption recovery and split/merge/focus, grouped seen boundaries and recovery', unavailableLayout, screenshots: ['messages-empty.png', 'messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png', 'unread-mobile.png', 'unavailable-mobile.png', 'unavailable-details-mobile.png'] }, null, 2));
   console.log(`Browser checks passed. Artifacts: ${root}`);
