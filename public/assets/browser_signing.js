@@ -1176,6 +1176,84 @@
     return finalPreparedApprovalFailure(finalized);
   }
 
+  function parseRetractionResponse(text, serverTiming, fallbackMessage) {
+    let data = null;
+    try {
+      data = JSON.parse(String(text || ""));
+    } catch (error) {
+      data = null;
+    }
+
+    if (!data || data.status !== "ok") {
+      const rawError = data && data.error ? String(data.error) : fallbackMessage;
+      const classified = classifyPreparedPostFailure(rawError);
+      return {
+        ok: false,
+        error: classified.friendlyMessage,
+        rawError: rawError,
+        technicalDetails: classified.technicalDetails,
+        serverTiming: serverTiming || {},
+      };
+    }
+
+    return {
+      ok: true,
+      prepareToken: data.prepare_token || "",
+      postId: data.post_id || "",
+      threadId: data.thread_id || "",
+      recordPath: data.record_path || "",
+      canonicalRecord: data.canonical_record || "",
+      alreadyRetracted: data.already_retracted === true,
+      retractionStatus: data.retraction_status || "",
+      failedStep: data.failed_step || "",
+      commitSha: data.commit_sha || "",
+      serverTiming: serverTiming || {},
+    };
+  }
+
+  async function submitSignedRetraction(postId) {
+    await ensureActionIdentity(null, null);
+    const authorIdentityId = currentAuthorIdentityId();
+    if (!authorIdentityId) {
+      return {
+        ok: false,
+        error: "No saved browser identity is available to sign this deletion.",
+        technicalDetails: "Retraction signing requires a stored browser fingerprint.",
+      };
+    }
+
+    const preparedResponse = await submitUrlEncoded("/api/prepare_retraction", {
+      post_id: String(postId || ""),
+      author_identity_id: authorIdentityId,
+    });
+    const prepared = parseRetractionResponse(
+      preparedResponse.text,
+      preparedResponse.serverTiming,
+      "Unable to prepare the deletion for signing."
+    );
+    if (!prepared.ok || prepared.alreadyRetracted) {
+      return prepared;
+    }
+
+    const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
+    const finalizedResponse = await submitUrlEncoded("/api/create_prepared_retraction", {
+      prepare_token: prepared.prepareToken,
+      post_id: prepared.postId,
+      record_path: prepared.recordPath,
+      author_identity_id: authorIdentityId,
+      canonical_record: prepared.canonicalRecord,
+      detached_signature: detachedSignature,
+    });
+    const finalized = parseRetractionResponse(
+      finalizedResponse.text,
+      finalizedResponse.serverTiming,
+      "Unable to finalize the signed deletion."
+    );
+    finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
+
+    return finalized;
+  }
+
   async function retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, previousResult) {
     markActionTiming(timing, "forum_signature_retry_start");
     await ensureCurrentComposeAuthorIdentity(form);
@@ -3505,6 +3583,7 @@
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
+  window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
   window.ForumBrowserSigning.prepareOutboxPost = prepareOutboxPost;
   window.ForumBrowserSigning.finalizeOutboxPost = finalizeOutboxPost;

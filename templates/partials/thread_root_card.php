@@ -200,6 +200,9 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
 <?php endif; ?>
+<?php if (!$isQdbQuoteRoot): ?>
+<?= $partial('partials/retract_post_control.php') ?>
+<?php endif; ?>
 <?php if ($showAgentReplyRequestButton && !$isRetracted): ?>
     <button
       type="button"

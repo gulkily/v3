@@ -44,6 +44,7 @@ $testFiles = [
     __DIR__ . '/MediaEmbedBeaconTemplatesTest.php',
     __DIR__ . '/MediaEmbedPreviewControllerTest.php',
     __DIR__ . '/MediaEmbedInlinePlayerScriptTest.php',
+    __DIR__ . '/PostRetractionScriptTest.php',
     __DIR__ . '/TemplateRendererMediaEmbedsScriptTest.php',
     __DIR__ . '/FastScoringConfigTest.php',
     __DIR__ . '/FastScoreContextFactoryTest.php',

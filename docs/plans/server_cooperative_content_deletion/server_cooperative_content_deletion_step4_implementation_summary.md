@@ -79,3 +79,18 @@ Debug mode: enabled
   - Not separately covered by a test: the activity/forte list rows other than the two paned partials, and profile/username page lists. They read the same `posts`/`threads` rows, which are already blank and titled via the shared helpers; a Stage 7 sweep should open them with a retracted post present.
   - The QDB quote layout branch was changed but has no dedicated test; its placeholder text uses `RetractedPostNotice::TEXT`.
   - Default `/threads/` in the test fixture renders no thread cards without `?view=all`; the board assertion uses `?view=all&sort=newest`.
+
+## Stage 6 - Retract action and status display
+- Changes:
+  - Shared partial `partials/retract_post_control.php`, included by `post_card.php` (replies and `/posts/<id>`) and `thread_root_card.php` (non-QDB thread roots). It shows a Delete button and a status line only when the viewer's identity equals the post's `author_identity_id`, the post is not already retracted, and it is not an identity/approval/invitation post. `post()` now passes `viewerProfile` to `post.php`.
+  - `browser_signing.js`: `submitSignedRetraction(postId)` (exposed as `ForumBrowserSigning.submitSignedRetraction`) prepares, signs the canonical record with the stored browser key, and finalizes; an already-retracted post skips signing so a repeat acts as a refresh retry.
+  - New `public/assets/post_retraction.js` (loaded on thread and post pages): confirmation dialog, progress text, then `complete` reloads the page, `partial` shows the failed step with a Retry deletion button, and errors re-enable the button.
+  - Wording lives in `Support/RetractedPostNotice` (`CONFIRM`, `DONE`): states that the post stops being shown here and replies stay behind a placeholder, and that version history, backups, and copies others saved are not erased.
+- Verification:
+  - `WriteApiSmokeTest::testRetractControlAppearsOnlyForTheAuthorOfAnUnretractedPost`: control absent for anonymous and other viewers, present for the author on thread and post pages with the honest copy and script reference, absent after retraction.
+  - New `PostRetractionScriptTest` (with `tests/fixtures/post_retraction_script_check.js`): `node --check` on both scripts, plus a stubbed-DOM run covering declined confirm, complete, partial (Retry label, failed step shown), server error, and signing unavailable.
+  - Full `php tests/run.php`: 1120 run, 9 failed, all long-standing and unchanged.
+- Notes:
+  - Not exercised end to end in a real browser: key loading and OpenPGP signing inside `submitSignedRetraction`. Server-side prepare/finalize with real gpg signatures is covered in Stage 3; the browser path reuses `ensureActionIdentity`, `currentAuthorIdentityId`, and `signCanonicalRecord` exactly as `submitSignedApproval` does. A manual run in a browser with a stored key is advisable before release.
+  - The control is not added to the forte paned views or the QDB quote layout, per the plan clarification at the top of this summary.
+  - Copy for review: the confirmation and completion strings in `src/ForumRewrite/Support/RetractedPostNotice.php`.

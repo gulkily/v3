@@ -2336,6 +2336,50 @@ NODE;
         assertTrue($replyId !== '');
     }
 
+    public function testRetractControlAppearsOnlyForTheAuthorOfAnUnretractedPost(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $author = $this->createAuthoredThread($application, 'retract-control', 'Control body');
+        $other = $this->linkSigningIdentity($application, 'retract-control-other');
+        $threadPath = '/threads/' . rawurlencode($author['thread_id']);
+
+        try {
+            $_COOKIE = [];
+            $anonymous = $this->renderMethod($application, 'GET', $threadPath);
+            assertSame(false, str_contains($anonymous, 'data-action="retract-post"'));
+
+            $_COOKIE = ['identity_hint' => $other['identity_id']];
+            $notAuthor = $this->renderMethod($application, 'GET', $threadPath);
+            assertSame(false, str_contains($notAuthor, 'data-action="retract-post"'));
+
+            $_COOKIE = ['identity_hint' => $author['identity_id']];
+            $asAuthor = $this->renderMethod($application, 'GET', $threadPath);
+            assertStringContains('data-action="retract-post"', $asAuthor);
+            assertStringContains('does not erase it from the site&#039;s version history or backups', $asAuthor);
+            assertStringContains('post_retraction.', $asAuthor);
+            $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($author['thread_id']));
+            assertStringContains('data-action="retract-post"', $postPage);
+
+            $prepared = $this->prepareRetractionRequest($application, $author['identity_id'], $author['thread_id']);
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'],
+                'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'],
+                'author_identity_id' => $author['identity_id'],
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+            ];
+            $this->renderMethod($application, 'POST', '/api/create_prepared_retraction');
+            $_POST = [];
+
+            $afterRetraction = $this->renderMethod($application, 'GET', $threadPath);
+            assertSame(false, str_contains($afterRetraction, 'data-action="retract-post"'));
+        } finally {
+            $_COOKIE = [];
+        }
+    }
+
     public function testRetractionRefreshFailureReportsPartialAndRetryRecovers(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
