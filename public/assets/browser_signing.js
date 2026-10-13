@@ -2022,10 +2022,10 @@
     };
   }
 
-  function saveImportedBrowserIdentity(identity) {
+  function saveImportedBrowserIdentity(identity, preserveText = false) {
     localStorage.setItem(storageKeys.username, normalizeUsername(identity.username || "guest"));
     localStorage.setItem(storageKeys.publicKey, normalizeNewlines(String(identity.publicKey || "")).trim() + "\n");
-    localStorage.setItem(storageKeys.privateKey, normalizedArmoredPrivateKey(identity.privateKey || ""));
+    localStorage.setItem(storageKeys.privateKey, preserveText ? identity.privateKey : normalizedArmoredPrivateKey(identity.privateKey || ""));
     localStorage.setItem(storageKeys.fingerprint, String(identity.fingerprint || "").trim().toUpperCase());
     localStorage.removeItem(storageKeys.publishedFingerprint);
     localStorage.removeItem(storageKeys.composePromptCancelled);
@@ -2687,6 +2687,42 @@
     }
   }
 
+  async function importAccountPrivateKey(root, text, expectedFingerprint = "") {
+    const previousIdentity = browserIdentitySnapshot();
+    const previousClearedKey = clearedKeypairBackup;
+    const identity = await deriveIdentityFromPrivateKey(text);
+    if (expectedFingerprint) {
+      const previousKey = previousIdentity[storageKeys.privateKey];
+      const previousFingerprint = previousKey
+        ? (await deriveIdentityFromPrivateKey(previousKey)).fingerprint.toLowerCase() : "";
+      const accountFingerprint = String(root.dataset.authenticatedIdentityId || "").replace(/^openpgp:/, "").toLowerCase();
+      if (identity.fingerprint.toLowerCase() !== expectedFingerprint ||
+          (previousFingerprint && previousFingerprint !== expectedFingerprint) ||
+          (accountFingerprint && accountFingerprint !== expectedFingerprint)) {
+        throw new Error("Backup fingerprint does not match this account. Use a separate browser profile to restore another identity.");
+      }
+      identity.privateKey = text;
+    }
+    if (JSON.stringify(previousIdentity) !== JSON.stringify(browserIdentitySnapshot())) {
+      throw new Error("The browser identity changed. Try restoring again.");
+    }
+    try {
+      saveImportedBrowserIdentity(identity, Boolean(expectedFingerprint));
+      renderSavedState(root);
+      await publishPublicKeyWithRetry(root);
+      await authenticatePrivateSiteIfAvailable();
+      return identity;
+    } catch (error) {
+      restoreBrowserIdentitySnapshot(previousIdentity);
+      clearedKeypairBackup = previousClearedKey;
+      throw error;
+    } finally {
+      renderSavedState(root);
+      const field = root.querySelector('[data-role="public-key-field"]');
+      if (field) field.value = localStorage.getItem(storageKeys.publicKey) || "";
+    }
+  }
+
   function bindAccountKeyPage(root) {
     if (rootIsBrowserSigningBound(root)) {
       return false;
@@ -2704,6 +2740,13 @@
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
     const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
     const automaticGuestPublicationInput = root.querySelector('[data-role="automatic-guest-publication"]');
+    if (window.ForumKeyBackupUI) {
+      window.ForumKeyBackupUI.bind(root, {
+        snapshot: browserIdentitySnapshot,
+        restore: (text, fingerprint) => importAccountPrivateKey(root, text, fingerprint),
+      });
+    }
+
 
     renderSavedState(root);
     if (automaticGuestPublicationInput) {
@@ -2788,34 +2831,14 @@
 
     if (restorePrivateButton) {
       restorePrivateButton.addEventListener("click", async function () {
-        const previousIdentity = browserIdentitySnapshot();
         restorePrivateButton.disabled = true;
-
         try {
           setStatus(statusNode, "Reading private key from clipboard...", "info");
-          const clipboardText = await readClipboardText();
-          setStatus(statusNode, "Validating private key...", "info");
-          const identity = await deriveIdentityFromPrivateKey(clipboardText);
-          saveImportedBrowserIdentity(identity);
-          renderSavedState(root);
-          if (publicKeyField) {
-            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
-          }
-
-          setStatus(statusNode, "Publishing your public key in the background...", "info");
-          await publishPublicKeyWithRetry(root);
-          await authenticatePrivateSiteIfAvailable();
-          if (publicKeyField) {
-            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
-          }
+          const text = await readClipboardText();
+          setStatus(statusNode, "Validating and linking your public key...", "info");
+          const identity = await importAccountPrivateKey(root, text);
           setStatus(statusNode, `Restored browser keypair for ${identity.username}. Public key linked.`, "ok");
         } catch (error) {
-          restoreBrowserIdentitySnapshot(previousIdentity);
-          renderSavedState(root);
-          if (publicKeyField) {
-            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
-          }
-
           const status = statusFromError(error, "Unable to restore browser private key.");
           setStatus(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
         } finally {

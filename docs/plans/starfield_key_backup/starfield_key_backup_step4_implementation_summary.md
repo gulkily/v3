@@ -11,3 +11,8 @@ Debug mode: disabled
 - Changes: browser-only password-encrypted OpenPGP envelope preserves exact original UTF-8 key text and validates its fingerprint; creation decrypts its own result before returning.
 - Verification: `node tests/browser/key_backup.cjs` and the same command with `openpgp.v5.11.3.min.js` passed real-key exact-byte restoration, wrong/empty password, corrupt/oversized file and fingerprint mismatch checks.
 - Notes: uses the existing loader and both bundled versions; no new cryptography implementation or secret storage/network effects.
+
+## Stage 3 - Account Key text backup and restore
+- Changes: added passphrase/download/file controls, final-Blob verification, serialized UI actions and identity-change checks; extracted the shared raw/file import transaction with exact-text preservation and cleared-key undo rollback. Account Key assets use the existing fingerprint resolver.
+- Verification: `node tests/browser/key_backup_ui.mjs` passed actual Chromium download, fresh-profile restore, wrong password, simulated storage failure rollback, exact bytes and request privacy; two existing raw import/publication rollback tests passed with `php tests/run.php BrowserSigningNormalizationTest::testAccountRestorePrivateKeyPublishesDerivedPublicKeyOnly BrowserSigningNormalizationTest::testAccountRestorePrivateKeyRollsBackWhenPublishFails`; affected PHP lint and JS syntax checks passed.
+- Notes: test waits for existing automatic authentication/reload before filling password controls; no production state used. Browser test fixtures live in isolated temporary directories.
