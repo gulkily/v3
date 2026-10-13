@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared, read-only checks for the local PHP development server.
 source "${ROOT}/scripts/php_setup_guidance.sh"
+source "${ROOT}/scripts/local_server_dependency_install.sh"
 missing_php_startup_guidance() {
   if [[ "${1:-startup}" == report ]]; then
     printf '%s\n' 'PHP CLI is not available on PATH.' >&2
@@ -11,11 +12,21 @@ missing_php_startup_guidance() {
 If PHP is already installed, add its executable's directory to PATH in this
 terminal. Check that 'php --version' works before installing another copy.
 EOF
-  if [[ "$(php_setup_platform /etc/os-release)" == ubuntu-24.04 ]]; then
+  local php_series ubuntu_suite php_version_pattern platform
+  platform="$(php_setup_platform /etc/os-release)"
+  if php_setup_mapping "${platform}"; then
+    if [[ -e /usr/bin/php || -e /usr/bin/php${php_series} ]] || dpkg-query -W -f='${db:Status-Status}\n' 'php*-cli' 2>/dev/null | grep -q '^installed$'; then
+      printf '%s\n' 'A PHP CLI exists outside the selected PATH. Inspect /usr/bin/php and update-alternatives --display php; restore /usr/bin in PATH or select your existing CLI before retrying. No additional runtime is recommended.' >&2
+      return
+    fi
+    if ! install_candidate "php${php_series}-cli" >/dev/null || ! install_candidate "php${php_series}-sqlite3" >/dev/null || ! install_candidate "php${php_series}-mbstring" >/dev/null; then
+      printf '%s\n' "Ubuntu ${platform#ubuntu-}: package metadata is unavailable or unverified. Inspect apt-cache policy php${php_series}-cli and APT sources; run sudo apt-get update manually, then rerun ./v3 check-dependencies for a verified package recipe." >&2
+      return
+    fi
     cat >&2 <<EOF
-Ubuntu 24.04 with APT: install PHP CLI, SQLite support, and mbstring manually:
+Ubuntu ${platform#ubuntu-} with APT: install PHP CLI, SQLite support, and mbstring manually:
   ${cyan:-}sudo apt-get update${reset:-}
-  ${cyan:-}sudo apt-get install php8.3-cli php8.3-sqlite3 php8.3-mbstring${reset:-}
+  ${cyan:-}sudo apt-get install php${php_series}-cli php${php_series}-sqlite3 php${php_series}-mbstring${reset:-}
 These commands require administrator privileges and change system packages.
 In an existing root shell, omit sudo. Startup and ordinary checks do not install.
 For reviewed, opt-in setup, run ./v3 check-dependencies --install in a terminal.
@@ -89,7 +100,8 @@ local_server_report_finish() {
 local_server_dependencies_check() {
   local mode="$1" failed=0 git_ready=1 runtime version_id version binary platform report_fd
   local missing_php=0 probe_details='' green='' red='' amber='' dim='' cyan='' bold='' reset=''
-  local -a recovery=()
+  local -a recovery=() extension_guidance=()
+  local php_series ubuntu_suite php_version_pattern
   if [[ "${mode}" == report ]]; then
     if [[ -t 1 && -z "${NO_COLOR+x}" ]]; then
       green=$'\033[32m'; red=$'\033[31m'; amber=$'\033[33m'; dim=$'\033[90m'
@@ -108,10 +120,11 @@ local_server_dependencies_check() {
   fi
   local_server_dependency_line OK 'Bash 4.1+ launcher'
   platform="$(php_setup_platform /etc/os-release)"
+  if [[ "${mode}" == report ]]; then printf 'Platform: %s\n' "${platform}"; fi
   if ! command -v git >/dev/null 2>&1; then
     local guidance='Install Git or repair PATH, then retry the same command.'
-    if [[ "${platform}" == ubuntu-24.04 ]]; then
-      guidance+=$'\nUbuntu 24.04/APT (manual, administrator privileges; omit sudo in a root shell):\n  '
+    if php_setup_mapping "${platform}"; then
+      guidance+=$'\nUbuntu/APT (manual, administrator privileges; omit sudo in a root shell):\n  '
       guidance+="${cyan}sudo apt-get install git${reset}"
     fi
     local_server_dependency_line FAIL 'Git is not available on PATH' "${guidance}"
@@ -163,14 +176,17 @@ local_server_dependencies_check() {
     return 1
   fi
   local_server_dependency_line OK "PHP ${version} (${binary}), minimum 8.1"
+  if php_setup_mapping "${platform}"; then
+    extension_guidance+=("$(php_setup_extension_guidance common pdo)" "$(php_setup_extension_guidance sqlite3 pdo_sqlite)" "$(php_setup_extension_guidance mbstring mbstring)" "$(php_setup_extension_guidance intl intl)")
+  fi
   if [[ "${mode}" == report ]]; then
     # Keep status rows on the original stdout; collect runtime/recovery details in memory.
     exec {report_fd}>&1
-    if ! probe_details="$(php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}" 2>&1 1>&"${report_fd}")"; then
+    if ! probe_details="$(php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}" "${extension_guidance[@]}" 2>&1 1>&"${report_fd}")"; then
       failed=1
     fi
     exec {report_fd}>&-
-  elif ! php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}"; then
+  elif ! php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}" "${extension_guidance[@]}"; then
     failed=1
   fi
   local_server_report_finish

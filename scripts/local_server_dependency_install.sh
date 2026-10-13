@@ -13,12 +13,12 @@ install_package_status() {
 # A local dpkg status entry alone does not establish provenance.
 install_official_version() {
   local package="$1" version="$2"
-  LC_ALL=C apt-cache policy "${package}" 2>/dev/null | awk -v wanted="${version}" '
+  LC_ALL=C apt-cache policy "${package}" 2>/dev/null | awk -v wanted="${version}" -v suite="${ubuntu_suite:-noble}" '
     $1 == "***" { $1=""; sub(/^ +/, "") }
     NF == 2 && $2 ~ /^[0-9]+$/ { active=($1 == wanted); next }
     active && $1 ~ /^[0-9]+$/ {
       if ($2 == "/var/lib/dpkg/status") next
-      if ($2 ~ /^https?:\/\/(archive.ubuntu.com\/ubuntu|security.ubuntu.com\/ubuntu|ports.ubuntu.com\/ubuntu-ports)\/?$/ && $3 ~ /^noble(-updates|-security)?\//) good=1
+      if ($2 ~ /^https?:\/\/(archive.ubuntu.com\/ubuntu|security.ubuntu.com\/ubuntu|ports.ubuntu.com\/ubuntu-ports)\/?$/ && $3 ~ ("^" suite "(-updates|-security)?/")) good=1
       else bad=1
     }
     END { exit !(good && !bad) }'
@@ -58,16 +58,16 @@ install_runtime_identity() {
   local selected identity version binary installed
   selected="$(type -P php)" || return 1
   selected="$(readlink -f "${selected}")" || return 1
-  [[ "${selected}" == /usr/bin/php8.3 ]] || return 1
+  [[ "${selected}" == /usr/bin/php${php_series:-8.3} ]] || return 1
   identity="$(php -r 'echo PHP_VERSION_ID, " ", PHP_BINARY;' 2>/dev/null)" || return 1
   read -r version binary <<<"${identity}"
-  [[ "${version}" =~ ^803[0-9][0-9]$ && "${binary}" == /usr/bin/php8.3 ]] || return 1
-  [[ "$(dpkg-query -S /usr/bin/php8.3 2>/dev/null)" == 'php8.3-cli: /usr/bin/php8.3' ]] || return 1
-  [[ "$(install_package_status php8.3-cli)" == installed ]] || return 1
-  installed="$(dpkg-query -W -f='${Version}' php8.3-cli 2>/dev/null)" || return 1
-  install_official_version php8.3-cli "${installed}" || return 1
+  [[ "${version}" =~ ${php_version_pattern:-^803[0-9][0-9]$} && "${binary}" == /usr/bin/php${php_series:-8.3} ]] || return 1
+  [[ "$(dpkg-query -S /usr/bin/php${php_series:-8.3} 2>/dev/null)" == "php${php_series:-8.3}-cli: /usr/bin/php${php_series:-8.3}" ]] || return 1
+  [[ "$(install_package_status php${php_series:-8.3}-cli)" == installed ]] || return 1
+  installed="$(dpkg-query -W -f='${Version}' php${php_series:-8.3}-cli 2>/dev/null)" || return 1
+  install_official_version php${php_series:-8.3}-cli "${installed}" || return 1
   # Modified CLI executables are custom runtimes even if dpkg still owns the path.
-  if dpkg --verify php8.3-cli 2>/dev/null | grep -q ' /usr/bin/php8.3$'; then return 1; fi
+  if dpkg --verify php${php_series:-8.3}-cli 2>/dev/null | grep -q " /usr/bin/php${php_series:-8.3}\$"; then return 1; fi
   printf '%s' "${selected}"
 }
 
