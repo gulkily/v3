@@ -35,3 +35,21 @@
 ### Uncertain assessments
 - The "<=1 page" limit conflicts with the required per-stage field template for 7 stages; the plan is about 1,100 words. Clarification of how "page" is measured would help.
 - RAILSPIKE.md describes both a Step 3 "Do" reprint rule and a "Before" reprint rule; I reprinted Before in full and Do in summary, unsure whether a summary satisfies "reprint".
+
+## 2026-10-13T05:42:55Z · Step 4 · Diagnostic report
+
+### Necessary/useful instructions
+- step4_implementation_do.md "Stage Boundary Protocol": the numbered sequence (verify, update summary, `git status`, commit, `git log`) kept each of the seven stages atomic and made the interrupted Stage 3 easy to hold uncommitted until verification could be rerun.
+- RAILSPIKE.md "Planning Artifacts" organization rule: gave an exact, checkable definition of the folder move, index entry, and what the planning commit may contain.
+- step4_implementation_after.md "Final Verification Checklist" item 3: the commit-count formula (`1 + stages`) was directly verifiable with `git log main..HEAD`.
+
+### Redundant/unnecessary instructions
+- step4_implementation_before.md "Planning Docs Commit Gate" steps 3-4 repeat the RAILSPIKE.md "Planning Artifacts" organization rule and planning-commit contents almost verbatim; both had to be read to confirm they agreed. Suggestion: keep the rule in one place and link to it from the gate.
+
+### Inapplicable instructions
+- Documentation-only variants in step4_implementation_do.md and step4_implementation_after.md (document integrity, evidence boundary, allowed file scope): not applicable to this application change.
+
+### Uncertain assessments
+- No instruction says how to record a file-placement refinement to an approved plan (Stage 6 control moving from `thread.php`/`post.php` to the shared card partials). I recorded it as a "Plan clarifications" note at the top of the Step 4 summary without editing the approved Step 3; guidance on whether that needs renewed approval would help.
+- No guidance covers the verification environment changing mid-stage (PHP was uninstalled from the host during a full-suite run). I held the stage uncommitted and reported it; an explicit rule for blocked verification would help.
+- The "Final verification" section must be in the summary before the final stage commit exists, so the commit count it states is an expectation confirmed immediately afterward rather than an observation; unclear whether that ordering is intended.
