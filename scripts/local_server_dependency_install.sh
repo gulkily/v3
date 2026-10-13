@@ -169,34 +169,50 @@ install_interrupt() {
   interrupted=1
   trap '' INT TERM
   printf '\nInstallation interrupted; stopping the package process group. Partial changes are possible.\n'
-  if [[ -n "${apt_pid}" ]]; then
-    "${privilege[@]}" /bin/kill -TERM -- "-${apt_pid}" 2>/dev/null || true
+  if [[ -z "${apt_pgid}" && -s "${apt_pid_file}" ]]; then
+    IFS= read -r apt_pgid < "${apt_pid_file}" || true
+  fi
+  if [[ "${apt_pgid}" =~ ^[0-9]+$ ]]; then
+    "${privilege[@]}" /bin/kill -TERM -- "-${apt_pgid}" 2>/dev/null || true
+  elif [[ -n "${apt_pid}" ]]; then
+    kill -TERM "${apt_pid}" 2>/dev/null || true
   fi
 }
 
 install_group_active() {
-  ps -eo pgid=,stat= | awk -v group="${apt_pid}" '$1 == group && $2 !~ /^Z/ {live=1} END {exit !live}'
+  ps -eo pgid=,stat= | awk -v group="${apt_pgid}" '$1 == group && $2 !~ /^Z/ {live=1} END {exit !live}'
 }
 
 install_privileged_apt() {
-  local status=0 count=0
-  # A distinct session permits reliable cleanup of APT and its child processes.
-  /usr/bin/setsid "${privilege[@]}" /usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get "$@" &
+  local status=0 count=0 pid_dir
+  pid_dir="$(mktemp -d)" || return 1
+  apt_pid_file="${pid_dir}/group"
+  # Authenticate sudo in the caller's terminal session, then isolate APT. Moving
+  # sudo itself into a new session would lose the terminal-scoped credential cache.
+  "${privilege[@]}" /usr/bin/setsid --wait /bin/bash -c '
+    printf "%s\n" "$$" > "$1"; shift
+    exec /usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get "$@"
+  ' v3-apt "${apt_pid_file}" "$@" &
   apt_pid=$!
   wait "${apt_pid}" || status=$?
+  if [[ -s "${apt_pid_file}" ]]; then IFS= read -r apt_pgid < "${apt_pid_file}" || true; fi
   if (( interrupted )); then
+    if [[ "${apt_pgid}" =~ ^[0-9]+$ ]]; then
+      "${privilege[@]}" /bin/kill -TERM -- "-${apt_pgid}" 2>/dev/null || true
+    fi
     while install_group_active && (( count < 100 )); do
       sleep 0.1
       count=$((count + 1))
     done
     if install_group_active; then
       package_active=1
-      printf 'Package processes remain active in process group %s; do not retry or repair dpkg until they exit.\n' "${apt_pid}"
+      printf 'Package processes remain active in process group %s; do not retry or repair dpkg until they exit.\n' "${apt_pgid}"
     fi
     if (( ! package_active )); then wait "${apt_pid}" 2>/dev/null || true; fi
     status=1
   fi
-  apt_pid=''
+  rm -rf -- "${pid_dir}"
+  apt_pid=''; apt_pgid=''; apt_pid_file=''
   return "${status}"
 }
 
@@ -227,7 +243,7 @@ install_reassess() {
 local_server_dependencies_install() {
   local -a required_packages=() optional_packages=() selected_packages=() privilege=()
   local -a transaction=() requested_versions=() reviewed=()
-  local original_runtime='' initial_ready=0 apt_pid='' interrupted=0 package_active=0
+  local original_runtime='' initial_ready=0 apt_pid='' apt_pgid='' apt_pid_file='' interrupted=0 package_active=0
   local_server_dependencies_check report || initial_ready=1
   printf '\nDependency installation review\n'
   install_assess_batch || return 1
@@ -257,7 +273,9 @@ local_server_dependencies_install() {
   for package in /usr/bin/setsid /bin/kill; do
     [[ -x "${package}" ]] || { install_manual "${package} is unavailable; repair process-control tools externally."; return 1; }
   done
-  command -v ps >/dev/null && command -v sleep >/dev/null || { install_manual 'process-control tools unavailable.'; return 1; }
+  for package in ps sleep mktemp rm; do
+    command -v "${package}" >/dev/null || { install_manual 'process-control tools unavailable.'; return 1; }
+  done
   install_resolve || return 1
   reviewed=("${transaction[@]}")
   printf '%s\n' 'This changes system packages and may upgrade the dependencies listed above.' \

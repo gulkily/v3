@@ -27,6 +27,8 @@ printf '%s\n' '        500 https://ppa.example/ubuntu noble/main amd64 Packages'
 if install_candidate php8.3-cli; then fail 'accepted mixed source'; fi
 sed '/500 http/d' "$work/good" > "$work/policy"
 if install_candidate php8.3-cli; then fail 'accepted local-only runtime'; fi
+printf '%s\n' '  Candidate: (none)' > "$work/policy"
+if install_candidate php8.3-intl; then fail 'accepted unavailable package'; fi
 cp "$work/good" "$work/policy"
 required_packages=(); optional_packages=()
 install_package_status() { printf '%s' "${fixture_status:-}"; }
