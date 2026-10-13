@@ -947,6 +947,7 @@ final class Application
                 QdbVoteCaptionCatalog::forReadModel($this->databasePath),
             ),
             $this->routeServices(),
+            $this->threadAndPostPageController(),
         );
     }
 
