@@ -8,6 +8,7 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 ## Feature folders
 
 - [Rebuild progress and history batching](rebuild_thread_label_stall/)
+- [Authentication modes documentation](authentication_modes_documentation/)
 
 - [Account key approval safety](account_key_approval_safety/)
 - [Runtime detail pages](runtime_detail_pages/)
