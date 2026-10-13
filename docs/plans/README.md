@@ -118,3 +118,5 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 When organizing a feature, use `docs/plans/{feature_name}/`, add it to this index,
 and repair its navigation and affected references. See the
 [transition guide](../reference/railspike_workflow.md) for existing FDP cycles.
+
+- [Signed thread labels and post reactions](signed_thread_label_records/)
