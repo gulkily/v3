@@ -75,7 +75,7 @@ final class ReadModelBuilder
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
-            $pdo->commit();
+            $this->measure('commit_read_model', fn (): bool => $pdo->commit());
         } catch (\Throwable $throwable) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -157,21 +157,10 @@ final class ReadModelBuilder
 
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
-        $this->reportProgress(sprintf(
-            'Read model: resolving legacy creation times for %d post records...',
-            count($paths),
-        ));
-        $this->canonicalRepository->preloadLegacyPostCreatedAts($paths);
-        $this->reportProgress('Read model: legacy creation time resolution complete.');
-        $this->reportProgress(sprintf(
-            'Read model: resolving source commits for %d post records...',
-            count($paths),
-        ));
-        $this->preloadSourceCommitShas($paths, 'records/posts');
-        $this->reportProgress('Read model: source commit resolution complete.');
-        $this->reportBatchStart('Read model: parsing post records', count($paths));
+        $this->measure('resolve_legacy_post_creation_times', fn () => $this->canonicalRepository->preloadLegacyPostCreatedAts($paths));
+        $this->measure('resolve_post_source_commits', fn () => $this->preloadSourceCommitShas($paths, 'records/posts'));
 
-        foreach ($paths as $index => $relativePath) {
+        foreach ($this->progressItems('parsing_post_records', $paths) as $index => $relativePath) {
             $record = $this->canonicalRepository->loadPost($relativePath);
             $threadId = $record->threadId ?? $record->postId;
             $parsedPosts[] = [
@@ -194,27 +183,27 @@ final class ReadModelBuilder
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
             ];
-            $this->reportBatchProgress('Read model: parsing post records', $index + 1, count($paths));
         }
 
-        usort($parsedPosts, static function (array $left, array $right): int {
-            if ($left['thread_id'] !== $right['thread_id']) {
-                return $left['thread_id'] <=> $right['thread_id'];
-            }
+        $this->measure('sort_posts', function () use (&$parsedPosts): void {
+            usort($parsedPosts, static function (array $left, array $right): int {
+                if ($left['thread_id'] !== $right['thread_id']) {
+                    return $left['thread_id'] <=> $right['thread_id'];
+                }
 
-            $leftIsRoot = $left['post_id'] === $left['thread_id'];
-            $rightIsRoot = $right['post_id'] === $right['thread_id'];
-            if ($leftIsRoot !== $rightIsRoot) {
-                return $leftIsRoot ? -1 : 1;
-            }
+                $leftIsRoot = $left['post_id'] === $left['thread_id'];
+                $rightIsRoot = $right['post_id'] === $right['thread_id'];
+                if ($leftIsRoot !== $rightIsRoot) {
+                    return $leftIsRoot ? -1 : 1;
+                }
 
-            return $left['source_order'] <=> $right['source_order'];
+                return $left['source_order'] <=> $right['source_order'];
+            });
         });
 
         $posts = [];
         $threadSummaries = [];
-        $this->reportBatchStart('Read model: writing post records', count($parsedPosts));
-        foreach ($parsedPosts as $index => $post) {
+        foreach ($this->progressItems('writing_post_records', $parsedPosts) as $index => $post) {
             $post['sequence_number'] = $index + 1;
             unset($post['source_order']);
             $posts[] = $post;
@@ -260,10 +249,9 @@ final class ReadModelBuilder
             }
             $summary['last_post_id'] = $post['post_id'];
             unset($summary);
-            $this->reportBatchProgress('Read model: writing post records', $index + 1, count($parsedPosts));
         }
 
-        foreach ($threadSummaries as $summary) {
+        foreach ($this->progressItems('writing_thread_summaries', $threadSummaries) as $summary) {
             $insertThread->execute($summary);
         }
 
@@ -288,30 +276,35 @@ final class ReadModelBuilder
         $records = [];
 
         $paths = $this->findRelativePaths('records/thread-labels');
-        $this->reportBatchStart('Read model: parsing thread-label records', count($paths));
-        foreach ($paths as $index => $relativePath) {
+        foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
                 $records[] = $this->canonicalRepository->loadThreadLabel($relativePath);
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadLabelRecordCount++;
             }
-            $this->reportBatchProgress('Read model: parsing thread-label records', $index + 1, count($paths));
         }
 
-        usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {
-            if ($left->createdAt !== $right->createdAt) {
-                return $left->createdAt <=> $right->createdAt;
-            }
+        $this->measure('sort_thread_labels', function () use (&$records): void {
+            usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {
+                if ($left->createdAt !== $right->createdAt) {
+                    return $left->createdAt <=> $right->createdAt;
+                }
 
-            return $left->recordId <=> $right->recordId;
+                return $left->recordId <=> $right->recordId;
+            });
         });
+
+        $this->measure('resolve_thread_label_source_commits', fn () => $this->preloadSourceCommitShas(
+            array_map(static fn (ThreadLabelRecord $record): string => CanonicalPathResolver::threadLabel($record->recordId), $records),
+            'records/thread-labels',
+        ));
 
         $labelsByThread = [];
         $scoreByThread = [];
         $countedApprovedScoredTagsByThread = [];
         $voteCountByThread = [];
         $countedVoteTagsByThread = [];
-        foreach ($records as $record) {
+        foreach ($this->progressItems('deriving_thread_label_records', $records) as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadLabelRecordCount++;
                 continue;
@@ -371,7 +364,7 @@ final class ReadModelBuilder
              WHERE root_post_id = :root_post_id'
         );
 
-        foreach ($knownRootThreads as $threadId => $_present) {
+        foreach ($this->progressItems('writing_thread_labels', $knownRootThreads) as $threadId => $_present) {
             $labels = array_keys($labelsByThread[$threadId] ?? []);
             sort($labels);
             $updateThread->execute([
@@ -396,26 +389,26 @@ final class ReadModelBuilder
 
         $records = [];
         $paths = $this->findRelativePaths('records/thread-subjects');
-        $this->reportBatchStart('Read model: parsing thread-subject records', count($paths));
-        foreach ($paths as $index => $relativePath) {
+        foreach ($this->progressItems('parsing_thread_subject_records', $paths) as $index => $relativePath) {
             try {
                 $records[] = $this->canonicalRepository->loadThreadSubject($relativePath);
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadSubjectRecordCount++;
             }
-            $this->reportBatchProgress('Read model: parsing thread-subject records', $index + 1, count($paths));
         }
 
-        usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
-            if ($left->createdAt !== $right->createdAt) {
-                return $left->createdAt <=> $right->createdAt;
-            }
+        $this->measure('sort_thread_subjects', function () use (&$records): void {
+            usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
+                if ($left->createdAt !== $right->createdAt) {
+                    return $left->createdAt <=> $right->createdAt;
+                }
 
-            return $left->recordId <=> $right->recordId;
+                return $left->recordId <=> $right->recordId;
+            });
         });
 
         $resolvedSubjectByThread = [];
-        foreach ($records as $record) {
+        foreach ($this->progressItems('deriving_thread_subject_records', $records) as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadSubjectRecordCount++;
                 continue;
@@ -439,7 +432,7 @@ final class ReadModelBuilder
 
         $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject WHERE root_post_id = :root_post_id');
         $updatePost = $pdo->prepare('UPDATE posts SET subject = :subject WHERE post_id = :post_id');
-        foreach ($resolvedSubjectByThread as $threadId => $subject) {
+        foreach ($this->progressItems('writing_thread_subjects', $resolvedSubjectByThread) as $threadId => $subject) {
             $updateThread->execute([
                 'subject' => $subject,
                 'root_post_id' => $threadId,
@@ -468,30 +461,34 @@ final class ReadModelBuilder
 
         $records = [];
         $paths = $this->findRelativePaths('records/post-reactions');
-        $this->reportBatchStart('Read model: parsing post-reaction records', count($paths));
-        foreach ($paths as $index => $relativePath) {
+        foreach ($this->progressItems('parsing_post_reaction_records', $paths) as $index => $relativePath) {
             try {
                 $records[] = $this->canonicalRepository->loadPostReaction($relativePath);
             } catch (CanonicalRecordParseException) {
-                $this->reportBatchProgress('Read model: parsing post-reaction records', $index + 1, count($paths));
                 continue;
             }
-            $this->reportBatchProgress('Read model: parsing post-reaction records', $index + 1, count($paths));
         }
 
-        usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
-            if ($left->createdAt !== $right->createdAt) {
-                return $left->createdAt <=> $right->createdAt;
-            }
+        $this->measure('sort_post_reactions', function () use (&$records): void {
+            usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
+                if ($left->createdAt !== $right->createdAt) {
+                    return $left->createdAt <=> $right->createdAt;
+                }
 
-            return $left->recordId <=> $right->recordId;
+                return $left->recordId <=> $right->recordId;
+            });
         });
+
+        $this->measure('resolve_post_reaction_source_commits', fn () => $this->preloadSourceCommitShas(
+            array_map(static fn (PostReactionRecord $record): string => CanonicalPathResolver::postReaction($record->recordId), $records),
+            'records/post-reactions',
+        ));
 
         $tagsByPost = [];
         $scoreByPost = [];
         $flaggersByPost = [];
         $countedApprovedScoredTagsByPost = [];
-        foreach ($records as $record) {
+        foreach ($this->progressItems('deriving_post_reaction_records', $records) as $record) {
             if (!isset($knownPosts[$record->postId])) {
                 continue;
             }
@@ -546,7 +543,7 @@ final class ReadModelBuilder
              WHERE post_id = :post_id'
         );
 
-        foreach ($knownPosts as $postId => $post) {
+        foreach ($this->progressItems('writing_post_reactions', $knownPosts) as $postId => $post) {
             $tags = array_keys($tagsByPost[$postId] ?? []);
             sort($tags);
             $approvedFlagCount = count($flaggersByPost[$postId] ?? []);
@@ -583,8 +580,7 @@ final class ReadModelBuilder
         $paths = $this->findRelativePaths('records/identity');
         $profiles = [];
         $claimedUsernameTokens = [];
-        $this->reportBatchStart('Read model: parsing identity records', count($paths));
-        foreach ($paths as $index => $relativePath) {
+        foreach ($this->progressItems('parsing_identity_records', $paths) as $index => $relativePath) {
             $identity = $this->canonicalRepository->loadIdentity($relativePath);
             $publicKeyPath = 'records/public-keys/openpgp-' . $identity->signerFingerprint . '.asc';
             if (!is_file($this->repositoryRoot . '/' . $publicKeyPath)) {
@@ -624,7 +620,6 @@ final class ReadModelBuilder
                 'bootstrap_post_id' => $identity->bootstrapByPost,
                 'bootstrap_thread_id' => $identity->bootstrapByThread,
             ];
-            $this->reportBatchProgress('Read model: parsing identity records', $index + 1, count($paths));
         }
 
         return $profiles;
@@ -653,7 +648,7 @@ final class ReadModelBuilder
              WHERE identity_id = :identity_id'
         );
 
-        foreach ($profiles as $profile) {
+        foreach ($this->progressItems('linking_author_profiles', $profiles) as $profile) {
             $updatePost->execute([
                 'author_identity_id' => $profile['identity_id'],
                 'author_profile_slug' => $profile['profile_slug'],
@@ -717,7 +712,7 @@ final class ReadModelBuilder
         );
         $postsById = [];
 
-        foreach ($posts as $post) {
+        foreach ($this->progressItems('writing_post_activity', $posts) as $post) {
             $postsById[$post['post_id']] = $post;
             $author = $this->resolveActivityAuthor($pdo, $post['author_identity_id']);
             $recordFamily = $this->activityRecordFamilyForPost($post);
@@ -748,7 +743,7 @@ final class ReadModelBuilder
             ]);
         }
 
-        foreach ($this->threadLabelActivityEvents as $event) {
+        foreach ($this->progressItems('writing_thread_label_activity', $this->threadLabelActivityEvents) as $event) {
             $thread = $postsById[$event['thread_id']] ?? null;
             if ($thread === null) {
                 continue;
@@ -774,7 +769,7 @@ final class ReadModelBuilder
             ]);
         }
 
-        foreach ($this->postReactionActivityEvents as $event) {
+        foreach ($this->progressItems('writing_post_reaction_activity', $this->postReactionActivityEvents) as $event) {
             $author = $this->resolveActivityAuthor($pdo, $event['author_identity_id']);
             $stmt->execute([
                 'created_at' => $event['created_at'],
@@ -795,9 +790,9 @@ final class ReadModelBuilder
             ]);
         }
 
-        $signedFeatureFlagEvents = $this->featureFlagChangeActivityEvents();
+        $signedFeatureFlagEvents = $this->measure('derive_signed_flag_activity', fn () => $this->featureFlagChangeActivityEvents());
         $signedCommitShas = [];
-        foreach ($signedFeatureFlagEvents as $event) {
+        foreach ($this->progressItems('writing_signed_flag_activity', $signedFeatureFlagEvents) as $event) {
             $signedCommitShas[$event['source_commit_sha']] = true;
             $author = $this->resolveActivityAuthor($pdo, $event['operator_identity_id']);
             $stmt->execute([
@@ -819,7 +814,7 @@ final class ReadModelBuilder
             ]);
         }
 
-        foreach ($this->featureFlagActivityEvents($signedCommitShas) as $event) {
+        foreach ($this->progressItems('writing_legacy_flag_activity', $this->measure('read_legacy_flag_activity', fn () => $this->featureFlagActivityEvents($signedCommitShas))) as $event) {
             $stmt->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'site_feature_flag',
@@ -839,7 +834,7 @@ final class ReadModelBuilder
             ]);
         }
 
-        foreach ($this->codexHandoffActivityEvents($pdo) as $event) {
+        foreach ($this->progressItems('writing_handoff_activity', $this->codexHandoffActivityEvents($pdo)) as $event) {
             $stmt->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'codex_handoff',
@@ -884,7 +879,10 @@ final class ReadModelBuilder
         );
         $output = [];
         $exitCode = 0;
-        exec($command, $output, $exitCode);
+        $this->measure('read_commit_history', static function () use ($command, &$output, &$exitCode): bool {
+            exec($command, $output, $exitCode);
+            return $exitCode === 0;
+        });
         if ($exitCode !== 0) {
             return;
         }
@@ -895,7 +893,7 @@ final class ReadModelBuilder
         );
 
         $pendingRow = null;
-        foreach ($output as $line) {
+        foreach ($this->progressItems('processing_commit_history_lines', $output) as $line) {
             $fields = explode($delimiter, $line);
             if (count($fields) === 5 && preg_match('/^[0-9a-f]{40}$/', $fields[0]) === 1) {
                 if ($pendingRow !== null) {
@@ -1113,13 +1111,19 @@ final class ReadModelBuilder
         }
 
         $command = sprintf(
-            'git -C %s log --format=%%H --name-only -- %s 2>/dev/null',
+            'git -C %s log %s --format=%%H --name-only -- %s 2>/dev/null',
             escapeshellarg($this->repositoryRoot),
+            // Combined diffs include merge resolutions, but not paths unchanged
+            // from a parent. Preserve the established post-history behavior.
+            $pathspec === 'records/posts' ? '' : '-c',
             escapeshellarg($pathspec),
         );
         $output = [];
         $exitCode = 0;
-        exec($command, $output, $exitCode);
+        $this->measure('read_source_history', static function () use ($command, &$output, &$exitCode): bool {
+            exec($command, $output, $exitCode);
+            return $exitCode === 0;
+        });
 
         if ($exitCode !== 0) {
             foreach (array_keys($unresolvedPaths) as $relativePath) {
@@ -1203,7 +1207,9 @@ final class ReadModelBuilder
     private function featureFlagChangeActivityEvents(): array
     {
         $records = [];
-        foreach ($this->findRelativePaths('records/feature-flag-changes') as $relativePath) {
+        $paths = $this->findRelativePaths('records/feature-flag-changes');
+        $this->measure('resolve_feature_flag_source_commits', fn () => $this->preloadSourceCommitShas($paths, 'records/feature-flag-changes'));
+        foreach ($this->progressItems('parsing_feature_flag_changes', $paths) as $relativePath) {
             try {
                 $record = $this->canonicalRepository->loadFeatureFlagChange($relativePath);
             } catch (CanonicalRecordParseException) {
@@ -1222,7 +1228,9 @@ final class ReadModelBuilder
                 'source_commit_sha' => $commitSha,
             ];
         }
-        usort($records, static fn (array $left, array $right): int => [$left['created_at'], $left['source_path']] <=> [$right['created_at'], $right['source_path']]);
+        $this->measure('sort_feature_flag_activity', function () use (&$records): void {
+            usort($records, static fn (array $left, array $right): int => [$left['created_at'], $left['source_path']] <=> [$right['created_at'], $right['source_path']]);
+        });
 
         return $records;
     }
@@ -1290,9 +1298,11 @@ final class ReadModelBuilder
         }
 
         $changed = true;
+        $pass = 0;
         while ($changed) {
+            $this->reportProgress('Read model: approval pass ' . ++$pass . '.');
             $changed = false;
-            foreach ($posts as $post) {
+            foreach ($this->progressItems('checking_approval_posts', $posts) as $post) {
                 $targetIdentityId = $this->extractApprovalTargetIdentityId($post);
                 if ($targetIdentityId === null || !isset($profiles[$targetIdentityId]) || isset($approved[$targetIdentityId])) {
                     continue;
@@ -1324,7 +1334,7 @@ final class ReadModelBuilder
                 ];
                 $changed = true;
             }
-            foreach ($this->invitationApprovalCandidates($posts) as $candidate) {
+            foreach ($this->progressItems('checking_invitation_candidates', $this->invitationApprovalCandidates($posts)) as $candidate) {
                 $targetIdentityId = $candidate['target_identity_id'];
                 $approverIdentityId = $candidate['approver_identity_id'];
                 if (!isset($profiles[$targetIdentityId]) || isset($approved[$targetIdentityId]) || !isset($approved[$approverIdentityId])) {
@@ -1356,10 +1366,10 @@ final class ReadModelBuilder
      */
     private function invitationApprovalCandidates(array $posts): array
     {
-        $posts = \ForumRewrite\Invitation\InvitationReplayOrder::sortPosts($posts);
+        $posts = $this->measure('sort_invitation_posts', fn (): array => \ForumRewrite\Invitation\InvitationReplayOrder::sortPosts($posts));
         $issued = [];
         $candidates = [];
-        foreach ($posts as $post) {
+        foreach ($this->progressItems('replaying_invitation_posts', $posts) as $post) {
             $tags = json_decode($post['board_tags_json'], true);
             if (!is_array($tags) || !in_array('invitation', $tags, true)) {
                 continue;
@@ -1430,12 +1440,12 @@ final class ReadModelBuilder
     {
         $counts = [];
         $bootstrapPostOwners = [];
-        foreach ($profiles as $identityId => $profile) {
+        foreach ($this->progressItems('initializing_profile_counts', $profiles) as $identityId => $profile) {
             $counts[$identityId] = ['post_count' => 0, 'thread_count' => 0];
             $bootstrapPostOwners[$profile['bootstrap_post_id']] = $identityId;
         }
 
-        foreach ($posts as $post) {
+        foreach ($this->progressItems('counting_profile_posts', $posts) as $post) {
             if ($this->isHiddenBootstrapBoardTagsJson($post['board_tags_json'])) {
                 continue;
             }
@@ -1472,17 +1482,47 @@ final class ReadModelBuilder
     private function measure(string $name, callable $callback): mixed
     {
         $startedAt = hrtime(true);
+        $succeeded = false;
         $this->reportProgress('Read model: ' . str_replace('_', ' ', $name) . '...');
         try {
-            return $callback();
+            $result = $callback();
+            $succeeded = $result !== false;
+            return $result;
         } finally {
-            $this->timings[$name] = round((hrtime(true) - $startedAt) / 1000000, 1);
-            $this->reportProgress(sprintf(
-                'Read model: %s complete (%.1f ms).',
-                str_replace('_', ' ', $name),
-                $this->timings[$name],
-            ));
+            $this->reportDuration($name, $startedAt, $succeeded);
         }
+    }
+
+    /** Preserve keys and report completed work even when a loop skips a record. */
+    private function progressItems(string $name, array $items): \Generator
+    {
+        $startedAt = hrtime(true);
+        $label = 'Read model: ' . str_replace('_', ' ', $name);
+        $total = count($items);
+        $completed = 0;
+        $succeeded = false;
+        $this->reportBatchStart($label, $total);
+        try {
+            foreach ($items as $key => $item) {
+                yield $key => $item;
+                $this->reportBatchProgress($label, ++$completed, $total);
+            }
+            $succeeded = true;
+        } finally {
+            $this->reportDuration($name, $startedAt, $succeeded);
+        }
+    }
+
+    private function reportDuration(string $name, int $startedAt, bool $succeeded): void
+    {
+        $duration = round((hrtime(true) - $startedAt) / 1000000, 1);
+        $this->timings[$name] = round(($this->timings[$name] ?? 0.0) + $duration, 1);
+        $this->reportProgress(sprintf(
+            'Read model: %s %s (%.1f ms).',
+            str_replace('_', ' ', $name),
+            $succeeded ? 'complete' : 'failed',
+            $duration,
+        ));
     }
 
     private function reportProgress(string $message): void
@@ -1499,7 +1539,7 @@ final class ReadModelBuilder
 
     private function reportBatchProgress(string $label, int $completed, int $total): void
     {
-        if ($completed === $total || $completed % 100 === 0) {
+        if ($completed === $total || $completed % max(100, (int) ceil($total / 100)) === 0) {
             $this->reportProgress("{$label} ({$completed}/{$total}).");
         }
     }

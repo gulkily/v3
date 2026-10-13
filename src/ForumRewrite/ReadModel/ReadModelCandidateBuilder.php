@@ -36,7 +36,10 @@ final class ReadModelCandidateBuilder
                 $this->rebuildReason,
                 $this->progressReporter,
             ))->rebuild();
-            self::assertValid($this->repositoryRoot, $candidatePath);
+            (new RebuildProgress($this->progressReporter))->measure(
+                'Read model: validating candidate',
+                fn () => self::assertValid($this->repositoryRoot, $candidatePath),
+            );
 
             return $candidatePath;
         } catch (\Throwable $throwable) {

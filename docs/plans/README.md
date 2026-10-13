@@ -7,6 +7,9 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 
 ## Feature folders
 
+- [Rebuild progress and history batching](rebuild_thread_label_stall/)
+- [Authentication modes documentation](authentication_modes_documentation/)
+
 - [Account key approval safety](account_key_approval_safety/)
 - [Runtime detail pages](runtime_detail_pages/)
 
@@ -81,6 +84,7 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 - [Private-window lobby fallback](private_window_lobby_fallback/)
 - [QDB archive importer](qdb_archive_importer/)
 - [QDB numeric permalinks](qdb_numeric_permalinks/)
+- [QDB numeric URL retention](qdb_numeric_url_retention/)
 - [QDB permalink quote-card parity](qdb_permalink_quote_card_parity/)
 - [QDB quote card action placement](qdb_quote_card_action_placement/)
 - [QDB quote id authoring scope](qdb_quote_id_authoring_scope/)

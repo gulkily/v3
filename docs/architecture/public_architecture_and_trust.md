@@ -10,9 +10,15 @@ An operator can archive the repository, open any record directly, or rebuild a r
 
 ## Your browser holds your private key
 
-If you choose browser identity, your browser generates an OpenPGP private key and keeps it. The site receives the public key, its fingerprint, and the signatures it needs to verify your signed public writes. It does not need your private key to publish or verify your identity.
+Your browser can generate and keep an OpenPGP private key when you set up an identity; instances can also enable automatic guest-key preparation. The site receives the public key, its fingerprint, and the signatures it needs to verify your signed public writes. It does not need your private key to publish or verify your identity.
 
 Your visible identity is an `openpgp:<fingerprint>` value tied to the stored public key. The [identity bootstrap record](../specs/identity_bootstrap_record_v1.md) specifies how a public key, fingerprint, username, and first accepted identity event bind together. Readers can check the identity material and the record history themselves, with no opaque account database to trust.
+
+## Identity and access are separate
+
+A saved key, a published identity, a signed action, an authenticated viewer session, and membership approval are different states. An identity hint only helps select presentation. Public browsing does not require a key; members-only content requires an authenticated approved identity. Documentation and the site's entry/recovery routes remain available before approval.
+
+The [Authentication Modes and Access reference](../reference/authentication_modes.md) explains the site settings, access matrix, action-specific permissions, and recovery when a session expires or a browser key is missing. It is the current authentication reference; older session plans retain historical alternatives.
 
 ## Where secrets live
 
@@ -23,6 +29,6 @@ Operators can still hold server-side secrets. Optional LLM features need provide
 ## What visitors can inspect
 
 - This site renders the same Markdown documentation committed with the application, and each page shows its exact source path.
-- The [Tools](/tools/) page links to repository and read-model backups.
-- The public activity and source views show canonical record and commit context where it is available.
+- The [Tools](/tools/) page links to repository and read-model backups; on members-only instances, these require authenticated approved access.
+- Activity and source views show canonical record and commit context where it is available, subject to the instance's access policy.
 - The [CLI reference](../reference/v3_cli.md) and runbooks describe rebuild, backup, signature-audit, and release procedures.

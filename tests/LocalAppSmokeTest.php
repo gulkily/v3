@@ -56,8 +56,8 @@ final class LocalAppSmokeTest
         assertStringContains('Starting read-model rebuild.', $text);
         assertStringContains('[1/3] Scanning source record counts...', $text);
         assertStringContains('[2/3] Building and validating a read-model candidate...', $text);
-        assertStringContains('[2/3] Read model: resolving legacy creation times for ', $text);
-        assertStringContains('[2/3] Read model: resolving source commits for ', $text);
+        assertStringContains('[2/3] Read model: resolve legacy post creation times...', $text);
+        assertStringContains('[2/3] Read model: resolve post source commits...', $text);
         assertStringContains('[2/3] Read model: parsing post records (0/', $text);
         assertStringContains('[3/3] Waiting for the exclusive read-model lock...', $text);
         assertStringContains('[3/3] Read model promoted.', $text);

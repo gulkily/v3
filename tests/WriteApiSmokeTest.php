@@ -3301,15 +3301,22 @@ NODE;
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=general&subject=&body=Quote%20to%20upvote'
+                '/api/create_quote?board_tags=general&subject=&body=Quote%20to%20upvote'
             );
             $threadId = $this->extractValue($threadResponse, 'thread_id');
 
             $_COOKIE = ['identity_hint' => $identity['identity_id']];
             $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=' . rawurlencode($threadId) . '&tag=upvote');
+            $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=' . rawurlencode($threadId) . '&tag=flag');
             $votedPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+            $numericPath = '/' . \ForumRewrite\Qdb\QdbQuoteNumbers::fromThreadId($threadId);
+            $numericPage = $this->renderMethod($application, 'GET', $numericPath);
+            assertSame(200, http_response_code());
+            assertSame(2, preg_match_all('/data-action="apply-thread-tag"[^>]*aria-pressed="true"[^>]*disabled="disabled"/', $numericPage));
+            assertSame(1, preg_match('/data-action="apply-post-tag"[^>]*data-tag="flag"[^>]*aria-pressed="true"/', $numericPage));
             $_COOKIE = [];
-            $anonymousPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
+            $anonymousPage = $this->renderMethod($application, 'GET', $numericPath);
+            assertSame(200, http_response_code());
         } finally {
             putenv('FORUM_SITE_ID');
         }

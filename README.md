@@ -46,6 +46,7 @@ that stays accurate even as implementation details move around:
 
 ### Reference
 
+- [Authentication Modes and Access](docs/reference/authentication_modes.md) — public and members-only access, browser identities, approval, and session recovery
 - [`v3` CLI Reference](docs/reference/v3_cli.md) — every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `codex-handoff run`/`test-local`, `task-queue`), plus the 3 standalone operator scripts not wired into `./v3`
 - [Fastmod](docs/reference/fast_post_scoring.md) — configuration and approved-operator workflow for focused 0–1 LLM moderation scores
 
@@ -285,9 +286,9 @@ FORUM_APP_VERSION_NOTIFICATION=false ./v3 start
 
 Registered site feature flags are visible at `/tools/feature-flags/`. A root-approved operator changes a mutable flag by signing the server-prepared action with their browser key. A successful action writes the current snapshot to `records/instance/feature-flags.txt` and commits an immutable signed record under `records/feature-flag-changes/`.
 
-`FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED` is off by default. Enable it from that Feature Flags page (or set it to `true` in the deployment environment) to prepare a browser-local `guest` keypair for new visitors before their first signed action. The private key never leaves the browser. Each visitor can choose on Account Key whether the public key publishes immediately or, by default, on the first signed action. Disabling the flag stops future automatic preparation but does not remove a keypair already saved in a browser.
+`FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED` is off by default. Enable it from that Feature Flags page (or set it to `true` in the deployment environment) to prepare a browser-local `guest` keypair for new visitors before their first signed action. The private key stays in the browser. Automatic preparation defers public-key publication by default; Account Key offers a per-browser immediate-publication preference. Later authentication or identity-readiness flows can also publish the saved key. Disabling the flag stops future automatic preparation but does not remove a keypair already saved in a browser. Preparing a keypair does not grant membership approval.
 
-To lock an instance to approved members, enable `FORUM_APPROVED_MEMBERS_ONLY=true` in its feature-flags record or deployment environment. A saved browser keypair is automatically published from the Lobby before authentication; unapproved visitors can access only the Lobby, Account, and their own profile. All other pages, feeds, APIs, downloads, backups, and content artifacts are blocked. The flag is independent of `FORUM_SITE_ID` and theme selection.
+To restrict member content to authenticated approved identities, enable `FORUM_APPROVED_MEMBERS_ONLY=true` in its feature-flags record or deployment environment (default: `false`). Entry/recovery exceptions include Lobby, Account Key, documentation GETs, identity/authentication and invitation-redemption endpoints, and the session-bound own profile. Public assets and the version endpoint remain available. Other protected content, feeds, APIs, and downloads require member access; each action can impose additional permissions. Authentication publishes a saved browser identity when needed before verifying its challenge signature. The flag is independent of `FORUM_SITE_ID` and theme selection. See [Authentication Modes and Access](docs/reference/authentication_modes.md) for the access matrix, exact exceptions, and recovery paths.
 
 Local site profiles share the instance's repository and read-model database. The site selector changes presentation but not approval-command state:
 

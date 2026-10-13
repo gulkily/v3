@@ -24,9 +24,20 @@ final class ReadModelCandidatePromoter
         }
 
         $this->reportProgress('Waiting for the exclusive read-model lock...');
-        (new ExecutionLock($liveDirectory . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($candidatePath): void {
-            $this->promoteWhileLocked($candidatePath);
-        });
+        $waitStartedAt = hrtime(true);
+        $acquired = false;
+        try {
+            (new ExecutionLock($liveDirectory . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($candidatePath, $waitStartedAt, &$acquired): void {
+                $acquired = true;
+                $this->reportProgress(sprintf('Exclusive read-model lock acquired (%.1f ms).', (hrtime(true) - $waitStartedAt) / 1000000));
+                $this->promoteWhileLocked($candidatePath);
+            });
+        } catch (\Throwable $exception) {
+            if (!$acquired) {
+                $this->reportProgress(sprintf('Exclusive read-model lock wait failed (%.1f ms).', (hrtime(true) - $waitStartedAt) / 1000000));
+            }
+            throw $exception;
+        }
     }
 
     /** Caller must already hold the exclusive forum-rewrite.lock for the live database. */
@@ -35,15 +46,15 @@ final class ReadModelCandidatePromoter
         if (dirname($candidatePath) !== dirname($this->liveDatabasePath) || !is_file($candidatePath)) {
             throw new RuntimeException('Read-model candidate must be an existing file beside the live database.');
         }
-        $this->reportProgress('Validating candidate before promotion...');
-        ReadModelCandidateBuilder::assertValid($this->repositoryRoot, $candidatePath);
-        $this->reportProgress('Replacing the live read model...');
-        $this->assertNoSqliteSidecars();
-        if (!rename($candidatePath, $this->liveDatabasePath)) {
-            throw new RuntimeException('Unable to promote read-model candidate.');
-        }
-
-        (new ReadModelStaleMarker($this->liveDatabasePath))->clear();
+        $progress = new RebuildProgress($this->progressReporter);
+        $progress->measure('Validating candidate before promotion', fn () => ReadModelCandidateBuilder::assertValid($this->repositoryRoot, $candidatePath));
+        $progress->measure('Replacing the live read model', function () use ($candidatePath): void {
+            $this->assertNoSqliteSidecars();
+            if (!rename($candidatePath, $this->liveDatabasePath)) {
+                throw new RuntimeException('Unable to promote read-model candidate.');
+            }
+            (new ReadModelStaleMarker($this->liveDatabasePath))->clear();
+        });
         $this->reportProgress('Read-model promotion complete.');
     }
 
