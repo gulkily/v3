@@ -94,3 +94,33 @@ Debug mode: enabled
   - Not exercised end to end in a real browser: key loading and OpenPGP signing inside `submitSignedRetraction`. Server-side prepare/finalize with real gpg signatures is covered in Stage 3; the browser path reuses `ensureActionIdentity`, `currentAuthorIdentityId`, and `signCanonicalRecord` exactly as `submitSignedApproval` does. A manual run in a browser with a stored key is advisable before release.
   - The control is not added to the forte paned views or the QDB quote layout, per the plan clarification at the top of this summary.
   - Copy for review: the confirmation and completion strings in `src/ForumRewrite/Support/RetractedPostNotice.php`.
+
+## Stage 7 - End-to-end verification and documentation
+- Changes:
+  - New reference doc `docs/reference/author_post_retraction.md` (behavior, limits, record format, write API, operator notes); `docs/reference/v3_cli.md` `delete-record` section now points to it as the separate operator mechanism.
+  - Test helper `createAuthoredReply`; `linkSigningIdentity` also returns `profile_slug`.
+- Verification:
+  - New `WriteApiSmokeTest::testRetractionEndToEndKeepsRepliesRejectsOthersAndSurvivesReimportOfTheOriginalArchive`, in one flow with real gpg signatures:
+    - a different identity's retraction is rejected and HEAD does not move;
+    - an identity/approval authority post by the same author is refused (this closes the Stage 3 and Stage 5 test gaps);
+    - the author retracts a signed reply and then the thread root, both `complete`;
+    - the prose marker is absent from the thread page, activity, latest, top, users, list-index, post API, profile page and profile API, and the raw read-model file, while the guest reply stays and the placeholder is shown, with both rows marked retracted;
+    - re-importing the original archive over the live repository through `ContentImportRunner` leaves both posts suppressed;
+    - after the operator removes both post files (confirmed gone), importing the archive restores the files (confirmed present) and a rebuild still suppresses them.
+  - Full `php tests/run.php`: 1121 run, 9 failed; the 9 are the long-standing failures present before this branch (`testApplicationRendersCoreRoutes`, `testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags`, two `OfflineSnapshotBootstrapTest`, two `OfflineSnapshotPublishCommandTest`, `testQdbWelcomeDisplaysThreeNewestNewsItemsAndLinksToAllNews`, `testTaskQueueProcessesQueuedAgentReplyOnce`, `testQdbPermalinkDisablesBothVoteCaptionsAfterAnExistingUpvote`), unchanged by this work.
+- Notes:
+  - `is_file` results are cached within a PHP process; the test calls `clearstatcache(true)` before checking files an external `git rm` or import changed.
+
+## Final verification
+- Stages: all seven planned stages are implemented, each in its own stage-scoped commit with its summary update; the planning commit (Steps 1–3, debug log, folder organization, index entry) precedes them, so the commit count is 8 against a minimum of `1 + 7`.
+- Completion Contract:
+  - Entry: a signed-in author sees Delete on their own post (thread roots, replies, post page) and confirms.
+  - Outcome: signature verified, tombstone committed, post suppressed across read surfaces, raw routes, artifacts and downloads of the read model, status shown.
+  - Recovery: `partial` reports the failed step with a Retry that needs no new signature.
+  - Release condition: re-import of the original archive leaves the post suppressed (tested).
+- Not verified / known limits for review:
+  - The in-browser key and signing path of `submitSignedRetraction` was not run in a real browser; reuses the approval flow's helpers. Manual check recommended.
+  - Whole-checkout downloads (`/downloads/repository.tar.gz` / `.zip`), Git history, backups, and others' copies still hold the original; the UI copy and reference doc say so. Physical purge is the later slice.
+  - Forte paned views show the placeholder but have no Delete control; QDB quote layout has the placeholder but no Delete control.
+  - Scoring/analysis sweeps read bodies from the read model, so a retracted post has an empty body there; their behavior on empty bodies was not separately verified.
+  - Deployment: no external system; the read-model schema version bump (15 → 16) triggers a one-time rebuild on deploy.

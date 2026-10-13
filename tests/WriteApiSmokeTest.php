@@ -2380,6 +2380,115 @@ NODE;
         }
     }
 
+    public function testRetractionEndToEndKeepsRepliesRejectsOthersAndSurvivesReimportOfTheOriginalArchive(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $author = $this->createAuthoredThread($application, 'retract-e2e', 'zze2eprose root body');
+        $stranger = $this->linkSigningIdentity($application, 'retract-e2e-stranger');
+        $authorReply = $this->createAuthoredReply($application, $author, $author['thread_id'], 'zze2eprose reply body');
+        $guestReply = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_reply?thread_id=' . rawurlencode($author['thread_id'])
+            . '&parent_id=' . rawurlencode($author['thread_id']) . '&body=' . rawurlencode('Guest reply that stays.')
+        );
+        assertStringContains('post_id=', $guestReply);
+
+        $archive = sys_get_temp_dir() . '/forum-rewrite-retraction-archive-' . bin2hex(random_bytes(6));
+        $this->copyDirectory($repositoryRoot . '/records', $archive . '/records');
+
+        // A different identity cannot retract, and the failed request changes nothing.
+        $headBefore = $this->gitOutput($repositoryRoot, 'rev-parse HEAD');
+        $rejected = $this->prepareRetractionRequest($application, $stranger['identity_id'], $author['thread_id']);
+        assertSame('error', $rejected['status']);
+        assertSame($headBefore, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
+        assertSame(false, is_dir($repositoryRoot . '/records/post-retractions'));
+
+        // Authority posts are never retractable, even by their author.
+        file_put_contents(
+            $repositoryRoot . '/records/posts/approval-authority.txt',
+            "Post-ID: approval-authority\nCreated-At: 2026-04-12T12:00:00Z\nBoard-Tags: identity approval\nThread-ID: "
+            . $author['thread_id'] . "\nParent-ID: " . $author['thread_id'] . "\nAuthor-Identity-ID: " . $author['identity_id']
+            . "\n\nApprove-Identity-ID: " . $stranger['identity_id'] . "\n"
+        );
+        $this->runCommand($repositoryRoot, 'git add records/posts/approval-authority.txt && git commit -q -m "Add authority fixture"');
+        $authority = $this->prepareRetractionRequest($application, $author['identity_id'], 'approval-authority');
+        assertSame('error', $authority['status']);
+        assertStringContains('cannot be retracted', $authority['error']);
+
+        // The author retracts their reply and then their root; both finish complete.
+        foreach ([$authorReply, $author['thread_id']] as $postId) {
+            $prepared = $this->prepareRetractionRequest($application, $author['identity_id'], $postId);
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'],
+                'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'],
+                'author_identity_id' => $author['identity_id'],
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+            ];
+            $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = [];
+            assertSame('complete', $finalized['retraction_status']);
+        }
+
+        $assertSuppressed = function () use ($application, $databasePath, $author, $authorReply): void {
+            $thread = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
+            assertSame(false, str_contains($thread, 'zze2eprose'));
+            assertStringContains('Guest reply that stays.', $thread);
+            assertStringContains('This post was deleted by its author.', $thread);
+            foreach (['/', '/activity/', '/latest', '/top', '/users/', '/api/list_index', '/api/get_post?post_id=' . $authorReply, '/profiles/' . rawurlencode($author['profile_slug']), '/api/get_profile?profile_slug=' . rawurlencode($author['profile_slug'])] as $route) {
+                assertSame(false, str_contains($this->renderMethod($application, 'GET', $route), 'zze2eprose'), 'Prose at ' . $route);
+            }
+            $pdo = new PDO('sqlite:' . $databasePath);
+            foreach ([$author['thread_id'], $authorReply] as $postId) {
+                $retractedAt = $pdo->query("SELECT retracted_at FROM posts WHERE post_id = '" . $postId . "'")->fetchColumn();
+                assertTrue(is_string($retractedAt) && $retractedAt !== '', 'Post row missing or not marked retracted: ' . $postId);
+            }
+            assertSame(false, str_contains($this->readModelFileBytes($databasePath), 'zze2eprose'));
+        };
+        $assertSuppressed();
+
+        // Re-importing the original archive over the live repository leaves both posts suppressed.
+        $runner = new \ForumRewrite\Import\ContentImportRunner($repositoryRoot, $databasePath);
+        $runner->run($archive, function () use ($repositoryRoot, $databasePath): void {
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'reimport_test'))->rebuild();
+        });
+        $assertSuppressed();
+
+        // Even if the operator removed the post files, restoring them from the archive does not resurrect them.
+        foreach ([$authorReply, $author['thread_id']] as $postId) {
+            foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+                if (is_file($repositoryRoot . '/' . $candidate)) {
+                    $this->runCommand($repositoryRoot, 'git rm -q -f ' . escapeshellarg($candidate . '.asc') . ' ' . escapeshellarg($candidate) . ' 2>/dev/null || git rm -q -f ' . escapeshellarg($candidate));
+                }
+            }
+        }
+        $this->runCommand($repositoryRoot, 'git commit -q -m "Operator removes retracted post files"');
+        clearstatcache(true);
+        foreach ([$authorReply, $author['thread_id']] as $postId) {
+            foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+                assertSame(false, is_file($repositoryRoot . '/' . $candidate));
+            }
+        }
+        $restored = $runner->run($archive, function () use ($repositoryRoot, $databasePath): void {
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'restore_test'))->rebuild();
+        });
+        assertSame('complete', $restored['status']);
+        clearstatcache(true);
+        foreach ([$authorReply, $author['thread_id']] as $postId) {
+            $present = false;
+            foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+                $present = $present || is_file($repositoryRoot . '/' . $candidate);
+            }
+            assertTrue($present, 'Original post file was not restored by the archive import: ' . $postId);
+        }
+        $assertSuppressed();
+
+        $this->deleteTree($archive);
+    }
+
     public function testRetractionRefreshFailureReportsPartialAndRetryRecovers(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2421,6 +2530,32 @@ NODE;
         assertSame(false, (new \ForumRewrite\ReadModel\ReadModelStaleMarker($databasePath))->exists());
     }
 
+    /**
+     * @param array{identity_id:string,home:string} $author
+     */
+    private function createAuthoredReply(Application $application, array $author, string $parentId, string $body): string
+    {
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_reply?thread_id=' . rawurlencode($parentId) . '&parent_id=' . rawurlencode($parentId)
+            . '&body=' . rawurlencode($body) . '&author_identity_id=' . rawurlencode($author['identity_id'])
+        ), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ];
+        $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_post'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+        assertSame('ok', $finalized['status']);
+
+        return (string) $prepared['post_id'];
+    }
+
     /** Raw bytes of the read-model database and any SQLite sidecar, as a download would expose. */
     private function readModelFileBytes(string $databasePath): string
     {
@@ -2435,7 +2570,7 @@ NODE;
     }
 
     /**
-     * @return array{identity_id:string,home:string,public_key:string}
+     * @return array{identity_id:string,profile_slug:string,home:string,public_key:string}
      */
     private function linkSigningIdentity(Application $application, string $username): array
     {
@@ -2444,7 +2579,10 @@ NODE;
         $response = $this->renderMethod($application, 'POST', '/api/link_identity');
         $_POST = [];
 
-        return $key + ['identity_id' => $this->extractValue($response, 'identity_id')];
+        return $key + [
+            'identity_id' => $this->extractValue($response, 'identity_id'),
+            'profile_slug' => $this->extractValue($response, 'profile_slug'),
+        ];
     }
 
     /**

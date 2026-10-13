@@ -372,6 +372,9 @@ Deletes a canonical file under `records/` with `git rm`, commits the
 removal, rebuilds the read model, and rebuilds static artifacts when an
 artifact root is resolved (via argument or `FORUM_PUBLIC_ARTIFACT_ROOT`).
 
+This is the operator removal mechanism. Authors retract their own posts through
+the site instead; see [Author post retraction](author_post_retraction.md).
+
 - `record_path_or_id` — a relative path (e.g. `records/thread-labels/thread-label-20260530000001-zenrules.txt`) or an unambiguous filename stem (e.g. `thread-label-20260530000001-zenrules`)
 - `repository_root` — canonical records checkout to delete from
 - `database_path` — SQLite file to rebuild after deletion
