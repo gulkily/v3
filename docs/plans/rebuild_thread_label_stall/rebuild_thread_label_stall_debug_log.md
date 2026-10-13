@@ -72,3 +72,23 @@ Debug mode: enabled, inherited from approved Step 2. No implementation, branch c
 ### Uncertain assessments
 - The one-page requirement has no page-size/rendering definition and competes with six required fields per stage. The final artifact is compact at 583 words but physical pagination was not verified. Clarify a word budget or prioritize complete risk/verification fields over rendered page count.
 - About one hour per stage is an estimate, not measured feasibility; fixture and failure-path complexity may require splitting a stage before implementation. The plan records that obligation and remains below the eight-stage/day ceiling.
+
+## 2026-10-13 05:14:21 UTC — Step 4
+
+Debug mode: enabled, inherited into the implementation summary. This is the single completed Step 4 report; stage evidence lives in the summary.
+
+### Necessary/useful instructions
+- `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate: produced `686d8766` containing only approved plans, the preserved debug log, and organization/index changes, before summary or code creation. Retain; the boundary is directly auditable.
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol: each of the five stage commits includes its summary update and verification evidence. The provenance stage caught a real merge-resolution mismatch before batching expanded to other families. Retain.
+- `docs/railspike/docs/workflow/step4_implementation_after.md`, normal-flow/recovery verification: drove actual `./v3 rebuild` coverage and validation, sidecar, lock-timeout, and post-promotion snapshot failure checks. Retain; direct builder timing alone would not establish delivery.
+- `docs/railspike/RAILSPIKE.md`, Persistent debug log: allowed this final log-only handoff commit without rewriting stage history. Retain.
+
+### Redundant/unnecessary instructions
+- `RAILSPIKE.md` and the Step 4 phase files, instruction-reprint requirements: three more full workflow reprints added conversation volume while source links, stage updates, and the persistent summary already made the active process reviewable. Consider one linked step summary instead; required reprints were performed.
+
+### Inapplicable instructions
+- Documentation-only scope clauses and database-migration verification do not apply: this is an application change with no schema changes. Production deployment is explicitly outside the approved scope.
+
+### Uncertain assessments
+- The final verification gate does not specify how to distinguish pre-existing suite failures from feature failures or how to handle an environment change after a completed run. Nine failures were reproduced on pre-change code; the one feature-related stale-output assertion was corrected and its targeted run passed. The summary records the non-green repository-wide release gate and PHP disappearing before the requested clean rerun. Clarify evidence requirements for this case rather than implying either unqualified success or authorization to fix unrelated features.
+- The Stage 3 one-hour/line-count estimates understated source-line churn from consistently wrapping existing loops, but the stage remained one coherent behavior change with parity checks and a separate commit. Consider sizing by verification scope and dependencies rather than line count for instrumentation work.
