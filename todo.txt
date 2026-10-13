@@ -84,11 +84,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 	needs its own Step 1 given the redirect-following/unknown-provider
 		design questions
 
-the request agent response dropdown does not always fully display in-page
-	it should go up and above the link if below is not enough viewport space
-	other ways of mitigating it?
-	it should scroll along with its parent button
-
 explore server-cooperative content deletion
 	Discussion: docs/plans/backlog/server_cooperative_content_deletion_discussion.md
 	Initial scope: users retract their own posts with server help; cross-instance cooperation is a future possibility.
