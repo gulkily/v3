@@ -1,0 +1,16 @@
+> **Feature plan:** [Step 1](./local_server_dependency_install_step1_solution_assessment.md) · [Step 2](./local_server_dependency_install_step2_feature_description.md) · [Step 3](./local_server_dependency_install_step3_development_plan.md) · [Step 4](./local_server_dependency_install_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+## Execution state
+
+- User authorized Step 4 with “Continue to Step 4”; debug mode explicitly enabled.
+- Branch: `feat/local-server-dependency-install`; planning commit: `e261361c`.
+- Target: disposable Ubuntu Base 24.04.3 amd64 chroot under `/home/wsl/.cache/v3-dependency-install`, SHA256 checked against the published Ubuntu image manifest; host Ubuntu 22.04. Mounts are private per invocation.
+- Stage 1 complete; Stages 2–5 pending.
+
+## Stage 1 - Structured assessment and package review
+- Changes: Both aliases dispatch `--install` to a shared coordinator. The existing PHP probe exposes machine facts using the same checks. Conservative package mapping validates official Noble candidate sources, installed CLI ownership and executable integrity, selected runtime, and installed-but-disabled capabilities. This stage remains review-only.
+- Verification: `bash tests/local_server_dependency_install_test.sh`, `bash tests/local_server_dependency_checks_test.sh`, `python3 tests/local_server_dependency_runtime_test.py`, Bash/PHP syntax and `git diff --check` passed. Existing runtime tests cover no application mutation, output modes, HTTP reads/writes, and 20 shutdown combinations.
+- Verification: Real Ubuntu metadata offers PHP `8.3.6-0ubuntu0.24.04.11`. A real distribution CLI/Git setup produced precisely `php8.3-sqlite3 php8.3-mbstring` as required and `php8.3-intl` as optional. Real disabled-PDO, copied/custom executable, and PATH-excluded PHP cases refused automatic mapping. Missing-PHP review proposed Git/CLI/SQLite/mbstring before the initial temporary environment was lost.
+- Notes: The first `/tmp` target disappeared and exhibited truncated files; its package-install result was discarded. Recreated and verified the target in the cache directory. This is Linux chroot evidence, not native-host/WSL installer certification. No release claim yet.

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Standalone: run only after the launcher checks PHP compatibility, before autoload/bootstrap.
 $mode = $argv[1] ?? 'report';
-if (!in_array($mode, ['startup', 'report'], true)) {
+if (!in_array($mode, ['startup', 'report', 'facts'], true)) {
     fwrite(STDERR, "Unknown local dependency report mode.\n");
     exit(1);
 }
@@ -33,7 +33,7 @@ $result = static function (bool $available, string $name, string $guidance = '')
         if ($mode === 'report') {
             fwrite($output, '  ' . $paint("✗ FAIL: {$name}", '31') . "\n");
             $recovery[] = [$name, $guidance];
-        } else {
+        } elseif ($mode === 'startup') {
             $startupFailures[] = [$name, $guidance];
         }
     } elseif ($mode === 'report') {
@@ -124,7 +124,7 @@ $optional = static function (bool $available, string $name, string $guidance) us
         if ($mode === 'report') {
             fwrite($output, '  ' . $paint("! WARN: Optional {$name} unavailable", '33') . "\n");
             $recovery[] = ['Optional ' . $name, $guidance];
-        } else {
+        } elseif ($mode === 'startup') {
             $startupWarnings[] = [$name, $guidance];
         }
     } elseif ($mode === 'report') {
@@ -196,6 +196,19 @@ if ($mode === 'startup' && ($startupFailures !== [] || $startupWarnings !== []))
     fwrite($output, "\nDetails: " . $paint('./v3 check-dependencies', '1;36') . "\n");
     if ($failed) {
         fwrite($output, "After setup, retry your ./v3 start command with the same options.\n");
+    }
+}
+
+// Stable machine facts share the very same capability probes as human reports.
+if ($mode === 'facts') {
+    foreach ([
+        'version' => PHP_VERSION_ID, 'binary' => PHP_BINARY,
+        'pdo' => (int) $pdoReady, 'sqlite' => (int) $sqliteReady,
+        'mbstring' => (int) $mbstringReady,
+        'intl' => (int) class_exists(Normalizer::class, false),
+        'ready' => (int) !$failed,
+    ] as $key => $value) {
+        fwrite(STDOUT, $key . "\t" . $value . "\n");
     }
 }
 

@@ -97,6 +97,12 @@ case "${COMMAND}" in
         'Required failures return 1; optional limitations are warnings. Repair setup manually, then retry.'
       exit 0
     fi
+    if (( $# == 1 )) && [[ "$1" == --install ]]; then
+      source "${ROOT}/scripts/local_server_dependencies.sh"
+      source "${ROOT}/scripts/local_server_dependency_install.sh"
+      local_server_dependencies_install
+      exit $?
+    fi
     if (( $# != 0 )); then
       echo 'Usage: ./v3 check-dependencies (local-server prerequisites only)' >&2
       exit 1
