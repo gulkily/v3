@@ -216,6 +216,7 @@ final class ContentImportPlanner
                     'thread-subjects' => $repository->loadThreadSubject($path),
                     'thread-labels' => $repository->loadThreadLabel($path),
                     'post-reactions' => $repository->loadPostReaction($path),
+                    'post-retractions' => $repository->loadPostRetraction($path),
                 };
                 $entry['dependencies'][] = 'post:' . ($record->threadId ?? $record->postId);
                 $author = $record->authorIdentityId;

@@ -30,6 +30,23 @@ final class ContentImportPlannerTest
         }
     }
 
+    public function testPostRetractionIsImportedWithItsSignatureAndDependsOnItsPost(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source', true);
+        $target = $w->repository('target');
+        $record = 'records/post-retractions/post-retraction-reply-001.txt';
+        $w->put($source . '/' . $record, "Record-ID: post-retraction-reply-001\nCreated-At: 2026-10-13T12:00:00Z\nPost-ID: reply-001\nOperation: retract\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n");
+        $w->put($source . '/' . $record . '.asc', 'detached signature');
+        $w->put($source . '/records/post-retractions/post-retraction-absent.txt', "Record-ID: post-retraction-absent\nCreated-At: 2026-10-13T12:00:00Z\nPost-ID: absent\nOperation: retract\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n");
+        $plan = (new ContentImportPlanner())->plan($source, $target);
+        assertSame('import', $plan[$record]['state']);
+        assertSame('post-retraction:post-retraction-reply-001', $plan[$record]['key']);
+        assertSame('import', $plan[$record . '.asc']['state']);
+        assertSame('invalid', $plan['records/post-retractions/post-retraction-absent.txt']['state']);
+        assertStringContains('Missing dependency: post:absent', $plan['records/post-retractions/post-retraction-absent.txt']['reason']);
+    }
+
     public function testConflictsRejectDependentRecordsAndSignatures(): void
     {
         $w = new ImportTestWorkspace();

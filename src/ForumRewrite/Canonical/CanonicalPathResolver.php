@@ -65,6 +65,11 @@ final class CanonicalPathResolver
         return 'records/post-reactions/' . $recordId . '.txt';
     }
 
+    public static function postRetraction(string $recordId): string
+    {
+        return 'records/post-retractions/' . $recordId . '.txt';
+    }
+
     public static function featureFlagChange(string $recordId): string
     {
         return 'records/feature-flag-changes/' . $recordId . '.txt';

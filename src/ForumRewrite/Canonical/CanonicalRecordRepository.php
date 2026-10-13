@@ -18,6 +18,7 @@ final class CanonicalRecordRepository
         private readonly ThreadLabelRecordParser $threadLabelParser = new ThreadLabelRecordParser(),
         private readonly ThreadSubjectRecordParser $threadSubjectParser = new ThreadSubjectRecordParser(),
         private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
+        private readonly PostRetractionRecordParser $postRetractionParser = new PostRetractionRecordParser(),
         private readonly FeatureFlagChangeRecordParser $featureFlagChangeParser = new FeatureFlagChangeRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
@@ -227,6 +228,18 @@ final class CanonicalRecordRepository
         $expectedPath = CanonicalPathResolver::postReaction($record->recordId);
         if ($relativePath !== $expectedPath) {
             throw new CanonicalRecordParseException('Post-reaction record path must match Record-ID.');
+        }
+
+        return $record;
+    }
+
+    public function loadPostRetraction(string $relativePath): PostRetractionRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/post-retractions/');
+        $record = $this->postRetractionParser->parse($this->read($relativePath));
+
+        if ($relativePath !== CanonicalPathResolver::postRetraction($record->recordId)) {
+            throw new CanonicalRecordParseException('Post-retraction record path must match Record-ID.');
         }
 
         return $record;
