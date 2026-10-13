@@ -186,7 +186,16 @@ final class WritePostAndIdentityApiController
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
 
         try {
-            $result = $this->routeServices->writer()->createPreparedPost($input);
+            $imagePath = null;
+            if (isset($_FILES['image'])) {
+                $file = $_FILES['image'];
+                if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+                    || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) {
+                    throw new RuntimeException('Image upload failed or exceeds the server request limit; preserve the draft and select the file again.');
+                }
+                $imagePath = $file['tmp_name'];
+            }
+            $result = $this->routeServices->writer()->createPreparedPost($input, $imagePath);
             $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $headers = $this->routeServices->serverTimingHeaders($result);
