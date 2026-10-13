@@ -128,9 +128,22 @@ install_assess_batch() {
 
 install_confirm() {
   local answer
-  printf '%s [type yes to continue]: ' "$1"
-  IFS= read -r answer || return 1
-  [[ "${answer}" == yes ]]
+  (( ! ${interrupted:-0} )) || return 1
+  if [[ "${recovery_context:-explicit}" == startup ]]; then
+    if [[ "$1" == 'Include optional '* ]]; then
+      printf '%s [y/N]: ' "$1"
+      IFS= read -r answer || return 1
+      [[ "${answer}" == y || "${answer}" == Y ]]
+    else
+      printf '%s [Y/n]: ' "$1"
+      IFS= read -r answer || return 1
+      [[ -z "${answer}" || "${answer}" == y || "${answer}" == Y ]]
+    fi
+  else
+    printf '%s [type yes to continue]: ' "$1"
+    IFS= read -r answer || return 1
+    [[ "${answer}" == yes ]]
+  fi
 }
 
 install_resolve() {
@@ -236,18 +249,30 @@ install_reassess() {
     printf '%s\n' 'System packages or APT metadata may have changed. No automatic rollback or retry was attempted.' \
       'Inspect APT output and /var/log/apt/history.log; resolve package state manually before retrying.'
   fi
-  printf '%s\n' 'After required checks pass, retry your original ./v3 start command with the same port and logging options.'
+  if [[ "${recovery_context:-explicit}" != startup || "${package_status}" != succeeded || "${readiness}" != 0 ]]; then
+    printf '%s\n' 'After required checks pass, retry your original ./v3 start command with the same port and logging options.'
+  fi
   [[ "${package_status}" == succeeded && "${readiness}" == 0 ]]
 }
 
-local_server_dependencies_install() {
+local_server_dependencies_install_run() {
+  local recovery_context="${1:-explicit}"
   local -a required_packages=() optional_packages=() selected_packages=() privilege=()
   local -a transaction=() requested_versions=() reviewed=()
   local php_series ubuntu_suite php_version_pattern
   local original_runtime='' initial_ready=0 apt_pid='' apt_pgid='' apt_pid_file='' interrupted=0 package_active=0
-  local_server_dependencies_check report || initial_ready=1
+  trap 'interrupted=1' INT TERM
+  if [[ "${recovery_context}" == startup ]]; then initial_ready=1
+  else local_server_dependencies_check report || initial_ready=1; fi
   printf '\nDependency installation review\n'
   install_assess_batch || return 1
+  (( ! interrupted )) || return 1
+  if [[ "${recovery_context}" == startup ]]; then
+    (( ${#required_packages[@]} )) || { install_manual 'no automatic package repair applies; follow the configuration guidance above.'; return 1; }
+    if (( EUID != 0 )) && ! command -v sudo >/dev/null 2>&1; then
+      install_manual 'sudo is unavailable; ask an administrator to run the listed manual commands.'; return 1
+    fi
+  fi
   printf 'Required packages:'; printf ' %s' "${required_packages[@]:-(none)}"; printf '\n'
   printf 'Optional packages (separate choice required):'; printf ' %s' "${optional_packages[@]:-(none)}"; printf '\n'
   selected_packages=("${required_packages[@]}")
@@ -278,18 +303,23 @@ local_server_dependencies_install() {
     command -v "${package}" >/dev/null || { install_manual 'process-control tools unavailable.'; return 1; }
   done
   install_resolve || return 1
+  (( ! interrupted )) || return 1
   reviewed=("${transaction[@]}")
   printf '%s\n' 'This changes system packages and may upgrade the dependencies listed above.' \
     'Administrator privileges are required. After confirmation, APT metadata will be refreshed.' \
     'Configuration files are preserved; package maintainer scripts will run. No automatic rollback.'
-  install_confirm 'Refresh metadata and install this reviewed batch?' || {
+  local confirmation='Refresh metadata and install this reviewed batch?'
+  if [[ "${recovery_context}" == startup ]]; then confirmation='Recover missing dependencies and continue startup?'; fi
+  install_confirm "${confirmation}" || {
     printf '%s\n' 'Cancelled before execution. No system changes made.'; return 1;
   }
+  (( ! interrupted )) || return 1
   if (( EUID != 0 )); then
     command -v sudo >/dev/null 2>&1 || { install_manual 'sudo is unavailable; ask an administrator or use an existing root shell.'; return 1; }
     sudo -v || { install_manual 'administrator privileges were not obtained; no package changes made.'; return 1; }
     privilege=(sudo -n)
   fi
+  (( ! interrupted )) || return 1
   trap install_interrupt INT TERM
   if ! install_privileged_apt update -o APT::Update::Error-Mode=any; then
     install_reassess 'metadata refresh failed' || true; return 1
@@ -310,4 +340,16 @@ local_server_dependencies_install() {
     install_reassess failed || true; return 1
   fi
   install_reassess succeeded
+}
+
+# Restore the caller's handlers on every return, including interrupted recovery.
+# A subshell would hide direct signals from the coordinator waiting on APT.
+local_server_dependencies_install() {
+  local saved_int saved_term status=0
+  saved_int="$(trap -p INT)"; saved_term="$(trap -p TERM)"
+  local_server_dependencies_install_run "$@" || status=$?
+  trap - INT TERM
+  [[ -z "${saved_int}" ]] || eval "${saved_int}"
+  [[ -z "${saved_term}" ]] || eval "${saved_term}"
+  return "${status}"
 }

@@ -28,8 +28,8 @@ Ubuntu ${platform#ubuntu-} with APT: install PHP CLI, SQLite support, and mbstri
   ${cyan:-}sudo apt-get update${reset:-}
   ${cyan:-}sudo apt-get install php${php_series}-cli php${php_series}-sqlite3 php${php_series}-mbstring${reset:-}
 These commands require administrator privileges and change system packages.
-In an existing root shell, omit sudo. Startup and ordinary checks do not install.
-For reviewed, opt-in setup, run ./v3 check-dependencies --install in a terminal.
+In an existing root shell, omit sudo. Ordinary checks and redirected startup do not install.
+Terminal startup offers reviewed recovery when eligible. You can also run ./v3 check-dependencies --install.
 EOF
   else
     cat >&2 <<'EOF'

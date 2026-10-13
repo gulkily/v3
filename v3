@@ -65,13 +65,18 @@ case "${COMMAND}" in
   start)
     shift
     source "${ROOT}/scripts/local_server_dependencies.sh"
-    local_server_dependencies_check startup || exit 1
     ADDRESS_ARGUMENT="127.0.0.1:8000"
     DEV_SERVER_ARGS=()
+    ADDRESS_SEEN=0
     for ARGUMENT in "$@"; do
       case "${ARGUMENT}" in
-        --verbose|--quiet|--log-file=*) DEV_SERVER_ARGS+=("${ARGUMENT}") ;;
-        *) ADDRESS_ARGUMENT="${ARGUMENT}" ;;
+        --verbose|--quiet) DEV_SERVER_ARGS+=("${ARGUMENT}") ;;
+        --log-file=) echo 'The log-file path cannot be empty.' >&2; exit 1 ;;
+        --log-file=*) DEV_SERVER_ARGS+=("${ARGUMENT}") ;;
+        *)
+          (( ADDRESS_SEEN == 0 )) || { echo 'Specify only one listening address.' >&2; exit 1; }
+          ADDRESS_ARGUMENT="${ARGUMENT}"; ADDRESS_SEEN=1 ;;
+
       esac
     done
     ADDRESS="${ADDRESS_ARGUMENT}"
@@ -79,12 +84,24 @@ case "${COMMAND}" in
       ADDRESS="0.0.0.0:8000"
     elif [[ "${ADDRESS}" =~ ^:?([0-9]+)$ ]]; then
       PORT="${BASH_REMATCH[1]}"
+      (( ${#PORT} <= 5 )) || { echo "Invalid port: ${PORT}" >&2; exit 1; }
       PORT_NUMBER=$((10#${PORT}))
       if (( PORT_NUMBER < 1 || PORT_NUMBER > 65535 )); then
         echo "Invalid port: ${PORT}" >&2
         exit 1
       fi
       ADDRESS="127.0.0.1:${PORT_NUMBER}"
+    fi
+    if [[ ! "${ADDRESS}" =~ ^([a-zA-Z0-9._-]+|\[[a-fA-F0-9:]+\]):([0-9]{1,5})$ ]]; then
+      echo "Invalid listening address: ${ADDRESS}" >&2; exit 1
+    fi
+    PORT_NUMBER=$((10#${BASH_REMATCH[2]}))
+    (( PORT_NUMBER >= 1 && PORT_NUMBER <= 65535 )) || { echo "Invalid port: ${PORT_NUMBER}" >&2; exit 1; }
+    if ! local_server_dependencies_check startup; then
+      [[ -t 0 && -t 1 ]] || exit 1
+      local_server_dependencies_install startup || exit 1
+      local_server_dependencies_check startup || exit 1
+      printf '%s\n' 'Dependencies recovered; continuing the original startup request.'
     fi
     source "${ROOT}/scripts/local_server_start.sh"
     local_server_start "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
