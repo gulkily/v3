@@ -10,7 +10,8 @@ export async function checkMessagingFeatureFlag(page, context, base, seed) {
   const send = page.getByRole('button', { name: 'Send private message', exact: true });
   await field.fill('Draft retained while messaging disabled');
   flag(false);
-  await send.click();
+  // Background refresh may notice shutdown before a user can click Send.
+  await page.locator('[data-private-message-form]').evaluate(form => form.requestSubmit());
   await page.locator('[data-messaging-disabled-notice]').waitFor();
   await page.waitForFunction(() => document.querySelector('[data-private-message-form] button[type="submit"]').disabled);
   assert.equal((await draft()).plaintext, 'Draft retained while messaging disabled');
@@ -69,4 +70,47 @@ export async function checkMessagingFeatureFlag(page, context, base, seed) {
   const messages = (await (await context.request.get(base + '/api/private_messages/conversation?username_token=bob')).json()).messages;
   assert.equal(messages.filter(row => row.message_id === attempt.message_id).length, 1);
   assert.equal((await draft()).attempt, null);
+}
+
+export async function checkMessagingBackgroundGate(page, context, base, seed) {
+  const flag = enabled => seed({ action: 'messaging-flag', enabled });
+  for (const source of ['unread', 'sync', 'seen']) {
+    console.log('Checking disabled background source: ' + source);
+    flag(true);
+    let deniedRead;
+    if (source === 'seen') {
+      deniedRead = async route => { flag(false); await route.continue(); };
+      await page.route('**/api/private_messages/read', deniedRead);
+    }
+    await page.goto(base + (source === 'seen' ? '/messages/conversation/bob' : '/'));
+    if (source !== 'seen') {
+      await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
+      flag(false);
+      await page.evaluate(source => source === 'unread'
+        ? window.ForumPrivateMessageUnread.refresh()
+        : window.ForumPrivateMessageHistorySync.refresh(), source);
+    }
+    await page.locator('[data-messaging-disabled-notice]').waitFor();
+    await page.waitForFunction(() => window.ForumPrivateMessageHistorySync.state().state === 'disabled');
+    if (deniedRead) await page.unroute('**/api/private_messages/read', deniedRead);
+    const requests = [];
+    const count = request => { if (new URL(request.url()).pathname.startsWith('/api/private_messages')) requests.push(request.url()); };
+    page.on('request', count);
+    await page.evaluate(async () => {
+      window.dispatchEvent(new Event('focus'));
+      window.dispatchEvent(new Event('scroll'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      document.dispatchEvent(new CustomEvent('private-message-rows-changed'));
+      await Promise.all([window.ForumPrivateMessageUnread.refresh(), window.ForumPrivateMessageHistorySync.refresh()]);
+      window.ForumPrivateMessageHistorySync.confirm('irrelevant', 'irrelevant');
+      await window.ForumPrivateMessageHistorySync.candidates('irrelevant', 'irrelevant');
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+    assert.deepEqual(requests, [], source + ' shutdown must stop all follow-up messaging requests');
+    page.off('request', count);
+    flag(true);
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready');
+    assert.equal(await page.locator('[data-messaging-disabled-notice]').count(), 0);
+  }
 }
