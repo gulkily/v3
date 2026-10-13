@@ -7,6 +7,8 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 
 ## Feature folders
 
+- [Private messaging feature flag](private_messaging_feature_flag/)
+
 - [Hide Messages new-message form](hide_messages_new_message_form/)
 
 - [Rebuild progress and history batching](rebuild_thread_label_stall/)
