@@ -52,7 +52,11 @@ final class SourceFileController
             return;
         }
 
-        $this->routeServices->sendText($contents, 200);
+        $headers = [];
+        if (preg_match('#^records/(thread-labels|post-reactions)/[^/]+\.txt$#D', $relativePath)) {
+            $headers['X-Forum-Signature-Status'] = $this->routeServices->activityService()->sourceSignatureStatus($relativePath, '', '');
+        }
+        $this->routeServices->sendText($contents, 200, $headers);
     }
 
     public function blob(string $commitSha, string $encodedRelativePath): void

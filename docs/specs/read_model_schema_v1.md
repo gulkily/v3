@@ -258,3 +258,21 @@ against the read-model database won't see these:
 
 These three are small enough that this section plus their source files is
 sufficient; they don't warrant their own schema sections here.
+
+## `reaction_signatures` (schema version 17)
+
+One row per thread-label or post-reaction file, including repeated labels absent
+from the activity reducer. Full rebuild and incremental family writes refresh
+this derived evidence index. Signature status does not replace target validation
+or imply every vote in an aggregate is verified.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| `source_path` | TEXT PK | Canonical record path |
+| `author_identity_id` | TEXT NULL | Claimed author |
+| `signature_status` | TEXT NOT NULL | `verified`, `unsigned`, or `invalid` |
+
+Metadata also includes `post_reaction_invalid_count`, parallel to
+`thread_label_invalid_count`. A missing signer key makes a supplied signature
+invalid, never unsigned. Raw source bytes are unchanged; current-source responses
+expose `X-Forum-Signature-Status`, and activity source metadata shows the status.

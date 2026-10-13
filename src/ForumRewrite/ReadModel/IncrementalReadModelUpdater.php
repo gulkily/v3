@@ -185,6 +185,7 @@ class IncrementalReadModelUpdater
                 'refresh_thread_label_activity',
                 fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'], $commitSha)
             );
+            ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot, 'thread-labels');
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
 
@@ -268,6 +269,7 @@ class IncrementalReadModelUpdater
                 'refresh_post_reaction_activity',
                 fn (): mixed => $this->refreshPostReactionActivity($pdo, $post, $records, $commitSha)
             );
+            ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot, 'post-reactions');
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
 

@@ -164,6 +164,12 @@ final class WriteApiSmokeTest
             $builder = new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root));
             $builder->rebuild();
             $pdo = new PDO('sqlite:' . $database);
+            foreach ($paths as $path) {
+                $stmt = $pdo->prepare('SELECT signature_status FROM reaction_signatures WHERE source_path = ?');
+                $stmt->execute([$path]);
+                assertSame('verified', $stmt->fetchColumn());
+                $stmt->closeCursor();
+            }
             assertSame(1, (int) $pdo->query("SELECT post_score_total FROM posts WHERE post_id = 'root-001'")->fetchColumn());
             foreach ($paths as $path) file_put_contents($root . '/' . $path . '.asc', 'tampered');
             $builder->rebuild();

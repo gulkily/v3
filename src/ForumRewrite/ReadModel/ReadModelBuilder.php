@@ -82,6 +82,7 @@ final class ReadModelBuilder
             $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
+            ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot);
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
             $pdo->commit();
         } catch (\Throwable $throwable) {
@@ -132,6 +133,7 @@ final class ReadModelBuilder
 
     private function dropSchema(PDO $pdo): void
     {
+        $pdo->exec('DROP TABLE IF EXISTS reaction_signatures');
         $pdo->exec('DROP TABLE IF EXISTS metadata');
         $pdo->exec('DROP TABLE IF EXISTS posts');
         $pdo->exec('DROP TABLE IF EXISTS threads');

@@ -25,3 +25,8 @@ Branch: `feature/signed-thread-label-records`. Planning commit: `2cbbe624`.
 - Changes: both canonical loaders verify optional signature companions against author keys; full/incremental reducers therefore reject invalid signed input. Import planning resolves source keys with destination fallback. Viewer/duplicate scans skip invalid records. Added invalid post-reaction diagnostics and bounded content-keyed verification caching.
 - Verification: 15 write/import/read-model tests passed; additional real-GPG historical test passed, proving old valid records import/rebuild while corrupted companions are rejected and removed from derived scores.
 - Notes: no live timestamp cutoff in historical verification; unsigned records continue through existing reducers. Missing keys cannot produce verified status.
+
+## Stage 5 - Per-record evidence and inspection
+- Changes: schema 17 adds `reaction_signatures` for all records, including activity-deduplicated labels. Full/incremental refreshes maintain it; shared activity/source metadata reports verified/unsigned/invalid and current raw-source responses add a status header without changing bytes.
+- Verification: schema and signed-record tests passed (4); version-16 normal-page startup rebuild and historical evidence tests passed (2). `./v3 rebuild tests/fixtures/parity_minimal_v1 /tmp/signed-reactions-stage5b.sqlite3` succeeded. Fixed a test-only open SQLite cursor that blocked a rebuild before rerunning.
+- Notes: schema reference updated; aggregate scores are not marked universally signed. Production data was not rebuilt.

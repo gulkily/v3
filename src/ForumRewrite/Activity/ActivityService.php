@@ -535,6 +535,16 @@ final class ActivityService
         bool $authorIdentityIdIsCanonical = false
     ): string
     {
+        if (preg_match('#^records/(thread-labels|post-reactions)/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $sourcePath)) {
+            try {
+                $contents = (string) file_get_contents($this->repositoryRoot . '/' . $sourcePath);
+                $author = (new \ForumRewrite\Canonical\GenericTextRecordParser())->parse($contents)->headers['Author-Identity-ID'] ?? null;
+                return \ForumRewrite\Security\ReactionSignature::status($this->repositoryRoot, $sourcePath, $contents, $author);
+            } catch (RuntimeException) {
+                return 'invalid';
+            }
+        }
+
         if ($sourceSignaturePath !== '' || !str_starts_with($sourcePath, 'records/posts/')) {
             return '';
         }

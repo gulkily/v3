@@ -28,6 +28,7 @@ final class ReadModelSchemaTest
             'metadata',
             'posts',
             'profiles',
+            'reaction_signatures',
             'threads',
             'username_routes',
         ], $objects);

@@ -16,6 +16,11 @@ final class ReadModelSchema
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             )',
+            'CREATE TABLE reaction_signatures (
+                source_path TEXT PRIMARY KEY,
+                author_identity_id TEXT NULL,
+                signature_status TEXT NOT NULL
+            )',
             'CREATE TABLE posts (
                 post_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
