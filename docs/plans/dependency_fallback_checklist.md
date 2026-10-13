@@ -58,6 +58,6 @@ This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader wo
 - [ ] Keep optional dependencies from blocking unrelated commands and help.
 - [ ] Verify failures occur before avoidable state changes; document partial changes and recovery for installation attempts.
 
-## Proposed next local-server slice
+## Opt-in local-server installation
 
-- [ ] Explicit opt-in batch dependency installation followed by readiness verification: [Step 1 assessment](./local_server_dependency_install_step1_solution_assessment.md). Awaiting Step 1 review; no installer implemented.
+- [x] Explicit `--install` through both aliases: reviewed required/selected optional batches, terminal confirmation, verified Ubuntu 24.04/PHP 8.3 mapping, root/sudo execution, fresh readiness and manual startup retry. Real clean-image installation, declines, failures, interrupts and HTTP read/write/shutdown passed: [implementation summary](./local_server_dependency_install/local_server_dependency_install_step4_implementation_summary.md) and [exact evidence](./local_server_dependency_install/local_server_dependency_install_test_evidence.json). Other platform candidates remain in the [categorized support checklist](./local_server_dependency_install/local_server_dependency_platform_support_checklist.md).

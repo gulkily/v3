@@ -8,7 +8,7 @@ if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "
   cat <<'EOF'
 Usage:
   ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
-  ./v3 check-dependencies [--help] (alias: dependency-check)
+  ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 tui
@@ -92,9 +92,14 @@ case "${COMMAND}" in
   check-dependencies|dependency-check)
     shift
     if (( $# == 1 )) && [[ "$1" == --help || "$1" == -h ]]; then
-      printf '%s\n' 'Usage: ./v3 check-dependencies' \
+      printf '%s\n' 'Usage: ./v3 check-dependencies [--install|--help] (alias: dependency-check)' \
         'Check local-server prerequisites without starting the server or changing application state.' \
-        'Required failures return 1; optional limitations are warnings. Repair setup manually, then retry.'
+        'Required failures return 1; optional limitations are warnings.' \
+        '--install: Ubuntu 24.04/APT distribution PHP 8.3 only; review packages, choose optional intl, and confirm in a terminal.' \
+        'Confirmation precedes sudo/root execution and metadata refresh; changed transactions require new confirmation.' \
+        'No unattended bypass. Failed/interrupted operations may leave partial system changes; no automatic rollback.' \
+        'Installation returns 0 only for successful requested installation and required readiness, or a ready no-op.' \
+        'Repair remaining configuration manually, then retry ./v3 start with the original options.'
       exit 0
     fi
     if (( $# == 1 )) && [[ "$1" == --install ]]; then
@@ -104,7 +109,7 @@ case "${COMMAND}" in
       exit $?
     fi
     if (( $# != 0 )); then
-      echo 'Usage: ./v3 check-dependencies (local-server prerequisites only)' >&2
+      echo 'Usage: ./v3 check-dependencies [--install|--help] (local-server prerequisites only)' >&2
       exit 1
     fi
     source "${ROOT}/scripts/local_server_dependencies.sh"

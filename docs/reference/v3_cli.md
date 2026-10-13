@@ -76,26 +76,46 @@ limitations warn without blocking. Stop the launcher with Ctrl+C or SIGTERM.
 ## Check local-server prerequisites
 
 ```
-./v3 check-dependencies [--help]
-./v3 dependency-check [--help]
+./v3 check-dependencies [--install|--help]
+./v3 dependency-check [--install|--help]
 ```
 
 Uses the same checks as startup without starting the server or changing application
-state. Reports Bash 4.1+, Git, PHP CLI 8.1+, PDO/PDO SQLite, mbstring, and PHP
+state. Without `--install`, it is read-only and noninteractive. Reports Bash 4.1+,
+Git, PHP CLI 8.1+, PDO/PDO SQLite, mbstring, and PHP
 process execution; intl, PCNTL, terminal shell execution, and `stty` are optional.
 Returns 0 when required capabilities pass (even with warnings), or 1 for missing,
 disabled, or unusable required capabilities. `-h`/`--help` returns 0 without
-checking PHP or Git; other arguments are rejected.
+checking PHP or Git. `--install` selects the interactive mode below; other
+arguments are rejected.
 
 Status rows use ✓/✗/!/? for available, unavailable, optional limitations, and
 unchecked capabilities. Runtime details and recovery instructions follow the
 readiness result. Terminals show colored statuses and highlighted setup commands;
 redirected output and `NO_COLOR` use plain text with the same symbols.
 
-Follow manual recovery guidance and retry with the same startup options. This
-command never prompts or installs software, and does not validate repository,
-database, permissions, listening address, other-command, or deployment readiness.
-See [local setup and launcher prerequisites](../../README.md#php-setup).
+With `--install`, Ubuntu 24.04/APT distribution PHP 8.3 users can review required
+packages, explicitly select optional intl, and confirm the full resolved APT
+transaction. Confirmation requires terminal input/output and exact `yes`;
+no unattended bypass is supported. Root or sudo privileges are needed only after
+confirmation. Metadata refresh precedes installation; a changed transaction needs
+new confirmation. Installation preserves configuration and rejects removals,
+unverified sources and other PHP runtime families. Custom runtimes, PATH or
+configuration problems, and unsupported environments retain manual recovery.
+
+Installation returns 0 only when the requested package operation succeeds and
+required readiness passes, or a ready no-op (including declined optional-only
+setup). It returns 1 for refusal, cancelled installation, package failure, or
+remaining required problems. Package outcome is separate from readiness. Failure
+or interruption may leave partial changes; no rollback, repair or automatic retry
+is performed. If package processes survive interruption, reassessment is deferred
+and manual inspection is required. Declining before execution makes no changes;
+declining a revised transaction after refresh leaves only refreshed metadata.
+
+Retry startup manually with the same options after recovery. Neither mode validates
+repository, database, permissions, listening address, other-command, or deployment
+readiness. See [installation scope, source restrictions and recovery](../../README.md#install-missing-local-server-dependencies)
+and [external launcher prerequisites](../../README.md#launcher-and-optional-support).
 
 ## Run the test suite
 

@@ -17,7 +17,8 @@ Ubuntu 24.04 with APT: install PHP CLI, SQLite support, and mbstring manually:
   ${cyan:-}sudo apt-get update${reset:-}
   ${cyan:-}sudo apt-get install php8.3-cli php8.3-sqlite3 php8.3-mbstring${reset:-}
 These commands require administrator privileges and change system packages.
-In an existing root shell, omit sudo. v3 does not run these commands for you.
+In an existing root shell, omit sudo. Startup and ordinary checks do not install.
+For reviewed, opt-in setup, run ./v3 check-dependencies --install in a terminal.
 EOF
   else
     cat >&2 <<'EOF'

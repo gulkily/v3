@@ -105,7 +105,9 @@ containing its executable to `PATH` in the terminal where you run v3.
 Check availability with `php --version` and `./v3 check-dependencies`, then retry
 `./v3 start` with your original options. Both commands explain missing or disabled
 capabilities and manual recovery. This guide is readable directly from the
-checkout without running PHP; v3 does not install software.
+checkout without running PHP. Ordinary checks and startup do not install software;
+[explicit install mode](#install-missing-local-server-dependencies) is available for
+Ubuntu 24.04 with distribution PHP 8.3.
 
 On Ubuntu 24.04 with APT, install Git and the matching PHP CLI, SQLite/PDO SQLite,
 and mbstring packages manually:
@@ -182,6 +184,54 @@ available; those failures remain separate operational errors. Checks cover only
 the local server. Other commands and production deployment have their own
 prerequisites; Ubuntu 24.04/APT has specific setup guidance, while other or
 unrecognized environments receive generic instructions.
+
+### Install missing local-server dependencies
+
+```bash
+./v3 check-dependencies --install
+# Equivalent: ./v3 dependency-check --install
+```
+
+On **Ubuntu 24.04/APT with distribution PHP 8.3**, this reviews missing Git,
+PHP CLI, SQLite and mbstring packages, asks separately whether to include optional
+intl, and shows APT's complete resolved transaction. Type `yes` at the final
+confirmation to authorize metadata refresh and installation. Both input and output
+must be terminals; there is no unattended bypass. Declining before execution or
+sending EOF makes no package changes. Ordinary checks and startup stay read-only.
+
+Installation needs administrator privileges: use your normal account with `sudo`,
+or an existing root shell. The reviewed dependencies may be upgraded and package
+maintainer scripts run; existing configuration files are preserved. If refreshed
+metadata changes the transaction, a second confirmation is required. Refusal at
+that point leaves refreshed metadata but does not install packages. Removals,
+other PHP runtime families, unfinished dpkg transactions and unverified package
+sources are refused.
+
+Automatic mapping requires verified package versions from `archive.ubuntu.com`,
+`security.ubuntu.com`, or `ports.ubuntu.com` Noble archives. Custom PHP builds,
+other mirrors/releases, PATH errors, installed-but-disabled extensions and host
+restrictions require manual setup. If no candidate metadata is available, inspect
+APT sources and run `sudo apt-get update` manually before retrying. Bash and
+launcher utilities must already work; [external launcher setup](#launcher-and-optional-support)
+also applies. The installer needs standard Ubuntu APT/dpkg, coreutils, util-linux,
+and procps tools; it does not install or repair its own launcher/package tools.
+
+After an attempt, package outcome and fresh dependency readiness are reported
+separately. Exit **0** means the requested installation succeeded and required
+checks pass, or no packages were selected and required checks already pass.
+Declined optional-only setup can therefore return 0. Exit **1** means refusal,
+cancelled installation, a package failure, or remaining required problems; even a
+successful package transaction may leave configuration restrictions. Failures and
+interruptions can leave partial system changes. Inspect APT output and
+`/var/log/apt/history.log`; there is no automatic rollback, repair or retry. If
+package processes remain active, wait for them to exit before manual recovery;
+readiness is not reassessed while those processes remain active.
+
+The installer never starts the server or changes application state. After setup,
+retry your original `./v3 start` command with the same port and logging options,
+as your usual user. Real install-to-read/write/shutdown tests cover an Ubuntu Base
+24.04.3 amd64 chroot with PHP 8.3.6; broader host, WSL and architecture claims
+remain unverified. See the [test evidence and reproduction procedure](docs/plans/local_server_dependency_install/local_server_dependency_install_step4_implementation_summary.md#reproduce-disposable-acceptance).
 
 ### Start locally
 

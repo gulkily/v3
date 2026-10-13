@@ -12,7 +12,7 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 
 - [Guided PHP setup fallback](guided_php_setup_fallback/)
 - [Local server dependency checks](local_server_dependency_checks/)
-- [Local server dependency installation](local_server_dependency_install/) — opt-in installation plan and categorized platform-support backlog.
+- [Local server dependency installation](local_server_dependency_install/) — implemented Ubuntu 24.04 opt-in installation, recovery evidence, and platform-support backlog.
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)
 
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
