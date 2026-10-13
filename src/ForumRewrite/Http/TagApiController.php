@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use RuntimeException;
+use ForumRewrite\Write\ReactionClockSkew;
 
 /**
  * Sixteenth Phase 2 slice (see docs/plans/codebase_cleanup_audit_plan_v1.md
@@ -77,6 +78,11 @@ final class TagApiController
             }
 
             $this->routeServices->sendText($response, 200, $this->routeServices->serverTimingHeaders($result));
+        } catch (ReactionClockSkew $exception) {
+            $this->routeServices->sendText(json_encode([
+                'status' => 'error', 'error_code' => 'clock_skew',
+                'error' => $exception->getMessage(),
+            ] + $exception->prepared, JSON_THROW_ON_ERROR), 409);
         } catch (RuntimeException $exception) {
             $this->routeServices->sendText(
                 "error=" . $exception->getMessage() . "\n",
@@ -133,6 +139,11 @@ final class TagApiController
             }
 
             $this->routeServices->sendText($response, 200, $this->routeServices->serverTimingHeaders($result));
+        } catch (ReactionClockSkew $exception) {
+            $this->routeServices->sendText(json_encode([
+                'status' => 'error', 'error_code' => 'clock_skew',
+                'error' => $exception->getMessage(),
+            ] + $exception->prepared, JSON_THROW_ON_ERROR), 409);
         } catch (RuntimeException $exception) {
             $this->routeServices->sendText(
                 "error=" . $exception->getMessage() . "\n",

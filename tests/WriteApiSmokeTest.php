@@ -98,6 +98,45 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testSignedReactionsClockFallbackBindsPreparedBytesAndExpires(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('skew-reaction-signer');
+        $cookies = $_COOKIE; $post = $_POST;
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $_COOKIE = ['identity_hint' => $identity];
+            foreach (['thread', 'post'] as $kind) {
+                $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
+                $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
+                $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
+                $created = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
+                $record = "Record-ID: {$family}-skew\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
+                $_POST = [$kind . '_id' => 'root-001', 'tag' => 'like', 'canonical_record' => $record,
+                    'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
+                $prepared = json_decode($this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'), true, 512, JSON_THROW_ON_ERROR);
+                assertSame('clock_skew', $prepared['error_code']);
+                $_POST['canonical_record'] = $prepared['canonical_record'];
+                $_POST['prepare_token'] = $prepared['prepare_token'];
+                $_POST['detached_signature'] = $this->signCanonicalRecord($key['home'], $_POST['canonical_record']);
+                $tokenPath = dirname($database) . '/prepared-posts/' . $prepared['prepare_token'] . '.json';
+                $tokenBytes = file_get_contents($tokenPath);
+                $expired = json_decode($tokenBytes, true);
+                $expired['expires_at'] = '2000-01-01T00:00:00Z';
+                file_put_contents($tokenPath, json_encode($expired));
+                assertStringContains('expired', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
+                file_put_contents($tokenPath, $tokenBytes);
+                assertStringContains('wrote_record=yes', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
+                assertStringContains('wrote_record=no', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
+            }
+        } finally {
+            $_COOKIE = $cookies; $_POST = $post;
+            $this->deleteTree($key['home']); $this->deleteTree($root);
+        }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

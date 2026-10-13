@@ -15,3 +15,8 @@ Branch: `feature/signed-thread-label-records`. Planning commit: `2cbbe624`.
 - Changes: post reactions reuse the same browser/server signature envelope; existing classic, Forte, and QDB handlers require no separate markup. Registered the existing post-reaction read-model tests, previously absent from the runner.
 - Verification: real-GPG API regression covers root/reply Like and Flag, exact signature persistence, moderation count, and duplicate submission; passed. Node syntax passed. Existing ReadModelPostReactionsTest passed (1 test).
 - Notes: inspected existing lazy-signing assets and both action contracts; theme/browser interaction coverage remains Stage 8.
+
+## Stage 3 - Bounded clock fallback
+- Changes: signed requests outside ±300 seconds return prepared bytes/token with `clock_skew`; browser validates unchanged action fields, signs once more, and finalizes through the same endpoint. Tokens reuse existing ten-minute storage/expiry and bind exact bytes and author.
+- Verification: three signed-reaction regression methods passed, including real-GPG HTTP fallback for both families, expired tokens, successful finalization, and duplicate finalization. PHP/Node syntax passed.
+- Notes: correction to Stage 2 count: ReadModelPostReactionsTest ran two tests, both passed. Historical signature verification in Stage 4 will not enforce the live clock window.

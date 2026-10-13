@@ -2855,6 +2855,25 @@ class LocalWriteService
             throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
         }
         $path = $kind === 'thread' ? CanonicalPathResolver::threadLabel($record->recordId) : CanonicalPathResolver::postReaction($record->recordId);
+        if (isset($input['prepare_token'])) {
+            $token = $this->requireHexToken((string) $input['prepare_token'], 'prepare_token');
+            $prepared = $this->loadPreparedPost($token);
+            if (($prepared['kind'] ?? '') !== 'reaction-' . $kind
+                || ($prepared['canonical_record'] ?? '') !== $contents
+                || ($prepared['author_identity_id'] ?? '') !== $author
+                || strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared reaction is expired or does not match this action.');
+            }
+        } elseif (abs(time() - strtotime($record->createdAt)) > 300) {
+            [$preparedPath, $preparedContents] = $kind === 'thread'
+                ? $this->buildThreadLabelRecord($target, [$tag], $author, $this->canonicalTimestampNow())
+                : $this->buildPostReactionRecord($target, [$tag], $author, $this->canonicalTimestampNow());
+            $prepared = $this->storePreparedPost($preparedPath, $preparedContents, [
+                'kind' => 'reaction-' . $kind, 'author_identity_id' => $author,
+            ]);
+            throw new ReactionClockSkew($prepared + ['canonical_record' => $preparedContents]);
+        }
+
         foreach ([$path => $contents, $path . '.asc' => $signature] as $candidate => $bytes) {
             if (file_exists($this->repositoryRoot . '/' . $candidate)
                 && file_get_contents($this->repositoryRoot . '/' . $candidate) !== $bytes) {
