@@ -47,6 +47,7 @@ if ($agentReplyPostedId !== '') {
 }
 $agentReplyIsUnfinished = $agentReplyPostedId === ''
     && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true);
+$isRetracted = ($post['retracted_at'] ?? null) !== null;
 $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -88,13 +89,17 @@ if ($isRunTail) {
 <?php if ($isAgentPost): ?>
   <p class="meta"><span class="agent-label">Agent-authored reply</span></p>
 <?php endif; ?>
+<?php if ($isRetracted): ?>
+<?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
+<?php else: ?>
   <div class="body"><?= $br($post['body']) ?></div>
+<?php endif; ?>
 <?php if ($metaLine !== '' && $isContinuation): ?>
   <?= $metaLine ?>
 <?php endif; ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
-$postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))
+$postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false)) && !$isRetracted
     ? (($postAnalysesByPostId[$post['post_id']] ?? null))
     : null;
 $postAnalysisModeration = is_array($postAnalysis) && is_array($postAnalysis['moderation'] ?? null) ? $postAnalysis['moderation'] : [];
@@ -142,6 +147,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?php endif; ?>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
+<?php if (!$isRetracted): ?>
     <button
       type="button"
       class="thread-reaction-button"
@@ -162,7 +168,8 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
-<?php if ($showAgentReplyRequestButton): ?>
+<?php endif; ?>
+<?php if ($showAgentReplyRequestButton && !$isRetracted): ?>
     <button
       type="button"
       class="thread-reaction-button"
@@ -170,7 +177,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       data-post-id="<?= $e($post['post_id']) ?>"
     >Request agent response</button>
 <?php endif; ?>
-<?php if ($showCodexHandoffButton): ?>
+<?php if ($showCodexHandoffButton && !$isRetracted): ?>
     <button
       type="button"
       class="thread-reaction-button"

@@ -2289,6 +2289,53 @@ NODE;
         assertSame(false, str_contains($this->readModelFileBytes($databasePath), 'zzprosemarker'), 'Prose left in the read-model file');
     }
 
+    public function testRetractedRootShowsPlaceholderKeepsRepliesAndDropsAuthorActions(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $author = $this->createAuthoredThread($application, 'retract-render', 'zzrenderprose body words');
+        $reply = $this->renderMethod(
+            $application,
+            'POST',
+            '/api/create_reply?thread_id=' . rawurlencode($author['thread_id'])
+            . '&parent_id=' . rawurlencode($author['thread_id']) . '&body=' . rawurlencode('Reply that stays visible.')
+        );
+        $replyId = $this->extractValue($reply, 'post_id');
+
+        $prepared = $this->prepareRetractionRequest($application, $author['identity_id'], $author['thread_id']);
+        $_POST = [
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ];
+        $this->renderMethod($application, 'POST', '/api/create_prepared_retraction');
+        $_POST = [];
+
+        $notice = 'This post was deleted by its author.';
+        $thread = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
+        assertStringContains($notice, $thread);
+        assertStringContains('Reply that stays visible.', $thread);
+        assertStringContains('Deleted post', $thread);
+        assertSame(false, str_contains($thread, 'zzrenderprose'));
+        assertSame(false, str_contains($thread, 'data-action="apply-thread-tag"'), 'Root reaction actions remain on a retracted post');
+        assertStringContains('data-action="apply-post-tag"', $thread);
+
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all&sort=newest');
+        assertStringContains('Deleted post', $board);
+        assertSame(false, str_contains($board, 'Subject retract-render'));
+
+        $post = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($author['thread_id']));
+        assertStringContains($notice, $post);
+
+        $forte = $this->renderMethod($application, 'GET', '/forte?selected=' . rawurlencode($author['thread_id']));
+        assertSame(false, str_contains($forte, 'zzrenderprose'));
+        assertStringContains($notice, $forte);
+        assertTrue($replyId !== '');
+    }
+
     public function testRetractionRefreshFailureReportsPartialAndRetryRecovers(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

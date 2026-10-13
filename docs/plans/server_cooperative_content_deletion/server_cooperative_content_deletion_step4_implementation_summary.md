@@ -64,3 +64,18 @@ Debug mode: enabled
   - `/source/commits/<sha>` lists file paths and the commit subject (`Create thread <id>`), not prose, so it is unchanged.
   - Operator scripts that read canonical files directly (`archive_thread`, `thread_attributes`, `delete-record`) are out of scope and unchanged.
   - Agent and analysis workflows read bodies from the read model, so they see an empty body for a retracted post.
+
+## Stage 5 - Deleted-post placeholder
+- Changes:
+  - `retracted_at` is now selected by the thread and post queries that feed templates: `Application` (`fetchThread`, `fetchThreadPosts`, `fetchPost`), `ThreadRepository` (two thread queries, two post queries), and `AuthoredContentRepository` (thread and post queries).
+  - One wording source, `Support/RetractedPostNotice` (`TEXT`, `TITLE`), and one shared partial `partials/retracted_post_notice.php`, used by `post_card.php` (replies and `/posts/<id>`) and `thread_root_card.php` (thread roots, including the QDB quote layout).
+  - Retracted posts drop Like/Flag/thread-reaction, agent-reply, Codex handoff, and analysis controls; the Reply link and permalink stay so conversation structure is intact.
+  - `threadTitle` closure, `BoardPageController::displayThreadTitle`, and `Application::displayThreadTitle` return `Deleted post` for a retracted root; `thread_card.php` hides the body preview for it.
+  - Forte paned views (`paned_board_content_article.php`, `paned_thread_reply_tree.php`) render the same wording inline.
+- Verification:
+  - New `WriteApiSmokeTest::testRetractedRootShowsPlaceholderKeepsRepliesAndDropsAuthorActions`: after retraction the thread page shows the notice, the `Deleted post` title, and the unchanged reply; the root's `apply-thread-tag` action is absent while reply actions remain; the board listing shows `Deleted post` and not the original subject; `/posts/<id>` and the forte view show the notice and no prose.
+  - Full `php tests/run.php`: 1117 run, 9 failed, all long-standing and unchanged.
+- Notes:
+  - Not separately covered by a test: the activity/forte list rows other than the two paned partials, and profile/username page lists. They read the same `posts`/`threads` rows, which are already blank and titled via the shared helpers; a Stage 7 sweep should open them with a retracted post present.
+  - The QDB quote layout branch was changed but has no dedicated test; its placeholder text uses `RetractedPostNotice::TEXT`.
+  - Default `/threads/` in the test fixture renders no thread cards without `?view=all`; the board assertion uses `?view=all&sort=newest`.

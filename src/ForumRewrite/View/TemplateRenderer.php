@@ -12,6 +12,7 @@ use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\Support\RetractedPostNotice;
 use ForumRewrite\Support\ThreadTitle;
 use RuntimeException;
 
@@ -444,7 +445,9 @@ final class TemplateRenderer
         $forteContentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e, true);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
-        $threadTitle = static fn (array $thread): string => ThreadTitle::displayTitle(
+        $threadTitle = static fn (array $thread): string => ($thread['retracted_at'] ?? null) !== null
+            ? RetractedPostNotice::TITLE
+            : ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
             (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),

@@ -26,7 +26,7 @@ if (($mediaEmbedsEnabled ?? false) && $subject === 'Untitled') {
 <?php if ($showLabels && ($thread['thread_labels'] ?? []) !== []): ?>
   <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
 <?php endif; ?>
-<?php if (!$previewDuplicatesTitle): ?>
+<?php if (!$previewDuplicatesTitle && ($thread['retracted_at'] ?? null) === null): ?>
   <p class="thread-card__preview"><?= $br($thread['body_preview']) ?></p>
 <?php endif; ?>
 <?php if ((int) $thread['reply_count'] > 0): ?>

@@ -325,6 +325,10 @@ final class BoardPageController
      */
     private function displayThreadTitle(array $thread): string
     {
+        if (($thread['retracted_at'] ?? null) !== null) {
+            return \ForumRewrite\Support\RetractedPostNotice::TITLE;
+        }
+
         return ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
