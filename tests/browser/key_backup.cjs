@@ -1,0 +1,21 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+global.crypto=require('node:crypto').webcrypto;
+vm.runInThisContext(fs.readFileSync('public/assets/'+(process.argv[2]||'openpgp.min.js'),'utf8'));
+global.window={openpgp};
+vm.runInThisContext(fs.readFileSync('public/assets/key_backup.js','utf8'));
+(async()=>{
+  const key=await openpgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'Backup test'}],format:'armored'});
+  const original=key.privateKey.replace(/\r?\n/g,'\r\n');
+  const api=window.ForumKeyBackup,password='correct horse starfield battery';
+  const backup=await api.createBackup(original,password);
+  assert(!backup.text.includes('PRIVATE KEY'));
+  assert.equal((await api.readBackup(backup.text,password)).privateKeyText,original);
+  await assert.rejects(()=>api.readBackup(backup.text,'wrong'),/Could not unlock/);
+  await assert.rejects(()=>api.createBackup(original,'   '),/passphrase/);
+  await assert.rejects(()=>api.readBackup('x'.repeat(131073),password));
+  await assert.rejects(()=>api.readBackup(backup.text.slice(0,-50),password));
+  const payload={type:'forum-key-backup',version:1,fingerprint:'0'.repeat(40),privateKeyText:original};
+  const forged=await openpgp.encrypt({message:await openpgp.createMessage({binary:new TextEncoder().encode(JSON.stringify(payload))}),passwords:[password],format:'armored'});
+  await assert.rejects(()=>api.readBackup(forged,password),/fingerprint/);
+  console.log((process.argv[2]||'v6')+': exact-byte backup, password, mismatch, corruption and size checks passed');
+})().catch(e=>{console.error(e);process.exitCode=1;});
