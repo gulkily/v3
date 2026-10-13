@@ -147,6 +147,8 @@
     const destinationMenu = form.querySelector("[data-role=invitation-destination-menu]");
     const destinationOptions = form.querySelector("[data-role=invitation-destination-options]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
+    const issueButton = form.querySelector('button[type="submit"]');
+    let issuing = false;
     addDestinationOption(destinationOptions, destination.dataset.sourceDestination);
     recentInvitationDestinations().forEach(function (recentDestination) {
       addDestinationOption(destinationOptions, recentDestination);
@@ -182,6 +184,14 @@
     });
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
+      if (issuing) return;
+      issuing = true;
+      if (issueButton) issueButton.disabled = true;
+      result.hidden = true;
+      link.value = "";
+      if (qrResult) qrResult.hidden = true;
+      if (qrCanvas) qrCanvas.width = 0;
+      setFeedback(feedback, "Creating invitation…", "ok");
       try {
         const signing = await ensureInvitationIdentity(root, feedback);
         const token = randomToken();
@@ -214,6 +224,9 @@
         }
       } catch (error) {
         setFeedback(feedback, error && error.message || "Unable to create invitation.", "error");
+      } finally {
+        issuing = false;
+        if (issueButton) issueButton.disabled = false;
       }
     });
 

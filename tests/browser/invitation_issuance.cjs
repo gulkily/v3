@@ -81,8 +81,59 @@ async function main() {
     await failed.copy.listeners.click();
     assert.equal(failed.state.copied, failed.link.value);
     assert.equal(failed.calls.length, 2);
+    assert.equal(failed.submit.disabled, false);
   }
-  console.log('Invitation QR and copy fallback checks passed.');
+
+  const firstLink = page.link.value;
+  await page.issue();
+  assert.notEqual(page.link.value, firstLink);
+  assert.equal(page.payloads.at(-1), page.link.value);
+  assert.equal(page.submit.disabled, false);
+
+  for (const failure of ['prepare', 'sign', 'finalize']) {
+    const retry = invitationPage();
+    await retry.issue();
+    retry.state.failure = failure;
+    await retry.issue();
+    assert.equal(retry.result.hidden, true, failure);
+    assert.equal(retry.link.value, '', failure);
+    assert.equal(retry.qr.hidden, true, failure);
+    assert.equal(retry.canvas.width, 0, failure);
+    assert.equal(retry.feedback.dataset.status, 'error', failure);
+    assert.equal(retry.submit.disabled, false, failure);
+    retry.state.failure = '';
+    await retry.issue();
+    assert.equal(retry.result.hidden, false, failure);
+    assert.equal(retry.qr.hidden, false, failure);
+    assert.equal(retry.payloads.at(-1), retry.link.value, failure);
+  }
+
+  const delayed = invitationPage();
+  await delayed.issue();
+  let resume;
+  delayed.state.pause = new Promise(resolve => { resume = resolve; });
+  const pending = delayed.issue();
+  assert.equal(delayed.result.hidden, true);
+  assert.equal(delayed.qr.hidden, true);
+  assert.equal(delayed.link.value, '');
+  assert.equal(delayed.submit.disabled, true);
+  await delayed.issue(); // A second submit event must be ignored even if dispatched programmatically.
+  assert.equal(delayed.calls.length, 2);
+  resume();
+  await pending;
+  assert.equal(delayed.calls.length, 4);
+  assert.equal(delayed.payloads.length, 2);
+  assert.equal(delayed.payloads.at(-1), delayed.link.value);
+  assert.equal(delayed.submit.disabled, false);
+
+  delete delayed.window.qrcode;
+  await delayed.issue();
+  assert.equal(delayed.qr.hidden, true);
+  assert.equal(delayed.canvas.width, 0);
+  assert.equal(delayed.result.hidden, false);
+  await delayed.copy.listeners.click();
+  assert.equal(delayed.state.copied, delayed.link.value);
+  console.log('Invitation QR, copy fallback, repeated generation, failures, and concurrent-submit checks passed.');
 }
 
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
