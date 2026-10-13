@@ -70,7 +70,7 @@ exit nonzero on failure. The old instance can remain intact until cutover.
 ## Capacity and deployment
 
 JPEG/PNG only: 5 MiB per image, 4096 pixels per side, one image per post/reply,
-1–500 UTF-8 bytes of description. Retained store: 256 MiB/1024 files. No image
+and an optional description of at most 500 UTF-8 bytes. Retained store: 256 MiB/1024 files. No image
 transformations, automatic retained-image deletion or cloud backend are included.
 Original bytes, including embedded metadata, are preserved.
 

@@ -36,7 +36,7 @@ final class MediaEmbedRenderer
             if ($available) {
                 $html .= '<img src="/images/' . \ForumRewrite\Images\ImageReference::filename($image) . '" alt="' . $description . '" width="' . $image['width'] . '" height="' . $image['height'] . '" loading="lazy" style="max-width:100%;height:auto">';
             }
-            $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable — ') . $description . '</span></span>';
+            $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable' . ($description === '' ? '' : ' — ')) . $description . '</span></span>';
             return $this->render($before, $enabled, $inlinePlayerEnabled, false) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false);
         }
         $matches = $enabled ? $this->detector->detect($body) : [];

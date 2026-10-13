@@ -79,7 +79,7 @@ try {
  const imageResponse=await context.request.get(base+imageUrl);assert.equal(imageResponse.status(),200);assert.match(imageResponse.headers()['cache-control'],/no-store/);assert.equal(imageResponse.headers()['x-content-type-options'],'nosniff');assert.deepEqual(await imageResponse.body(),png);
  await page.goto(base+`/compose/reply?thread_id=${thread.thread_id}&parent_id=${thread.post_id}`);
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
- await page.locator('[name="body"]').fill('Browser image reply');await page.locator('[name="image_description"]').fill('Reply pixel');
+ await page.locator('[name="body"]').fill('Browser image reply');assert.equal(await page.locator('[name="image_description"]').inputValue(),'');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  const replyResponse=page.waitForResponse(r=>r.url().endsWith('/api/create_prepared_post'));

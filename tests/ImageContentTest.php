@@ -28,6 +28,9 @@ final class ImageContentTest
             $store->put($base . '/source.png', $ref);
             assertSame(1, count($store->inventory()));
             $renderer = new \ForumRewrite\View\MediaEmbedRenderer(imageStore: $store);
+            $withoutDescription = array_replace($ref, ['description' => '']);
+            assertSame($withoutDescription, ImageReference::fromBody(ImageReference::line($withoutDescription)));
+            assertStringContains('<img', $renderer->render(ImageReference::line($withoutDescription), false, false, true));
             $body = "Text\n" . ImageReference::line($ref);
             assertStringContains('/images/' . ImageReference::filename($ref), $renderer->render($body, false, false, true));
             assertStringNotContains('<caption>', $renderer->render($body, false, false, true));
@@ -69,7 +72,7 @@ final class ImageContentTest
         $archives = [];
         try {
             file_put_contents($base . '/pixel.png', self::png());
-            $ref = ImageStore::inspect($base . '/pixel.png', 'Pixel');
+            $ref = ImageStore::inspect($base . '/pixel.png', '');
             $store = new ImageStore($base . '/repo');
             $store->put($base . '/pixel.png', $ref);
             file_put_contents($base . '/repo/records/posts/pixel.txt', "Post-ID: pixel\nCreated-At: 2026-10-13T00:00:00Z\nBoard-Tags: general\n\n" . ImageReference::line($ref) . "\n");

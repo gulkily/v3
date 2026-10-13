@@ -1111,7 +1111,7 @@
     if (!navigator.onLine || !window.crypto || !window.crypto.subtle) throw new Error("Image publication requires an online HTTPS connection (or localhost).");
     if (!file || file.size > 5 * 1024 * 1024 || !["image/png", "image/jpeg"].includes(file.type)) throw new Error("Choose a JPEG/PNG of at most 5 MiB.");
     const description = composeFormFieldValue(form, "image_description").trim();
-    if (!description || new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Add an image description of 1–500 bytes.");
+    if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
     const bitmap = await createImageBitmap(file);
     const width = bitmap.width, height = bitmap.height;
     bitmap.close();
@@ -1120,7 +1120,7 @@
     const fields = collectSignedSubmitFields(form);
     if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
     const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
-    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height, encodedDescription].join(" ");
+    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
     const identity = JSON.stringify(fields);
     let pending = form.__pendingImagePost;
     if (!pending || pending.identity !== identity) {

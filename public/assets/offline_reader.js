@@ -15,8 +15,8 @@
   }
 
   function nl2br(value) {
-    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+ (\S+)$/gm, function (line, description) {
-      try { return "Image unavailable offline — " + decodeURIComponent(description); }
+    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?$/gm, function (line, description) {
+      try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : ""); }
       catch (error) { return "Image unavailable offline (reference preserved in the snapshot)."; }
     });
     return escapeHtml(text).replace(/(\r\n|\r|\n)/g, "<br>$1");
@@ -32,8 +32,8 @@
   }
 
   function nl2br(value) {
-    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+ (\S+)$/gm, function (line, description) {
-      try { return "Image unavailable offline — " + decodeURIComponent(description); }
+    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?$/gm, function (line, description) {
+      try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : ""); }
       catch (error) { return "Image unavailable offline (reference preserved in the snapshot)."; }
     });
     return escapeHtml(text).replace(/(\r\n|\r|\n)/g, "<br>$1");

@@ -157,7 +157,8 @@ An image attachment is one canonical `Image-v1: <sha256> <png|jpg> <bytes>
 <width> <height> <percent-encoded-description>` line in the body (all on one
 line). The lowercase SHA-256 identifies immutable original bytes, independent of
 host or storage provider. Numeric values are positive decimal integers; the
-description is UTF-8 encoded with RFC 3986 percent encoding, 1–500 bytes before
+description is optional; omit its preceding space when absent. When present,
+it is UTF-8 encoded with RFC 3986 percent encoding, at most 500 bytes before
 encoding. The signed body binds all metadata. Existing text readers can preserve
 the reference without image support; no read-model schema change is required.
 

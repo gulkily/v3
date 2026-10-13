@@ -19,9 +19,9 @@ final class ImageReference
         $type = (string) ($value['type'] ?? '');
         $description = (string) ($value['description'] ?? '');
         if (!preg_match('/^[a-f0-9]{64}$/D', $hash) || !in_array($type, ['png', 'jpg'], true)
-            || trim($description) === '' || strlen($description) > 500 || preg_match('/[\x00-\x1f\x7f]/', $description)
+            || strlen($description) > 500 || preg_match('/[\x00-\x1f\x7f]/', $description)
             || !mb_check_encoding($description, 'UTF-8')) {
-            throw new RuntimeException('Invalid image reference or description (1–500 bytes).');
+            throw new RuntimeException('Invalid image reference or description (at most 500 bytes).');
         }
         foreach (['bytes' => self::MAX_BYTES, 'width' => self::MAX_SIDE, 'height' => self::MAX_SIDE] as $key => $max) {
             if (!isset($value[$key]) || filter_var($value[$key], FILTER_VALIDATE_INT) === false || (int) $value[$key] < 1 || (int) $value[$key] > $max) {
@@ -34,7 +34,7 @@ final class ImageReference
     public static function line(array $value): string
     {
         $v = self::validate($value);
-        return self::PREFIX . ' ' . implode(' ', [$v['sha256'], $v['type'], $v['bytes'], $v['width'], $v['height'], rawurlencode($v['description'])]);
+        return self::PREFIX . ' ' . implode(' ', [$v['sha256'], $v['type'], $v['bytes'], $v['width'], $v['height']]) . ($v['description'] === '' ? '' : ' ' . rawurlencode($v['description']));
     }
 
     public static function fromBody(string $body): ?array
@@ -44,10 +44,10 @@ final class ImageReference
             if (!str_starts_with($line, self::PREFIX)) {
                 continue;
             }
-            if ($found !== null || !preg_match('/^Image-v1: ([a-f0-9]{64}) (png|jpg) ([0-9]+) ([0-9]+) ([0-9]+) (\S+)$/D', $line, $m)) {
+            if ($found !== null || !preg_match('/^Image-v1: ([a-f0-9]{64}) (png|jpg) ([0-9]+) ([0-9]+) ([0-9]+)(?: (\S+))?$/D', $line, $m)) {
                 throw new RuntimeException('A post supports one well-formed Image-v1 reference.');
             }
-            $found = self::validate(['sha256' => $m[1], 'type' => $m[2], 'bytes' => $m[3], 'width' => $m[4], 'height' => $m[5], 'description' => rawurldecode($m[6])]);
+            $found = self::validate(['sha256' => $m[1], 'type' => $m[2], 'bytes' => $m[3], 'width' => $m[4], 'height' => $m[5], 'description' => rawurldecode($m[6] ?? '')]);
             if (self::line($found) !== $line) {
                 throw new RuntimeException('Image reference must use canonical encoding.');
             }

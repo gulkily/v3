@@ -26,6 +26,8 @@ vm.runInContext(source.slice(start,end),context);
  assert.match(Buffer.from(finalizations[0].body.get('canonical_record_base64'), 'base64').toString(), /Image-v1: [a-f0-9]{64} png 68 1 1 Pixel%20%26%20%3Ctest%3E/);
  assert.equal(finalizations[0].body.get('image').size,68);
  body='Changed text';await context.submitImageCompose(form);assert.equal(prepares,2);
+ context.composeFormFieldValue=()=>'';await context.submitImageCompose(form);
+ assert.match(Buffer.from(finalizations.at(-1).body.get('canonical_record_base64'), 'base64').toString(), /Image-v1: [a-f0-9]{64} png 68 1 1$/);
  context.navigator.onLine=false;await assert.rejects(context.submitImageCompose(form),/online HTTPS/);
  console.log('PASS image compose metadata, multipart bytes, retry identity, edits and offline rejection');
 })().catch(e=>{console.error(e);process.exitCode=1;});
