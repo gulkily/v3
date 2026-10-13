@@ -2978,7 +2978,7 @@ class LocalWriteService
     {
         $policy = new QdbVoteScoringPolicy($this->qdbVoteCaptionCatalog());
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $this->canonicalRepository->loadThreadLabel('records/thread-labels/' . basename($path));
+            try { $record = $this->canonicalRepository->loadThreadLabel('records/thread-labels/' . basename($path)); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
                 continue;
             }
@@ -3073,7 +3073,7 @@ class LocalWriteService
     {
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
             $relativePath = 'records/thread-labels/' . basename($path);
-            $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+            try { $record = $this->canonicalRepository->loadThreadLabel($relativePath); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
                 continue;
             }
@@ -3090,7 +3090,7 @@ class LocalWriteService
     {
         foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
             $relativePath = 'records/post-reactions/' . basename($path);
-            $record = $this->canonicalRepository->loadPostReaction($relativePath);
+            try { $record = $this->canonicalRepository->loadPostReaction($relativePath); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->postId !== $postId || $record->authorIdentityId !== $identityId) {
                 continue;
             }

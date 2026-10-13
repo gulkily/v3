@@ -252,7 +252,7 @@ final class ThreadAndPostPageController
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+            try { $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path)); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
                 continue;
             }

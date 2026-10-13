@@ -27,6 +27,7 @@ final class ReadModelBuilder
     /** @var array<string, float> */
     private array $timings = [];
     private int $invalidThreadLabelRecordCount = 0;
+    private int $invalidPostReactionRecordCount = 0;
     private int $invalidThreadSubjectRecordCount = 0;
     /** @var array<int, array{created_at:string,thread_id:string,author_identity_id:?string,labels_added:list<string>,source_path:string,source_commit_sha:?string}> */
     private array $threadLabelActivityEvents = [];
@@ -60,6 +61,7 @@ final class ReadModelBuilder
 
         $this->timings = [];
         $this->invalidThreadLabelRecordCount = 0;
+        $this->invalidPostReactionRecordCount = 0;
         $this->invalidThreadSubjectRecordCount = 0;
         $this->threadLabelActivityEvents = [];
         $this->postReactionActivityEvents = [];
@@ -524,6 +526,7 @@ final class ReadModelBuilder
             try {
                 $records[] = $this->canonicalRepository->loadPostReaction($relativePath);
             } catch (CanonicalRecordParseException) {
+                $this->invalidPostReactionRecordCount++;
                 $this->reportBatchProgress('Read model: parsing post-reaction records', $index + 1, count($paths));
                 continue;
             }
@@ -1062,6 +1065,7 @@ final class ReadModelBuilder
             'rebuilt_at' => gmdate('c'),
             'rebuild_reason' => $this->rebuildReason,
             'thread_label_invalid_count' => (string) $this->invalidThreadLabelRecordCount,
+            'post_reaction_invalid_count' => (string) $this->invalidPostReactionRecordCount,
             'thread_subject_invalid_count' => (string) $this->invalidThreadSubjectRecordCount,
         ]);
 

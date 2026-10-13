@@ -137,6 +137,50 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testHistoricalReactionSignaturesAreVerifiedOnRebuildAndImport(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        [$destination] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('historical-reaction-signer');
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $this->seedApprovedIdentity($root, $identity);
+            $paths = [];
+            foreach (['thread', 'post'] as $kind) {
+                $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
+                $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
+                $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
+                $record = "Record-ID: {$family}-historical\nCreated-At: 2020-01-01T00:00:00Z\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
+                $path = 'records/' . $family . 's/' . $family . '-historical.txt';
+                if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0777, true);
+                file_put_contents($root . '/' . $path, $record);
+                file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($key['home'], $record));
+                $paths[] = $path;
+            }
+            $planner = new \ForumRewrite\Import\ContentImportPlanner();
+            $plan = $planner->plan($root, $destination);
+            foreach ($paths as $path) assertSame('import', $plan[$path]['state']);
+            $builder = new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root));
+            $builder->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(1, (int) $pdo->query("SELECT post_score_total FROM posts WHERE post_id = 'root-001'")->fetchColumn());
+            foreach ($paths as $path) file_put_contents($root . '/' . $path . '.asc', 'tampered');
+            $builder->rebuild();
+            assertSame(0, (int) $pdo->query("SELECT post_score_total FROM posts WHERE post_id = 'root-001'")->fetchColumn());
+            foreach (['thread_label_invalid_count', 'post_reaction_invalid_count'] as $metric) {
+                assertSame('1', $pdo->query("SELECT value FROM metadata WHERE key = '{$metric}'")->fetchColumn());
+            }
+            $plan = $planner->plan($root, $destination);
+            foreach ($paths as $path) {
+                assertSame('invalid', $plan[$path]['state']);
+                assertSame('invalid', $plan[$path . '.asc']['state']);
+            }
+        } finally {
+            $this->deleteTree($key['home']); $this->deleteTree($root); $this->deleteTree($destination);
+        }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

@@ -30,7 +30,7 @@ final class ViewerTagLookup
         $repository = new CanonicalRecordRepository($repositoryRoot);
         $taggedPostIds = [];
         foreach (glob($repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
-            $record = $repository->loadPostReaction('records/post-reactions/' . basename($path));
+            try { $record = $repository->loadPostReaction('records/post-reactions/' . basename($path)); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if (!isset($postLookup[$record->postId]) || $record->authorIdentityId !== $identityId) {
                 continue;
             }
@@ -57,7 +57,7 @@ final class ViewerTagLookup
         $repository = new CanonicalRecordRepository($repositoryRoot);
         $taggedThreadIds = [];
         foreach (glob($repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+            try { $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path)); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if (!isset($threadLookup[$record->threadId]) || $record->authorIdentityId !== $identityId) {
                 continue;
             }
