@@ -120,6 +120,14 @@ function discoverThreadComponentPaths(string $repositoryRoot, CanonicalRecordRep
         }
     }
 
+    foreach ($paths as $recordPath) {
+        foreach (['.asc', '.sig'] as $suffix) {
+            if (is_file($repositoryRoot . '/' . $recordPath . $suffix)) {
+                $paths[] = $recordPath . $suffix;
+            }
+        }
+    }
+
     $paths = array_values(array_unique($paths));
     sort($paths);
 
@@ -135,6 +143,7 @@ function discoverSupportingPublicKeyPaths(string $repositoryRoot, CanonicalRecor
     $identityIds = [];
 
     foreach ($componentPaths as $relativePath) {
+        if (!str_ends_with($relativePath, '.txt')) continue;
         if (str_starts_with($relativePath, 'records/posts/')) {
             $identityId = $repository->loadPost($relativePath)->authorIdentityId;
         } elseif (str_starts_with($relativePath, 'records/thread-labels/')) {

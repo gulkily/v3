@@ -30,3 +30,8 @@ Branch: `feature/signed-thread-label-records`. Planning commit: `2cbbe624`.
 - Changes: schema 17 adds `reaction_signatures` for all records, including activity-deduplicated labels. Full/incremental refreshes maintain it; shared activity/source metadata reports verified/unsigned/invalid and current raw-source responses add a status header without changing bytes.
 - Verification: schema and signed-record tests passed (4); version-16 normal-page startup rebuild and historical evidence tests passed (2). `./v3 rebuild tests/fixtures/parity_minimal_v1 /tmp/signed-reactions-stage5b.sqlite3` succeeded. Fixed a test-only open SQLite cursor that blocked a rebuild before rerunning.
 - Notes: schema reference updated; aggregate scores are not marked universally signed. Production data was not rebuilt.
+
+## Stage 6 - Signature lifecycle preservation
+- Changes: thread archives now collect/remove signature companions alongside records and retain supporting author keys. Legacy repository archive import uses the shared reaction plan for signature validity and paired conflict decisions; modern sync/import already uses that planner. Whole-repository downloads include companions without extension filtering.
+- Verification: archive, legacy import, and import planner tests passed (13). Real-GPG round trip passed: archive both signed families, confirm both companions leave the live repository, extract/restore exact bytes, rebuild, and recover two verified evidence rows.
+- Notes: intentionally stripped signatures remain indistinguishable from legacy unsigned records; supported archive paths now preserve evidence.

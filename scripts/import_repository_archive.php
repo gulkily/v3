@@ -92,6 +92,7 @@ try {
     fwrite(STDOUT, "Indexing existing canonical records in the target repository...\n");
     $existingIndex = buildExistingRecordIndex($repositoryRoot);
     $sourceFiles = canonicalSourceFiles($sourceRoot);
+    $reactionPlan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($sourceRoot, $repositoryRoot);
     $sourceFileCount = count($sourceFiles);
     $progressInterval = max(1, min(100, (int) ceil($sourceFileCount / 20)));
 
@@ -133,7 +134,20 @@ try {
             continue;
         }
 
-        $sourceKey = canonicalIdentityKey($sourceRoot, $relativePath);
+        $reactionEntry = preg_match('#^records/(thread-labels|post-reactions)/#', $relativePath)
+            ? ($reactionPlan[$relativePath] ?? null) : null;
+        if ($reactionEntry !== null && !in_array($reactionEntry['state'], ['import', 'duplicate'], true)) {
+            if ($reactionEntry['state'] === 'conflict') {
+                $summary['conflicts']++;
+                $conflictPaths[] = $arguments['dry_run'] ? $relativePath
+                    : saveConflict($conflictRoot, $relativePath, $sourceContents, $reactionEntry['reason']);
+            } else {
+                $summary['invalid_skipped']++;
+            }
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
+            continue;
+        }
+        $sourceKey = $reactionEntry['key'] ?? canonicalIdentityKey($sourceRoot, $relativePath);
         if ($sourceKey === null) {
             $summary['invalid_skipped']++;
             reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);

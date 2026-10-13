@@ -187,6 +187,43 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testSignedReactionArchiveRoundTripRetainsBothCompanions(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('archive-reaction-signer');
+        $archive = $root . '/thread.zip';
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $pairs = [];
+            foreach (['thread', 'post'] as $kind) {
+                $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
+                $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
+                $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
+                $created = gmdate('Y-m-d\TH:i:s\Z');
+                $record = "Record-ID: {$family}-archive\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
+                $signature = $this->signCanonicalRecord($key['home'], $record);
+                $input = [$kind . '_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity,
+                    'canonical_record' => $record, 'detached_signature' => $signature];
+                $kind === 'thread' ? $writer->applyThreadTag($input) : $writer->applyPostTag($input);
+                $path = 'records/' . $family . 's/' . $family . '-archive.txt';
+                $pairs[$path] = $record; $pairs[$path . '.asc'] = $signature;
+            }
+            $output = $this->runCommand($root, 'php ' . escapeshellarg(__DIR__ . '/../scripts/archive_thread.php')
+                . ' root-001 ' . escapeshellarg($root) . ' ' . escapeshellarg($database)
+                . ' ' . escapeshellarg($artifacts) . ' ' . escapeshellarg($archive));
+            assertStringContains('Archived thread', $output);
+            foreach ($pairs as $path => $bytes) assertFalse(is_file($root . '/' . $path));
+            $this->runCommand($root, 'unzip -oq ' . escapeshellarg($archive) . ' -d ' . escapeshellarg($root));
+            foreach ($pairs as $path => $bytes) assertSame($bytes, file_get_contents($root . '/' . $path));
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(2, (int) $pdo->query("SELECT COUNT(*) FROM reaction_signatures WHERE signature_status = 'verified'")->fetchColumn());
+        } finally {
+            $this->deleteTree($key['home']); $this->deleteTree($root);
+        }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
