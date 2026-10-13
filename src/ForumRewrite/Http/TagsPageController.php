@@ -55,7 +55,7 @@ final class TagsPageController
             [
                 'group' => $group,
             ],
-            '#' . $tag . ' - Tag',
+            '#' . $group['tag'] . ' - Tag',
             'board',
         );
     }

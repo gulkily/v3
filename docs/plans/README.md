@@ -1,10 +1,18 @@
 # Feature Plans
 
 This directory holds planning artifacts for current and recently completed work.
-Each feature that has four or more related artifacts has its own folder; smaller
-or standalone plans remain at this level until they reach that threshold.
+New work follows [Railspike](../railspike/RAILSPIKE.md): after Step 3 approval
+and branching, organize that feature in its own folder before the planning commit.
+Existing FDP cycles keep their approved process; unrelated historical plans stay put.
 
 ## Feature folders
+
+- [Account key approval safety](account_key_approval_safety/)
+- [Runtime detail pages](runtime_detail_pages/)
+
+- [Guided PHP setup fallback](guided_php_setup_fallback/)
+- [Local server dependency checks](local_server_dependency_checks/)
+- [Immediate approval seed refresh](approval_seed_immediate_refresh/)
 
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
 - [Agent response direct preflight](agent_response_direct_preflight/)
@@ -12,12 +20,14 @@ or standalone plans remain at this level until they reach that threshold.
 - [Agent response harness simplification](agent_response_harness_simplification/)
 - [Agent response modes](agent_response_modes/)
 - [Automatic guest identity](automatic_guest_identity/)
+- [Case insensitive tags](case_insensitive_tags/)
 - [Compact unavailable private messages](private_message_unavailable/)
 - [Event feature gating](event_feature_gating/)
 - [Event time](event_time/)
 - [Extension improvement cookbook](extension_improvement_cookbook/)
 - [Fast LLM post scoring](fast_llm_post_scoring/)
 - [Fast post scoring batch runner](fast_post_scoring_batch_runner/)
+- [FDP to Railspike](fdp_to_railspike/)
 - [Fastmod audit backfill](fastmod_audit_backfill/)
 - [Feature flag change attribution](feature_flag_change_attribution/)
 - [Feature flag lock explanation](feature_flag_lock_explanation/)
@@ -37,6 +47,7 @@ or standalone plans remain at this level until they reach that threshold.
 - [MIT Rap Club media embeds](mitrapclub_media_embeds/)
 - [MIT Rap Club structural identity](mitrapclub_structural_identity/)
 - [MIT Rap Club website](mit_rap_club_website/)
+- [Missing PHP startup guidance](missing_php_startup_guidance/)
 - [Multi-site refactor P0](multi_site_refactor_p0/)
 - [Multi-site refactor P1](multi_site_refactor_p1/)
 - [Multi-site refactor P2 browser offline identity](multi_site_refactor_p2_browser_offline_identity/)
@@ -103,6 +114,6 @@ or standalone plans remain at this level until they reach that threshold.
 - [Backlog](backlog/) contains early-stage and uncommitted proposals, grouped by topic.
 - [Archive](archive/) contains completed planning cycles retained for historical reference.
 
-When a root-level feature reaches four related artifacts, move its documents into
-`docs/plans/{feature_name}/` and add the folder to this index. Update links
-throughout the repository as part of that move.
+When organizing a feature, use `docs/plans/{feature_name}/`, add it to this index,
+and repair its navigation and affected references. See the
+[transition guide](../reference/railspike_workflow.md) for existing FDP cycles.

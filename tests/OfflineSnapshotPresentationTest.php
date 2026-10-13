@@ -15,13 +15,14 @@ global.window = {};
 global.document = { addEventListener() {} };
 vm.runInThisContext(source);
 const rows = [
-  ['t1', 'One', '', 0, '2026-01-01T00:00:00Z', 'A', '2026-01-01T00:00:00Z', '["topic","topic"]', '["general","topic"]', 0],
-  ['t2', 'Two', '', 0, '2026-01-02T00:00:00Z', 'B', '2026-01-02T00:00:00Z', '["topic"]', '["general"]', 0],
+  ['t1', 'One', '', 0, '2026-01-01T00:00:00Z', 'A', '2026-01-01T00:00:00Z', '["TOPIC","topic","Topic"]', '["GENERAL","topic"]', 0],
+  ['t2', 'Two', '', 0, '2026-01-02T00:00:00Z', 'B', '2026-01-02T00:00:00Z', '["topic"]', '["General"]', 0],
   ['t3', 'Three', '', 0, '2026-01-03T00:00:00Z', 'C', '2026-01-03T00:00:00Z', '["bug"]', 'not json', 0],
   ['t4', 'Four', '', 0, '2026-01-04T00:00:00Z', 'D', '2026-01-04T00:00:00Z', '[]', '["general"]', 0],
   ['t5', 'Five', '', 0, '2026-01-05T00:00:00Z', 'E', '2026-01-05T00:00:00Z', '[]', '["general"]', 0],
   ['t6', 'Six', '', 0, '2026-01-06T00:00:00Z', 'F', '2026-01-06T00:00:00Z', '[]', '["general"]', 0],
-  ['t7', 'Seven', '', 0, '2026-01-07T00:00:00Z', 'G', '2026-01-07T00:00:00Z', '[]', '["general"]', 0]
+  ['t7', 'Seven', '', 0, '2026-01-07T00:00:00Z', 'G', '2026-01-07T00:00:00Z', '[]', '["general"]', 0],
+  ['t8', 'Eight', '', 0, '2026-01-08T00:00:00Z', 'H', '2026-01-08T00:00:00Z', '["CONSTRUCTOR"]', '["constructor"]', 0]
 ];
 const database = { exec() { return [{ values: rows }]; } };
 const groups = window.forumOfflineSnapshot.tagGroups(database).map((group) => ({
@@ -59,6 +60,9 @@ NODE;
         assertSame(['t2', 't1'], $groups[1]['ids']);
         assertSame('bug', $groups[2]['tag']);
         assertSame(1, $groups[2]['count']);
+        assertSame('constructor', $groups[3]['tag']);
+        assertSame(1, $groups[3]['count']);
+        assertSame(['t8'], $groups[3]['ids']);
     }
 
     public function testBoardUrlsPreserveNormalRouteAndSelectedState(): void
@@ -266,7 +270,7 @@ const rows = [
 ];
 const database = { exec() { return [{ values: rows }]; } };
 const content = element('div');
-const found = window.forumOfflineSnapshot.renderTagResult({ content, database, tag: 'topic' });
+const found = window.forumOfflineSnapshot.renderTagResult({ content, database, tag: 'ToPiC' });
 const missing = element('div');
 const missingFound = window.forumOfflineSnapshot.renderTagResult({ content: missing, database, tag: 'absent' });
 function collect(node, result) {
@@ -280,7 +284,7 @@ collect(content, rendered);
 collect(missing, missingRendered);
 process.stdout.write(JSON.stringify({
   found, missingFound, rendered, missingRendered,
-  tag: window.forumOfflineSnapshot.tagFromPathname('/tags/topic/'), invalid: window.forumOfflineSnapshot.tagFromPathname('/tags/Topic')
+  tag: window.forumOfflineSnapshot.tagFromPathname('/tags/TOPIC/'), mixed: window.forumOfflineSnapshot.tagFromPathname('/tags/Topic'), invalid: window.forumOfflineSnapshot.tagFromPathname('/tags/topic/extra')
 }));
 NODE;
         $command = sprintf(
@@ -297,6 +301,8 @@ NODE;
         assertSame(true, $result['found']);
         assertSame(false, $result['missingFound']);
         assertSame('topic', $result['tag']);
+        assertSame('topic', $result['mixed']);
+        assertSame(true, in_array('#topic', $result['rendered']['text'], true));
         assertSame('', $result['invalid']);
         assertSame([
             ['href' => '/tags/', 'text' => 'Back to Tags'],

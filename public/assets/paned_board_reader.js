@@ -283,7 +283,7 @@
     }
 
     function currentTagFromUrl() {
-      return new URLSearchParams(location.search).get("tag") || "";
+      return (new URLSearchParams(location.search).get("tag") || "").replace(/[A-Z]/g, function (letter) { return letter.toLowerCase(); });
     }
 
     function currentSelectedThreadId() {

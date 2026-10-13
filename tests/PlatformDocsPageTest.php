@@ -71,6 +71,17 @@ final class PlatformDocsPageTest
         assertTrue(str_contains($architecture, 'The public record lives in Git'));
     }
 
+    public function testRailspikeAndLegacyTransitionAreReadable(): void
+    {
+        $workflow = $this->render('/docs/railspike/RAILSPIKE.md');
+        $guide = $this->render('/docs/reference/railspike_workflow.md');
+        $legacy = $this->render('/docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md');
+        assertStringContains('<h1>Railspike</h1>', $workflow);
+        assertStringContains('Git subtree', $guide);
+        assertStringContains('Legacy FDP reference', $legacy);
+        assertStringContains('../railspike/RAILSPIKE.md', $legacy);
+    }
+
     public function testInvalidDocumentationPathsAreNotRendered(): void
     {
         $html = $this->render('/docs/%2e%2e/README.md');

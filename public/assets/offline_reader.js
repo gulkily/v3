@@ -77,9 +77,12 @@
       var match = String(pathname || "").match(/^\/threads\/([^/]+)\/?$/);
       return match ? decodeURIComponent(match[1]) : "";
     },
+    canonicalTag: function (tag) {
+      return tag.replace(/[A-Z]/g, function (letter) { return letter.toLowerCase(); });
+    },
     tagFromPathname: function (pathname) {
-      var match = String(pathname || "").match(/^\/tags\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/);
-      return match ? match[1] : "";
+      var match = String(pathname || "").match(/^\/tags\/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)\/?$/);
+      return match ? snapshotPresentation.canonicalTag(match[1]) : "";
     },
     threadTitle: function (subject, preview) {
       var title = String(subject || "").trim();
@@ -145,10 +148,10 @@
       }
     },
     threadTags: function (thread) {
-      return [...new Set([...(thread.boardTags || []), ...(thread.labels || [])])];
+      return [...new Set([...(thread.boardTags || []), ...(thread.labels || [])].map(snapshotPresentation.canonicalTag))];
     },
     tagGroups: function (database) {
-      var groups = {};
+      var groups = Object.create(null);
       snapshotPresentation.boardRows(database).forEach(function (thread) {
         snapshotPresentation.threadTags(thread).forEach(function (tag) {
           if (!groups[tag]) groups[tag] = { tag: tag, threads: [] };
@@ -235,8 +238,9 @@
       return groups;
     },
     renderTagResult: function (options) {
+      var tag = snapshotPresentation.canonicalTag(options.tag);
       var group = snapshotPresentation.tagGroups(options.database).find(function (candidate) {
-        return candidate.tag === options.tag;
+        return candidate.tag === tag;
       });
       clearSnapshotNode(options.content);
       options.content.hidden = false;
@@ -246,7 +250,7 @@
       eyebrow.className = "eyebrow";
       eyebrow.textContent = "Saved tag";
       var heading = document.createElement("h1");
-      heading.textContent = "#" + options.tag;
+      heading.textContent = "#" + tag;
       var count = document.createElement("p");
       count.className = "meta";
       count.textContent = group ? group.count + (group.count === 1 ? " thread" : " threads") : "Not in saved snapshot";

@@ -523,8 +523,8 @@ final class StaticArtifactBuilder
             return null;
         }
 
-        if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
-            return '/tags/' . $matches[1];
+        if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
+            return '/tags/' . strtolower($matches[1]);
         }
 
         if (preg_match('#^/(threads|posts|profiles)/([^/]+)/?$#', $path, $matches) !== 1) {
@@ -667,7 +667,7 @@ final class StaticArtifactBuilder
             )));
 
             foreach ($tags as $tag) {
-                $routes['/tags/' . $tag] = true;
+                $routes['/tags/' . strtolower($tag)] = true;
             }
         }
 

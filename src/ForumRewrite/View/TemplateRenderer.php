@@ -165,22 +165,15 @@ final class TemplateRenderer
         $profile = SiteProfileRegistry::active();
         $browserRuntime = BrowserRuntimeProfile::fromProfile($profile);
         $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $explicitThemeNames = $this->explicitThemeNames($themes);
         $permittedThemeNames = array_column($themes, 'name');
-        $explicitThemeNames = array_values(array_filter(
-            $permittedThemeNames,
-            static fn (string $name): bool => ThemeRegistry::isExplicitName($name),
-        ));
         $themeStylesheetPaths = [];
         foreach (ThemeRegistry::stylesheetPaths() as $name => $path) {
             if (in_array($name, $explicitThemeNames, true)) {
                 $themeStylesheetPaths[$name] = $this->assetPath($path);
             }
         }
-        $brandedStylesheet = PresentationSlotRegistry::resolve($profile, 'brandedStylesheet');
-        $defaultTheme = $brandedStylesheet === 'site' ? $profile['defaultTheme'] : $brandedStylesheet;
-        if (!in_array($defaultTheme, $permittedThemeNames, true)) {
-            $defaultTheme = $profile['defaultTheme'];
-        }
+        $defaultTheme = $this->defaultThemeName($profile, $permittedThemeNames);
         $themeHint = $this->themeHint($explicitThemeNames);
         $initialTheme = $themeHint
             ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
@@ -224,6 +217,30 @@ final class TemplateRenderer
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
         ]);
+    }
+
+    /**
+     * @param list<array{name: string, label: string, mode: string}> $themes
+     * @return list<string>
+     */
+    private function explicitThemeNames(array $themes): array
+    {
+        return array_values(array_filter(
+            array_column($themes, 'name'),
+            static fn (string $name): bool => ThemeRegistry::isExplicitName($name),
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     * @param list<string> $permittedThemeNames
+     */
+    private function defaultThemeName(array $profile, array $permittedThemeNames): string
+    {
+        $brandedStylesheet = PresentationSlotRegistry::resolve($profile, 'brandedStylesheet');
+        $defaultTheme = $brandedStylesheet === 'site' ? $profile['defaultTheme'] : $brandedStylesheet;
+
+        return in_array($defaultTheme, $permittedThemeNames, true) ? $defaultTheme : $profile['defaultTheme'];
     }
 
     private function criticalCss(): string
@@ -368,6 +385,14 @@ final class TemplateRenderer
         }
 
         $profile = SiteProfileRegistry::active();
+        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $explicitThemeNames = $this->explicitThemeNames($themes);
+        $themeModes = [];
+        foreach ($themes as $theme) {
+            if (in_array($theme['name'], $explicitThemeNames, true)) {
+                $themeModes[$theme['name']] = $theme['mode'];
+            }
+        }
 
         return $this->renderFile('standalone_layout.php', [
             'title' => $title,
@@ -377,6 +402,9 @@ final class TemplateRenderer
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'faviconPath' => FaviconRegistry::resolve($profile),
             'additionalCssPaths' => $assetAdditionalCssPaths,
+            'themeStorageKey' => BrowserRuntimeProfile::fromProfile($profile)['themeStorageKey'],
+            'defaultTheme' => $this->defaultThemeName($profile, array_column($themes, 'name')),
+            'themeModes' => $themeModes,
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),

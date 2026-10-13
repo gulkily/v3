@@ -385,10 +385,11 @@ final class FrontController
             ]);
         }
 
-        if (preg_match('#^/tags/([a-z0-9]+(?:-[a-z0-9]+)*)/?$#', $path, $matches) === 1) {
+        if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
+            $tag = strtolower($matches[1]);
             return $this->firstExistingPath([
-                $this->publicRoot . '/tags/' . $matches[1] . '.html',
-                $this->staticHtmlRoot . '/tags/' . $matches[1] . '/index.html',
+                $this->publicRoot . '/tags/' . $tag . '.html',
+                $this->staticHtmlRoot . '/tags/' . $tag . '/index.html',
             ]);
         }
 

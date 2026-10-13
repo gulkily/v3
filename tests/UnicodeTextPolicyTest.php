@@ -6,6 +6,22 @@ use ForumRewrite\Support\UnicodeTextPolicy;
 
 final class UnicodeTextPolicyTest
 {
+    public function testCombiningMarksRequireNormalizationSupport(): void
+    {
+        $policy = new UnicodeTextPolicy();
+        if (class_exists(\Normalizer::class)) {
+            assertSame('Café', $policy->normalizeLine("Cafe\u{0301}", 'subject'));
+            return;
+        }
+        try {
+            $policy->normalizeLine("Cafe\u{0301}", 'subject');
+        } catch (RuntimeException $exception) {
+            assertStringContains('normalization support is unavailable', $exception->getMessage());
+            return;
+        }
+        throw new RuntimeException('Expected combining-mark rejection without intl.');
+    }
+
     public function testAllowsReadableCyrillicLineAndBody(): void
     {
         $policy = new UnicodeTextPolicy();

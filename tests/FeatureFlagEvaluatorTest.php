@@ -13,6 +13,7 @@ final class FeatureFlagEvaluatorTest
     {
         $this->withEnvironment([], function (): void {
             $evaluator = new FeatureFlagEvaluator();
+            assertSame(true, $evaluator->isEnabled(FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL));
 
             $unicode = $evaluator->evaluate(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT);
             $emoji = $evaluator->evaluate(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT);
@@ -41,7 +42,7 @@ final class FeatureFlagEvaluatorTest
             assertSame(true, $notification->effectiveValue);
             assertSame('default', $notification->source);
             assertSame(true, $notification->isDefault());
-            assertSame(true, $staticDetailPages->effectiveValue);
+            assertSame(false, $staticDetailPages->effectiveValue);
             assertSame('default', $staticDetailPages->source);
             assertSame(true, $staticDetailPages->isDefault());
             assertSame(true, $agentReplies->effectiveValue);
@@ -95,6 +96,26 @@ final class FeatureFlagEvaluatorTest
         });
     }
 
+    public function testStaticDetailOptInRespectsInstanceAndEnvironmentPrecedence(): void
+    {
+        $key = FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED;
+        $this->withEnvironment([], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => true]))->evaluate($key);
+            assertSame(true, $state->effectiveValue);
+            assertSame('site', $state->source);
+        });
+        $this->withEnvironment([$key => 'false'], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => true]))->evaluate($key);
+            assertSame(false, $state->effectiveValue);
+            assertSame('environment', $state->source);
+        });
+        $this->withEnvironment([$key => 'true'], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => false]))->evaluate($key);
+            assertSame(true, $state->effectiveValue);
+            assertSame('environment', $state->source);
+        });
+    }
+
     public function testRegistryListsCurrentPublicFlags(): void
     {
         $states = (new FeatureFlagEvaluator())->all();
@@ -104,6 +125,7 @@ final class FeatureFlagEvaluatorTest
         );
 
         assertSame([
+            FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,

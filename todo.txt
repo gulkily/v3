@@ -84,11 +84,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 	needs its own Step 1 given the redirect-following/unknown-provider
 		design questions
 
-the request agent response dropdown does not always fully display in-page
-	it should go up and above the link if below is not enough viewport space
-	other ways of mitigating it?
-	it should scroll along with its parent button
-
 explore server-cooperative content deletion
 	Discussion: docs/plans/backlog/server_cooperative_content_deletion_discussion.md
 	Initial scope: users retract their own posts with server help; cross-instance cooperation is a future possibility.
@@ -140,3 +135,9 @@ make it easier to copy the bookmarklets as a one-liner js
 add another analysis type: scripture-oriented analysis
 
 continue with docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md;
+
+when we import another instance, we end up with a lot of unapproved accounts
+    this is because root approvals are gone
+        we need to figure out a way to make this process smoother
+
+add provisions for calling remove-record from web ui

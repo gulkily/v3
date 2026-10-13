@@ -180,7 +180,7 @@ function supportsOfflineNavigation(url) {
   return url.pathname === "/" || url.pathname === "/threads" || url.pathname === "/threads/"
     || /^\/threads\/[^/]+\/?$/.test(url.pathname)
     || url.pathname === "/tags" || url.pathname === "/tags/"
-    || /^\/tags\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(url.pathname);
+    || /^\/tags\/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\/?$/.test(url.pathname);
 }
 
 async function networkFirstNavigation(request) {
