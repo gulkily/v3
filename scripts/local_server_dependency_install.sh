@@ -126,14 +126,113 @@ install_assess_batch() {
   fi
 }
 
+install_confirm() {
+  local answer
+  printf '%s [type yes to continue]: ' "$1"
+  IFS= read -r answer || return 1
+  [[ "${answer}" == yes ]]
+}
+
+install_resolve() {
+  local package version simulation line name rest audit
+  transaction=(); requested_versions=()
+  audit="$(dpkg --audit 2>&1)" || return 1
+  [[ -z "${audit}" ]] || { install_manual 'dpkg reports an unfinished transaction; inspect dpkg --audit manually.'; return 1; }
+  for package in "${selected_packages[@]}"; do
+    version="$(install_candidate "${package}")" || { install_manual "unverified candidate for ${package}."; return 1; }
+    requested_versions+=("${package}=${version}")
+  done
+  simulation="$(LC_ALL=C apt-get --simulate --no-install-recommends --no-remove install "${requested_versions[@]}" 2>&1)" || {
+    printf '%s\n' "${simulation}"; install_manual 'APT could not resolve a safe installation.'; return 1;
+  }
+  while IFS= read -r line; do
+    case "${line}" in
+      Remv\ *) install_manual 'APT proposed removing packages; no installation will run.'; return 1 ;;
+      Inst\ *)
+        read -r _ name rest <<<"${line}"
+        version="${rest#*(}"; version="${version%% *}"
+        [[ "${name}" =~ ^[a-z0-9][a-z0-9.+:-]*$ && "${version}" =~ ^[a-zA-Z0-9.+:~_-]+$ ]] || return 1
+        case "${name%%:*}" in
+          php-common|php8.3-cli|php8.3-common|php8.3-opcache|php8.3-readline|php8.3-sqlite3|php8.3-mbstring|php8.3-intl) ;;
+          php*|libapache2-mod-php*) install_manual "APT proposed an unapproved PHP runtime package: ${name}."; return 1 ;;
+        esac
+        install_official_version "${name}" "${version}" || { install_manual "unverified dependency source: ${name} ${version}."; return 1; }
+        transaction+=("${name}=${version}")
+        ;;
+    esac
+  done <<<"${simulation}"
+  (( ${#transaction[@]} )) || { install_manual 'APT proposed no package changes; repair unavailable capabilities manually.'; return 1; }
+  printf '%s\n' "${simulation}"
+}
+
+install_privileged_apt() {
+  "${privilege[@]}" /usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get "$@"
+}
+
+install_reassess() {
+  local package_status="$1" readiness=0 identity=''
+  printf '\nFresh dependency assessment\n'
+  local_server_dependencies_check report || readiness=1
+  identity="$(install_runtime_identity)" || readiness=1
+  if [[ "${identity}" != /usr/bin/php8.3 || ( "${original_runtime}" != missing && "${identity}" != "${original_runtime}" ) ]]; then
+    printf '%s\n' 'Selected PHP runtime changed or could not be verified; inspect PATH and alternatives manually.'
+    readiness=1
+  fi
+  printf 'Package operation: %s\n' "${package_status}"
+  if [[ "${package_status}" != succeeded ]]; then
+    printf '%s\n' 'System packages or APT metadata may have changed. No automatic rollback or retry was attempted.' \
+      'Inspect APT output and /var/log/apt/history.log; resolve package state manually before retrying.'
+  fi
+  printf '%s\n' 'After required checks pass, retry your original ./v3 start command with the same port and logging options.'
+  [[ "${package_status}" == succeeded && "${readiness}" == 0 ]]
+}
+
 local_server_dependencies_install() {
-  local -a required_packages=() optional_packages=()
-  local original_runtime=''
-  local_server_dependencies_check report || true
+  local -a required_packages=() optional_packages=() selected_packages=() privilege=()
+  local -a transaction=() requested_versions=() reviewed=()
+  local original_runtime='' initial_ready=0
+  local_server_dependencies_check report || initial_ready=1
   printf '\nDependency installation review\n'
   install_assess_batch || return 1
   printf 'Required packages:'; printf ' %s' "${required_packages[@]:-(none)}"; printf '\n'
   printf 'Optional packages (separate choice required):'; printf ' %s' "${optional_packages[@]:-(none)}"; printf '\n'
-  printf '%s\n' 'Review only: installation is not yet available. No system changes made.'
-  return 1
+  selected_packages=("${required_packages[@]}")
+  if (( ${#selected_packages[@]} == 0 )); then
+    printf '%s\n' 'No required package changes. Remaining configuration restrictions need manual recovery.'
+    return "${initial_ready}"
+  fi
+  if [[ ! -t 0 || ! -t 1 ]]; then
+    printf '%s\n' 'Installation requires terminal input and output; no unattended confirmation bypass. No system changes made.'
+    return 1
+  fi
+  install_resolve || return 1
+  reviewed=("${transaction[@]}")
+  printf '%s\n' 'This changes system packages and may upgrade the dependencies listed above.' \
+    'Administrator privileges are required. After confirmation, APT metadata will be refreshed.' \
+    'Configuration files are preserved; package maintainer scripts will run. No automatic rollback.'
+  install_confirm 'Refresh metadata and install this reviewed required batch?' || {
+    printf '%s\n' 'Cancelled before execution. No system changes made.'; return 1;
+  }
+  if (( EUID != 0 )); then
+    command -v sudo >/dev/null 2>&1 || { install_manual 'sudo is unavailable; ask an administrator or use an existing root shell.'; return 1; }
+    sudo -v || { install_manual 'administrator privileges were not obtained; no package changes made.'; return 1; }
+    privilege=(sudo)
+  fi
+  if ! install_privileged_apt update -o APT::Update::Error-Mode=any; then
+    install_reassess 'metadata refresh failed' || true; return 1
+  fi
+  # Resolve again after refresh, and obtain new approval if the concrete batch changed.
+  if ! install_resolve; then
+    install_reassess 'resolution failed after metadata refresh' || true; return 1
+  fi
+  if [[ "${transaction[*]}" != "${reviewed[*]}" ]]; then
+    install_confirm 'APT changed the transaction above. Install this revised batch?' || {
+      install_reassess 'cancelled after metadata refresh; no install attempted' || true; return 1;
+    }
+  fi
+  if ! install_privileged_apt --yes --no-remove --no-install-recommends \
+    -o Dpkg::Options::=--force-confold install "${transaction[@]}"; then
+    install_reassess failed || true; return 1
+  fi
+  install_reassess succeeded
 }

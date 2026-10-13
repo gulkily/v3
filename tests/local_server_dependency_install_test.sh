@@ -51,3 +51,22 @@ second=$?
 set -e
 [[ "$first" == "$second" ]] && cmp "$work/first" "$work/second" || fail aliases
 printf '%s\n' 'PASS: official origins, disabled/broken packages, separate batches, unsupported host, alias equivalence'
+# The resolver must refuse removals, runtime switches, and pending dpkg repair.
+unset -f php_setup_platform
+source "${ROOT}/scripts/php_setup_guidance.sh"
+dpkg() { printf '%s' "${fixture_audit:-}"; }
+apt-get() { cat "$work/simulation"; }
+selected_packages=(php8.3-mbstring)
+printf '%s\n' 'Inst php8.3-mbstring (8.3.6-0ubuntu0.24.04.5 Ubuntu:24.04/noble-updates [amd64])' > "$work/simulation"
+transaction=(); requested_versions=()
+install_resolve > "$work/out"
+[[ "${transaction[*]}" == 'php8.3-mbstring=8.3.6-0ubuntu0.24.04.5' ]] || fail 'unpinned transaction'
+printf '%s\n' 'Remv php8.3-cli [8.3.6]' >> "$work/simulation"
+if install_resolve > "$work/out"; then fail 'accepted removal'; fi
+printf '%s\n' 'Inst php8.4-cli (8.4.1 Ubuntu:24.04/noble [amd64])' > "$work/simulation"
+if install_resolve > "$work/out"; then fail 'accepted runtime switch'; fi
+fixture_audit='Package left unconfigured'
+if install_resolve > "$work/out"; then fail 'accepted unfinished dpkg state'; fi
+if install_confirm 'EOF fixture' < /dev/null > "$work/out"; then fail 'accepted EOF'; fi
+if install_confirm 'Decline fixture' <<< no > "$work/out"; then fail 'accepted decline'; fi
+echo 'PASS: resolved version pinning, removal/runtime-switch refusal, dpkg state, decline/EOF'
