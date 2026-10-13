@@ -70,3 +70,18 @@ if install_resolve > "$work/out"; then fail 'accepted unfinished dpkg state'; fi
 if install_confirm 'EOF fixture' < /dev/null > "$work/out"; then fail 'accepted EOF'; fi
 if install_confirm 'Decline fixture' <<< no > "$work/out"; then fail 'accepted decline'; fi
 echo 'PASS: resolved version pinning, removal/runtime-switch refusal, dpkg state, decline/EOF'
+(
+  local_server_dependencies_check() { echo 'Result: READY'; }
+  install_runtime_identity() { echo /usr/bin/php8.3; }
+  original_runtime=/usr/bin/php8.3
+  interrupted=0; package_active=0
+  if install_reassess failed > "$work/out"; then fail 'masked package failure with readiness'; fi
+  grep -q 'Package operation: failed' "$work/out" || fail 'lost package outcome'
+  install_reassess succeeded > "$work/out" || fail 'healthy successful outcome'
+  install_runtime_identity() { echo /custom/php; }
+  if install_reassess succeeded > "$work/out"; then fail 'accepted changed runtime'; fi
+  interrupted=1; package_active=1
+  if install_reassess succeeded > "$work/out"; then fail 'accepted active transaction'; fi
+  grep -q 'Readiness was not rechecked' "$work/out" || fail 'unsafe active recheck'
+)
+echo 'PASS: package outcome independent of readiness, runtime change, active-process recovery'

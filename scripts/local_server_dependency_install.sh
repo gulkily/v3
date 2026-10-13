@@ -99,7 +99,7 @@ install_assess_batch() {
     install_add_missing php8.3-cli || return 1
     install_add_missing php8.3-sqlite3 || return 1
     install_add_missing php8.3-mbstring || return 1
-    [[ "$(install_package_status php8.3-intl)" == installed ]] || install_add_missing php8.3-intl optional || return 1
+    [[ "$(install_package_status php8.3-intl)" == installed ]] || install_add_missing php8.3-intl optional || true
     return 0
   fi
   original_runtime="$(install_runtime_identity)" || {
@@ -121,7 +121,7 @@ install_assess_batch() {
     if [[ "$(install_package_status php8.3-intl)" == installed ]]; then
       printf '%s\n' 'Optional intl is installed but disabled; enable it manually if wanted.'
     else
-      install_add_missing php8.3-intl optional || return 1
+      install_add_missing php8.3-intl optional || true
     fi
   fi
 }
@@ -165,12 +165,49 @@ install_resolve() {
   printf '%s\n' "${simulation}"
 }
 
+install_interrupt() {
+  interrupted=1
+  trap '' INT TERM
+  printf '\nInstallation interrupted; stopping the package process group. Partial changes are possible.\n'
+  if [[ -n "${apt_pid}" ]]; then
+    "${privilege[@]}" /bin/kill -TERM -- "-${apt_pid}" 2>/dev/null || true
+  fi
+}
+
+install_group_active() {
+  ps -eo pgid=,stat= | awk -v group="${apt_pid}" '$1 == group && $2 !~ /^Z/ {live=1} END {exit !live}'
+}
+
 install_privileged_apt() {
-  "${privilege[@]}" /usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get "$@"
+  local status=0 count=0
+  # A distinct session permits reliable cleanup of APT and its child processes.
+  /usr/bin/setsid "${privilege[@]}" /usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get "$@" &
+  apt_pid=$!
+  wait "${apt_pid}" || status=$?
+  if (( interrupted )); then
+    while install_group_active && (( count < 100 )); do
+      sleep 0.1
+      count=$((count + 1))
+    done
+    if install_group_active; then
+      package_active=1
+      printf 'Package processes remain active in process group %s; do not retry or repair dpkg until they exit.\n' "${apt_pid}"
+    fi
+    if (( ! package_active )); then wait "${apt_pid}" 2>/dev/null || true; fi
+    status=1
+  fi
+  apt_pid=''
+  return "${status}"
 }
 
 install_reassess() {
   local package_status="$1" readiness=0 identity=''
+  if (( interrupted )); then package_status=interrupted; fi
+  if (( package_active )); then
+    printf '%s\n' 'Package operation: interrupted; processes may still be active. Readiness was not rechecked.' \
+      'System changes may be partial. Inspect running APT/dpkg processes and logs manually; no automatic rollback, repair, or retry.'
+    return 1
+  fi
   printf '\nFresh dependency assessment\n'
   local_server_dependencies_check report || readiness=1
   identity="$(install_runtime_identity)" || readiness=1
@@ -190,34 +227,51 @@ install_reassess() {
 local_server_dependencies_install() {
   local -a required_packages=() optional_packages=() selected_packages=() privilege=()
   local -a transaction=() requested_versions=() reviewed=()
-  local original_runtime='' initial_ready=0
+  local original_runtime='' initial_ready=0 apt_pid='' interrupted=0 package_active=0
   local_server_dependencies_check report || initial_ready=1
   printf '\nDependency installation review\n'
   install_assess_batch || return 1
   printf 'Required packages:'; printf ' %s' "${required_packages[@]:-(none)}"; printf '\n'
   printf 'Optional packages (separate choice required):'; printf ' %s' "${optional_packages[@]:-(none)}"; printf '\n'
   selected_packages=("${required_packages[@]}")
-  if (( ${#selected_packages[@]} == 0 )); then
-    printf '%s\n' 'No required package changes. Remaining configuration restrictions need manual recovery.'
+  if (( ${#selected_packages[@]} == 0 && ${#optional_packages[@]} == 0 )); then
+    printf '%s\n' 'No installable package changes. Remaining configuration restrictions need manual recovery.'
     return "${initial_ready}"
   fi
   if [[ ! -t 0 || ! -t 1 ]]; then
     printf '%s\n' 'Installation requires terminal input and output; no unattended confirmation bypass. No system changes made.'
     return 1
   fi
+  local package
+  for package in "${optional_packages[@]}"; do
+    if install_confirm "Include optional ${package}?"; then
+      selected_packages+=("${package}")
+    else
+      printf 'Optional %s not selected.\n' "${package}"
+    fi
+  done
+  if (( ${#selected_packages[@]} == 0 )); then
+    printf '%s\n' 'No packages selected. No system changes made.'
+    return "${initial_ready}"
+  fi
+  for package in /usr/bin/setsid /bin/kill; do
+    [[ -x "${package}" ]] || { install_manual "${package} is unavailable; repair process-control tools externally."; return 1; }
+  done
+  command -v ps >/dev/null && command -v sleep >/dev/null || { install_manual 'process-control tools unavailable.'; return 1; }
   install_resolve || return 1
   reviewed=("${transaction[@]}")
   printf '%s\n' 'This changes system packages and may upgrade the dependencies listed above.' \
     'Administrator privileges are required. After confirmation, APT metadata will be refreshed.' \
     'Configuration files are preserved; package maintainer scripts will run. No automatic rollback.'
-  install_confirm 'Refresh metadata and install this reviewed required batch?' || {
+  install_confirm 'Refresh metadata and install this reviewed batch?' || {
     printf '%s\n' 'Cancelled before execution. No system changes made.'; return 1;
   }
   if (( EUID != 0 )); then
     command -v sudo >/dev/null 2>&1 || { install_manual 'sudo is unavailable; ask an administrator or use an existing root shell.'; return 1; }
     sudo -v || { install_manual 'administrator privileges were not obtained; no package changes made.'; return 1; }
-    privilege=(sudo)
+    privilege=(sudo -n)
   fi
+  trap install_interrupt INT TERM
   if ! install_privileged_apt update -o APT::Update::Error-Mode=any; then
     install_reassess 'metadata refresh failed' || true; return 1
   fi
@@ -225,11 +279,13 @@ local_server_dependencies_install() {
   if ! install_resolve; then
     install_reassess 'resolution failed after metadata refresh' || true; return 1
   fi
+  if (( interrupted )); then install_reassess interrupted || true; return 1; fi
   if [[ "${transaction[*]}" != "${reviewed[*]}" ]]; then
     install_confirm 'APT changed the transaction above. Install this revised batch?' || {
       install_reassess 'cancelled after metadata refresh; no install attempted' || true; return 1;
     }
   fi
+  if (( interrupted )); then install_reassess interrupted || true; return 1; fi
   if ! install_privileged_apt --yes --no-remove --no-install-recommends \
     -o Dpkg::Options::=--force-confold install "${transaction[@]}"; then
     install_reassess failed || true; return 1
