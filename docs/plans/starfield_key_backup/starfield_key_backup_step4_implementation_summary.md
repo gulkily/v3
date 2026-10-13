@@ -16,3 +16,8 @@ Debug mode: disabled
 - Changes: added passphrase/download/file controls, final-Blob verification, serialized UI actions and identity-change checks; extracted the shared raw/file import transaction with exact-text preservation and cleared-key undo rollback. Account Key assets use the existing fingerprint resolver.
 - Verification: `node tests/browser/key_backup_ui.mjs` passed actual Chromium download, fresh-profile restore, wrong password, simulated storage failure rollback, exact bytes and request privacy; two existing raw import/publication rollback tests passed with `php tests/run.php BrowserSigningNormalizationTest::testAccountRestorePrivateKeyPublishesDerivedPublicKeyOnly BrowserSigningNormalizationTest::testAccountRestorePrivateKeyRollsBackWhenPublishFails`; affected PHP lint and JS syntax checks passed.
 - Notes: test waits for existing automatic authentication/reload before filling password controls; no production state used. Browser test fixtures live in isolated temporary directories.
+
+## Stage 4 - Browser SFENC codec
+- Changes: canvas-free bounded PNG/gzip codec with deterministic background, shuffled nonoverlapping cells and whole-file canonical validation.
+- Verification: `node tests/browser/starfield.cjs` passed exact SHA256 matches to independent Python vectors, Python cross-decoding of JS output, empty/all-byte/capacity/max-128-KiB round trips, corruption/truncation/oversize rejection. `node tests/browser/starfield_browsers.mjs` passed exact PNG Blob hashes and restores in Chromium and Firefox.
+- Notes: original PNG is required; lossless re-encoding is deliberately rejected as noncanonical. Container checks and bounded stored-block parsing avoid canvas color transforms and decompression bombs.
