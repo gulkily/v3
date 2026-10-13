@@ -62,7 +62,7 @@ class Target:
     def shell(self, name, command):
         return self.run(name, ['/bin/bash', '-euc', command])
 
-    def terminal(self, name, args, answers, expected=0, interrupt=None, password=None):
+    def terminal(self, name, args, answers, expected=0, interrupt=None, password=None, cancel_auth=False):
         master, slave = pty.openpty()
         p = subprocess.Popen(self.command(args), env=self.env(), stdin=slave,
                              stdout=slave, stderr=slave, preexec_fn=lambda: (os.setsid(), fcntl.ioctl(0, termios.TIOCSCTTY, 0)))
@@ -82,14 +82,20 @@ class Target:
                     if not chunk:
                         break
                     output += chunk
+                    if cancel_auth and not password_sent and b'password for installer:' in output:
+                        os.killpg(p.pid, signal.SIGINT)
+                        password_sent = True
                     if password and not password_sent and b'password for installer:' in output:
                         os.write(master, (password + '\n').encode())
                         password_sent = True
-                    prompts = output.count(b'[type yes to continue]:')
+                    prompts = sum(output.count(marker) for marker in (b'[type yes to continue]:', b'[Y/n]:', b'[y/N]:'))
                     if prompts > sent:
                         assert sent < len(answers), (name, 'unexpected extra confirmation', output[-2500:])
                         answer = answers[sent]
-                        os.write(master, b'\x04' if answer is None else (answer + '\n').encode())
+                        if answer in ('SIGNAL_INT', 'SIGNAL_TERM'):
+                            os.kill(p.pid, signal.SIGINT if answer == 'SIGNAL_INT' else signal.SIGTERM)
+                        else:
+                            os.write(master, b'\x04' if answer is None else (answer + '\n').encode())
                         sent += 1
                 if interrupt and not signalled and (self.root / 'tmp/installer-hook-active').exists():
                     os.kill(p.pid, interrupt)

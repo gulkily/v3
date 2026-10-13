@@ -202,11 +202,14 @@ install_privileged_apt() {
   apt_pid_file="${pid_dir}/group"
   # Authenticate sudo in the caller's terminal session, then isolate APT. Moving
   # sudo itself into a new session would lose the terminal-scoped credential cache.
+  package_starting=1
   "${privilege[@]}" /usr/bin/setsid --wait /bin/bash -c '
     printf "%s\n" "$$" > "$1"; shift
     exec /usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C /usr/bin/apt-get "$@"
   ' v3-apt "${apt_pid_file}" "$@" &
   apt_pid=$!
+  package_starting=0
+  if (( interrupted )); then install_interrupt; fi
   wait "${apt_pid}" || status=$?
   if [[ -s "${apt_pid_file}" ]]; then IFS= read -r apt_pgid < "${apt_pid_file}" || true; fi
   if (( interrupted )); then
@@ -260,8 +263,8 @@ local_server_dependencies_install_run() {
   local -a required_packages=() optional_packages=() selected_packages=() privilege=()
   local -a transaction=() requested_versions=() reviewed=()
   local php_series ubuntu_suite php_version_pattern
-  local original_runtime='' initial_ready=0 apt_pid='' apt_pgid='' apt_pid_file='' interrupted=0 package_active=0
-  trap 'interrupted=1' INT TERM
+  local original_runtime='' initial_ready=0 apt_pid='' apt_pgid='' apt_pid_file='' interrupted=0 package_active=0 package_starting=0
+  trap 'interrupted=1; printf "\nRecovery cancelled before package execution. No system changes made.\n"; return 1' INT TERM
   if [[ "${recovery_context}" == startup ]]; then initial_ready=1
   else local_server_dependencies_check report || initial_ready=1; fi
   printf '\nDependency installation review\n'
@@ -320,7 +323,7 @@ local_server_dependencies_install_run() {
     privilege=(sudo -n)
   fi
   (( ! interrupted )) || return 1
-  trap install_interrupt INT TERM
+  trap 'install_interrupt; if [[ -z "${apt_pid}" ]] && (( ! package_starting )); then return 1; fi' INT TERM
   if ! install_privileged_apt update -o APT::Update::Error-Mode=any; then
     install_reassess 'metadata refresh failed' || true; return 1
   fi

@@ -61,3 +61,20 @@ php_setup_extension_guidance() {
     printf '%s' "No verified installable ${package} candidate. Inspect apt-cache policy ${package}, dpkg --audit and APT sources; refresh metadata manually with sudo apt-get update, then rerun ./v3 check-dependencies."
   fi
 }
+
+php_setup_os_description() {
+  local line value id='' version=''
+  if [[ -r /etc/os-release ]]; then
+    while IFS= read -r line; do
+      case "${line}" in
+        ID=*|VERSION_ID=*)
+          value="${line#*=}"
+          if [[ "${value}" == \"*\" || "${value}" == \'*\' ]]; then value="${value:1:${#value}-2}"; fi
+          [[ "${value}" =~ ^[a-zA-Z0-9._-]+$ ]] || continue
+          case "${line}" in ID=*) id="${value}" ;; VERSION_ID=*) version="${value}" ;; esac
+          ;;
+      esac
+    done < /etc/os-release
+  fi
+  printf '%s %s' "${id:-unknown OS}" "${version:-unknown release}"
+}

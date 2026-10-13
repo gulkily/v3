@@ -8,6 +8,7 @@ missing_php_startup_guidance() {
   else
     printf '%s\n' 'Cannot start v3: PHP CLI is not available on PATH.' >&2
   fi
+  printf 'OS/release: %s\n' "$(php_setup_os_description)" >&2
   cat >&2 <<EOF
 If PHP is already installed, add its executable's directory to PATH in this
 terminal. Check that 'php --version' works before installing another copy.
@@ -120,7 +121,7 @@ local_server_dependencies_check() {
   fi
   local_server_dependency_line OK 'Bash 4.1+ launcher'
   platform="$(php_setup_platform /etc/os-release)"
-  if [[ "${mode}" == report ]]; then printf 'Platform: %s\n' "${platform}"; fi
+  if [[ "${mode}" == report ]]; then printf 'OS/release: %s; package mapping: %s\n' "$(php_setup_os_description)" "${platform}"; fi
   if ! command -v git >/dev/null 2>&1; then
     local guidance='Install Git or repair PATH, then retry the same command.'
     if php_setup_mapping "${platform}"; then
@@ -189,6 +190,7 @@ local_server_dependencies_check() {
   elif ! php "${ROOT}/scripts/check_local_server_dependencies.php" "${mode}" "${git_ready}" "${platform}" "${extension_guidance[@]}"; then
     failed=1
   fi
+  if [[ "${mode}" == startup ]] && (( failed )); then printf 'OS/release: %s\n' "$(php_setup_os_description)" >&2; fi
   local_server_report_finish
   return "${failed}"
 }

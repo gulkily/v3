@@ -31,7 +31,7 @@ class StartupTarget(Target):
                 'FORUM_SECRETS_PATH': '/no-secrets.php',
                 'DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED': 'false', 'FAST_SCORING_ENABLED': 'false'}
 
-    def start(self, name, answer, sudo=False):
+    def start(self, name, answer, sudo=False, recovery=True):
         with socket.socket() as reserved:
             reserved.bind(('127.0.0.1', 0))
             port = reserved.getsockname()[1]
@@ -69,11 +69,14 @@ class StartupTarget(Target):
                         os.write(master, b'disposable-test-password\n')
                         passwords += 1
                 if listening(port):
-                    assert b'Package operation: succeeded' in output, output[-3000:]
-                    assert output.count(b'continuing the original startup request') == 1, output[-3000:]
-                    assert confirmations >= 1
-                    assert bool(passwords) == sudo
-                    expected_uid = (self.root / 'work').stat().st_uid
+                    if recovery:
+                        assert b'Package operation: succeeded' in output, output[-3000:]
+                        assert output.count(b'continuing the original startup request') == 1, output[-3000:]
+                        assert confirmations >= 1
+                    else:
+                        assert b'Dependency installation review' not in output and confirmations == optional_sent == 0
+                    assert bool(passwords) == (sudo and recovery)
+                    expected_uid = next(line.split(':')[2] for line in (self.root / 'etc/passwd').read_text().splitlines() if line.startswith('installer:')) if sudo else '0'
                     launchers = []
                     for proc in Path('/proc').glob('[0-9]*'):
                         try:
@@ -121,7 +124,8 @@ class StartupTarget(Target):
             assert served, output[-5000:]
             assert not listening(port), 'Listening child survived shutdown'
             assert b'stopped' in output
-            assert b'\x1b' not in output.split(b'Dependencies recovered;')[0]
+            if recovery:
+                assert b'\x1b' not in output.split(b'Dependencies recovered;')[0]
             plain = (self.root / log.lstrip('/')).read_bytes()
             assert b'/api/create_thread' in plain and b'\x1b' not in plain
             assert not (self.root / 'etc/php' / ('8.1' if '22.04' in (self.root / 'etc/os-release').read_text() else '8.3') / 'cli/conf.d/20-intl.ini').exists()

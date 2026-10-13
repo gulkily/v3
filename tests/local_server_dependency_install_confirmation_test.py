@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import pty
 import select
+import signal
 import subprocess
 import tempfile
 import time
@@ -28,11 +29,12 @@ local_server_dependencies_install
 '''
 
 
-def case(second_answer):
+def case(second_answer, startup=False):
     with tempfile.TemporaryDirectory() as directory:
         events = Path(directory) / 'events'
         master, slave = pty.openpty()
-        process = subprocess.Popen(['bash', '-c', SCRIPT], stdin=slave, stdout=slave,
+        script = SCRIPT.replace('local_server_dependencies_install\n', 'local_server_dependencies_install startup\n') if startup else SCRIPT
+        process = subprocess.Popen(['bash', '-c', script], stdin=slave, stdout=slave,
             stderr=slave, env={**os.environ, 'ROOT': str(ROOT), 'V3_FIXTURE_EVENTS': str(events)})
         os.close(slave)
         output = b''
@@ -46,10 +48,13 @@ def case(second_answer):
                     except OSError:
                         break
                     output += chunk
-                    prompts = output.count(b'[type yes to continue]:')
+                    prompts = output.count(b'[Y/n]:' if startup else b'[type yes to continue]:')
                     if prompts > sent:
-                        answer = ['yes', second_answer][sent]
-                        os.write(master, (answer + '\n').encode())
+                        answer = [('y' if startup else 'yes'), second_answer][sent]
+                        if answer in ('SIGINT', 'SIGTERM'):
+                            os.kill(process.pid, getattr(signal, answer))
+                        else:
+                            os.write(master, (answer + '\n').encode())
                         sent += 1
                 elif process.poll() is not None:
                     break
@@ -57,9 +62,9 @@ def case(second_answer):
             actions = events.read_text().splitlines()
             assert sent == 2 and b'Install this revised batch?' in output, output
             assert actions.count('update') == 1, actions
-            assert ('--yes' in actions) == (second_answer == 'yes'), actions
-            assert process.returncode == (0 if second_answer == 'yes' else 1), output
-            if second_answer == 'no':
+            assert ('--yes' in actions) == (second_answer in ('yes', 'y')), actions
+            assert process.returncode == (0 if second_answer in ('yes', 'y') else 1), output
+            if second_answer in ('no', 'n'):
                 assert b'cancelled after metadata refresh; no install attempted' in output, output
         finally:
             if process.poll() is None:
@@ -70,4 +75,8 @@ def case(second_answer):
 
 case('no')
 case('yes')
+case('n', startup=True)
+case('y', startup=True)
+case('SIGINT', startup=True)
+case('SIGTERM', startup=True)
 print('PASS: changed APT batch requires new confirmation; decline never executes installation')
