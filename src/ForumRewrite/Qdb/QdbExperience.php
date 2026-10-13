@@ -6,6 +6,7 @@ namespace ForumRewrite\Qdb;
 
 use ForumRewrite\Http\BoardPageController;
 use ForumRewrite\Http\RouteServices;
+use ForumRewrite\Http\ThreadAndPostPageController;
 use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\SiteProfileRegistry;
@@ -20,6 +21,7 @@ final class QdbExperience
         private readonly PDO $pdo,
         private readonly QdbBoardPolicy $boardPolicy,
         private readonly RouteServices $routeServices,
+        private readonly ThreadAndPostPageController $threadPages,
     ) {
     }
 
@@ -104,6 +106,9 @@ final class QdbExperience
         $resolvedThreadId = ThreadRepository::byId($this->pdo, $matches[1]) !== null ? $matches[1] : null;
         if ($resolvedThreadId === null && ctype_digit($matches[1])) {
             $resolvedThreadId = QdbQuoteNumbers::resolve($this->pdo, (int) $matches[1]);
+            $html = $resolvedThreadId === null ? null : $this->threadPages->thread($resolvedThreadId);
+
+            return $html === null ? null : QdbExperienceRouteResult::page($html);
         }
 
         return $resolvedThreadId === null

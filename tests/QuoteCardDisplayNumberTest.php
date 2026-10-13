@@ -296,15 +296,14 @@ final class QuoteCardDisplayNumberTest
             $directThreadPage = $this->render($application, '/threads/thread-20030613104735-qdb-42');
             $viaShortLink = $this->render($application, '/42');
             $shortLinkStatus = http_response_code();
-            $resolvedPage = $this->render($application, '/threads/thread-20030613104735-qdb-42');
         } finally {
             putenv('FORUM_SITE_ID');
         }
 
-        assertSame(302, $shortLinkStatus);
-        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $viaShortLink);
+        assertSame(200, $shortLinkStatus);
+        assertStringContains('The quoted body.', $viaShortLink);
         assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $directThreadPage);
-        assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $resolvedPage);
+        assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $viaShortLink);
     }
 
     public function testQdbStaticReleaseIncludesPublicListingsAndNumericQuoteAlias(): void
@@ -392,9 +391,9 @@ final class QuoteCardDisplayNumberTest
                 assertStringContains('The quoted body.', $response);
                 assertStringNotContains('route-source: static-html', $response);
             }
-            $redirect = $this->renderFrontController($controller, '/42');
-            assertSame(302, http_response_code());
-            assertStringContains('href="/threads/' . $quoteId . '"', $redirect);
+            $quotePage = $this->renderFrontController($controller, '/42');
+            assertSame(200, http_response_code());
+            assertStringContains('The quoted body.', $quotePage);
             $this->renderFrontController($controller, '/999999');
             assertSame(404, http_response_code());
         } finally {
@@ -519,7 +518,7 @@ final class QuoteCardDisplayNumberTest
         assertStringNotContains('quote-card-permalink', $permalink);
     }
 
-    public function testBareNumericPathRedirectsToTheQuoteWithThatNumber(): void
+    public function testBareNumericPathRendersTheQuoteWithThatNumberAndPreservesExactIdAliases(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -528,12 +527,17 @@ final class QuoteCardDisplayNumberTest
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $body = $this->render($application, '/42');
+            assertSame(200, http_response_code());
+            assertStringContains('The quoted body.', $body);
+            foreach (['/thread-20030613104735-qdb-42', '/root-001'] as $alias) {
+                $redirect = $this->render($application, $alias);
+                assertSame(302, http_response_code());
+                assertStringContains('href="/threads' . $alias . '"', $redirect);
+            }
         } finally {
             putenv('FORUM_SITE_ID');
         }
 
-        assertSame(302, http_response_code());
-        assertStringContains('href="/threads/thread-20030613104735-qdb-42"', $body);
     }
 
     public function testBareNumericPathWithNoMatchingQuoteStill404s(): void
