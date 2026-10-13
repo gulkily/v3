@@ -8,6 +8,8 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\PostReactionRecord;
+use ForumRewrite\Canonical\PostRecord;
+use ForumRewrite\Canonical\PostRetractionRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\Canonical\ThreadSubjectRecord;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
@@ -147,14 +149,15 @@ final class ReadModelBuilder
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, sequence_number)
-             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :sequence_number)'
+            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, retracted_at, sequence_number)
+             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :retracted_at, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, retracted_at)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at)'
         );
 
+        $retractions = $this->loadPostRetractions();
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
         $this->reportProgress(sprintf(
@@ -174,22 +177,26 @@ final class ReadModelBuilder
         foreach ($paths as $index => $relativePath) {
             $record = $this->canonicalRepository->loadPost($relativePath);
             $threadId = $record->threadId ?? $record->postId;
+            // An author retraction suppresses prose at index time so no later ingest path can restore it.
+            $retractedAt = $this->retractionTimestampFor($record, $retractions);
+            $isRetracted = $retractedAt !== null;
             $parsedPosts[] = [
                 'post_id' => $record->postId,
                 'created_at' => $record->createdAt,
                 'thread_id' => $threadId,
                 'parent_id' => $record->parentId,
-                'subject' => $record->subject,
-                'body' => $record->body,
+                'subject' => $isRetracted ? null : $record->subject,
+                'body' => $isRetracted ? '' : $record->body,
+                'retracted_at' => $retractedAt,
                 'board_tags_json' => json_encode($record->boardTags, JSON_THROW_ON_ERROR),
                 'thread_type' => $record->threadType,
                 'author_identity_id' => $record->authorIdentityId,
                 'imported_score_seed' => $record->importedScoreSeed,
                 'imported_vote_count_seed' => $record->importedVoteCountSeed,
-                'event_date' => $record->eventDate,
-                'event_location' => $record->eventLocation,
-                'event_link' => $record->eventLink,
-                'event_time' => $record->eventTime,
+                'event_date' => $isRetracted ? null : $record->eventDate,
+                'event_location' => $isRetracted ? null : $record->eventLocation,
+                'event_link' => $isRetracted ? null : $record->eventLink,
+                'event_time' => $isRetracted ? null : $record->eventTime,
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
@@ -228,6 +235,7 @@ final class ReadModelBuilder
                 'board_tags_json' => $post['board_tags_json'],
                 'thread_type' => $post['thread_type'],
                 'author_identity_id' => $post['author_identity_id'],
+                'retracted_at' => $post['retracted_at'],
                 'sequence_number' => $post['sequence_number'],
             ]);
 
@@ -248,6 +256,7 @@ final class ReadModelBuilder
                     'event_location' => $post['event_location'],
                     'event_link' => $post['event_link'],
                     'event_time' => $post['event_time'],
+                    'retracted_at' => $post['retracted_at'],
                 ];
             }
 
@@ -268,6 +277,43 @@ final class ReadModelBuilder
         }
 
         return $posts;
+    }
+
+    /**
+     * @return array<string, PostRetractionRecord>
+     */
+    private function loadPostRetractions(): array
+    {
+        $retractions = [];
+        foreach ($this->findRelativePaths('records/post-retractions') as $relativePath) {
+            try {
+                $record = $this->canonicalRepository->loadPostRetraction($relativePath);
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+            $retractions[$record->postId] = $record;
+        }
+
+        return $retractions;
+    }
+
+    /**
+     * A retraction applies only when its signer is the post's own author, and never to
+     * identity, approval, or invitation authority posts, which other state is derived from.
+     *
+     * @param array<string, PostRetractionRecord> $retractions
+     */
+    private function retractionTimestampFor(PostRecord $post, array $retractions): ?string
+    {
+        $retraction = $retractions[$post->postId] ?? null;
+        if ($retraction === null || $post->authorIdentityId === null || $retraction->authorIdentityId !== $post->authorIdentityId) {
+            return null;
+        }
+        if (array_intersect($post->boardTags, ['identity', 'approval', 'invitation']) !== []) {
+            return null;
+        }
+
+        return $retraction->createdAt;
     }
 
     /**
@@ -385,13 +431,17 @@ final class ReadModelBuilder
 
     private function indexThreadSubjects(PDO $pdo): void
     {
-        $rootThreadRows = $pdo->query('SELECT root_post_id, subject FROM threads')->fetchAll();
+        $rootThreadRows = $pdo->query('SELECT root_post_id, subject, retracted_at FROM threads')->fetchAll();
         $knownRootThreads = [];
         $currentSubjectByThread = [];
+        $retractedThreads = [];
         foreach ($rootThreadRows as $row) {
             $rootPostId = (string) $row['root_post_id'];
             $knownRootThreads[$rootPostId] = true;
             $currentSubjectByThread[$rootPostId] = $row['subject'];
+            if ($row['retracted_at'] !== null) {
+                $retractedThreads[$rootPostId] = true;
+            }
         }
 
         $records = [];
@@ -418,6 +468,10 @@ final class ReadModelBuilder
         foreach ($records as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadSubjectRecordCount++;
+                continue;
+            }
+
+            if (isset($retractedThreads[$record->threadId])) {
                 continue;
             }
 
@@ -988,6 +1042,10 @@ final class ReadModelBuilder
     /** @param array{subject:?string,body:string,board_tags_json:string} $post */
     private function activityLabelForPost(array $post): string
     {
+        if (($post['retracted_at'] ?? null) !== null) {
+            return 'Deleted post';
+        }
+
         $boardTags = json_decode($post['board_tags_json'], true);
         if (is_array($boardTags) && in_array('invitation', $boardTags, true)
             && preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action)

@@ -208,6 +208,13 @@ class IncrementalReadModelUpdater
         $pdo->beginTransaction();
 
         try {
+            if ($this->threadIsRetracted($pdo, $threadId)) {
+                $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+                $pdo->commit();
+
+                return $timings;
+            }
+
             $currentSubject = $this->measure($timings, 'load_thread_subject', fn (): ?string => $this->loadThreadSubjectColumn($pdo, $threadId));
             $records = $this->measure($timings, 'load_thread_subject_records', fn (): array => $this->loadThreadSubjectRecords($threadId));
             $resolvedSubject = $this->measure(
@@ -1401,6 +1408,14 @@ class IncrementalReadModelUpdater
         }
 
         return $records[0]->subject;
+    }
+
+    private function threadIsRetracted(PDO $pdo, string $threadId): bool
+    {
+        $stmt = $pdo->prepare('SELECT retracted_at FROM threads WHERE root_post_id = :thread_id');
+        $stmt->execute(['thread_id' => $threadId]);
+
+        return $stmt->fetchColumn() !== null;
     }
 
     private function updateThreadSubject(PDO $pdo, string $threadId, string $subject): void
