@@ -59,6 +59,9 @@ $threadComposeAuthoringOperation = (string) ($authoringOperation ?? 'thread');
   <div class="compose-form-actions<?= $isCompactThreadCompose ? ' compact-thread-compose-actions' : '' ?>">
     <button type="submit"><?= $e($threadComposeSubmitLabel) ?></button>
     <button type="submit" data-action="submit-anonymous-compose"><?= $e($threadComposeAnonymousLabel) ?></button>
+<?php if ($threadComposeAuthoringOperation === 'quote'): ?>
+    <button type="button" class="compose-clear-button" data-action="clean-quote-text" title="Remove timestamps and tidy nick formatting in the pasted chat">Remove timestamps</button>
+<?php endif; ?>
     <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
   </div>
   <input type="hidden" name="author_identity_id" value="">

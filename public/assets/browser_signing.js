@@ -292,6 +292,37 @@
     return characters;
   }
 
+  /**
+   * Tidies pasted IRC/chat transcripts for the QDB add form: drops leading
+   * timestamps, normalizes irssi-style "< nick>" to "<nick>", trims trailing
+   * whitespace and surrounding blank lines. Bracketed timestamps are always
+   * stripped; bare ones only when a chat marker follows, so prose such as
+   * "12:30 is fine" is left alone.
+   */
+  function cleanQuoteText(text) {
+    const bracketed = /^[ \t]*[\[(](?:\d{4}-\d{2}-\d{2}[ T])?\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AaPp][Mm])?[\])][ \t]*/;
+    const bare = /^[ \t]*(?:\d{4}-\d{2}-\d{2}[ T])?\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AaPp][Mm])?(?=[ \t]+(?:<|\*|-!-))[ \t]*/;
+    const lines = String(text === null || text === undefined ? "" : text)
+      .replace(/\r\n?/g, "\n")
+      .split("\n")
+      .map(function (line) {
+        let cleaned = line.replace(/[ \t]+$/, "");
+        cleaned = cleaned.replace(bracketed, "").replace(bare, "");
+        cleaned = cleaned.replace(/^(\s*)<\s+([^<>\s]+)>/, "$1<$2>");
+        return cleaned.replace(/^[ \t]+(?=[<*])/, "");
+      });
+
+    while (lines.length > 0 && lines[0].trim() === "") {
+      lines.shift();
+    }
+    while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
+      lines.pop();
+    }
+
+    const cleaned = lines.join("\n");
+    return { text: cleaned, changed: cleaned !== String(text === null || text === undefined ? "" : text) };
+  }
+
   function normalizeComposeText(text, options) {
     const config = options || {};
     const removeUnsupported = config.removeUnsupported === true;
@@ -1317,6 +1348,7 @@
       insertPendingReplyCard: insertPendingReplyCard,
       insertPendingThreadShell: insertPendingThreadShell,
       isInlineReplyComposer: isInlineReplyComposer,
+      cleanQuoteText: cleanQuoteText,
       isQuoteComposeForm: isQuoteComposeForm,
       isReplyComposeForm: isReplyComposeForm,
       isThreadComposeForm: isThreadComposeForm,
@@ -2904,6 +2936,7 @@
     const fieldNormalizationStatusNodes = form ? Array.from(root.querySelectorAll('[data-role="compose-field-normalization-status"]')) : [];
     const removeUnsupportedButtons = form ? Array.from(root.querySelectorAll('[data-action="remove-unsupported-compose-characters"]')) : [];
     const clearFieldsButtons = form ? Array.from(root.querySelectorAll('[data-action="clear-compose-fields"]')) : [];
+    const cleanQuoteButtons = form ? Array.from(root.querySelectorAll('[data-action="clean-quote-text"]')) : [];
     const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
     const normalizationMessageNode = root.querySelector('[data-role="compose-normalization-message"]');
     if (!form) {
@@ -3139,6 +3172,26 @@
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     }
 
+    function cleanQuoteBody() {
+      const bodyField = fieldByName("body");
+      if (!bodyField) {
+        return;
+      }
+
+      const result = cleanQuoteText(bodyField.value);
+      if (result.changed) {
+        bodyField.value = result.text;
+      }
+      normalizeComposeFields({ removeUnsupported: false });
+      if (normalizationStatusNode && normalizationStatusNode.dataset.kind === "error") {
+        return;
+      }
+      updateComposeNormalizationStatus(
+        result.changed ? "Cleaned up the pasted quote." : "Nothing to clean up.",
+        "ok"
+      );
+    }
+
     function clearTransientComposeStatus() {
       if (!statusNode) {
         return;
@@ -3357,6 +3410,10 @@
 
     clearFieldsButtons.forEach(function (button) {
       button.addEventListener("click", clearComposeFields);
+    });
+
+    cleanQuoteButtons.forEach(function (button) {
+      button.addEventListener("click", cleanQuoteBody);
     });
 
     function primaryComposeSubmitter() {
