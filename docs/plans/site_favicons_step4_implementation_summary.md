@@ -28,3 +28,17 @@ Debug mode: enabled
 - Notes:
   - The four offline-snapshot failures look like local database schema drift from working across branches; they are out of scope here and were not touched.
   - Existing slot entries and the `zenmemes`/`mitrapclub` selections are unchanged.
+
+## Stage 3 - End-to-end verification
+- Changes:
+  - None. No service worker or builder edits were needed.
+- Verification:
+  - Page head, rendered through `Application` against copies of the local state databases and repositories (`FORUM_SITE_ID` per site): `zenmemes` -> `/favicon.ico`, `chouse` -> `/assets/favicon-chouse.ico`, `qdb` -> `/assets/favicon-qdb.ico`.
+  - Manifest, via `BrowserRuntimeAssetRenderer::manifest` for all four profiles: `zenmemes` -> `/favicon.ico`, `chouse` -> `/assets/favicon-chouse.ico`, `qdb` -> `/assets/favicon-qdb.ico`, `mitrapclub` -> `/assets/favicon-mitrapclub.ico`.
+  - Static build runtime step (`copyOfflineRuntimeFiles`, run into a temp artifact root per profile): each profile's artifact contains `/favicon.ico` plus its own icon (`chouse`, `qdb`, `mitrapclub`); `zenmemes` contains only `/favicon.ico`.
+  - Service worker: it precaches `/favicon.ico` and every `/assets/` URL referenced by `<link href>` in the offline shell pages, which includes the page's `<link rel="icon">`; the per-site icon is therefore precached with no worker change. Checked by reading the worker source, not by running it in a browser.
+  - Full `./v3 test` ran at Stage 2 with no source changes since; the only failures are pre-existing (see Stage 2 notes).
+- Notes:
+  - `/manifest.webmanifest` is not an `Application` route in this checkout (it returns Not Found there); it is served as a runtime file, so it was verified through the renderer and static output instead.
+  - `mitrapclub` page head was not rendered because no local `mitrapclub` repository exists under `state/`; its resolved path is covered by the Stage 2 test and the manifest/static checks above.
+  - Not verified: an installed-app icon on a real device or browser tab bar.
