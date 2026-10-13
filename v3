@@ -95,7 +95,7 @@ case "${COMMAND}" in
       printf '%s\n' 'Usage: ./v3 check-dependencies [--install|--help] (alias: dependency-check)' \
         'Check local-server prerequisites without starting the server or changing application state.' \
         'Required failures return 1; optional limitations are warnings.' \
-        '--install: Ubuntu 24.04/APT distribution PHP 8.3 only; review packages, choose optional intl, and confirm in a terminal.' \
+        '--install: Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution packages only; review packages, choose optional intl, and confirm in a terminal.' \
         'Confirmation precedes sudo/root execution and metadata refresh; changed transactions require new confirmation.' \
         'No unattended bypass. Failed/interrupted operations may leave partial system changes; no automatic rollback.' \
         'Installation returns 0 only for successful requested installation and required readiness, or a ready no-op.' \

@@ -9,7 +9,7 @@ install_package_status() {
   dpkg-query -W -f='${db:Status-Status}' "$1" 2>/dev/null || true
 }
 
-# Accept a version only when all its indexed sources are official Noble archives.
+# Accept a version only when all its indexed sources are official archives for the selected Ubuntu release.
 # A local dpkg status entry alone does not establish provenance.
 install_official_version() {
   local package="$1" version="$2"
@@ -44,7 +44,7 @@ install_add_missing() {
     return 1
   fi
   candidate="$(install_candidate "${package}")" || {
-    install_manual "no verified Ubuntu 24.04 candidate for ${package}; inspect APT sources and metadata manually."
+    install_manual "no verified Ubuntu ${ubuntu_suite:-noble} candidate for ${package}; inspect APT sources and metadata manually."
     return 1
   }
   if [[ "${kind}" == optional ]]; then
@@ -74,8 +74,8 @@ install_runtime_identity() {
 install_assess_batch() {
   local fact key value php_path git_path
   required_packages=(); optional_packages=()
-  [[ "$(php_setup_platform /etc/os-release)" == ubuntu-24.04 ]] || {
-    install_manual 'automatic installation supports only Ubuntu 24.04/APT with distribution PHP 8.3.'; return 1;
+  php_setup_mapping "$(php_setup_platform /etc/os-release)" || {
+    install_manual 'automatic installation supports Ubuntu 22.04/PHP 8.1 and 24.04/PHP 8.3 distribution packages only.'; return 1;
   }
   local tool
   for tool in apt-cache dpkg dpkg-query readlink awk grep; do
@@ -90,38 +90,38 @@ install_assess_batch() {
   fi
   php_path="$(command -v php || true)"
   if [[ -z "${php_path}" ]]; then
-    [[ ! -e /usr/bin/php && ! -e /usr/bin/php8.3 ]] || { install_manual 'PHP exists outside PATH; repair PATH first.'; return 1; }
+    [[ ! -e /usr/bin/php && ! -e /usr/bin/php${php_series:-8.3} ]] || { install_manual 'PHP exists outside PATH; repair PATH first.'; return 1; }
     # Never add a new runtime alongside any already registered PHP CLI package.
     if dpkg-query -W -f='${binary:Package} ${db:Status-Status}\n' 'php*-cli' 2>/dev/null | grep -q ' installed$'; then
       install_manual 'a PHP CLI package is already installed; repair PATH/alternatives manually.'; return 1
     fi
     original_runtime=missing
-    install_add_missing php8.3-cli || return 1
-    install_add_missing php8.3-sqlite3 || return 1
-    install_add_missing php8.3-mbstring || return 1
-    [[ "$(install_package_status php8.3-intl)" == installed ]] || install_add_missing php8.3-intl optional || true
+    install_add_missing php${php_series:-8.3}-cli || return 1
+    install_add_missing php${php_series:-8.3}-sqlite3 || return 1
+    install_add_missing php${php_series:-8.3}-mbstring || return 1
+    [[ "$(install_package_status php${php_series:-8.3}-intl)" == installed ]] || install_add_missing php${php_series:-8.3}-intl optional || true
     return 0
   fi
   original_runtime="$(install_runtime_identity)" || {
-    install_manual 'selected PHP is not a verified, unmodified Ubuntu PHP 8.3 CLI; keep this runtime and use its own setup instructions.'; return 1;
+    install_manual "selected PHP is not a verified, unmodified Ubuntu PHP ${php_series} CLI; keep this runtime and use its own setup instructions."; return 1;
   }
-  fact="$(php "${ROOT}/scripts/check_local_server_dependencies.php" facts "$(command -v git >/dev/null 2>&1 && echo 1 || echo 0)" ubuntu-24.04)" || true
+  fact="$(php "${ROOT}/scripts/check_local_server_dependencies.php" facts "$(command -v git >/dev/null 2>&1 && echo 1 || echo 0)" "$(php_setup_platform /etc/os-release)")" || true
   local -A facts=()
   while IFS=$'\t' read -r key value; do
     case "${key}" in version|binary|pdo|sqlite|mbstring|intl|ready) facts["${key}"]="${value}" ;; *) install_manual 'unreadable PHP capability facts.'; return 1 ;; esac
   done <<<"${fact}"
-  [[ "${facts[binary]:-}" == "${original_runtime}" && "${facts[version]:-}" =~ ^803[0-9][0-9]$ ]] || return 1
+  [[ "${facts[binary]:-}" == "${original_runtime}" && "${facts[version]:-}" =~ ${php_version_pattern:-^803[0-9][0-9]$} ]] || return 1
   for key in pdo sqlite mbstring intl ready; do
     [[ "${facts[${key}]:-}" =~ ^[01]$ ]] || { install_manual 'incomplete PHP capability facts.'; return 1; }
   done
-  [[ "${facts[pdo]}" == 1 ]] || { install_add_missing php8.3-common || return 1; }
-  [[ "${facts[sqlite]}" == 1 ]] || { install_add_missing php8.3-sqlite3 || return 1; }
-  [[ "${facts[mbstring]}" == 1 ]] || { install_add_missing php8.3-mbstring || return 1; }
+  [[ "${facts[pdo]}" == 1 ]] || { install_add_missing php${php_series:-8.3}-common || return 1; }
+  [[ "${facts[sqlite]}" == 1 ]] || { install_add_missing php${php_series:-8.3}-sqlite3 || return 1; }
+  [[ "${facts[mbstring]}" == 1 ]] || { install_add_missing php${php_series:-8.3}-mbstring || return 1; }
   if [[ "${facts[intl]}" == 0 ]]; then
-    if [[ "$(install_package_status php8.3-intl)" == installed ]]; then
+    if [[ "$(install_package_status php${php_series:-8.3}-intl)" == installed ]]; then
       printf '%s\n' 'Optional intl is installed but disabled; enable it manually if wanted.'
     else
-      install_add_missing php8.3-intl optional || true
+      install_add_missing php${php_series:-8.3}-intl optional || true
     fi
   fi
 }
@@ -153,7 +153,7 @@ install_resolve() {
         version="${rest#*(}"; version="${version%% *}"
         [[ "${name}" =~ ^[a-z0-9][a-z0-9.+:-]*$ && "${version}" =~ ^[a-zA-Z0-9.+:~_-]+$ ]] || return 1
         case "${name%%:*}" in
-          php-common|php8.3-cli|php8.3-common|php8.3-opcache|php8.3-readline|php8.3-sqlite3|php8.3-mbstring|php8.3-intl) ;;
+          php-common|php${php_series:-8.3}-cli|php${php_series:-8.3}-common|php${php_series:-8.3}-opcache|php${php_series:-8.3}-readline|php${php_series:-8.3}-sqlite3|php${php_series:-8.3}-mbstring|php${php_series:-8.3}-intl) ;;
           php*|libapache2-mod-php*) install_manual "APT proposed an unapproved PHP runtime package: ${name}."; return 1 ;;
         esac
         install_official_version "${name}" "${version}" || { install_manual "unverified dependency source: ${name} ${version}."; return 1; }
@@ -227,7 +227,7 @@ install_reassess() {
   printf '\nFresh dependency assessment\n'
   local_server_dependencies_check report || readiness=1
   identity="$(install_runtime_identity)" || readiness=1
-  if [[ "${identity}" != /usr/bin/php8.3 || ( "${original_runtime}" != missing && "${identity}" != "${original_runtime}" ) ]]; then
+  if [[ "${identity}" != /usr/bin/php${php_series:-8.3} || ( "${original_runtime}" != missing && "${identity}" != "${original_runtime}" ) ]]; then
     printf '%s\n' 'Selected PHP runtime changed or could not be verified; inspect PATH and alternatives manually.'
     readiness=1
   fi
@@ -243,6 +243,7 @@ install_reassess() {
 local_server_dependencies_install() {
   local -a required_packages=() optional_packages=() selected_packages=() privilege=()
   local -a transaction=() requested_versions=() reviewed=()
+  local php_series ubuntu_suite php_version_pattern
   local original_runtime='' initial_ready=0 apt_pid='' apt_pgid='' apt_pid_file='' interrupted=0 package_active=0
   local_server_dependencies_check report || initial_ready=1
   printf '\nDependency installation review\n'

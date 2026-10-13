@@ -20,6 +20,13 @@ php8.3-cli:
 POLICY
 [[ "$(install_candidate php8.3-cli)" == 8.3.6-0ubuntu0.24.04.5 ]] || fail official
 cp "$work/policy" "$work/good"
+ubuntu_suite=jammy
+if install_candidate php8.3-cli; then fail 'accepted Noble packages for Jammy'; fi
+sed -i 's/noble/jammy/g' "$work/policy"
+install_candidate php8.1-cli >/dev/null || fail 'rejected official Jammy source'
+unset ubuntu_suite
+if install_candidate php8.3-cli; then fail 'accepted Jammy packages for Noble'; fi
+cp "$work/good" "$work/policy"
 sed -i 's@archive.ubuntu.com/ubuntu@ppa.example/ubuntu@' "$work/policy"
 if install_candidate php8.3-cli; then fail 'accepted custom source'; fi
 cp "$work/good" "$work/policy"
@@ -43,7 +50,7 @@ install_add_missing php8.3-intl optional
 [[ "${required_packages[*]}" == php8.3-mbstring && "${optional_packages[*]}" == php8.3-intl ]] || fail 'batch separation'
 php_setup_platform() { echo generic; }
 if install_assess_batch > "$work/out"; then fail 'accepted unsupported host'; fi
-grep -q 'only Ubuntu 24.04' "$work/out" || fail 'unsupported guidance'
+grep -q 'Ubuntu 22.04/PHP 8.1 and 24.04/PHP 8.3' "$work/out" || fail 'unsupported guidance'
 # Both public aliases must stay equivalent on this real host, without prompts.
 set +e
 "${ROOT}/v3" check-dependencies --install < /dev/null > "$work/first" 2>&1

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real APT recovery tests in a NEW, disposable Ubuntu Base 24.04 amd64 chroot.
+"""Real APT recovery tests in a NEW, disposable Ubuntu Base 22.04 or 24.04 amd64 chroot.
 
 Run as root with --base-image, --sha256 (published Ubuntu checksum), --work-dir.
 The work directory must not exist. Host packages are never installed. Requires
@@ -39,6 +39,8 @@ class Target:
         self.results = []
 
     def command(self, args):
+        series = '8.1' if 'VERSION_ID="22.04"' in (self.root / 'etc/os-release').read_text() else '8.3'
+        args = [a.replace('php8.3', 'php' + series) for a in args]
         return ['unshare', '--mount', '/bin/bash', '-c', MOUNT_RUN, 'v3-test', str(self.root), *args]
 
     def env(self):
@@ -143,7 +145,7 @@ def main():
     subprocess.run(['tar', '-xzf', str(args.base_image.resolve()), '-C', str(target.root)], check=True)
     shutil.copyfile('/etc/resolv.conf', target.root / 'etc/resolv.conf')
     release = (target.root / 'etc/os-release').read_text()
-    assert 'VERSION_ID="24.04"' in release and '\nID=ubuntu\n' in release
+    assert any('VERSION_ID="' + v + '"' in release for v in ('22.04', '24.04')) and '\nID=ubuntu\n' in release
     project = target.root / 'work'
     project.mkdir()
     for name in ('v3', 'autoload.php'):
@@ -207,7 +209,7 @@ def main():
         try:
             text = target.terminal('interrupt-' + sig.name, cli, ['yes', 'yes'], 1, interrupt=sig)
             assert 'Package operation: interrupted' in text and 'Fresh dependency assessment' in text
-            target.shell('no-package-child-' + sig.name, '! ps -eo args | grep -E "^[s]leep 60$|^[/]usr/bin/apt-get"')
+            target.shell('no-package-child-' + sig.name, '! (for p in /proc/[0-9]*; do [[ "$p/root" -ef / ]] || continue; tr "\\0" " " < "$p/cmdline" 2>/dev/null || true; echo; done) | grep -E "^[s]leep 60 ?$|^[/]usr/bin/apt-get"')
         finally:
             target.unhook('99v3-slow')
     target.hook('99v3-fail', 'DPkg::Post-Invoke { "false"; };')
@@ -238,7 +240,7 @@ apt-get remove -y php8.3-mbstring''')
             '/work/v3', 'dependency-check', '--install'], ['yes', 'yes'], 1,
             interrupt=signal.SIGTERM, password='disposable-test-password')
         assert 'Package operation: interrupted' in text and 'Fresh dependency assessment' in text
-        target.shell('no-sudo-package-child', '! ps -eo args | grep -E "^[s]leep 60$|^[/]usr/bin/apt-get"')
+        target.shell('no-sudo-package-child', '! (for p in /proc/[0-9]*; do [[ "$p/root" -ef / ]] || continue; tr "\\0" " " < "$p/cmdline" 2>/dev/null || true; echo; done) | grep -E "^[s]leep 60 ?$|^[/]usr/bin/apt-get"')
     finally:
         target.unhook('99v3-slow')
     target.terminal('restore-optional-after-interruption', ['/work/v3', 'check-dependencies', '--install'], ['yes', 'yes'])
