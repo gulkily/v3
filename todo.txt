@@ -141,3 +141,10 @@ when we import another instance, we end up with a lot of unapproved accounts
         we need to figure out a way to make this process smoother
 
 add provisions for calling remove-record from web ui
+
+unify thread-label and post-reaction record formats
+	use one canonical format with explicit thread/post target scope
+	preserve distinct labeling, scoring, voting, and moderation behavior
+	keep existing signed and unsigned records compatible without rewriting signed bytes
+	account for imports, activity, signature companions, and duplicate detection
+	separate follow-up to signed_thread_label_records
