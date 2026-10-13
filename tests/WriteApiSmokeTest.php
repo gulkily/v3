@@ -62,6 +62,11 @@ final class WriteApiSmokeTest
             $retry = $writer->createPreparedPost($final, $source);
             assertSame($result['post_id'], $retry['post_id']);
             assertSame($result['commit_sha'], $retry['commit_sha']);
+            $imageUrl = '/images/' . \ForumRewrite\Images\ImageReference::filename($ref);
+            assertSame(ImageContentTest::png(), $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $imageUrl));
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=false');
+            assertStringContains('Image unavailable', $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $imageUrl));
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
             assertSame(ImageContentTest::png(), file_get_contents((new \ForumRewrite\Images\ImageStore($root))->resolve($ref)));
         } finally {
             $_POST = [];

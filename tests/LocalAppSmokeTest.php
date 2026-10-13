@@ -3697,6 +3697,23 @@ PHP;
         assertStringContains('Write APIs are disabled against the committed fixture repository', $response);
     }
 
+    public function testImageFlagMismatchBypassesStaleStaticArtifact(): void
+    {
+        $previous = getenv('FORUM_IMAGE_CONTENT_ENABLED');
+        ['controller' => $controller, 'staticHtmlRoot' => $static, 'publicRoot' => $public] = $this->buildFrontController();
+        mkdir($static . '/current', 0777, true);
+        file_put_contents($static . '/current/index.html', '<body data-image-content-state="1">STALE IMAGE PAGE</body>');
+        try {
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+            assertStringContains('STALE IMAGE PAGE', $this->renderFrontController($controller, 'GET', '/', []));
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=false');
+            assertStringNotContains('STALE IMAGE PAGE', $this->renderFrontController($controller, 'GET', '/', []));
+        } finally {
+            putenv($previous === false ? 'FORUM_IMAGE_CONTENT_ENABLED' : 'FORUM_IMAGE_CONTENT_ENABLED=' . $previous);
+            $this->deleteTree($static); $this->deleteTree($public);
+        }
+    }
+
     public function testFrontControllerServesStaticArtifactForAnonymousEligibleRoute(): void
     {
         @unlink($this->databasePath);

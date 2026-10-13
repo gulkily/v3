@@ -98,8 +98,11 @@ final class FrontController
                 throw new RuntimeException('Unable to read static HTML artifact: ' . $staticArtifact);
             }
 
-            $this->sendHtml($contents, 200, true);
-            return;
+            $imagesEnabled = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
+            if (str_contains($contents, 'data-image-content-state="1"') === $imagesEnabled) {
+                $this->sendHtml($contents, 200, true);
+                return;
+            }
         }
 
         try {

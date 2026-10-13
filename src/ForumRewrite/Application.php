@@ -180,6 +180,11 @@ final class Application
             return;
         }
 
+        if (str_starts_with($path, '/images/')) {
+            (new \ForumRewrite\Http\ImageController($this->routeServices(), $this->repositoryRoot, $this->featureFlags()))->serve($method, substr($path, strlen('/images/')));
+            return;
+        }
+
         if ($path === '/api/set_identity_hint') {
             $this->identityHintController()->setIdentityHint($method, $query);
             return;
@@ -1233,7 +1238,7 @@ final class Application
             $this->projectRoot . '/templates',
             $this->appVersion(),
             $this->featureFlags(),
-            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot)),
+            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
         );
     }
 
@@ -1754,7 +1759,7 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
-        if (str_starts_with($path, '/messages/conversation/')) {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/')) {
             return true;
         }
 

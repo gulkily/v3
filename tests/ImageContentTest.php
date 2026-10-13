@@ -27,6 +27,12 @@ final class ImageContentTest
             $store->put($base . '/source.png', $ref);
             $store->put($base . '/source.png', $ref);
             assertSame(1, count($store->inventory()));
+            $renderer = new \ForumRewrite\View\MediaEmbedRenderer(imageStore: $store);
+            $body = "Text\n" . ImageReference::line($ref);
+            assertStringContains('/images/' . ImageReference::filename($ref), $renderer->render($body, false, false, true));
+            assertStringNotContains('<caption>', $renderer->render($body, false, false, true));
+            assertStringNotContains('<img', $renderer->render($body, false, false, false));
+            assertStringContains('Image unavailable', $renderer->render($body, false, false, false));
             assertSame(self::png(), file_get_contents($store->resolve($ref)));
             $this->reject(fn () => ImageReference::fromBody(ImageReference::line($ref) . "\n" . ImageReference::line($ref)));
             $this->reject(fn () => ImageReference::line(array_replace($ref, ['width' => 4097])));

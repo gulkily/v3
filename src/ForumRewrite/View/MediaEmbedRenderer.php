@@ -16,11 +16,29 @@ final class MediaEmbedRenderer
     public function __construct(
         private readonly MediaEmbedDetector $detector = new MediaEmbedDetector(),
         private readonly ?MediaEmbedPreviewCacheStore $previewCacheStore = null,
+        private readonly ?\ForumRewrite\Images\ImageStore $imageStore = null,
     ) {
     }
 
-    public function render(string $body, bool $enabled, bool $inlinePlayerEnabled = false): string
+    public function render(string $body, bool $enabled, bool $inlinePlayerEnabled = false, bool $imagesEnabled = false): string
     {
+        try { $image = \ForumRewrite\Images\ImageReference::fromBody($body); }
+        catch (\RuntimeException) { $image = null; }
+        if ($image !== null) {
+            $line = \ForumRewrite\Images\ImageReference::line($image);
+            [$before, $after] = explode($line, $body, 2);
+            $available = false;
+            if ($imagesEnabled && $this->imageStore !== null) {
+                try { $this->imageStore->resolve($image); $available = true; } catch (\RuntimeException) {}
+            }
+            $description = $this->escape($image['description']);
+            $html = '<span class="post-image" data-image-reference="' . $image['sha256'] . '">';
+            if ($available) {
+                $html .= '<img src="/images/' . \ForumRewrite\Images\ImageReference::filename($image) . '" alt="' . $description . '" width="' . $image['width'] . '" height="' . $image['height'] . '" loading="lazy" style="max-width:100%;height:auto">';
+            }
+            $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable — ') . $description . '</span></span>';
+            return $this->render($before, $enabled, $inlinePlayerEnabled, false) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false);
+        }
         $matches = $enabled ? $this->detector->detect($body) : [];
 
         if ($matches === []) {
