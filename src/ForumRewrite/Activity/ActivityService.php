@@ -965,10 +965,11 @@ final class ActivityService
                 return $repository->loadIdentity($recordPath)->identityId;
             }
             if (str_starts_with($recordPath, 'records/thread-labels/')) {
-                return $repository->loadThreadLabel($recordPath)->authorIdentityId;
+                // Key attribution is the record's claim; validity is reported separately.
+                return (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))->authorIdentityId;
             }
             if (str_starts_with($recordPath, 'records/post-reactions/')) {
-                return $repository->loadPostReaction($recordPath)->authorIdentityId;
+                return (new \ForumRewrite\Canonical\PostReactionRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))->authorIdentityId;
             }
             if (str_starts_with($recordPath, 'records/feature-flag-changes/')) {
                 return $repository->loadFeatureFlagChange($recordPath)->operatorIdentityId;

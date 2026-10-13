@@ -6619,8 +6619,8 @@ vm.runInThisContext(source);
     target: button,
     preventDefault() {}
   });
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let attempt = 0; attempt < 20 && !resolveFetch; attempt++) await Promise.resolve();
+  if (!resolveFetch) throw new Error("Reaction did not start its request");
   const optimistic = {
     fetchCount,
     score: scoreNode.textContent,
@@ -7206,8 +7206,8 @@ vm.runInThisContext(source);
     target: button,
     preventDefault() {}
   });
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let attempt = 0; attempt < 20 && !resolveFetch; attempt++) await Promise.resolve();
+  if (!resolveFetch) throw new Error("Reaction did not start its request");
   const optimistic = {
     fetchCount,
     feedback: feedbackNode.textContent,

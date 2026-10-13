@@ -2839,22 +2839,18 @@ class LocalWriteService
         return $labels;
     }
 
-    /**
-     * @param list<string> $labels
-     * @return array{string,string}
-     */
     private function reactionJournalDirectory(): string
     {
         return dirname($this->databasePath) . '/signed-reaction-writes-' . substr(hash('sha256', $this->repositoryRoot), 0, 16);
     }
 
-    private function atomicReactionFile(string $path, string $bytes): void
+    private function atomicReactionFile(string $path, string $bytes, int $mode = 0600): void
     {
         if (!is_dir(dirname($path))) mkdir(dirname($path), 0700, true);
         $temporary = tempnam(dirname($path), '.reaction-');
         if ($temporary === false) throw new RuntimeException('Unable to stage reaction file.');
         try {
-            if (file_put_contents($temporary, $bytes) !== strlen($bytes) || !rename($temporary, $path)) {
+            if (file_put_contents($temporary, $bytes) !== strlen($bytes) || !chmod($temporary, $mode) || !rename($temporary, $path)) {
                 throw new RuntimeException('Unable to publish reaction file.');
             }
         } finally {
@@ -2883,7 +2879,7 @@ class LocalWriteService
                 if (file_get_contents($path) !== $bytes) throw new RuntimeException('Reaction recovery collision: ' . $relative);
                 continue;
             }
-            $this->atomicReactionFile($path, $bytes);
+            $this->atomicReactionFile($path, $bytes, 0644);
         }
     }
 
@@ -2925,7 +2921,7 @@ class LocalWriteService
 
     private function signedReactionInput(string $kind, array $input, string $target, string $tag, string $author): ?array
     {
-        if (!array_key_exists('canonical_record', $input) && !array_key_exists('detached_signature', $input)) {
+        if (!array_key_exists('canonical_record', $input) && !array_key_exists('detached_signature', $input) && !array_key_exists('prepare_token', $input)) {
             return null;
         }
         $contents = (string) ($input['canonical_record'] ?? '');
@@ -2978,6 +2974,10 @@ class LocalWriteService
         return [$path, $contents, $signature];
     }
 
+    /**
+     * @param list<string> $labels
+     * @return array{string,string}
+     */
     private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null): array
     {
         $recordId = $this->generateRecordId('thread-label');

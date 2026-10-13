@@ -121,6 +121,11 @@ final class WriteApiSmokeTest
                 $_POST['canonical_record'] = $prepared['canonical_record'];
                 $_POST['prepare_token'] = $prepared['prepare_token'];
                 $_POST['detached_signature'] = $this->signCanonicalRecord($key['home'], $_POST['canonical_record']);
+                $validPost = $_POST;
+                $_POST['canonical_record'] = preg_replace('/Created-At: [^\n]+/', 'Created-At: 2020-01-01T00:00:00Z', $_POST['canonical_record']);
+                $_POST['detached_signature'] = $this->signCanonicalRecord($key['home'], $_POST['canonical_record']);
+                assertStringContains('does not match', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
+                $_POST = $validPost;
                 $tokenPath = dirname($database) . '/prepared-posts/' . $prepared['prepare_token'] . '.json';
                 $tokenBytes = file_get_contents($tokenPath);
                 $expired = json_decode($tokenBytes, true);
@@ -161,6 +166,15 @@ final class WriteApiSmokeTest
             $planner = new \ForumRewrite\Import\ContentImportPlanner();
             $plan = $planner->plan($root, $destination);
             foreach ($paths as $path) assertSame('import', $plan[$path]['state']);
+            $keyPath = '/records/public-keys/openpgp-' . strtoupper(substr($identity, 8)) . '.asc';
+            copy($root . $keyPath, $destination . $keyPath);
+            unlink($root . $keyPath);
+            $plan = $planner->plan($root, $destination);
+            foreach ($paths as $path) assertSame('import', $plan[$path]['state']);
+            unlink($destination . $keyPath);
+            $plan = $planner->plan($root, $destination);
+            foreach ($paths as $path) assertSame('invalid', $plan[$path]['state']);
+            file_put_contents($root . $keyPath, $key['public_key']);
             $builder = new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root));
             $builder->rebuild();
             $pdo = new PDO('sqlite:' . $database);
