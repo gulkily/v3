@@ -112,6 +112,15 @@ final class StaticArtifactInvalidator
      */
     public function invalidateApprovalSeed(): void
     {
+        $this->invalidateAllGeneratedPresentation();
+    }
+
+    /**
+     * Retires every generated presentation file and served snapshot copy, failing loudly so
+     * callers can report a partial result. Used when content must stop being served anywhere.
+     */
+    public function invalidateAllGeneratedPresentation(): void
+    {
         $paths = [];
         foreach ($this->artifactRoots as $root) {
             if (!file_exists($root)) {

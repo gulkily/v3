@@ -2235,6 +2235,60 @@ NODE;
         assertSame('complete', $repeat['retraction_status']);
     }
 
+    public function testRetractedPostProseIsAbsentFromEveryServedSurface(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $author = $this->createAuthoredThread($application, 'retract-surfaces', 'zzprosemarker unique body words');
+        $createCommit = $this->gitOutput($repositoryRoot, 'log --format=%H -n 1 -- ' . escapeshellarg($author['record_path']));
+        $routes = [
+            '/', '/threads/', '/threads/' . $author['thread_id'], '/posts/' . $author['thread_id'],
+            '/api/get_post?post_id=' . $author['thread_id'], '/api/get_thread?thread_id=' . $author['thread_id'],
+            '/api/list_index', '/activity/', '/activity/?format=rss', '/latest', '/top', '/tags/', '/users/',
+        ];
+        $before = $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . $author['thread_id']);
+        assertStringContains('zzprosemarker', $before);
+        assertStringContains('zzprosemarker', $this->readModelFileBytes($databasePath));
+
+        mkdir($artifactRoot . '/tags', 0777, true);
+        mkdir($artifactRoot . '/offline', 0777, true);
+        file_put_contents($artifactRoot . '/tags/general.html', 'zzprosemarker');
+        file_put_contents($artifactRoot . '/threads.html', 'zzprosemarker');
+        file_put_contents($artifactRoot . '/offline/snapshot.sqlite3', 'zzprosemarker');
+
+        $prepared = $this->prepareRetractionRequest($application, $author['identity_id'], $author['thread_id']);
+        $_POST = [
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ];
+        $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+        assertSame('complete', $finalized['retraction_status']);
+
+        foreach ($routes as $route) {
+            $output = $this->renderMethod($application, 'GET', $route);
+            assertSame(false, str_contains($output, 'zzprosemarker'), 'Retracted prose served at ' . $route);
+        }
+        $search = $this->renderMethod($application, 'GET', '/search?search=' . rawurlencode('unique body'));
+        assertSame(false, str_contains($search, $author['thread_id']), 'Retracted post listed in search');
+
+        $current = $this->renderMethod($application, 'GET', '/source/current/' . $author['record_path']);
+        assertSame(false, str_contains($current, 'zzprosemarker'));
+        assertStringContains('retracted by its author', $current);
+        $blob = $this->renderMethod($application, 'GET', '/source/blob/' . $createCommit . '/' . $author['record_path']);
+        assertSame(false, str_contains($blob, 'zzprosemarker'));
+        assertStringContains('retracted by its author', $blob);
+
+        foreach (['/tags/general.html', '/threads.html', '/offline/snapshot.sqlite3'] as $artifact) {
+            assertSame(false, is_file($artifactRoot . $artifact), 'Artifact not retired: ' . $artifact);
+        }
+        assertSame(false, str_contains($this->readModelFileBytes($databasePath), 'zzprosemarker'), 'Prose left in the read-model file');
+    }
+
     public function testRetractionRefreshFailureReportsPartialAndRetryRecovers(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2276,6 +2330,19 @@ NODE;
         assertSame(false, (new \ForumRewrite\ReadModel\ReadModelStaleMarker($databasePath))->exists());
     }
 
+    /** Raw bytes of the read-model database and any SQLite sidecar, as a download would expose. */
+    private function readModelFileBytes(string $databasePath): string
+    {
+        $bytes = '';
+        foreach ([$databasePath, $databasePath . '-wal', $databasePath . '-journal'] as $path) {
+            if (is_file($path)) {
+                $bytes .= (string) file_get_contents($path);
+            }
+        }
+
+        return $bytes;
+    }
+
     /**
      * @return array{identity_id:string,home:string,public_key:string}
      */
@@ -2290,7 +2357,7 @@ NODE;
     }
 
     /**
-     * @return array{identity_id:string,home:string,public_key:string,thread_id:string}
+     * @return array{identity_id:string,home:string,public_key:string,thread_id:string,record_path:string}
      */
     private function createAuthoredThread(Application $application, string $username, string $body): array
     {
@@ -2313,7 +2380,7 @@ NODE;
         $_POST = [];
         assertSame('ok', $finalized['status']);
 
-        return $key + ['thread_id' => (string) $prepared['thread_id']];
+        return $key + ['thread_id' => (string) $prepared['thread_id'], 'record_path' => (string) $prepared['record_path']];
     }
 
     /**

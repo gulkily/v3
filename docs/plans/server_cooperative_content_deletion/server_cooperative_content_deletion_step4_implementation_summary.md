@@ -49,3 +49,18 @@ Debug mode: enabled
   - Refusal of identity/approval/invitation posts is enforced in code but has no dedicated test yet; Stage 7's end-to-end test should cover it.
   - The retraction record's `Created-At` is server time at prepare, and the signature covers the whole canonical record, so a stale prepared token (10-minute expiry) cannot be replayed with a different record.
   - Static artifact invalidation here covers the thread/reply pages only; the wider audit (raw record route, exports, search/feeds) is Stage 4.
+
+## Stage 4 - Close non-template leaks
+- Changes:
+  - New `Canonical/RetractedPosts`: the one definition of when a retraction applies (signer equals the post's author; never identity/approval/invitation posts) and of which post ids are effectively retracted on disk. `ReadModelBuilder` and `LocalWriteService` now use it instead of duplicating the rule.
+  - `SourceFileController`: `/source/current/...` and `/source/blob/<commit>/...` answer `410 This post was retracted by its author.` for a retracted post's record file, at the current path or any historical commit.
+  - `StaticArtifactInvalidator::invalidateAllGeneratedPresentation()` (the former `invalidateApprovalSeed` body, which now delegates to it) is used by retraction finalize. It retires every generated HTML file, the active release pointer, and served offline snapshot copies, so tag, profile, listing, and snapshot artifacts cannot keep the prose. A failure surfaces as `partial` / `artifact_invalidate`.
+  - `ReadModelBuilder::rebuild` sets `PRAGMA secure_delete = ON` so freed pages in the downloadable read-model file are zeroed.
+- Verification:
+  - New `WriteApiSmokeTest::testRetractedPostProseIsAbsentFromEveryServedSurface`, with positive controls that the marker is served before retraction: after retraction the marker is absent from the home, threads, thread, post, `/api/get_post`, `/api/get_thread`, `/api/list_index`, activity (HTML and RSS), latest, top, tags, and users routes; the post is not listed in search; both source routes return the 410 text; seeded tag/listing/snapshot artifacts are deleted; and the raw read-model file (plus `-wal`/`-journal`) no longer contains the marker.
+  - Full `php tests/run.php`: 1116 run, 9 failed, all long-standing and unchanged.
+- Notes:
+  - Known retained copies, not changed in this slice (Step 1 Option A): `/downloads/repository.tar.gz` and `.zip` archive the entire checkout including `.git`, so they still contain the original file and its history; the UI copy in Stage 6 must say so. Filtering only the working-tree file would not change that and would leave the archive inconsistent with its own Git state.
+  - `/source/commits/<sha>` lists file paths and the commit subject (`Create thread <id>`), not prose, so it is unchanged.
+  - Operator scripts that read canonical files directly (`archive_thread`, `thread_attributes`, `delete-record`) are out of scope and unchanged.
+  - Agent and analysis workflows read bodies from the read model, so they see an empty body for a retracted post.

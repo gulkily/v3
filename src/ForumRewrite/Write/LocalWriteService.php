@@ -13,6 +13,7 @@ use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRetractionRecordParser;
+use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadSubjectRecordParser;
@@ -619,7 +620,7 @@ class LocalWriteService
                 $failedStep = 'read_model_refresh';
             }
             try {
-                $this->invalidateRetractedPostArtifacts($threadId, $postId);
+                $this->invalidateRetractedPostArtifacts();
             } catch (\Throwable) {
                 $failedStep ??= 'artifact_invalidate';
             }
@@ -643,21 +644,20 @@ class LocalWriteService
         if ($post->authorIdentityId === null || $post->authorIdentityId !== $authorIdentityId) {
             throw new RuntimeException('Only the post author can retract this post.');
         }
-        if (array_intersect($post->boardTags, ['identity', 'approval', 'invitation']) !== []) {
+        if (RetractedPosts::isAuthorityPost($post)) {
             throw new RuntimeException('Identity, approval, and invitation records cannot be retracted.');
         }
 
         return $post;
     }
 
-    private function invalidateRetractedPostArtifacts(string $threadId, string $postId): void
+    /**
+     * A retracted post can appear in tag, profile, listing, and snapshot artifacts as well as
+     * its own pages, so every generated presentation file is retired, not just the thread's.
+     */
+    private function invalidateRetractedPostArtifacts(): void
     {
-        if ($threadId === $postId) {
-            $this->invalidator()->invalidateBoardThread($threadId);
-
-            return;
-        }
-        $this->invalidator()->invalidateReply($threadId, $postId);
+        $this->invalidator()->invalidateAllGeneratedPresentation();
     }
 
     /**

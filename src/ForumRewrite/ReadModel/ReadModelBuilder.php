@@ -10,6 +10,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRetractionRecord;
+use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\Canonical\ThreadSubjectRecord;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
@@ -53,6 +54,9 @@ final class ReadModelBuilder
 
         $pdo = new PDO('sqlite:' . $this->databasePath);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // The database file is downloadable; zero freed pages so a rebuild after a retraction
+        // does not leave the retracted prose in the file's free list.
+        $pdo->exec('PRAGMA secure_delete = ON');
 
         $this->timings = [];
         $this->invalidThreadLabelRecordCount = 0;
@@ -298,22 +302,15 @@ final class ReadModelBuilder
     }
 
     /**
-     * A retraction applies only when its signer is the post's own author, and never to
-     * identity, approval, or invitation authority posts, which other state is derived from.
+     * See RetractedPosts::applies() for when a retraction takes effect.
      *
      * @param array<string, PostRetractionRecord> $retractions
      */
     private function retractionTimestampFor(PostRecord $post, array $retractions): ?string
     {
         $retraction = $retractions[$post->postId] ?? null;
-        if ($retraction === null || $post->authorIdentityId === null || $retraction->authorIdentityId !== $post->authorIdentityId) {
-            return null;
-        }
-        if (array_intersect($post->boardTags, ['identity', 'approval', 'invitation']) !== []) {
-            return null;
-        }
 
-        return $retraction->createdAt;
+        return RetractedPosts::applies($post, $retraction) ? $retraction->createdAt : null;
     }
 
     /**
