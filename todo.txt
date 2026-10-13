@@ -81,15 +81,8 @@ explore server-cooperative content deletion
 	Discussion: docs/plans/backlog/server_cooperative_content_deletion_discussion.md
 	Initial scope: users retract their own posts with server help; cross-instance cooperation is a future possibility.
 
-youtube embeds
-	should be full width of the container module
-	should remove border from iframe
-	what else?
-
 make it easy to import/sync content from another instance
 	make this schedulable too
-
-gate pm feature behind a feature flag
 
 identify targets for "ephemeral testing"
 	see https://zenmemes.com/threads/thread-20261006122804-184a64b6 
