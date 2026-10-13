@@ -26,3 +26,8 @@ Debug mode: disabled
 - Changes: added Starfield download, actual-Blob decode/decrypt verification, content-based file detection and original-image guidance; text stays independently available.
 - Verification: `FORMAT=png node tests/browser/key_backup_ui.mjs` and the default text run passed real downloads and fresh-profile exact-key restoration. PNG run also converted the actual PNG to JPEG and rejected it, rejected a corrupted PNG, and checked unchanged storage; PHP lint/JS syntax passed.
 - Notes: no canvas is used in production; the browser test uses canvas solely to simulate destructive JPEG conversion.
+
+## Stage 6 - Private-message reminder
+- Changes: shared reminder partial on private-message surfaces links directly to Account Key backup controls. A fingerprint-scoped local marker records only verified download initiation; storage failure keeps a useful prompt and reports that its marker could not be saved.
+- Verification: Chromium text/PNG UI runs passed normal Messages-to-Account-Key navigation, initial prompt, failed confirmation without a marker, successful-download suppression on list/conversation, changed-key prompt and storage-unavailable behavior; PHP lint and diff checks passed.
+- Notes: wording promises only download initiation, not durable storage. Restoring or merely preparing a backup does not suppress the reminder.

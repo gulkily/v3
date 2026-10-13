@@ -33,7 +33,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
-      <fieldset class="stack" data-key-backup>
+      <fieldset class="stack" id="key-backup" data-key-backup>
         <legend>Back up your key</legend>
         <p>Keep access to your identity and private messages if you clear browser data or change devices. Backups are encrypted here in your browser.</p>
         <p class="meta">Use a strong, unique passphrase and keep it somewhere safe. A forgotten passphrase cannot be recovered.</p>

@@ -37,8 +37,16 @@ try {
   },{keys,fingerprint});
   await page.reload();
   await page.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]').dataset.authenticatedIdentityId));
+  await page.goto(base+'/messages');
+  await page.locator('[data-key-backup-reminder]').waitFor({state:'visible'});
+  await page.getByRole('link',{name:'Back up your key',exact:true}).click();
   const passphrase='a long unique starfield passphrase';
   const requests=[]; context.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
+  await page.locator('[data-backup-password]').fill(passphrase);
+  await page.locator('[data-backup-confirm]').fill('does not match');
+  await page.locator('[data-backup-download="'+format+'"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('do not match'));
+  assert.equal(await page.evaluate(fp=>localStorage.getItem('forum_pki_backup_verified_'+fp),fingerprint),null);
   await page.locator('[data-backup-password]').fill(passphrase);
   await page.locator('[data-backup-confirm]').fill(passphrase);
   assert.equal(await page.locator('[data-backup-password]').inputValue(),passphrase);
@@ -48,6 +56,19 @@ try {
   const download=await pending, backup=await readFile(await download.path());
   await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('download started'));
   assert(!backup.includes(Buffer.from('PRIVATE KEY')));
+  assert.equal(await page.evaluate(fp=>localStorage.getItem('forum_pki_backup_verified_'+fp),fingerprint),'1');
+  await page.goto(base+'/messages');
+  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),false);
+  await page.goto(base+'/messages/conversation/user-01');
+  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),false);
+  await page.evaluate(()=>{localStorage.setItem('forum_pki_fingerprint','a'.repeat(40));window.ForumKeyBackupStatus.refresh();});
+  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),true);
+  await page.evaluate(fp=>localStorage.setItem('forum_pki_fingerprint',fp.toUpperCase()),fingerprint);
+  await page.evaluate(()=>{
+    const get=Storage.prototype.getItem;Storage.prototype.getItem=()=>{throw new Error('Storage unavailable');};
+    try{window.ForumKeyBackupStatus.refresh();}finally{Storage.prototype.getItem=get;}
+  });
+  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),true);
   const fresh=await browser.newContext({serviceWorkers:'block'}), restored=await fresh.newPage();
   fresh.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   restored.on('pageerror',e=>errors.push(e.message));
