@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./qdb_disabled_vote_button_appearance_step1_solution_assessment.md) · [Step 2](./qdb_disabled_vote_button_appearance_step2_feature_description.md) · [Step 3](./qdb_disabled_vote_button_appearance_step3_development_plan.md) · [Step 4](./qdb_disabled_vote_button_appearance_step4_implementation_summary.md)
+> **Archived assessment:** The feature was implemented in commit `f444ef2bd028f3b04c5bbf638c9a6949e9c85fcd`. The original assessment is retained below for historical reference; no Step 2–4 documents exist.
 
 # QDB Disabled Vote Button Appearance – Solution Assessment
 

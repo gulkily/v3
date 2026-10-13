@@ -106,10 +106,18 @@ containing its executable to `PATH` in the terminal where you run v3.
 Check availability with `php --version` and `./v3 check-dependencies`, then retry
 `./v3 start` with your original options. Both commands explain missing or disabled
 capabilities and manual recovery. This guide is readable directly from the
-checkout without running PHP; v3 does not install software.
+checkout without running PHP. Ordinary checks and redirected startup are read-only.
+Terminal startup can offer [reviewed recovery](#install-missing-local-server-dependencies)
+on Ubuntu 22.04/distribution PHP 8.1 and Ubuntu 24.04/distribution PHP 8.3.
 
-On Ubuntu 24.04 with APT, install Git and the matching PHP CLI, SQLite/PDO SQLite,
-and mbstring packages manually:
+For missing distribution packages on Ubuntu 22.04, the manual recipe is:
+
+```bash
+sudo apt-get update
+sudo apt-get install git php8.1-cli php8.1-sqlite3 php8.1-mbstring
+```
+
+For Ubuntu 24.04, use the matching PHP 8.3 packages:
 
 ```bash
 sudo apt-get update
@@ -130,11 +138,20 @@ SQLite. If PHP process functions are disabled or execution is restricted, review
 the CLI's `disable_functions` and host policy, or use another supported
 environment. These checks do not require remote Git credentials.
 
-Startup displays this recipe only when it recognizes Ubuntu 24.04 and finds
-`apt-get`. Other environments receive general manual setup guidance; install
-PHP CLI with PDO SQLite and mbstring support using your platform's instructions.
-Missing or ambiguous platform information also uses the general guidance.
-Startup never prompts, changes PATH or shell profiles, or retries automatically.
+Reports identify OS/release and selected CLI. Package advice requires matching
+Ubuntu distribution ownership and verified APT metadata; a custom CLI is never
+replaced automatically. If an extension package is installed but unavailable,
+inspect `php --ini`, `php -m`, `PHPRC` and `PHP_INI_SCAN_DIR`. For example, a disabled
+mbstring link in standard Ubuntu 22.04 CLI configuration can be enabled manually:
+
+```bash
+sudo phpenmod -v 8.1 -s cli mbstring
+./v3 check-dependencies
+```
+
+Use `8.3` for the matching Ubuntu 24.04 CLI. This does not repair an alternate
+configuration or disabled PHP functions. Recovery never edits PATH, shell profiles
+or PHP configuration, and unsupported environments retain manual setup guidance.
 
 ### Launcher and optional support
 
@@ -152,8 +169,8 @@ Without them, output uses plain logging and launcher-managed shutdown remains
 available; stop the launcher with Ctrl+C or SIGTERM. Do not relax host execution
 policy solely to enable terminal cosmetics. PHP intl is also optional: existing
 Unicode behavior rejects combining marks when normalization is unavailable.
-For Ubuntu 24.04/PHP 8.3, enable normalization manually with
-`sudo apt-get install php8.3-intl`; for another runtime, enable its matching intl
+For missing Ubuntu 22.04/PHP 8.1 packages, use `sudo apt-get install php8.1-intl`;
+for Ubuntu 24.04/PHP 8.3, use `sudo apt-get install php8.3-intl`. For another runtime, enable its matching intl
 extension and recheck the selected CLI.
 
 ### Check local-server dependencies
@@ -181,8 +198,75 @@ logs/state. A passing dependency report does not validate checkout/database
 health, application permissions, configuration, or whether the listening port is
 available; those failures remain separate operational errors. Checks cover only
 the local server. Other commands and production deployment have their own
-prerequisites; Ubuntu 24.04/APT has specific setup guidance, while other or
-unrecognized environments receive generic instructions.
+prerequisites. Verified Ubuntu 22.04/24.04 packages receive specific setup
+guidance; unsupported or ambiguous setups receive inspection/manual steps.
+
+### Install missing local-server dependencies
+
+```bash
+./v3 check-dependencies --install
+# Equivalent: ./v3 dependency-check --install
+```
+
+On **Ubuntu 22.04/PHP 8.1 or Ubuntu 24.04/PHP 8.3 distribution packages**, this reviews missing Git,
+PHP CLI, SQLite and mbstring packages, asks separately whether to include optional
+intl, and shows APT's complete resolved transaction. Type `yes` at the final
+confirmation to authorize metadata refresh and installation. Both input and output
+must be terminals; there is no unattended bypass. Declining before execution or
+sending EOF makes no package changes. Ordinary checks remain read-only.
+
+When `./v3 start` encounters installable required failures and both input and
+output are terminals, it offers the same review if root or sudo is available:
+
+```text
+Recover missing dependencies and continue startup? [Y/n]:
+```
+
+Enter, `Y` or `y` accepts; `N`, `n`, invalid input, EOF or pre-execution cancellation
+stops without changes. Optional intl has a separate `[y/N]` choice and defaults
+off. Optional-only limitations never trigger startup recovery. Sudo authenticates
+**after consent**; a password is supported, and denied/cancelled authentication
+stops without installation. Successful installation and fresh required readiness
+resume the original startup once, retaining its port/logging options and caller
+identity. Only package operations are elevated. Redirecting either input or
+output disables startup recovery prompts.
+
+Installation needs administrator privileges: use your normal account with `sudo`,
+or an existing root shell. The reviewed dependencies may be upgraded and package
+maintainer scripts run; existing configuration files are preserved. If refreshed
+metadata changes the transaction, a second confirmation is required. Refusal at
+that point leaves refreshed metadata but does not install packages. Removals,
+other PHP runtime families, unfinished dpkg transactions and unverified package
+sources are refused.
+
+Automatic mapping requires verified package versions from `archive.ubuntu.com`,
+`security.ubuntu.com`, or `ports.ubuntu.com` archives for the matching Jammy or Noble release. Custom PHP builds,
+other mirrors/releases, PATH errors, installed-but-disabled extensions and host
+restrictions require manual setup. If no candidate metadata is available, inspect
+APT sources and run `sudo apt-get update` manually before retrying. Bash and
+launcher utilities must already work; [external launcher setup](#launcher-and-optional-support)
+also applies. The installer needs standard Ubuntu APT/dpkg, coreutils, util-linux,
+and procps tools; it does not install or repair its own launcher/package tools.
+
+After an attempt, package outcome and fresh dependency readiness are reported
+separately. Exit **0** means the requested installation succeeded and required
+checks pass, or no packages were selected and required checks already pass.
+Declined optional-only setup can therefore return 0. Exit **1** means refusal,
+cancelled installation, a package failure, or remaining required problems; even a
+successful package transaction may leave configuration restrictions. Failures and
+interruptions can leave partial system changes. Inspect APT output and
+`/var/log/apt/history.log`; there is no automatic rollback, repair or retry. If
+package processes remain active, wait for them to exit before manual recovery;
+readiness is not reassessed while those processes remain active.
+
+Explicit `--install` never starts the server or changes application state; retry
+your original startup command afterward. Recovery accepted inside `start` continues
+automatically after success. Neither route resumes startup after a failed package
+operation, even when its partial changes made dependencies ready.
+
+Real startup-to-read/write/shutdown tests cover Ubuntu Base **22.04.5/PHP 8.1.2**
+and **24.04.3/PHP 8.3.6**, amd64 chroots. This is not separate WSL terminal/PATH or
+other architecture certification. See [acceptance evidence and reproduction](docs/plans/startup_dependency_recovery/acceptance_evidence.md).
 
 ### Start locally
 

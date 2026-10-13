@@ -1,0 +1,1168 @@
+{
+  "verified_utc": "2026-10-13T06:25:13.462102+00:00",
+  "scope": "Ubuntu Base amd64 chroots; not independent WSL certification",
+  "source_sha256": {
+    "v3": "728554bec945fc59711f0f5a767a98f6df225ca60387835ae9fe74449f293e91",
+    "scripts/local_server_dependencies.sh": "bde0f3d97b3f9a404e3222a08bbb46af5ded26151493d06c58d040f009d39fd8",
+    "scripts/php_setup_guidance.sh": "8679b860f1bb18d0c489f7d75a8c347e118285535d5ecb043abaa336318ebc30",
+    "scripts/check_local_server_dependencies.php": "ebf06927f9e0154b212cd95efbe7d8ff1beb9ff47f96968a40515386be56ac01",
+    "scripts/local_server_dependency_install.sh": "4ac593005c993ad50000201b65bbc2e32520f814849336fd00d250a1c55ffc33",
+    "scripts/local_server_start.sh": "34958a12fe6c638df1c98157b1b43a6ea0f29af8d218d674ab82bfe83f9fc1ab"
+  },
+  "environments": {
+    "22": {
+      "startup": {
+        "base_sha256": "242cd8898b33ea806ef5f13b1076ed7c76f9f989d18384452f7166692438ff1a",
+        "environment": "PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"22.04\"\nVERSION=\"22.04.5 LTS (Jammy Jellyfish)\"\nVERSION_CODENAME=jammy\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=jammy\nx86_64\nPHP 8.1.2-1ubuntu2.26 (cli) (built: Sep  2 2026 12:42:10) (NTS)\nCopyright (c) The PHP Group\nZend Engine v4.1.2, Copyright (c) Zend Technologies\n    with Zend OPcache v8.1.2-1ubuntu2.26, Copyright (c), by Zend Technologies\ngit\t1:2.34.1-1ubuntu1.17\nphp8.1-cli\t8.1.2-1ubuntu2.26\nphp8.1-mbstring\t8.1.2-1ubuntu2.26\nphp8.1-sqlite3\t8.1.2-1ubuntu2.26\n",
+        "results": [
+          {
+            "case": "prepare-metadata",
+            "exit_status": 0
+          },
+          {
+            "case": "root-missing-php-enter",
+            "exit_status": 0
+          },
+          {
+            "case": "remove-extensions",
+            "exit_status": 0
+          },
+          {
+            "case": "root-missing-extensions-Y",
+            "exit_status": 0
+          },
+          {
+            "case": "prepare-password-sudo",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-missing-php-y",
+            "exit_status": 0
+          },
+          {
+            "case": "remove-extensions-again",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-missing-extensions-Y",
+            "exit_status": 0
+          },
+          {
+            "case": "environment",
+            "exit_status": 0
+          }
+        ]
+      },
+      "failure_cases": [
+        {
+          "case": "remove-required",
+          "exit_status": 0
+        },
+        {
+          "case": "required-refusal-n",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-N",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-invalid",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-None",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-SIGNAL_INT",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-SIGNAL_TERM",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid---unknown",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-0",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-65536",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-host:99999",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-999999999999999999999",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid---log-file=",
+          "exit_status": 1
+        },
+        {
+          "case": "redirected-input-output",
+          "exit_status": 1
+        },
+        {
+          "case": "redirected-input",
+          "exit_status": 1
+        },
+        {
+          "case": "redirected-output",
+          "exit_status": 1
+        },
+        {
+          "case": "disabled-installed-common",
+          "exit_status": 1
+        },
+        {
+          "case": "prepare-custom",
+          "exit_status": 0
+        },
+        {
+          "case": "custom-runtime",
+          "exit_status": 1
+        },
+        {
+          "case": "clear-credentials",
+          "exit_status": 0
+        },
+        {
+          "case": "cancel-password-sudo",
+          "exit_status": 1
+        },
+        {
+          "case": "prepare-denied-user",
+          "exit_status": 0
+        },
+        {
+          "case": "denied-sudo",
+          "exit_status": 1
+        },
+        {
+          "case": "hide-sudo",
+          "exit_status": 0
+        },
+        {
+          "case": "missing-sudo",
+          "exit_status": 1
+        },
+        {
+          "case": "restore-sudo",
+          "exit_status": 0
+        },
+        {
+          "case": "network-failure",
+          "exit_status": 1
+        },
+        {
+          "case": "lock-failure",
+          "exit_status": 1
+        },
+        {
+          "case": "package-SIGINT",
+          "exit_status": 1
+        },
+        {
+          "case": "no-child-SIGINT",
+          "exit_status": 0
+        },
+        {
+          "case": "package-SIGTERM",
+          "exit_status": 1
+        },
+        {
+          "case": "no-child-SIGTERM",
+          "exit_status": 0
+        },
+        {
+          "case": "partial-install",
+          "exit_status": 1
+        },
+        {
+          "case": "no-child-after-failure",
+          "exit_status": 0
+        },
+        {
+          "case": "prepare-restriction",
+          "exit_status": 0
+        },
+        {
+          "case": "remaining-required-restriction",
+          "exit_status": 1
+        },
+        {
+          "case": "optional-only-no-prompt",
+          "exit_status": 0
+        }
+      ],
+      "post_audit_cases": [
+        {
+          "case": "final-remove-runtime",
+          "exit_status": 0
+        },
+        {
+          "case": "final-sudo-missing-php-enter",
+          "exit_status": 0
+        },
+        {
+          "case": "final-remove-extensions",
+          "exit_status": 0
+        },
+        {
+          "case": "final-sudo-missing-extensions-y",
+          "exit_status": 0
+        }
+      ],
+      "explicit": {
+        "base_sha256": "242cd8898b33ea806ef5f13b1076ed7c76f9f989d18384452f7166692438ff1a",
+        "environment": "PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"22.04\"\nVERSION=\"22.04.5 LTS (Jammy Jellyfish)\"\nVERSION_CODENAME=jammy\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=jammy\nx86_64\nGNU bash, version 5.1.16(1)-release (x86_64-pc-linux-gnu)\nCopyright (C) 2020 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n\nThis is free software; you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\nPHP 8.1.2-1ubuntu2.26 (cli) (built: Sep  2 2026 12:42:10) (NTS)\nCopyright (c) The PHP Group\nZend Engine v4.1.2, Copyright (c) Zend Technologies\n    with Zend OPcache v8.1.2-1ubuntu2.26, Copyright (c), by Zend Technologies\ngit\t1:2.34.1-1ubuntu1.17\nphp8.1-cli\t8.1.2-1ubuntu2.26\nphp8.1-intl\t8.1.2-1ubuntu2.26\nphp8.1-mbstring\t8.1.2-1ubuntu2.26\nphp8.1-sqlite3\t8.1.2-1ubuntu2.26\nphp8.1-cli:\n  Installed: 8.1.2-1ubuntu2.26\n  Candidate: 8.1.2-1ubuntu2.26\n  Version table:\n *** 8.1.2-1ubuntu2.26 500\n        500 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages\n        500 http://security.ubuntu.com/ubuntu jammy-security/main amd64 Packages\n        100 /var/lib/dpkg/status\n     8.1.2-1ubuntu2 500\n        500 http://archive.ubuntu.com/ubuntu jammy/main amd64 Packages\n",
+        "results": [
+          {
+            "case": "prepare-metadata",
+            "exit_status": 0
+          },
+          {
+            "case": "check-dependencies-help-without-php",
+            "exit_status": 0
+          },
+          {
+            "case": "check-dependencies-ordinary-missing",
+            "exit_status": 1
+          },
+          {
+            "case": "check-dependencies-noninteractive",
+            "exit_status": 1
+          },
+          {
+            "case": "check-dependencies-decline",
+            "exit_status": 1
+          },
+          {
+            "case": "check-dependencies-eof",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-help-without-php",
+            "exit_status": 0
+          },
+          {
+            "case": "dependency-check-ordinary-missing",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-noninteractive",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-decline",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-eof",
+            "exit_status": 1
+          },
+          {
+            "case": "unavailable-privileges",
+            "exit_status": 1
+          },
+          {
+            "case": "missing-php-git-install",
+            "exit_status": 0
+          },
+          {
+            "case": "optional-only-decline",
+            "exit_status": 0
+          },
+          {
+            "case": "optional-only-install",
+            "exit_status": 0
+          },
+          {
+            "case": "check-dependencies-already-ready",
+            "exit_status": 0
+          },
+          {
+            "case": "dependency-check-already-ready",
+            "exit_status": 0
+          },
+          {
+            "case": "prepare-restriction",
+            "exit_status": 0
+          },
+          {
+            "case": "remaining-host-restriction",
+            "exit_status": 1
+          },
+          {
+            "case": "prepare-custom-runtime",
+            "exit_status": 0
+          },
+          {
+            "case": "custom-runtime",
+            "exit_status": 1
+          },
+          {
+            "case": "remove-optional-for-failure-tests",
+            "exit_status": 0
+          },
+          {
+            "case": "network-failure",
+            "exit_status": 1
+          },
+          {
+            "case": "dpkg-lock-failure",
+            "exit_status": 1
+          },
+          {
+            "case": "interrupt-SIGINT",
+            "exit_status": 1
+          },
+          {
+            "case": "no-package-child-SIGINT",
+            "exit_status": 0
+          },
+          {
+            "case": "interrupt-SIGTERM",
+            "exit_status": 1
+          },
+          {
+            "case": "no-package-child-SIGTERM",
+            "exit_status": 0
+          },
+          {
+            "case": "partial-install-failure",
+            "exit_status": 1
+          },
+          {
+            "case": "prepare-sudo-and-runtime-tests",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-required-install",
+            "exit_status": 0
+          },
+          {
+            "case": "prepare-sudo-interruption",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-interrupt-SIGTERM",
+            "exit_status": 1
+          },
+          {
+            "case": "no-sudo-package-child",
+            "exit_status": 0
+          },
+          {
+            "case": "restore-optional-after-interruption",
+            "exit_status": 0
+          },
+          {
+            "case": "installed-runtime-http-and-shutdown",
+            "exit_status": 0
+          },
+          {
+            "case": "shell-regressions",
+            "exit_status": 0
+          },
+          {
+            "case": "installer-fixtures",
+            "exit_status": 0
+          },
+          {
+            "case": "environment",
+            "exit_status": 0
+          }
+        ]
+      },
+      "manual_cases": [
+        {
+          "case": "remove-runtime",
+          "exit_status": 0
+        },
+        {
+          "case": "missing-php-start",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-php-check-dependencies",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-php-dependency-check",
+          "exit_status": 1
+        },
+        {
+          "case": "follow-missing-php-recipe",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-runtime-ready",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-runtime-usable",
+          "exit_status": 0
+        },
+        {
+          "case": "remove-extensions",
+          "exit_status": 0
+        },
+        {
+          "case": "missing-extensions-start",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-extensions-check-dependencies",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-extensions-dependency-check",
+          "exit_status": 1
+        },
+        {
+          "case": "follow-missing-extension-recipe",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-extensions-ready",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-extensions-usable",
+          "exit_status": 0
+        },
+        {
+          "case": "disable-installed-module",
+          "exit_status": 0
+        },
+        {
+          "case": "disabled-installed-module",
+          "exit_status": 1
+        },
+        {
+          "case": "follow-enable-recipe",
+          "exit_status": 0
+        },
+        {
+          "case": "enabled-ready",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-enabled-usable",
+          "exit_status": 0
+        },
+        {
+          "case": "modify-owned-cli",
+          "exit_status": 0
+        },
+        {
+          "case": "modified-owned-cli-refused",
+          "exit_status": 1
+        },
+        {
+          "case": "restore-owned-cli",
+          "exit_status": 0
+        }
+      ],
+      "transcript_sha256": {
+        "/home/wsl/.cache/startup-recovery-22-final/logs/environment.log": "42bbdb9e63743eb1e97b21bae26ace0aadb9dc470ffd6d92d8284d3f1c772c83",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/final-remove-extensions.log": "fac402a59b6649e7ce288ec2ae003fb4260b2131e4f86e0c6df49fb471c4c862",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/final-remove-runtime.log": "108c375f89d62dc3666d5d93432eecebf5420f35e2a6aae71b41616122d590d2",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/final-sudo-missing-extensions-y.log": "dcb6db08047f180fa383ecdc46ed26d26d6b61b27c6ac1748b297d762b4bab5d",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/final-sudo-missing-php-enter.log": "85ac0a6bc30cee2399108a510299abf3031bb7d002ec98ab09078a3f17346a6a",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/prepare-metadata.log": "45a02deaa98a37e8ca5e34e17b92c0608295f0776d73adceb4e4b4cfd63b2d3c",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/prepare-password-sudo.log": "f4c89fc3296eb1f0891da7ac91405117be21578353dd92a497c0c73743b439d2",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/remove-extensions-again.log": "fac402a59b6649e7ce288ec2ae003fb4260b2131e4f86e0c6df49fb471c4c862",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/remove-extensions.log": "b2c0be304d8020fd4089a3f1efffeb0824a09ca3091486b70ceba84afebaa2cf",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/root-missing-extensions-Y.log": "75bb6b50e151c5bf601b00f51514e43f137faae2ba55e924c49f1ad9e547c83e",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/root-missing-php-enter.log": "b59ca9a55a62f72056832c8585585469adcedd7ab70d16caf46de96b094c57d9",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/sudo-missing-extensions-Y.log": "4bb56ee4f37e57cf25aa98e0e259d5b4cb1e5d071dbe0adc7c9b75da28253e7a",
+        "/home/wsl/.cache/startup-recovery-22-final/logs/sudo-missing-php-y.log": "d76e67f5c58d55fd49f90b87f402918ad4738ed58330158955237e7a074a2da5",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/cancel-password-sudo.log": "384cf3738a1632bc101408f2b02545d5f59da156681393e3c199ef498a9fb735",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/clear-credentials.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/custom-runtime.log": "60ed82d0317ab27648b80c808f2346e351f38f8746be9140c8b02ce236ca9e90",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/denied-sudo.log": "bb58438be6fe41475e45daec5d764b624d494e784ef7b9d2ea622e3359ed4aa8",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/disabled-installed-common.log": "b5d00a13d016d7219aa84ba31fa4532fba5e77590c01d64716b2c3c7aab2200b",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/hide-sudo.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/invalid---log-file=.log": "8f9e92740713987dc0882415b35b44241df01e2a876831cacd3f98ab9e83d086",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/invalid---unknown.log": "e1177a023781a21e4402b95f110450a70fcb0b330bd959b8648a67cc99435c3e",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/invalid-0.log": "1c9f7f09935f3c9e7d2a669cd0b51110296a48231151221babd21a90a9bcff7c",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/invalid-65536.log": "29fbe7d96d3baa3af4ab8c1eb41fe5c8fbafbf0df14c68a40b18be563b0508bf",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/invalid-999999999999999999999.log": "fe098d8ca9196cb533a8a0e66e3d14c8eeb37250bcf05dea563c66ca326486a5",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/invalid-host:99999.log": "4b4248bc7033d425fc79e6295c75616a90d1911dbcd2753fd10a43510a0dcb50",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/lock-failure.log": "eb8fb52868f636cdf1bb4c91d72bf742148a7b56070ded38522debf882eebdde",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/missing-sudo.log": "35b4f8eecfed1b403fff950b4ff60dce79d3d30d2f0c09b70bf55d358d9d522e",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/network-failure.log": "9f35250df7bdb6645567940bdaed7cb78db4157975f990b2081cff7722776659",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/no-child-SIGINT.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/no-child-SIGTERM.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/no-child-after-failure.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/optional-only-no-prompt.log": "3a41323e880f9164c28a5fa63d2bf9a23aeb60e96c3fb86cd3deae6ab90035d2",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/package-SIGINT.log": "1fcd4036a29aabea5ed580264a5dd260096fcb0637b9e3ae188ebf0c966070ca",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/package-SIGTERM.log": "24e2cf3476fff7533c81afa42309c45eb7ddb8dbd458c1420eff5d211b73abfa",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/partial-install.log": "aec5885e964991f0548315803448f1322e1ae2f32c85fb746e052a9c3fb1c2f4",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/prepare-custom.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/prepare-denied-user.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/prepare-restriction.log": "118b9bea1d9713b8f4add04d8660f01728ab89c70c73649baab53fde7d071a9d",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/redirected-input-output.log": "018fc922139310d5bc89ae3145c32eaea17566f1e02f05f62369350fe5defcac",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/redirected-input.log": "38a048a48654955efbbdfc989d7ab38327d7112390e59710e4b295d7a3dc4079",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/redirected-output.log": "38a048a48654955efbbdfc989d7ab38327d7112390e59710e4b295d7a3dc4079",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/remaining-required-restriction.log": "b063facd9a57d3b2e3cda3ea91d3f6bdb75365b4c6cc566686434ed543fb1aaa",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/remove-required.log": "fac402a59b6649e7ce288ec2ae003fb4260b2131e4f86e0c6df49fb471c4c862",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/required-refusal-N.log": "4d8e78af2b44eece6e42ebe08376627d2d31bb38439841b88771f6c906dceeee",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/required-refusal-None.log": "52d071d2abb56caeda64aba92a3c5f59f8a0c58cafb01bc6646533b42ec91e0b",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/required-refusal-SIGNAL_INT.log": "8b70af6be06adddd01eca2f88e1e0e70a48dbb83f375fc822a988e2db88d5895",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/required-refusal-SIGNAL_TERM.log": "8b70af6be06adddd01eca2f88e1e0e70a48dbb83f375fc822a988e2db88d5895",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/required-refusal-invalid.log": "355fcf41fc8bdb7d9f7d9ec3c791760d6f9277029199ff2102692743dc28f7a7",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/required-refusal-n.log": "bd88212e97522141a670d85974c99b19387064e43f5375542601a71d4d258615",
+        "/home/wsl/.cache/startup-recovery-22-final/failure-logs/restore-sudo.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/check-dependencies-already-ready.log": "2f360381b81b7467663d4814be3ddde0ae4b9e9c28354780e0aa732c4d52fe88",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/check-dependencies-decline.log": "0054e07c3a5a5360af13106b35c21aa5c2276fdb1497b332bfcc45a25091adf2",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/check-dependencies-eof.log": "dc5b7a927c6285e2f78460c2a76fb9d0cf38a8a44393e024372ebc43a9543bda",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/check-dependencies-help-without-php.log": "2243c1d11b471d1fb63ef2f6f73a0c04569dd1e4fad27cb0652e413f9146b9a0",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/check-dependencies-noninteractive.log": "f05b2046bf7ec1e2e389fd6205d405e6b2228c69f1dea257ff9da92ccd8ae280",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/check-dependencies-ordinary-missing.log": "f68ee6c478b35c7570b21b6f5db4a314c7c3df1cece5939fbedebc2914567a48",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/custom-runtime.log": "ff7fba851edea8cf9f8d8b13f020b0dc5df9277cd9134b338c6025130862cd48",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/dependency-check-already-ready.log": "2f360381b81b7467663d4814be3ddde0ae4b9e9c28354780e0aa732c4d52fe88",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/dependency-check-decline.log": "0054e07c3a5a5360af13106b35c21aa5c2276fdb1497b332bfcc45a25091adf2",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/dependency-check-eof.log": "dc5b7a927c6285e2f78460c2a76fb9d0cf38a8a44393e024372ebc43a9543bda",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/dependency-check-help-without-php.log": "2243c1d11b471d1fb63ef2f6f73a0c04569dd1e4fad27cb0652e413f9146b9a0",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/dependency-check-noninteractive.log": "f05b2046bf7ec1e2e389fd6205d405e6b2228c69f1dea257ff9da92ccd8ae280",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/dependency-check-ordinary-missing.log": "f68ee6c478b35c7570b21b6f5db4a314c7c3df1cece5939fbedebc2914567a48",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/dpkg-lock-failure.log": "b9bf4f2649d4c31e5c9cce28afe56d0ce378dc65687dabd792fa89fb541f5d54",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/environment.log": "1260896dc7b8914c74c2cac9e95766f26c71720b5f014b2eb11cdd81844a6657",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/installed-runtime-http-and-shutdown.log": "c1052fc0a76278d1620b7977e0a9bfe164267d69534c69df36e3fe897eef117d",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/installer-fixtures.log": "ca428cbb5f93876c5e5f989717288b022ad1239ce95cadfc4d47886c60f8853a",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/interrupt-SIGINT.log": "f8b594549429b757fb83491edc9cd685b5e3c28003ba940423e390805177368a",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/interrupt-SIGTERM.log": "5b09f0269e67d67c5e2f6f5f2a252aeb6b0c947735fb6ed64b10630a48195a41",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/missing-php-git-install.log": "db903ad89c78d77b046e9d9b26ae607a35df308b012b45e897865a3fc4b24e4a",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/network-failure.log": "cd61cdc8272b40feec125a5e9d9701797c8ad226e468dc6c66f485f588e61b68",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/no-package-child-SIGINT.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/no-package-child-SIGTERM.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/no-sudo-package-child.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/optional-only-decline.log": "5a8423c151781e0739bd78d09c18c89ab7e9f9e1e75d6daa96a90279df304bee",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/optional-only-install.log": "4f83b294bdbc09b21f66e969235405b813467623fd81c0be26cc4210e4b3c291",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/partial-install-failure.log": "5504210714c3953ceef98bd4e2313483e7d34fe8fb981f762402639701907088",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/prepare-custom-runtime.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/prepare-metadata.log": "71564b220d503105c99b713314b9077a7d1d2d5a07d714ecc43deaac3249c6d4",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/prepare-restriction.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/prepare-sudo-and-runtime-tests.log": "1d0e37c4e7f2f4e6b6bd4ab486213aa54e3de76ab959fa9490bc68ba3bc2794f",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/prepare-sudo-interruption.log": "e0b530768052547d0288346d41febd9c25bcabe14daa5a75c693dc0def0636d9",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/remaining-host-restriction.log": "9b7a78a1fc0cd0178f0b780f3ad5bdf83b6472a7e7f436f33d020d35a7b9222b",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/remove-optional-for-failure-tests.log": "8d2770b2868210becf4ae6f5673d63d771dbd881fa4f557c3b8822c14ceaaaab",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/restore-optional-after-interruption.log": "d5ab9b9f805e27916850fe92068310ed558b207ea0e4e1866f25aa456abd858a",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/shell-regressions.log": "8fac8cd30f422e12a04d80bc37d3fe602312fa1a16fffc70d567a868c8e585bd",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/sudo-interrupt-SIGTERM.log": "2c155fafc56b1c91c8c7378e5bec1f55ac76c8610d94628553fde44afa9d75aa",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/sudo-required-install.log": "935b0801962300c952946b2993530d22afc50214cc8aa0f31bf0b782c17abe3b",
+        "/home/wsl/.cache/startup-explicit-22-final/logs/unavailable-privileges.log": "d29fcced959f89e5da5f0a0dc72423e82072f0db4dd8152691a235e2e682121d",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/disable-installed-module.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/disabled-installed-module.log": "5a316ab3908bd9470af5e97705e3d47011989fcac603af2085b56612a977c551",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/enabled-ready.log": "fef18c41cc4e047943a20698d18a6e3d657234da5dce6b69f65de8d924978ca0",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/follow-enable-recipe.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/follow-missing-extension-recipe.log": "0469ea18e1b21b0d293498d16a3c29a577760f0fe8a0ce8138cc11c7fe1892ac",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/follow-missing-php-recipe.log": "797d875666bbb862702db8848c98c133c16b0bb2e51016bf70e7028e7f6e8718",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/manual-enabled-usable.log": "f2a6e11fe34415b3bd6d22f740eefc10d8c3a4aabaa47ca253c6fe83f90f436d",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/manual-extensions-ready.log": "fef18c41cc4e047943a20698d18a6e3d657234da5dce6b69f65de8d924978ca0",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/manual-extensions-usable.log": "9cafda31df31447d439017a450355f4edac73b0818e9ca00f1813adbff62919a",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/manual-runtime-ready.log": "fef18c41cc4e047943a20698d18a6e3d657234da5dce6b69f65de8d924978ca0",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/manual-runtime-usable.log": "e74e405661a6dd5becfb4d700483074ed77f33e009207beae752ca88375ebbbd",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/missing-extensions-check-dependencies.log": "917f9eba5b689ca1bb518835b4b29a3ccdce4f39d83b0091087d5c9dfd105f25",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/missing-extensions-dependency-check.log": "917f9eba5b689ca1bb518835b4b29a3ccdce4f39d83b0091087d5c9dfd105f25",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/missing-extensions-start.log": "018fc922139310d5bc89ae3145c32eaea17566f1e02f05f62369350fe5defcac",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/missing-php-check-dependencies.log": "f0746c170ae672e55780b80002e66e9fefa10b4bdf6032e571f18bd173121ff5",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/missing-php-dependency-check.log": "f0746c170ae672e55780b80002e66e9fefa10b4bdf6032e571f18bd173121ff5",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/missing-php-start.log": "2d6af586c405f495ea429c09df7f028dbf1327c3e0d38b329c85a7976ab2cd06",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/modified-owned-cli-refused.log": "03effa44c45d7766f360f72d47ccb855f74ec01232241f48a2ff0f5765a6bfe1",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/modify-owned-cli.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/remove-extensions.log": "fac402a59b6649e7ce288ec2ae003fb4260b2131e4f86e0c6df49fb471c4c862",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/remove-runtime.log": "108c375f89d62dc3666d5d93432eecebf5420f35e2a6aae71b41616122d590d2",
+        "/home/wsl/.cache/startup-recovery-22-stage3/manual-logs/restore-owned-cli.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "24": {
+      "startup": {
+        "base_sha256": "6bc2cde3930ad088b3bb46fa45279e96d25bc3810f209850ecbe4722711874f9",
+        "environment": "PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.3 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\nx86_64\nPHP 8.3.6 (cli) (built: Sep  2 2026 12:56:02) (NTS)\nCopyright (c) The PHP Group\nZend Engine v4.3.6, Copyright (c) Zend Technologies\n    with Zend OPcache v8.3.6, Copyright (c), by Zend Technologies\ngit\t1:2.43.0-1ubuntu7.3\nphp8.3-cli\t8.3.6-0ubuntu0.24.04.11\nphp8.3-mbstring\t8.3.6-0ubuntu0.24.04.11\nphp8.3-sqlite3\t8.3.6-0ubuntu0.24.04.11\n",
+        "results": [
+          {
+            "case": "prepare-metadata",
+            "exit_status": 0
+          },
+          {
+            "case": "root-missing-php-enter",
+            "exit_status": 0
+          },
+          {
+            "case": "remove-extensions",
+            "exit_status": 0
+          },
+          {
+            "case": "root-missing-extensions-Y",
+            "exit_status": 0
+          },
+          {
+            "case": "prepare-password-sudo",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-missing-php-y",
+            "exit_status": 0
+          },
+          {
+            "case": "remove-extensions-again",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-missing-extensions-Y",
+            "exit_status": 0
+          },
+          {
+            "case": "environment",
+            "exit_status": 0
+          }
+        ]
+      },
+      "failure_cases": [
+        {
+          "case": "remove-required",
+          "exit_status": 0
+        },
+        {
+          "case": "required-refusal-n",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-N",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-invalid",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-None",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-SIGNAL_INT",
+          "exit_status": 1
+        },
+        {
+          "case": "required-refusal-SIGNAL_TERM",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid---unknown",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-0",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-65536",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-host:99999",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid-999999999999999999999",
+          "exit_status": 1
+        },
+        {
+          "case": "invalid---log-file=",
+          "exit_status": 1
+        },
+        {
+          "case": "redirected-input-output",
+          "exit_status": 1
+        },
+        {
+          "case": "redirected-input",
+          "exit_status": 1
+        },
+        {
+          "case": "redirected-output",
+          "exit_status": 1
+        },
+        {
+          "case": "disabled-installed-common",
+          "exit_status": 1
+        },
+        {
+          "case": "prepare-custom",
+          "exit_status": 0
+        },
+        {
+          "case": "custom-runtime",
+          "exit_status": 1
+        },
+        {
+          "case": "clear-credentials",
+          "exit_status": 0
+        },
+        {
+          "case": "cancel-password-sudo",
+          "exit_status": 1
+        },
+        {
+          "case": "prepare-denied-user",
+          "exit_status": 0
+        },
+        {
+          "case": "denied-sudo",
+          "exit_status": 1
+        },
+        {
+          "case": "hide-sudo",
+          "exit_status": 0
+        },
+        {
+          "case": "missing-sudo",
+          "exit_status": 1
+        },
+        {
+          "case": "restore-sudo",
+          "exit_status": 0
+        },
+        {
+          "case": "network-failure",
+          "exit_status": 1
+        },
+        {
+          "case": "lock-failure",
+          "exit_status": 1
+        },
+        {
+          "case": "package-SIGINT",
+          "exit_status": 1
+        },
+        {
+          "case": "no-child-SIGINT",
+          "exit_status": 0
+        },
+        {
+          "case": "package-SIGTERM",
+          "exit_status": 1
+        },
+        {
+          "case": "no-child-SIGTERM",
+          "exit_status": 0
+        },
+        {
+          "case": "partial-install",
+          "exit_status": 1
+        },
+        {
+          "case": "no-child-after-failure",
+          "exit_status": 0
+        },
+        {
+          "case": "prepare-restriction",
+          "exit_status": 0
+        },
+        {
+          "case": "remaining-required-restriction",
+          "exit_status": 1
+        },
+        {
+          "case": "optional-only-no-prompt",
+          "exit_status": 0
+        }
+      ],
+      "post_audit_cases": [
+        {
+          "case": "final-remove-runtime",
+          "exit_status": 0
+        },
+        {
+          "case": "final-sudo-missing-php-enter",
+          "exit_status": 0
+        },
+        {
+          "case": "final-remove-extensions",
+          "exit_status": 0
+        },
+        {
+          "case": "final-sudo-missing-extensions-y",
+          "exit_status": 0
+        }
+      ],
+      "explicit": {
+        "base_sha256": "6bc2cde3930ad088b3bb46fa45279e96d25bc3810f209850ecbe4722711874f9",
+        "environment": "PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.3 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\nx86_64\nGNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n\nThis is free software; you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\nPHP 8.3.6 (cli) (built: Sep  2 2026 12:56:02) (NTS)\nCopyright (c) The PHP Group\nZend Engine v4.3.6, Copyright (c) Zend Technologies\n    with Zend OPcache v8.3.6, Copyright (c), by Zend Technologies\ngit\t1:2.43.0-1ubuntu7.3\nphp8.3-cli\t8.3.6-0ubuntu0.24.04.11\nphp8.3-intl\t8.3.6-0ubuntu0.24.04.11\nphp8.3-mbstring\t8.3.6-0ubuntu0.24.04.11\nphp8.3-sqlite3\t8.3.6-0ubuntu0.24.04.11\nphp8.3-cli:\n  Installed: 8.3.6-0ubuntu0.24.04.11\n  Candidate: 8.3.6-0ubuntu0.24.04.11\n  Version table:\n *** 8.3.6-0ubuntu0.24.04.11 500\n        500 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages\n        500 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages\n        100 /var/lib/dpkg/status\n     8.3.6-0maysync1 500\n        500 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages\n",
+        "results": [
+          {
+            "case": "prepare-metadata",
+            "exit_status": 0
+          },
+          {
+            "case": "check-dependencies-help-without-php",
+            "exit_status": 0
+          },
+          {
+            "case": "check-dependencies-ordinary-missing",
+            "exit_status": 1
+          },
+          {
+            "case": "check-dependencies-noninteractive",
+            "exit_status": 1
+          },
+          {
+            "case": "check-dependencies-decline",
+            "exit_status": 1
+          },
+          {
+            "case": "check-dependencies-eof",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-help-without-php",
+            "exit_status": 0
+          },
+          {
+            "case": "dependency-check-ordinary-missing",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-noninteractive",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-decline",
+            "exit_status": 1
+          },
+          {
+            "case": "dependency-check-eof",
+            "exit_status": 1
+          },
+          {
+            "case": "unavailable-privileges",
+            "exit_status": 1
+          },
+          {
+            "case": "missing-php-git-install",
+            "exit_status": 0
+          },
+          {
+            "case": "optional-only-decline",
+            "exit_status": 0
+          },
+          {
+            "case": "optional-only-install",
+            "exit_status": 0
+          },
+          {
+            "case": "check-dependencies-already-ready",
+            "exit_status": 0
+          },
+          {
+            "case": "dependency-check-already-ready",
+            "exit_status": 0
+          },
+          {
+            "case": "prepare-restriction",
+            "exit_status": 0
+          },
+          {
+            "case": "remaining-host-restriction",
+            "exit_status": 1
+          },
+          {
+            "case": "prepare-custom-runtime",
+            "exit_status": 0
+          },
+          {
+            "case": "custom-runtime",
+            "exit_status": 1
+          },
+          {
+            "case": "remove-optional-for-failure-tests",
+            "exit_status": 0
+          },
+          {
+            "case": "network-failure",
+            "exit_status": 1
+          },
+          {
+            "case": "dpkg-lock-failure",
+            "exit_status": 1
+          },
+          {
+            "case": "interrupt-SIGINT",
+            "exit_status": 1
+          },
+          {
+            "case": "no-package-child-SIGINT",
+            "exit_status": 0
+          },
+          {
+            "case": "interrupt-SIGTERM",
+            "exit_status": 1
+          },
+          {
+            "case": "no-package-child-SIGTERM",
+            "exit_status": 0
+          },
+          {
+            "case": "partial-install-failure",
+            "exit_status": 1
+          },
+          {
+            "case": "prepare-sudo-and-runtime-tests",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-required-install",
+            "exit_status": 0
+          },
+          {
+            "case": "prepare-sudo-interruption",
+            "exit_status": 0
+          },
+          {
+            "case": "sudo-interrupt-SIGTERM",
+            "exit_status": 1
+          },
+          {
+            "case": "no-sudo-package-child",
+            "exit_status": 0
+          },
+          {
+            "case": "restore-optional-after-interruption",
+            "exit_status": 0
+          },
+          {
+            "case": "installed-runtime-http-and-shutdown",
+            "exit_status": 0
+          },
+          {
+            "case": "shell-regressions",
+            "exit_status": 0
+          },
+          {
+            "case": "installer-fixtures",
+            "exit_status": 0
+          },
+          {
+            "case": "environment",
+            "exit_status": 0
+          }
+        ]
+      },
+      "manual_cases": [
+        {
+          "case": "remove-runtime",
+          "exit_status": 0
+        },
+        {
+          "case": "missing-php-start",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-php-check-dependencies",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-php-dependency-check",
+          "exit_status": 1
+        },
+        {
+          "case": "follow-missing-php-recipe",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-runtime-ready",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-runtime-usable",
+          "exit_status": 0
+        },
+        {
+          "case": "remove-extensions",
+          "exit_status": 0
+        },
+        {
+          "case": "missing-extensions-start",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-extensions-check-dependencies",
+          "exit_status": 1
+        },
+        {
+          "case": "missing-extensions-dependency-check",
+          "exit_status": 1
+        },
+        {
+          "case": "follow-missing-extension-recipe",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-extensions-ready",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-extensions-usable",
+          "exit_status": 0
+        },
+        {
+          "case": "disable-installed-module",
+          "exit_status": 0
+        },
+        {
+          "case": "disabled-installed-module",
+          "exit_status": 1
+        },
+        {
+          "case": "follow-enable-recipe",
+          "exit_status": 0
+        },
+        {
+          "case": "enabled-ready",
+          "exit_status": 0
+        },
+        {
+          "case": "manual-enabled-usable",
+          "exit_status": 0
+        },
+        {
+          "case": "modify-owned-cli",
+          "exit_status": 0
+        },
+        {
+          "case": "modified-owned-cli-refused",
+          "exit_status": 1
+        },
+        {
+          "case": "restore-owned-cli",
+          "exit_status": 0
+        }
+      ],
+      "transcript_sha256": {
+        "/home/wsl/.cache/startup-recovery-24-final/logs/environment.log": "13feceff5a0193ba7a5b2ee283fa534bbed7b715c263e26b6f9f3e8a72913e64",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/final-remove-extensions.log": "b75d40697a8106e3926b141da79b4f948616d317b3ca19e5482c5433aff8c96f",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/final-remove-runtime.log": "b029036af03b47b75f229cb87542e6a3a0f03a5da14041b527a08d1735cd64e0",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/final-sudo-missing-extensions-y.log": "bee92d73205694486f09046d99fdea2ba50c5b2eb407572fb7e9e0fd1d20a101",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/final-sudo-missing-php-enter.log": "4fb8e128ddc04da67b3b1eb5af1aaa9720e022eb12847506473a383a4da76b89",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/prepare-metadata.log": "3d40fe835d76c196e465f2e9adcc9536620f9fa37ee7a25f28bdc099eb1f3aec",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/prepare-password-sudo.log": "ffcb9888dab4cc73e88ae10f646d0ac2498fa78834be46faaa2e1cbe66eb61f0",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/remove-extensions-again.log": "b75d40697a8106e3926b141da79b4f948616d317b3ca19e5482c5433aff8c96f",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/remove-extensions.log": "e20d5106b1725e41240d94fb610046bb3062676f7868a809a11f8e2e363ddc86",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/root-missing-extensions-Y.log": "f261c4b14c796ad46287220aca8e3b778011d5b140d2d62c1b1e6cbafa969d09",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/root-missing-php-enter.log": "1bf8ecffa243e239f6946e7cee705b75dec1777e491fe35427d43e86c3e5402a",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/sudo-missing-extensions-Y.log": "e5c52b0bfb0a9fe038d602ce510ceab994e97acfae918a337b4ddc70dc5ea849",
+        "/home/wsl/.cache/startup-recovery-24-final/logs/sudo-missing-php-y.log": "d01ffb87c86139078460c8794ebfeca6ab869c0efab2eafb40bd84eac763d3ce",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/cancel-password-sudo.log": "92daef65058dbe3e8ff9ac13f55be7e1cc45f014e68f240fe53830800810f2bb",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/clear-credentials.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/custom-runtime.log": "26e12c02c26fc884ff16fafba73ff1bef2d9026685e1ceb2ae5561d0882ae446",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/denied-sudo.log": "08538a779442b65750586b243184840b9e308c4b5ded31b3ecac7eb0401c9b4a",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/disabled-installed-common.log": "5a95ad03b9c84f7c0dec8182703cedd246b7563ff1c7173fbb576f7fd53bfe2d",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/hide-sudo.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/invalid---log-file=.log": "8f9e92740713987dc0882415b35b44241df01e2a876831cacd3f98ab9e83d086",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/invalid---unknown.log": "e1177a023781a21e4402b95f110450a70fcb0b330bd959b8648a67cc99435c3e",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/invalid-0.log": "1c9f7f09935f3c9e7d2a669cd0b51110296a48231151221babd21a90a9bcff7c",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/invalid-65536.log": "29fbe7d96d3baa3af4ab8c1eb41fe5c8fbafbf0df14c68a40b18be563b0508bf",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/invalid-999999999999999999999.log": "fe098d8ca9196cb533a8a0e66e3d14c8eeb37250bcf05dea563c66ca326486a5",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/invalid-host:99999.log": "4b4248bc7033d425fc79e6295c75616a90d1911dbcd2753fd10a43510a0dcb50",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/lock-failure.log": "eccaedb38689050c803b897b606ccbb194f49b6c37f017fcb9641b97bfc757dd",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/missing-sudo.log": "ddec3fe2c4b0851587e0e224872573fb878205bc3d168384bf85c6dedf1e1750",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/network-failure.log": "014997331ad7e27b7a55ac2a0fa729b980ef45cc92fdd473d234e50a2924eb11",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/no-child-SIGINT.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/no-child-SIGTERM.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/no-child-after-failure.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/optional-only-no-prompt.log": "d1ab186d2ae40ba70986486bed67776b97f1dd0bebfd5b449871bdc8e6f55725",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/package-SIGINT.log": "a83575b4901a7a5fa8b7511ec542818f12c2edfd15bd73d9f053a363b8355377",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/package-SIGTERM.log": "4a2aa0db241c60694d703edb053b2324a698c5111bd9f2e17f8d952cc7080742",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/partial-install.log": "a8abe2a28a37deaa4b45242ba1e70c4db7385e25dcff8044206500ad85de6601",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/prepare-custom.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/prepare-denied-user.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/prepare-restriction.log": "0fe97a7065f5104a04b7bf171318a7cf01c5463da0123d102c782e8c8a87ea03",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/redirected-input-output.log": "9851dc5de483067f6d9f1d167778906d695f415e28d4e7c3fe355756b9cb1095",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/redirected-input.log": "f330139e63c95863e931751daba77e81d0b018e60d4475c18a3953b8ae3effec",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/redirected-output.log": "f330139e63c95863e931751daba77e81d0b018e60d4475c18a3953b8ae3effec",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/remaining-required-restriction.log": "81f3c2c72583e579b6db5826023c3f0bfe2808f4dc21db02e468736e16bd8080",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/remove-required.log": "b75d40697a8106e3926b141da79b4f948616d317b3ca19e5482c5433aff8c96f",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/required-refusal-N.log": "d6bb714a51a9ae72a044c828b385a281e1bd1d494714b53530be5bedafa79a56",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/required-refusal-None.log": "b02ec79e5a32b58045ac936deed33294504c1988f5f9bca49e1ea1fa0d3119f6",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/required-refusal-SIGNAL_INT.log": "69df13779a86e78ccdd3222dcd4a685fccdad54c6e85bf7c76bfc885cd699255",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/required-refusal-SIGNAL_TERM.log": "69df13779a86e78ccdd3222dcd4a685fccdad54c6e85bf7c76bfc885cd699255",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/required-refusal-invalid.log": "d6dbb462de1c4d45a01b09dde00a60e5ff02f46549c8df7f5bb184d7bd017bc7",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/required-refusal-n.log": "51a972787a563d7d0676e1c1a3390086adf5799f27bec9045153f44b0d9a7c7a",
+        "/home/wsl/.cache/startup-recovery-24-final/failure-logs/restore-sudo.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/check-dependencies-already-ready.log": "3eb49de1c7fa8f1ae45dd22b498cc501d3c9c47504d5804b1fe12db7d71a3321",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/check-dependencies-decline.log": "470c9e08271451df9e4e5b163a1b678ab55c2b0e4d5b04569ac827e05c05f9ac",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/check-dependencies-eof.log": "27963a37883c9764b16f7161337d0df8ab58e060e87f3321ab6b8ae6acee304e",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/check-dependencies-help-without-php.log": "2243c1d11b471d1fb63ef2f6f73a0c04569dd1e4fad27cb0652e413f9146b9a0",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/check-dependencies-noninteractive.log": "82fb31f98c863689214705af29292f68b3dfd03672f3f60b270cb2195a044da7",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/check-dependencies-ordinary-missing.log": "fba1369f4c18f456cd13766146b0f7f716bddff705de73d70368580539f9dca0",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/custom-runtime.log": "d8bf2c1f04f399a167f6cf47581f4de40546c47f8621b9114f4e4d13b29597ed",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/dependency-check-already-ready.log": "3eb49de1c7fa8f1ae45dd22b498cc501d3c9c47504d5804b1fe12db7d71a3321",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/dependency-check-decline.log": "470c9e08271451df9e4e5b163a1b678ab55c2b0e4d5b04569ac827e05c05f9ac",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/dependency-check-eof.log": "27963a37883c9764b16f7161337d0df8ab58e060e87f3321ab6b8ae6acee304e",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/dependency-check-help-without-php.log": "2243c1d11b471d1fb63ef2f6f73a0c04569dd1e4fad27cb0652e413f9146b9a0",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/dependency-check-noninteractive.log": "82fb31f98c863689214705af29292f68b3dfd03672f3f60b270cb2195a044da7",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/dependency-check-ordinary-missing.log": "fba1369f4c18f456cd13766146b0f7f716bddff705de73d70368580539f9dca0",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/dpkg-lock-failure.log": "f6a8091c97cb25fbc03fe6d241b511f563adb8579440c641668e0187adb85405",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/environment.log": "5e5e2cd71d2e43c9008852984afc6c3a5f852980b157f7b65adb4712bc331b74",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/installed-runtime-http-and-shutdown.log": "c1052fc0a76278d1620b7977e0a9bfe164267d69534c69df36e3fe897eef117d",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/installer-fixtures.log": "ca428cbb5f93876c5e5f989717288b022ad1239ce95cadfc4d47886c60f8853a",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/interrupt-SIGINT.log": "f96b3e4ac24567aac3c5a43ccb0fbb85fdb8b5be3a43d6eb3e882c787029e3b9",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/interrupt-SIGTERM.log": "b5d953ceb6526fa949c30c3eec7bae2a2953ec105fd969fbf016cfc52123cae8",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/missing-php-git-install.log": "22d6d92815f3be9810a9e7e5042de0e0db5b59c1bb3e9ec1ace4d2629b10853b",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/network-failure.log": "f36c496090850a4a5905004ff9b4788e63e126fdfa630dd58d1a308f6777c6bc",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/no-package-child-SIGINT.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/no-package-child-SIGTERM.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/no-sudo-package-child.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/optional-only-decline.log": "f5df538f5503e4df262e88fd3634c823a7fd3ae5d4ff2603c84e5cdaf9ef5005",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/optional-only-install.log": "8e0a052a7daa3bbd0cabf200e0b92ab0f1ce08903bcfe2ca556d6d0637dac7ea",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/partial-install-failure.log": "39a2aec440019fdd7e31a65bf6e209d1a9003d1acf5b983a4e5e7fd7694f2111",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/prepare-custom-runtime.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/prepare-metadata.log": "cafcb24d88756963574c59bceb92a2b13df5c6fe56054722c3b2e9f51f6051d4",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/prepare-restriction.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/prepare-sudo-and-runtime-tests.log": "67b70526e7a2e8dd2437c5af16f78e013d8a9ef125b0a6a515db0e0f52206a29",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/prepare-sudo-interruption.log": "d1b01bf0e72d4568ded9a15266426a9c23806adee95aab84cd75079dcd9a05b7",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/remaining-host-restriction.log": "fc9b657aa2cba4b88d07c4115d966e796bbb5f229406516625a084e748ac5aa1",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/remove-optional-for-failure-tests.log": "7c4cca659c8ab85740db154d0c5ec56768b27a55e7a7781d1de092499c1b1f52",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/restore-optional-after-interruption.log": "7964074d7d14214784cc42e20b3f55069cd2d3a847e2bc37750ccb46a1a61830",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/shell-regressions.log": "8fac8cd30f422e12a04d80bc37d3fe602312fa1a16fffc70d567a868c8e585bd",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/sudo-interrupt-SIGTERM.log": "2134180b1ac15906ac7a0804c1fed970fe1e39b743518f6244924e4532e9cda9",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/sudo-required-install.log": "47be8112d089e62fedb76b85faaf1f21bfd549e2b09a27051a32fab467211c45",
+        "/home/wsl/.cache/startup-explicit-24-final/logs/unavailable-privileges.log": "a7f1539e3b567f0c8a6223fd8d5860d79b4755dd97d256f3618f571d1e0dce46",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/disable-installed-module.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/disabled-installed-module.log": "2cfb131326e53634eeb3689536864713707dd6d76346891b78608ce7b05b3b49",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/enabled-ready.log": "d0dbc9c357aac0caaeca8e94630d7792984ce3579f9ea12997a30c0f5d16b0cc",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/follow-enable-recipe.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/follow-missing-extension-recipe.log": "c770f4e19edf55c4ba66e51b526d02851d440d014a5344cb9cfb935e98feb5b4",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/follow-missing-php-recipe.log": "a76fa6346f3595a3f1a4dbb9a2a9231c0a2f762ac553da4cff367857c1083d7a",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/manual-enabled-usable.log": "604268228a625e9d276d11c417802b06bc10418467ced36a0bb01d865068be58",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/manual-extensions-ready.log": "d0dbc9c357aac0caaeca8e94630d7792984ce3579f9ea12997a30c0f5d16b0cc",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/manual-extensions-usable.log": "85ac394f27119c44d30b091315a2093f1fb54a7f318c7f669143ae2c33d6f97a",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/manual-runtime-ready.log": "d0dbc9c357aac0caaeca8e94630d7792984ce3579f9ea12997a30c0f5d16b0cc",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/manual-runtime-usable.log": "7cd29a3f69237cd5750314ce6b7bfa33d9ef94a0e4f30ee28e5266a5f35b9240",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/missing-extensions-check-dependencies.log": "ecb33e4ddd73f210e036f23eb1f9062056f65f68de204b1d572d883eeb37d938",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/missing-extensions-dependency-check.log": "ecb33e4ddd73f210e036f23eb1f9062056f65f68de204b1d572d883eeb37d938",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/missing-extensions-start.log": "9851dc5de483067f6d9f1d167778906d695f415e28d4e7c3fe355756b9cb1095",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/missing-php-check-dependencies.log": "0f752a1367380b4abe04040cc41c7a8a88230482d54f27b8ee3a75cbf83f6ec6",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/missing-php-dependency-check.log": "0f752a1367380b4abe04040cc41c7a8a88230482d54f27b8ee3a75cbf83f6ec6",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/missing-php-start.log": "79019711c1e267568435b3866c9e0cd5685eba169823b549649f2204d580300c",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/modified-owned-cli-refused.log": "d747540fcd1992496cb002e7d88e56fc4dcbe00f75ded8ff6d0d00c1b4fa3f4a",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/modify-owned-cli.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/remove-extensions.log": "b75d40697a8106e3926b141da79b4f948616d317b3ca19e5482c5433aff8c96f",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/remove-runtime.log": "b029036af03b47b75f229cb87542e6a3a0f03a5da14041b527a08d1735cd64e0",
+        "/home/wsl/.cache/startup-recovery-24-stage3/manual-logs/restore-owned-cli.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

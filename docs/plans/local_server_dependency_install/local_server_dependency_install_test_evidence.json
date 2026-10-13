@@ -1,0 +1,211 @@
+{
+  "base_sha256": "6bc2cde3930ad088b3bb46fa45279e96d25bc3810f209850ecbe4722711874f9",
+  "environment": "PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.3 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\nx86_64\nGNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n\nThis is free software; you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\nPHP 8.3.6 (cli) (built: Sep  2 2026 12:56:02) (NTS)\nCopyright (c) The PHP Group\nZend Engine v4.3.6, Copyright (c) Zend Technologies\n    with Zend OPcache v8.3.6, Copyright (c), by Zend Technologies\ngit\t1:2.43.0-1ubuntu7.3\nphp8.3-cli\t8.3.6-0ubuntu0.24.04.11\nphp8.3-intl\t8.3.6-0ubuntu0.24.04.11\nphp8.3-mbstring\t8.3.6-0ubuntu0.24.04.11\nphp8.3-sqlite3\t8.3.6-0ubuntu0.24.04.11\nphp8.3-cli:\n  Installed: 8.3.6-0ubuntu0.24.04.11\n  Candidate: 8.3.6-0ubuntu0.24.04.11\n  Version table:\n *** 8.3.6-0ubuntu0.24.04.11 500\n        500 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages\n        500 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages\n        100 /var/lib/dpkg/status\n     8.3.6-0maysync1 500\n        500 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages\n",
+  "results": [
+    {
+      "case": "prepare-metadata",
+      "exit_status": 0
+    },
+    {
+      "case": "check-dependencies-help-without-php",
+      "exit_status": 0
+    },
+    {
+      "case": "check-dependencies-ordinary-missing",
+      "exit_status": 1
+    },
+    {
+      "case": "check-dependencies-noninteractive",
+      "exit_status": 1
+    },
+    {
+      "case": "check-dependencies-decline",
+      "exit_status": 1
+    },
+    {
+      "case": "check-dependencies-eof",
+      "exit_status": 1
+    },
+    {
+      "case": "dependency-check-help-without-php",
+      "exit_status": 0
+    },
+    {
+      "case": "dependency-check-ordinary-missing",
+      "exit_status": 1
+    },
+    {
+      "case": "dependency-check-noninteractive",
+      "exit_status": 1
+    },
+    {
+      "case": "dependency-check-decline",
+      "exit_status": 1
+    },
+    {
+      "case": "dependency-check-eof",
+      "exit_status": 1
+    },
+    {
+      "case": "unavailable-privileges",
+      "exit_status": 1
+    },
+    {
+      "case": "missing-php-git-install",
+      "exit_status": 0
+    },
+    {
+      "case": "optional-only-decline",
+      "exit_status": 0
+    },
+    {
+      "case": "optional-only-install",
+      "exit_status": 0
+    },
+    {
+      "case": "check-dependencies-already-ready",
+      "exit_status": 0
+    },
+    {
+      "case": "dependency-check-already-ready",
+      "exit_status": 0
+    },
+    {
+      "case": "prepare-restriction",
+      "exit_status": 0
+    },
+    {
+      "case": "remaining-host-restriction",
+      "exit_status": 1
+    },
+    {
+      "case": "prepare-custom-runtime",
+      "exit_status": 0
+    },
+    {
+      "case": "custom-runtime",
+      "exit_status": 1
+    },
+    {
+      "case": "remove-optional-for-failure-tests",
+      "exit_status": 0
+    },
+    {
+      "case": "network-failure",
+      "exit_status": 1
+    },
+    {
+      "case": "dpkg-lock-failure",
+      "exit_status": 1
+    },
+    {
+      "case": "interrupt-SIGINT",
+      "exit_status": 1
+    },
+    {
+      "case": "no-package-child-SIGINT",
+      "exit_status": 0
+    },
+    {
+      "case": "interrupt-SIGTERM",
+      "exit_status": 1
+    },
+    {
+      "case": "no-package-child-SIGTERM",
+      "exit_status": 0
+    },
+    {
+      "case": "partial-install-failure",
+      "exit_status": 1
+    },
+    {
+      "case": "prepare-sudo-and-runtime-tests",
+      "exit_status": 0
+    },
+    {
+      "case": "sudo-required-install",
+      "exit_status": 0
+    },
+    {
+      "case": "prepare-sudo-interruption",
+      "exit_status": 0
+    },
+    {
+      "case": "sudo-interrupt-SIGTERM",
+      "exit_status": 1
+    },
+    {
+      "case": "no-sudo-package-child",
+      "exit_status": 0
+    },
+    {
+      "case": "restore-optional-after-interruption",
+      "exit_status": 0
+    },
+    {
+      "case": "installed-runtime-http-and-shutdown",
+      "exit_status": 0
+    },
+    {
+      "case": "shell-regressions",
+      "exit_status": 0
+    },
+    {
+      "case": "installer-fixtures",
+      "exit_status": 0
+    },
+    {
+      "case": "environment",
+      "exit_status": 0
+    }
+  ],
+  "verified_at_utc": "2026-10-13T05:01:13.612157+00:00",
+  "scope": "Ubuntu Base 24.04.3 amd64 chroot with private mounts; host Ubuntu 22.04. Native hosts, WSL integration, other architectures and platforms not independently certified.",
+  "runtime_checks": [
+    "PASS: both entry points reject PDO extension without state changes",
+    "PASS: both entry points reject PDO SQLite driver without state changes",
+    "PASS: both entry points reject mbstring extension without state changes",
+    "PASS: both entry points reject Server process functions unavailable: proc_open without state changes",
+    "PASS: both entry points reject Server process functions unavailable: proc_terminate without state changes",
+    "PASS: both entry points reject Local Git shell functions without state changes",
+    "PASS: both entry points reject Local Git shell functions without state changes",
+    "PASS: both entry points reject mbstring functions unavailable: mb_ord without state changes",
+    "PASS: concise startup groups required installs separately from optional recovery",
+    "PASS: terminal status colors, highlighted commands, and NO_COLOR fallback",
+    "PASS: healthy/restored report is read-only and independent of checkout/database errors",
+    "PASS: normal redirected SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: normal redirected SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: normal terminal SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: normal terminal SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl redirected SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl redirected SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl terminal SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl terminal SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-shell redirected SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-shell redirected SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-shell terminal SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-shell terminal SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl-shell redirected SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl-shell redirected SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl-shell terminal SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-pcntl-shell terminal SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-stty redirected SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-stty redirected SIGTERM HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-stty terminal SIGINT HTTP reads/writes, plain log, clean shutdown",
+    "PASS: no-stty terminal SIGTERM HTTP reads/writes, plain log, clean shutdown"
+  ],
+  "additional_host_checks": [
+    "bash tests/local_server_dependency_install_test.sh",
+    "python3 tests/local_server_dependency_install_confirmation_test.py",
+    "bash tests/local_server_dependency_checks_test.sh",
+    "bash -n v3 scripts/local_server_dependency_install.sh",
+    "php -l scripts/check_local_server_dependencies.php",
+    "git diff --check"
+  ],
+  "source_sha256": {
+    "scripts/local_server_dependency_install.sh": "96df41d9bef7643d5fbc27d5d94dda1475b71c8274d228f3bc80a0668993d5fd",
+    "scripts/check_local_server_dependencies.php": "79372c8e6aa76776cea5f4bdabf0e21b0ec217199431d4dbcb4358dc520604a6",
+    "tests/local_server_dependency_install_integration_test.py": "c1add3d50af99d8976b2e293ec73294b366f82d3988c2c88626c31f1ea563ae8",
+    "tests/local_server_dependency_install_confirmation_test.py": "e68353738a794820f1dba7e6327ec5e7431759b71064be59a03e23d7d9736111"
+  }
+}
