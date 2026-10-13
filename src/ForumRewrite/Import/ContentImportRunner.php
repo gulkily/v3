@@ -165,7 +165,7 @@ final class ContentImportRunner
         }
         ksort($causes);
         ksort($exclusions);
-        return ['source' => $source, 'destination' => $this->repositoryRoot, 'preview' => $preview,
+        return ['media_notice' => 'Image files are separate and are not transferred by repository imports. Image references require the source image collection; this is not a full image backup restore.', 'source' => $source, 'destination' => $this->repositoryRoot, 'preview' => $preview,
             'status' => $counts['conflict'] + $counts['invalid'] + $counts['unsupported'] > 0 ? 'partial' : 'complete',
             'counts' => $counts, 'excluded_archive_categories' => $excluded, 'entries' => $entries,
             'review_causes' => array_values($causes), 'exclusion_reasons' => $exclusions];

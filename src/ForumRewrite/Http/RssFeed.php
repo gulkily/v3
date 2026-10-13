@@ -26,6 +26,7 @@ final class RssFeed
 
     public static function item(string $title, string $link, string $description, ?string $publishedAt = null): string
     {
+        if (str_contains($description, \ForumRewrite\Images\ImageReference::PREFIX)) { $description .= "\nImage files are not included in this feed; view the post online."; }
         $item = '<item><title>' . self::escape($title) . '</title>'
             . '<link>' . self::escape('http://localhost' . $link) . '</link>'
             . '<description>' . self::escape($description) . '</description>';
