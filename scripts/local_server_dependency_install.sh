@@ -55,7 +55,7 @@ install_add_missing() {
 }
 
 install_runtime_identity() {
-  local selected identity version binary installed
+  local selected identity version binary installed verification
   selected="$(type -P php)" || return 1
   selected="$(readlink -f "${selected}")" || return 1
   [[ "${selected}" == /usr/bin/php${php_series:-8.3} ]] || return 1
@@ -67,7 +67,8 @@ install_runtime_identity() {
   installed="$(dpkg-query -W -f='${Version}' php${php_series:-8.3}-cli 2>/dev/null)" || return 1
   install_official_version php${php_series:-8.3}-cli "${installed}" || return 1
   # Modified CLI executables are custom runtimes even if dpkg still owns the path.
-  if dpkg --verify php${php_series:-8.3}-cli 2>/dev/null | grep -q " /usr/bin/php${php_series:-8.3}\$"; then return 1; fi
+  verification="$(dpkg --verify php${php_series:-8.3}-cli 2>/dev/null)" || return 1
+  if grep -Fq " /usr/bin/php${php_series:-8.3}" <<<"${verification}"; then return 1; fi
   printf '%s' "${selected}"
 }
 
@@ -264,7 +265,7 @@ local_server_dependencies_install_run() {
   local -a transaction=() requested_versions=() reviewed=()
   local php_series ubuntu_suite php_version_pattern
   local original_runtime='' initial_ready=0 apt_pid='' apt_pgid='' apt_pid_file='' interrupted=0 package_active=0 package_starting=0
-  trap 'interrupted=1; printf "\nRecovery cancelled before package execution. No system changes made.\n"; return 1' INT TERM
+  trap 'interrupted=1; printf "\nRecovery cancelled before package execution. No system changes made.\n"; exit 1' INT TERM
   if [[ "${recovery_context}" == startup ]]; then initial_ready=1
   else local_server_dependencies_check report || initial_ready=1; fi
   printf '\nDependency installation review\n'
@@ -323,7 +324,7 @@ local_server_dependencies_install_run() {
     privilege=(sudo -n)
   fi
   (( ! interrupted )) || return 1
-  trap 'install_interrupt; if [[ -z "${apt_pid}" ]] && (( ! package_starting )); then return 1; fi' INT TERM
+  trap 'install_interrupt; if [[ -z "${apt_pid}" ]] && (( ! package_starting )); then install_reassess interrupted || true; exit 1; fi' INT TERM
   if ! install_privileged_apt update -o APT::Update::Error-Mode=any; then
     install_reassess 'metadata refresh failed' || true; return 1
   fi

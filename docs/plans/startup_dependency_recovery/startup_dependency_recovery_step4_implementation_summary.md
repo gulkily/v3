@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Implementation in progress.
+All five stages implemented and verified on `feat/startup-dependency-recovery`. See [acceptance evidence](acceptance_evidence.md) for the outcome matrix, exact environments and reproduction commands.
 
 ## Stage 1 - Actionable recovery guidance
 - Changes: shared Ubuntu 22.04/PHP 8.1 and 24.04/PHP 8.3 mapping; verified package provenance and CLI ownership for extension commands; installed/disabled modules receive CLI-specific phpenmod/configuration guidance. Unverified sources, custom runtimes and PATH problems remain manual. Direct PHP probes no longer infer package installation merely from absent capabilities.
@@ -23,3 +23,14 @@ Implementation in progress.
 - Changes: fixed Bash read cancellation (setting a flag alone leaves read waiting); pre-execution handlers return immediately, and changed-transaction prompts also abort. Preserve active-package cleanup while handling the launch/signal window. Added real startup failure harness and startup changed-batch/INT/TERM fixtures. Reports identify OS/release independently of package mapping.
 - Verification: both chroots passed n/N/invalid/EOF and pre-execution INT/TERM; malformed options; redirected input/output separately and together; custom/disabled runtime; absent/denied/cancelled sudo; package/network/lock/partial failure; active-install INT/TERM and no surviving package children; remaining PHP restriction after successful install; optional-only startup without prompting. Pre-execution application/package/metadata snapshots stayed identical; failed recoveries never opened the requested listener or log. Changed-transaction accept/decline/cancellation and active-process reassessment fixtures passed.
 - Notes: corrected a process assertion that matched its own shell command. Retained failed attempts and resumed package gates under `/home/wsl/.cache/startup-recovery-{22,24}-stage3/failure-logs*`; final acceptance reruns the complete corrected harness. System configuration is not rewritten by recovery; no rollback promised.
+
+## Stage 5 - Complete outcome acceptance and documentation
+- Changes: README/CLI/help explain both release mappings, terminal Y/n recovery, password-sudo timing, automatic continuation, explicit/manual retry and unsupported cases. Updated the remediation checklist with evidence-backed closure and retained broader open checks; preserved historical failure reports. Added durable manual-command acceptance and machine-readable evidence with source/transcript hashes.
+- Verification: fresh-image startup acceptance passed both missing states as root and password-sudo on both releases; final-source password-sudo missing-runtime/extensions reruns passed. Both full explicit-installer matrices and complete corrected startup failure matrices passed. Actual displayed manual commands and disabled-module enabling restored HTTP thread/reply reads/writes and shutdown on each release. Final shell/confirmation/40 prompt-boundary cancellation tests, PHP syntax and real-runtime capability/color/20 HTTP lifecycle regressions passed. Documentation links and diff whitespace checked.
+- Notes: final acceptance caught a signal arriving between prompt output and read; cancellation now exits the launcher before any package operation, with separate post-refresh interruption reporting. Added ownership-verification handling that refuses verification-command errors and modified package-owned CLI binaries, verified in both disposable targets. Final guidance audit corrected installed-Git/PATH advice and exposed the reviewed installer in verified extension guidance. Successful returns still restore caller signal handlers. No host installation, schema, deployment or service changes. Chroot evidence does not certify WSL terminal/PATH or other platforms.
+
+## Completion contract audit
+- Ordinary `./v3 start` reaches the approved reviewed recovery and usable-server outcome on both named release/runtime mappings; preserves caller, original address/logging and optional-off behavior.
+- Decline, EOF, invalid input, signals, denied/cancelled privilege, failed transactions and remaining required restrictions block startup. Package success and readiness are separate; no automatic rollback/configuration repair/runtime replacement.
+- Manual fallback commands were executed, not merely matched as text. Ordinary checks/redirected startup remain read-only; explicit aliases retain exact-yes confirmation.
+- Five stage commits plus the initial approved-plans commit preserve the required cadence. Earlier unrelated staged documents remain outside this feature's commits.

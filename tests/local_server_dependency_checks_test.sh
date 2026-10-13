@@ -40,6 +40,10 @@ reject_both() {
 }
 mv "${FIXTURE}/bin/git" "${FIXTURE}/git"
 reject_both 'Git is not available on PATH'
+if [[ -e /usr/bin/git ]]; then
+  grep -Fq 'Git is already installed' "${FIXTURE}/combined" || fail 'PATH repair missing'
+  if grep -Fq 'sudo apt-get install git' "${FIXTURE}/combined"; then fail 'PATH repair proposed duplicate installation'; fi
+fi
 mv "${FIXTURE}/git" "${FIXTURE}/bin/git"
 export V3_TEST_GIT_BROKEN=1
 reject_both 'Git is on PATH but cannot run'

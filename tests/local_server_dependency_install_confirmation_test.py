@@ -80,3 +80,31 @@ case('y', startup=True)
 case('SIGINT', startup=True)
 case('SIGTERM', startup=True)
 print('PASS: changed APT batch requires new confirmation; decline never executes installation')
+
+# Signals can arrive between printing the prompt and entering Bash's read.
+# Exercise that boundary repeatedly, not only an already-blocked read.
+for stop in (signal.SIGINT, signal.SIGTERM):
+    for attempt in range(20):
+        with tempfile.TemporaryDirectory() as directory:
+            events = Path(directory) / 'events'
+            master, slave = pty.openpty()
+            script = SCRIPT.replace('local_server_dependencies_install\n', 'local_server_dependencies_install startup\n')
+            process = subprocess.Popen(['bash', '-c', script], stdin=slave, stdout=slave, stderr=slave,
+                env={**os.environ, 'ROOT': str(ROOT), 'V3_FIXTURE_EVENTS': str(events)})
+            os.close(slave)
+            output = b''
+            try:
+                deadline = time.monotonic() + 3
+                while b'[Y/n]:' not in output and time.monotonic() < deadline:
+                    if select.select([master], [], [], .1)[0]:
+                        output += os.read(master, 65536)
+                assert b'[Y/n]:' in output, output
+                os.kill(process.pid, stop)
+                process.wait(timeout=2)
+                assert process.returncode == 1 and not events.exists(), output
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait()
+                os.close(master)
+print('PASS: 40 prompt-boundary signal cancellations exit without privilege/package operations')

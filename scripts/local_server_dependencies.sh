@@ -124,7 +124,9 @@ local_server_dependencies_check() {
   if [[ "${mode}" == report ]]; then printf 'OS/release: %s; package mapping: %s\n' "$(php_setup_os_description)" "${platform}"; fi
   if ! command -v git >/dev/null 2>&1; then
     local guidance='Install Git or repair PATH, then retry the same command.'
-    if php_setup_mapping "${platform}"; then
+    if [[ -e /usr/bin/git ]] || [[ "$(install_package_status git)" == installed ]]; then
+      guidance='Git is already installed. Restore its directory (normally /usr/bin) in PATH; verify command -v git and git --version before retrying. No duplicate installation is needed.'
+    elif php_setup_mapping "${platform}" && install_candidate git >/dev/null; then
       guidance+=$'\nUbuntu/APT (manual, administrator privileges; omit sudo in a root shell):\n  '
       guidance+="${cyan}sudo apt-get install git${reset}"
     fi

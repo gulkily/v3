@@ -50,6 +50,10 @@ Usage:
   ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 
+Terminal startup can review missing dependencies on Ubuntu 22.04/PHP 8.1 or
+24.04/PHP 8.3: Enter/Y/y accepts recovery and continuation; optional intl defaults off.
+Redirected startup and ordinary dependency checks never prompt or install.
+
 Import content from another instance:
   ./v3 import-instance https://forum.example --dry-run
   ./v3 import-instance https://forum.example
@@ -116,7 +120,8 @@ case "${COMMAND}" in
         'Confirmation precedes sudo/root execution and metadata refresh; changed transactions require new confirmation.' \
         'No unattended bypass. Failed/interrupted operations may leave partial system changes; no automatic rollback.' \
         'Installation returns 0 only for successful requested installation and required readiness, or a ready no-op.' \
-        'Repair remaining configuration manually, then retry ./v3 start with the original options.'
+        'Repair remaining configuration manually, then retry ./v3 start with the original options.' \
+        'Terminal ./v3 start can offer Y/n recovery and continue once after success; optional intl defaults off.'
       exit 0
     fi
     if (( $# == 1 )) && [[ "$1" == --install ]]; then

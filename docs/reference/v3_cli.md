@@ -65,8 +65,16 @@ and existing-plan policy.
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
 Checks local-server prerequisites before application loading, logs, or bootstrap.
-Missing required capabilities return 1 with manual recovery guidance; optional
-limitations warn without blocking. Stop the launcher with Ctrl+C or SIGTERM.
+Missing required capabilities produce runtime-specific recovery guidance.
+On Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution packages, terminal input/output
+and root or potentially usable sudo allow a reviewed `Recover missing dependencies
+and continue startup? [Y/n]` prompt. Enter/Y/y accepts; n/N/invalid input/EOF or
+pre-execution cancellation stops without changes. Optional intl is a separate,
+default-off choice; optional-only limitations never trigger recovery.
+Authenticate sudo after consent. Success plus fresh readiness resumes startup
+once with the original address, logging options and caller identity; failures
+return 1 without starting a listener. Redirected startup never prompts or installs.
+Options are validated before recovery. Stop the launcher with Ctrl+C or SIGTERM.
 
 - `--listen-all` — bind `0.0.0.0:8000` instead of `127.0.0.1:8000`
 - `host:port` — bind an explicit address or bare port number instead of the default
@@ -94,7 +102,7 @@ unchecked capabilities. Runtime details and recovery instructions follow the
 readiness result. Terminals show colored statuses and highlighted setup commands;
 redirected output and `NO_COLOR` use plain text with the same symbols.
 
-With `--install`, Ubuntu 24.04/APT distribution PHP 8.3 users can review required
+With `--install`, Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution users can review required
 packages, explicitly select optional intl, and confirm the full resolved APT
 transaction. Confirmation requires terminal input/output and exact `yes`;
 no unattended bypass is supported. Root or sudo privileges are needed only after
@@ -112,7 +120,8 @@ is performed. If package processes survive interruption, reassessment is deferre
 and manual inspection is required. Declining before execution makes no changes;
 declining a revised transaction after refresh leaves only refreshed metadata.
 
-Retry startup manually with the same options after recovery. Neither mode validates
+After explicit `--install`, retry startup manually with the same options. Recovery
+accepted from `start` continues automatically only after success. Neither check mode validates
 repository, database, permissions, listening address, other-command, or deployment
 readiness. See [installation scope, source restrictions and recovery](../../README.md#install-missing-local-server-dependencies)
 and [external launcher prerequisites](../../README.md#launcher-and-optional-support).

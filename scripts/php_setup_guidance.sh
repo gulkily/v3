@@ -56,7 +56,7 @@ php_setup_extension_guidance() {
     printf '%s\n' "For the standard /etc/php/${php_series}/cli configuration, inspect /etc/php/${php_series}/cli/conf.d and /etc/php/${php_series}/mods-available/${module}.ini."
     printf '%s' "If its CLI link is disabled, enable it manually: sudo phpenmod -v ${php_series} -s cli ${module}. Otherwise repair the selected configuration or host restrictions; then verify php -m and ./v3 check-dependencies."
   elif [[ -z "${status}" || "${status}" == not-installed || "${status}" == config-files ]] && install_candidate "${package}" >/dev/null; then
-    printf '%s' "Missing ${package}. Run sudo apt-get update, then sudo apt-get install ${package} (administrator privileges; omit sudo as root). Verify ./v3 check-dependencies and retry the original command."
+    printf '%s' "Missing ${package}. Run sudo apt-get update, then sudo apt-get install ${package} (administrator privileges; omit sudo as root). For reviewed installation, run ./v3 check-dependencies --install in a terminal. Verify ./v3 check-dependencies and retry the original command."
   else
     printf '%s' "No verified installable ${package} candidate. Inspect apt-cache policy ${package}, dpkg --audit and APT sources; refresh metadata manually with sudo apt-get update, then rerun ./v3 check-dependencies."
   fi
