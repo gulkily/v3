@@ -39,7 +39,7 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'chouse',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Start a thread...',
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'chouse', 'editorial' => 'boston', 'brandedStylesheet' => 'chouse'],
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'chouse', 'editorial' => 'boston', 'brandedStylesheet' => 'chouse', 'favicon' => 'chouse'],
             ],
             'qdb' => [
                 'name' => 'qdb',
@@ -50,7 +50,7 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'qdb',
                 'enabledExperienceKeys' => ['qdb'],
                 'composerPrompt' => 'Submit a quote...',
-                'presentationSlots' => ['navigation' => 'qdb', 'boardCard' => 'quote', 'compose' => 'qdb', 'about' => 'default', 'editorial' => 'qdb', 'brandedStylesheet' => 'qdb'],
+                'presentationSlots' => ['navigation' => 'qdb', 'boardCard' => 'quote', 'compose' => 'qdb', 'about' => 'default', 'editorial' => 'qdb', 'brandedStylesheet' => 'qdb', 'favicon' => 'qdb'],
             ],
             'mitrapclub' => [
                 'name' => 'mitrapclub',
