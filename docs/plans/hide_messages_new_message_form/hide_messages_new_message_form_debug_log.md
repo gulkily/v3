@@ -48,3 +48,20 @@
 ### Uncertain assessments
 
 - **Source:** `docs/railspike/docs/workflow/step3_development_plan_do.md`, instruction to prefix usability, data, or rollback risks with “High risk.” **Observation:** Applied the required prefix to both usability concerns, although this is a small reversible change; the category-based label does not distinguish severity or likelihood. **Suggestion:** Clarify whether the prefix denotes a risk category or assessed severity, rather than assuming all usability changes have high impact.
+
+
+## 2026-10-13T07:41:55Z — Step 4
+
+### Necessary/useful instructions
+
+- **Source:** `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate. **Observed contribution:** Organized the approved plans/log and index in planning commit `cd94b661`, before implementation, while path-scoped commits preserved the unrelated staged `todo.txt` change. **Suggestion:** Retain.
+- **Source:** `docs/railspike/docs/workflow/step4_implementation_do.md`, complete the Step 3 Contract and record stage verification. **Observed contribution:** The browser harness now proves normal Users navigation, sending from a user page, returning to Messages, and replying; existing recovery and eligibility coverage passed. Focused tests caught the removed function’s stale export and obsolete form assertions before completion. Implementation and its summary shipped together in `c93ba5f1`. **Suggestion:** Retain.
+- **Source:** `docs/railspike/docs/workflow/step4_implementation_after.md`, final verification and debug handoff. **Observed contribution:** Confirmed the separate planning/stage commits, reviewed screenshots and actual results, and saved this final report without amending completed commits. **Suggestion:** Retain.
+
+### Redundant/unnecessary instructions
+
+- **Source:** `docs/railspike/RAILSPIKE.md`, How to Use This Chain / Key Rules: reprint each phase; Step 4 Before, Do, and After. **Observed overhead:** Reproducing all three procedural files creates substantially more conversational text than explaining this small change and its verification. **Suggestion:** Permit linked phase checklists with concise progress updates by default, while providing full text on request.
+
+### Inapplicable instructions
+
+- **Source:** Step 4 Before/Do/After, documentation-only restrictions and verification branches. **Applicability:** This approved application change required runtime and browser checks; documentation-only conditions do not apply. **Suggestion:** Retain conditional wording so planning documents are not mistaken for documentation-only implementation.
