@@ -34,6 +34,6 @@ Capture the problem framing, desired outcomes, and shared-component consideratio
 - Keep the doc lightweight enough to consume at a glance
 
 ## Next
-Before the completed-step handoff, restore mode state and, if enabled, log and present the diagnostic summary under [Railspike Debug Mode](../../RAILSPIKE.md#railspike-debug-mode), linking to the saved log.
+Before the completed-step handoff, restore mode state and, if enabled, save the full diagnostic report under [Railspike Debug Mode](../../RAILSPIKE.md#railspike-debug-mode) and include only one short debug line linking to the saved log in the handoff, before approval.
 
 Deliver the document, request confirmation, and wait for "Approved Step 2." Once approved, continue with `docs/workflow/step3_development_plan_before.md`.

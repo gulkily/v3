@@ -50,8 +50,10 @@ Then confirm that the first Step 4 commit contains approved plans and only the [
 
 ## Debug state or logging is unclear
 
-**Signal:** Resumed work lacks a reliable mode setting, prior artifacts disagree, a diagnostic log cannot be saved, or a report repeats earlier findings.
+**Signal:** Resumed work lacks a reliable mode setting, prior artifacts disagree, a diagnostic log cannot be saved, a report repeats earlier findings, or routine chat echoes diagnostics instead of linking to the log.
 
-**Recovery:** Apply the [debug contract](../RAILSPIKE.md#railspike-debug-mode): prefer the latest explicit request and current artifact state; historical snapshots do not override them. If evidence cannot resolve resumed state, ask rather than silently defaulting off. Mode changes do not grant approval to proceed.
+**Recovery:** Apply the [debug contract](../RAILSPIKE.md#railspike-debug-mode): prefer the latest explicit request and current artifact state; historical snapshots do not override them. If evidence cannot resolve resumed state, ask briefly rather than silently defaulting off. Mode changes do not grant approval to proceed.
 
-If saving fails, report the failure without claiming the log was saved; resolve it before presenting diagnostics as logged. Preserve existing entries and append labeled corrections identifying the superseded entry; skip unchanged reports. Keep inapplicable or uncertain findings separate from redundant instructions. Disabled mode preserves the log without new diagnostics. Include saved additions only in the authorized planning/stage commit or final log-only handoff commit; never amend completed commits or use the allowance for unrelated files.
+If saving fails, briefly report the failure without claiming the log was saved or dumping unsaved diagnostics into chat; resolve it before presenting diagnostics as logged. Preserve existing entries and append labeled corrections identifying the superseded entry; skip unchanged reports and link to the existing log without claiming a new entry. Keep full findings and required groups in the log, with inapplicable or uncertain findings separate from redundant instructions. Restore routine enabled handoffs to one short debug link line, without findings or collection narration; present findings in chat only when explicitly requested. Disabled mode preserves the log without new diagnostics or debug links. Ordinary task updates, blockers, approvals, and instruction reprints remain available.
+
+Include saved additions only in the authorized planning/stage commit or final log-only handoff commit; never amend completed commits or use the allowance for unrelated files.
