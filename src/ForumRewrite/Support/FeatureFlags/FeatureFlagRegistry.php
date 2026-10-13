@@ -6,6 +6,7 @@ namespace ForumRewrite\Support\FeatureFlags;
 
 final class FeatureFlagRegistry
 {
+    public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
@@ -31,6 +32,15 @@ final class FeatureFlagRegistry
     public function all(): array
     {
         return [
+            new FeatureFlagDefinition(
+                self::PRIVATE_MESSAGES_ENABLED,
+                'Private messages',
+                'Enable private messaging, including message history, unread status, and history sync. Disabling preserves stored messages. Re-enable and reload to resume.',
+                true,
+                self::PRIVATE_MESSAGES_ENABLED,
+                siteMutable: true,
+                group: 'ACCESS',
+            ),
             new FeatureFlagDefinition(
                 self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
                 'Allow members to approve keys for other existing accounts',

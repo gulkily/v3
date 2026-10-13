@@ -43,6 +43,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Forte reply likes](forte_reply_likes/)
 - [Forte unauthenticated vote identity setup](forte_unauthenticated_vote_identity_setup/)
 - [Guided PHP setup fallback](guided_php_setup_fallback/)
+- [Hide Messages new-message form](hide_messages_new_message_form/)
 - [Identity bootstrap signature verification](identity_bootstrap_signature_verification/)
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)
 - [Instance content sync](instance_content_sync/)
@@ -94,6 +95,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Private message history](private_message_history/) — recorded steps: 2, 3, 4.
 - [Private message reader refinement](private_message_reader_refinement/)
 - [Private message unread state](private_message_unread/)
+- [Private messaging feature flag](private_messaging_feature_flag/)
 - [Private messaging](private_messaging/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)
 - [QDB archive importer](qdb_archive_importer/)

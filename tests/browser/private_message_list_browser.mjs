@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { checkMessagingFeatureFlag, checkMessagingBackgroundGate } from './private_message_feature_flag.mjs';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -119,15 +120,21 @@ try {
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
   assert.equal(await list.first().getAttribute('data-message-id'), 'arrival');
-  await page.locator('summary').filter({ hasText: 'New message' }).click();
-  for (const username of ['alice', 'not a username', 'pending', 'keyless']) {
-    await page.getByLabel('Username', { exact: true }).fill(username);
-    await page.getByRole('button', { name: 'Open conversation' }).click();
-    await page.locator('[data-role="recipient-feedback"].feedback-error').waitFor();
-    assert.equal(await page.getByLabel('Username', { exact: true }).inputValue(), username);
+  async function assertNoNewMessage(target) {
+    assert.equal(await target.locator('[data-role="new-message"], [data-role="recipient-form"], [data-action="new-message"]').count(), 0,
+      'Recipient controls must be absent, including from keyboard navigation');
   }
-  await page.getByLabel('Username', { exact: true }).fill('bob');
-  await page.getByRole('button', { name: 'Open conversation' }).click();
+  await assertNoNewMessage(page);
+  await page.goto(base + '/messages/');
+  await page.locator('[data-conversation-list]').waitFor();
+  await assertNoNewMessage(page);
+  await page.getByRole('link', { name: 'Users', exact: true }).click();
+  await page.getByRole('link', { name: 'bob', exact: true }).click();
+  await page.locator('[data-private-message-composer] textarea').fill('Started from user page');
+  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByText('Private message sent.', { exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Messages', exact: true }).click();
+  await list.filter({ has: page.locator('[data-role="counterpart"]', { hasText: 'bob' }) }).locator('a').click();
   await page.waitForURL('**/messages/conversation/bob');
   assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('textarea')), false, 'Opening chat must not autofocus');
   await page.evaluate(() => {
@@ -148,7 +155,7 @@ try {
   await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Browser follow-up' }).waitFor();
   assert.equal(await page.evaluate(() => window.chatDocumentMarker), 'same-document', 'Successful sends must not reload');
   await page.evaluate(() => document.querySelector('[data-private-message-composer]').dispatchEvent(new CustomEvent('private-message-sent', { bubbles: true, cancelable: true, detail: window.lastChatConfirmation })));
-  assert.equal(await page.locator('[data-private-message-id]').count(), 2, 'Repeated confirmation must not append twice');
+  assert.equal(await page.locator('[data-private-message-id]').count(), 3, 'Repeated confirmation must not append twice');
   if (process.env.PRIVATE_MESSAGE_DENSITY_BASELINE === '1') {
     const density = await page.locator('[data-private-message-id]').evaluateAll(cards => {
       for (const card of cards) card.querySelector('[data-role="private-message-plaintext"]').textContent = 'A representative short message.';
@@ -234,6 +241,15 @@ try {
   const outsiderContext = await browser.newContext();
   await authenticate(outsiderContext, outsider);
   assert.equal((await (await outsiderContext.request.get(base + '/api/private_messages/conversations')).json()).conversations.length, 0);
+  const emptyPage = await outsiderContext.newPage();
+  emptyPage.on('pageerror', error => errors.push(error.message));
+  for (const path of ['/messages', '/messages/']) {
+    await emptyPage.goto(base + path);
+    await emptyPage.getByText('No messages yet', { exact: true }).waitFor();
+    await assertNoNewMessage(emptyPage);
+  }
+  await emptyPage.screenshot({ path: join(root, 'messages-empty.png') });
+  await emptyPage.close();
   console.log('Checking checkHistory');
   await checkHistory(page, context, base, root, seed, incoming, {
     long: await encrypt(bob, 'Older long message\n' + 'A long history line.\n'.repeat(30)),
@@ -273,8 +289,11 @@ try {
   await page.bringToFront();
   console.log('Checking checkUnavailableBoundaries');
   await checkUnavailableBoundaries(page, base, seed, unavailable, incoming);
+  console.log('Checking messaging feature flag recovery');
+  await checkMessagingFeatureFlag(page, context, base, seed);
+  await checkMessagingBackgroundGate(page, context, base, seed);
   assert.deepEqual(errors, []);
-  await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'normal entry, inline encrypted replies, lost send acknowledgment/newer draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list/history snapshots, exact history coverage and anchoring within 5px, history restart/concurrent send, unread counts beyond 25 rows, signed read receipts, visible-window acknowledgment, unread 2-to-1 transition, hidden tabs/early navigation, backdated arrivals, lost read acknowledgment with pending send/newer draft, two-device convergence, reversed refreshes, identity changes, back navigation, authorization/no-store; compact unavailable groups, twenty-to-one collapse, sixty-message history joins, details/retry, real decryption recovery and split/merge/focus, grouped seen boundaries and recovery', unavailableLayout, screenshots: ['messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png', 'unread-mobile.png', 'unavailable-mobile.png', 'unavailable-details-mobile.png'] }, null, 2));
+  await writeFile(join(root, 'report.json'), JSON.stringify({ passed: true, checks: 'hidden recipient controls in empty/populated Messages and aliases, user-directory entry and first send, normal entry, inline encrypted replies, lost send acknowledgment/newer draft, isolated read recovery, invalid/missing signatures, delayed decryption/navigation, keyboard/zoom/scroll, shared composers, list/history snapshots, exact history coverage and anchoring within 5px, history restart/concurrent send, unread counts beyond 25 rows, signed read receipts, visible-window acknowledgment, unread 2-to-1 transition, hidden tabs/early navigation, backdated arrivals, lost read acknowledgment with pending send/newer draft, two-device convergence, reversed refreshes, identity changes, back navigation, authorization/no-store; compact unavailable groups, twenty-to-one collapse, sixty-message history joins, details/retry, real decryption recovery and split/merge/focus, grouped seen boundaries and recovery', unavailableLayout, screenshots: ['messages-empty.png', 'messages-desktop.png', 'messages-mobile.png', 'chat-desktop.png', 'chat-mobile.png', 'chat-recovery-mobile.png', 'history-loaded.png', 'history-mobile.png', 'unread-mobile.png', 'unavailable-mobile.png', 'unavailable-details-mobile.png'] }, null, 2));
   console.log(`Browser checks passed. Artifacts: ${root}`);
 } catch (error) {
   console.error(`Browser artifacts: ${root}`);

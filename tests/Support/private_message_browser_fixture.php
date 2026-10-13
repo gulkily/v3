@@ -16,6 +16,11 @@ if (PHP_SAPI !== 'cli') {
 }
 $root = $argv[1];
 $input = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+if (($input['action'] ?? '') === 'messaging-flag') {
+    file_put_contents($root . '/repository/records/instance/feature-flags.txt',
+        "Schema: site-feature-flags-v1\n\nFORUM_PRIVATE_MESSAGES_ENABLED: " . ($input['enabled'] ? 'true' : 'false') . "\n");
+    exit;
+}
 if (($input['action'] ?? '') === 'chat') {
     $store = new PrivateMessageStore(new PDO('sqlite:' . $root . '/state/private/messages.sqlite3'));
     foreach ($input['messages'] as $message) {

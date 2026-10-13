@@ -63,7 +63,7 @@
       if (onPrepared) onPrepared(attempt);
     }
     if (attempt.senderKey !== senderKey()) throw new Error("Restore the original sending identity to check this attempt.");
-    const response = await fetch("/api/private_messages", {
+    const response = await window.ForumPrivateMessageAvailability.request("/api/private_messages", {
       method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ message_id: attempt.messageId, recipient_username_token: token(root, "recipientUsernameToken"), encrypted_envelope: attempt.encryptedEnvelope }),
     });
@@ -132,7 +132,7 @@
     recovery();
     async function send(event, retryOnly) {
       event.preventDefault();
-      if (submitting) return;
+      if (submitting || window.ForumPrivateMessageAvailability.isDisabled()) return;
       if (senderKey() !== originalKey) { setFeedback(feedback, "Your identity changed. Restore it or reload before sending.", "error"); return; }
       if (pending && !retryOnly && pending.snapshotVersion !== version) {
         setFeedback(feedback, "Check the previous send before sending your edited draft.", "error"); return;

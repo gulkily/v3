@@ -70,6 +70,7 @@ global.fetch = async function(url, options) {
   return { ok: !shouldFail, async json() { return shouldFail ? { status: 'error', error: 'Temporary failure.' } : { status: 'ok', message: { message_id: 'private-fixed-id', sender_username_token: 'alice', recipient_username_token: 'ilyag', created_at: '2026-10-09T12:00:00Z' } }; } };
 };
 global.document = { addEventListener() {}, querySelectorAll() { return []; } };
+vm.runInThisContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[1]), 'private_message_availability.js'), 'utf8'));
 vm.runInThisContext(source);
 window.ForumPrivateMessageComposer.bind(root);
 const event = { preventDefault() {} };
