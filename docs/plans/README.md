@@ -7,6 +7,8 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 
 ## Feature folders
 
+- [Starfield key backup](starfield_key_backup/)
+
 - [Rebuild progress and history batching](rebuild_thread_label_stall/)
 - [Authentication modes documentation](authentication_modes_documentation/)
 
