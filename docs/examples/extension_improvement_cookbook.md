@@ -77,7 +77,7 @@ Use a per-post workflow when one post supplies enough context. Use a queued work
 - **Outcome:** Draft a feature-request post or Codex handoff that preserves the source link, problem, intended benefit, constraints, unanswered questions, and possible duplicates.
 - **Guard:** Require a developer or moderator to approve the handoff or publication. The workflow must not silently create a roadmap commitment or change the original author’s words.
 - **Operations:** Keep the origin, review decision, and resulting work auditable; expose rejection and retry paths.
-- **Reuse:** [`v3` Codex-handoff commands](../reference/v3_cli.md#run-approved-codex-handoff-requests), the [Feature Development Process](../fdp/README.md), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).
+- **Reuse:** [`v3` Codex-handoff commands](../reference/v3_cli.md#run-approved-codex-handoff-requests), the [Railspike workflow](../railspike/RAILSPIKE.md), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).
 
 ## Recommended next recipes
 

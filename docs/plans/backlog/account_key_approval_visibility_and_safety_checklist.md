@@ -4,7 +4,7 @@ Status: Proposed follow-up work. Items are not approved implementation scope or 
 
 Reduce easy account impersonation while preserving open registration, member sponsorship, and convenient device setup. Prioritize the cross-account approval restriction, clear approval wording, and visible account-key history. Notifications and device pairing can follow as separately scoped features.
 
-The [approval policy FDP checklist](account_key_approval_policy_fdp_checklist.md) retains the single-flag first-release scope. This checklist captures additional ideas from the discussion; it does not expand that release. See also the [findings and recommendations](account_key_approval_policy_findings_and_recommendations.md). Select and scope follow-up features through the [Feature Development Process](../../fdp/FEATURE_DEVELOPMENT_PROCESS.md).
+The [combined Step 1 assessment](../account_key_approval_safety/account_key_approval_safety_step1_solution_assessment.md) and [Step 2 feature description](../account_key_approval_safety/account_key_approval_safety_step2_feature_description.md) are approved for Option B, grouping priorities 1–3 with a default-enabled flag. The [Step 3 development plan](../account_key_approval_safety/account_key_approval_safety_step3_development_plan.md) is approved; implementation is underway on `feature/account-key-approval-safety`. The [approval policy FDP checklist](account_key_approval_policy_fdp_checklist.md) supplies the narrower flag requirements within that scope. See also the [findings and recommendations](account_key_approval_policy_findings_and_recommendations.md). Select and scope work through the [Feature Development Process](../../fdp/FEATURE_DEVELOPMENT_PROCESS.md).
 
 ## Priority 1 Prevent unintended access and clarify approvals
 
@@ -72,7 +72,7 @@ The goal is to make adding your own device easier than asking another member to 
 - [ ] Choose notification channels and how existing devices recognize and acknowledge new-key notices.
 - [ ] Define the historical evidence available for older approvals and how uncertain classifications are presented.
 - [ ] Scope a revocation response before promising users they can disable an unfamiliar key.
-- [ ] Select the first follow-up outcome and its FDP cycle without bundling the full checklist into the initial flag release.
+- [ ] Review the combined Step 1 scope and select its FDP cycle without bundling the full checklist into one release.
 
 ## Verification for selected work
 

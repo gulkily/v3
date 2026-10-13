@@ -20,6 +20,7 @@ final class FeatureFlagRegistry
     public const LLM_CONVERSATION_RECORDING_ENABLED = 'LLM_CONVERSATION_RECORDING_ENABLED';
     public const LLM_CONVERSATION_UI_ENABLED = 'LLM_CONVERSATION_UI_ENABLED';
     public const APPROVED_MEMBERS_ONLY = 'FORUM_APPROVED_MEMBERS_ONLY';
+    public const ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL = 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL';
     public const AUTOMATIC_GUEST_KEYPAIR_ENABLED = 'FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED';
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
@@ -30,6 +31,15 @@ final class FeatureFlagRegistry
     public function all(): array
     {
         return [
+            new FeatureFlagDefinition(
+                self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
+                'Allow members to approve keys for other existing accounts',
+                'When disabled, members can approve new usernames and their own additional keys. Only root-approved operators can approve keys for other existing usernames. Existing approvals remain valid.',
+                true,
+                self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
+                siteMutable: true,
+                group: 'ACCESS',
+            ),
             new FeatureFlagDefinition(
                 self::APPROVED_MEMBERS_ONLY,
                 'Approved members only',
@@ -114,8 +124,8 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,
                 'Static detail pages',
-                'Pre-build individual thread and post pages during a full static release. Disable this on a large QDB instance to keep shared listing pages static while individual quotes render dynamically.',
-                true,
+                'Off by default: individual threads and posts render at runtime. Enable to pre-build detail pages for static hosting. Run a full static build after changing this flag.',
+                false,
                 self::STATIC_DETAIL_PAGES_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',

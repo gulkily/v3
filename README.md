@@ -60,15 +60,17 @@ that stays accurate even as implementation details move around:
 
 - [Production Deployment Checklist](docs/plans/php_production_deployment_checklist_v1.md) — tracks remaining work between current state and a production launch; periodically re-reviewed rather than treated as done
 
-### Feature Development Process (`docs/fdp/`)
+### Development workflow (Railspike)
 
-- [FDP Overview](docs/fdp/README.md) — the 4-step (+ optional Step 1 assessment) workflow this project's feature work follows, vendored from an external template repo via `git subtree`
+- [Railspike](docs/railspike/RAILSPIKE.md) — the workflow for new work, vendored as a Git subtree.
+- [Project workflow and updates](docs/reference/railspike_workflow.md) — subtree operations, recovery, and the transition from FDP.
 
 ### Planning Docs (`docs/plans/`)
 
 The [planning index](docs/plans/README.md) lists feature folders for in-flight
-and historical planning documents. Features with four or more related artifacts
-have their own folders; smaller efforts and standalone plans remain at the root.
+and historical planning documents. New Railspike cycles move into feature folders after Step 3 approval and
+branching, before their planning commit. Existing FDP plans retain their original
+organization rules.
 Two cross-cutting plans are worth knowing about:
 
 - [Codebase Cleanup Audit Plan](docs/plans/codebase_cleanup_audit_plan_v1.md) — the plan behind the `Application.php` decomposition into per-domain namespaces
@@ -91,6 +93,98 @@ internet message boards, unrelated to this codebase's implementation —
 
 ## Local Run
 
+### PHP setup
+
+Local startup requires PHP CLI **8.1+**, Git, PDO/PDO SQLite, mbstring, and PHP
+process execution for the server and local Git operations. The selected `php`
+executable must be on your `PATH`; extensions must be enabled for that same CLI.
+If it is missing, install PHP CLI using your system's package manager or PHP
+installation instructions. If PHP is already installed, add the directory
+containing its executable to `PATH` in the terminal where you run v3.
+
+Check availability with `php --version` and `./v3 check-dependencies`, then retry
+`./v3 start` with your original options. Both commands explain missing or disabled
+capabilities and manual recovery. This guide is readable directly from the
+checkout without running PHP; v3 does not install software.
+
+On Ubuntu 24.04 with APT, install Git and the matching PHP CLI, SQLite/PDO SQLite,
+and mbstring packages manually:
+
+```bash
+sudo apt-get update
+sudo apt-get install git php8.3-cli php8.3-sqlite3 php8.3-mbstring
+```
+
+These commands change system packages and require administrator privileges;
+omit `sudo` in an existing root shell. If a command fails, resolve the reported
+package-manager or permission issue before retrying. Then check `php --version`
+and `php -m` for `PDO`, `pdo_sqlite`, and `mbstring` in your launching terminal.
+Run v3 as your usual user after setup.
+
+If PHP is already installed, the report identifies its executable and loaded
+configuration. Use `php --ini` to find CLI settings and `php -m` to check enabled
+extensions; changing another PHP installation or a web-server-only configuration
+will not repair this CLI. A standalone `sqlite3` executable does not replace PDO
+SQLite. If PHP process functions are disabled or execution is restricted, review
+the CLI's `disable_functions` and host policy, or use another supported
+environment. These checks do not require remote Git credentials.
+
+Startup displays this recipe only when it recognizes Ubuntu 24.04 and finds
+`apt-get`. Other environments receive general manual setup guidance; install
+PHP CLI with PDO SQLite and mbstring support using your platform's instructions.
+Missing or ambiguous platform information also uses the general guidance.
+Startup never prompts, changes PATH or shell profiles, or retries automatically.
+
+### Launcher and optional support
+
+The launcher requires Bash **4.1+** and standard `dirname` and `cat` utilities.
+Its `#!/usr/bin/env bash` interpreter must be available on `PATH`. If Bash is
+missing, the launcher cannot print its own guidance: install/select Bash using
+your platform's setup instructions, verify `bash --version`, and retry. With a
+newer Bash outside `PATH`, use `/path/to/bash ./v3 check-dependencies` and
+`/path/to/bash ./v3 start` with your original options. Missing `dirname` or `cat`
+must likewise be repaired through your platform's standard utilities setup;
+the launcher uses them before it can provide all diagnostics.
+
+`stty`, PCNTL signal support, and `shell_exec` for terminal cosmetics are optional.
+Without them, output uses plain logging and launcher-managed shutdown remains
+available; stop the launcher with Ctrl+C or SIGTERM. Do not relax host execution
+policy solely to enable terminal cosmetics. PHP intl is also optional: existing
+Unicode behavior rejects combining marks when normalization is unavailable.
+For Ubuntu 24.04/PHP 8.3, enable normalization manually with
+`sudo apt-get install php8.3-intl`; for another runtime, enable its matching intl
+extension and recheck the selected CLI.
+
+### Check local-server dependencies
+
+```bash
+./v3 check-dependencies
+```
+
+Reports required and optional local-server capabilities without starting the
+server, bootstrapping a repository, rebuilding a read model, or writing application
+state. Exit status is **0** when required capabilities are available, including
+when optional warnings remain; **1** means setup needs repair. It also works
+without PHP and never consumes interactive setup input. Use
+`./v3 check-dependencies --help` for usage without runtime checks.
+`./v3 dependency-check` is an alias with the same options and exit status.
+
+The report lists **✓ available**, **✗ unavailable**, **! optional limitations**,
+and **? not checked**, followed by a readiness result and separate recovery
+instructions. PHP-dependent checks stay unknown when PHP cannot run. Terminal
+output colors the statuses and highlights setup commands; redirected output
+keeps the symbols and plain text. Set `NO_COLOR=1` to disable color.
+
+`./v3 start` uses the same assessment before loading application code or creating
+logs/state. A passing dependency report does not validate checkout/database
+health, application permissions, configuration, or whether the listening port is
+available; those failures remain separate operational errors. Checks cover only
+the local server. Other commands and production deployment have their own
+prerequisites; Ubuntu 24.04/APT has specific setup guidance, while other or
+unrecognized environments receive generic instructions.
+
+### Start locally
+
 The default local runtime now bootstraps and uses `state/local_repository` automatically. On first run it copies the committed fixture seed into that writable git repo, so thread/reply/bootstrap writes work without setting `FORUM_REPOSITORY_ROOT`.
 
 Rebuild the SQLite read model:
@@ -104,6 +198,12 @@ Build and activate an Apache-friendly static HTML release under `state/static_ht
 ```bash
 php scripts/build_static_artifacts.php
 ```
+
+By default this skips bulk thread/post HTML generation and serves detail pages
+through PHP at runtime. Static-only hosts can opt in with
+`FORUM_STATIC_DETAIL_PAGES_ENABLED=true`. Existing instance/environment overrides
+still apply; run a full build after changing the flag (a shared-only refresh
+retains old detail files). See the [build reference](docs/reference/v3_cli.md#build-static-html-artifacts).
 
 Start the local PHP server:
 
@@ -285,6 +385,38 @@ Approval helper examples:
 ./v3 approval audit --repository-root=/path/repository --database-path=/path/read-model.sqlite3 --json
 ```
 
+`./v3 approve` is an alias for `./v3 approval seed`. On a current read model,
+both apply the seed synchronously without a full rebuild: success means the next
+request sees updated approval, attribution, access, activity, and scores, including
+existing approvals unlocked by the new seed. Generated pages and active static
+releases are invalidated; PHP serves current state immediately. Existing offline
+snapshot copies are retired and the snapshot endpoint can recreate them from the
+current model. Already-open pages and downloaded offline copies are not pushed an
+update.
+
+Use the same repository/database and `FORUM_PUBLIC_ARTIFACT_ROOT` /
+`FORUM_STATIC_HTML_ROOT` as the web instance (the static root defaults to the active
+site profile). Git-backed instances require matching read-model HEAD and clean
+canonical records; unrelated staged files are preserved. Non-Git instances use a
+recorded canonical-content fingerprint. Older non-Git indexes without that evidence
+need an explicit read-model repair once.
+
+Missing, stale, incompatible, or out-of-date read models fail without automatically
+rebuilding. Errors state whether the seed was written and committed. Resolve the
+reported canonical-write, permissions, or cache problem, then use the instance paths
+printed by the error to repair and retry:
+
+```bash
+./v3 rebuild /path/repository /path/read-model.sqlite3
+./v3 approve openpgp-<fingerprint> "same seed reason" /path/repository /path/read-model.sqlite3
+```
+
+Repair is an exceptional recovery operation, not a step after ordinary approval.
+Retrying a matching seed refreshes state and caches without creating another seed
+or commit; a seed left uncommitted by a failed Git operation is committed on retry.
+An existing seed with a different reason is rejected without changing it. Seed
+writes preserve root attribution and do not create user approval replies.
+
 The approval audit reads existing state without rebuilding or changing approvals.
 It reports currently approved keys and their attributed approver, including grants
 derived from invitations. Root-seeded, operator-approved, same-username, and
@@ -307,6 +439,19 @@ Run the current parser, rebuild, and app smoke tests:
 ```bash
 ./v3 test
 ```
+
+Standalone local-server dependency regressions:
+
+```bash
+bash tests/missing_php_startup_test.sh
+bash tests/local_server_dependency_checks_test.sh
+python3 tests/local_server_dependency_runtime_test.py
+```
+
+The real-runtime test uses Python 3's standard library, PHP CLI, temporary
+projects/configurations, and HTTP/terminal checks. It changes no system packages
+or real application state. Missing shared-extension cases are skipped when the
+runtime compiled that extension statically.
 
 The custom test runner reports tests that take at least 5 seconds by default.
 Override the cutoff with `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS`, for example

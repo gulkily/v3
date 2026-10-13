@@ -51,7 +51,7 @@ final class PostWorkflowService
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
-    private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp'];
+    private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp', 'railspike'];
 
     private ?PDO $pdo = null;
 

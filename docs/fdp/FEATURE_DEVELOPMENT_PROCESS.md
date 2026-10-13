@@ -1,5 +1,7 @@
 # Feature Development Process
 
+> **Legacy FDP reference — frozen.** New work uses [Railspike](../railspike/RAILSPIKE.md). See the [project transition and update guide](../reference/railspike_workflow.md). Existing FDP cycles, including this migration, retain the rules below unless explicitly replanned and approved.
+
 ## Overview
 Feature work flows through four tightly scoped steps with an optional solution assessment upfront. To keep the instructions inside the context window, the detailed guidance for each step now lives in separate files that you open only when you are ready for that step.
 
@@ -30,12 +32,16 @@ Debug mode is optional feedback for **debugging and improving FDP itself**. It d
 - An explicit latest user enable/disable request takes precedence; update the current field accordingly. Missing state is disabled only for a clearly new workflow with no enable request. For resumed work, ask for clarification if state is missing or conflicting and cannot be resolved from available evidence; do not silently reset it.
 - Mode changes alone do not approve a step or authorize advancing, branching, or committing. During Step 4, record state changes in the summary and include them in the next authorized stage commit; do not amend completed commits.
 
-**Completion report**: When enabled, append one concise diagnostic summary to the completed Step 1–4 handoff, before requesting approval where applicable. Do not report separately for phases or implementation stages. A revision updates the step's findings rather than accumulating duplicate reports. When disabled, omit diagnostic output.
+**Completion report**: When enabled, include one concise diagnostic summary and a debug-log link in each completed Step 1–4 handoff, before requesting approval where applicable. Do not report separately for phases or implementation stages. Revisions update the handoff's findings. When disabled, emit no diagnostics and preserve the log.
 
 - Always include **Necessary/useful instructions** and **Redundant/unnecessary instructions**. Say “No supported findings” for an empty group.
 - Each finding names its FDP source (file and section or short instruction excerpt), cites observable contribution or overhead in this step, and suggests retention, clarification, consolidation, or removal where justified.
 - Put relevant **Inapplicable instructions** and **Uncertain assessments** in separately labeled groups; never infer redundancy merely from non-use. Report selectively, without claiming exhaustive coverage or access to hidden reasoning.
 - Findings are advisory. Continue following required instructions and approval/commit gates; suggested FDP changes need their own authorized work.
+
+**Debug log**: Before presenting any FDP debug output, append its full text to `{feature_name}_debug_log.md` beside the planning artifacts, matching their feature prefix. Create it on first output; reuse it across steps, resumptions, and mode changes. Move it with the plans into `docs/plans/{feature_name}/` and update links. Each entry needs a UTC timestamp and step identifier. Never overwrite entries: append corrections labeled `Revision`, identifying the superseded entry; skip unchanged reports. Report write failures rather than claiming output was saved.
+
+Keep the log uncommitted during Steps 1–3; include it in the initial planning commit. During Step 4, include additions in the next authorized stage commit, or a separate log-only handoff commit after the final stage. Do not amend completed commits.
 
 ## Planning Artifacts
 Each step MUST be a separate file in `docs/plans/`:
@@ -44,7 +50,11 @@ Each step MUST be a separate file in `docs/plans/`:
 - **Step 3**: `{feature_name}_step3_development_plan.md`
 - **Step 4**: `{feature_name}_step4_implementation_summary.md`
 
-**Directory structure**: When a feature accumulates four or more planning artifacts (e.g., all Step 1–4 docs plus auxiliary notes), move them into `docs/plans/{feature_name}/`. Keep smaller efforts at the root until they grow, and update `docs/plans/README.md` when a new folder appears so others can navigate.
+**Directory structure and organization rule**: After explicit `Approved Step 3` and creation of the Step 4 feature branch, organize the current feature's planning artifacts in `docs/plans/{feature_name}/` before the first commit or implementation, regardless of artifact count or whether Step 1 was skipped. Reuse an existing feature folder. Preserve filenames and separate step files; update relative Feature plan navigation links, affected repository references, and the `docs/plans/README.md` entry as needed.
+
+The initial planning commit contains only approved Step 1–3 documents (Steps 2–3 if Step 1 was skipped), this feature's existing debug log if present, and the moves, index entries, and reference fixes needed for this feature's organization. Exclude implementation changes, the Step 4 summary, unrelated plans, and other unapproved auxiliary content. Organization permits no substantive revisions to approved planning content or changes to its debug-mode state. Create the Step 4 summary later, after the planning commit, in the same folder, inheriting debug mode from Step 3 under the [FDP Debug Mode](#fdp-debug-mode) recovery rules.
+
+This narrow organization allowance also applies to the [detailed Step 4 planning-commit gate](docs/dev/feature_process/step4_implementation_before.md#planning-docs-commit-gate-required); its restriction on altering approved planning documents during setup remains in effect.
 
 **Plan navigation**: Start every artifact with this relative-link bar; omit Step 1 only when skipped.
 
@@ -56,13 +66,13 @@ Each step MUST be a separate file in `docs/plans/`:
 - Keep Step 1-3 planning documents uncommitted while they are being drafted/revised.
 - Do not commit Step 1-3 planning documents when Step 1 or Step 2 is approved.
 - After the user explicitly responds `Approved Step 3`, create the Step 4 feature branch.
-- The first commit on that feature branch must contain only the approved Step 1-3 planning documents.
+- Before the first commit on that feature branch, apply the organization rule above; limit that commit to its approved planning documents and organization allowance.
 - During Step 4, each completed stage must be committed with its Step 4 summary update in the same commit before starting the next stage.
 
-**Plan review**: Do not begin Step 4 until the user explicitly responds `Approved Step 3`. The first commit after branching for Step 4 must capture the approved Step 1-3 planning files.
+**Plan review**: Do not begin Step 4 until the user explicitly responds `Approved Step 3`. Organize and commit the approved planning files under the organization rule above before implementation.
 
 **Step 4 commit cadence (mandatory)**:
-- Make one planning commit at the start of Step 4 containing only approved Step 1–3 docs.
+- Make one planning commit at the start of Step 4 under the organization rule above, including only approved planning documents and its organization allowance.
 - Then make at least one stage-scoped artifact commit per Step 3 stage.
 - Do not start Stage `N+1` until Stage `N` has:
   - applicable verification completed,
@@ -84,7 +94,7 @@ Each step MUST be a separate file in `docs/plans/`:
 - After delivering each step, explicitly request “Approved Step N” and pause until the user responds with that exact phrase
 - Create separate files for each step only after receiving the relevant approval
 - ALWAYS create a feature branch before Step 4 implementation
-- Enforce Step 4 commit cadence: first Step 4 commit contains approved Step 1-3 planning docs; each completed stage has a stage-scoped commit that includes the Step 4 summary update
+- Enforce Step 4 commit cadence: organize and commit approved planning docs under the organization rule above first; each completed stage has a stage-scoped commit that includes the Step 4 summary update
 - Treat documentation-only work as a Step 4 implementation only when its allowed documentation file scope was approved in Steps 2 and 3; use applicable verification and record non-applicable runtime checks in the summary
 - Prefer shared components/API contracts first; reuse or extend instead of forking markup, CSS, or payloads
 - Flag scope creep early and bounce back to planning steps rather than improvising mid-implementation

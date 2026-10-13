@@ -25,24 +25,26 @@ final class CodexHandoffDraftService
         $title = $subject !== '' ? $subject : $this->titleFromBody($body);
         $requestSummary = $this->compactRequest($body);
         $userStory = 'As an approved local user, I want ' . lcfirst($requestSummary)
-            . ' so that the request can be reviewed and implemented through the feature development process.';
-        $fdpStep1 = $this->fdpStep1($title, $requestSummary);
+            . ' so that the request can be reviewed and implemented through the Railspike workflow.';
+        $step1 = $this->stepOneAssessment($title, $requestSummary);
         $confidenceSummary = $this->confidenceSummary($body);
         $draftText = "# Codex Handoff Draft\n\n"
             . "Origin post: {$postId}\n\n"
+            . "Workflow: docs/railspike/RAILSPIKE.md\n\n"
             . "## User Story\n\n{$userStory}\n\n"
-            . "## FDP Step 1\n\n{$fdpStep1}\n\n"
+            . "## Railspike Step 1\n\n{$step1}\n\n"
             . "## Implementation Confidence\n\n{$confidenceSummary}\n";
 
         return [
             'user_story' => $userStory,
-            'fdp_step1' => $fdpStep1,
+            // Retain the persisted/API field name for existing handoffs and clients.
+            'fdp_step1' => $step1,
             'confidence_summary' => $confidenceSummary,
             'draft_text' => $draftText,
         ];
     }
 
-    private function fdpStep1(string $title, string $requestSummary): string
+    private function stepOneAssessment(string $title, string $requestSummary): string
     {
         return '# ' . $this->heading($title) . " Step 1 Solution Assessment\n\n"
             . "## Problem Statement\n\n"
@@ -50,7 +52,7 @@ final class CodexHandoffDraftService
             . "## Option A: Draft only inside the forum UI\n\n"
             . "Pros:\n"
             . "- Safest first step because no local code execution starts.\n"
-            . "- Gives approved users a reviewable user story, FDP Step 1, and confidence summary.\n\n"
+            . "- Gives approved users a reviewable user story, Railspike Step 1, and confidence summary.\n\n"
             . "Cons:\n"
             . "- Still requires a separate runner or operator action to perform the work.\n\n"
             . "## Option B: Queue approved handoffs for a local Codex runner\n\n"

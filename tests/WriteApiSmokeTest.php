@@ -723,6 +723,46 @@ PHP);
         }
     }
 
+    public function testLegacyFdpHandoffRemainsUnchangedThroughApiAndCards(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $originalServer = $_SERVER;
+        try {
+            $_SERVER['HTTP_HOST'] = 'localhost';
+            unset($_SERVER['SERVER_NAME'], $_SERVER['REMOTE_ADDR']);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $response = $this->renderMethod($application, 'POST',
+                '/api/create_thread?board_tags=fdp&subject=Legacy%20handoff&body=Preserve%20existing%20work.');
+            $postId = $this->extractValue($response, 'post_id');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $created = json_decode($this->renderMethod($application, 'POST',
+                '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+            assertSame('draft_ready', $created['handoff_status']);
+            assertStringContains('Railspike', $created['draft_text']);
+            // Represent a draft persisted before the migration; requesting it again must not regenerate it.
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $statement = $pdo->prepare('UPDATE codex_handoffs SET fdp_step1 = ?, draft_text = ? WHERE handoff_id = ?');
+            $statement->execute(['Legacy FDP assessment', 'Legacy FDP full draft', $created['handoff_id']]);
+            foreach (['GET', 'POST'] as $method) {
+                $stored = json_decode($this->renderMethod($application, $method,
+                    '/api/codex_handoff?post_id=' . rawurlencode($postId)), true);
+                assertSame($created['handoff_id'], $stored['handoff_id']);
+                assertSame('Legacy FDP assessment', $stored['fdp_step1']);
+                assertSame('Legacy FDP full draft', $stored['draft_text']);
+            }
+            foreach (['/threads/', '/posts/'] as $route) {
+                assertStringContains('Legacy FDP assessment', $this->renderMethod($application, 'GET', $route . rawurlencode($postId)));
+            }
+            $approved = json_decode($this->renderMethod($application, 'POST',
+                '/api/codex_handoff_approval?handoff_id=' . rawurlencode($created['handoff_id']) . '&decision=approve'), true);
+            assertSame('approved', $approved['handoff_status']);
+            assertSame('Legacy FDP full draft', $approved['draft_text']);
+        } finally {
+            $_SERVER = $originalServer;
+            $_COOKIE = [];
+        }
+    }
+
     public function testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -802,7 +842,7 @@ PHP);
                 $application,
                 'POST',
                 '/api/create_thread?board_tags=general&subject=Root%20Task%20Label&body='
-                . rawurlencode("Please prepare this for Codex.\n#task\n")
+                . rawurlencode("Please prepare this for Codex.\n#railspike\n")
             );
             $rootPostId = $this->extractValue($threadResponse, 'post_id');
 
@@ -810,7 +850,7 @@ PHP);
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($rootPostId));
             $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($rootPostId)), true);
 
-            assertStringContains('Labels: task', $threadPage);
+            assertStringContains('Labels: railspike', $threadPage);
             assertStringContains('data-action="request-codex-handoff"', $threadPage);
             assertSame('ok', $created['status']);
             assertSame('draft_ready', $created['handoff_status']);
@@ -835,18 +875,22 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Reply%20Task%20Label&body=This%20starts%20as%20a%20general%20thread.'
             );
             $threadId = $this->extractValue($threadResponse, 'thread_id');
-            $this->renderMethod(
+            $replyResponse = $this->renderMethod(
                 $application,
                 'POST',
                 '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($threadId) . '&body='
-                . rawurlencode("This reply marks the thread for implementation.\n#task\n")
+                . rawurlencode("This reply marks the thread for implementation.\n#railspike\n")
             );
 
             $_COOKIE = ['identity_hint' => 'guest'];
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($threadId));
             $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($threadId)), true);
 
-            assertStringContains('Labels: task', $threadPage);
+            $replyId = $this->extractValue($replyResponse, 'post_id');
+            $replyHandoff = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($replyId)), true);
+            assertSame('error', $replyHandoff['status']);
+            assertStringContains('requires a development tag or thread label', $replyHandoff['error']);
+            assertStringContains('Labels: railspike', $threadPage);
             assertSame(1, substr_count($threadPage, 'data-action="request-codex-handoff"'));
             assertSame('ok', $created['status']);
             assertSame('draft_ready', $created['handoff_status']);
@@ -911,7 +955,7 @@ PHP);
             $threadResponse = $this->renderMethod(
                 $application,
                 'POST',
-                '/api/create_thread?board_tags=feature&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
+                '/api/create_thread?board_tags=railspike&subject=Codex%20UI&body=Approved%20users%20should%20review%20a%20Codex%20handoff%20before%20execution.'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 
@@ -939,6 +983,8 @@ PHP);
             assertStringContains('data-action="approve-codex-handoff"', $draftThreadPage);
             assertStringContains('data-action="reject-codex-handoff"', $draftThreadPage);
             assertStringContains('data-role="codex-handoff-preview"', $draftPostPage);
+            assertStringContains('Railspike', $draftThreadPage);
+            assertStringContains('Railspike', $draftPostPage);
         } finally {
             $_SERVER = $originalServer;
             $_COOKIE = [];
@@ -2519,42 +2565,50 @@ NODE;
 
     public function testUnicodeAuthoredTextSurvivesWriteRenderRssAndStaticArtifacts(): void
     {
-        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
-
+        $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
         try {
-            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-            $response = $this->renderMethod(
-                $application,
-                'POST',
-                '/api/create_thread?board_tags=general&subject=' . rawurlencode('Привет') . '&body=' . rawurlencode('Привет мир')
-            );
-            $postId = $this->extractValue($response, 'post_id');
-            $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $postId));
-            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
-            $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
-            $activity = $this->renderMethod($application, 'GET', '/activity/');
-            $rss = $this->renderMethod($application, 'GET', '/activity/?format=rss');
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
 
-            $builder = new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-            $builder->build();
-            $threadArtifact = (string) file_get_contents($artifactRoot . '/threads/' . $postId . '.html');
-            $postArtifact = (string) file_get_contents($artifactRoot . '/posts/' . $postId . '.html');
+            try {
+                $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+                $response = $this->renderMethod(
+                    $application,
+                    'POST',
+                    '/api/create_thread?board_tags=general&subject=' . rawurlencode('Привет') . '&body=' . rawurlencode('Привет мир')
+                );
+                $postId = $this->extractValue($response, 'post_id');
+                $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $postId));
+                $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+                $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+                $activity = $this->renderMethod($application, 'GET', '/activity/');
+                $rss = $this->renderMethod($application, 'GET', '/activity/?format=rss');
 
-            assertStringContains('status=ok', $response);
-            assertStringContains('Subject: Привет', $record);
-            assertStringContains('Привет мир', $record);
-            assertStringContains('Привет', $threadPage);
-            assertStringContains('Привет мир', $threadPage);
-            assertStringContains('Привет', $postPage);
-            assertStringContains('Привет', $activity);
-            assertStringContains('Привет', $rss);
-            assertStringContains('Привет мир', $threadArtifact);
-            assertStringContains('Привет мир', $postArtifact);
-            assertTrue(is_file($artifactRoot . '/threads/' . $postId . '.html'));
-            assertTrue(is_file($artifactRoot . '/posts/' . $postId . '.html'));
+                $builder = new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+                $builder->build();
+                $threadArtifact = (string) file_get_contents($artifactRoot . '/threads/' . $postId . '.html');
+                $postArtifact = (string) file_get_contents($artifactRoot . '/posts/' . $postId . '.html');
+
+                assertStringContains('status=ok', $response);
+                assertStringContains('Subject: Привет', $record);
+                assertStringContains('Привет мир', $record);
+                assertStringContains('Привет', $threadPage);
+                assertStringContains('Привет мир', $threadPage);
+                assertStringContains('Привет', $postPage);
+                assertStringContains('Привет', $activity);
+                assertStringContains('Привет', $rss);
+                assertStringContains('Привет мир', $threadArtifact);
+                assertStringContains('Привет мир', $postArtifact);
+                assertTrue(is_file($artifactRoot . '/threads/' . $postId . '.html'));
+                assertTrue(is_file($artifactRoot . '/posts/' . $postId . '.html'));
+            } finally {
+                putenv('FORUM_UNICODE_AUTHORED_TEXT');
+            }
         } finally {
-            putenv('FORUM_UNICODE_AUTHORED_TEXT');
+            putenv($previousStaticDetails === false
+                ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
         }
     }
 
@@ -4469,6 +4523,81 @@ NODE;
             $_POST = [];
             $_COOKIE = [];
             $this->deleteTree($signingKey['home']);
+        }
+    }
+
+    public function testSignedInvitationRedemptionRechecksPolicyBeforeAcceptance(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $issuerKey = $this->createSigningKey('invitation-sponsor');
+        $recipientKey = $this->createSigningKey('forum-user');
+        $previous = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $profiles = [];
+            foreach ([$issuerKey, $recipientKey] as $key) {
+                $_POST = ['public_key' => $key['public_key']];
+                $response = $this->renderMethod($app, 'POST', '/api/link_identity');
+                $_POST = [];
+                $profiles[] = [
+                    'identity_id' => $this->extractValue($response, 'identity_id'),
+                    'profile_slug' => $this->extractValue($response, 'profile_slug'),
+                    'thread_id' => $this->extractValue($response, 'bootstrap_thread_id'),
+                    'parent_id' => $this->extractValue($response, 'bootstrap_post_id'),
+                ];
+            }
+            [$issuer, $recipient] = $profiles;
+            $existing = $this->linkGeneratedIdentity($app, 'forum-user');
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $writer->approveUser([
+                'approver_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'target_identity_id' => $existing['identity_id'], 'target_profile_slug' => $existing['profile_slug'],
+                'thread_id' => $existing['bootstrap_thread_id'], 'parent_id' => $existing['bootstrap_post_id'],
+            ]);
+            $writer->approveUser([
+                'approver_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                'target_identity_id' => $issuer['identity_id'], 'target_profile_slug' => $issuer['profile_slug'],
+                'thread_id' => $issuer['thread_id'], 'parent_id' => $issuer['parent_id'],
+            ]);
+            $token = bin2hex(random_bytes(16));
+            $issue = $writer->prepareInvitation([
+                'issuer_identity_id' => $issuer['identity_id'], 'thread_id' => $issuer['thread_id'],
+                'parent_id' => $issuer['parent_id'], 'verification_hash' => 'sha256:' . hash('sha256', $token),
+                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600),
+            ]);
+            $writer->finalizePreparedInvitation($issue + [
+                'author_identity_id' => $issuer['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $issue['canonical_record']),
+            ]);
+            $redeem = $writer->prepareInvitationRedemption([
+                'recipient_identity_id' => $recipient['identity_id'], 'thread_id' => $recipient['thread_id'],
+                'parent_id' => $recipient['parent_id'], 'invite_token' => $token,
+            ]);
+            $signed = $redeem + ['author_identity_id' => $recipient['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($recipientKey['home'], $redeem['canonical_record'])];
+            $before = $this->countCanonicalPostFiles($root);
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            try {
+                $writer->finalizePreparedInvitation($signed);
+                throw new RuntimeException('Expected cross-account denial.');
+            } catch (RuntimeException $exception) {
+                if (!str_contains($exception->getMessage(), 'same username or a root-approved operator')) {
+                    throw $exception;
+                }
+            }
+            assertSame($before, $this->countCanonicalPostFiles($root));
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            assertSame('ok', $writer->finalizePreparedInvitation($signed)['status']);
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $recipient['identity_id']);
+            assertSame(1, (int) $profile['is_approved']);
+        } finally {
+            $_POST = [];
+            putenv($previous === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previous);
+            $this->deleteTree($issuerKey['home']);
+            $this->deleteTree($recipientKey['home']);
         }
     }
 
