@@ -70,3 +70,12 @@ Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954
 Reason: Approved user flagged reply-agent content
 
 ```
+
+## Optional author signature
+
+A detached ASCII-armored OpenPGP signature may accompany the exact record bytes
+as `<record-id>.txt.asc`. Unsigned historical records remain valid. A supplied
+signature must verify against `Author-Identity-ID`; invalid signatures are never
+treated as absent. Explicit online actions use the existing format with an empty
+body and a single label/tag, canonical LF endings, and a safe family-prefixed
+client identifier. Signing does not change scoring or moderation policy.

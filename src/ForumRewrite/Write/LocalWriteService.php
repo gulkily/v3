@@ -729,6 +729,8 @@ class LocalWriteService
                 throw new RuntimeException('QDB caption tags may be applied only to QDB quotes.');
             }
 
+            $signed = $this->signedReactionInput('thread', $input, $threadId, $tag, $authorIdentityId);
+
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             if (($isQdbCaptionVote && $this->hasQdbVoteFromIdentity($threadId, $authorIdentityId))
                 || $this->hasThreadTagFromIdentity($threadId, $tag, $authorIdentityId)) {
@@ -748,11 +750,14 @@ class LocalWriteService
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
+            [$recordPath, $contents] = $signed ?? $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
             $this->writeFile($recordPath, $contents);
+            if ($signed !== null) {
+                $this->writeFile($recordPath . '.asc', $signed[2]);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Apply thread tag ' . $tag . ' to ' . $threadId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply thread tag ' . $tag . ' to ' . $threadId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -2819,6 +2824,42 @@ class LocalWriteService
      * @param list<string> $labels
      * @return array{string,string}
      */
+    private function signedReactionInput(string $kind, array $input, string $target, string $tag, string $author): ?array
+    {
+        if (!array_key_exists('canonical_record', $input) && !array_key_exists('detached_signature', $input)) {
+            return null;
+        }
+        $contents = (string) ($input['canonical_record'] ?? '');
+        $signature = (string) ($input['detached_signature'] ?? '');
+        if ($contents === '' || $signature === '' || strlen($contents) > 4096 || strlen($signature) > 16384) {
+            throw new RuntimeException('A complete signed reaction record and signature are required.');
+        }
+        $record = $kind === 'thread' ? (new ThreadLabelRecordParser())->parse($contents) : (new PostReactionRecordParser())->parse($contents);
+        $prefix = $kind === 'thread' ? 'thread-label' : 'post-reaction';
+        if (!preg_match('/^' . $prefix . '-[a-zA-Z0-9][a-zA-Z0-9_-]{0,100}$/D', $record->recordId)) {
+            throw new RuntimeException('Invalid signed reaction record identifier.');
+        }
+        $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
+        $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
+        $expected = "Record-ID: {$record->recordId}\nCreated-At: {$record->createdAt}\n{$targetHeader}: {$target}\nOperation: add\n{$tagHeader}: {$tag}\nAuthor-Identity-ID: {$author}\n\n";
+        if ($contents !== $expected) {
+            throw new RuntimeException('Signed reaction must match the requested author, target, and tag exactly.');
+        }
+        [$key, $fingerprint] = $this->publicKeyForIdentity($author);
+        $verification = $this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint);
+        if (!$verification['ok']) {
+            throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+        }
+        $path = $kind === 'thread' ? CanonicalPathResolver::threadLabel($record->recordId) : CanonicalPathResolver::postReaction($record->recordId);
+        foreach ([$path => $contents, $path . '.asc' => $signature] as $candidate => $bytes) {
+            if (file_exists($this->repositoryRoot . '/' . $candidate)
+                && file_get_contents($this->repositoryRoot . '/' . $candidate) !== $bytes) {
+                throw new RuntimeException('Signed reaction record identifier collision.');
+            }
+        }
+        return [$path, $contents, $signature];
+    }
+
     private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null): array
     {
         $recordId = $this->generateRecordId('thread-label');

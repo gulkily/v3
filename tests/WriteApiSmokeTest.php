@@ -27,6 +27,42 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testSignedThreadReactionPreservesBytesAndRejectsTampering(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('reaction-signer');
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $id = 'thread-label-signed-test';
+            $created = gmdate('Y-m-d\TH:i:s\Z');
+            $record = "Record-ID: {$id}\nCreated-At: {$created}\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$identity}\n\n";
+            $signature = $this->signCanonicalRecord($key['home'], $record);
+            $input = ['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity,
+                'canonical_record' => $record, 'detached_signature' => $signature];
+            $result = $writer->applyThreadTag($input);
+            assertSame('yes', $result['wrote_record']);
+            assertSame($record, file_get_contents($root . '/records/thread-labels/' . $id . '.txt'));
+            assertSame($signature, file_get_contents($root . '/records/thread-labels/' . $id . '.txt.asc'));
+            assertSame('no', $writer->applyThreadTag($input)['wrote_record']);
+            foreach ([
+                ['canonical_record' => str_replace($id, 'thread-label-changed', $record)],
+                ['canonical_record' => str_replace($id, 'thread-label-../bad', $record)],
+                ['canonical_record' => str_replace('Labels: like', 'Labels: flag', $record)],
+                ['detached_signature' => 'invalid'],
+                ['detached_signature' => ''],
+            ] as $change) {
+                $rejected = false;
+                try { $writer->applyThreadTag(array_replace($input, $change)); }
+                catch (RuntimeException) { $rejected = true; }
+                assertTrue($rejected);
+            }
+        } finally {
+            $this->deleteTree($key['home']);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
