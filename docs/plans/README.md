@@ -96,6 +96,7 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 - [Read model schema version integrity](read_model_schema_version_integrity/)
 - [Read-model failure experience](read_model_failure_experience/)
 - [Sender-assisted private message history synchronization](private_message_sender_history_sync/)
+- [Server cooperative content deletion](server_cooperative_content_deletion/)
 - [Site wide reaction state](site_wide_reaction_state/)
 - [Status lock wait notice](status_lock_wait_notice/)
 - [Test-run summary report](test_run_summary_report/)
