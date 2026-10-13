@@ -224,6 +224,61 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testSignedReactionRecoveryAfterPartialPairCommitAndRefreshFailures(): void
+    {
+        $key = $this->createSigningKey('recovery-reaction-signer');
+        try {
+            foreach (['signature_only', 'commit_failure', 'refresh_failure'] as $phase) {
+                [$root, $database, $artifacts] = $this->createTempEnvironment();
+                try {
+                    $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+                    $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+                    $kind = $phase === 'signature_only' ? 'thread' : 'post';
+                    $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
+                    $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
+                    $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
+                    $created = gmdate('Y-m-d\TH:i:s\Z');
+                    $record = "Record-ID: {$family}-recover\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
+                    $signature = $this->signCanonicalRecord($key['home'], $record);
+                    $path = 'records/' . $family . 's/' . $family . '-recover.txt';
+                    $input = [$kind . '_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity,
+                        'canonical_record' => $record, 'detached_signature' => $signature];
+                    $journalDirectory = dirname($database) . '/signed-reaction-writes-' . substr(hash('sha256', $root), 0, 16);
+                    if ($phase === 'signature_only') {
+                        mkdir($journalDirectory, 0700, true);
+                        file_put_contents($journalDirectory . '/' . hash('sha256', $path) . '.json', json_encode([$path, $record, $signature]));
+                        file_put_contents($root . '/' . $path . '.asc', $signature);
+                        assertFalse(is_file($root . '/' . $path));
+                    } else {
+                        $failing = $writer;
+                        if ($phase === 'commit_failure') {
+                            file_put_contents($root . '/.git/hooks/pre-commit', "#!/bin/sh\nexit 1\n");
+                            chmod($root . '/.git/hooks/pre-commit', 0700);
+                        } else {
+                            $failing = new class($root, $database, $artifacts, new CanonicalRecordRepository($root)) extends LocalWriteService {
+                                protected function canIncrementallyUpdateReadModel(): bool { return false; }
+                                protected function rebuildReadModel(): array { throw new RuntimeException('injected refresh failure'); }
+                            };
+                        }
+                        $failed = false;
+                        try { $failing->applyPostTag($input); } catch (RuntimeException) { $failed = true; }
+                        assertTrue($failed);
+                        assertTrue(is_file($root . '/' . $path . '.asc'));
+                        if ($phase === 'commit_failure') unlink($root . '/.git/hooks/pre-commit');
+                    }
+                    $result = $kind === 'thread' ? $writer->applyThreadTag($input) : $writer->applyPostTag($input);
+                    assertSame('no', $result['wrote_record']);
+                    assertSame($record, file_get_contents($root . '/' . $path));
+                    assertSame($signature, file_get_contents($root . '/' . $path . '.asc'));
+                    assertSame([], glob($journalDirectory . '/*.json'));
+                    assertFalse((new ReadModelStaleMarker($database))->exists());
+                    $committed = $this->runCommand($root, 'git show ' . escapeshellarg('HEAD:' . $path));
+                    assertSame(trim($record), trim($committed));
+                } finally { $this->deleteTree($root); }
+            }
+        } finally { $this->deleteTree($key['home']); }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

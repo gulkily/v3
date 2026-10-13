@@ -35,3 +35,8 @@ Branch: `feature/signed-thread-label-records`. Planning commit: `2cbbe624`.
 - Changes: thread archives now collect/remove signature companions alongside records and retain supporting author keys. Legacy repository archive import uses the shared reaction plan for signature validity and paired conflict decisions; modern sync/import already uses that planner. Whole-repository downloads include companions without extension filtering.
 - Verification: archive, legacy import, and import planner tests passed (13). Real-GPG round trip passed: archive both signed families, confirm both companions leave the live repository, extract/restore exact bytes, rebuild, and recover two verified evidence rows.
 - Notes: intentionally stripped signatures remain indistinguishable from legacy unsigned records; supported archive paths now preserve evidence.
+
+## Stage 7 - Durable retry recovery
+- Changes: signed writes journal exact accepted bytes outside the canonical repository, atomically publish signature before record, and clear the journal only after commit/refresh/invalidation. The next locked write recovers pending pairs, commits only when needed, rebuilds derived state, and invalidates presentation. Duplicate shortcuts also repair stale derived state.
+- Verification: signed write/fallback regressions passed (3). Failure-injection test passed for signature-only interruption, rejected Git commit, and failed postcommit refresh; retries preserve exact pairs, produce committed records once, clear journals/stale markers, and return duplicate success.
+- Notes: unsigned records are never retroactively signed. Recovery rejects conflicting filesystem bytes and invalid journal evidence rather than overwriting them.

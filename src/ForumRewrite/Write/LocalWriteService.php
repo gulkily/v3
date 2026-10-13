@@ -734,6 +734,7 @@ class LocalWriteService
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             if (($isQdbCaptionVote && $this->hasQdbVoteFromIdentity($threadId, $authorIdentityId))
                 || $this->hasThreadTagFromIdentity($threadId, $tag, $authorIdentityId)) {
+                $this->recoverReactionDerivedState();
                 return [
                     'status' => 'ok',
                     'thread_id' => $threadId,
@@ -751,9 +752,11 @@ class LocalWriteService
 
             $phaseStartedAt = hrtime(true);
             [$recordPath, $contents] = $signed ?? $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
-            $this->writeFile($recordPath, $contents);
-            if ($signed !== null) {
-                $this->writeFile($recordPath . '.asc', $signed[2]);
+            if ($signed === null) {
+                $this->writeFile($recordPath, $contents);
+            } else {
+                $this->beginSignedReactionWrite($signed);
+                $this->writeSignedReactionPair($signed);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
@@ -766,6 +769,9 @@ class LocalWriteService
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateBoardThread($threadId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            if ($signed !== null) {
+                $this->finishSignedReactionWrite($recordPath);
+            }
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
@@ -848,6 +854,7 @@ class LocalWriteService
             if ($this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId)) {
                 $state = $this->currentPostReactionState($postId);
 
+                $this->recoverReactionDerivedState();
                 return [
                     'status' => 'ok',
                     'post_id' => $postId,
@@ -867,9 +874,11 @@ class LocalWriteService
 
             $phaseStartedAt = hrtime(true);
             [$recordPath, $contents] = $signed ?? $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
-            $this->writeFile($recordPath, $contents);
-            if ($signed !== null) {
-                $this->writeFile($recordPath . '.asc', $signed[2]);
+            if ($signed === null) {
+                $this->writeFile($recordPath, $contents);
+            } else {
+                $this->beginSignedReactionWrite($signed);
+                $this->writeSignedReactionPair($signed);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
@@ -886,6 +895,9 @@ class LocalWriteService
                 $this->invalidator()->invalidateBoardThread($postId);
             }
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            if ($signed !== null) {
+                $this->finishSignedReactionWrite($recordPath);
+            }
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             $state = $this->currentPostReactionState($postId);
@@ -2732,7 +2744,10 @@ class LocalWriteService
      */
     private function withTimedWriteLock(callable $callback): array
     {
-        $locked = $this->executionLock()->withExclusiveLockTimed($callback);
+        $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
+            $this->recoverSignedReactionWrites();
+            return $callback();
+        });
         $result = $locked['result'];
         if (($result['commit_sha'] ?? null) !== null && $this->enqueueOfflineSnapshotPublication !== null) {
             try {
@@ -2828,6 +2843,86 @@ class LocalWriteService
      * @param list<string> $labels
      * @return array{string,string}
      */
+    private function reactionJournalDirectory(): string
+    {
+        return dirname($this->databasePath) . '/signed-reaction-writes-' . substr(hash('sha256', $this->repositoryRoot), 0, 16);
+    }
+
+    private function atomicReactionFile(string $path, string $bytes): void
+    {
+        if (!is_dir(dirname($path))) mkdir(dirname($path), 0700, true);
+        $temporary = tempnam(dirname($path), '.reaction-');
+        if ($temporary === false) throw new RuntimeException('Unable to stage reaction file.');
+        try {
+            if (file_put_contents($temporary, $bytes) !== strlen($bytes) || !rename($temporary, $path)) {
+                throw new RuntimeException('Unable to publish reaction file.');
+            }
+        } finally {
+            if (is_file($temporary)) unlink($temporary);
+        }
+    }
+
+    private function beginSignedReactionWrite(array $signed): void
+    {
+        $this->atomicReactionFile($this->reactionJournalDirectory() . '/' . hash('sha256', $signed[0]) . '.json',
+            json_encode($signed, JSON_THROW_ON_ERROR));
+    }
+
+    private function finishSignedReactionWrite(string $path): void
+    {
+        $journal = $this->reactionJournalDirectory() . '/' . hash('sha256', $path) . '.json';
+        if (is_file($journal) && !unlink($journal)) throw new RuntimeException('Unable to finish reaction journal.');
+    }
+
+    private function writeSignedReactionPair(array $signed): void
+    {
+        // Publish the signature first: a crash must never leave a new apparently unsigned vote.
+        foreach ([$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]] as $relative => $bytes) {
+            $path = $this->repositoryRoot . '/' . $relative;
+            if (file_exists($path)) {
+                if (file_get_contents($path) !== $bytes) throw new RuntimeException('Reaction recovery collision: ' . $relative);
+                continue;
+            }
+            $this->atomicReactionFile($path, $bytes);
+        }
+    }
+
+    private function recoverReactionDerivedState(): void
+    {
+        if ($this->staleMarker()->exists()) {
+            $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'));
+            $this->refreshDerivedStateAfterCommit($head);
+            $this->invalidator()->invalidateAllGeneratedPresentation();
+        }
+    }
+
+    private function recoverSignedReactionWrites(): void
+    {
+        foreach (glob($this->reactionJournalDirectory() . '/*.json') ?: [] as $journal) {
+            $signed = json_decode((string) file_get_contents($journal), true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($signed) || count($signed) !== 3 || !is_string($signed[0] ?? null)
+                || !preg_match('#^records/(thread-labels|post-reactions)/[A-Za-z0-9_-]+\.txt$#D', $signed[0])) {
+                throw new RuntimeException('Invalid reaction recovery journal.');
+            }
+            $record = str_starts_with($signed[0], 'records/thread-labels/')
+                ? (new ThreadLabelRecordParser())->parse($signed[1]) : (new PostReactionRecordParser())->parse($signed[1]);
+            if (basename($signed[0]) !== $record->recordId . '.txt') throw new RuntimeException('Reaction recovery path mismatch.');
+            [$key, $fingerprint] = $this->publicKeyForIdentity($record->authorIdentityId ?? '');
+            if (!$this->signatureVerifier->verifyDetached($key, $signed[1], $signed[2], $fingerprint)['ok']) {
+                throw new RuntimeException('Reaction recovery signature is invalid.');
+            }
+            $this->writeSignedReactionPair($signed);
+            $paths = [$signed[0], $signed[0] . '.asc'];
+            $dirty = trim($this->runGitCommand(array_merge(['status', '--porcelain', '--'], $paths), 'Unable to inspect reaction recovery'));
+            $head = $dirty === ''
+                ? trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'))
+                : $this->commitCanonicalWrite($paths, 'Recover signed reaction ' . $record->recordId)['commit_sha'];
+            $this->refreshDerivedStateAfterCommit($head);
+            $this->invalidator()->invalidateAllGeneratedPresentation();
+            $this->finishSignedReactionWrite($signed[0]);
+        }
+    }
+
     private function signedReactionInput(string $kind, array $input, string $target, string $tag, string $author): ?array
     {
         if (!array_key_exists('canonical_record', $input) && !array_key_exists('detached_signature', $input)) {
