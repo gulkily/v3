@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./local_server_dependency_install_step1_solution_assessment.md)
+> **Feature plan:** [Step 1](./local_server_dependency_install_step1_solution_assessment.md) · [Step 2](./local_server_dependency_install_step2_feature_description.md) · [Step 3](./local_server_dependency_install_step3_development_plan.md) · [Step 4](./local_server_dependency_install_step4_implementation_summary.md)
 
 ## Original Query
 
@@ -48,4 +48,4 @@ Choose **Option B**, initially for the existing Ubuntu 24.04/APT local-server se
 
 ## New-chat Handoff
 
-Continue by reviewing this Step 1 and requesting `Approved Step 1` before drafting Step 2. Inspect `scripts/local_server_dependencies.sh`, `scripts/check_local_server_dependencies.php`, and `scripts/php_setup_guidance.sh`; existing readiness checks are shared by startup and the report. Keep the [dependency checklist](./dependency_fallback_checklist.md) updated. The prior [local-server plan](./local_server_dependency_checks/local_server_dependency_checks_step1_solution_assessment.md) intentionally specified manual recovery; this proposal changes that boundary only for an explicitly opted-in mode.
+Steps 1 and 2 are approved; Step 3 is drafted and awaits `Approved Step 3` before implementation. All planning edits remain uncommitted until the Step 4 feature branch and planning commit. The requested [platform support checklist](./local_server_dependency_platform_support_checklist.md) records future candidates without expanding the initial installer scope. Inspect `scripts/local_server_dependencies.sh`, `scripts/check_local_server_dependencies.php`, and `scripts/php_setup_guidance.sh`; existing readiness checks are shared by startup and the report. Keep the [dependency checklist](../dependency_fallback_checklist.md) updated. The prior [local-server plan](../local_server_dependency_checks/local_server_dependency_checks_step1_solution_assessment.md) intentionally specified manual recovery; this proposal changes that boundary only for an explicitly opted-in mode.
