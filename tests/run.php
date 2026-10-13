@@ -15,6 +15,7 @@ $testFiles = [
     __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
+    __DIR__ . '/ApprovalSeedCommandTest.php',
     __DIR__ . '/ApprovedUserKeyResolverTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',
     __DIR__ . '/AgentReplyGenerationTest.php',

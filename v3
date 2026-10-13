@@ -8,6 +8,7 @@ if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "
   cat <<'EOF'
 Usage:
   ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
+  ./v3 check-dependencies [--help] (alias: dependency-check)
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 tui
@@ -45,6 +46,7 @@ Usage:
   ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
+    Seed commands apply immediately on a current read model, without a full rebuild.
   ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 
@@ -62,6 +64,8 @@ fi
 case "${COMMAND}" in
   start)
     shift
+    source "${ROOT}/scripts/local_server_dependencies.sh"
+    local_server_dependencies_check startup || exit 1
     ADDRESS_ARGUMENT="127.0.0.1:8000"
     DEV_SERVER_ARGS=()
     for ARGUMENT in "$@"; do
@@ -82,7 +86,23 @@ case "${COMMAND}" in
       fi
       ADDRESS="127.0.0.1:${PORT_NUMBER}"
     fi
-    exec php "${ROOT}/scripts/dev_server.php" "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
+    source "${ROOT}/scripts/local_server_start.sh"
+    local_server_start "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
+    ;;
+  check-dependencies|dependency-check)
+    shift
+    if (( $# == 1 )) && [[ "$1" == --help || "$1" == -h ]]; then
+      printf '%s\n' 'Usage: ./v3 check-dependencies' \
+        'Check local-server prerequisites without starting the server or changing application state.' \
+        'Required failures return 1; optional limitations are warnings. Repair setup manually, then retry.'
+      exit 0
+    fi
+    if (( $# != 0 )); then
+      echo 'Usage: ./v3 check-dependencies (local-server prerequisites only)' >&2
+      exit 1
+    fi
+    source "${ROOT}/scripts/local_server_dependencies.sh"
+    local_server_dependencies_check report
     ;;
   test)
     shift

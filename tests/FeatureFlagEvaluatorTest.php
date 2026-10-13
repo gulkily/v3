@@ -42,7 +42,7 @@ final class FeatureFlagEvaluatorTest
             assertSame(true, $notification->effectiveValue);
             assertSame('default', $notification->source);
             assertSame(true, $notification->isDefault());
-            assertSame(true, $staticDetailPages->effectiveValue);
+            assertSame(false, $staticDetailPages->effectiveValue);
             assertSame('default', $staticDetailPages->source);
             assertSame(true, $staticDetailPages->isDefault());
             assertSame(true, $agentReplies->effectiveValue);
@@ -93,6 +93,26 @@ final class FeatureFlagEvaluatorTest
             assertSame(true, $approvedMembersOnly->effectiveValue);
             assertSame('environment', $approvedMembersOnly->source);
             assertSame(true, $approvedMembersOnly->environmentValue);
+        });
+    }
+
+    public function testStaticDetailOptInRespectsInstanceAndEnvironmentPrecedence(): void
+    {
+        $key = FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED;
+        $this->withEnvironment([], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => true]))->evaluate($key);
+            assertSame(true, $state->effectiveValue);
+            assertSame('site', $state->source);
+        });
+        $this->withEnvironment([$key => 'false'], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => true]))->evaluate($key);
+            assertSame(false, $state->effectiveValue);
+            assertSame('environment', $state->source);
+        });
+        $this->withEnvironment([$key => 'true'], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => false]))->evaluate($key);
+            assertSame(true, $state->effectiveValue);
+            assertSame('environment', $state->source);
         });
     }
 

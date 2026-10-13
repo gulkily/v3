@@ -8,6 +8,12 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 ## Feature folders
 
 - [Account key approval safety](account_key_approval_safety/)
+- [Runtime detail pages](runtime_detail_pages/)
+
+- [Guided PHP setup fallback](guided_php_setup_fallback/)
+- [Local server dependency checks](local_server_dependency_checks/)
+- [Immediate approval seed refresh](approval_seed_immediate_refresh/)
+
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
 - [Agent response direct preflight](agent_response_direct_preflight/)
 - [Agent response dropdown viewport fit](agent_response_dropdown_viewport_fit/)
@@ -41,6 +47,7 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 - [MIT Rap Club media embeds](mitrapclub_media_embeds/)
 - [MIT Rap Club structural identity](mitrapclub_structural_identity/)
 - [MIT Rap Club website](mit_rap_club_website/)
+- [Missing PHP startup guidance](missing_php_startup_guidance/)
 - [Multi-site refactor P0](multi_site_refactor_p0/)
 - [Multi-site refactor P1](multi_site_refactor_p1/)
 - [Multi-site refactor P2 browser offline identity](multi_site_refactor_p2_browser_offline_identity/)

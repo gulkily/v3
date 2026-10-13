@@ -2565,42 +2565,50 @@ NODE;
 
     public function testUnicodeAuthoredTextSurvivesWriteRenderRssAndStaticArtifacts(): void
     {
-        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
-        putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
-
+        $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
         try {
-            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-            $response = $this->renderMethod(
-                $application,
-                'POST',
-                '/api/create_thread?board_tags=general&subject=' . rawurlencode('Привет') . '&body=' . rawurlencode('Привет мир')
-            );
-            $postId = $this->extractValue($response, 'post_id');
-            $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $postId));
-            $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
-            $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
-            $activity = $this->renderMethod($application, 'GET', '/activity/');
-            $rss = $this->renderMethod($application, 'GET', '/activity/?format=rss');
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            putenv('FORUM_UNICODE_AUTHORED_TEXT=true');
 
-            $builder = new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-            $builder->build();
-            $threadArtifact = (string) file_get_contents($artifactRoot . '/threads/' . $postId . '.html');
-            $postArtifact = (string) file_get_contents($artifactRoot . '/posts/' . $postId . '.html');
+            try {
+                $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+                $response = $this->renderMethod(
+                    $application,
+                    'POST',
+                    '/api/create_thread?board_tags=general&subject=' . rawurlencode('Привет') . '&body=' . rawurlencode('Привет мир')
+                );
+                $postId = $this->extractValue($response, 'post_id');
+                $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $postId));
+                $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+                $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+                $activity = $this->renderMethod($application, 'GET', '/activity/');
+                $rss = $this->renderMethod($application, 'GET', '/activity/?format=rss');
 
-            assertStringContains('status=ok', $response);
-            assertStringContains('Subject: Привет', $record);
-            assertStringContains('Привет мир', $record);
-            assertStringContains('Привет', $threadPage);
-            assertStringContains('Привет мир', $threadPage);
-            assertStringContains('Привет', $postPage);
-            assertStringContains('Привет', $activity);
-            assertStringContains('Привет', $rss);
-            assertStringContains('Привет мир', $threadArtifact);
-            assertStringContains('Привет мир', $postArtifact);
-            assertTrue(is_file($artifactRoot . '/threads/' . $postId . '.html'));
-            assertTrue(is_file($artifactRoot . '/posts/' . $postId . '.html'));
+                $builder = new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+                $builder->build();
+                $threadArtifact = (string) file_get_contents($artifactRoot . '/threads/' . $postId . '.html');
+                $postArtifact = (string) file_get_contents($artifactRoot . '/posts/' . $postId . '.html');
+
+                assertStringContains('status=ok', $response);
+                assertStringContains('Subject: Привет', $record);
+                assertStringContains('Привет мир', $record);
+                assertStringContains('Привет', $threadPage);
+                assertStringContains('Привет мир', $threadPage);
+                assertStringContains('Привет', $postPage);
+                assertStringContains('Привет', $activity);
+                assertStringContains('Привет', $rss);
+                assertStringContains('Привет мир', $threadArtifact);
+                assertStringContains('Привет мир', $postArtifact);
+                assertTrue(is_file($artifactRoot . '/threads/' . $postId . '.html'));
+                assertTrue(is_file($artifactRoot . '/posts/' . $postId . '.html'));
+            } finally {
+                putenv('FORUM_UNICODE_AUTHORED_TEXT');
+            }
         } finally {
-            putenv('FORUM_UNICODE_AUTHORED_TEXT');
+            putenv($previousStaticDetails === false
+                ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
         }
     }
 

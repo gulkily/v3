@@ -199,7 +199,12 @@ final class LocalAppSmokeTest
             assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
             assertStringContains('[2/4] Fingerprinting and copying assets referenced by rendered pages...', $text);
             assertStringContains('[2/4] Rendering shared pages (1/20): /.', $text);
-            assertStringContains('[2/4] Rendering thread pages (0/', $text);
+            assertStringContains('Skipping individual thread and post pages', $text);
+            assertStringNotContains('Rendering thread pages', $text);
+            assertStringNotContains('Rendering post pages', $text);
+            assertFalse(is_file($artifactRoot . '/current/threads/root-001.html'));
+            assertFalse(is_file($artifactRoot . '/current/posts/root-001.html'));
+            assertTrue(is_file($artifactRoot . '/current/offline/snapshot.sqlite3'));
             assertStringContains('[2/4] Static release is ready:', $text);
             assertStringContains('Static artifacts:', $text);
             assertStringContains('[3/4] Promoting the read model...', $text);
@@ -232,46 +237,54 @@ final class LocalAppSmokeTest
 
     public function testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel(): void
     {
-        $databasePath = sys_get_temp_dir() . '/forum-rewrite-static-shared-' . bin2hex(random_bytes(6)) . '.sqlite3';
-        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-static-shared-artifacts-' . bin2hex(random_bytes(6));
-
+        $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
         try {
-            (new ReadModelBuilder(
-                $this->repositoryRoot,
-                $databasePath,
-                new CanonicalRecordRepository($this->repositoryRoot),
-            ))->rebuild();
-            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $artifactRoot);
-            $initialRelease = $publisher->build($databasePath);
-            $publisher->activate($initialRelease);
-            $detailArtifact = $artifactRoot . '/current/threads/root-001.html';
-            $detailContents = (string) file_get_contents($detailArtifact);
+            $databasePath = sys_get_temp_dir() . '/forum-rewrite-static-shared-' . bin2hex(random_bytes(6)) . '.sqlite3';
+            $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-static-shared-artifacts-' . bin2hex(random_bytes(6));
 
-            $command = sprintf(
-                'php %s %s %s %s 2>&1',
-                escapeshellarg(__DIR__ . '/../scripts/refresh_static_shared_artifacts.php'),
-                escapeshellarg($this->repositoryRoot),
-                escapeshellarg($databasePath),
-                escapeshellarg($artifactRoot),
-            );
-            exec($command, $output, $exitCode);
-            $text = implode("\n", $output);
+            try {
+                (new ReadModelBuilder(
+                    $this->repositoryRoot,
+                    $databasePath,
+                    new CanonicalRecordRepository($this->repositoryRoot),
+                ))->rebuild();
+                $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $artifactRoot);
+                $initialRelease = $publisher->build($databasePath);
+                $publisher->activate($initialRelease);
+                $detailArtifact = $artifactRoot . '/current/threads/root-001.html';
+                $detailContents = (string) file_get_contents($detailArtifact);
 
-            assertSame(0, $exitCode, $text);
-            assertStringContains('Starting shared static release refresh', $text);
-            assertStringContains('does not rebuild the read model', $text);
-            assertStringContains('[1/2] Rendering shared pages (10/20): /tags/.', $text);
-            assertStringContains('[2/2] Shared static release activated.', $text);
-            assertStringNotContains('Rendering thread pages', $text);
-            assertStringNotContains('Rendering post pages', $text);
-            assertStringNotContains('Read model: index posts', $text);
-            assertTrue(is_link($artifactRoot . '/current'));
-            assertSame($detailContents, (string) file_get_contents($artifactRoot . '/current/threads/root-001.html'));
-            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/current/index.html'));
-            assertStringContains('self.__forumBrowserRuntime = {"namespace":"zenmemes"', (string) file_get_contents($artifactRoot . '/current/service_worker.js'));
+                $command = sprintf(
+                    'php %s %s %s %s 2>&1',
+                    escapeshellarg(__DIR__ . '/../scripts/refresh_static_shared_artifacts.php'),
+                    escapeshellarg($this->repositoryRoot),
+                    escapeshellarg($databasePath),
+                    escapeshellarg($artifactRoot),
+                );
+                exec($command, $output, $exitCode);
+                $text = implode("\n", $output);
+
+                assertSame(0, $exitCode, $text);
+                assertStringContains('Starting shared static release refresh', $text);
+                assertStringContains('does not rebuild the read model', $text);
+                assertStringContains('[1/2] Rendering shared pages (10/20): /tags/.', $text);
+                assertStringContains('[2/2] Shared static release activated.', $text);
+                assertStringNotContains('Rendering thread pages', $text);
+                assertStringNotContains('Rendering post pages', $text);
+                assertStringNotContains('Read model: index posts', $text);
+                assertTrue(is_link($artifactRoot . '/current'));
+                assertSame($detailContents, (string) file_get_contents($artifactRoot . '/current/threads/root-001.html'));
+                assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/current/index.html'));
+                assertStringContains('self.__forumBrowserRuntime = {"namespace":"zenmemes"', (string) file_get_contents($artifactRoot . '/current/service_worker.js'));
+            } finally {
+                @unlink($databasePath);
+                $this->deleteTree($artifactRoot);
+            }
         } finally {
-            @unlink($databasePath);
-            $this->deleteTree($artifactRoot);
+            putenv($previousStaticDetails === false
+                ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
         }
     }
 
@@ -1082,9 +1095,13 @@ PHP;
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+        $this->runCommand($repositoryRoot, 'git add records && git commit -m ' . escapeshellarg('Prepare unapproved fixture'));
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new \ForumRewrite\Canonical\CanonicalRecordRepository($repositoryRoot)))->rebuild();
 
         $command = sprintf(
-            'FORUM_SITE_ID=chouse FORUM_REPOSITORY_ROOT=%s FORUM_DATABASE_PATH=%s %s approval seed %s %s',
+            'FORUM_SITE_ID=chouse FORUM_PUBLIC_ARTIFACT_ROOT=%s FORUM_STATIC_HTML_ROOT=%s FORUM_REPOSITORY_ROOT=%s FORUM_DATABASE_PATH=%s %s approval seed %s %s',
+            escapeshellarg($artifactRoot),
+            escapeshellarg($projectRoot . '/static'),
             escapeshellarg($repositoryRoot),
             escapeshellarg($databasePath),
             escapeshellarg(__DIR__ . '/../v3'),
@@ -1106,9 +1123,13 @@ PHP;
     {
         [$projectRoot, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
+        $this->runCommand($repositoryRoot, 'git add records && git commit -m ' . escapeshellarg('Prepare unapproved fixture'));
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new \ForumRewrite\Canonical\CanonicalRecordRepository($repositoryRoot)))->rebuild();
 
         $command = sprintf(
-            '%s %s %s %s %s %s',
+            'FORUM_PUBLIC_ARTIFACT_ROOT=%s FORUM_STATIC_HTML_ROOT=%s %s %s %s %s %s %s',
+            escapeshellarg($artifactRoot),
+            escapeshellarg($projectRoot . '/static'),
             escapeshellarg(__DIR__ . '/../v3'),
             'approve',
             escapeshellarg('openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
@@ -1248,38 +1269,46 @@ PHP;
 
     public function testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
     {
-        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
-        $recordId = 'thread-label-20260530000001-zenrules';
-        $relativePath = 'records/thread-labels/' . $recordId . '.txt';
-        $recordPath = $repositoryRoot . '/' . $relativePath;
+        $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+        try {
+            [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+            $recordId = 'thread-label-20260530000001-zenrules';
+            $relativePath = 'records/thread-labels/' . $recordId . '.txt';
+            $recordPath = $repositoryRoot . '/' . $relativePath;
 
-        $command = sprintf(
-            '%s delete-record %s %s %s %s',
-            escapeshellarg(__DIR__ . '/../v3'),
-            escapeshellarg($relativePath),
-            escapeshellarg($repositoryRoot),
-            escapeshellarg($databasePath),
-            escapeshellarg($artifactRoot),
-        );
-        exec($command, $output, $exitCode);
+            $command = sprintf(
+                '%s delete-record %s %s %s %s',
+                escapeshellarg(__DIR__ . '/../v3'),
+                escapeshellarg($relativePath),
+                escapeshellarg($repositoryRoot),
+                escapeshellarg($databasePath),
+                escapeshellarg($artifactRoot),
+            );
+            exec($command, $output, $exitCode);
 
-        $pdo = new PDO('sqlite:' . $databasePath);
-        $labels = $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn();
-        exec(
-            sprintf('git -C %s log -1 --pretty=%%s', escapeshellarg($repositoryRoot)),
-            $gitLogOutput,
-            $gitLogExitCode,
-        );
-        $combinedOutput = implode("\n", $output);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $labels = $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn();
+            exec(
+                sprintf('git -C %s log -1 --pretty=%%s', escapeshellarg($repositoryRoot)),
+                $gitLogOutput,
+                $gitLogExitCode,
+            );
+            $combinedOutput = implode("\n", $output);
 
-        assertSame(0, $exitCode);
-        assertFalse(is_file($recordPath));
-        assertSame('[]', $labels);
-        assertSame(0, $gitLogExitCode);
-        assertSame('Delete canonical record ' . $relativePath, $gitLogOutput[0] ?? '');
-        assertTrue(is_file($artifactRoot . '/threads/thread-zenmemes-rules.html'));
-        assertStringContains('Deleted canonical record.', $combinedOutput);
-        assertStringContains('Rebuilt static artifacts:', $combinedOutput);
+            assertSame(0, $exitCode);
+            assertFalse(is_file($recordPath));
+            assertSame('[]', $labels);
+            assertSame(0, $gitLogExitCode);
+            assertSame('Delete canonical record ' . $relativePath, $gitLogOutput[0] ?? '');
+            assertTrue(is_file($artifactRoot . '/threads/thread-zenmemes-rules.html'));
+            assertStringContains('Deleted canonical record.', $combinedOutput);
+            assertStringContains('Rebuilt static artifacts:', $combinedOutput);
+        } finally {
+            putenv($previousStaticDetails === false
+                ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
+        }
     }
 
     public function testThreadAttributesCommandResolvesDeletedLabelRecordToThread(): void
@@ -4080,95 +4109,102 @@ PHP;
 
     public function testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout(): void
     {
-        @unlink($this->databasePath);
-        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-public-' . bin2hex(random_bytes(6));
-        mkdir($artifactRoot, 0777, true);
+        $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+        try {
+            @unlink($this->databasePath);
+            $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-public-' . bin2hex(random_bytes(6));
+            mkdir($artifactRoot, 0777, true);
 
-        $builder = new StaticArtifactBuilder(
-            dirname(__DIR__),
-            $this->repositoryRoot,
-            $this->databasePath,
-            $artifactRoot,
-        );
-        $builder->build();
+            $builder = new StaticArtifactBuilder(
+                dirname(__DIR__),
+                $this->repositoryRoot,
+                $this->databasePath,
+                $artifactRoot,
+            );
+            $builder->build();
 
-        assertTrue(is_file($artifactRoot . '/index.html'));
-        assertTrue(is_file($artifactRoot . '/threads.html'));
-        assertTrue(is_file($artifactRoot . '/threads/index.html'));
-        assertTrue(is_file($artifactRoot . '/about.html'));
-        assertTrue(is_file($artifactRoot . '/about/index.html'));
-        assertTrue(is_file($artifactRoot . '/instance.html'));
-        assertTrue(is_file($artifactRoot . '/activity.html'));
-        assertTrue(is_file($artifactRoot . '/users.html'));
-        assertTrue(is_file($artifactRoot . '/tools.html'));
-        assertTrue(is_file($artifactRoot . '/tools/index.html'));
-        assertTrue(is_file($artifactRoot . '/tools/bookmarklets.html'));
-        assertTrue(is_file($artifactRoot . '/tools/feature-flags.html'));
-        assertTrue(is_file($artifactRoot . '/tags.html'));
-        assertTrue(is_file($artifactRoot . '/tags/index.html'));
-        assertTrue(is_file($artifactRoot . '/tags/general.html'));
-        assertTrue(is_file($artifactRoot . '/tags/bug.html'));
-        assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
-        assertTrue(is_file($artifactRoot . '/threads/thread-zenmemes-rules.html'));
-        assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
-        assertTrue(is_file($artifactRoot . '/posts/thread-zenmemes-rules.html'));
-        assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
-        $indexArtifact = (string) file_get_contents($artifactRoot . '/index.html');
-        assertTrue(preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $indexArtifact, $assetMatches) !== false);
-        foreach (array_unique($assetMatches[0]) as $assetPath) {
-            assertTrue(is_file($artifactRoot . $assetPath));
-        }
-        assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js')));
-        assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js')));
-        assertStringContains(
-            '"openpgpV6":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js') . '"',
-            $indexArtifact,
-        );
-        assertStringContains(
-            '"openpgpV5":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js') . '"',
-            $indexArtifact,
-        );
-        assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
-        assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
-        assertStringContains('self.__forumBrowserRuntime = {"namespace":"zenmemes"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
-        assertStringContains('"id": "/offline/?site=zenmemes"', (string) file_get_contents($artifactRoot . '/manifest.webmanifest'));
-        foreach (\ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::all()['zenmemes']['permittedThemes']) as $theme) {
-            if ($theme['name'] === 'auto') {
-                continue;
+            assertTrue(is_file($artifactRoot . '/index.html'));
+            assertTrue(is_file($artifactRoot . '/threads.html'));
+            assertTrue(is_file($artifactRoot . '/threads/index.html'));
+            assertTrue(is_file($artifactRoot . '/about.html'));
+            assertTrue(is_file($artifactRoot . '/about/index.html'));
+            assertTrue(is_file($artifactRoot . '/instance.html'));
+            assertTrue(is_file($artifactRoot . '/activity.html'));
+            assertTrue(is_file($artifactRoot . '/users.html'));
+            assertTrue(is_file($artifactRoot . '/tools.html'));
+            assertTrue(is_file($artifactRoot . '/tools/index.html'));
+            assertTrue(is_file($artifactRoot . '/tools/bookmarklets.html'));
+            assertTrue(is_file($artifactRoot . '/tools/feature-flags.html'));
+            assertTrue(is_file($artifactRoot . '/tags.html'));
+            assertTrue(is_file($artifactRoot . '/tags/index.html'));
+            assertTrue(is_file($artifactRoot . '/tags/general.html'));
+            assertTrue(is_file($artifactRoot . '/tags/bug.html'));
+            assertTrue(is_file($artifactRoot . '/threads/root-001.html'));
+            assertTrue(is_file($artifactRoot . '/threads/thread-zenmemes-rules.html'));
+            assertTrue(is_file($artifactRoot . '/posts/root-001.html'));
+            assertTrue(is_file($artifactRoot . '/posts/thread-zenmemes-rules.html'));
+            assertTrue(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
+            $indexArtifact = (string) file_get_contents($artifactRoot . '/index.html');
+            assertTrue(preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $indexArtifact, $assetMatches) !== false);
+            foreach (array_unique($assetMatches[0]) as $assetPath) {
+                assertTrue(is_file($artifactRoot . $assetPath));
             }
-            $path = \ForumRewrite\View\ThemeRegistry::stylesheetPaths()[$theme['name']];
-            $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
-            assertStringContains($fingerprintedPath, $indexArtifact);
-            assertTrue(is_file($artifactRoot . $fingerprintedPath));
+            assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js')));
+            assertTrue(is_file($artifactRoot . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js')));
+            assertStringContains(
+                '"openpgpV6":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.min.js') . '"',
+                $indexArtifact,
+            );
+            assertStringContains(
+                '"openpgpV5":"' . AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', '/assets/openpgp.v5.11.3.min.js') . '"',
+                $indexArtifact,
+            );
+            assertTrue(is_file($artifactRoot . '/offline/snapshot.sqlite3'));
+            assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
+            assertStringContains('self.__forumBrowserRuntime = {"namespace":"zenmemes"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
+            assertStringContains('"id": "/offline/?site=zenmemes"', (string) file_get_contents($artifactRoot . '/manifest.webmanifest'));
+            foreach (\ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::all()['zenmemes']['permittedThemes']) as $theme) {
+                if ($theme['name'] === 'auto') {
+                    continue;
+                }
+                $path = \ForumRewrite\View\ThemeRegistry::stylesheetPaths()[$theme['name']];
+                $fingerprintedPath = AssetFingerprint::fingerprintedPath(dirname(__DIR__) . '/public', $path);
+                assertStringContains($fingerprintedPath, $indexArtifact);
+                assertTrue(is_file($artifactRoot . $fingerprintedPath));
+            }
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about/index.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/index.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/bookmarklets.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/index.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/general.html'));
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/bug.html'));
+            $rootThreadArtifact = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
+            assertStringContains('route-source: static-html', $rootThreadArtifact);
+            $inlineReplyAssetPath = fingerprintedAssetPath($rootThreadArtifact, 'inline_reply_form.js');
+            assertTrue(is_file($artifactRoot . $inlineReplyAssetPath));
+            assertStringContains('inline-reply-composer', $rootThreadArtifact);
+            assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/thread-zenmemes-rules.html'));
+
+            $threadsArtifact = (string) file_get_contents($artifactRoot . '/threads.html');
+            assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsArtifact);
+
+            $pdo = new PDO('sqlite:' . $this->databasePath);
+            assertSame(
+                '["pinned"]',
+                $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn()
+            );
+        } finally {
+            putenv($previousStaticDetails === false
+                ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
         }
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/index.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/index.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/about/index.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/index.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tools/bookmarklets.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/index.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/general.html'));
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/tags/bug.html'));
-        $rootThreadArtifact = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
-        assertStringContains('route-source: static-html', $rootThreadArtifact);
-        $inlineReplyAssetPath = fingerprintedAssetPath($rootThreadArtifact, 'inline_reply_form.js');
-        assertTrue(is_file($artifactRoot . $inlineReplyAssetPath));
-        assertStringContains('inline-reply-composer', $rootThreadArtifact);
-        assertStringContains('route-source: static-html', (string) file_get_contents($artifactRoot . '/threads/thread-zenmemes-rules.html'));
-
-        $threadsArtifact = (string) file_get_contents($artifactRoot . '/threads.html');
-        assertSame((string) file_get_contents($artifactRoot . '/index.html'), $threadsArtifact);
-
-        $pdo = new PDO('sqlite:' . $this->databasePath);
-        assertSame(
-            '["pinned"]',
-            $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn()
-        );
-
     }
 
     public function testStaticArtifactReleasePublisherActivatesCompleteReleaseForFrontController(): void
@@ -4205,6 +4241,70 @@ PHP;
             assertStringNotContains('old public artifact', $response);
         } finally {
             $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testFullReleaseSwitchesStaticDetailsToRuntimeAndPreservesFailedBuildRecovery(): void
+    {
+        $staticRoot = sys_get_temp_dir() . '/forum-runtime-transition-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-runtime-public-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot, 0777, true);
+        $previous = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $this->databasePath,
+                new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $staticRoot);
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+            $staticRelease = $publisher->build($this->databasePath);
+            $publisher->activate($staticRelease);
+            assertTrue(is_file($staticRoot . '/current/threads/root-001.html'));
+            assertTrue(is_file($staticRoot . '/current/posts/reply-001.html'));
+
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+            $runtimeRelease = $publisher->build($this->databasePath);
+            $publisher->activate($runtimeRelease);
+            assertSame($runtimeRelease, realpath($staticRoot . '/current'));
+            assertFalse(is_file($staticRoot . '/current/threads/root-001.html'));
+            assertFalse(is_file($staticRoot . '/current/posts/reply-001.html'));
+            assertTrue(is_file($staticRoot . '/current/offline/snapshot.sqlite3'));
+            $controller = new FrontController(dirname(__DIR__), $this->repositoryRoot,
+                $this->databasePath, $staticRoot, $publicRoot);
+            foreach (['/threads/root-001' => 'First line preview.', '/posts/root-001' => 'First line preview.', '/posts/reply-001' => 'Reply body.'] as $path => $body) {
+                $response = $this->renderFrontController($controller, 'GET', $path, []);
+                assertSame(200, http_response_code());
+                assertStringContains($body, $response);
+                assertStringNotContains('route-source: static-html', $response);
+            }
+            assertStringContains('route-source: static-html',
+                $this->renderFrontController($controller, 'GET', '/', []));
+
+            $failed = false;
+            try {
+                $publisher->build($this->databasePath, static function (string $message): void {
+                    throw new RuntimeException('Simulated rendering failure.');
+                });
+            } catch (RuntimeException $exception) {
+                assertSame('Simulated rendering failure.', $exception->getMessage());
+                $failed = true;
+            }
+            assertTrue($failed);
+            assertSame($runtimeRelease, realpath($staticRoot . '/current'));
+            assertSame([], glob($staticRoot . '/.candidate-*'));
+            $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
+            assertSame(200, http_response_code());
+            $pdo = new PDO('sqlite:' . $this->databasePath);
+            $pdo->exec("UPDATE posts SET is_hidden = 1 WHERE post_id = 'reply-001'");
+            $hidden = $this->renderFrontController($controller, 'GET', '/posts/reply-001', []);
+            assertStringContains('Post Hidden', $hidden);
+            assertStringNotContains('Reply body.', $hidden);
+        } finally {
+            if (isset($pdo)) {
+                $pdo->exec("UPDATE posts SET is_hidden = 0 WHERE post_id = 'reply-001'");
+            }
+            putenv($previous === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
+                : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previous);
+            $this->deleteTree($staticRoot);
             $this->deleteTree($publicRoot);
         }
     }

@@ -1,8 +1,9 @@
 # `v3` CLI Reference
 
-`./v3` is a thin dispatcher over the PHP scripts in `scripts/`. Every subcommand
-below can also be invoked directly as `php scripts/<script>.php ...`; the `./v3`
-form is the shorthand used elsewhere in this repo's docs.
+`./v3` dispatches to scripts in `scripts/`. Use the launcher for local startup
+and dependency checks: it handles executable/version checks and server shutdown.
+Many other PHP commands can also be invoked directly as
+`php scripts/<script>.php ...`.
 
 Run `./v3 help`, `./v3 --help`, or `./v3 -h` to print the command list.
 Running `./v3` with no arguments also prints it (with exit code 1).
@@ -59,13 +60,42 @@ and existing-plan policy.
 ## Start the local dev server
 
 ```
-./v3 start [--listen-all|host:port]
+./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
 ```
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
+Checks local-server prerequisites before application loading, logs, or bootstrap.
+Missing required capabilities return 1 with manual recovery guidance; optional
+limitations warn without blocking. Stop the launcher with Ctrl+C or SIGTERM.
 
 - `--listen-all` — bind `0.0.0.0:8000` instead of `127.0.0.1:8000`
 - `host:port` — bind an explicit address or bare port number instead of the default
+- `--verbose` / `--quiet` — show all requests / server errors only
+- `--log-file=...` — append plain request logs to the chosen file
+
+## Check local-server prerequisites
+
+```
+./v3 check-dependencies [--help]
+./v3 dependency-check [--help]
+```
+
+Uses the same checks as startup without starting the server or changing application
+state. Reports Bash 4.1+, Git, PHP CLI 8.1+, PDO/PDO SQLite, mbstring, and PHP
+process execution; intl, PCNTL, terminal shell execution, and `stty` are optional.
+Returns 0 when required capabilities pass (even with warnings), or 1 for missing,
+disabled, or unusable required capabilities. `-h`/`--help` returns 0 without
+checking PHP or Git; other arguments are rejected.
+
+Status rows use ✓/✗/!/? for available, unavailable, optional limitations, and
+unchecked capabilities. Runtime details and recovery instructions follow the
+readiness result. Terminals show colored statuses and highlighted setup commands;
+redirected output and `NO_COLOR` use plain text with the same symbols.
+
+Follow manual recovery guidance and retry with the same startup options. This
+command never prompts or installs software, and does not validate repository,
+database, permissions, listening address, other-command, or deployment readiness.
+See [local setup and launcher prerequisites](../../README.md#php-setup).
 
 ## Run the test suite
 
@@ -375,12 +405,25 @@ normal requests continue using the prior complete state while the command runs.
 - `database_path` — read-model SQLite file to render from
 - `artifact_root` — static release root; defaults to `state/static_html` when not given via argument or `FORUM_STATIC_HTML_ROOT`. The active release is `artifact_root/current`.
 
-`FORUM_STATIC_DETAIL_PAGES_ENABLED` defaults to `true`. Set it to `false`
-through the instance feature-flags page (or as an environment override) to omit
-the individual thread and post HTML files from a full release. Shared pages,
-including QDB's home, Latest, Top, and Leetness pages, are still generated;
-individual quote and thread requests fall back to PHP. Run a full build after
-changing this flag so the active release reflects it.
+`FORUM_STATIC_DETAIL_PAGES_ENABLED` defaults to `false`. Full builds skip
+bulk thread and post rendering; individual thread, post, and numeric quote
+requests use PHP at runtime. Shared pages (including QDB's home, Latest, Top,
+and Leetness), tag/profile pages, and the offline snapshot are still generated.
+
+To pre-build detail HTML for static-only hosting, enable **Static detail pages**
+on the instance feature-flags page or set
+`FORUM_STATIC_DETAIL_PAGES_ENABLED=true` in the build environment. An explicit
+environment value takes precedence over an instance setting; either explicit
+setting takes precedence over the default. Existing explicit enablement remains
+in effect after an upgrade, so disable it if these builds are still slow.
+
+Run a full build after changing the effective flag value. A full build activates
+a fresh release, removing old detail HTML from the active release when disabled;
+`--shared-only` preserves existing detail artifacts and cannot make this
+transition. Runtime detail hosting requires PHP routing (as provided by the
+checked-in Apache configuration or local PHP router). Static-only hosts should
+opt in before building/deploying. To restore static details, enable the flag and
+run another full build.
 
 ### Refresh only shared static pages
 
@@ -577,3 +620,5 @@ a static build or asset-fingerprint change to catch broken references
 before they ship.
 
 - `artifact_root` — directory to scan; defaults to `FORUM_PUBLIC_ARTIFACT_ROOT` or `public/`
+
+Startup dependency failures list missing capabilities, group required Ubuntu extension installs into one command, and show optional recovery separately. Commands are highlighted on terminals unless `NO_COLOR` is set. `dependency-check` is an alias for `check-dependencies`.

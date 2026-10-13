@@ -124,8 +124,8 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,
                 'Static detail pages',
-                'Pre-build individual thread and post pages during a full static release. Disable this on a large QDB instance to keep shared listing pages static while individual quotes render dynamically.',
-                true,
+                'Off by default: individual threads and posts render at runtime. Enable to pre-build detail pages for static hosting. Run a full static build after changing this flag.',
+                false,
                 self::STATIC_DETAIL_PAGES_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
