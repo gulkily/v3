@@ -17,5 +17,8 @@ vm.runInThisContext(fs.readFileSync('public/assets/key_backup.js','utf8'));
   const payload={type:'forum-key-backup',version:1,fingerprint:'0'.repeat(40),privateKeyText:original};
   const forged=await openpgp.encrypt({message:await openpgp.createMessage({binary:new TextEncoder().encode(JSON.stringify(payload))}),passwords:[password],format:'armored'});
   await assert.rejects(()=>api.readBackup(forged,password),/fingerprint/);
+  const oversized=await openpgp.encrypt({message:await openpgp.createMessage({binary:new Uint8Array(1000000)}),passwords:[password],format:'armored',config:{preferredCompressionAlgorithm:openpgp.enums.compression.zip}});
+  assert(oversized.length<131072);
+  await assert.rejects(()=>api.readBackup(oversized,password),/Could not unlock/);
   console.log((process.argv[2]||'v6')+': exact-byte backup, password, mismatch, corruption and size checks passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

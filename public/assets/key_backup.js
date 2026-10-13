@@ -27,10 +27,25 @@
     let envelope;
     try {
       const result = await pgp.decrypt({
-        message: await pgp.readMessage({ armoredMessage: text }), passwords: [passphrase], format: 'binary',
+        message: await pgp.readMessage({ armoredMessage: new ReadableStream({
+          start(controller) { controller.enqueue(text); controller.close(); },
+        }) }), passwords: [passphrase], format: 'binary',
+        config: 'maxDecompressedMessageSize' in pgp.config ? { maxDecompressedMessageSize: 65536 } : {},
       });
-      if (!(result.data instanceof Uint8Array) || result.data.length > 65536) throw new Error('size');
-      envelope = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(result.data));
+      const reader = result.data.getReader();
+      const parts = []; let size = 0;
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          size += value.length;
+          if (size > 65536) { await reader.cancel(); throw new Error('size'); }
+          parts.push(value);
+        }
+      } finally { reader.releaseLock(); }
+      const bytes = new Uint8Array(size); let offset = 0;
+      for (const part of parts) { bytes.set(part, offset); offset += part.length; }
+      envelope = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
     } catch (_) {
       throw new Error('Could not unlock this backup. Check the passphrase and use the original downloaded file.');
     }

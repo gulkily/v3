@@ -16,21 +16,22 @@ const root=await mkdtemp(join(tmpdir(),'key-backup-browser-'));
 const keys=await pgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'alice'}],format:'armored'});
 keys.privateKey=keys.privateKey.replace(/\r?\n/g,'\r\n');
 const fingerprint=(await pgp.readKey({armoredKey:keys.publicKey})).getFingerprint();
-const envelope=await pgp.encrypt({message:await pgp.createMessage({text:'Original private conversation'}),encryptionKeys:await pgp.readKey({armoredKey:keys.publicKey}),format:'armored'});
+const envelope=await pgp.encrypt({message:await pgp.createMessage({text:'Original private conversation'}),encryptionKeys:await pgp.readKey({armoredKey:keys.publicKey}),signingKeys:await pgp.readPrivateKey({armoredKey:keys.privateKey}),format:'armored'});
 const profiles=[{name:'alice',fingerprint,publicKey:keys.publicKey},...Array.from({length:60},(_,i)=>({name:'user-'+String(i+1).padStart(2,'0'),fingerprint,publicKey:keys.publicKey}))];
-const seeded=spawnSync('php',[join(project,'tests/Support/private_message_browser_fixture.php'),root],{input:JSON.stringify({profiles,incoming:envelope,outgoing:envelope}),encoding:'utf8'});
+const seeded=spawnSync('php',[join(project,'tests/Support/private_message_browser_fixture.php'),root],{input:JSON.stringify({profiles,incoming:envelope,outgoing:envelope,canonical_identity:profiles[0]}),encoding:'utf8'});
 assert.equal(seeded.status,0,seeded.stderr);
 const socket=createServer().listen(0,'127.0.0.1'); await once(socket,'listening'); const port=socket.address().port; await new Promise(r=>socket.close(r));
 const base=`http://127.0.0.1:${port}`;
-const server=spawn('php',['-d',`session.save_path=${root}/sessions`,'-S',`127.0.0.1:${port}`,join(project,'tests/Support/private_message_browser_router.php')],{env:{...process.env,PRIVATE_MESSAGE_TEST_ROOT:root,FORUM_SECRETS_PATH:join(root,'unused-secrets.php'),PRIVATE_MESSAGE_DATABASE_PATH:join(root,'state/private/messages.sqlite3'),VISITOR_STATISTICS_DATABASE_PATH:join(root,'visitors.sqlite3')},stdio:['ignore','ignore','pipe']});
+const server=spawn('php',['-d',`session.save_path=${root}/sessions`,'-S',`127.0.0.1:${port}`,join(project,'tests/Support/private_message_browser_router.php')],{env:{...process.env,PRIVATE_MESSAGE_TEST_ROOT:root,FORUM_SECRETS_PATH:join(root,'unused-secrets.php'),PRIVATE_MESSAGE_DATABASE_PATH:join(root,'state/private/messages.sqlite3'),VISITOR_STATISTICS_DATABASE_PATH:join(root,'visitors.sqlite3'),FORUM_APPROVED_MEMBERS_ONLY:process.env.MEMBERS_ONLY||'false'},stdio:['ignore','ignore','pipe']});
 let serverLog=''; server.stderr.on('data',d=>{serverLog+=d;});
-let browser;
+let browser, restoreBrowser, lastPage;
 try {
   for(let i=0;i<80;i++){try{await fetch(base+'/api/version');break;}catch{await new Promise(r=>setTimeout(r,100));}}
   const engine=process.env.BROWSER||'chromium';
   browser=await (engine==='firefox'?firefox:chromium).launch({headless:true,...(engine==='firefox'?{}:{executablePath:process.env.CHROMIUM_PATH||'/opt/google/chrome/chrome',args:['--no-sandbox']})});
   const context=await browser.newContext({serviceWorkers:'block',acceptDownloads:true});
-  const page=await context.newPage(); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+  if(process.env.BUNDLE==='v5')await context.addInitScript(()=>Object.defineProperty(window,'isSecureContext',{value:false}));
+  const page=await context.newPage(); lastPage=page; page.setDefaultTimeout(15000); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/account/key/');
   await page.evaluate(({keys,fingerprint})=>{
     for(const [name,value] of Object.entries({username:'alice',private_key:keys.privateKey,public_key:keys.publicKey,fingerprint:fingerprint.toUpperCase(),published_fingerprint:fingerprint.toUpperCase()}))localStorage.setItem('forum_pki_'+name,value);
@@ -38,6 +39,7 @@ try {
   await page.reload();
   await page.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]').dataset.authenticatedIdentityId));
   await page.goto(base+'/messages');
+  if(await page.locator('[data-key-backup-reminder]').count()===0)throw new Error('Messages entry: '+(await page.locator('main').innerText()).slice(0,800));
   await page.locator('[data-key-backup-reminder]').waitFor({state:'visible'});
   await page.getByRole('link',{name:'Back up your key',exact:true}).click();
   const passphrase='a long unique starfield passphrase';
@@ -69,7 +71,11 @@ try {
     try{window.ForumKeyBackupStatus.refresh();}finally{Storage.prototype.getItem=get;}
   });
   assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),true);
-  const fresh=await browser.newContext({serviceWorkers:'block'}), restored=await fresh.newPage();
+  const restoreEngine=engine==='chromium'?firefox:chromium;
+  restoreBrowser=await restoreEngine.launch({headless:true,...(restoreEngine===chromium?{executablePath:process.env.CHROMIUM_PATH||'/opt/google/chrome/chrome',args:['--no-sandbox']}:{})});
+  const fresh=await restoreBrowser.newContext({serviceWorkers:'block'});
+  if(process.env.RESTORE_BUNDLE==='v5')await fresh.addInitScript(()=>Object.defineProperty(window,'isSecureContext',{value:false}));
+  const restored=await fresh.newPage(); lastPage=restored; restored.setDefaultTimeout(15000);
   fresh.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   restored.on('pageerror',e=>errors.push(e.message));
   await restored.goto(base+'/account/key/');
@@ -104,12 +110,45 @@ try {
   await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Simulated storage failure'));
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),null);
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_username')),null);
+  await restored.route('**/api/set_identity_hint?*',route=>route.abort());
+  await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
+  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent!=='Working locally…');
+  assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),null);
+  await restored.unroute('**/api/set_identity_hint?*');
+  await restored.route('**/api/set_identity_hint?*',async route=>{
+    await restored.evaluate(()=>localStorage.setItem('forum_pki_private_key','newer identity from another tab'));
+    await route.abort();
+  });
+  await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
+  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent!=='Working locally…');
+  assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),'newer identity from another tab');
+  await restored.unroute('**/api/set_identity_hint?*');
+  await restored.evaluate(()=>localStorage.clear());
+
+
   await restored.locator('[data-restore-password]').fill(passphrase); await restored.locator('[data-backup-restore]').click();
-  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Backup restored'));
+  if(process.env.MEMBERS_ONLY==='true'){
+    await restored.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]')?.dataset.authenticatedIdentityId));
+  }else{
+    await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Backup restored'));
+  }
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),keys.privateKey);
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_fingerprint').toLowerCase()),fingerprint);
+  await restored.reload();
+  await restored.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]')?.dataset.authenticatedIdentityId));
+  await restored.goto(base+'/messages/conversation/user-01');
+  await restored.locator('[data-role="private-message-plaintext"]').filter({hasText:'Original private conversation'}).first().waitFor({state:'visible'});
+  await restored.goto(base+'/account/key/');
+  const other=await pgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'other'}],format:'armored'});
+  const different=await restored.evaluate(async({key,passphrase})=>(await window.ForumKeyBackup.createBackup(key,passphrase)).text,{key:other.privateKey,passphrase});
+  await restored.locator('[data-backup-file]').setInputFiles({name:'different.txt',mimeType:'text/plain',buffer:Buffer.from(different)});
+  await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
+  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('fingerprint does not match'));
+  assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),keys.privateKey);
+  assert.equal(await page.evaluate(()=>window.__forumOpenPgpLoader.selectedVersion),process.env.BUNDLE||'v6');
+  assert.equal(await restored.evaluate(()=>window.__forumOpenPgpLoader.selectedVersion),process.env.RESTORE_BUNDLE||'v6');
   assert(requests.every(r=>!r.includes(passphrase)&&!r.includes('PRIVATE KEY')&&!r.includes(encodeURIComponent(passphrase))));
   assert.deepEqual(errors,[]);
-  console.log(engine+': normal Account Key '+format+' download, wrong password, fresh-profile restore, byte equality and request privacy passed');
-} catch(error) { console.error('Fixture:',root); throw error; }
-finally { if(browser)await browser.close(); server.kill(); }
+  console.log(engine+' → '+restoreEngine.name()+' '+format+' '+(process.env.BUNDLE||'v6')+' → '+(process.env.RESTORE_BUNDLE||'v6')+' members='+Boolean(process.env.MEMBERS_ONLY==='true')+': download, reminder, rejection, storage rollback, exact restore, original-message decryption and privacy passed');
+} catch(error) { console.error('Fixture:',root); if(lastPage)console.error('Page:',lastPage.url(),'Status:',await lastPage.locator('[data-backup-status]').textContent({timeout:1000}).catch(()=>'')); throw error; }
+finally { if(restoreBrowser)await restoreBrowser.close(); if(browser)await browser.close(); server.kill(); }

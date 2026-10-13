@@ -2706,15 +2706,24 @@
     if (JSON.stringify(previousIdentity) !== JSON.stringify(browserIdentitySnapshot())) {
       throw new Error("The browser identity changed. Try restoring again.");
     }
+    const identityKeys = [storageKeys.username, storageKeys.publicKey, storageKeys.privateKey, storageKeys.fingerprint];
+    let installed = null;
+    const stillInstalled = () => installed && identityKeys.every((key, index) => localStorage.getItem(key) === installed[index]);
     try {
       saveImportedBrowserIdentity(identity, Boolean(expectedFingerprint));
+      installed = identityKeys.map(key => localStorage.getItem(key));
       renderSavedState(root);
       await publishPublicKeyWithRetry(root);
+      if (!stillInstalled()) throw new Error("The browser identity changed in another tab. Restore again when other identity actions have finished.");
       await authenticatePrivateSiteIfAvailable();
+      if (!stillInstalled()) throw new Error("The browser identity changed in another tab. Restore again when other identity actions have finished.");
       return identity;
     } catch (error) {
-      restoreBrowserIdentitySnapshot(previousIdentity);
-      clearedKeypairBackup = previousClearedKey;
+      // Do not overwrite a newer identity installed by another tab during a request.
+      if (!installed || stillInstalled()) {
+        restoreBrowserIdentitySnapshot(previousIdentity);
+        clearedKeypairBackup = previousClearedKey;
+      }
       throw error;
     } finally {
       renderSavedState(root);
@@ -2753,7 +2762,7 @@
       automaticGuestPublicationInput.checked = automaticGuestPublicationIsImmediate();
     }
     if (hasBrowserKeypair()) {
-      void syncIdentityHint(preferredIdentityHint());
+      void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
 
     window.addEventListener("pageshow", function () {
