@@ -66,3 +66,35 @@ No supported findings specific to this planning step.
 - Downloaded Ubuntu Base 22.04.5 amd64 and verified SHA256 `242cd8898b33ea806ef5f13b1076ed7c76f9f989d18384452f7166692438ff1a` against the published Ubuntu manifest. A disposable extracted chroot runs Bash and exposes APT/dpkg. Location: `/home/wsl/.cache/startup-dependency-recovery-planning/rootfs`.
 - Existing `/home/wsl/.cache/v3-dependency-install/acceptance-3/rootfs` still reports Ubuntu 24.04.3 and PHP 8.3.6. Noninteractive sudo/mount-namespace availability checked. Existing test evidence includes password-sudo install/interruption; these are prior installer results, not evidence of the new startup continuation.
 - No host packages were installed/removed, no application implementation changed, and no new automatic Ubuntu 22.04 transaction was claimed. Actual transaction and continuation verification remain mandatory stage gates.
+
+## 2026-10-13 06:27:33 UTC — Step 4
+
+Debug mode: enabled, inherited from approved Step 3 and recorded in the implementation summary. User approval: “Approved Step 3.”
+
+### Necessary/useful instructions
+
+- **Source:** `docs/railspike/docs/workflow/step4_implementation_before.md`, “Planning Docs Commit Gate,” and `RAILSPIKE.md`, “Planning Artifacts.” **Contribution:** the new branch contains an initial plans/log/index-only commit (`71b7c8ba`); implementation and its summary begin afterward. Explicit path-scoped commits preserved three unrelated staged documents rather than sweeping them into implementation commits. **Suggestion:** retain the gate and staged-content inspection; examples should explicitly cover a pre-existing index containing unrelated user work.
+- **Source:** `step4_implementation_do.md`, “Complete the Step 3 Contract,” and the normal-entry/end-to-end rule in `RAILSPIKE.md`. **Contribution:** acceptance used ordinary `./v3 start` on both Ubuntu releases, both failure states, and root/password-sudo callers, proving original options/UID, HTTP thread/reply reads/writes and shutdown. Actual emitted manual commands were also followed. This prevented a repeat of the earlier narrower Ubuntu 24.04 component-only completion. **Suggestion:** retain concrete known-user-environment and manual-recovery outcomes as release gates.
+- **Source:** `step4_implementation_do.md`, “Stage Boundary Protocol,” and `step4_implementation_after.md`, “Final Verification Checklist.” **Contribution:** five separate stage commits each contain their summary update; final source hashes and evidence counts were checked. Final acceptance exposed a prompt-boundary Bash signal race after ordinary refusal tests had passed; the defect was fixed and exercised with 40 boundary trials plus both full failure matrices before handoff. **Suggestion:** retain final outcome verification after stage verification, and state that a successful intermediate stage does not waive rerunning checks affected by later fixes.
+- **Source:** `RAILSPIKE.md`, “Railspike Debug Mode / completed-step report.” **Contribution:** enabled state survived organization/resumption; the existing log history remains intact and one completed-Step-4 report is appended after the five stages. **Suggestion:** retain durable mode state and the log-only final commit allowance.
+
+### Redundant/unnecessary instructions
+
+No supported findings. Repeated commit/verification rules have different entry, stage-boundary and final-audit roles in this execution; repetition alone does not establish that they should be removed.
+
+### Inapplicable instructions
+
+- **Source:** `step4_implementation_after.md`, documentation-only checks and scoped deployment/external-system/migration verification. **Applicability:** this is application work with real runtime verification; deployment, schema/migration and external integrations were explicitly excluded. Host package modification was excluded; all package tests used disposable chroots. **Suggestion:** retain scope-based applicability and explicit environment limits rather than treating unrelated deployment work as required.
+
+### Uncertain assessments and execution deviations
+
+- **Source:** `RAILSPIKE.md`, “How to Use This Chain / reprint” and “Key Rules / Reprint the current step/phase instructions.” **Observation:** conversation phase reprints were condensed instead of reproducing the complete source files verbatim. The phase order was followed, but a condensed reprint should not be represented as exact reproduction. **Suggestion:** clarify whether full verbatim reproduction is required or a faithful concise restatement is acceptable; until clarified, follow the literal reprint instruction. This is an execution deviation, not evidence that the rule is unnecessary.
+- **Source:** `step4_implementation_do.md`, stage verification and the approved environment acceptance gates. **Observation:** early concurrent chroot assertions inspected the shared host PID view and falsely saw another target's APT process; another process assertion matched its own command. Both harness defects were corrected, earlier attempts retained, and complete corrected matrices rerun. **Suggestion:** clarify that test isolation must cover process identity as well as filesystems; test-harness failures should be distinguished from application failures and final acceptance should not silently reuse partial runs as complete evidence.
+- **Source:** `step4_implementation_after.md`, “Confirm the Contract” and verification in the applicable environment. **Uncertainty:** Linux chroots share this WSL host's kernel but do not certify the user's WSL terminal/PATH/Windows behavior. **Suggestion:** retain explicit evidence boundaries; keep the broader WSL and environment exploration checklist open rather than generalizing from these successes.
+
+### Handoff audit
+
+- Planning commit plus five stage commits verified; summary absent from the planning commit and included with every stage.
+- Per release: 9 startup/provisioning result records (including four end-to-end recovery journeys), 37 startup failure/provisioning records, 39 explicit-installer/regression records, 22 manual/provisioning records, and 4 final-source recovery/provisioning records. Records deliberately include provisioning and are not mislabeled as that many independent user journeys.
+- Machine-readable evidence captures environment, base-image checksums, final source hashes, case exit statuses and retained transcript hashes. Final-source continuation and modified-owned-binary refusal passed on both releases.
+- Earlier unrelated staged documents remain staged and unchanged by this feature. No merge, push, deployment or host package installation was performed.
