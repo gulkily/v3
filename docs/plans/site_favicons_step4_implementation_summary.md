@@ -14,3 +14,17 @@ Debug mode: enabled
 - Notes:
   - Icons are PNG-in-ICO rather than the BMP encoding `favicon-mitrapclub.ico` uses; supported by current browsers.
   - No source changes in this stage, so `./v3 test` is deferred to Stage 2.
+
+## Stage 2 - Slot and profile wiring
+- Changes:
+  - `PresentationSlotRegistry`: `favicon` slot choices now include `chouse` and `qdb`.
+  - `FaviconRegistry`: added `/assets/favicon-chouse.ico` and `/assets/favicon-qdb.ico`.
+  - `SiteProfileRegistry`: `chouse` and `qdb` profiles select their own `favicon`.
+  - `PresentationSlotRegistryTest`: new test asserts all four profiles resolve to the expected path, each file exists, and an unselected profile falls back to `/favicon.ico`.
+- Verification:
+  - `./v3 test PresentationSlotRegistryTest`: 4/4 pass, including the new test.
+  - Full `./v3 test` run: only failures were the five long-standing ones plus four `OfflineSnapshot*` tests flagged "new".
+  - Stashing my changes and re-running those four on the untouched branch base gives the same four failures (`no such column: author_identity_id`, and two publish-command exit-code assertions), so they are not caused by this feature.
+- Notes:
+  - The four offline-snapshot failures look like local database schema drift from working across branches; they are out of scope here and were not touched.
+  - Existing slot entries and the `zenmemes`/`mitrapclub` selections are unchanged.
