@@ -6,6 +6,7 @@ namespace ForumRewrite\Support\FeatureFlags;
 
 final class FeatureFlagRegistry
 {
+    public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
@@ -31,6 +32,15 @@ final class FeatureFlagRegistry
     public function all(): array
     {
         return [
+            new FeatureFlagDefinition(
+                self::IMAGE_CONTENT_ENABLED,
+                'Image attachments',
+                'Allow approved members to attach JPEG/PNG images. Disabling blocks image delivery and authoring; retained image backups remain available.',
+                false,
+                self::IMAGE_CONTENT_ENABLED,
+                siteMutable: true,
+                group: 'AUTHORING',
+            ),
             new FeatureFlagDefinition(
                 self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
                 'Allow members to approve keys for other existing accounts',

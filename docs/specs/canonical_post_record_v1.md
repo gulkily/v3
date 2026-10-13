@@ -150,3 +150,18 @@ never uses extraction mtime or the destination import commit date. Metadata and
 its legacy post are imported together and participate in conflict/recovery checks.
 The original post and detached signatures are not rewritten. These dates carry
 source provenance, not a new cryptographic attestation.
+
+## Optional image reference
+
+An image attachment is one canonical `Image-v1: <sha256> <png|jpg> <bytes>
+<width> <height> <percent-encoded-description>` line in the body (all on one
+line). The lowercase SHA-256 identifies immutable original bytes, independent of
+host or storage provider. Numeric values are positive decimal integers; the
+description is UTF-8 encoded with RFC 3986 percent encoding, 1–500 bytes before
+encoding. The signed body binds all metadata. Existing text readers can preserve
+the reference without image support; no read-model schema change is required.
+
+Only one reference is supported per post. Uploads require a verified approved
+author and `FORUM_IMAGE_CONTENT_ENABLED`; JPEG/PNG are limited to 5 MiB and
+4096 pixels per side. Storage is outside the repository, with a separate image
+backup required for restoration. Images are not public presentation assets.
