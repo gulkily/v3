@@ -1,11 +1,9 @@
 <section class="stack" data-conversation-list data-page-cursor="<?= $e($page['page_cursor']) ?>" data-next-cursor="<?= $e($page['next_cursor'] ?? '') ?>" data-viewer="<?= $e($viewerProfile['username_token']) ?>">
   <article class="card">
     <h1>Messages</h1>
+    <p data-role="empty"<?= $page['conversations'] !== [] ? ' hidden' : '' ?>>No messages yet</p>
     <button type="button" data-role="unread-retry" hidden>Retry unread status</button>
   </article>
-  <div data-role="empty"<?= $page['conversations'] !== [] ? ' hidden' : '' ?>>
-    <p>No messages yet</p>
-  </div>
   <div class="stack" data-role="rows">
 <?php foreach ($page['conversations'] as $conversation): ?>
 <?= $indent($partial('partials/private_message_conversation_row.php', ['conversation' => $conversation]), 4) ?>
