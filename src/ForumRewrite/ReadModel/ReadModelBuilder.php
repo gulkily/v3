@@ -492,6 +492,11 @@ final class ReadModelBuilder
             return $left->recordId <=> $right->recordId;
         });
 
+        $this->measure('resolve_post_reaction_source_commits', fn () => $this->preloadSourceCommitShas(
+            array_map(static fn (PostReactionRecord $record): string => CanonicalPathResolver::postReaction($record->recordId), $records),
+            'records/post-reactions',
+        ));
+
         $tagsByPost = [];
         $scoreByPost = [];
         $flaggersByPost = [];
@@ -1211,7 +1216,9 @@ final class ReadModelBuilder
     private function featureFlagChangeActivityEvents(): array
     {
         $records = [];
-        foreach ($this->findRelativePaths('records/feature-flag-changes') as $relativePath) {
+        $paths = $this->findRelativePaths('records/feature-flag-changes');
+        $this->measure('resolve_feature_flag_source_commits', fn () => $this->preloadSourceCommitShas($paths, 'records/feature-flag-changes'));
+        foreach ($paths as $relativePath) {
             try {
                 $record = $this->canonicalRepository->loadFeatureFlagChange($relativePath);
             } catch (CanonicalRecordParseException) {

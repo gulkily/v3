@@ -124,6 +124,7 @@ $testFiles = [
     __DIR__ . '/RepositoryArchiveImportCommandTest.php',
     __DIR__ . '/ReadModelBuilderTimingTest.php',
     __DIR__ . '/ReadModelProvenanceTest.php',
+    __DIR__ . '/ReadModelPostReactionsTest.php',
     __DIR__ . '/ReadModelCandidateBuilderTest.php',
     __DIR__ . '/ReadModelMetadataTest.php',
     __DIR__ . '/ReadModelSchemaTest.php',
