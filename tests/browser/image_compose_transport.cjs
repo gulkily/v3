@@ -8,7 +8,7 @@ const end = source.indexOf('  async function signAndFinalizePreparedPost(', star
 let prepares = 0, finalizations = [], body = 'A picture';
 const file = new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64')], {type:'image/png'});
 const form = {querySelector(){return {files:[file]};}};
-const context = {window:{crypto}, crypto, navigator:{onLine:true}, TextEncoder, Uint8Array, FormData,
+const context = {window:{crypto}, crypto, navigator:{onLine:true}, TextEncoder, Uint8Array, FormData, btoa,
  createImageBitmap:async()=>({width:1,height:1,close(){}}),
  composeFormFieldValue:()=>"Pixel & <test>", collectSignedSubmitFields:()=>({body,author_identity_id:'test'}),
  isReplyComposeForm:()=>false, threadPrepareApiPath:()=>'/api/prepare_thread',
@@ -23,7 +23,7 @@ vm.runInContext(source.slice(start,end),context);
  await context.submitImageCompose(form);
  assert.equal(prepares,1);
  assert.equal(finalizations.length,2);
- assert.match(finalizations[0].body.get('canonical_record'), /Image-v1: [a-f0-9]{64} png 68 1 1 Pixel%20%26%20%3Ctest%3E/);
+ assert.match(Buffer.from(finalizations[0].body.get('canonical_record_base64'), 'base64').toString(), /Image-v1: [a-f0-9]{64} png 68 1 1 Pixel%20%26%20%3Ctest%3E/);
  assert.equal(finalizations[0].body.get('image').size,68);
  body='Changed text';await context.submitImageCompose(form);assert.equal(prepares,2);
  context.navigator.onLine=false;await assert.rejects(context.submitImageCompose(form),/online HTTPS/);

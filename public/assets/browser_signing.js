@@ -1146,7 +1146,11 @@
     let result;
     if (fields.imageFile) {
       const data = new FormData();
-      Object.entries(payload).forEach(([key, value]) => data.append(key, value));
+      Object.entries(payload).forEach(([key, value]) => {
+        // Multipart string fields normalize LF to CRLF. Preserve signed bytes exactly.
+        if (key === "canonical_record") data.append("canonical_record_base64", btoa(Array.from(new TextEncoder().encode(value), b => String.fromCharCode(b)).join("")));
+        else data.append(key, value);
+      });
       data.append("image", fields.imageFile);
       const response = await fetch("/api/create_prepared_post", { method: "POST", credentials: "same-origin", body: data });
       result = { text: await response.text(), serverTiming: {} };

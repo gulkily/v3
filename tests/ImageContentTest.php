@@ -115,6 +115,42 @@ final class ImageContentTest
         }
     }
 
+    public function testUploadCapacityAndUnsafeArchivesFailWithoutReplacingData(): void
+    {
+        $base = sys_get_temp_dir() . '/forum-image-limits-' . bin2hex(random_bytes(6));
+        mkdir($base . '/images', 0700, true);
+        try {
+            $source = $base . '/source.png';
+            file_put_contents($source, str_repeat('x', ImageReference::MAX_BYTES + 1));
+            $this->reject(fn () => ImageStore::inspect($source, 'Too large'));
+            file_put_contents($source, self::png());
+            $ref = ImageStore::inspect($source, 'Pixel');
+            for ($i = 0; $i < ImageStore::MAX_OBJECTS; $i++) {
+                $bytes = self::png() . pack('N', $i);
+                file_put_contents($base . '/images/' . hash('sha256', $bytes) . '.png', $bytes);
+            }
+            $store = new ImageStore($base . '/repo', $base . '/images');
+            $this->reject(fn () => $store->put($source, $ref));
+            assertSame(false, is_file($base . '/images/' . ImageReference::filename($ref)));
+            $restore = new \ForumRewrite\Images\ImageRestore();
+            foreach (['../escape.png', 'objects/' . str_repeat('a', 64) . '.png'] as $index => $name) {
+                // Construct a valid-checksum header with traversal or a symlink type.
+                $header = str_repeat("\0", 512);
+                $header = substr_replace($header, $name, 0, strlen($name));
+                $header = substr_replace($header, "00000000001\0", 124, 12);
+                $header[156] = $index === 0 ? '0' : '2';
+                $header = substr_replace($header, str_repeat(' ', 8), 148, 8);
+                $sum = array_sum(unpack('C*', $header));
+                $header = substr_replace($header, sprintf("%06o\0 ", $sum), 148, 8);
+                $archive = $base . '/unsafe-' . $index . '.tar';
+                file_put_contents($archive, $header . 'x' . str_repeat("\0", 511 + 1024));
+                $this->reject(fn () => $restore->run($archive, $base . '/repo', $base . '/cache/db.sqlite3', $base . '/restored'));
+                assertSame(false, is_dir($base . '/restored'));
+            }
+            assertSame(false, is_file($base . '/escape.png'));
+        } finally { \ForumRewrite\Images\ImageBackup::removeTree($base); }
+    }
+
     private function reject(callable $action): void
     {
         try { $action(); } catch (RuntimeException $e) { return; }

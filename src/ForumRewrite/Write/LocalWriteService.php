@@ -96,7 +96,7 @@ class LocalWriteService
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
-            if (str_contains($body, ImageReference::PREFIX)) {
+            if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
                 throw new RuntimeException('Image attachments require signed publication by an approved member.');
             }
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
@@ -156,7 +156,7 @@ class LocalWriteService
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
-            if (str_contains($body, ImageReference::PREFIX)) {
+            if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
                 throw new RuntimeException('Image attachments require signed publication by an approved member.');
             }
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));

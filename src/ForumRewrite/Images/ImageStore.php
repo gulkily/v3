@@ -36,6 +36,7 @@ final class ImageStore
 
     public static function inspect(string $path, string $description): array
     {
+        clearstatcache(true, $path);
         if (is_link($path) || !is_file($path) || filesize($path) > ImageReference::MAX_BYTES) {
             throw new RuntimeException('Image must be a regular JPEG/PNG of at most 5 MiB.');
         }
