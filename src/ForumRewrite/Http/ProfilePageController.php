@@ -73,7 +73,8 @@ final class ProfilePageController
             $profiles
         ));
         $viewerProfile = ($this->resolveViewerProfile)();
-        $canPrivateMessage = $viewerProfile !== null
+        $canPrivateMessage = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)
+            && $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && $approvedProfiles !== []
             && (string) ($viewerProfile['username_token'] ?? '') !== ''

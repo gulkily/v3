@@ -322,7 +322,8 @@ final class TemplateRenderer
             ));
         }
 
-        if ($viewerProfile !== null
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)
+            && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
             $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'viewer' => $viewerProfile['username_token'] ?? ''];

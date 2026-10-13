@@ -151,6 +151,19 @@ final class Application
         $this->ensureReadModel();
         $this->observeVisitorPageRequest($method, $path);
 
+        // Gate the whole namespace before any messaging controller opens private storage.
+        $messagingApi = $path === '/api/private_messages' || str_starts_with($path, '/api/private_messages/');
+        $messagingPage = $path === '/messages' || str_starts_with($path, '/messages/');
+        if (($messagingApi || $messagingPage) && !$this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) {
+            $message = 'Private messaging is disabled on this server. Reload after it is re-enabled to resume.';
+            if ($messagingApi) {
+                $this->sendJson(['status' => 'error', 'code' => 'messaging_disabled', 'error' => $message], 403, $this->routeServices()->noStoreHeaders());
+            } else {
+                $this->sendHtml($this->renderMessagePage('Messaging unavailable', 'Messaging unavailable', $message, 'messages'), 403, $this->routeServices()->noStoreHeaders());
+            }
+            return;
+        }
+
         if ($this->approvedMembersOnlyEnabled() && $this->membersOnlyLobbyRedirect($method, $path, $query)) {
             $this->logLobbyGateDiagnostics('lobby_redirect', $method, $path);
             $this->sendRedirect('/lobby/', 'Entering lobby.', statusCode: 303, activeSection: 'account');
@@ -996,7 +1009,8 @@ final class Application
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
-        $canPrivateMessage = $viewerProfile !== null
+        $canPrivateMessage = $this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)
+            && $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) === 1
             && (string) ($viewerProfile['username_token'] ?? '') !== ''
