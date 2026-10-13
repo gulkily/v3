@@ -61,3 +61,20 @@ Supersedes the prior Step 2 report’s online thread-only scope assessment. The 
 ### Uncertain assessments
 - The one-page limit and eight stages with six mandatory fields are in tension; compressed the plan to 797 words while preserving required verification and recovery detail. Literal rendered pagination is not guaranteed. Clarify the intended length metric or allow compact multi-page plans when all mandatory fields require it.
 - One-hour stage estimates rely on reuse observed in the browser signer, existing writers, and import companion handling. Require reassessment before implementation if verification/key-resolution work exceeds these estimates.
+
+## 2026-10-13T23:55:30Z · Step 4 · Diagnostic report
+
+### Necessary/useful instructions
+- `step4_implementation_do.md`, "Stage Boundary Protocol": eight stage commits include their corresponding summary updates, making signature persistence, verification, evidence, lifecycle, and recovery separately reviewable. Retain the stage boundary rule.
+- `step4_implementation_after.md`, "Confirm the Contract": real Chrome checks exposed a malformed raw-source header and activity status hidden behind the commit-manifest branch; both were corrected before handoff. Retain normal-flow/browser verification.
+- `RAILSPIKE.md`, "Planning Artifacts": the initial planning-only commit preserved approved scope and excluded the separately requested todo edit; all four plan links now resolve. Retain the organization boundary.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Production deployment and documentation-only runtime exceptions do not apply to the approved local implementation/testing scope.
+
+### Uncertain assessments
+- The approved globally-green suite release condition cannot be certified: 1,121 of 1,130 tests pass, with nine failures reproduced on the pre-implementation baseline (two require the same local private configuration). The implementation summary explicitly preserves this unmet release gate. Clarify how pre-existing failures should be handled without silently expanding a feature into unrelated maintenance.
+- Stage time estimates depended on existing infrastructure; broad integration still required dedicated browser fixtures and failure-injection coverage. Retain the requirement to record actual verification rather than treating estimates as evidence of completion.
