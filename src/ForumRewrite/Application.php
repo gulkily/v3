@@ -313,6 +313,16 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_retraction') {
+            $this->writePostAndIdentityApiController()->prepareRetraction($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_prepared_retraction') {
+            $this->writePostAndIdentityApiController()->createPreparedRetraction($method, $query);
+            return;
+        }
+
         if ($path === '/api/create_identity') {
             $this->writePostAndIdentityApiController()->createIdentity($method, $query);
             return;
@@ -1788,7 +1798,7 @@ final class Application
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
-            '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
+            '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',

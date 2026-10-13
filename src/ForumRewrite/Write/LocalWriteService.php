@@ -12,6 +12,7 @@ use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
+use ForumRewrite\Canonical\PostRetractionRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadSubjectRecordParser;
@@ -486,6 +487,219 @@ class LocalWriteService
         }
 
         return $authorIdentityId;
+    }
+
+    /**
+     * Prepares the canonical retraction record for the post's author to sign. A retraction
+     * that already exists is not re-signed; its derived-state refresh is retried instead.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareRetraction(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $totalStartedAt = hrtime(true);
+            $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+            $post = $this->requireRetractablePost($postId, $authorIdentityId);
+            $threadId = $post->threadId ?? $post->postId;
+            $recordPath = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
+
+            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
+            }
+
+            $createdAt = $this->canonicalTimestampNow();
+            $contents = 'Record-ID: ' . PostRetractionRecordParser::RECORD_ID_PREFIX . $postId . "\n"
+                . "Created-At: {$createdAt}\n"
+                . "Post-ID: {$postId}\n"
+                . "Operation: retract\n"
+                . "Author-Identity-ID: {$authorIdentityId}\n"
+                . "\n";
+            (new PostRetractionRecordParser())->parse($contents);
+
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'retraction',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'author_identity_id' => $authorIdentityId,
+                'created_at' => $createdAt,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+                'already_retracted' => false,
+                'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+            ]);
+        });
+    }
+
+    /**
+     * Verifies the author's detached signature, commits the tombstone, and refreshes derived
+     * state. The result's `retraction_status` is `complete`, or `partial` with the failed step
+     * when the commit succeeded but a refresh did not; a repeat call retries the refresh.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedRetraction(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+
+            if (($prepared['kind'] ?? '') !== 'retraction') {
+                throw new RuntimeException('Prepared post is not a retraction.');
+            }
+            if (strtotime((string) $prepared['expires_at']) < time()) {
+                throw new RuntimeException('Prepared post has expired.');
+            }
+
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $authorIdentityId = $this->requireOpenPgpIdentityId(
+                $this->requirePreparedMatch($input, $prepared, 'author_identity_id'),
+                'author_identity_id'
+            );
+
+            $record = (new PostRetractionRecordParser())->parse($canonicalRecord);
+            if ($record->postId !== $postId
+                || $record->authorIdentityId !== $authorIdentityId
+                || CanonicalPathResolver::postRetraction($record->recordId) !== $recordPath
+            ) {
+                throw new RuntimeException('Prepared retraction canonical record does not match prepared metadata.');
+            }
+
+            $post = $this->requireRetractablePost($postId, $authorIdentityId);
+            $threadId = $post->threadId ?? $post->postId;
+            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                $this->deletePreparedPost($prepareToken);
+
+                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
+            }
+
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $phaseStartedAt = hrtime(true);
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $commitResult = $this->commitCanonicalWrite(
+                [$recordPath, $recordPath . '.asc'],
+                'Retract post ' . $postId . ' by ' . $authorIdentityId
+            );
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+            $this->deletePreparedPost($prepareToken);
+
+            $failedStep = null;
+            try {
+                $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($commitSha));
+            } catch (RuntimeException) {
+                $failedStep = 'read_model_refresh';
+            }
+            try {
+                $this->invalidateRetractedPostArtifacts($threadId, $postId);
+            } catch (\Throwable) {
+                $failedStep ??= 'artifact_invalidate';
+            }
+
+            return $this->retractionResult($postId, $threadId, $recordPath, $failedStep, $timings, hrtime(true) - $totalStartedAt, false, $commitSha);
+        });
+    }
+
+    private function requireRetractablePost(string $postId, string $authorIdentityId): PostRecord
+    {
+        $post = null;
+        foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                $post = $this->canonicalRepository->loadPost($candidate);
+                break;
+            }
+        }
+        if ($post === null) {
+            throw new RuntimeException('Post to retract was not found.');
+        }
+        if ($post->authorIdentityId === null || $post->authorIdentityId !== $authorIdentityId) {
+            throw new RuntimeException('Only the post author can retract this post.');
+        }
+        if (array_intersect($post->boardTags, ['identity', 'approval', 'invitation']) !== []) {
+            throw new RuntimeException('Identity, approval, and invitation records cannot be retracted.');
+        }
+
+        return $post;
+    }
+
+    private function invalidateRetractedPostArtifacts(string $threadId, string $postId): void
+    {
+        if ($threadId === $postId) {
+            $this->invalidator()->invalidateBoardThread($threadId);
+
+            return;
+        }
+        $this->invalidator()->invalidateReply($threadId, $postId);
+    }
+
+    /**
+     * When the retraction was already committed and derived state is still stale, the refresh
+     * is retried here so repeating the request recovers a partial retraction.
+     *
+     * @param array<string, float> $timings
+     * @return array<string, mixed>
+     */
+    private function retractionResult(
+        string $postId,
+        string $threadId,
+        string $recordPath,
+        ?string $failedStep,
+        array $timings,
+        float|int $elapsedNanoseconds,
+        bool $alreadyRetracted,
+        ?string $commitSha = null,
+    ): array {
+        if ($alreadyRetracted && $this->staleMarker()->exists()) {
+            $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'));
+            try {
+                $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($head));
+            } catch (RuntimeException) {
+                $failedStep = 'read_model_refresh';
+            }
+        }
+
+        $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
+
+        return [
+            'status' => 'ok',
+            'retraction_status' => $failedStep === null ? 'complete' : 'partial',
+            'failed_step' => $failedStep,
+            'already_retracted' => $alreadyRetracted,
+            'post_id' => $postId,
+            'thread_id' => $threadId,
+            'record_path' => $recordPath,
+            'signature_path' => $recordPath . '.asc',
+            'commit_sha' => $commitSha,
+            'timings' => $timings,
+        ];
     }
 
     /**

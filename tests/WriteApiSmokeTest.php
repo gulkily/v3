@@ -2185,6 +2185,149 @@ NODE;
         assertStringContains('https://example.test/cypher-night', $threadPage);
     }
 
+    public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $author = $this->createAuthoredThread($application, 'retract-author', 'Retraction marker body');
+        $other = $this->linkSigningIdentity($application, 'retract-other');
+
+        $_POST = ['author_identity_id' => $other['identity_id'], 'post_id' => $author['thread_id']];
+        $rejected = json_decode($this->renderMethod($application, 'POST', '/api/prepare_retraction'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+        assertSame('error', $rejected['status']);
+        assertStringContains('Only the post author can retract this post.', $rejected['error']);
+        assertSame(false, is_dir($repositoryRoot . '/records/post-retractions'));
+
+        $prepared = $this->prepareRetractionRequest($application, $author['identity_id'], $author['thread_id']);
+        assertSame('ok', $prepared['status']);
+        assertSame(false, $prepared['already_retracted']);
+        $postFields = [
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+        ];
+        $_POST = $postFields + ['detached_signature' => 'invalid detached signature'];
+        $invalid = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+        assertSame('error', $invalid['status']);
+        assertStringContains('Detached signature verification failed:', $invalid['error']);
+        assertSame(false, is_file($repositoryRoot . '/' . $prepared['record_path']));
+
+        $_POST = $postFields + ['detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+
+        assertSame('ok', $finalized['status']);
+        assertSame('complete', $finalized['retraction_status']);
+        assertTrue(is_file($repositoryRoot . '/' . $prepared['record_path']));
+        assertTrue(is_file($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
+        assertSame('Retract post ' . $author['thread_id'] . ' by ' . $author['identity_id'], $this->gitOutput($repositoryRoot, 'log -1 --format=%s'));
+        $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
+        assertSame(false, str_contains($threadPage, 'Retraction marker body'));
+        $pdo = new PDO('sqlite:' . $databasePath);
+        assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id = '" . $author['thread_id'] . "'")->fetchColumn());
+
+        $repeat = $this->prepareRetractionRequest($application, $author['identity_id'], $author['thread_id']);
+        assertSame(true, $repeat['already_retracted']);
+        assertSame('complete', $repeat['retraction_status']);
+    }
+
+    public function testRetractionRefreshFailureReportsPartialAndRetryRecovers(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $author = $this->createAuthoredThread($application, 'retract-partial', 'Partial marker body');
+
+        $service = new class($repositoryRoot, $databasePath, $artifactRoot, new CanonicalRecordRepository($repositoryRoot)) extends LocalWriteService {
+            public bool $failRefresh = true;
+
+            protected function rebuildReadModel(): array
+            {
+                if ($this->failRefresh) {
+                    throw new RuntimeException('simulated refresh failure');
+                }
+
+                return parent::rebuildReadModel();
+            }
+        };
+
+        $prepared = $service->prepareRetraction(['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']]);
+        $partial = $service->finalizePreparedRetraction([
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ]);
+
+        assertSame('partial', $partial['retraction_status']);
+        assertSame('read_model_refresh', $partial['failed_step']);
+        assertTrue(is_file($repositoryRoot . '/' . $prepared['record_path']));
+        assertTrue((new \ForumRewrite\ReadModel\ReadModelStaleMarker($databasePath))->exists());
+
+        $service->failRefresh = false;
+        $retried = $service->prepareRetraction(['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']]);
+        assertSame(true, $retried['already_retracted']);
+        assertSame('complete', $retried['retraction_status']);
+        assertSame(false, (new \ForumRewrite\ReadModel\ReadModelStaleMarker($databasePath))->exists());
+    }
+
+    /**
+     * @return array{identity_id:string,home:string,public_key:string}
+     */
+    private function linkSigningIdentity(Application $application, string $username): array
+    {
+        $key = $this->createSigningKey($username);
+        $_POST = ['public_key' => $key['public_key']];
+        $response = $this->renderMethod($application, 'POST', '/api/link_identity');
+        $_POST = [];
+
+        return $key + ['identity_id' => $this->extractValue($response, 'identity_id')];
+    }
+
+    /**
+     * @return array{identity_id:string,home:string,public_key:string,thread_id:string}
+     */
+    private function createAuthoredThread(Application $application, string $username, string $body): array
+    {
+        $key = $this->linkSigningIdentity($application, $username);
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=general&subject=' . rawurlencode('Subject ' . $username)
+            . '&body=' . rawurlencode($body) . '&author_identity_id=' . rawurlencode($key['identity_id'])
+        ), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [
+            'prepare_token' => $prepared['prepare_token'],
+            'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'],
+            'author_identity_id' => $key['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record']),
+        ];
+        $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_post'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+        assertSame('ok', $finalized['status']);
+
+        return $key + ['thread_id' => (string) $prepared['thread_id']];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function prepareRetractionRequest(Application $application, string $identityId, string $postId): array
+    {
+        $_POST = ['author_identity_id' => $identityId, 'post_id' => $postId];
+        $response = json_decode($this->renderMethod($application, 'POST', '/api/prepare_retraction'), true, 512, JSON_THROW_ON_ERROR);
+        $_POST = [];
+
+        return $response;
+    }
+
     public function testQdbQuoteApiAssignsSequentialQuoteNumbersAcrossDigitBoundary(): void
     {
         putenv('FORUM_SITE_ID=qdb');
@@ -5291,6 +5434,7 @@ NODE;
     {
         $recordPath = $home . '/approval-record.txt';
         $signaturePath = $recordPath . '.asc';
+        @unlink($signaturePath);
         file_put_contents($recordPath, $canonicalRecord);
         $this->runCommand(
             $home,

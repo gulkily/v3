@@ -215,6 +215,50 @@ final class WritePostAndIdentityApiController
         }
     }
 
+    /** @param array<string, mixed> $query */
+    public function prepareRetraction(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->prepareRetraction($input));
+    }
+
+    /** @param array<string, mixed> $query */
+    public function createPreparedRetraction(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->finalizePreparedRetraction($input));
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     * @param callable(array<string, mixed>): array<string, mixed> $write
+     */
+    private function handleWrite(string $method, array $query, callable $write): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->routeServices->requestData($query);
+        $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
+
+        try {
+            $result = $write($input);
+            $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->routeServices->serverTimingHeaders($result);
+            unset($result['timings']);
+            $this->routeServices->sendJson($result, 200, $headers);
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
+            );
+        }
+    }
+
     /**
      * @param array<string, mixed> $query
      */

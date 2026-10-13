@@ -33,3 +33,19 @@ Debug mode: enabled
   - Deviation from the plan: no dedicated incremental retraction path was added. Stage 3 will refresh derived state through the existing full-rebuild path (`refreshDerivedStateAfterCommit`); an incremental path can be added later if rebuild cost matters.
   - Search and feed filtering depend on the same `posts`/`threads` rows, so they are covered here; raw-record and static-artifact exposure is Stage 4.
   - Because the authority tags are exempt, Stage 3 must reject retraction requests for those posts rather than record a no-op tombstone.
+
+## Stage 3 - Signed retraction write path
+- Changes:
+  - `LocalWriteService::prepareRetraction(array $input): array` and `finalizePreparedRetraction(array $input): array`, following the prepare/finalize approval pattern. Authority is the post's own `Author-Identity-ID`, checked at prepare and again at finalize, plus detached-signature verification against that identity's public key.
+  - Identity, approval, and invitation posts are refused, matching the Stage 2 index-time exemption.
+  - Finalize writes the record and `.asc`, commits `Retract post <id> by <identity>`, refreshes the read model through the existing full-rebuild path, and invalidates the thread/reply static artifacts. Result carries `retraction_status` (`complete` or `partial`) and `failed_step`.
+  - Retry: when the record already exists, prepare returns `already_retracted` and re-runs the refresh if the stale marker is set, so a partial retraction recovers without re-signing.
+  - Routes `/api/prepare_retraction` and `/api/create_prepared_retraction` (POST) via `WritePostAndIdentityApiController`, registered in `Application`'s route list.
+- Verification:
+  - New `WriteApiSmokeTest` tests with real gpg keys: author success (record, `.asc`, commit message, thread page and read-model body suppressed, repeat reports `already_retracted`); non-author rejected with no file written; invalid signature rejected with the prepared token retained; forced refresh failure reports `partial`, the stale marker is set, and a retry reports `complete` and clears it.
+  - Test helper `signCanonicalRecord` now removes a stale `.asc` so one key home can sign twice.
+  - Full `php tests/run.php`: 1115 run, 9 failed, all long-standing and unchanged. An earlier full run during this stage was invalidated because PHP was uninstalled from the host mid-run; it was rerun after PHP was restored.
+- Notes:
+  - Refusal of identity/approval/invitation posts is enforced in code but has no dedicated test yet; Stage 7's end-to-end test should cover it.
+  - The retraction record's `Created-At` is server time at prepare, and the signature covers the whole canonical record, so a stale prepared token (10-minute expiry) cannot be replayed with a different record.
+  - Static artifact invalidation here covers the thread/reply pages only; the wider audit (raw record route, exports, search/feeds) is Stage 4.
