@@ -39,8 +39,12 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta">Use a strong, unique passphrase and keep it somewhere safe. A forgotten passphrase cannot be recovered.</p>
         <label>Backup passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
         <label>Confirm passphrase <input type="password" data-backup-confirm autocomplete="new-password"></label>
-        <div class="button-row"><button type="button" data-backup-download="text">Download text backup</button></div>
-        <label>Restore from backup <input type="file" data-backup-file accept=".txt,text/plain"></label>
+        <div class="button-row">
+          <button type="button" data-backup-download="text">Download text backup</button>
+          <button type="button" data-backup-download="png">Download Starfield PNG</button>
+        </div>
+        <p class="meta">Keep the original PNG file. Screenshots, edits, and image conversion can destroy the backup. Text is also available.</p>
+        <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
         <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
         <button type="button" data-backup-restore>Restore backup</button>
         <p class="meta" data-backup-status role="status" aria-live="polite"></p>

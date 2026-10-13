@@ -1,5 +1,12 @@
 (function () {
   'use strict';
+  function backupText(bytes) {
+    const png = bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
+    if (png) bytes = window.ForumStarfield.decodeStarfield(bytes);
+    if (bytes.length > window.ForumKeyBackup.MAX_BYTES) throw new Error('This backup file is too large.');
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+    catch (_) { throw new Error('Use an original backup text file or Starfield PNG. Screenshots and converted images cannot restore your key.'); }
+  }
   function bind(root, identity) {
     const area = root.querySelector('[data-key-backup]');
     if (!area || area.dataset.bound) return;
@@ -32,26 +39,28 @@
       if (passphrase !== find('[data-backup-confirm]').value) throw new Error('The passphrases do not match.');
       const backup = await window.ForumKeyBackup.createBackup(original, passphrase);
       if (backup.fingerprint !== String(before.forum_pki_fingerprint || '').toLowerCase()) throw new Error('The browser key and account fingerprint do not match.');
-      const blob = new Blob([backup.text], { type: 'text/plain;charset=utf-8' });
-      const check = await window.ForumKeyBackup.readBackup(await blob.text(), passphrase);
+      const isPng = button.dataset.backupDownload === 'png';
+      const content = isPng ? window.ForumStarfield.encodeStarfield(new TextEncoder().encode(backup.text)) : backup.text;
+      const blob = new Blob([content], { type: isPng ? 'image/png' : 'text/plain;charset=utf-8' });
+      const check = await window.ForumKeyBackup.readBackup(backupText(new Uint8Array(await blob.arrayBuffer())), passphrase);
       if (check.privateKeyText !== original || check.fingerprint !== backup.fingerprint) throw new Error('Backup verification failed.');
       if (JSON.stringify(before) !== JSON.stringify(identity.snapshot())) throw new Error('The browser identity changed. Try backing up again.');
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = 'key-backup-' + backup.fingerprint + '.txt';
+      anchor.download = 'key-backup-' + backup.fingerprint + (isPng ? '.png' : '.txt');
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30000);
-      status.textContent = 'Verified text backup download started. Keep the file and passphrase somewhere safe.';
+      status.textContent = 'Verified ' + (isPng ? 'PNG' : 'text') + ' backup download started. Keep the original file and passphrase somewhere safe.';
     })));
     find('[data-backup-restore]').addEventListener('click', () => run(async () => {
       const file = find('[data-backup-file]').files[0];
       if (!file) throw new Error('Choose a backup file first.');
-      if (file.size > window.ForumKeyBackup.MAX_BYTES) throw new Error('This backup file is too large.');
+      if (file.size > window.ForumStarfield.MAX_FILE_BYTES) throw new Error('This backup file is too large.');
       const before = JSON.stringify(identity.snapshot());
-      const backup = await window.ForumKeyBackup.readBackup(await file.text(), find('[data-restore-password]').value);
+      const backup = await window.ForumKeyBackup.readBackup(backupText(new Uint8Array(await file.arrayBuffer())), find('[data-restore-password]').value);
       if (before !== JSON.stringify(identity.snapshot())) throw new Error('The browser identity changed. Try restoring again.');
       await identity.restore(backup.privateKeyText, backup.fingerprint);
       find('[data-backup-file]').value = '';

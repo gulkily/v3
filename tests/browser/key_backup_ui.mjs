@@ -8,6 +8,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium, firefox } from 'playwright-core';
+const format=process.env.FORMAT||'text';
 const project=resolve(new URL('../..',import.meta.url).pathname);
 runInThisContext(readFileSync(join(project,'public/assets/openpgp.min.js'),'utf8'));
 const pgp=globalThis.openpgp;
@@ -41,7 +42,7 @@ try {
   await page.locator('[data-backup-password]').fill(passphrase);
   await page.locator('[data-backup-confirm]').fill(passphrase);
   assert.equal(await page.locator('[data-backup-password]').inputValue(),passphrase);
-  const pending=page.waitForEvent('download'); pending.catch(()=>{}); await page.locator('[data-backup-download="text"]').click();
+  const pending=page.waitForEvent('download'); pending.catch(()=>{}); await page.locator('[data-backup-download="'+format+'"]').click();
   await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent !== 'Working locally…');
   assert.match(await page.locator('[data-backup-status]').textContent(),/download started/,JSON.stringify(errors));
   const download=await pending, backup=await readFile(await download.path());
@@ -51,7 +52,23 @@ try {
   fresh.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   restored.on('pageerror',e=>errors.push(e.message));
   await restored.goto(base+'/account/key/');
-  const upload=()=>restored.locator('[data-backup-file]').setInputFiles({name:'backup.txt',mimeType:'text/plain',buffer:backup});
+  const upload=()=>restored.locator('[data-backup-file]').setInputFiles({name:format==='png'?'backup.png':'backup.txt',mimeType:format==='png'?'image/png':'text/plain',buffer:backup});
+  if(format==='png'){
+    const jpeg=await page.evaluate(async base64=>{
+      const img=new Image();img.src='data:image/png;base64,'+base64;await img.decode();
+      const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+      canvas.getContext('2d').drawImage(img,0,0);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg'));
+      return Array.from(new Uint8Array(await blob.arrayBuffer()));
+    },backup.toString('base64'));
+    const damaged=Buffer.from(backup);damaged[100]^=1;
+    for(const bad of [{name:'converted.jpg',mimeType:'image/jpeg',buffer:Buffer.from(jpeg)},{name:'damaged.png',mimeType:'image/png',buffer:damaged}]){
+      await restored.locator('[data-backup-file]').setInputFiles(bad);
+      await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
+      await restored.waitForFunction(()=>/original/i.test(document.querySelector('[data-backup-status]').textContent));
+      assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),null);
+    }
+  }
   await upload(); await restored.locator('[data-restore-password]').fill('wrong'); await restored.locator('[data-backup-restore]').click();
   await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Could not unlock'));
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),null);
@@ -72,6 +89,6 @@ try {
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_fingerprint').toLowerCase()),fingerprint);
   assert(requests.every(r=>!r.includes(passphrase)&&!r.includes('PRIVATE KEY')&&!r.includes(encodeURIComponent(passphrase))));
   assert.deepEqual(errors,[]);
-  console.log(engine+': normal Account Key text download, wrong password, fresh-profile restore, byte equality and request privacy passed');
+  console.log(engine+': normal Account Key '+format+' download, wrong password, fresh-profile restore, byte equality and request privacy passed');
 } catch(error) { console.error('Fixture:',root); throw error; }
 finally { if(browser)await browser.close(); server.kill(); }

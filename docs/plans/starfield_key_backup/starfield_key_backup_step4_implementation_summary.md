@@ -21,3 +21,8 @@ Debug mode: disabled
 - Changes: canvas-free bounded PNG/gzip codec with deterministic background, shuffled nonoverlapping cells and whole-file canonical validation.
 - Verification: `node tests/browser/starfield.cjs` passed exact SHA256 matches to independent Python vectors, Python cross-decoding of JS output, empty/all-byte/capacity/max-128-KiB round trips, corruption/truncation/oversize rejection. `node tests/browser/starfield_browsers.mjs` passed exact PNG Blob hashes and restores in Chromium and Firefox.
 - Notes: original PNG is required; lossless re-encoding is deliberately rejected as noncanonical. Container checks and bounded stored-block parsing avoid canvas color transforms and decompression bombs.
+
+## Stage 5 - PNG download and unified restore
+- Changes: added Starfield download, actual-Blob decode/decrypt verification, content-based file detection and original-image guidance; text stays independently available.
+- Verification: `FORMAT=png node tests/browser/key_backup_ui.mjs` and the default text run passed real downloads and fresh-profile exact-key restoration. PNG run also converted the actual PNG to JPEG and rejected it, rejected a corrupted PNG, and checked unchanged storage; PHP lint/JS syntax passed.
+- Notes: no canvas is used in production; the browser test uses canvas solely to simulate destructive JPEG conversion.
