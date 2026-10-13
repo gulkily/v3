@@ -435,6 +435,7 @@ PHP);
     private function withEnvironment(array $values, callable $callback): void
     {
         $keys = [
+            FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
