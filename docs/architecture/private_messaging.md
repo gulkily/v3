@@ -250,7 +250,7 @@ The latest compact-message implementation record reports **62 focused tests pass
 - [Core encrypted messaging implementation](../plans/private_messaging/private_messaging_step4_implementation_summary.md)
 - [Conversation list implementation](../plans/private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md)
 - [Chat refinement implementation](../plans/private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md)
-- [Older history implementation](../plans/private_message_history_step4_implementation_summary.md)
+- [Older history implementation](../plans/private_message_history/private_message_history_step4_implementation_summary.md)
 - [Unread state implementation](../plans/private_message_unread/private_message_unread_step4_implementation_summary.md)
 - [Compact unavailable messages implementation](../plans/private_message_unavailable/private_message_unavailable_step4_implementation_summary.md)
 - [Usability master checklist](../plans/private_messaging_usability_master_checklist.md)
