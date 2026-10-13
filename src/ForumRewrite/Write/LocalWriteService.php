@@ -843,6 +843,7 @@ class LocalWriteService
 
             $post = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($postId));
             $threadId = $post->threadId ?? $post->postId;
+            $signed = $this->signedReactionInput('post', $input, $postId, $tag, $authorIdentityId);
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             if ($this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId)) {
                 $state = $this->currentPostReactionState($postId);
@@ -865,11 +866,14 @@ class LocalWriteService
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
+            [$recordPath, $contents] = $signed ?? $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
             $this->writeFile($recordPath, $contents);
+            if ($signed !== null) {
+                $this->writeFile($recordPath . '.asc', $signed[2]);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Apply post tag ' . $tag . ' to ' . $postId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply post tag ' . $tag . ' to ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 

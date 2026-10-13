@@ -63,6 +63,41 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testSignedPostReactionsThroughApiPreserveModerationAndDuplicates(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('post-reaction-signer');
+        $cookies = $_COOKIE;
+        $post = $_POST;
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $this->seedApprovedIdentity($root, $identity);
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $_COOKIE = ['identity_hint' => $identity];
+            foreach (['root-001', 'reply-001'] as $target) {
+                foreach (['like', 'flag'] as $tag) {
+                    $id = 'post-reaction-' . $target . '-' . $tag;
+                    $created = gmdate('Y-m-d\TH:i:s\Z');
+                    $record = "Record-ID: {$id}\nCreated-At: {$created}\nPost-ID: {$target}\nOperation: add\nTags: {$tag}\nAuthor-Identity-ID: {$identity}\n\n";
+                    $_POST = ['post_id' => $target, 'tag' => $tag, 'canonical_record' => $record,
+                        'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
+                    $result = $this->renderMethod($app, 'POST', '/api/apply_post_tag');
+                    assertStringContains('wrote_record=yes', $result);
+                    assertSame($record, file_get_contents($root . '/records/post-reactions/' . $id . '.txt'));
+                    assertSame($_POST['detached_signature'], file_get_contents($root . '/records/post-reactions/' . $id . '.txt.asc'));
+                    if ($tag === 'flag') assertStringContains('approved_flag_count=1', $result);
+                    assertStringContains('wrote_record=no', $this->renderMethod($app, 'POST', '/api/apply_post_tag'));
+                }
+            }
+        } finally {
+            $_COOKIE = $cookies;
+            $_POST = $post;
+            $this->deleteTree($key['home']);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

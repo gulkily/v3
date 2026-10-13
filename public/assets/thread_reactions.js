@@ -711,7 +711,7 @@
       headers: {
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       },
-      body: new URLSearchParams({ post_id: postId, tag }).toString(),
+      body: new URLSearchParams({ post_id: postId, tag, ...await signedReactionFields("post", postId, tag) }).toString(),
     });
 
     const text = await response.text();
