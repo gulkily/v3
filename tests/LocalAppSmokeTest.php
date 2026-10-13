@@ -359,6 +359,14 @@ try {
     ob_start();
     $application->handle('GET', '/invites/');
     $invites = (string) ob_get_clean();
+    $qrScript = \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($argv[1] . '/public', '/assets/qrcode-generator.js');
+    $issueScript = \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($argv[1] . '/public', '/assets/invite_issuance.js');
+    if (!str_contains($invites, 'src="' . $qrScript . '"')
+        || strpos($invites, $qrScript) > strpos($invites, $issueScript)
+        || !str_contains($invites, 'data-role="invitation-qr" hidden')
+        || str_contains($board, $qrScript)) {
+        throw new RuntimeException('Invite QR assets/result were not wired exclusively to the invite page.');
+    }
     ob_start();
     $application->handle('GET', '/api/auth_status');
     $authStatus = (string) ob_get_clean();

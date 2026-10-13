@@ -62,6 +62,25 @@
     return signing;
   }
 
+  function renderInvitationQr(canvas, value) {
+    const qr = window.qrcode(0, "M");
+    qr.addData(value);
+    qr.make();
+    const modules = qr.getModuleCount();
+    const cell = 4;
+    const margin = 4;
+    canvas.width = canvas.height = (modules + margin * 2) * cell;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#000";
+    for (let row = 0; row < modules; row += 1) {
+      for (let col = 0; col < modules; col += 1) {
+        if (qr.isDark(row, col)) context.fillRect((col + margin) * cell, (row + margin) * cell, cell, cell);
+      }
+    }
+  }
+
   function validInvitationDestination(value) {
     const destination = String(value || "").trim();
     if (destination === "" || destination.length > 500 || !/^\/(?!\/)/.test(destination)
@@ -120,6 +139,8 @@
     const feedback = root.querySelector("[data-role=invitation-feedback]");
     const result = root.querySelector("[data-role=invitation-result]");
     const link = root.querySelector("[data-role=invitation-link]");
+    const qrResult = root.querySelector("[data-role=invitation-qr]");
+    const qrCanvas = root.querySelector("[data-role=invitation-qr-code]");
     const includeDestination = form.elements.include_destination;
     const destination = form.elements.destination;
     const destinationFields = form.querySelector("[data-role=invitation-destination-fields]");
@@ -184,6 +205,13 @@
         link.value = window.location.origin + "/lobby/#invite=" + token;
         result.hidden = false;
         setFeedback(feedback, "Invitation created.", "ok");
+        try {
+          renderInvitationQr(qrCanvas, link.value);
+          qrResult.hidden = false;
+        } catch (error) {
+          if (qrResult) qrResult.hidden = true;
+          setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead.", "ok");
+        }
       } catch (error) {
         setFeedback(feedback, error && error.message || "Unable to create invitation.", "error");
       }
