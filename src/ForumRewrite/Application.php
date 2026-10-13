@@ -549,13 +549,18 @@ final class Application
             return;
         }
 
+        if ($path === '/downloads/images.tar') {
+            $this->instancePageController()->downloadImageBackup($method, 'images', isset($query['revision']) ? (string) $query['revision'] : null);
+            return;
+        }
+
         if ($path === '/downloads/repository.tar.gz') {
-            $this->instancePageController()->downloadRepository($method, 'tar.gz');
+            $this->instancePageController()->downloadRepository($method, 'tar.gz', isset($query['revision']) ? (string) $query['revision'] : null);
             return;
         }
 
         if ($path === '/downloads/repository.zip') {
-            $this->instancePageController()->downloadRepository($method, 'zip');
+            $this->instancePageController()->downloadRepository($method, 'zip', isset($query['revision']) ? (string) $query['revision'] : null);
             return;
         }
 
@@ -1777,7 +1782,7 @@ final class Application
             '/tools/sqlite', '/tools/sqlite/',
             '/offline', '/offline/', '/offline/reader', '/offline/reader/',
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
-            '/downloads/repository.tar.gz', '/downloads/repository.zip',
+            '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',

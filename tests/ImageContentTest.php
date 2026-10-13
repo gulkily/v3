@@ -62,6 +62,42 @@ final class ImageContentTest
         }
     }
 
+    public function testBackupInventoriesAndRejectsMissingOrMismatchedPairs(): void
+    {
+        $base = sys_get_temp_dir() . '/forum-image-backup-' . bin2hex(random_bytes(6));
+        mkdir($base . '/repo/records/posts', 0700, true);
+        $archives = [];
+        try {
+            file_put_contents($base . '/pixel.png', self::png());
+            $ref = ImageStore::inspect($base . '/pixel.png', 'Pixel');
+            $store = new ImageStore($base . '/repo');
+            $store->put($base . '/pixel.png', $ref);
+            file_put_contents($base . '/repo/records/posts/pixel.txt', "Post-ID: pixel\nCreated-At: 2026-10-13T00:00:00Z\nBoard-Tags: general\n\n" . ImageReference::line($ref) . "\n");
+            $git = 'git -C ' . escapeshellarg($base . '/repo');
+            foreach (['init -q', 'config user.name Test', 'config user.email test@example.test', 'add .', 'commit -qm Initial'] as $command) {
+                exec($git . ' ' . $command . ' 2>&1', $output, $status);
+                assertSame(0, $status);
+            }
+            $backup = new \ForumRewrite\Images\ImageBackup($base . '/repo', $base . '/cache/index.sqlite3');
+            $head = $backup->revision();
+            $images = $backup->export('images', $head); $archives[] = $images['path'];
+            $repo = $backup->export('tar.gz', $head); $archives[] = $repo['path'];
+            assertSame($images['revision'], $repo['revision']);
+            $tar = new PharData($images['path']);
+            $manifest = json_decode($tar['manifest.json']->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            assertSame($head, $manifest['repository_head']);
+            assertSame(self::png(), $tar['objects/' . ImageReference::filename($ref)]->getContent());
+            assertSame(1, count($manifest['objects']));
+            $this->reject(fn () => $backup->export('images', str_repeat('0', 40)));
+            unlink($store->resolve($ref));
+            $this->reject(fn () => $backup->export('images', $head));
+            $this->reject(fn () => $backup->export('tar.gz', $head));
+        } finally {
+            foreach ($archives as $path) { @unlink($path); }
+            \ForumRewrite\Images\ImageBackup::removeTree($base);
+        }
+    }
+
     private function reject(callable $action): void
     {
         try { $action(); } catch (RuntimeException $e) { return; }
