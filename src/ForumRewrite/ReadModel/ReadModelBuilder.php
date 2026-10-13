@@ -306,6 +306,11 @@ final class ReadModelBuilder
             return $left->recordId <=> $right->recordId;
         });
 
+        $this->measure('resolve_thread_label_source_commits', fn () => $this->preloadSourceCommitShas(
+            array_map(static fn (ThreadLabelRecord $record): string => CanonicalPathResolver::threadLabel($record->recordId), $records),
+            'records/thread-labels',
+        ));
+
         $labelsByThread = [];
         $scoreByThread = [];
         $countedApprovedScoredTagsByThread = [];
@@ -1113,8 +1118,11 @@ final class ReadModelBuilder
         }
 
         $command = sprintf(
-            'git -C %s log --format=%%H --name-only -- %s 2>/dev/null',
+            'git -C %s log %s --format=%%H --name-only -- %s 2>/dev/null',
             escapeshellarg($this->repositoryRoot),
+            // Combined diffs include merge resolutions, but not paths unchanged
+            // from a parent. Preserve the established post-history behavior.
+            $pathspec === 'records/posts' ? '' : '-c',
             escapeshellarg($pathspec),
         );
         $output = [];
