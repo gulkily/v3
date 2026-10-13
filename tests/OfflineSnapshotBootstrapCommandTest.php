@@ -72,7 +72,7 @@ final class OfflineSnapshotBootstrapCommandTest
     {
         $command = 'FORUM_STATIC_HTML_ROOT=' . escapeshellarg($staticHtmlRoot)
             . ' FORUM_APPROVED_MEMBERS_ONLY=' . ($membersOnly ? 'true' : 'false')
-            . ' php ' . escapeshellarg(__DIR__ . '/../scripts/rebuild_read_model.php')
+            . ' ' . escapeshellarg(__DIR__ . '/../v3') . ' rebuild'
             . ' ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1')
             . ' ' . escapeshellarg($databasePath)
             . ' 2>&1';

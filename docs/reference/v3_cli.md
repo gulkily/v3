@@ -201,11 +201,31 @@ is unavailable, `./v3 tui` makes no change and directs the operator to:
 ```
 
 Rebuilds the SQLite read model from canonical records in the repository root.
-Reports source scanning, candidate construction and validation, lock wait, and
-promotion phases. During candidate construction, it emits read-model stages and
-bounded record-parsing progress checkpoints. It also prints source record
-counts (posts, identities, approval seeds) and resulting read-model table counts
-(posts, threads, profiles, activity).
+Reports source scanning, candidate construction and validation, lock wait,
+promotion, and offline snapshot readiness. Indexing reports parsing, history
+resolution, sorting/derivation, and writes separately, with elapsed milliseconds.
+A parsing count such as `210/210` means those files have been examined; it does
+not mean indexing or the rebuild is finished. Counters name their work unit
+(records, posts, threads, profiles, or history lines), include skipped records,
+and emit at most 100 intermediate checkpoints plus start/final boundaries per
+loop. Approval replay identifies each pass. Empty loops report `0/0`.
+
+Thread labels, post reactions, and signed feature-flag changes resolve source
+commits in a single history walk per nonempty family, rather than one Git
+invocation per record. Other long operations identify their start and outcome;
+blocking Git, storage, and lock operations do not emit a heartbeat or estimate
+remaining time. A failed operation reports `failed`, with existing errors and
+recovery guidance preserved. Missing Git history retains the existing nullable
+provenance/omitted-flag-activity behavior; a failed Git read may therefore be
+followed by successful completion of the containing fallback operation.
+
+Timings cover the named operation and may nest; do not sum them to calculate
+total rebuild duration. Repeated timing keys accumulate across approval passes
+or repeated history reads. The final `Elapsed` line measures the overall CLI
+run. Output also includes source counts (posts, identities, approval seeds) and
+resulting model counts (posts, threads, profiles, activity). Phase timings and
+query-count comparisons help locate remaining costs; production speed depends
+on repository history and storage.
 
 `diagnose` is read-only: it reports SQLite sidecars, the application rebuild
 lock, and Linux `/proc` file holders. If a stopped process left sidecars behind,
