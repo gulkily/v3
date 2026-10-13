@@ -73,3 +73,28 @@ Debug mode: enabled (inherited from approved Step 2).
 - Source: `docs/workflow/step3_development_plan_after.md`, “Verify <=1 page.” Markdown has no defined paper size or typography; the required contract, risks, and stage fields were kept concise, but physical page fit was not verified. Replace or supplement the page target with a defined word budget for reproducible checks.
 
 This step inspected source and existing test coverage but did not execute runtime tests. Only the Step 3 plan and this appended diagnostic report were written; implementation remains pending approval.
+
+## 2026-10-13T05:00:42Z — Step 4
+
+Debug mode: enabled (inherited from approved Step 3).
+
+### Necessary/useful instructions
+
+- Source: `docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate, and `RAILSPIKE.md`, Planning Artifacts. The first commit (`255f3f84`) contains approved plans, their preserved debug log, and an index entry; moved evidence links were repaired before implementation. The summary appears only in the subsequent stage commit. Retain these concrete ordering and content checks.
+- Source: `docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Stage 1 (`4952ac0e`) and Stage 2 (`f95cfed6`) each include their document changes and contemporaneous summary. Scoped staging excluded the existing `todo.txt` edits. Retain stage-scoped verification and commits.
+- Source: `docs/workflow/step4_implementation_do.md`, documentation-only verification, and `step4_implementation_after.md`, Completion Contract. Evidence checks prevented unsupported claims about approval, public-key publication timing, and session retention. Renderer/link checks supported a list-based matrix; 52 focused tests passed, six fixture-backed document requests returned 200, and 16 pinned evidence URLs returned 200. Retain proportional verification and the distinction between inspected code, executed tests, and production guarantees.
+- Source: `RAILSPIKE.md`, Completed-step report and Persistent debug log. Existing entries were preserved, debug state carried into the summary, and a single final report is appended after both stage commits. Retain the short linked handoff and explicit log-only final-commit allowance.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Source: `docs/workflow/step4_implementation_after.md`, scoped deployment/release/migration verification. This approved change modifies documentation only; production rollout, schema migration, and generated release checks are outside scope. The summary records why those checks are not applicable while retaining application-rendering and focused behavior checks needed for documentation claims. Retain the applicability qualifier.
+
+### Uncertain assessments
+
+- Source: `RAILSPIKE.md`, Key Rules, “Reprint the current step/phase instructions,” alongside the Step 4 phase chain. Three full phase reprints substantially lengthened the conversation. The observed cost is extra handoff text; this run does not establish whether the reprints improved adherence. Evaluate a concise linked acknowledgement in a separately authorized workflow comparison before changing the rule.
+
+Final verification confirmed three required commits before this log-only handoff commit, the approved four-file product scope, complete plan navigation, inherited debug state, and only the pre-existing `todo.txt` change remaining unstaged. No application source, tests, deployment settings, or Railspike instructions were changed; no merge, push, or deployment was performed.
