@@ -97,7 +97,7 @@ final class QuoteCardDisplayNumberTest
         assertStringNotContains('href="/threads/thread-20030613104735-qdb-42"', $board);
     }
 
-    public function testQuoteCardLinksToTheShortNumericPermalinkOnTopSearchAndRandom(): void
+    public function testQuoteCardLinksToTheShortNumericPermalinkOnTopLeetnessSearchAndRandom(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment();
         $this->writeImportedQuote($repositoryRoot, 'thread-20030613104735-qdb-42', 'The quoted body.');
@@ -106,6 +106,7 @@ final class QuoteCardDisplayNumberTest
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $top = $this->render($application, '/top');
+            $leetness = $this->render($application, '/leetness');
             $search = $this->render($application, '/search?search=quoted');
             $random = $this->render($application, '/random');
         } finally {
@@ -113,6 +114,7 @@ final class QuoteCardDisplayNumberTest
         }
 
         assertStringContains('href="/42">#42</a>', $top);
+        assertStringContains('href="/42">#42</a>', $leetness);
         assertStringContains('href="/42">#42</a>', $search);
         assertStringContains('href="/42">#42</a>', $random);
     }
@@ -375,6 +377,14 @@ final class QuoteCardDisplayNumberTest
             $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $repositoryRoot, $artifactRoot);
             $publisher->activate($publisher->build($databasePath));
             assertTrue(is_file($artifactRoot . '/current/qdb/quotes/42.html'));
+            $controller = new FrontController(dirname(__DIR__), $repositoryRoot, $databasePath,
+                $artifactRoot, dirname(__DIR__) . '/public');
+            foreach ([[], ['identity_hint' => 'unknown-viewer']] as $cookies) {
+                $quotePage = $this->renderFrontController($controller, '/42', $cookies);
+                assertSame(200, http_response_code());
+                assertStringContains('The quoted body.', $quotePage);
+                assertStringContains('class="quote-card-permalink" href="/42">#42</a>', $quotePage);
+            }
             putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
             $publisher->activate($publisher->build($databasePath));
             foreach (['latest.html', 'top.html', 'leetness.html', 'offline/snapshot.sqlite3'] as $path) {
@@ -391,9 +401,12 @@ final class QuoteCardDisplayNumberTest
                 assertStringContains('The quoted body.', $response);
                 assertStringNotContains('route-source: static-html', $response);
             }
-            $quotePage = $this->renderFrontController($controller, '/42');
-            assertSame(200, http_response_code());
-            assertStringContains('The quoted body.', $quotePage);
+            foreach ([[], ['identity_hint' => 'unknown-viewer']] as $cookies) {
+                $quotePage = $this->renderFrontController($controller, '/42', $cookies);
+                assertSame(200, http_response_code());
+                assertStringContains('The quoted body.', $quotePage);
+                assertStringNotContains('route-source: static-html', $quotePage);
+            }
             $this->renderFrontController($controller, '/999999');
             assertSame(404, http_response_code());
         } finally {
@@ -578,10 +591,10 @@ final class QuoteCardDisplayNumberTest
         return (string) ob_get_clean();
     }
 
-    private function renderFrontController(FrontController $controller, string $path): string
+    private function renderFrontController(FrontController $controller, string $path, array $cookies = []): string
     {
         ob_start();
-        $controller->handle('GET', $path);
+        $controller->handle('GET', $path, $cookies);
 
         return (string) ob_get_clean();
     }
