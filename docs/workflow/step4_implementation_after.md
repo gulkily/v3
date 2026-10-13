@@ -16,6 +16,6 @@ Run final Step 4 verification gates and prepare handoff.
 6. Confirm documentation is updated, including the finalized Step 4 implementation summary.
 
 ## Next
-Restore mode state using [Railspike Debug Mode](../../RAILSPIKE.md#railspike-debug-mode). If enabled, log and present the completed Step 4 diagnostic summary with its log link. Report once for Step 4, not per stage; save and commit final additions in a separate log-only handoff commit after the final stage, without amending completed commits.
+Restore mode state using [Railspike Debug Mode](../../RAILSPIKE.md#railspike-debug-mode). If enabled, save the full completed Step 4 diagnostic report and include only one short debug line linking to the saved log in the handoff. Report once for Step 4, not per stage; save and commit final additions in a separate log-only handoff commit after the final stage, without amending completed commits.
 
 Notify the user for review/handoff. If additional scope emerges, return to the appropriate earlier step instead of improvising within Step 4.

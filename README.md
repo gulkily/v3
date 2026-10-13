@@ -10,9 +10,9 @@ Use it with Claude Code, Codex, GitHub Copilot, or another agent that can read y
 
 [Website](https://gulkily.github.io/railspike/) · [RAILSPIKE.md](RAILSPIKE.md) · [Step files](docs/workflow/)
 
-## Why I built this
+## Why we built this
 
-I wanted plans that live in the repo, that I can edit in my own editor and come back to the next day, with explicit review points when the direction changes.
+We wanted plans that live in the repo, that we can edit in our own editor and come back to the next day, with explicit review points when the direction changes.
 
 So Railspike puts every plan in a Markdown file. You can read it in VS Code, Obsidian, vim, or a GitHub diff. You can edit it directly or ask the agent to change it. The instructions require the agent to stop until you type `Approved Step N`. These are instructions the agent follows, not a technical enforcement mechanism.
 
@@ -112,9 +112,15 @@ Turn it off with:
 
 New workflows default off. The agent records `Debug mode: enabled` or `Debug mode: disabled` below the current artifact’s navigation bar, carries it into later artifacts, and restores it after context loss. The latest explicit request wins; unresolved missing or conflicting state on resumption needs clarification. Historical artifacts remain snapshots.
 
-When enabled, each completed step’s handoff includes evidence-backed findings about useful and redundant instructions, plus a link to `{feature_name}_debug_log.md`. Reports are saved before presentation with UTC timestamps and step identifiers. Corrections append labeled revisions; unchanged reports are skipped. Phases and implementation stages do not produce separate reports. Disabling stops diagnostics and preserves the log.
+When enabled, full evidence-backed findings go in `{feature_name}_debug_log.md`. Each completed step’s handoff includes just one short debug line linking to the saved log, before approval where applicable. Findings, group headings, and empty-group markers stay in the file; diagnostic collection is not narrated in chat. Reports use UTC timestamps and step identifiers. Corrections append labeled revisions; unchanged reports reuse the existing log link without a new entry. Phases and implementation stages do not produce separate reports. Disabling stops diagnostics and debug links while preserving the log.
 
-Illustrative report format (use actual timestamps and observed step evidence):
+Illustrative conversation line (replace the path with the saved log's actual location):
+
+```markdown
+Debug log: [View findings](./docs/plans/{feature_name}/{feature_name}_debug_log.md).
+```
+
+Illustrative content inside the Markdown log (use actual timestamps and observed step evidence):
 
 ```text
 ## <UTC timestamp> — Step 1
@@ -127,6 +133,8 @@ Redundant/unnecessary instructions
 ```
 
 Findings must cite their instruction source and observable evidence. Inapplicable and uncertain findings belong in separate groups; an unused instruction is not necessarily redundant. Findings are advisory: approval gates still apply, and changing instructions requires separate authorization.
+
+Brief save-failure notices and necessary mode-state questions may appear in chat; full findings may appear when explicitly requested. Failed saves must be resolved before claiming a report was logged, without dumping unsaved diagnostics into chat. Ordinary task updates, blockers, approval requests, and instruction reprints are unaffected.
 
 The log stays uncommitted during planning and moves with the plans into the feature folder. Include it in the initial planning commit; later additions accompany authorized stage commits or a final log-only handoff commit. Never amend completed commits. See the [debug contract](./RAILSPIKE.md#railspike-debug-mode) for recovery and commit rules, and the [failure guide](./docs/failure-modes.md#debug-state-or-logging-is-unclear) if state or saving fails.
 
