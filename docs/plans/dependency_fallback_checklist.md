@@ -4,6 +4,8 @@ Future dependency checks should explain what is missing, help users recover, and
 
 Unchecked items represent future work, including improvements to existing error messages.
 
+Recent Ubuntu 22.04 findings: [recovery fixes and follow-up checks](local_server_dependency_recovery_checklist.md). Process follow-up: [Railspike failure report](local_server_dependency_recovery_railspike_failure_report.md).
+
 ## Local-server delivery progress
 
 This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader workflow items below remain unchecked when their full scope is not delivered. Evidence and stage results: [implementation summary](local_server_dependency_checks/local_server_dependency_checks_step4_implementation_summary.md).
