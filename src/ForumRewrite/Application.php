@@ -155,7 +155,7 @@ final class Application
         $messagingApi = $path === '/api/private_messages' || str_starts_with($path, '/api/private_messages/');
         $messagingPage = $path === '/messages' || str_starts_with($path, '/messages/');
         if (($messagingApi || $messagingPage) && !$this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) {
-            $message = 'Private messaging is disabled on this server. Reload after it is re-enabled to resume.';
+            $message = 'Private messaging is disabled on this server.';
             if ($messagingApi) {
                 $this->sendJson(['status' => 'error', 'code' => 'messaging_disabled', 'error' => $message], 403, $this->routeServices()->noStoreHeaders());
             } else {
