@@ -19,6 +19,7 @@ Usage:
   ./v3 rebuild recover --confirm [repository_root] [database_path]
   ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+  ./v3 images verify|restore <images.tar> <repository_root> <database_path> [--image-root=/private/images]
   ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
@@ -66,6 +67,10 @@ EOF
 fi
 
 case "${COMMAND}" in
+  images)
+    shift
+    exec php "${ROOT}/scripts/restore_images.php" "$@"
+    ;;
   start)
     shift
     source "${ROOT}/scripts/local_server_dependencies.sh"

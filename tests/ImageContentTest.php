@@ -88,6 +88,23 @@ final class ImageContentTest
             assertSame($head, $manifest['repository_head']);
             assertSame(self::png(), $tar['objects/' . ImageReference::filename($ref)]->getContent());
             assertSame(1, count($manifest['objects']));
+            $restore = new \ForumRewrite\Images\ImageRestore();
+            $result = $restore->run($images['path'], $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images', true);
+            assertSame('verified', $result['status']);
+            assertSame(false, is_dir($base . '/restored-images'));
+            $result = $restore->run($images['path'], $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images');
+            assertSame('restored', $result['status']);
+            assertSame(self::png(), file_get_contents($base . '/restored-images/' . ImageReference::filename($ref)));
+            assertSame($result, $restore->run($images['path'], $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images'));
+            $bad = $base . '/unsafe.tar';
+            $unsafe = new PharData($bad);
+            $unsafe->addFromString('unexpected.txt', 'untrusted'); unset($unsafe);
+            $this->reject(fn () => $restore->run($bad, $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images'));
+            assertSame(self::png(), file_get_contents($base . '/restored-images/' . ImageReference::filename($ref)));
+            exec($git . ' -c user.name=Test -c user.email=test@example.test commit --allow-empty -qm Changed', $output, $status);
+            $this->reject(fn () => $restore->run($images['path'], $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images'));
+            exec($git . ' reset --hard ' . escapeshellarg($head), $output, $status);
+
             $this->reject(fn () => $backup->export('images', str_repeat('0', 40)));
             unlink($store->resolve($ref));
             $this->reject(fn () => $backup->export('images', $head));
