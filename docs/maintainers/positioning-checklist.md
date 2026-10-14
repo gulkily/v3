@@ -14,7 +14,7 @@ Work on one item at a time. Commit each completed item with its checklist update
 ## Follow-up outside repository copy
 
 - [ ] Apply the revised description in GitHub repository settings.
-- [ ] Complete existing launch and first-run verification in [BACKLOG.md](../BACKLOG.md).
+- [ ] Complete existing launch and first-run verification in [BACKLOG.md](./BACKLOG.md).
 
 ## Proposed GitHub description
 
