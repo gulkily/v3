@@ -72,3 +72,15 @@ Debug mode: disabled
   - Deployment, migration, and external-system checks: not applicable (template and CSS only).
 - Notes:
   - Final commit count on the branch: 1 planning commit plus 6 stages, as planned.
+
+## Follow-up - Copy as plain one-line JavaScript
+- Changes:
+  - `public/assets/tools_bookmarklets.js`: the copy button now copies `javascript:` plus the unencoded script collapsed to one physical line, instead of the percent-encoded string. The draggable link's `href` is unchanged (still percent-encoded).
+  - Browser tests updated to expect the new copy format; the qutebrowser acceptance binding uses plain `jseval` rather than `jseval --url`.
+- Verification:
+  - `node tests/browser/bookmarklet_copy.cjs`: passes all seven variants; copied text has no newlines, no `%XX` escapes, no `;;`, equals the decoded link collapsed to one line, and runs correctly.
+  - `bookmarklet_copy_qutebrowser.mjs` under Xvfb with qutebrowser: all seven entries passed with the real clipboard bound via `jseval <paste>`.
+  - `bookmarklet_copy_ui.mjs` (Chromium, real clipboard, keyboard, fallbacks, themes): passed. Smoke test: exit 0.
+- Notes:
+  - Reported by the user: percent-encoded copy is not valid for `:jseval`, which takes raw JavaScript. A leading `javascript:` parses there as a label, so one form also works for `:open` and `jseval --url`.
+  - Newline collapsing is safe only while the generated source has no line comments or template literals; the unit test compiles and runs each copied variant to catch regressions.

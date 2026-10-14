@@ -18,7 +18,7 @@ function setup(script = source, fail = false) {
     setTimeout() {}, clearTimeout() {}});
   return {links, copied};
 }
-function execute(url, kind, mode) {
+function execute(script, kind, mode) {
   const title = 'A "title" 100% café';
   const text = 'Selected "quote" 50% 😀\nsecond line';
   const current = 'https://source.test/status/123?q=100%25';
@@ -28,7 +28,7 @@ function execute(url, kind, mode) {
   const location = {href: current, pathname: '/status/123'};
   const opened = [];
   const window = {location, getSelection: () => ({toString: () => kind === 'tweet' ? '' : text, rangeCount: 0}), open: (...args) => opened.push(args)};
-  vm.runInNewContext(decodeURIComponent(url.slice('javascript:'.length)), {window, location,
+  vm.runInNewContext(script, {window, location,
     document: {title, querySelectorAll: () => [article]}, alert() {throw Error('unexpected alert');}});
   const result = mode === 'new-window' ? opened[0][0] : window.location;
   const parsed = new URL(result);
@@ -46,9 +46,17 @@ function execute(url, kind, mode) {
     const link = links[i], href = link.getAttribute('href');
     assert(href.startsWith('javascript:'));
     assert(!/[\r\n\u2028\u2029]/.test(href));
-    execute(href, ...variants[i]);
+    execute(decodeURIComponent(href.slice('javascript:'.length)), ...variants[i]);
     await link.button.click();
-    assert.equal(copied[i], href);
+    // Copy is unencoded one-line JavaScript (valid for qutebrowser :jseval), not the percent-encoded link.
+    assert(copied[i].startsWith('javascript:'));
+    assert(!/[\r\n\u2028\u2029]/.test(copied[i]));
+    assert(!/%[0-9A-Fa-f]{2}/.test(copied[i]));
+    assert(!copied[i].includes(';;'));
+    const raw = copied[i].slice('javascript:'.length);
+    assert.equal(raw, decodeURIComponent(href.slice('javascript:'.length)).replace(/\s*[\r\n]+\s*/g, ' '));
+    execute(raw, ...variants[i]);
+    new vm.Script('(function(){' + 'javascript:' + raw + '})');
     assert.equal(link.feedback.textContent, 'Copied');
     assert.equal(link.button.disabled, false);
     assert(link.button.focused);
@@ -58,9 +66,9 @@ function execute(url, kind, mode) {
   assert.equal(failed.links[0].feedback.textContent, 'Copy failed. Try again.');
   assert.equal(failed.links[0].button.disabled, false);
   if (process.env.BOOKMARKLET_BASELINE) {
-    // Baseline source is unencoded; encode it before the shared evaluator decodes it.
+    // Baseline source is already unencoded.
     const baseline = setup(fs.readFileSync(process.env.BOOKMARKLET_BASELINE, 'utf8'));
-    baseline.links.forEach((link, i) => execute('javascript:' + encodeURIComponent(link.getAttribute('href').slice(11)), ...variants[i]));
+    baseline.links.forEach((link, i) => execute(link.getAttribute('href').slice(11), ...variants[i]));
   }
   console.log('PASS seven bookmarklets: behavior, one-line copying, focus, and denied clipboard');
 })();
