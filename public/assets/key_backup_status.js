@@ -21,5 +21,6 @@
   document.addEventListener('DOMContentLoaded', refresh);
   window.addEventListener('pageshow', refresh);
   window.addEventListener('storage', refresh);
+  window.addEventListener('forum:identity-changed', refresh);
   window.ForumKeyBackupStatus = { record, refresh };
 })();

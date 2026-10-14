@@ -2,13 +2,13 @@
 
 SFENC stores bytes in a lossless starfield PNG. It is **not encryption**. Key backups must encrypt their payload before encoding. v0.1 was unimplemented and not recoverable as specified; reject its version byte.
 
-## Limits and canonical containers
+## Limits and canonical encoder containers
 
 Input is 0–131072 bytes. Image width equals height and is the first of 256, 512, 1024, 2048 with capacity for all stars below. Reject files above 20 MiB, other dimensions, unsupported versions, lengths, compression, nonzero reserved bytes, or checksum failures before allocating from claimed lengths. All arithmetic below is integer arithmetic (division means floor), except no floating-point operations are needed at all.
 
 The payload is canonical gzip: header hex `1f8b08000000000000ff`, DEFLATE stored blocks, then little-endian CRC32 and original length. Split input into maximal 65535-byte blocks, with one empty block for empty input. Each block starts with byte 0 (nonfinal) or 1 (final), little-endian LEN and its 16-bit one's complement, then LEN bytes. No additional blocks, members or trailing data are permitted. Compression field is 1; v0.2 does not support zstd or uncompressed payloads. Stored blocks deliberately trade file size for reproducibility and bounded decoding without browser compression dependencies.
 
-PNG uses signature `89504e470d0a1a0a`, then exactly IHDR, IDAT, IEND. IHDR is width/height big-endian, depth 8, color 6 (RGBA), compression/filter/interlace 0. Each scanline has filter byte 0 then opaque RGBA bytes. One IDAT contains zlib header `7801`, the same stored-block algorithm over scanlines, then big-endian Adler32. Chunks use standard big-endian length and CRC32(type + data). IEND is empty. CRC32 is reflected IEEE polynomial `edb88320`, initial/final XOR `ffffffff`. Adler32 starts a=1,b=0, modulus 65521. These exact container rules are normative: reject re-encoded/noncanonical files and advise keeping the original download. No canvas/color conversion is used.
+PNG uses signature `89504e470d0a1a0a`, then exactly IHDR, IDAT, IEND. IHDR is width/height big-endian, depth 8, color 6 (RGBA), compression/filter/interlace 0. Each scanline has filter byte 0 then opaque RGBA bytes. One IDAT contains zlib header `7801`, the same stored-block algorithm over scanlines, then big-endian Adler32. Chunks use standard big-endian length and CRC32(type + data). IEND is empty. CRC32 is reflected IEEE polynomial `edb88320`, initial/final XOR `ffffffff`. Adler32 starts a=1,b=0, modulus 65521. These exact container rules define canonical **encoder output**. Decoders also accept lossless PNG re-encoding as specified below. No canvas/color conversion is used.
 
 ## Header
 
@@ -47,6 +47,10 @@ Draw each star with that RGB, alpha 255. Hue 0 draws center only; hue 1 adds fou
 
 ## Decode and conformance
 
-Validate bounded canonical PNG structure, chunk CRCs, zlib blocks/Adler32 and filter/alpha bytes. Extract header; validate fields, lengths and the canonical dimensions. Recreate shuffled cells. Decode the first L centers, verify gzip CRC against header **before** inflating, then verify bounded canonical gzip and its CRC/length. Re-encode with the extracted seed and require exact PNG equality, detecting altered background, header padding, dummy stars, shapes, or containers. Return original payload bytes only on success.
+Validate bounded PNG structure and every chunk CRC. Accept noninterlaced, 8-bit RGB (color type 2) or RGBA (type 6), contiguous multiple IDAT chunks, standard zlib DEFLATE compression, and row filters 0–4 (None, Sub, Up, Average, Paeth). Bound inflated data to exactly `H * (1 + W * channels)` before allocating/writing beyond that size. Reject unsupported critical chunks, transparency chunks, invalid chunk order, missing IEND, trailing data, and checksum/decompression failures. Other ancillary chunks may be ignored; interpret stored channel values directly, without color-profile transformations. Normalize RGB to RGBA by adding alpha 255.
+
+Extract header; validate fields, lengths and the canonical dimensions. Recreate shuffled cells. Decode the first L centers, verify gzip CRC against header **before** inflating, then verify bounded canonical gzip and its CRC/length. Re-render the starfield with the extracted seed and require exact equality of the **decoded RGBA pixels**, including alpha, background, header padding, dummy stars and shapes. Return original payload bytes only on success. Container compression, filter selection and metadata may differ; pixel changes are not tolerated.
+
+This decoder compatibility revision preserves version 2 and all existing canonical encoder vectors. It accepts lossless optimization such as removing the redundant opaque alpha channel, without weakening payload integrity checks. Resizing, JPEG conversion and other pixel-changing edits remain unsupported.
 
 Given identical payload and seed, the **entire PNG**, including its body, is byte-identical. Encryption is randomized: this promise concerns already-encrypted payload bytes, not separate encryption operations. `tests/fixtures/starfield/vectors.json` contains SHA256 conformance vectors; `tests/Support/starfield_reference.py` is an independent Python reference codec. Verify full payload range, empty input, all byte values, capacity boundaries and malformed input using its `--test` entry point.

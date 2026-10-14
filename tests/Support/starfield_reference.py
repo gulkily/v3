@@ -61,7 +61,7 @@ def color(b):
     return [(v,v,v),(85*v//100,90*v//100,v),(v,v,70*v//100),(v,70*v//100,60*v//100)][b//64]
 
 
-def encode(data,seed):
+def encode(data,seed,pixels_only=False):
     if len(data)>LIMIT or not 0<=seed<=MASK:
         raise ValueError('bounds')
     zipped = gzip(data)
@@ -95,6 +95,7 @@ def encode(data,seed):
     struct.pack_into('<I',header,36,zlib.crc32(zipped))
     for i,b in enumerate(header):
         pixels[(i//3)*4+i%3] = b
+    if pixels_only: return bytes(pixels)
     raw = b''.join(b'\0'+pixels[y*w*4:(y+1)*w*4] for y in range(w))
     def chunk(kind,body):
         return struct.pack('>I',len(body))+kind+body+struct.pack('>I',zlib.crc32(kind+body))
@@ -105,22 +106,57 @@ def encode(data,seed):
 def decode(png):
     if len(png)>20*1024*1024 or png[:8]!=bytes.fromhex('89504e470d0a1a0a'):
         raise ValueError('PNG')
-    offset=8; parts=[]
-    for expected in (b'IHDR',b'IDAT',b'IEND'):
+    offset=8; ihdr=None; idat=[]; ended=False; after_data=False
+    while offset<len(png):
+        if ended or offset+12>len(png): raise ValueError('chunk bounds')
         length=struct.unpack_from('>I',png,offset)[0]
+        if offset+length+12>len(png): raise ValueError('chunk bounds')
         kind=png[offset+4:offset+8]; body=png[offset+8:offset+8+length]
-        if kind!=expected or zlib.crc32(kind+body)!=struct.unpack_from('>I',png,offset+8+length)[0]:
-            raise ValueError('chunk')
-        parts.append(body); offset+=12+length
-    if offset!=len(png) or parts[2]: raise ValueError('trailing')
-    w,h,depth,mode,compression,filtering,interlace=struct.unpack('>IIBBBBB',parts[0])
-    if w!=h or w not in (256,512,1024,2048) or (depth,mode,compression,filtering,interlace)!=(8,6,0,0,0):
-        raise ValueError('dimensions')
+        if not all(65<=c<=90 or 97<=c<=122 for c in kind) or kind[2]&32: raise ValueError('chunk type')
+        if zlib.crc32(kind+body)!=struct.unpack_from('>I',png,offset+8+length)[0]: raise ValueError('CRC')
+        if ihdr is None and kind!=b'IHDR': raise ValueError('header first')
+        if kind==b'IHDR':
+            if ihdr is not None or length!=13: raise ValueError('header')
+            ihdr=body
+        elif kind==b'IDAT':
+            if after_data: raise ValueError('IDAT order')
+            idat.append(body)
+        elif kind==b'IEND':
+            if length or not idat: raise ValueError('end')
+            ended=True
+        else:
+            if idat: after_data=True
+            if not kind[0]&32 or kind==b'tRNS': raise ValueError('unsupported chunk')
+        offset+=length+12
+    if not ended: raise ValueError('missing end')
+    w,h,depth,mode,compression,filtering,interlace=struct.unpack('>IIBBBBB',ihdr)
+    if w!=h or w not in (256,512,1024,2048) or depth!=8 or mode not in (2,6) or compression or filtering or interlace:
+        raise ValueError('dimensions or pixel encoding')
+    channels=3 if mode==2 else 4; stride=w*channels; expected=h*(stride+1)
     inflater=zlib.decompressobj()
-    raw=inflater.decompress(parts[1],w*(1+4*w)+1)
-    if len(raw)!=w*(1+4*w) or not inflater.eof: raise ValueError('inflate bounds')
-    if any(raw[y*(4*w+1)] for y in range(w)): raise ValueError('filter')
-    pixels=b''.join(raw[y*(4*w+1)+1:(y+1)*(4*w+1)] for y in range(w))
+    raw=inflater.decompress(b''.join(idat),expected+1)
+    if len(raw)!=expected or not inflater.eof or inflater.unused_data: raise ValueError('inflate bounds')
+    pixels=bytearray(); previous=bytearray(stride)
+    for y in range(h):
+        filter_type=raw[y*(stride+1)]
+        if filter_type>4: raise ValueError('filter')
+        row=bytearray(stride)
+        for x in range(stride):
+            left=row[x-channels] if x>=channels else 0
+            up=previous[x]; corner=previous[x-channels] if x>=channels else 0
+            predictor=0
+            if filter_type==1: predictor=left
+            elif filter_type==2: predictor=up
+            elif filter_type==3: predictor=(left+up)//2
+            elif filter_type==4:
+                estimate=left+up-corner
+                candidates=[left,up,corner]
+                predictor=min(candidates,key=lambda candidate:abs(estimate-candidate))
+            row[x]=(raw[y*(stride+1)+1+x]+predictor)%256
+        for x in range(w):
+            pixels.extend(row[x*channels:x*channels+3])
+            pixels.append(row[x*channels+3] if channels==4 else 255)
+        previous=row
     header=bytes(pixels[(i//3)*4+i%3] for i in range(66))
     if header[:5]!=b'SFEN\x02' or header[32]!=1 or any(header[5:8]+header[33:36]+header[40:]): raise ValueError('header')
     seed,length,compressed=struct.unpack_from('<QQQ',header,8)
@@ -136,7 +172,7 @@ def decode(png):
     inflater=zlib.decompressobj(31)
     data=inflater.decompress(zipped,LIMIT+1)
     if len(data)!=length or not inflater.eof or gzip(data)!=zipped: raise ValueError('gzip')
-    if encode(data,seed)!=png: raise ValueError('noncanonical PNG')
+    if encode(data,seed,pixels_only=True)!=pixels: raise ValueError('altered pixels')
     return data
 
 

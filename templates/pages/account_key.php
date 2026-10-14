@@ -43,7 +43,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <button type="button" data-backup-download="text">Download text backup</button>
           <button type="button" data-backup-download="png">Download Starfield PNG</button>
         </div>
-        <p class="meta">Keep the original PNG file. Screenshots, edits, and image conversion can destroy the backup. Text is also available.</p>
+        <p class="meta">Keep the original PNG file. Lossless PNG recompression is supported, but screenshots, resizing, and JPEG conversion can destroy the backup. Text is also available.</p>
         <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
         <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
         <button type="button" data-backup-restore>Restore backup</button>
@@ -280,6 +280,8 @@ No browser private key saved yet.
       bindViewerCopyButtons();
       syncSimpleUI();
       mirrorAdvancedStatus();
+      window.addEventListener('forum:identity-changed', syncSimpleUI);
+      window.addEventListener('forum:identity-changed', mirrorAdvancedStatus);
       window.addEventListener('storage', syncSimpleUI);
       window.addEventListener('storage', mirrorAdvancedStatus);
       window.addEventListener('pageshow', syncSimpleUI);

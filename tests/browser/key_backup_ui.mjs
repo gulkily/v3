@@ -8,6 +8,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium, firefox } from 'playwright-core';
+import reencode from '../Support/png_reencode.cjs';
 const format=process.env.FORMAT||'text';
 const project=resolve(new URL('../..',import.meta.url).pathname);
 runInThisContext(readFileSync(join(project,'public/assets/openpgp.min.js'),'utf8'));
@@ -55,7 +56,8 @@ try {
   const pending=page.waitForEvent('download'); pending.catch(()=>{}); await page.locator('[data-backup-download="'+format+'"]').click();
   await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent !== 'Working locally…');
   assert.match(await page.locator('[data-backup-status]').textContent(),/download started/,JSON.stringify(errors));
-  const download=await pending, backup=await readFile(await download.path());
+  const download=await pending, downloaded=await readFile(await download.path());
+  const backup=format==='png'&&process.env.REENCODE==='1'?reencode(downloaded):downloaded;
   await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('download started'));
   assert(!backup.includes(Buffer.from('PRIVATE KEY')));
   assert.equal(await page.evaluate(fp=>localStorage.getItem('forum_pki_backup_verified_'+fp),fingerprint),'1');
@@ -127,18 +129,28 @@ try {
 
 
   await restored.locator('[data-restore-password]').fill(passphrase); await restored.locator('[data-backup-restore]').click();
-  if(process.env.MEMBERS_ONLY==='true'){
-    await restored.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]')?.dataset.authenticatedIdentityId));
-  }else{
-    await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Backup restored'));
-  }
+  await restored.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]')?.dataset.authenticatedIdentityId));
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),keys.privateKey);
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_fingerprint').toLowerCase()),fingerprint);
-  await restored.reload();
-  await restored.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]')?.dataset.authenticatedIdentityId));
+  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'This browser is ready');
+  assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);
+  // No manual reload: the restored session must work immediately on Messages.
   await restored.goto(base+'/messages/conversation/user-01');
   await restored.locator('[data-role="private-message-plaintext"]').filter({hasText:'Original private conversation'}).first().waitFor({state:'visible'});
   await restored.goto(base+'/account/key/');
+  await restored.evaluate(()=>{
+    for(const key of ['forum_pki_username','forum_pki_public_key','forum_pki_private_key','forum_pki_fingerprint'])localStorage.removeItem(key);
+    window.dispatchEvent(new Event('storage'));
+  });
+  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'Not set up yet');
+  let navigated=false;const onNavigation=frame=>{if(frame===restored.mainFrame())navigated=true;};
+  restored.on('framenavigated',onNavigation);
+  await upload();await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
+  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Backup restored'));
+  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'This browser is ready');
+  assert.match(await restored.locator('#simple-status').textContent(),/All set! Posting as alice/);
+  assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);
+  assert.equal(navigated,false);restored.off('framenavigated',onNavigation);
   const other=await pgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'other'}],format:'armored'});
   const different=await restored.evaluate(async({key,passphrase})=>(await window.ForumKeyBackup.createBackup(key,passphrase)).text,{key:other.privateKey,passphrase});
   await restored.locator('[data-backup-file]').setInputFiles({name:'different.txt',mimeType:'text/plain',buffer:Buffer.from(different)});

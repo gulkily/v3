@@ -8,7 +8,7 @@
     for (let n=0;n<8;n++) i=(i>>>1)^((i&1)?0xedb88320:0);
     return i>>>0;
   });
-  function fail() { throw new Error('This image is damaged or is not an original Starfield backup. Use the original downloaded PNG or text backup.'); }
+  function fail() { throw new Error('This image cannot be read as a Starfield backup. Its pixels may have changed or the file may be damaged. Try the original PNG or text backup.'); }
   function view(bytes) { return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength); }
   function equal(a,b) { return a.length===b.length && a.every((v,i)=>v===b[i]); }
   function concat(...parts) {
@@ -101,7 +101,7 @@
     const name=new TextEncoder().encode(type),body=concat(name,data);
     return concat(u32(data.length),body,u32(crc(body)));
   }
-  function encodeStarfield(data,seed) {
+  function renderStarfield(data,seed) {
     if(!(data instanceof Uint8Array) || data.length>MAX_BYTES) throw new Error('This payload is too large for a Starfield backup.');
     if(seed===undefined){const words=crypto.getRandomValues(new Uint32Array(2));seed=(BigInt(words[0])<<32n)|BigInt(words[1]);}
     seed=BigInt(seed);if(seed<0n || seed>MASK) fail();
@@ -122,30 +122,88 @@
     const header=new Uint8Array(66),hv=view(header);header.set([83,70,69,78,2]);
     hv.setBigUint64(8,seed,true);hv.setBigUint64(16,BigInt(data.length),true);hv.setBigUint64(24,BigInt(zipped.length),true);header[32]=1;hv.setUint32(36,crc(zipped),true);
     header.forEach((b,i)=>{pixels[Math.floor(i/3)*4+i%3]=b;});
+    return { w, pixels };
+  }
+  function encodeStarfield(data,seed) {
+    const { w, pixels } = renderStarfield(data,seed);
     const raw=new Uint8Array(w*(w*4+1));
     for(let y=0;y<w;y++)raw.set(pixels.subarray(y*w*4,(y+1)*w*4),y*(w*4+1)+1);
     const ihdr=concat(u32(w),u32(w),Uint8Array.of(8,6,0,0,0));
     return concat(signature,chunk('IHDR',ihdr),chunk('IDAT',concat(Uint8Array.of(120,1),stored(raw),u32(adler(raw)))),chunk('IEND',new Uint8Array()));
   }
-  function decodeStarfield(png) {
-    if(!(png instanceof Uint8Array) || png.length>MAX_FILE_BYTES || !equal(png.subarray(0,8),signature)) fail();
-    let offset=8;const parts=[];
-    for(const type of ['IHDR','IDAT','IEND']){
-      if(offset+12>png.length) fail();
+  // Decode lossless PNG containers without canvas color management. Encoder output
+  // stays canonical; compression, filters, IDAT boundaries and opaque RGB may vary.
+  async function readPngPixels(png) {
+    if (!(png instanceof Uint8Array) || png.length > MAX_FILE_BYTES || !equal(png.subarray(0,8),signature)) fail();
+    let offset=8, ihdr=null, ended=false, afterData=false, compressedLength=0;
+    const parts=[];
+    while (offset < png.length) {
+      if (offset+12 > png.length || ended) fail();
       const length=view(png).getUint32(offset);
-      if(offset+12+length>png.length || new TextDecoder().decode(png.subarray(offset+4,offset+8))!==type) fail();
+      if (offset+12+length > png.length) fail();
+      const name=png.subarray(offset+4,offset+8), type=String.fromCharCode(...name);
+      if (!/^[A-Za-z]{4}$/.test(type) || (name[2]&32)) fail();
       const body=png.subarray(offset+8,offset+8+length);
-      if(crc(png.subarray(offset+4,offset+8+length))!==view(png).getUint32(offset+8+length)) fail();
-      parts.push(body);offset+=length+12;
+      if (crc(png.subarray(offset+4,offset+8+length)) !== view(png).getUint32(offset+8+length)) fail();
+      if (!ihdr && type !== 'IHDR') fail();
+      if (type === 'IHDR') {
+        if (ihdr || length !== 13) fail();
+        ihdr=body;
+      } else if (type === 'IDAT') {
+        if (afterData) fail();
+        parts.push(body); compressedLength+=body.length;
+      } else if (type === 'IEND') {
+        if (length || !parts.length) fail();
+        ended=true;
+      } else {
+        if (parts.length) afterData=true;
+        // Ancillary metadata cannot change decoded pixel values. Transparency on
+        // RGB would change alpha, so reject it rather than silently ignoring it.
+        if (!(name[0]&32) || type === 'tRNS') fail();
+      }
+      offset+=12+length;
     }
-    if(offset!==png.length || parts[0].length!==13 || parts[2].length) fail();
-    const w=view(parts[0]).getUint32(0),h=view(parts[0]).getUint32(4);
-    if(w!==h || ![256,512,1024,2048].includes(w) || !equal(parts[0].subarray(8),[8,6,0,0,0])) fail();
-    const idat=parts[1];if(idat.length<11 || idat[0]!==120 || idat[1]!==1) fail();
-    const raw=unstored(idat.subarray(2,-4),w*(w*4+1));
-    if(adler(raw)!==view(idat).getUint32(idat.length-4)) fail();
-    const pixels=new Uint8Array(w*w*4);
-    for(let y=0;y<w;y++){if(raw[y*(w*4+1)]!==0) fail();pixels.set(raw.subarray(y*(w*4+1)+1,(y+1)*(w*4+1)),y*w*4);}
+    if (!ended || !ihdr || !compressedLength) fail();
+    const w=view(ihdr).getUint32(0), h=view(ihdr).getUint32(4), type=ihdr[9];
+    if (w!==h || ![256,512,1024,2048].includes(w) || ihdr[8]!==8 || ![2,6].includes(type) || ihdr[10] || ihdr[11] || ihdr[12]) fail();
+    const channels=type===2?3:4, stride=w*channels, expected=h*(stride+1);
+    const compressed=new Uint8Array(compressedLength);
+    let at=0;for(const part of parts){compressed.set(part,at);at+=part.length;}
+    const raw=new Uint8Array(expected);
+    try {
+      const reader=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate')).getReader();
+      at=0;
+      try {
+        while (true) {
+          const {value,done}=await reader.read();if(done)break;
+          if (at+value.length>expected) { await reader.cancel(); fail(); }
+          raw.set(value,at);at+=value.length;
+        }
+      } finally { reader.releaseLock(); }
+      if (at!==expected) fail();
+    } catch (_) { fail(); }
+    const pixels=new Uint8Array(w*h*4), row=new Uint8Array(stride), previous=new Uint8Array(stride);
+    for(let y=0;y<h;y++) {
+      const filter=raw[y*(stride+1)];if(filter>4)fail();
+      for(let x=0;x<stride;x++) {
+        const a=x>=channels?row[x-channels]:0,b=previous[x],c=x>=channels?previous[x-channels]:0;
+        let predictor=0;
+        if(filter===1)predictor=a;
+        else if(filter===2)predictor=b;
+        else if(filter===3)predictor=Math.floor((a+b)/2);
+        else if(filter===4){const p=a+b-c,pa=Math.abs(p-a),pb=Math.abs(p-b),pc=Math.abs(p-c);predictor=pa<=pb&&pa<=pc?a:pb<=pc?b:c;}
+        row[x]=(raw[y*(stride+1)+1+x]+predictor)&255;
+      }
+      for(let x=0;x<w;x++) {
+        const out=(y*w+x)*4, source=x*channels;
+        pixels[out]=row[source];pixels[out+1]=row[source+1];pixels[out+2]=row[source+2];pixels[out+3]=channels===4?row[source+3]:255;
+      }
+      previous.set(row);
+    }
+    return {w,pixels};
+  }
+  async function decodeStarfield(png) {
+    const {w,pixels}=await readPngPixels(png);
     const header=Uint8Array.from({length:66},(_,i)=>pixels[Math.floor(i/3)*4+i%3]),hv=view(header);
     if(!equal(header.subarray(0,5),[83,70,69,78,2]) || header[32]!==1 || [...header.subarray(5,8),...header.subarray(33,36),...header.subarray(40)].some(b=>b)) fail();
     const seed=hv.getBigUint64(8,true),length=hv.getBigUint64(16,true),compressed=hv.getBigUint64(24,true);
@@ -155,7 +213,7 @@
     for(let i=0;i<l;i++)zipped[i]=byteAt(pixels,((3+5*Math.floor(positions[i]/cols))*w+2+5*(positions[i]%cols))*4);
     if(crc(zipped)!==hv.getUint32(36,true)) fail();
     const data=ungzip(zipped,Number(length));
-    if(!equal(encodeStarfield(data,seed),png)) fail();
+    if(!equal(renderStarfield(data,seed).pixels,pixels)) fail();
     return data;
   }
   window.ForumStarfield={encodeStarfield,decodeStarfield,MAX_BYTES,MAX_FILE_BYTES};

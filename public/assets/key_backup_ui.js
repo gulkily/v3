@@ -1,11 +1,11 @@
 (function () {
   'use strict';
-  function backupText(bytes) {
+  async function backupText(bytes) {
     const png = bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
-    if (png) bytes = window.ForumStarfield.decodeStarfield(bytes);
+    if (png) bytes = await window.ForumStarfield.decodeStarfield(bytes);
     if (bytes.length > window.ForumKeyBackup.MAX_BYTES) throw new Error('This backup file is too large.');
     try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
-    catch (_) { throw new Error('Use an original backup text file or Starfield PNG. Screenshots and converted images cannot restore your key.'); }
+    catch (_) { throw new Error('Use an original backup text file or Starfield PNG. Screenshots and JPEG images cannot restore your key.'); }
   }
   function bind(root, identity) {
     const area = root.querySelector('[data-key-backup]');
@@ -42,7 +42,7 @@
       const isPng = button.dataset.backupDownload === 'png';
       const content = isPng ? window.ForumStarfield.encodeStarfield(new TextEncoder().encode(backup.text)) : backup.text;
       const blob = new Blob([content], { type: isPng ? 'image/png' : 'text/plain;charset=utf-8' });
-      const check = await window.ForumKeyBackup.readBackup(backupText(new Uint8Array(await blob.arrayBuffer())), passphrase);
+      const check = await window.ForumKeyBackup.readBackup(await backupText(new Uint8Array(await blob.arrayBuffer())), passphrase);
       if (check.privateKeyText !== original || check.fingerprint !== backup.fingerprint) throw new Error('Backup verification failed.');
       if (JSON.stringify(before) !== JSON.stringify(identity.snapshot())) throw new Error('The browser identity changed. Try backing up again.');
       const url = URL.createObjectURL(blob);
@@ -61,7 +61,7 @@
       if (!file) throw new Error('Choose a backup file first.');
       if (file.size > window.ForumStarfield.MAX_FILE_BYTES) throw new Error('This backup file is too large.');
       const before = JSON.stringify(identity.snapshot());
-      const backup = await window.ForumKeyBackup.readBackup(backupText(new Uint8Array(await file.arrayBuffer())), find('[data-restore-password]').value);
+      const backup = await window.ForumKeyBackup.readBackup(await backupText(new Uint8Array(await file.arrayBuffer())), find('[data-restore-password]').value);
       if (before !== JSON.stringify(identity.snapshot())) throw new Error('The browser identity changed. Try restoring again.');
       await identity.restore(backup.privateKeyText, backup.fingerprint);
       find('[data-backup-file]').value = '';

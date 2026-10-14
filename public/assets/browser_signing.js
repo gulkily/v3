@@ -2208,6 +2208,9 @@
     });
 
     renderUndoState(root);
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new Event("forum:identity-changed"));
+    }
   }
 
   async function promptForUsername(promptMessage, cancellationMessage) {
@@ -2715,7 +2718,12 @@
       renderSavedState(root);
       await publishPublicKeyWithRetry(root);
       if (!stillInstalled()) throw new Error("The browser identity changed in another tab. Restore again when other identity actions have finished.");
-      await authenticatePrivateSiteIfAvailable();
+      if (expectedFingerprint && window.PrivateSiteAuth && typeof window.PrivateSiteAuth.authenticate === "function") {
+        // A restored key must also resume the public site's session, not only members-only sessions.
+        await window.PrivateSiteAuth.authenticate();
+      } else {
+        await authenticatePrivateSiteIfAvailable();
+      }
       if (!stillInstalled()) throw new Error("The browser identity changed in another tab. Restore again when other identity actions have finished.");
       return identity;
     } catch (error) {
@@ -2752,7 +2760,11 @@
     if (window.ForumKeyBackupUI) {
       window.ForumKeyBackupUI.bind(root, {
         snapshot: browserIdentitySnapshot,
-        restore: (text, fingerprint) => importAccountPrivateKey(root, text, fingerprint),
+        restore: async (text, fingerprint) => {
+          const identity = await importAccountPrivateKey(root, text, fingerprint);
+          setStatus(statusNode, `Restored browser keypair for ${identity.username}. Public key linked.`, "ok");
+          return identity;
+        },
       });
     }
 
