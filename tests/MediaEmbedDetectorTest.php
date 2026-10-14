@@ -8,6 +8,45 @@ use ForumRewrite\View\MediaEmbedDetector;
 
 final class MediaEmbedDetectorTest
 {
+    public function testShortsUseTheYoutubeProviderAndPreserveSourceParameters(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach (['https://www.youtube.com', 'http://youtube.com', 'https://YOUTUBE.COM'] as $base) {
+            $url = $base . '/shorts/M7lc1UVf-VE/?t=4&tag=a%20b&tag=c&si=tracking#section';
+            $match = $detector->detect('Clip: ' . $url . '.')[0];
+            assertSame('youtube', $match['provider']);
+            assertSame('M7lc1UVf-VE', $match['embedId']);
+            assertSame('shorts', $match['contentKind']);
+            assertSame($url, $match['url']);
+            assertSame($base . '/shorts/M7lc1UVf-VE/?t=4&tag=a%20b&tag=c#section', $match['displayUrl']);
+        }
+    }
+
+    public function testRejectsLookalikeHostsIncompleteIdentifiersAndUnsupportedYoutubeForms(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach ([
+            'https://youtube.com.evil.test/watch?v=M7lc1UVf-VE',
+            'https://youtube.com@evil.test/watch?v=M7lc1UVf-VE',
+            'https://user@youtube.com/watch?v=M7lc1UVf-VE',
+            'https://youtu.be/M7lc1UVf-V',
+            'https://youtu.be/M7lc1UVf-VEextra',
+            'https://youtu.be/M7lc1UVf-VE/extra',
+            'https://youtube.com/watch?v=M7lc1UVf-VEextra',
+            'https://youtube.com/watch?v[]=M7lc1UVf-VE',
+            'https://youtube.com/shorts/M7lc1UVf-VE/extra',
+            'https://youtube.com/live/M7lc1UVf-VE',
+            'https://youtube.com/embed/M7lc1UVf-VE',
+            'https://m.youtube.com/watch?v=M7lc1UVf-VE',
+            'https://youtube.com/playlist?list=PL123',
+            'https://instagram.com.evil.test/p/Cabc123XYZ/',
+            'https://instagram.com/p/Cabc123XYZ/extra',
+            'https://instagram.com/p/Cabc123XYZ.invalid/',
+        ] as $url) {
+            assertSame(null, $detector->classify($url));
+        }
+    }
+
     public function testMatchesKnownYoutubeUrlShapes(): void
     {
         $detector = new MediaEmbedDetector();

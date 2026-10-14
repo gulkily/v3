@@ -17,6 +17,26 @@ use ForumRewrite\View\YoutubeOembedTitleFetcher;
 
 final class MediaEmbedPreviewControllerTest
 {
+    public function testShortsFetchTitlesThroughACanonicalWatchUrl(): void
+    {
+        $root = $this->tempProjectRoot();
+        try {
+            $requested = '';
+            $fetcher = new YoutubeOembedTitleFetcher(function (string $url) use (&$requested): string {
+                $requested = $url;
+                return '{"title":"A short clip"}';
+            });
+            $controller = $this->controller($root, new InstagramPagePreviewFetcher(), $fetcher);
+            ob_start();
+            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'http://youtube.com/shorts/M7lc1UVf-VE?si=tracking']);
+            ob_end_clean();
+            assertSame('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/watch?v=M7lc1UVf-VE'), $requested);
+            assertSame('A short clip', $this->readCache($root, 'M7lc1UVf-VE', 'youtube')['title']);
+        } finally {
+            $this->cleanup($root);
+        }
+    }
+
     public function testValidInstagramUrlWithColdCacheTriggersFetchAndWritesCache(): void
     {
         $projectRoot = $this->tempProjectRoot();
@@ -157,11 +177,11 @@ final class MediaEmbedPreviewControllerTest
             $controller = $this->controller($projectRoot, new InstagramPagePreviewFetcher(), $youtubeFetcher);
 
             ob_start();
-            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc1234567']);
+            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc12345678']);
             ob_end_clean();
 
             assertSame(1, $callCount);
-            $row = $this->readCache($projectRoot, 'abc1234567', 'youtube');
+            $row = $this->readCache($projectRoot, 'abc12345678', 'youtube');
             assertSame('A great video', $row['title']);
             assertSame('https://i.ytimg.com/vi/abc123/hqdefault.jpg', $row['thumbnailUrl']);
         } finally {
@@ -174,7 +194,7 @@ final class MediaEmbedPreviewControllerTest
         $projectRoot = $this->tempProjectRoot();
 
         try {
-            $this->seedCache($projectRoot, 'abc1234567', 'Already cached', 'https://example.com/thumb.jpg', null, 'youtube');
+            $this->seedCache($projectRoot, 'abc12345678', 'Already cached', 'https://example.com/thumb.jpg', null, 'youtube');
 
             $callCount = 0;
             $youtubeFetcher = new YoutubeOembedTitleFetcher(function () use (&$callCount): string {
@@ -184,7 +204,7 @@ final class MediaEmbedPreviewControllerTest
             $controller = $this->controller($projectRoot, new InstagramPagePreviewFetcher(), $youtubeFetcher);
 
             ob_start();
-            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc1234567']);
+            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc12345678']);
             ob_end_clean();
 
             assertSame(0, $callCount);
@@ -198,7 +218,7 @@ final class MediaEmbedPreviewControllerTest
         $projectRoot = $this->tempProjectRoot();
 
         try {
-            $this->seedCache($projectRoot, 'abc1234567', null, null, '-5 minutes', 'youtube');
+            $this->seedCache($projectRoot, 'abc12345678', null, null, '-5 minutes', 'youtube');
 
             $callCount = 0;
             $youtubeFetcher = new YoutubeOembedTitleFetcher(function () use (&$callCount): string {
@@ -208,15 +228,15 @@ final class MediaEmbedPreviewControllerTest
             $controller = $this->controller($projectRoot, new InstagramPagePreviewFetcher(), $youtubeFetcher);
 
             ob_start();
-            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc1234567']);
+            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc12345678']);
             ob_end_clean();
 
             assertSame(0, $callCount);
 
-            $this->seedCache($projectRoot, 'abc1234567', null, null, '-2 hours', 'youtube');
+            $this->seedCache($projectRoot, 'abc12345678', null, null, '-2 hours', 'youtube');
 
             ob_start();
-            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc1234567']);
+            $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc12345678']);
             ob_end_clean();
 
             assertSame(1, $callCount);

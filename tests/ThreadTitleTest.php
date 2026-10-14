@@ -8,6 +8,14 @@ use ForumRewrite\Support\ThreadTitle;
 
 final class ThreadTitleTest
 {
+    public function testShortsRemainEligibleForExistingTitleBackfill(): void
+    {
+        $url = 'https://youtube.com/shorts/M7lc1UVf-VE';
+        assertSame('Untitled', ThreadTitle::displayTitle('', $url, 'thread-1', 80, true));
+        assertSame('youtube', ThreadTitle::bareMediaEmbedMatch('', $url)['provider']);
+        assertSame('My own title', ThreadTitle::displayTitle('My own title', $url, 'thread-1', 80, true));
+    }
+
     public function testDisplayTitlePrefersSubject(): void
     {
         assertSame('Explicit subject', ThreadTitle::displayTitle(' Explicit subject ', 'Body text', 'thread-1'));

@@ -87,13 +87,25 @@ final class MediaEmbedRenderer
 
     private function renderYoutubeExpando(array $match): string
     {
-        $embedSrc = 'https://www.youtube-nocookie.com/embed/' . $this->escape($match['embedId']);
+        return $this->renderPlayerExpando(
+            $match,
+            'https://www.youtube-nocookie.com/embed/' . $match['embedId'],
+            '▶ Watch on YouTube',
+            'YouTube video player',
+            ($match['contentKind'] ?? '') === 'shorts' ? ' media-embed-card--portrait' : '',
+        );
+    }
 
-        return '<details class="media-embed-card media-embed-card--inline-player" data-media-embed-card data-provider="youtube">'
-            . '<summary>▶ Watch on YouTube</summary>'
+    private function renderPlayerExpando(array $match, string $embedSrc, string $summary, string $title, string $extraClass = ''): string
+    {
+        $provider = self::PROVIDER_LABELS[$match['provider']]['label'];
+        return '<span class="media-embed-card__source"><a class="media-embed-card__link" href="' . $this->escape($match['displayUrl']) . '">Open on ' . $this->escape($provider) . '</a></span>'
+            . '<details class="media-embed-card media-embed-card--inline-player' . $extraClass . '" data-media-embed-card data-provider="' . $this->escape($match['provider']) . '">'
+            . '<summary>' . $this->escape($summary) . '</summary>'
             . '<iframe class="media-embed-card__iframe" data-media-embed-iframe data-embed-src="' . $this->escape($embedSrc) . '"'
-            . ' title="YouTube video player" src=""'
+            . ' title="' . $this->escape($title) . '" src=""'
             . ' sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"'
+            . ' allow="autoplay; encrypted-media; fullscreen; picture-in-picture"'
             . ' referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allowfullscreen></iframe>'
             . '</details>';
     }

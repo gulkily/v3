@@ -9,6 +9,21 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MediaEmbedRendererTest
 {
+    public function testShortsHavePortraitPlaybackAndASourceLinkOutsideTheCollapsedPlayer(): void
+    {
+        $url = 'https://youtube.com/shorts/M7lc1UVf-VE?t=4&si=tracking';
+        $renderer = new MediaEmbedRenderer();
+        $html = $renderer->render($url, true, true);
+        assertSame(true, str_contains($html, 'media-embed-card--portrait'));
+        assertSame(true, str_contains($html, 'data-embed-src="https://www.youtube-nocookie.com/embed/M7lc1UVf-VE"'));
+        assertSame(true, str_contains($html, 'href="https://youtube.com/shorts/M7lc1UVf-VE?t=4"'));
+        assertSame(true, strpos($html, '<a ') < strpos($html, '<details'));
+        assertSame(false, str_contains($html, '<details open'));
+        assertSame(false, str_contains($html, 'si=tracking'));
+        assertSame(false, str_contains($renderer->render($url, true, false), '<iframe'));
+        assertSame(nl2br(htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')), $renderer->render($url, false, true));
+    }
+
     private function todaysBrOutput(string $value): string
     {
         return nl2br(htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

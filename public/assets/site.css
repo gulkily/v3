@@ -658,3 +658,13 @@ pre {
 .media-embed-card--inline-player[open] > .media-embed-card__iframe {
   margin-top: 0.5rem;
 }
+
+.media-embed-card__source {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.media-embed-card--portrait > .media-embed-card__iframe {
+  max-width: 360px;
+  aspect-ratio: 9 / 16;
+}
