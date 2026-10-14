@@ -25,3 +25,14 @@ Debug mode: disabled
   - `php tests/LocalAppSmokeTest.php`: exit 0.
 - Notes:
   - No styling added yet; new elements render with existing styles until Stage 3.
+
+## Stage 3 - Scoped type, spacing, and chip styling
+- Changes:
+  - `public/assets/tools.css`: appended rules scoped to `.bookmarklets-page`: lead and hint typography, divider and spacing between variant groups, larger gap between items and a small gap between button row and description, content-sized chip (min-width, centered label, grab cursor, focus ring), copy button matched to chip height with its stray top margin reset, and a mask-based drag glyph (`currentColor`, no hard-coded colors) for themes that do not already draw a leading icon.
+- Verification:
+  - Playwright: chip and copy button have identical top and height in all 12 themes.
+  - Screenshot review of the dark theme at 1280 px: hierarchy, grouping, and drag glyph read as intended.
+  - `/tools/` screenshots in all 12 themes at 1280 px and 375 px are byte-identical to the Stage 1 baseline.
+- Notes:
+  - Chicago and word97 keep their existing icon; the new glyph is excluded there.
+  - Row layout and 375 px behavior are Stage 4; theme-specific fixes are Stage 5.
