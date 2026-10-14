@@ -45,5 +45,5 @@
     }
     return response;
   }
-  window.ForumPrivateMessageAvailability = { request, isDisabled: () => disabled, message };
+  window.ForumPrivateMessageAvailability = { request, disable, isDisabled: () => disabled, message };
 })();

@@ -60,7 +60,11 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
     await page.waitForFunction(({ key, value }) => document.querySelector(`[data-flag-key="${key}"] [role="switch"]`).getAttribute('aria-checked') === String(value), { key, value });
     assert.equal((await readFile(join(root, 'repository', result.record_path + '.asc'), 'utf8')).includes('PGP SIGNATURE'), true);
   }
+  const navigation = await page.request.get(base + '/api/feature_flags/navigation');
+  assert.match(navigation.headers()['cache-control'], /no-store/);
+  assert.equal((await navigation.json()).messaging_enabled, true, 'Navigation resolves the authenticated session');
   await toggle(false);
+  await page.waitForFunction(() => !document.querySelector('[data-private-message-unread]'));
   // Finish admitted work and let this stale settings page observe the disabled response.
   await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
   const digest = async name => createHash('sha256').update(await readFile(join(root, 'state/private', name))).digest('hex');
