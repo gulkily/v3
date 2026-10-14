@@ -460,6 +460,7 @@ final class TemplateRenderer
         $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);
         $mediaEmbedsInlinePlayerEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED);
         $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled, $mediaEmbedsInlinePlayerEnabled, $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED));
+        $hasMediaEmbed = fn (mixed $value): bool => $mediaEmbedsEnabled && $this->mediaEmbedRenderer->hasEmbeds((string) $value);
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);

@@ -668,3 +668,8 @@ pre {
   max-width: 360px;
   aspect-ratio: 9 / 16;
 }
+
+.media-embed-card--spotify > .media-embed-card__iframe {
+  height: 352px;
+  aspect-ratio: auto;
+}

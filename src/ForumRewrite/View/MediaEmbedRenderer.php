@@ -9,6 +9,7 @@ final class MediaEmbedRenderer
     private const PROVIDER_LABELS = [
         'youtube' => ['icon' => '▶', 'label' => 'YouTube'],
         'instagram' => ['icon' => '📷', 'label' => 'Instagram'],
+        'spotify' => ['icon' => '♫', 'label' => 'Spotify'],
     ];
 
     private const WARM_PREVIEW_ENDPOINT = '/internal/media-embeds/warm-preview';
@@ -61,6 +62,11 @@ final class MediaEmbedRenderer
         return $result;
     }
 
+    public function hasEmbeds(string $body): bool
+    {
+        return $this->detector->detect($body) !== [];
+    }
+
     private function renderCard(array $match, bool $inlinePlayerEnabled): string
     {
         if ($inlinePlayerEnabled && $match['provider'] === 'youtube') {
@@ -69,6 +75,16 @@ final class MediaEmbedRenderer
 
         if ($inlinePlayerEnabled && $match['provider'] === 'instagram') {
             return $this->renderInstagramCard($match);
+        }
+
+        if ($inlinePlayerEnabled && $match['provider'] === 'spotify') {
+            return $this->renderPlayerExpando(
+                $match,
+                'https://open.spotify.com/embed/' . $match['contentKind'] . '/' . $match['embedId'],
+                '♫ Listen on Spotify',
+                'Spotify ' . $match['contentKind'] . ' player',
+                ' media-embed-card--spotify',
+            );
         }
 
         return $this->renderPlainCard($match);

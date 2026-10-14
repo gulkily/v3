@@ -11,6 +11,18 @@ final class MediaEmbedBeaconTemplatesTest
 {
     private const BARE_YOUTUBE_URL = 'https://www.youtube.com/watch?v=mNLeVUCLrLo';
 
+    public function testSpotifyThreadsRenderCardsWithoutTitleFetchBeacons(): void
+    {
+        foreach (['track', 'album', 'playlist'] as $kind) {
+            $url = 'https://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl';
+            foreach ([$this->renderThreadCard(true, '', $url, 'spotify-thread'), $this->renderThreadRootCard(true, '', $url, 'spotify-thread')] as $html) {
+                assertSame(true, str_contains($html, 'data-provider="spotify"'));
+                assertSame(false, str_contains($html, 'data-media-embed-warm-beacon'));
+                assertSame(false, str_contains($html, '>Untitled<'));
+            }
+        }
+    }
+
     public function testThreadCardEmitsNoBeaconWhenFlagIsOff(): void
     {
         $html = $this->renderThreadCard(false, '', self::BARE_YOUTUBE_URL, 'thread-no-subject');

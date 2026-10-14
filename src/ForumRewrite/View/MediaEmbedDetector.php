@@ -85,6 +85,11 @@ final class MediaEmbedDetector
             return ['provider' => 'instagram', 'embedId' => $matches[1]];
         }
 
+        if ($host === 'open.spotify.com'
+            && preg_match('#^/(track|album|playlist)/([A-Za-z0-9]{22})/?$#D', $path, $matches) === 1) {
+            return ['provider' => 'spotify', 'embedId' => $matches[2], 'contentKind' => $matches[1]];
+        }
+
         return null;
     }
 

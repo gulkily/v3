@@ -54,7 +54,7 @@ $isRetracted = ($post['retracted_at'] ?? null) !== null;
 $postBody = (string) $post['body'];
 $postBodyFirstLineSegments = preg_split('/\r\n|\r|\n/', $postBody, 2);
 $postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
-$postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($title))
+$postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLine === trim($title) && !$hasMediaEmbed($postBodyFirstLine))
     ? preg_replace('/^(?:\r\n|\r|\n)+/', '', $postBodyFirstLineSegments[1] ?? '')
     : $postBody;
 $bareMediaEmbedWarmBeacon = '';

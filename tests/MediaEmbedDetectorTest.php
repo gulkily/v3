@@ -8,6 +8,28 @@ use ForumRewrite\View\MediaEmbedDetector;
 
 final class MediaEmbedDetectorTest
 {
+    public function testSpotifyContentTypesAreValidatedWithoutConfusingTheirIdentifiers(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach (['track', 'album', 'playlist'] as $kind) {
+            $url = 'http://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl/?si=tracking';
+            assertSame(['provider' => 'spotify', 'embedId' => '11dFghVXANMlKmJXsNCbNl', 'contentKind' => $kind], $detector->classify($url));
+            assertSame(str_replace('?si=tracking', '', $url), $detector->detect($url)[0]['displayUrl']);
+        }
+        foreach ([
+            'https://open.spotify.com.evil.test/track/11dFghVXANMlKmJXsNCbNl',
+            'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNlX',
+            'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbN',
+            'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl/extra',
+            'https://open.spotify.com/artist/11dFghVXANMlKmJXsNCbNl',
+            'https://open.spotify.com/episode/11dFghVXANMlKmJXsNCbNl',
+            'https://spotify.link/short',
+            'spotify:track:11dFghVXANMlKmJXsNCbNl',
+        ] as $url) {
+            assertSame(null, $detector->classify($url));
+        }
+    }
+
     public function testShortsUseTheYoutubeProviderAndPreserveSourceParameters(): void
     {
         $detector = new MediaEmbedDetector();

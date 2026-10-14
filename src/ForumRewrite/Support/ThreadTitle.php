@@ -29,7 +29,7 @@ final class ThreadTitle
 
     /**
      * Returns a match only when $subject is blank and the whole (trimmed)
-     * body is exactly one recognized media-embed URL - nothing else.
+     * body is exactly one recognized URL whose provider supports title fetching.
      * Shared by displayTitle()'s "Untitled" fallback and the title-fetch
      * beacon, so both use the exact same bare-URL definition.
      *
@@ -52,6 +52,9 @@ final class ThreadTitle
         }
 
         $match = $matches[0];
+        if (!in_array($match['provider'], ['youtube', 'instagram'], true)) {
+            return null;
+        }
         if ($match['offset'] !== 0 || $match['offset'] + $match['length'] !== strlen($trimmedBody)) {
             return null;
         }

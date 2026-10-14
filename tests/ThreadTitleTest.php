@@ -8,6 +8,16 @@ use ForumRewrite\Support\ThreadTitle;
 
 final class ThreadTitleTest
 {
+    public function testSpotifyUsesBodyDerivedTitlesAndNeverRequestsTitleBackfill(): void
+    {
+        foreach (['track', 'album', 'playlist'] as $kind) {
+            $url = 'https://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl';
+            assertSame($url, ThreadTitle::displayTitle('', $url, 'thread-1', 80, true));
+            assertSame(null, ThreadTitle::bareMediaEmbedMatch('', $url));
+            assertSame('My album', ThreadTitle::displayTitle('My album', $url, 'thread-1', 80, true));
+        }
+    }
+
     public function testShortsRemainEligibleForExistingTitleBackfill(): void
     {
         $url = 'https://youtube.com/shorts/M7lc1UVf-VE';

@@ -9,6 +9,23 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MediaEmbedRendererTest
 {
+    public function testSpotifyCardsPlayersAndFlagsWorkForEachContentType(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        foreach (['track', 'album', 'playlist'] as $kind) {
+            $url = 'https://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl';
+            $plain = $renderer->render($url, true, false);
+            assertSame(true, str_contains($plain, 'Spotify'));
+            assertSame(false, str_contains($plain, '<iframe'));
+            $player = $renderer->render($url, true, true);
+            assertSame(true, str_contains($player, 'data-embed-src="https://open.spotify.com/embed/' . $kind . '/11dFghVXANMlKmJXsNCbNl"'));
+            assertSame(true, str_contains($player, 'src=""'));
+            assertSame(true, strpos($player, 'href="' . $url . '"') < strpos($player, '<details'));
+            assertSame(false, str_contains($player, 'warm-preview'));
+            assertSame($url, $renderer->render($url, false, true));
+        }
+    }
+
     public function testShortsHavePortraitPlaybackAndASourceLinkOutsideTheCollapsedPlayer(): void
     {
         $url = 'https://youtube.com/shorts/M7lc1UVf-VE?t=4&si=tracking';
