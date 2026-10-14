@@ -22,7 +22,8 @@ final class RetractedPosts
             return false;
         }
 
-        return array_intersect($post->boardTags, self::AUTHORITY_TAGS) === [];
+        return ($retraction->classification !== 'operator' || $retraction->operatorAccepted)
+            && array_intersect($post->boardTags, self::AUTHORITY_TAGS) === [];
     }
 
     public static function isAuthorityPost(PostRecord $post): bool

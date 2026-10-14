@@ -14,3 +14,9 @@ Debug mode: disabled
 - Verification: three focused API/history tests passed; coverage includes author compatibility, wrong signing key, operator submission, privilege removal between prepare/finalize, and post-revocation retry.
 - Notes: the existing author_identity_id request parameter remains an actor alias for backward compatibility; canonical Author-Identity-ID continues to identify the target author.
 
+## Stage 3 - Shared validation and suppression
+
+- Changes: canonical loading verifies supplied signatures and requires a verified actor signature plus locally accepted history for operator records. Shared suppression accepts only validated operator actions; rebuilds and raw routes inherit the same rule. Legacy unsigned local author records remain readable for compatibility; import enforcement follows in Stage 4.
+- Verification: six targeted tests passed, covering legacy rebuilds, operator suppression, raw source denial, persistence after seed removal/rebuild, forged signature rejection, and author suppression across served surfaces.
+- Notes: validation caches key on verified bytes/key and repository HEAD, so mutations or new revisions invalidate the decision. No signature or imported archive statement grants operator authority by itself.
+

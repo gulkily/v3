@@ -2556,6 +2556,8 @@ NODE;
         $accepted = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
         $_POST = [];
         assertSame('complete', $accepted['retraction_status']);
+        assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
+        assertStringContains('retracted', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
         $stale = $this->prepareRetractionRequest($app, $operator['identity_id'], $second['thread_id']);
         $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($operator['identity_id'], 8) . '.txt'));
         $this->runCommand($root, 'git commit -m "Revoke operator"');
@@ -2569,6 +2571,14 @@ NODE;
         assertSame(false, is_file($root . '/' . $stale['record_path']));
         $retry = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
         assertSame(true, $retry['already_retracted']);
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
+        assertStringContains('retracted', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
+        file_put_contents($root . '/' . $prepared['record_path'] . '.asc', 'forged');
+        $rejected = false;
+        try { (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']); }
+        catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { $rejected = true; }
+        assertSame(true, $rejected);
     }
 
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
