@@ -1143,6 +1143,7 @@
     if (!window.ForumImageUpload) throw new Error("Image preparation is unavailable. Reload and select the image again.");
     window.ForumImageUpload.lock(form, true);
     try {
+    await window.ForumImageUpload.assertEligible(form);
     const preparedImage = await window.ForumImageUpload.ready(form);
     const file = preparedImage.file, width = preparedImage.width, height = preparedImage.height;
     const description = composeFormFieldValue(form, "image_description").trim();
@@ -1162,6 +1163,7 @@
       form.__pendingImagePost = pending;
     }
     // Keep the exact prepared record on failure; retry cannot create a second post.
+    if (fields.author_identity_id !== await form.__imageIdentity()) throw new Error('The signing identity changed. Review the draft and retry.');
     return await finalizePreparedPost(Object.assign({}, fields, { imageFile: file }), pending.prepared, pending.signature);
     } finally { window.ForumImageUpload.lock(form, false); }
   }
@@ -3114,7 +3116,10 @@
     const imageInput = form.querySelector('[name="image"]');
     if (imageInput) {
       imageInput.disabled = !window.ForumImageUpload;
-      if (window.ForumImageUpload) window.ForumImageUpload.bind(form);
+      if (window.ForumImageUpload) window.ForumImageUpload.bind(form, async function () {
+        if (!localStorage.getItem(storageKeys.privateKey) || !localStorage.getItem(storageKeys.publicKey)) return '';
+        return 'openpgp:' + String(await ensureStoredFingerprint()).toLowerCase();
+      });
     }
     const draftKey = composeDraftKey(form);
     const unicodeAuthoredTextEnabled = root.dataset.unicodeAuthoredText === "1";

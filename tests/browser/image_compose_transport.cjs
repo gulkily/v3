@@ -7,8 +7,8 @@ const start = source.indexOf('  function composeImageFile(');
 const end = source.indexOf('  async function signAndFinalizePreparedPost(', start);
 let prepares = 0, finalizations = [], body = 'A picture';
 const file = new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64')], {type:'image/png'});
-const form = {querySelector(){return {files:[file]};}};
-const context = {window:{crypto,ForumImageUpload:{has:()=>true,lock(){},ready:async()=>({file,width:1,height:1})}}, crypto, navigator:{onLine:true}, TextEncoder, Uint8Array, FormData, btoa,
+const form = {__imageIdentity:async()=>'test',querySelector(){return {files:[file]};}};
+const context = {window:{crypto,ForumImageUpload:{has:()=>true,lock(){},assertEligible:async()=>{},ready:async()=>({file,width:1,height:1})}}, crypto, navigator:{onLine:true}, TextEncoder, Uint8Array, FormData, btoa,
  createImageBitmap:async()=>({width:1,height:1,close(){}}),
  composeFormFieldValue:()=>"Pixel & <test>", collectSignedSubmitFields:()=>({body,author_identity_id:'test'}),
  isReplyComposeForm:()=>false, threadPrepareApiPath:()=>'/api/prepare_thread',

@@ -48,6 +48,20 @@ try {
  const outcomes=[]; let loseResponse=true;
  await page.route('**/api/create_prepared_post', async route=>{const response=await route.fetch();outcomes.push(await response.json());if(loseResponse){loseResponse=false;await route.abort();}else await route.fulfill({response});});
  await page.goto(base+'/compose/thread');
+ await page.waitForFunction(()=>document.querySelector('.image-compose-fields')?.hidden===false);
+ await page.route('**/api/get_profile?*',route=>route.fulfill({status:200,body:'Identity-ID: openpgp:'+fingerprint+'\nApproved: no\nImage-Upload-Allowed: no\n'}));
+ await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
+ assert.equal(await page.locator('.image-compose-fields').isVisible(),false);
+ await page.unroute('**/api/get_profile?*');
+ await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
+ assert.equal(await page.locator('.image-compose-fields').isVisible(),true);
+ await context.setOffline(true);
+ await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
+ assert.equal(await page.locator('.image-compose-fields').isVisible(),false);
+ await context.setOffline(false);
+ await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
+ const guestContext=await browser.newContext();const guestPage=await guestContext.newPage();await guestPage.goto(base+'/compose/thread');
+ assert.equal(await guestPage.locator('.image-compose-fields').isVisible(),false);await guestContext.close();
  const png=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2;c.height=2;c.getContext('2d').fillRect(0,0,2,2);return c.toDataURL('image/png').split(',')[1];}),'base64');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.evaluate(()=>window.ForumBrowserSigning.ensureActionIdentity());
@@ -125,6 +139,7 @@ try {
  assert.equal(authenticated.status(),200,await authenticated.text());
  assert.equal((await context.request.get(base+imageUrl)).status(),200);
  assert.equal((await context.request.get(base+imagesHref)).status(),200);
+ await page.goto(base+'/compose/thread');await page.waitForFunction(()=>document.querySelector('.image-compose-fields')?.hidden===false);
  await anonymous.close();
  assert.deepEqual(errors,[]);
  console.log(JSON.stringify({status:'passed',root,thread:thread.post_id,reply:reply.post_id,checks:['browser signed thread/reply','lost-response retry without duplication','fresh-instance/Forte/QDB rendering','anonymous draft preservation','verified image delivery','revision-matched backups','CLI verify/restore/rebuild','identical restored bytes','flag off','member access']},null,2));

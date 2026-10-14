@@ -21,3 +21,8 @@ Debug mode: enabled
 - Changes: Loaded shared preparation/state modules through both canonical layouts; signing/hash/multipart consume prepared bytes only. Selection clears original file input, supersedes stale preparation, clears stale signed attempts, and retains prepared copies across retries. Busy locking, reset cleanup and Outbox exclusion use the shared attachment state.
 - Verification: `node tests/browser/image_compose_transport.cjs`, `node tests/browser/image_prepare.mjs`, JavaScript syntax and PHP renderer lint passed. Tests cover reuse of signed retries, text changes, offline rejection, rapid replacement, lock and source-input clearing.
 - Notes: Preview controls and permission-aware visibility follow in Stages 5–6. Original files remain untouched on the user's device.
+
+## Stage 5 - Eligibility-aware controls
+- Changes: Shared fields start hidden. A no-store profile capability response combines approval, feature state and decoder readiness. Browser checks secure/online context and actual saved signing identity, refreshes on identity/storage/network/focus changes, ignores stale responses and rechecks before submission. Server authorization remains authoritative.
+- Verification: Browser signed thread/reply suite passed, including approved controls, simulated revocation, offline hiding, guest hiding, authenticated private-site composing and retry. Transport unit and signed API integration checks passed.
+- Notes: Profile queries remain behind the existing members-only access gate; no new public access exception was added.

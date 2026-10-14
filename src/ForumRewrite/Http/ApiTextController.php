@@ -130,11 +130,15 @@ final class ApiTextController
         }
 
         $approved = ((int) $profile['is_approved']) === 1 ? 'yes' : 'no';
+        $imageUpload = $approved === 'yes'
+            && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)
+            && \ForumRewrite\Images\ImageUploadValidator::available() ? 'yes' : 'no';
         $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
 
         $this->routeServices->sendText(
-            "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n",
-            200
+            "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nImage-Upload-Allowed: {$imageUpload}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n",
+            200,
+            ['Cache-Control: no-store']
         );
     }
 
