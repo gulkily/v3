@@ -53,7 +53,7 @@ final class SourceFileController
         }
 
         $headers = [];
-        if (preg_match('#^records/(thread-labels|post-reactions)/[^/]+\.txt$#D', $relativePath)) {
+        if (preg_match('#^records/(thread-labels|post-reactions|post-retractions)/[^/]+\.txt$#D', $relativePath)) {
             $headers[] = 'X-Forum-Signature-Status: ' . $this->routeServices->activityService()->sourceSignatureStatus($relativePath, '', '');
         }
         $this->routeServices->sendText($contents, 200, $headers);

@@ -256,7 +256,7 @@ final class ReadModelBuilder
                     'event_link' => $post['event_link'],
                     'event_time' => $post['event_time'],
                     'retracted_at' => $post['retracted_at'],
-                'retraction_class' => $post['retraction_class'],
+                    'retraction_class' => $post['retraction_class'],
                 ];
             }
 

@@ -65,6 +65,8 @@ One row per canonical post record (both thread roots and replies).
 | `approved_flag_count` | INTEGER | default 0 |
 | `is_hidden` | INTEGER | default 0; moderation flag |
 | `hidden_reason` | TEXT NULL | |
+| `retracted_at` | TEXT NULL | accepted retraction timestamp |
+| `retraction_class` | TEXT NULL | author or operator for an effective retraction |
 | `sequence_number` | INTEGER | |
 
 ### `threads`
@@ -84,6 +86,8 @@ One row per thread (keyed by its root post).
 | `thread_labels_json` | TEXT | JSON array |
 | `score_total` | INTEGER | default 0 |
 | `vote_count` | INTEGER | default 0; distinct upvote/downvote events |
+| `retracted_at` | TEXT NULL | root retraction timestamp |
+| `retraction_class` | TEXT NULL | root author/operator classification |
 
 ### `profiles`
 

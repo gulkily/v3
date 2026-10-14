@@ -70,6 +70,8 @@ try {
     assert.equal(fields.get('actor_identity_id'), identities[role]);
     assert.match(fields.get('detached_signature'), /BEGIN PGP SIGNATURE/);
     const recordPath = fields.get('record_path');
+    const source = await context.request.get(base + '/source/current/' + recordPath);
+    assert.equal(source.headers()['x-forum-signature-status'], 'verified');
     const record = await readFile(join(root, 'repository', recordPath), 'utf8');
     assert.match(record, new RegExp(`Author-Identity-ID: ${identities.author}`));
     if (role === 'operator') assert.match(record, new RegExp(`Actor-Identity-ID: ${identities.operator}`));

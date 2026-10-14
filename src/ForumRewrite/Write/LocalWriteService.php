@@ -551,6 +551,9 @@ class LocalWriteService
             $recordPath = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
 
             if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                if (!RetractedPosts::applies($post, $this->canonicalRepository->loadPostRetraction($recordPath))) {
+                    throw new RuntimeException('Existing retraction is not effective for this post.');
+                }
                 return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
             }
 
@@ -635,6 +638,9 @@ class LocalWriteService
             }
             $threadId = $post->threadId ?? $post->postId;
             if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                if (!RetractedPosts::applies($post, $this->canonicalRepository->loadPostRetraction($recordPath))) {
+                    throw new RuntimeException('Existing retraction is not effective for this post.');
+                }
                 $this->deletePreparedPost($prepareToken);
 
                 return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);

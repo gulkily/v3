@@ -31,7 +31,7 @@ final class RetractionAuthority
             if (count($parents) !== 1 || !preg_match('/^[a-f0-9]{40}$/D', $parents[0])) continue;
             $parent = $parents[0];
             // A symlink must not become an authority seed during historical replay.
-            if (!str_starts_with(self::git($root, ['ls-tree', $parent, '--', $seedPath]), '100644 blob ')) continue;
+            if (preg_match('/^100(?:644|755) blob /', self::git($root, ['ls-tree', $parent, '--', $seedPath])) !== 1) continue;
             try {
                 $seed = (new ApprovalSeedRecordParser())->parse(self::git($root, ['show', $parent . ':' . $seedPath]));
                 if ($seed->approvedIdentityId === $actor) return self::$cache[$key] = true;
@@ -46,6 +46,7 @@ final class RetractionAuthority
     {
         if (!ApprovalPolicy::isOperator($root, $actor)) return false;
         $path = CanonicalPathResolver::approvalSeed(substr($actor, 8));
+        if (preg_match('/^100(?:644|755) blob /', self::git($root, ['ls-tree', 'HEAD', '--', $path])) !== 1) return false;
         return self::git($root, ['show', 'HEAD:' . $path]) === (string) file_get_contents($root . '/' . $path);
     }
 
