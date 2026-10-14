@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Top five media embeds](top_five_media_embeds/)
+
 - [Private messaging live navigation](private_messaging_live_navigation/)
 
 - [Private messaging feature flag](private_messaging_feature_flag/)
