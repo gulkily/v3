@@ -59,3 +59,7 @@ Debug mode: disabled
 ## Follow-up - Backup and Restore tabs
 - Changes: split the expando into accessible Backup and Restore tabs. Default to Backup when a browser private key exists and Restore otherwise, including keyless sessions. Added selected-tab styling, linked tab panels, roving focus and Left/Right/Home/End keyboard navigation; controls remain locked during operations.
 - Verification: the existing Chromium-to-Firefox UI test passed default selection with/without a key, keyboard tab switching, panel visibility and the full download/restore flow. PHP lint, JS syntax and diff checks passed.
+
+## Follow-up - Distinct tab appearance across themes
+- Changes: replaced button chrome with tabs connected to a bordered panel. Selected tabs have a solid top edge and bold label, with an open bottom border joining the content; inactive tabs remain flat. Scoped selectors override theme button effects, including Word 97 bevels, and retain a visible keyboard focus outline.
+- Verification: checked both selections in Chromium across all 15 themes for distinct weight/top borders and removal of button shadows; inspected Word 97 and dark screenshots and checked the 320px layout for overflow. Existing Chromium-to-Firefox backup/restore UI coverage passed, including default selection, keyboard switching and complete recovery. `git diff --check` passed.
