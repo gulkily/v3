@@ -99,3 +99,12 @@ Image references use SHA-256 and metadata, not hostnames or filesystem paths.
 A future bucket adapter must preserve these identities, authorization, complete
 inventories, revision-bound exports, and independent restoration. Credentials and
 provider URLs belong in deployment configuration, never signed posts or backups.
+
+## Upload decoder readiness
+
+New uploads require PHP GD with JPEG and PNG decoding in the **serving PHP runtime**.
+Run `php -r 'var_export(gd_info());'` for the CLI launcher; separately check the
+web-server PHP configuration when using Apache/FPM. Enable the matching GD package
+(for this Ubuntu/PHP 8.1 runtime: `sudo apt-get install php8.1-gd`) and reload the
+serving process. Missing decoding support rejects uploads; existing reads and
+backup/restore do not require GD. Never replace decoding checks with header checks.
