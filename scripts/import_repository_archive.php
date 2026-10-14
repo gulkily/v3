@@ -280,7 +280,7 @@ try {
         fwrite(STDOUT, "No new files were imported; skipping staging, commit, and derived rebuilds.\n");
     }
 
-    fwrite(STDOUT, "Repository archive import complete.\n");
+    fwrite(STDOUT, "Repository archive import complete.\nImage files are separate and are not transferred. Image references require the source image collection; use the image backup runbook for complete restoration.\n");
     fwrite(STDOUT, "Archive: {$archivePath}\n");
     fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
     fwrite(STDOUT, sprintf("Canonical files considered: %d\n", $summary['seen']));

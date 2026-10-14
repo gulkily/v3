@@ -45,9 +45,11 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Guided PHP setup fallback](guided_php_setup_fallback/)
 - [Hide Messages new-message form](hide_messages_new_message_form/)
 - [Identity bootstrap signature verification](identity_bootstrap_signature_verification/)
+- [Image content](image_content/)
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)
 - [Instance content sync](instance_content_sync/)
 - [Instance incremental sync](instance_incremental_sync/) — recorded steps: 1.
+- [Invite QR code](invite_qr_code/)
 - [Live openpgp smoke test](live_openpgp_smoke_test/) — recorded steps: 1, 2, 3.
 - [Local server dependency checks](local_server_dependency_checks/)
 - [Local server dependency installation](local_server_dependency_install/) — implemented Ubuntu 24.04 opt-in installation, recovery evidence, and platform-support backlog.

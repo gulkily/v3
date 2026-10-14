@@ -379,6 +379,14 @@ try {
     ob_start();
     $application->handle('GET', '/invites/');
     $invites = (string) ob_get_clean();
+    $qrScript = \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($argv[1] . '/public', '/assets/qrcode-generator.js');
+    $issueScript = \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($argv[1] . '/public', '/assets/invite_issuance.js');
+    if (!str_contains($invites, 'src="' . $qrScript . '"')
+        || strpos($invites, $qrScript) > strpos($invites, $issueScript)
+        || !str_contains($invites, 'data-role="invitation-qr" hidden')
+        || str_contains($board, $qrScript)) {
+        throw new RuntimeException('Invite QR assets/result were not wired exclusively to the invite page.');
+    }
     ob_start();
     $application->handle('GET', '/api/auth_status');
     $authStatus = (string) ob_get_clean();
@@ -3721,6 +3729,23 @@ PHP;
         );
 
         assertStringContains('Write APIs are disabled against the committed fixture repository', $response);
+    }
+
+    public function testImageFlagMismatchBypassesStaleStaticArtifact(): void
+    {
+        $previous = getenv('FORUM_IMAGE_CONTENT_ENABLED');
+        ['controller' => $controller, 'staticHtmlRoot' => $static, 'publicRoot' => $public] = $this->buildFrontController();
+        mkdir($static . '/current', 0777, true);
+        file_put_contents($static . '/current/index.html', '<body data-image-content-state="1">STALE IMAGE PAGE</body>');
+        try {
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+            assertStringContains('STALE IMAGE PAGE', $this->renderFrontController($controller, 'GET', '/', []));
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=false');
+            assertStringNotContains('STALE IMAGE PAGE', $this->renderFrontController($controller, 'GET', '/', []));
+        } finally {
+            putenv($previous === false ? 'FORUM_IMAGE_CONTENT_ENABLED' : 'FORUM_IMAGE_CONTENT_ENABLED=' . $previous);
+            $this->deleteTree($static); $this->deleteTree($public);
+        }
     }
 
     public function testFrontControllerServesStaticArtifactForAnonymousEligibleRoute(): void

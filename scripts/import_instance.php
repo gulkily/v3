@@ -97,6 +97,7 @@ try {
     if (isset($result['review_path'])) {
         $progress('Review: ' . $result['review_path'] . '/report.json');
     }
+    $progress($result['media_notice'] ?? 'Image files are not transferred by repository imports.');
     $exitCode = $result['status'] === 'complete' ? 0 : 2;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");

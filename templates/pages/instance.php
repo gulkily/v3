@@ -1,5 +1,12 @@
 <section class="stack">
 <?php if (isset($toolNavOptions)): ?>
+<?php if ($imageBackupAvailable ?? false): ?>
+  <article class="card">
+    <h2>Image backup</h2>
+    <p>Download both the content repository below and <a href="<?= $e($imageBackupHref) ?>">the complete image collection (.tar)</a>. Keep files with matching repository revisions together. The SQLite index alone cannot restore images.</p>
+    <p class="meta">If the repository changes, refresh this page and download both again. Images remain available for backup when image display is disabled. Restore instructions are in the image backup runbook.</p>
+  </article>
+<?php endif; ?>
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>

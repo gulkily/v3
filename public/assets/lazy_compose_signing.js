@@ -1,6 +1,6 @@
 (function () {
   const composeRoots = Array.from(document.querySelectorAll("[data-compose-root]"));
-  const intentSelector = 'textarea[name="body"], input[name="subject"]';
+  const intentSelector = 'textarea[name="body"], input[name="subject"], input[name="image"], input[name="image_description"]';
   const reactionSelector = "[data-thread-reactions-root], .post-card[data-post-id]";
   let loadPromise = null;
 
@@ -118,5 +118,6 @@
     load: loadSigningAssets,
   };
 
+  if (document.querySelector('input[name="image"]')) { void loadSigningAssets().catch(function () {}); }
   scheduleStoredReactionIdentityPrewarm();
 })();

@@ -113,3 +113,13 @@ unify thread-label and post-reaction record formats
 	separate follow-up to signed_thread_label_records
 
 continue testing installation on system without dependencies installed
+
+image uploading
+	remove the limitations on image size and type, and allow for more flexible image handling
+	automatically downsample images to a reasonable size for display, and discard the original
+		downsample it on the client side if possible
+	create a feature to auto-describe images using LLM
+	create a modern image upload UI
+		support mobile devices with large area touch targets
+		allow drag-and-drop and paste from clipboard
+	do not display the form to users who cannot upload images

@@ -26,6 +26,9 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
   <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
     <span data-role="compose-normalization-message"></span>
   </p>
+<?php if ($imageContentEnabled ?? false): ?>
+<?= $partial('partials/image_compose_fields.php') ?>
+<?php endif; ?>
   <div class="compose-form-actions">
     <button type="submit"><?= $e($submitLabel) ?></button>
     <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>

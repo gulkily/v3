@@ -56,6 +56,9 @@ $threadComposeAuthoringOperation = (string) ($authoringOperation ?? 'thread');
   <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
     <span data-role="compose-normalization-message"></span>
   </p>
+<?php if ($imageContentEnabled ?? false): ?>
+<?= $partial('partials/image_compose_fields.php') ?>
+<?php endif; ?>
   <div class="compose-form-actions<?= $isCompactThreadCompose ? ' compact-thread-compose-actions' : '' ?>">
     <button type="submit"><?= $e($threadComposeSubmitLabel) ?></button>
     <button type="submit" data-action="submit-anonymous-compose"><?= $e($threadComposeAnonymousLabel) ?></button>

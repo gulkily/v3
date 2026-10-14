@@ -65,3 +65,13 @@
   width: auto;
   margin-top: 0;
 }
+
+.invitation-qr canvas {
+  display: block;
+  width: 18rem;
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  image-rendering: pixelated;
+  forced-color-adjust: none;
+}

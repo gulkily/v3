@@ -48,6 +48,8 @@
       button.addEventListener("click", function () {
         var item;
         try {
+          var image = form.querySelector('[name="image"]');
+          if (image && image.files && image.files.length) throw new Error("Images cannot be saved to Outbox. Keep this draft open and publish online, or remove the image.");
           item = replyItem({
             threadId: form.querySelector('[name="thread_id"]').value,
             parentId: form.querySelector('[name="parent_id"]').value,
@@ -85,6 +87,8 @@
       button.addEventListener("click", function () {
         var item;
         try {
+          var image = form.querySelector('[name="image"]');
+          if (image && image.files && image.files.length) throw new Error("Images cannot be saved to Outbox. Keep this draft open and publish online, or remove the image.");
           item = threadItem({
             subject: form.querySelector('[name="subject"]').value,
             body: form.querySelector('[name="body"]').value,

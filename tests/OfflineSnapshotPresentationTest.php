@@ -332,7 +332,8 @@ global.document = { addEventListener() {}, createElement: element };
 vm.runInThisContext(source);
 const rows = [
   ['p1', null, 'My Title', 'My Title\n\nFirst paragraph line.\nSecond line of paragraph.', 'A', '2026-01-01T00:00:00Z'],
-  ['p2', 'p1', '', 'A reply with a <script> tag & an "quote".', 'B', '2026-01-02T00:00:00Z']
+  ['p2', 'p1', '', 'A reply with a <script> tag & an "quote".', 'B', '2026-01-02T00:00:00Z'],
+  ['p3', 'p1', '', 'Image-v1: ' + 'a'.repeat(64) + ' png 68 1 1 %3Cpixel%3E', 'B', '2026-01-02T00:00:00Z']
 ];
 const database = {
   exec(sql) {
@@ -346,7 +347,8 @@ window.forumOfflineSnapshot.renderThreadDetail({
 });
 process.stdout.write(JSON.stringify({
   rootBody: content.children[0].children[1].innerHTML,
-  replyBody: content.children[1].children[1].innerHTML
+  replyBody: content.children[1].children[1].innerHTML,
+  imageBody: content.children[2].children[1].innerHTML
 }));
 NODE;
         $command = sprintf(
@@ -362,5 +364,6 @@ NODE;
 
         assertSame("First paragraph line.<br>\nSecond line of paragraph.", $result['rootBody']);
         assertSame('A reply with a &lt;script&gt; tag &amp; an &quot;quote&quot;.', $result['replyBody']);
+        assertSame('Image unavailable offline — &lt;pixel&gt;', $result['imageBody']);
     }
 }

@@ -674,3 +674,14 @@ before they ship.
 - `artifact_root` — directory to scan; defaults to `FORUM_PUBLIC_ARTIFACT_ROOT` or `public/`
 
 Startup dependency failures list missing capabilities, group required Ubuntu extension installs into one command, and show optional recovery separately. Commands are highlighted on terminals unless `NO_COLOR` is set. `dependency-check` is an alias for `check-dependencies`.
+
+## Verify or restore image backups
+
+`./v3 images verify|restore <images.tar> <repository_root> <database_path>
+[--image-root=/private/images]` checks a revision-matched image/repository pair.
+`verify` stages and validates without activation; `restore` atomically installs
+into a fresh private image directory or accepts an identical existing store.
+It never overwrites a different store. Exit 0 means complete verification/restore;
+exit 1 includes actionable failure text. Rebuild the read model after restoring.
+See [Image backup and recovery](../runbooks/image_backup.md) for the full sequence,
+limits, deployment requirements, and interrupted-operation recovery.

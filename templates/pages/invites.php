@@ -23,11 +23,15 @@
       </div>
       <button type="submit">Generate invite link</button>
     </form>
-    <p class="meta" data-role="invitation-feedback" hidden></p>
+    <p class="meta" data-role="invitation-feedback" role="status" hidden></p>
     <div data-role="invitation-result" hidden>
       <div class="button-row button-row-split">
-        <textarea id="invite-link" readonly rows="3" data-role="invitation-link"></textarea>
+        <textarea id="invite-link" aria-label="Invitation link" readonly rows="3" data-role="invitation-link"></textarea>
         <button type="button" data-action="copy-invitation-link">Copy</button>
+      </div>
+      <div class="invitation-qr" data-role="invitation-qr" hidden>
+        <p>Scan to accept this invitation</p>
+        <canvas data-role="invitation-qr-code" role="img" aria-label="Invitation QR code. Scan with your phone, or use the invitation link above."></canvas>
       </div>
     </div>
   </article>
