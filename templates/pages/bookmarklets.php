@@ -25,7 +25,7 @@ $bookmarkletSections = [
     <ul class="tool-launcher-list">
 <?php foreach ($bookmarklets as $bookmarklet): ?>
 <?php if ($bookmarklet['mode'] !== $section['mode']) { continue; } ?>
-      <li class="tool-launcher-item">
+      <li class="tool-launcher-item bookmarklet-item">
         <div class="bookmarklet-actions">
         <a
           class="tool-launcher-button"
