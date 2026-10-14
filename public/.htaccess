@@ -14,38 +14,7 @@ RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico)$ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# A QDB deployment may serve its anonymous, queryless hot paths directly from
-# the active complete release. The presence of latest.html identifies a QDB
-# release; every target is also tested so a missing or withdrawn release falls
-# through to PHP.
-RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{HTTP:Cookie} ^$
-RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
-RewriteCond %{DOCUMENT_ROOT}/.static/current/index.html -f
-RewriteRule ^$ .static/current/index.html [END]
-
-RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{HTTP:Cookie} ^$
-RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
-RewriteCond %{DOCUMENT_ROOT}/.static/current/$1.html -f
-RewriteRule ^(latest|top|leetness)/?$ .static/current/$1.html [END]
-
-RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{HTTP:Cookie} ^$
-RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
-RewriteCond %{DOCUMENT_ROOT}/.static/current/threads/$1.html -f
-RewriteRule ^threads/([A-Za-z0-9._:-]+)/?$ .static/current/threads/$1.html [END]
-
-RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{HTTP:Cookie} ^$
-RewriteCond %{DOCUMENT_ROOT}/.static/current/latest.html -f
-RewriteCond %{DOCUMENT_ROOT}/.static/current/qdb/quotes/$1.html -f
-RewriteRule ^([1-9][0-9]*)/?$ .static/current/qdb/quotes/$1.html [END]
-
+# Feature and membership state must be evaluated by PHP before serving content.
 # Every content, API, download, and generated-artifact request goes through the
 # front controller. Public instances still use its static-artifact fast path;
 # private instances always run the approved-members-only gate.

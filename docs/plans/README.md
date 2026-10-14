@@ -45,6 +45,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Guided PHP setup fallback](guided_php_setup_fallback/)
 - [Hide Messages new-message form](hide_messages_new_message_form/)
 - [Identity bootstrap signature verification](identity_bootstrap_signature_verification/)
+- [Image content](image_content/)
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)
 - [Instance content sync](instance_content_sync/)
 - [Instance incremental sync](instance_incremental_sync/) — recorded steps: 1.

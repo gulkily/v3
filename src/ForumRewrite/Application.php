@@ -193,6 +193,11 @@ final class Application
             return;
         }
 
+        if (str_starts_with($path, '/images/')) {
+            (new \ForumRewrite\Http\ImageController($this->routeServices(), $this->repositoryRoot, $this->featureFlags()))->serve($method, substr($path, strlen('/images/')));
+            return;
+        }
+
         if ($path === '/api/set_identity_hint') {
             $this->identityHintController()->setIdentityHint($method, $query);
             return;
@@ -557,13 +562,18 @@ final class Application
             return;
         }
 
+        if ($path === '/downloads/images.tar') {
+            $this->instancePageController()->downloadImageBackup($method, 'images', isset($query['revision']) ? (string) $query['revision'] : null);
+            return;
+        }
+
         if ($path === '/downloads/repository.tar.gz') {
-            $this->instancePageController()->downloadRepository($method, 'tar.gz');
+            $this->instancePageController()->downloadRepository($method, 'tar.gz', isset($query['revision']) ? (string) $query['revision'] : null);
             return;
         }
 
         if ($path === '/downloads/repository.zip') {
-            $this->instancePageController()->downloadRepository($method, 'zip');
+            $this->instancePageController()->downloadRepository($method, 'zip', isset($query['revision']) ? (string) $query['revision'] : null);
             return;
         }
 
@@ -1247,7 +1257,7 @@ final class Application
             $this->projectRoot . '/templates',
             $this->appVersion(),
             $this->featureFlags(),
-            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot)),
+            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
         );
     }
 
@@ -1768,7 +1778,7 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
-        if (str_starts_with($path, '/messages/conversation/')) {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/')) {
             return true;
         }
 
@@ -1786,7 +1796,7 @@ final class Application
             '/tools/sqlite', '/tools/sqlite/',
             '/offline', '/offline/', '/offline/reader', '/offline/reader/',
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
-            '/downloads/repository.tar.gz', '/downloads/repository.zip',
+            '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',

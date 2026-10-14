@@ -181,12 +181,32 @@ final class WritePostAndIdentityApiController
             return;
         }
 
+        if (str_starts_with((string) ($_SERVER['CONTENT_TYPE'] ?? ''), 'multipart/form-data')
+            && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0 && $_POST === [] && $_FILES === []) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Image request is empty or exceeds the server upload limit. Keep the draft, reselect a file of at most 5 MiB, and ask the operator to check PHP request limits.'], 413);
+            return;
+        }
+
         $phaseStartedAt = hrtime(true);
         $input = $this->routeServices->requestData($query);
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
 
         try {
-            $result = $this->routeServices->writer()->createPreparedPost($input);
+            $imagePath = null;
+            if (isset($_FILES['image'])) {
+                $file = $_FILES['image'];
+                if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+                    || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) {
+                    throw new RuntimeException('Image upload failed or exceeds the server request limit; preserve the draft and select the file again.');
+                }
+                $imagePath = $file['tmp_name'];
+                if (isset($input['canonical_record_base64'])) {
+                    $decoded = base64_decode((string) $input['canonical_record_base64'], true);
+                    if ($decoded === false) { throw new RuntimeException('Invalid signed record transport encoding.'); }
+                    $input['canonical_record'] = $decoded;
+                }
+            }
+            $result = $this->routeServices->writer()->createPreparedPost($input, $imagePath);
             $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $headers = $this->routeServices->serverTimingHeaders($result);

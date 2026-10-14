@@ -107,24 +107,18 @@ FORUM_STATIC_HTML_ROOT=/srv/forum-rewrite/state/static_html
 It is not under `public/`; Apache continues to route content requests through
 PHP, which selects only the `current` release.
 
-### Optional QDB Apache-direct static reads
+### Content routing and image storage
 
-For a public QDB deployment that has been validated on the target shared host,
-Apache 2.4+ can serve the anonymous hot-path artifacts without starting PHP.
-The host must permit `mod_rewrite` to follow the following document-root
-symlink:
+The front controller evaluates membership and image feature flags before serving
+content, including QDB hot paths. The checked-in `.htaccess` no longer serves
+QDB artifacts directly through `public/.static`; remove custom direct-content
+shortcuts. Matching generated HTML still uses the PHP static fast path.
 
-```bash
-ln -s "$FORUM_STATIC_HTML_ROOT" public/.static
-```
-
-The checked-in `.htaccess` then serves only cookie-free, query-free `GET` and
-`HEAD` requests for `/`, `/latest`, `/top`, `/leetness`, canonical quote pages,
-and existing numeric quote aliases. It confirms every target exists and falls
-back to `index.php` if the `current` release pointer is absent. Cookie-bearing,
-query, account, write, reaction, search, random, and unknown requests remain
-dynamic. Do not enable this on a host that cannot verify the symlink/rewrite
-behavior in staging; remove `public/.static` to roll back to PHP artifacts.
+Image support is default off. Before enabling it, configure a private image root,
+PHP upload/request limits and temporary export capacity, then verify backup and
+restore. Follow [Image backup and recovery](image_backup.md). Text remains usable
+on HTTP; image authoring requires HTTPS or localhost Web Crypto. Do not expose the
+image directory through Apache aliases, symlinks or a public CDN.
 
 ## Safe Deployment Procedure
 

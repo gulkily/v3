@@ -36,6 +36,8 @@ use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
 use RuntimeException;
+use ForumRewrite\Images\ImageReference;
+use ForumRewrite\Images\ImageStore;
 
 class LocalWriteService
 {
@@ -94,6 +96,9 @@ class LocalWriteService
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
+            if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
+                throw new RuntimeException('Image attachments require signed publication by an approved member.');
+            }
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
             $eventDate = $this->normalizeEventDate((string) ($input['event_date'] ?? ''));
@@ -151,6 +156,9 @@ class LocalWriteService
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
+            if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
+                throw new RuntimeException('Image attachments require signed publication by an approved member.');
+            }
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
@@ -232,6 +240,7 @@ class LocalWriteService
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
+            $this->assertImageAuthor($body, $authorIdentityId);
             $createdAt = $this->canonicalTimestampNow();
             $eventDate = $this->normalizeEventDate((string) ($input['event_date'] ?? ''));
             $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
@@ -277,6 +286,7 @@ class LocalWriteService
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
+            $this->assertImageAuthor($body, $authorIdentityId);
             $createdAt = $this->canonicalTimestampNow();
 
             $this->assertReplyTarget($threadId, $parentId);
@@ -311,9 +321,9 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
-    public function createPreparedPost(array $input): array
+    public function createPreparedPost(array $input, ?string $imagePath = null): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input, $imagePath): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -340,10 +350,6 @@ class LocalWriteService
                 'author_identity_id'
             );
 
-            if ($this->postTargetExists($postId)) {
-                throw new RuntimeException('Prepared post target already exists.');
-            }
-
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
             [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
             $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
@@ -365,6 +371,27 @@ class LocalWriteService
                 throw new RuntimeException('Prepared post canonical record does not match prepared metadata.');
             }
 
+            $image = $this->assertImageAuthor($record->body, $authorIdentityId);
+            $imageStore = $image !== null ? new ImageStore($this->repositoryRoot) : null;
+            if ($image !== null) {
+                if ($imagePath === null) { throw new RuntimeException('Select the image again to publish or repair this attachment.'); }
+                $imageStore->validateUpload($imagePath, $image);
+            } elseif ($imagePath !== null) {
+                throw new RuntimeException('Uploaded image is not bound to the signed post.');
+            }
+            if ($this->postTargetExists($postId)) {
+                // Image finalization is retryable after a lost response or interrupted save.
+                $committed = $this->runGitCommand(['show', 'HEAD:' . $recordPath], 'Unable to verify existing image post');
+                if ($image === null || rtrim($committed, "\n") !== rtrim($canonicalRecord, "\n")) {
+                    throw new RuntimeException('Prepared post target already exists.');
+                }
+                $imageStore->put($imagePath, $image);
+                $head = $this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read repository revision');
+                $this->synchronizePostDerivedState($record, $head, true);
+                $this->invalidator()->invalidateReply($threadId, $postId);
+                return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'record_path' => $recordPath, 'commit_sha' => $head];
+            }
+
             $threadLabels = $this->extractThreadLabelsFromBody($record->body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
@@ -382,6 +409,12 @@ class LocalWriteService
             }
             $commitResult = $this->commitCanonicalWrite($writtenPaths, ($record->isReply() ? 'Create signed reply ' : 'Create signed thread ') . $postId);
             $commitSha = $commitResult['commit_sha'];
+            if ($image !== null) {
+                try { $imageStore->put($imagePath, $image); }
+                catch (RuntimeException $error) {
+                    throw new RuntimeException('Post ' . $postId . ' committed, but image save failed. Retry this signed submission with the same image: ' . $error->getMessage());
+                }
+            }
             $timings = array_merge($timings, $commitResult['timings']);
             $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
 
@@ -392,7 +425,7 @@ class LocalWriteService
                 $this->invalidator()->invalidateBoardThread($postId);
             }
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
-            $this->deletePreparedPost($prepareToken);
+            if ($image === null) { $this->deletePreparedPost($prepareToken); }
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
@@ -405,6 +438,15 @@ class LocalWriteService
                 'timings' => $timings,
             ];
         });
+    }
+
+    private function assertImageAuthor(string $body, string $identity): ?array
+    {
+        $image = ImageReference::fromBody($body);
+        if ($image !== null && (!$this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED) || !$this->isApprovedIdentity($identity))) {
+            throw new RuntimeException('Image attachments require enabled image support and an approved signing identity.');
+        }
+        return $image;
     }
 
     private function buildThreadPostRecord(

@@ -33,7 +33,7 @@
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
 </head>
-<body class="<?= $e($bodyClass) ?>">
+<body data-image-content-state="<?= ($imageContentEnabled ?? false) ? '1' : '0' ?>" class="<?= $e($bodyClass) ?>">
 <?= $content ?>
 </body>
 </html>

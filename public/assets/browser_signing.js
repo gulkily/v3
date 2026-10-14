@@ -386,7 +386,7 @@
       }
 
       const type = (field.getAttribute("type") || "text").toLowerCase();
-      return type !== "hidden" || field.name === "thread_id" || field.name === "parent_id";
+      return type !== "file" && (type !== "hidden" || field.name === "thread_id" || field.name === "parent_id");
     });
   }
 
@@ -1101,16 +1101,62 @@
     return null;
   }
 
+  function composeImageFile(form) {
+    const field = form.querySelector('[name="image"]');
+    return field && field.files && field.files[0] || null;
+  }
+
+  async function submitImageCompose(form) {
+    const file = composeImageFile(form);
+    if (!navigator.onLine || !window.crypto || !window.crypto.subtle) throw new Error("Image publication requires an online HTTPS connection (or localhost).");
+    if (!file || file.size > 5 * 1024 * 1024 || !["image/png", "image/jpeg"].includes(file.type)) throw new Error("Choose a JPEG/PNG of at most 5 MiB.");
+    const description = composeFormFieldValue(form, "image_description").trim();
+    if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
+    const bitmap = await createImageBitmap(file);
+    const width = bitmap.width, height = bitmap.height;
+    bitmap.close();
+    if (width > 4096 || height > 4096) throw new Error("Image dimensions must be at most 4096 pixels per side.");
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
+    const fields = collectSignedSubmitFields(form);
+    if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
+    const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
+    const identity = JSON.stringify(fields);
+    let pending = form.__pendingImagePost;
+    if (!pending || pending.identity !== identity) {
+      const response = await submitUrlEncoded(isReplyComposeForm(form) ? "/api/prepare_reply" : threadPrepareApiPath(form), fields);
+      const prepared = parsePreparedPostJsonResponse(response.text, response.serverTiming, "Unable to prepare image post.");
+      if (!prepared.ok) throw new Error(prepared.error);
+      pending = { identity: identity, prepared: prepared, signature: await signCanonicalRecord(prepared.canonicalRecord) };
+      form.__pendingImagePost = pending;
+    }
+    // Keep the exact prepared record on failure; retry cannot create a second post.
+    return finalizePreparedPost(Object.assign({}, fields, { imageFile: file }), pending.prepared, pending.signature);
+  }
+
   async function finalizePreparedPost(fields, prepared, detachedSignature) {
-    const result = await submitUrlEncoded("/api/create_prepared_post", {
+    const payload = {
       prepare_token: prepared.prepareToken,
       post_id: prepared.postId,
       record_path: prepared.recordPath,
       author_identity_id: fields.author_identity_id,
       canonical_record: prepared.canonicalRecord,
       detached_signature: detachedSignature,
-    });
-
+    };
+    let result;
+    if (fields.imageFile) {
+      const data = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        // Multipart string fields normalize LF to CRLF. Preserve signed bytes exactly.
+        if (key === "canonical_record") data.append("canonical_record_base64", btoa(Array.from(new TextEncoder().encode(value), b => String.fromCharCode(b)).join("")));
+        else data.append(key, value);
+      });
+      data.append("image", fields.imageFile);
+      const response = await fetch("/api/create_prepared_post", { method: "POST", credentials: "same-origin", body: data });
+      result = { text: await response.text(), serverTiming: {} };
+    } else {
+      result = await submitUrlEncoded("/api/create_prepared_post", payload);
+    }
     return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to finalize signed post.");
   }
 
@@ -2909,6 +2955,8 @@
     if (!form) {
       return;
     }
+    const imageInput = form.querySelector('[name="image"]');
+    if (imageInput) imageInput.disabled = false;
     const draftKey = composeDraftKey(form);
     const unicodeAuthoredTextEnabled = root.dataset.unicodeAuthoredText === "1";
     const emojiAuthoredTextEnabled = unicodeAuthoredTextEnabled && root.dataset.emojiAuthoredText === "1";
@@ -3132,6 +3180,9 @@
     }
 
     function clearComposeFields() {
+      const imageField = form.querySelector('[name="image"]');
+      if (imageField) imageField.value = "";
+      delete form.__pendingImagePost;
       textFields.forEach(function (field) {
         field.value = "";
       });
@@ -3415,6 +3466,9 @@
       }
 
       try {
+        if (isAnonymousComposeSubmitter(submitter) && composeImageFile(form)) {
+          throw new Error("Image attachments require signed publication by an approved member. Remove the image to post anonymously.");
+        }
         if (isAnonymousComposeSubmitter(submitter)) {
           clearComposeAuthorIdentity(form);
           setStatus(statusNode, "Sending anonymous post...", "ok");
@@ -3428,6 +3482,16 @@
         await ensureComposeIdentity(root, statusNode, timing);
         markActionTiming(timing, "forum_identity_ready");
         ensureComposeAuthorIdentity(form);
+        if (composeImageFile(form)) {
+          setStatus(statusNode, "Validating, signing and uploading image…", "ok");
+          const result = await submitImageCompose(form);
+          if (!result.ok) throw new Error(result.error);
+          clearComposeDraftForPendingSubmit(form);
+          completeActionTiming(timing, "ok");
+          if (isReplyComposeForm(form)) navigateToCanonicalReply(result, composeFormFieldValue(form, "return_to"));
+          else navigateToCanonicalThread(result, composeFormFieldValue(form, "return_to"));
+          return;
+        }
         if (isThreadComposeForm(form) && await submitOptimisticThread(timing)) {
           return;
         }

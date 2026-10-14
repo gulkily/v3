@@ -27,6 +27,58 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testImageSignedPublicationRejectsTamperingAndRetriesSafely(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('image-author');
+        $old = getenv('FORUM_IMAGE_CONTENT_ENABLED');
+        $source = $root . '/upload.png';
+        try {
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_POST = ['public_key' => $key['public_key']];
+            $linked = $this->renderMethod($app, 'POST', '/api/link_identity');
+            $_POST = [];
+            $identity = $this->extractValue($linked, 'identity_id');
+            $this->seedApprovedIdentity($root, $identity);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            file_put_contents($source, ImageContentTest::png());
+            $ref = \ForumRewrite\Images\ImageStore::inspect($source, 'White pixel');
+            $input = ['body' => "Picture\n" . \ForumRewrite\Images\ImageReference::line($ref), 'subject' => 'Image', 'author_identity_id' => $identity];
+            try { $writer->createThread($input); throw new \LogicException('Unsigned attachment accepted'); }
+            catch (RuntimeException $e) { assertStringContains('signed publication', $e->getMessage()); }
+            $prepared = $writer->prepareThread($input);
+            $final = $prepared + ['author_identity_id' => $identity, 'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            file_put_contents($source, 'tampered');
+            try { $writer->createPreparedPost($final, $source); throw new \LogicException('Tampered attachment accepted'); }
+            catch (RuntimeException $e) { assertTrue(!is_file($root . '/' . $prepared['record_path'])); }
+            file_put_contents($source, ImageContentTest::png());
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=false');
+            try { $writer->createPreparedPost($final, $source); throw new \LogicException('Disabled attachment accepted'); }
+            catch (RuntimeException $e) { assertStringContains('enabled image support', $e->getMessage()); }
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+            $result = $writer->createPreparedPost($final, $source);
+            $retry = $writer->createPreparedPost($final, $source);
+            assertSame($result['post_id'], $retry['post_id']);
+            assertSame($result['commit_sha'], $retry['commit_sha']);
+            $imageUrl = '/images/' . \ForumRewrite\Images\ImageReference::filename($ref);
+            assertSame(ImageContentTest::png(), $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $imageUrl));
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=false');
+            assertStringContains('Image unavailable', $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $imageUrl));
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+            assertSame(ImageContentTest::png(), file_get_contents((new \ForumRewrite\Images\ImageStore($root))->resolve($ref)));
+        } finally {
+            $_POST = [];
+            putenv($old === false ? 'FORUM_IMAGE_CONTENT_ENABLED' : 'FORUM_IMAGE_CONTENT_ENABLED=' . $old);
+            $this->deleteTree($root);
+            $this->deleteTree($root . '-images');
+            $this->deleteTree($artifacts);
+            $this->deleteTree($key['home']);
+            @unlink($db);
+        }
+    }
+
     public function testEventFieldsRequireEventSupportBeforeWriting(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
