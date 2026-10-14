@@ -1,6 +1,6 @@
 # Browser key backups
 
-Open **Account Key → Back up your key**, or follow **Back up your key** from Messages. Enter and confirm a strong, unique passphrase, then download a text backup or Starfield PNG. Each file is encrypted and decoded/decrypted locally to verify the original key and fingerprint before download starts. Keep the file and passphrase somewhere safe; the site cannot recover either one. You can download both formats, entering your passphrase again for each download.
+Expand **Account Key → Back up or restore your key**, or follow **Back up your key** from Messages to open it automatically. Enter and confirm a strong, unique passphrase, then download a text backup or Starfield PNG. Each file is encrypted and decoded/decrypted locally to verify the original key and fingerprint before download starts. Keep the file and passphrase somewhere safe; the site cannot recover either one. You can download both formats, entering your passphrase again for each download.
 
 The PNG is an image containing the encrypted backup. Keep the **original downloaded file**. Lossless PNG recompression that preserves the exact pixels is supported, including conversion from opaque RGBA to RGB. Screenshots, resizing, and conversion to JPEG are not supported. Keep the original even when using an image host: a visually similar image can still contain altered data. The text file provides an alternative.
 

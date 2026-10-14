@@ -11,6 +11,11 @@
     const area = root.querySelector('[data-key-backup]');
     if (!area || area.dataset.bound) return;
     area.dataset.bound = '1';
+    function openLinkedBackup() {
+      if (window.location.hash === '#key-backup') area.open = true;
+    }
+    openLinkedBackup();
+    window.addEventListener('hashchange', openLinkedBackup);
     const find = selector => area.querySelector(selector);
     const status = find('[data-backup-status]');
     let busy = false;

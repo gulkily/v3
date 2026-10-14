@@ -34,6 +34,7 @@ try {
   if(process.env.BUNDLE==='v5')await context.addInitScript(()=>Object.defineProperty(window,'isSecureContext',{value:false}));
   const page=await context.newPage(); lastPage=page; page.setDefaultTimeout(15000); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/account/key/');
+  assert.equal(await page.locator('[data-backup-password]').isVisible(),false);
   await page.evaluate(({keys,fingerprint})=>{
     for(const [name,value] of Object.entries({username:'alice',private_key:keys.privateKey,public_key:keys.publicKey,fingerprint:fingerprint.toUpperCase(),published_fingerprint:fingerprint.toUpperCase()}))localStorage.setItem('forum_pki_'+name,value);
   },{keys,fingerprint});
@@ -81,6 +82,7 @@ try {
   fresh.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   restored.on('pageerror',e=>errors.push(e.message));
   await restored.goto(base+'/account/key/');
+  await restored.locator('#key-backup > summary').click();
   const upload=()=>restored.locator('[data-backup-file]').setInputFiles({name:format==='png'?'backup.png':'backup.txt',mimeType:format==='png'?'image/png':'text/plain',buffer:backup});
   if(format==='png'){
     const jpeg=await page.evaluate(async base64=>{
@@ -138,6 +140,7 @@ try {
   await restored.goto(base+'/messages/conversation/user-01');
   await restored.locator('[data-role="private-message-plaintext"]').filter({hasText:'Original private conversation'}).first().waitFor({state:'visible'});
   await restored.goto(base+'/account/key/');
+  await restored.locator('#key-backup > summary').click();
   await restored.evaluate(()=>{
     for(const key of ['forum_pki_username','forum_pki_public_key','forum_pki_private_key','forum_pki_fingerprint'])localStorage.removeItem(key);
     window.dispatchEvent(new Event('storage'));

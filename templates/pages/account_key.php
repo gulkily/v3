@@ -33,22 +33,24 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
-      <fieldset class="stack" id="key-backup" data-key-backup>
-        <legend>Back up your key</legend>
-        <p>Keep access to your identity and private messages if you clear browser data or change devices. Backups are encrypted here in your browser.</p>
-        <p class="meta">Use a strong, unique passphrase and keep it somewhere safe. A forgotten passphrase cannot be recovered.</p>
-        <label>Backup passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
-        <label>Confirm passphrase <input type="password" data-backup-confirm autocomplete="new-password"></label>
-        <div class="button-row">
-          <button type="button" data-backup-download="text">Download text backup</button>
-          <button type="button" data-backup-download="png">Download Starfield PNG</button>
+      <details class="account-key-advanced" id="key-backup" data-key-backup>
+        <summary>Back up or restore your key</summary>
+        <div class="stack">
+          <p>Keep access to your identity and private messages if you clear browser data or change devices. Backups are encrypted here in your browser.</p>
+          <p class="meta">Use a strong, unique passphrase and keep it somewhere safe. A forgotten passphrase cannot be recovered.</p>
+          <label>Backup passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
+          <label>Confirm passphrase <input type="password" data-backup-confirm autocomplete="new-password"></label>
+          <div class="button-row">
+            <button type="button" data-backup-download="text">Download text backup</button>
+            <button type="button" data-backup-download="png">Download Starfield PNG</button>
+          </div>
+          <p class="meta">Keep the original PNG file. Lossless PNG recompression is supported, but screenshots, resizing, and JPEG conversion can destroy the backup. Text is also available.</p>
+          <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
+          <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
+          <button type="button" data-backup-restore>Restore backup</button>
+          <p class="meta" data-backup-status role="status" aria-live="polite"></p>
         </div>
-        <p class="meta">Keep the original PNG file. Lossless PNG recompression is supported, but screenshots, resizing, and JPEG conversion can destroy the backup. Text is also available.</p>
-        <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
-        <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
-        <button type="button" data-backup-restore>Restore backup</button>
-        <p class="meta" data-backup-status role="status" aria-live="polite"></p>
-      </fieldset>
+      </details>
       <details class="account-key-advanced">
         <summary>Advanced / technical details</summary>
         <div class="stack">
