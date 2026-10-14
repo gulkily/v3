@@ -55,3 +55,7 @@ Debug mode: disabled
 ## Follow-up - Collapsible backup interface
 - Changes: moved backup and restore controls into a native, initially collapsed “Back up or restore your key” expando, reusing Account Key disclosure styling. The Messages reminder's `#key-backup` link opens it automatically, including same-page hash navigation.
 - Verification: PHP lint, JS syntax and diff checks passed. The existing Chromium-to-Firefox UI test passed with collapsed initial state, reminder-link expansion, manual expansion and the full backup/restore flow.
+
+## Follow-up - Backup and Restore tabs
+- Changes: split the expando into accessible Backup and Restore tabs. Default to Backup when a browser private key exists and Restore otherwise, including keyless sessions. Added selected-tab styling, linked tab panels, roving focus and Left/Right/Home/End keyboard navigation; controls remain locked during operations.
+- Verification: the existing Chromium-to-Firefox UI test passed default selection with/without a key, keyboard tab switching, panel visibility and the full download/restore flow. PHP lint, JS syntax and diff checks passed.

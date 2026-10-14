@@ -106,3 +106,22 @@
   margin-top: 0;
   flex: 0 0 auto;
 }
+
+.account-key-tabs {
+  display: flex;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--line);
+}
+.account-key-tabs > [role="tab"] {
+  width: auto;
+  margin-top: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.account-key-tabs > [aria-selected="true"] {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+[data-backup-panel][hidden] {
+  display: none;
+}

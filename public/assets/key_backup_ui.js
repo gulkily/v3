@@ -19,6 +19,34 @@
     const find = selector => area.querySelector(selector);
     const status = find('[data-backup-status]');
     let busy = false;
+    const tabs = Array.from(area.querySelectorAll('[data-backup-tab]'));
+    function selectTab(name) {
+      if (busy) return;
+      tabs.forEach(tab => {
+        const selected = tab.dataset.backupTab === name;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+      });
+      area.querySelectorAll('[data-backup-panel]').forEach(panel => {
+        panel.hidden = panel.dataset.backupPanel !== name;
+      });
+      status.textContent = '';
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectTab(tab.dataset.backupTab));
+      tab.addEventListener('keydown', event => {
+        if (busy || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+          : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        selectTab(tabs[next].dataset.backupTab);
+        tabs[next].focus();
+      });
+    });
+    let hasPrivateKey = false;
+    try { hasPrivateKey = Boolean(identity.snapshot().forum_pki_private_key); } catch (_) {}
+    selectTab(hasPrivateKey ? 'backup' : 'restore');
+
     root.addEventListener('submit', event => { if (busy) event.preventDefault(); }, true);
     root.addEventListener('click', event => { if (busy) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
     async function run(action) {

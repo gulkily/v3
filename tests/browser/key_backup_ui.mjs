@@ -35,6 +35,7 @@ try {
   const page=await context.newPage(); lastPage=page; page.setDefaultTimeout(15000); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/account/key/');
   assert.equal(await page.locator('[data-backup-password]').isVisible(),false);
+  assert.equal(await page.getByRole('tab',{name:'Restore',includeHidden:true}).getAttribute('aria-selected'),'true');
   await page.evaluate(({keys,fingerprint})=>{
     for(const [name,value] of Object.entries({username:'alice',private_key:keys.privateKey,public_key:keys.publicKey,fingerprint:fingerprint.toUpperCase(),published_fingerprint:fingerprint.toUpperCase()}))localStorage.setItem('forum_pki_'+name,value);
   },{keys,fingerprint});
@@ -44,6 +45,14 @@ try {
   if(await page.locator('[data-key-backup-reminder]').count()===0)throw new Error('Messages entry: '+(await page.locator('main').innerText()).slice(0,800));
   await page.locator('[data-key-backup-reminder]').waitFor({state:'visible'});
   await page.getByRole('link',{name:'Back up your key',exact:true}).click();
+  assert.equal(await page.getByRole('tab',{name:'Backup',exact:true}).getAttribute('aria-selected'),'true');
+  assert.equal(await page.locator('[data-backup-file]').isVisible(),false);
+  await page.getByRole('tab',{name:'Backup',exact:true}).focus();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.locator('[data-backup-file]').isVisible(),true);
+  assert.equal(await page.locator('[data-backup-password]').isVisible(),false);
+  await page.keyboard.press('Home');
+  assert.equal(await page.locator('[data-backup-password]').isVisible(),true);
   const passphrase='a long unique starfield passphrase';
   const requests=[]; context.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   await page.locator('[data-backup-password]').fill(passphrase);
@@ -83,6 +92,7 @@ try {
   restored.on('pageerror',e=>errors.push(e.message));
   await restored.goto(base+'/account/key/');
   await restored.locator('#key-backup > summary').click();
+  await restored.getByRole('tab',{name:'Restore',exact:true}).click();
   const upload=()=>restored.locator('[data-backup-file]').setInputFiles({name:format==='png'?'backup.png':'backup.txt',mimeType:format==='png'?'image/png':'text/plain',buffer:backup});
   if(format==='png'){
     const jpeg=await page.evaluate(async base64=>{
@@ -141,6 +151,7 @@ try {
   await restored.locator('[data-role="private-message-plaintext"]').filter({hasText:'Original private conversation'}).first().waitFor({state:'visible'});
   await restored.goto(base+'/account/key/');
   await restored.locator('#key-backup > summary').click();
+  await restored.getByRole('tab',{name:'Restore',exact:true}).click();
   await restored.evaluate(()=>{
     for(const key of ['forum_pki_username','forum_pki_public_key','forum_pki_private_key','forum_pki_fingerprint'])localStorage.removeItem(key);
     window.dispatchEvent(new Event('storage'));
