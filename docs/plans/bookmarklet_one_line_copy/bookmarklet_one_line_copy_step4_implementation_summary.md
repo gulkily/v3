@@ -27,3 +27,8 @@ Debug mode: disabled
 - Changes: Positioned transient copy feedback above the controls as an overlay so it never occupies layout space. Stacked each bookmarklet description below its controls at every width, using a bookmarklet-specific class to preserve other Tools layouts.
 - Verification: Browser geometry checks across all 13 available themes at 375px and 1280px confirmed every description is below its controls and every item's position/size stays identical for success, failure, and cleared feedback. Actual clipboard copying passed; mobile feedback screenshot inspected. PHP template syntax and `git diff --check` passed.
 - Notes: Implements the user's requested layout refinements; clipboard behavior is unchanged.
+
+## Follow-up - Feedback to the right
+
+- Changes: Moved copy feedback to the right of the controls, vertically centered. Reserved horizontal room at narrow widths so the overlay remains on-screen without shifting the description or neighboring entries.
+- Verification: Browser geometry checks passed all 13 available themes at 1280px, 375px, and 320px: success/failure feedback appeared to the right, stayed within the viewport, and left item positions and dimensions unchanged. `git diff --check` passed.
