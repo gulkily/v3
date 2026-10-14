@@ -82,3 +82,27 @@ Step 2 explicitly approved, including independent server validation. Debug mode 
 - Source: [Step 3 Do — Deliverable and Structure](../../railspike/docs/workflow/step3_development_plan_do.md#deliverable). Observation: eight stages with six mandatory fields plus the contract/risks exceed a conventional printed page despite concise bullets. Suggestion: replace the page cap with a stage-adjusted word budget, or permit a compact stage table; page-length compliance is not claimed.
 - Source: [Step 3 Do — stage sizing](../../railspike/docs/workflow/step3_development_plan_do.md#structure). Observation: each stage is budgeted around one hour, but decoder setup and browser coverage remain unproven. Suggestion: retain the one-day bound and return to Step 2 if the initial feasibility stage cannot resolve those dependencies within it. Planning does not establish runtime correctness.
 - Source: [Step 3 phase ordering](../../railspike/docs/workflow/step3_development_plan_do.md#next). Observation: the After instructions were opened during the final inspection before the draft was written, then read again after drafting; no subsequent step was opened. Suggestion: keep phase ordering and defer the first After read until the draft exists on future cycles.
+
+## 2026-10-14T08:02:46Z — Step 4
+
+Debug mode inherited and retained as enabled. All eight approved stages completed with one summary-bearing commit each after the planning-only commit. No production deployment or merge performed. Completed todo items were staged separately from the user's pre-existing collapsed-selector addition, which remains unstaged.
+
+### Necessary/useful instructions
+
+- Source: [Step 4 Before — Planning Docs Commit Gate](../../railspike/docs/workflow/step4_implementation_before.md#planning-docs-commit-gate-required). Contribution: approved artifacts and the debug log were moved to the feature folder, links/index repaired, and committed before the summary or source changes. Suggestion: retain; the initial commit is independently reviewable.
+- Source: [Step 4 Do — Stage Boundary Protocol](../../railspike/docs/workflow/step4_implementation_do.md#stage-boundary-protocol-required). Contribution: decoder feasibility, server enforcement, client preparation, transport, eligibility, UI, integration and operations each have verification and a stage-scoped commit. Suggestion: retain; this exposed the invalid historical PNG fixture before wiring the uploader.
+- Source: [Step 4 After — Completion Contract verification](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Contribution: tests cover ordinary signed thread/reply and QDB entry points, Forte attachment isolation, bypass requests, lost-response retry and backup/restore instead of stopping at a working file input. Suggestion: retain.
+- Source: [Step 4 After — environment verification](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Contribution: GD was checked in local CLI and isolated Apache, and WebKit was exercised with native multipart transport after test interception corrupted file bytes. The handoff distinguishes emulated touch layouts from physical devices and local verification from deployment. Suggestion: retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Source: [Step 4 After — documentation-only checks](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Applicability: this is an application change; runtime, browser and server tests apply. Suggestion: retain the conditional wording.
+
+### Uncertain assessments
+
+- Source: [Step 3 Do — atomic stage sizing](../../railspike/docs/workflow/step3_development_plan_do.md#structure). Observation: some stages exceed approximately 50 changed lines, but each stayed below one hour and all eight fit the approved one-day budget. Suggestion: clarify that the time and line-count thresholds are alternatives; preserve the existing emphasis on atomic goals and verification.
+- Source: [Step 4 After — release dependencies](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Observation: all image-specific tests passed; the full PHP suite has eight failures reproduced on unchanged main under the same configuration. Suggestion: explicitly permit an evidence-backed baseline-failure comparison rather than implying unrelated failures must expand scope. No physical-device or production-deployment result is claimed.
