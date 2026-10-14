@@ -26,3 +26,8 @@ Debug mode: enabled
 - Changes: Shared fields start hidden. A no-store profile capability response combines approval, feature state and decoder readiness. Browser checks secure/online context and actual saved signing identity, refreshes on identity/storage/network/focus changes, ignores stale responses and rechecks before submission. Server authorization remains authoritative.
 - Verification: Browser signed thread/reply suite passed, including approved controls, simulated revocation, offline hiding, guest hiding, authenticated private-site composing and retry. Transport unit and signed API integration checks passed.
 - Notes: Profile queries remain behind the existing members-only access gate; no new public access exception was added.
+
+## Stage 6 - Accessible shared uploader
+- Changes: Added preview, status, file/replace/remove controls, scoped drag/drop and image paste, text-paste preservation, and 44-pixel targets. Shared compose styles now also load in Forte. A retained-attachment recovery control remains available when the uploader is hidden after eligibility loss.
+- Verification: Browser suite passed file/drop/paste selection, preview/removal, normal text-paste preservation, keyboard focus and mobile target sizing, plus signed publication and recovery. Client preparation and transport tests passed.
+- Notes: All composers reuse the same fields/controller. The separately requested collapsed selector remains deferred, as in the approved plan.

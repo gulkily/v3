@@ -70,6 +70,23 @@ try {
  await page.locator('[name="image_description"]').fill('Two dark pixels & <caption>');
  assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after fill');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
+ await page.setViewportSize({width:390,height:844});
+ const choose=page.locator('.image-upload-choose');await choose.focus();
+ assert.equal(await choose.evaluate(e=>document.activeElement===e),true);
+ const target=await choose.boundingBox();assert.ok(target.width>=44 && target.height>=44);
+ for(const method of ['drop','paste']) {
+   await page.evaluate(({bytes,method})=>{
+     const data=new DataTransfer();data.items.add(new File([Uint8Array.from(bytes)],'pixel.png',{type:'image/png'}));
+     const form=document.querySelector('[data-compose-form]');
+     form.dispatchEvent(method==='drop' ? new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}) : new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));
+   },{bytes:[...png],method});
+   await page.waitForFunction(()=>Boolean(document.querySelector('[data-compose-form]').__imageState?.file));
+   assert.equal(await page.locator('.image-upload-preview').isVisible(),true);
+   await page.locator('.image-upload-remove').click();
+   assert.equal(await page.locator('.image-upload-preview').isVisible(),false);
+ }
+ assert.equal(await page.evaluate(()=>{const data=new DataTransfer();data.setData('text/plain','ordinary text');const e=new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data});document.querySelector('[name="body"]').dispatchEvent(e);return e.defaultPrevented;}),false);
+ await page.setViewportSize({width:1280,height:900});
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after file selection');
  // Anonymous must preserve the draft and refuse the attachment.

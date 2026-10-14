@@ -5,6 +5,7 @@
     const old = form.__imageState;
     if (old && old.url) URL.revokeObjectURL(old.url);
     form.__imageState = null;
+    form.__imageInputNotice = null;
     delete form.__pendingImagePost;
     const input = form.querySelector('[name="image"]');
     if (input) input.value = '';
@@ -31,6 +32,35 @@
     form.__imageBound = true;
     input.addEventListener('change', () => select(form, input.files && input.files[0]));
     form.addEventListener('reset', () => { if (!form.__imageBusy) clear(form); });
+    const fields = form.querySelector('.image-compose-fields');
+    if (fields) {
+      fields.querySelector('.image-upload-choose').addEventListener('click', () => input.click());
+      fields.querySelector('.image-upload-remove').addEventListener('click', () => { if (!form.__imageBusy) clear(form); });
+      form.querySelector('.image-upload-recovery button')?.addEventListener('click', () => { if (!form.__imageBusy) clear(form); });
+      form.addEventListener('forum:image-state', () => render(form));
+      const chooseFiles = files => {
+        if (!form.__imageEligible || form.__imageBusy) return;
+        if (files.length !== 1) { form.__imageInputNotice = 'Attach one image at a time.'; notify(form); return; }
+        select(form, files[0]);
+      };
+      form.addEventListener('dragover', event => {
+        if (Array.from(event.dataTransfer?.types || []).includes('Files')) {
+          event.preventDefault();
+          if (form.__imageEligible && !form.__imageBusy) fields.querySelector('.image-upload-dropzone').classList.add('is-dragging');
+        }
+      });
+      form.addEventListener('dragleave', event => { if (!form.contains(event.relatedTarget)) fields.querySelector('.image-upload-dropzone').classList.remove('is-dragging'); });
+      form.addEventListener('drop', event => {
+        fields.querySelector('.image-upload-dropzone').classList.remove('is-dragging');
+        if (event.dataTransfer?.files.length) { event.preventDefault(); chooseFiles(Array.from(event.dataTransfer.files)); }
+      });
+      form.addEventListener('paste', event => {
+        if (event.clipboardData?.getData('text/plain')) return;
+        const files = Array.from(event.clipboardData?.items || []).filter(item=>item.kind==='file').map(item=>item.getAsFile()).filter(Boolean);
+        if (files.length && form.__imageEligible && !form.__imageBusy) { event.preventDefault(); chooseFiles(files); }
+      });
+      render(form);
+    }
     if (identity) {
       form.__imageIdentity = identity;
       const refresh = () => { void refreshEligibility(form); };
@@ -38,6 +68,24 @@
       document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
       refresh();
     }
+  }
+  function render(form) {
+    const fields = form.querySelector('.image-compose-fields');
+    if (!fields) return;
+    const state = form.__imageState, busy = Boolean(form.__imageBusy);
+    const preview = fields.querySelector('.image-upload-preview');
+    const img = preview.querySelector('img');
+    preview.hidden = !state?.url;
+    if (state?.url) { if (img.getAttribute('src') !== state.url) img.src = state.url; }
+    else img.removeAttribute('src');
+    const status = fields.querySelector('.image-upload-status');
+    status.textContent = form.__imageInputNotice || state?.error?.message || (state ? (state.file ? `${state.width} × ${state.height} · ${Math.ceil(state.file.size / 1024)} KiB. ${state.note}` : 'Preparing image on your device…') : '');
+    status.dataset.error = String(Boolean(form.__imageInputNotice || state?.error));
+    fields.querySelector('.image-upload-choose').textContent = state ? 'Replace image' : 'Choose an image';
+    const remove = fields.querySelector('.image-upload-remove');remove.hidden = !state;
+    fields.querySelectorAll('button').forEach(button=>{button.disabled=busy || form.__imageEligible===false;});
+    const recovery = form.querySelector('.image-upload-recovery');
+    if (recovery) { recovery.hidden = !state || form.__imageEligible !== false; recovery.querySelector('button').disabled = busy; }
   }
   async function ready(form) {
     const state = form.__imageState;

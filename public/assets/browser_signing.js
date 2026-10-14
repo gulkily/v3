@@ -1163,6 +1163,7 @@
       form.__pendingImagePost = pending;
     }
     // Keep the exact prepared record on failure; retry cannot create a second post.
+    if (preparedImage !== form.__imageState) throw new Error('The attachment changed. Review the draft and retry.');
     if (fields.author_identity_id !== await form.__imageIdentity()) throw new Error('The signing identity changed. Review the draft and retry.');
     return await finalizePreparedPost(Object.assign({}, fields, { imageFile: file }), pending.prepared, pending.signature);
     } finally { window.ForumImageUpload.lock(form, false); }
