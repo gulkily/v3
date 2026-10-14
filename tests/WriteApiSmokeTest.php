@@ -334,6 +334,23 @@ final class WriteApiSmokeTest
             assertStringContains('Image unavailable', $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $imageUrl));
             putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
             assertSame(ImageContentTest::png(), file_get_contents((new \ForumRewrite\Images\ImageStore($root))->resolve($ref)));
+            // New oversized uploads fail even when correctly signed; exact legacy repair remains valid.
+            $large = imagecreatetruecolor(2049, 1);
+            imagepng($large, $source); imagedestroy($large);
+            $largeRef = \ForumRewrite\Images\ImageStore::inspect($source, 'Legacy wide image');
+            $largeInput = array_replace($input, ['body' => \ForumRewrite\Images\ImageReference::line($largeRef)]);
+            $largePrepared = $writer->prepareThread($largeInput);
+            $largeFinal = $largePrepared + ['author_identity_id' => $identity, 'detached_signature' => $this->signCanonicalRecord($key['home'], $largePrepared['canonical_record'])];
+            try { $writer->createPreparedPost($largeFinal, $source); throw new \LogicException('New oversized upload accepted'); }
+            catch (RuntimeException $e) { assertStringContains('2048', $e->getMessage()); }
+            assertSame(false, is_file($root . '/' . $largePrepared['record_path']));
+            assertSame(false, is_file((new \ForumRewrite\Images\ImageStore($root))->root . '/' . \ForumRewrite\Images\ImageReference::filename($largeRef)));
+            file_put_contents($root . '/' . $largePrepared['record_path'], $largePrepared['canonical_record']);
+            file_put_contents($root . '/' . $largePrepared['record_path'] . '.asc', $largeFinal['detached_signature']);
+            $this->runCommand($root, 'git add ' . escapeshellarg($largePrepared['record_path']) . ' ' . escapeshellarg($largePrepared['record_path'] . '.asc'));
+            $this->runCommand($root, 'git commit -qm "Historical image fixture"');
+            $writer->createPreparedPost($largeFinal, $source);
+            assertSame(file_get_contents($source), file_get_contents((new \ForumRewrite\Images\ImageStore($root))->resolve($largeRef)));
         } finally {
             $_POST = [];
             putenv($old === false ? 'FORUM_IMAGE_CONTENT_ENABLED' : 'FORUM_IMAGE_CONTENT_ENABLED=' . $old);

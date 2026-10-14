@@ -394,6 +394,10 @@ class LocalWriteService
                 return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'record_path' => $recordPath, 'commit_sha' => $head];
             }
 
+            if ($image !== null) {
+                \ForumRewrite\Images\ImageUploadValidator::validate($imagePath);
+            }
+
             $threadLabels = $this->extractThreadLabelsFromBody($record->body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);

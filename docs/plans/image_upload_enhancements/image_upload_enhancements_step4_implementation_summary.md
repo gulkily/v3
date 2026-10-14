@@ -6,3 +6,8 @@ Debug mode: enabled
 - Changes: Added bounded new-upload JPEG/PNG decoding, CRC/truncation checks and APNG rejection; documented serving-runtime GD requirements. Installed matching php8.1-gd locally.
 - Verification: `php tests/run.php ImageUploadValidatorTest` (2/2 passed); valid JPEG/PNG, damage, animation, limits and missing GD are covered.
 - Notes: No upload wiring yet; historical reads/restores remain independent of GD.
+
+## Stage 2 - Upload policy and legacy compatibility
+- Changes: New signed publications undergo strict decoding before persistence; exact committed-post retries/repair retain historical limits. Multipart MIME must match inspected contents.
+- Verification: `php tests/run.php ImageUploadValidatorTest ImageContentTest WriteApiSmokeTest::testImageSignedPublicationRejectsTamperingAndRetriesSafely` — 7/7 passed, including signed oversized rejection with no persisted object/post and exact legacy repair.
+- Notes: Replaced the historical test PNG with a valid CRC fixture; the old sample passed header checks but failed strict decoding. Global ImageReference limits remain unchanged.

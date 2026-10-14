@@ -200,6 +200,11 @@ final class WritePostAndIdentityApiController
                     throw new RuntimeException('Image upload failed or exceeds the server request limit; preserve the draft and select the file again.');
                 }
                 $imagePath = $file['tmp_name'];
+                $actual = \ForumRewrite\Images\ImageStore::inspect($imagePath, '');
+                $mime = $actual['type'] === 'jpg' ? 'image/jpeg' : 'image/png';
+                if (($file['type'] ?? '') !== $mime) {
+                    throw new RuntimeException('Uploaded image type does not match its contents. Prepare the image again.');
+                }
                 if (isset($input['canonical_record_base64'])) {
                     $decoded = base64_decode((string) $input['canonical_record_base64'], true);
                     if ($decoded === false) { throw new RuntimeException('Invalid signed record transport encoding.'); }
