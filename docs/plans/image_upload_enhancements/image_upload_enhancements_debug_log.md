@@ -106,3 +106,20 @@ Debug mode inherited and retained as enabled. All eight approved stages complete
 
 - Source: [Step 3 Do — atomic stage sizing](../../railspike/docs/workflow/step3_development_plan_do.md#structure). Observation: some stages exceed approximately 50 changed lines, but each stayed below one hour and all eight fit the approved one-day budget. Suggestion: clarify that the time and line-count thresholds are alternatives; preserve the existing emphasis on atomic goals and verification.
 - Source: [Step 4 After — release dependencies](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Observation: all image-specific tests passed; the full PHP suite has eight failures reproduced on unchanged main under the same configuration. Suggestion: explicitly permit an evidence-backed baseline-failure comparison rather than implying unrelated failures must expand scope. No physical-device or production-deployment result is claimed.
+
+## 2026-10-14T11:44:54Z — Step 4 — Revision: native file-picker fixes
+
+Debug mode remains enabled. User-reported Chrome collapse and Firefox selection loss were repaired within the approved uploader workflow. The fix and summary were committed together; the user's separate todo edit is preserved.
+
+### Necessary/useful instructions
+
+- Source: [Step 4 Do — Complete the Contract](../../railspike/docs/workflow/step4_implementation_do.md#execution-rules). Contribution: regression tests now click the actual chooser control on both normal entry points and force the focus/selection ordering with a delayed permission response. Pre-fix assets reproduce collapse and missing preview; fixed assets publish images with empty and nonempty bodies in Chromium and Firefox. Suggestion: retain and emphasize browser lifecycle events, not only programmatic file assignment.
+- Source: [Step 4 Do — Stage Boundary Protocol](../../railspike/docs/workflow/step4_implementation_do.md#stage-boundary-protocol-required). Contribution: the fix commit includes the summary and verification results, including cancellation and 80 signing regression checks. Suggestion: retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Source: [Step 4 After — environment verification](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Observation: automated file-chooser interception and explicit focus ordering reproduce the failure, but do not constitute manual testing of OS-specific native dialog chrome. Suggestion: retain browser-specific regression coverage and distinguish automation from manual deployment checks. No new server/deployment changes were required.
