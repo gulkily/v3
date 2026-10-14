@@ -93,8 +93,12 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
   await checkOverride(operator, root, project, true); // Overrides the saved false.
   await toggle(true);
   await checkOverride(operator, root, project, false); // Overrides the saved true.
-  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
   assert.equal(await page.locator('[data-private-message-unread]').count(), 1);
+  assert.equal(await page.locator('[data-private-message-unread]').isVisible(), true);
+  assert.equal(await page.locator('[data-messaging-disabled-notice]').count(), 0);
+  await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
+  assert.notEqual(await page.evaluate(() => window.ForumPrivateMessageHistorySync.state().state), 'disabled');
   assert.equal((await member.request.get(base + '/api/private_messages/conversations')).status(), 200);
   await page.close();
   console.log('Signed messaging toggle, retained stores, fresh pages, permissions and both deployment overrides passed.');

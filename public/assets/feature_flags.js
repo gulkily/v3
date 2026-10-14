@@ -127,11 +127,13 @@
     if (!window.ForumPrivateMessageAvailability || !window.ForumPrivateMessageUnread) throw new Error('Messaging unavailable');
     window.ForumPrivateMessageAvailability.setEnabled(true);
     window.ForumPrivateMessageUnread.start(link);
+    if (window.ForumPrivateMessageHistorySync) window.ForumPrivateMessageHistorySync.start(link);
   }
 
   function stopMessaging() {
     if (window.ForumPrivateMessageAvailability) window.ForumPrivateMessageAvailability.setEnabled(false);
     if (window.ForumPrivateMessageUnread) window.ForumPrivateMessageUnread.stop();
+    if (window.ForumPrivateMessageHistorySync) window.ForumPrivateMessageHistorySync.stop();
     document.querySelectorAll('[data-private-message-unread]').forEach(function (link) { link.remove(); });
   }
 
