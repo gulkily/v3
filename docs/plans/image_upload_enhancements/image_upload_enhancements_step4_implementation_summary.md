@@ -16,3 +16,8 @@ Debug mode: enabled
 - Changes: Added shared local JPEG/PNG/WebP/GIF/BMP preparation, header-based predecode bounds (32 MiB, 40 MP, 16384 edge), 2048-edge output, lossless alpha preservation, JPEG orientation and byte-bound shrinking. Decode timeout and resource cleanup included.
 - Verification: `node tests/browser/image_prepare.mjs` passed in Chromium with touch/mobile viewport: >5 MiB PNG, >4096-edge JPEG, transparent WebP/PNG, GIF, rotated EXIF JPEG, no upscaling and invalid/oversized inputs.
 - Notes: Formats requiring unavailable decoders (including HEIC/AVIF) receive export guidance. Actual handheld-device testing is not represented by viewport emulation.
+
+## Stage 4 - Prepared-image signing and recovery
+- Changes: Loaded shared preparation/state modules through both canonical layouts; signing/hash/multipart consume prepared bytes only. Selection clears original file input, supersedes stale preparation, clears stale signed attempts, and retains prepared copies across retries. Busy locking, reset cleanup and Outbox exclusion use the shared attachment state.
+- Verification: `node tests/browser/image_compose_transport.cjs`, `node tests/browser/image_prepare.mjs`, JavaScript syntax and PHP renderer lint passed. Tests cover reuse of signed retries, text changes, offline rejection, rapid replacement, lock and source-input clearing.
+- Notes: Preview controls and permission-aware visibility follow in Stages 5–6. Original files remain untouched on the user's device.
