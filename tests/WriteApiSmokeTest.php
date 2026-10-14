@@ -2503,6 +2503,35 @@ NODE;
         assertStringContains('https://example.test/cypher-night', $threadPage);
     }
 
+    public function testOperatorRetractionAuthorityRequiresLocalAcceptanceHistory(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $operator = $this->linkSigningIdentity($app, 'history-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $actor = $operator['identity_id'];
+        $contents = "Record-ID: post-retraction-root-001\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: root-001\nOperation: retract\n"
+            . "Author-Identity-ID: openpgp:" . str_repeat('b', 40) . "\nActor-Identity-ID: {$actor}\nRetraction-Class: operator\n\n";
+        $parser = new \ForumRewrite\Canonical\PostRetractionRecordParser();
+        $record = $parser->parse($contents);
+        $path = 'records/post-retractions/post-retraction-root-001.txt';
+        mkdir($root . '/records/post-retractions');
+        file_put_contents($root . '/' . $path, $contents);
+        file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($operator['home'], $contents));
+        assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $contents, $actor));
+        assertSame(false, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+        $this->runCommand($root, 'git add records/post-retractions');
+        $this->runCommand($root, 'git commit -m ' . escapeshellarg('Retract post root-001 by ' . $actor));
+        assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+        $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($actor, 8) . '.txt'));
+        $this->runCommand($root, 'git commit -m "Remove operator privilege"');
+        assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+        $changed = str_replace('12:00:00Z', '12:00:01Z', $contents);
+        assertSame(false, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $changed, $parser->parse($changed)));
+        $legacy = preg_replace('/Actor-Identity-ID:.*\nRetraction-Class: operator\n/', '', $contents);
+        assertSame('author', $parser->parse($legacy)->classification);
+    }
+
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

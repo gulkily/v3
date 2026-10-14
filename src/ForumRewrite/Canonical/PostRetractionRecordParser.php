@@ -53,12 +53,24 @@ final class PostRetractionRecordParser
             throw new CanonicalRecordParseException('Author-Identity-ID must use the retained lowercase OpenPGP identity form.');
         }
 
+        $actor = $record->headers['Actor-Identity-ID'] ?? null;
+        $classification = $record->headers['Retraction-Class'] ?? 'author';
+        if ($actor !== null || isset($record->headers['Retraction-Class'])) {
+            if ($actor === null || preg_match('/^openpgp:[a-f0-9]{40}$/D', $actor) !== 1
+                || !in_array($classification, ['author', 'operator'], true)
+                || ($classification === 'author') !== ($actor === $authorIdentityId)) {
+                throw new CanonicalRecordParseException('Invalid retraction actor or classification.');
+            }
+        }
+
         return new PostRetractionRecord(
             $record->headers['Record-ID'],
             $this->parseCreatedAt($record->headers['Created-At']),
             $postId,
             $record->headers['Operation'],
             $authorIdentityId,
+            $actor,
+            $classification,
         );
     }
 
