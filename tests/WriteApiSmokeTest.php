@@ -2532,6 +2532,45 @@ NODE;
         assertSame('author', $parser->parse($legacy)->classification);
     }
 
+    public function testOperatorRetractionSignsAsActorAndRechecksPrivilegeAtFinalize(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'operator-target', 'Operator target prose');
+        $second = $this->createAuthoredThread($app, 'operator-target-two', 'Second target prose');
+        $operator = $this->linkSigningIdentity($app, 'operator-actor');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+        assertSame('ok', $prepared['status']);
+        assertStringContains('Author-Identity-ID: ' . $author['identity_id'], $prepared['canonical_record']);
+        assertStringContains('Actor-Identity-ID: ' . $operator['identity_id'], $prepared['canonical_record']);
+        $fields = [
+            'prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'actor_identity_id' => $operator['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+        ];
+        $_POST = $fields + ['detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        $bad = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+        assertSame('error', $bad['status']);
+        $_POST = $fields + ['detached_signature' => $this->signCanonicalRecord($operator['home'], $prepared['canonical_record'])];
+        $accepted = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+        $_POST = [];
+        assertSame('complete', $accepted['retraction_status']);
+        $stale = $this->prepareRetractionRequest($app, $operator['identity_id'], $second['thread_id']);
+        $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($operator['identity_id'], 8) . '.txt'));
+        $this->runCommand($root, 'git commit -m "Revoke operator"');
+        $_POST = ['prepare_token' => $stale['prepare_token'], 'post_id' => $stale['post_id'],
+            'record_path' => $stale['record_path'], 'author_identity_id' => $operator['identity_id'],
+            'canonical_record' => $stale['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($operator['home'], $stale['canonical_record'])];
+        $denied = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+        $_POST = [];
+        assertSame('error', $denied['status']);
+        assertSame(false, is_file($root . '/' . $stale['record_path']));
+        $retry = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+        assertSame(true, $retry['already_retracted']);
+    }
+
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

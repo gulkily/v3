@@ -42,6 +42,13 @@ final class RetractionAuthority
         return self::$cache[$key] = false;
     }
 
+    public static function currentOperator(string $root, string $actor): bool
+    {
+        if (!ApprovalPolicy::isOperator($root, $actor)) return false;
+        $path = CanonicalPathResolver::approvalSeed(substr($actor, 8));
+        return self::git($root, ['show', 'HEAD:' . $path]) === (string) file_get_contents($root . '/' . $path);
+    }
+
     private static function git(string $root, array $arguments): string
     {
         $command = 'git -C ' . escapeshellarg($root) . ' ' . implode(' ', array_map('escapeshellarg', $arguments));

@@ -8,3 +8,9 @@ Debug mode: disabled
 - Verification: signed fixture test passed (1/1), covering uncommitted rejection, accepted authority, live seed removal, tampered history claims, and legacy parsing.
 - Notes: missing/pruned history fails closed for operator actions. Preserve the canonical repository history during backup/restore; arbitrary server-side Git writes remain privileged operations. Signature enforcement is wired into readers in Stage 3.
 
+## Stage 2 - Signed operator submission
+
+- Changes: prepare/finalize distinguish target author from actor, accept the actor_identity_id alias, verify the actor key, and require approved operator status backed by the committed live seed. Finalize rechecks authority under the write lock. Previously accepted operator actions remain retryable after privilege removal.
+- Verification: three focused API/history tests passed; coverage includes author compatibility, wrong signing key, operator submission, privilege removal between prepare/finalize, and post-revocation retry.
+- Notes: the existing author_identity_id request parameter remains an actor alias for backward compatibility; canonical Author-Identity-ID continues to identify the target author.
+

@@ -544,7 +544,7 @@ class LocalWriteService
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $totalStartedAt = hrtime(true);
-            $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? $input['author_identity_id'] ?? ''), 'author_identity_id');
             $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
             $post = $this->requireRetractablePost($postId, $authorIdentityId);
             $threadId = $post->threadId ?? $post->postId;
@@ -555,11 +555,13 @@ class LocalWriteService
             }
 
             $createdAt = $this->canonicalTimestampNow();
+            $targetAuthor = $post->authorIdentityId;
             $contents = 'Record-ID: ' . PostRetractionRecordParser::RECORD_ID_PREFIX . $postId . "\n"
                 . "Created-At: {$createdAt}\n"
                 . "Post-ID: {$postId}\n"
                 . "Operation: retract\n"
-                . "Author-Identity-ID: {$authorIdentityId}\n"
+                . "Author-Identity-ID: {$targetAuthor}\n"
+                . ($targetAuthor === $authorIdentityId ? '' : "Actor-Identity-ID: {$authorIdentityId}\nRetraction-Class: operator\n")
                 . "\n";
             (new PostRetractionRecordParser())->parse($contents);
 
@@ -615,19 +617,22 @@ class LocalWriteService
             $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
             $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
             $authorIdentityId = $this->requireOpenPgpIdentityId(
-                $this->requirePreparedMatch($input, $prepared, 'author_identity_id'),
+                $this->requirePreparedMatch(array_merge($input, ['author_identity_id' => $input['actor_identity_id'] ?? $input['author_identity_id'] ?? '']), $prepared, 'author_identity_id'),
                 'author_identity_id'
             );
 
             $record = (new PostRetractionRecordParser())->parse($canonicalRecord);
             if ($record->postId !== $postId
-                || $record->authorIdentityId !== $authorIdentityId
+                || $record->signerIdentityId() !== $authorIdentityId
                 || CanonicalPathResolver::postRetraction($record->recordId) !== $recordPath
             ) {
                 throw new RuntimeException('Prepared retraction canonical record does not match prepared metadata.');
             }
 
             $post = $this->requireRetractablePost($postId, $authorIdentityId);
+            if ($record->authorIdentityId !== $post->authorIdentityId) {
+                throw new RuntimeException('Retraction target author mismatch.');
+            }
             $threadId = $post->threadId ?? $post->postId;
             if (is_file($this->repositoryRoot . '/' . $recordPath)) {
                 $this->deletePreparedPost($prepareToken);
@@ -683,8 +688,27 @@ class LocalWriteService
         if ($post === null) {
             throw new RuntimeException('Post to retract was not found.');
         }
-        if ($post->authorIdentityId === null || $post->authorIdentityId !== $authorIdentityId) {
-            throw new RuntimeException('Only the post author can retract this post.');
+        if ($post->authorIdentityId === null) {
+            throw new RuntimeException('Only posts with a signing author can be retracted.');
+        }
+        if ($post->authorIdentityId !== $authorIdentityId) {
+            $allowed = $this->isApprovedIdentity($authorIdentityId)
+                && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, $authorIdentityId);
+            if (!$allowed) {
+                $path = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
+                if (is_file($this->repositoryRoot . '/' . $path)) {
+                    try {
+                        $existing = $this->canonicalRepository->loadPostRetraction($path);
+                        $contents = (string) file_get_contents($this->repositoryRoot . '/' . $path);
+                        $allowed = $existing->classification === 'operator'
+                            && $existing->signerIdentityId() === $authorIdentityId
+                            && $existing->authorIdentityId === $post->authorIdentityId
+                            && \ForumRewrite\Security\ReactionSignature::status($this->repositoryRoot, $path, $contents, $authorIdentityId) === 'verified'
+                            && \ForumRewrite\Security\RetractionAuthority::acceptedOperator($this->repositoryRoot, $path, $contents, $existing);
+                    } catch (\Throwable) { $allowed = false; }
+                }
+            }
+            if (!$allowed) throw new RuntimeException('Only the post author can retract this post. An approved operator may also retract it.');
         }
         if (RetractedPosts::isAuthorityPost($post)) {
             throw new RuntimeException('Identity, approval, and invitation records cannot be retracted.');
