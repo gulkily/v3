@@ -137,6 +137,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Startup dependency recovery](startup_dependency_recovery/) — Ubuntu 22.04/24.04 reviewed Y/n recovery, startup continuation and acceptance evidence.
 - [Status lock wait notice](status_lock_wait_notice/)
 - [Test-run summary report](test_run_summary_report/)
+- [Test runner elapsed time](test_runner_elapsed_time/)
 - [Thread card remove preview](thread_card_remove_preview/)
 - [Thread compact view](thread_compact_view/) — recorded steps: 3.
 - [Thread continuation merge](thread_continuation_merge/)
