@@ -115,3 +115,4 @@ x	create a modern image upload UI
 x		support mobile devices with large area touch targets
 x		allow drag-and-drop and paste from clipboard
 x	do not display the form to users who cannot upload images
+	collapse the image selector one small thing that doesn't double the size of the compose form.
