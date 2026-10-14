@@ -25,7 +25,7 @@ final class FastScoreSweepService
      * @param null|callable(string, array<string,mixed>):void $progress
      * @return array<string, int|bool|array<string,mixed>|null>
      */
-    public function run(int $providerCallLimit, int $workLimit = 250, ?callable $progress = null): array
+    public function run(int $providerCallLimit, int $workLimit = 250, ?callable $progress = null, ?array $target = null): array
     {
         if ($providerCallLimit < 1) {
             throw new \InvalidArgumentException('Fastmod provider-call limit must be at least 1.');
@@ -48,7 +48,7 @@ final class FastScoreSweepService
         $backfillProcessed = 0;
         $backfillExcluded = 0;
         while ($summary['examined'] < $workLimit) {
-            $work = $this->claimNextWork();
+            $work = $target === null ? $this->claimNextWork() : ($this->scoreStore->claimPendingWork(1, $target)[0] ?? null);
             if ($work === null) {
                 break;
             }
@@ -133,7 +133,7 @@ final class FastScoreSweepService
         }
 
         $this->scoreStore->refreshBackfillBatchStates();
-        $summary['remaining'] = $this->scoreStore->hasOutstandingWork() || $this->scoreStore->hasOutstandingBackfillWork();
+        $summary['remaining'] = $target === null && ($this->scoreStore->hasOutstandingWork() || $this->scoreStore->hasOutstandingBackfillWork());
         if ($backfillBatchId !== null) {
             $summary['backfill_processed'] = $backfillProcessed;
             $summary['backfill_excluded'] = $backfillExcluded;

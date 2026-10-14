@@ -21,3 +21,9 @@ Debug mode: disabled
 - Changes: Worker callbacks return outcomes; persisted failures are terminal queue failures, and generated/already-posted/skipped outcomes retain distinct progress/history details. Unavailable requests are not reported as publication. Configuration and exhaustion failures have safe actionable API/card/browser feedback. Unexpected worker exceptions retain bounded retries.
 - Verification: Queue worker/command/generator suites: 30 passed. Selected lifecycle, posting failure, and invalid-budget API/card tests: 3 passed. JS syntax and diff checks passed.
 - Notes: A stored failure needs explicit state recovery; replaying its task alone cannot generate again. Provider diagnostics remain available privately; public messages are bounded static descriptions.
+
+## Stage 4 - Targeted explicit recovery
+
+- Changes: Added locked `task-queue retry-agent-reply` and `run --task-id`; failed unpublished requests retain their mode and recover from interruption between reset and enqueue. Version/eligibility checks reject stale or published targets. Added target-only moderation `fast-score retry --run` using the existing scoring workflow and claim machinery.
+- Verification: Queue/store/scoring suites: 69 passed. Additional recovery/target-selection tests and isolated retry CLI/publication flow: 25 passed. Coverage includes historical completed queue task with failed reply, repeat recovery, interrupted enqueue, stale hashes, claimed/published guards, and leaving unrelated work queued.
+- Notes: No schema change. Targeted execution does not drain/reconcile unrelated tasks. Existing backfill budget controls remain separate.

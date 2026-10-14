@@ -2147,6 +2147,63 @@ NODE;
         }
     }
 
+    public function testOperatorRetryRepairsHistoricalCompletionAndRunsOnlySelectedTask(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $queuePath = sys_get_temp_dir() . '/reply-retry-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previous = $this->useStubLlmProvider();
+        $oldQueue = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        $oldArtifacts = getenv('FORUM_PUBLIC_ARTIFACT_ROOT');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+        putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $artifacts);
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $post = $this->createAnalyzedThread($app, $db);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($post) . '&response_mode=scripture_oriented_analysis');
+            $pdo = new PDO('sqlite:' . $db);
+            $hash = (string) $pdo->query('SELECT target_content_hash FROM post_generated_responses')->fetchColumn();
+            $replies = new SqliteAgentReplyGenerationStore($pdo);
+            $replies->saveFailed($post, $hash, 'task:old', 'analysis_suggestion_error', 'Historical length failure');
+            $queue = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            foreach ($queue->claimNext(100) as $old) { $queue->markCompleted($old['id']); }
+            $unrelated = $queue->enqueue(SqliteTaskQueueStore::AGENT_REPLY, 'unrelated@hash');
+            try {
+                $app->retryAgentReplyRequest($post, 'wrong-version');
+                throw new RuntimeException('Stale recovery accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('content changed', $expected->getMessage());
+            }
+            // Simulate interruption between resetting the reply and enqueueing its task.
+            $app->retryAgentReplyRequest($post, $hash);
+            $args = ' --repository-root=' . escapeshellarg($root) . ' --database-path=' . escapeshellarg($db)
+                . ' --queue-database-path=' . escapeshellarg($queuePath);
+            $retry = 'php scripts/task_queue.php retry-agent-reply --post-id=' . escapeshellarg($post)
+                . ' --content-hash=' . escapeshellarg($hash) . $args;
+            $output = $this->runCommand(dirname(__DIR__), $retry);
+            assertSame(1, preg_match('/task_id=(\d+)/', $output, $match));
+            assertStringContains('task_id=' . $match[1], $this->runCommand(dirname(__DIR__), $retry));
+            $run = 'php scripts/task_queue.php run --task-id=' . $match[1] . $args;
+            assertStringContains('completed=1', $this->runCommand(dirname(__DIR__), $run));
+            assertStringContains('claimed=0', $this->runCommand(dirname(__DIR__), $run));
+            assertSame('queued', $queue->findById($unrelated['id'])['status']);
+            $row = $replies->findByTarget($post, $hash);
+            assertSame('posted', $row['status']);
+            assertSame('scripture_oriented_analysis', $row['response_intent']);
+            try {
+                $app->retryAgentReplyRequest($post, $hash);
+                throw new RuntimeException('Published recovery accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('Only failed', $expected->getMessage());
+            }
+        } finally {
+            $this->restoreLlmProviderEnv($previous);
+            putenv($oldQueue === false ? 'FORUM_TASK_QUEUE_DATABASE_PATH' : 'FORUM_TASK_QUEUE_DATABASE_PATH=' . $oldQueue);
+            putenv($oldArtifacts === false ? 'FORUM_PUBLIC_ARTIFACT_ROOT' : 'FORUM_PUBLIC_ARTIFACT_ROOT=' . $oldArtifacts);
+            $_COOKIE = [];
+        }
+    }
+
     public function testInvalidReplyBudgetFailsWithoutPublicationAndHasActionableFeedback(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

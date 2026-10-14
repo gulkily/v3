@@ -15,6 +15,22 @@ use ForumRewrite\Scoring\SqliteFastScoreStore;
 
 final class FastScoreSweepServiceTest
 {
+    public function testTargetedSweepLeavesOtherPendingWorkUntouched(): void
+    {
+        $pdo = $this->postsDatabase();
+        foreach (['other', 'selected'] as $id) {
+            $this->insertPost($pdo, $id, $id, null, '', 'Meaningful text', 1);
+            $this->enqueue($pdo, $id, 'rubric-a');
+        }
+        $provider = new SweepFakeProvider();
+        $target = $pdo->query("SELECT post_id, content_hash, rubric_revision FROM fast_score_work WHERE post_id = 'selected'")->fetch(PDO::FETCH_ASSOC);
+        $service = $this->service($pdo, $provider, 'rubric-a');
+        assertSame(1, $service->run(1, 1, null, $target)['scored']);
+        assertSame(0, $service->run(1, 1, null, $target)['provider_calls']);
+        assertSame(['selected'], $provider->postIds);
+        assertSame('pending', $pdo->query("SELECT state FROM fast_score_work WHERE post_id = 'other'")->fetchColumn());
+    }
+
     public function testScoresRootsAndRepliesOnceInStableBoundedBatches(): void
     {
         $pdo = $this->postsDatabase();

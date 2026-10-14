@@ -113,6 +113,11 @@ final class Application
      * @param array<string, mixed> $requestRow
      * @return array<string, mixed>
      */
+    public function retryAgentReplyRequest(string $postId, string $contentHash): array
+    {
+        return $this->postWorkflowService()->retryAgentReplyRequest($postId, $contentHash);
+    }
+
     public function fulfillAgentReplyRequest(array $requestRow): array
     {
         return $this->postWorkflowService()->fulfillAgentReplyRequest($requestRow);

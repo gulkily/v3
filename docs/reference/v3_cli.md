@@ -694,3 +694,33 @@ fail before a provider call. Larger allowances can increase cost and latency;
 they do not guarantee model support or successful completion. Exhausted replies,
 including partial text, are rejected rather than published. Correct settings and
 explicitly retry affected work; no automatic budget escalation occurs.
+
+### Recover one failed analysis
+
+Inspect the post with `./v3 agent-reply status --post-id=POST` and correct the
+provider/model or completion allowance first. Use the full content hash from
+that request's private record. Requeue and process only its returned task ID:
+
+```bash
+./v3 task-queue retry-agent-reply --post-id=POST --content-hash=HASH
+./v3 task-queue run --task-id=TASK_ID
+```
+
+Pass the same repository, read-model, and queue path overrides to both commands
+when working outside the default instance. Recovery preserves the original mode,
+rejects changed/ineligible/published targets, and is safe to repeat if enqueueing
+was interrupted. Running a completed task again makes no provider call. A
+configuration or exhaustion failure needs another deliberate retry after correction.
+`status` exposes outcome details in progress/history; a skipped request is not a
+published reply. Targeted runs do not reconcile or process the unrelated backlog.
+
+For one failed moderation work item, use its full content and rubric hashes:
+
+```bash
+./v3 fast-score retry --post-id=POST --content-hash=HASH --rubric-revision=RUBRIC --run
+```
+
+`--run` validates current content/rubric and processes only that pending/failed
+normal moderation item under the worker lock, with at most one provider call.
+It does not enqueue a broad sweep. Without `--run`, existing enqueue-for-sweep
+behavior remains available. Backfill work retains its separate budget controls.

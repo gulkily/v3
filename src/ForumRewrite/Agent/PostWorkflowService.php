@@ -782,6 +782,21 @@ final class PostWorkflowService
      * @param array<string, mixed> $requestRow
      * @return array<string, mixed>
      */
+    public function retryAgentReplyRequest(string $postId, string $contentHash): array
+    {
+        $post = ($this->fetchPost)($postId);
+        if (!$this->agentResponseRequestsEnabled() || $post === null
+            || ($post['retracted_at'] ?? null) !== null
+            || (string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
+            throw new \InvalidArgumentException('Target is not eligible for an agent reply.');
+        }
+        $context = $this->postAnalysisContext($post, false);
+        if ($contentHash === '' || !hash_equals((string) $context['content_hash'], $contentHash)) {
+            throw new \InvalidArgumentException('Target content changed; request a new response from the current post.');
+        }
+        return (new SqliteAgentReplyGenerationStore($this->pdo()))->retryRequestedForTarget($postId, $contentHash);
+    }
+
     public function fulfillAgentReplyRequest(array $requestRow): array
     {
         try {

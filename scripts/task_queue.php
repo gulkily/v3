@@ -43,7 +43,7 @@ try {
         exit(0);
     }
 
-    if (!in_array($command, ['enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
+    if (!in_array($command, ['retry-agent-reply', 'enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
         throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
     }
 
@@ -59,6 +59,24 @@ try {
 
     $pdo = new PDO('sqlite:' . $queuePath);
     $store = new SqliteTaskQueueStore($pdo);
+
+    if ($command === 'retry-agent-reply') {
+        $postId = trim((string) ($options['post-id'] ?? ''));
+        $contentHash = trim((string) ($options['content-hash'] ?? ''));
+        if ($postId === '' || $contentHash === '') {
+            throw new InvalidArgumentException('--post-id and --content-hash are required.');
+        }
+        $task = (new ExecutionLock($queueDirectory . '/forum-rewrite-task-queue.lock', 0))->withExclusiveLock(
+            static function () use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $store, $postId, $contentHash): array {
+                $application = new Application($projectRoot, $repositoryRoot, $databasePath,
+                    getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'), $staticHtmlRoot);
+                $application->retryAgentReplyRequest($postId, $contentHash);
+                return $store->enqueue(SqliteTaskQueueStore::AGENT_REPLY, AgentReplyTask::deduplicationKey($postId, $contentHash));
+            }
+        );
+        fwrite(STDOUT, 'Agent reply requeued: task_id=' . $task['id'] . "\nRun only this task: ./v3 task-queue run --task-id=" . $task['id'] . "\n");
+        exit(0);
+    }
 
     if ($command === 'enqueue-rebuild') {
         $task = $store->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
@@ -142,7 +160,11 @@ try {
     }
 
     if ($command === 'run') {
-        $limit = max(1, (int) ($options['limit'] ?? 1));
+        $taskId = isset($options['task-id']) ? (int) $options['task-id'] : null;
+        if ($taskId !== null && $store->findById($taskId) === null) {
+            throw new InvalidArgumentException('Task ID does not exist.');
+        }
+        $limit = $taskId === null ? max(1, (int) ($options['limit'] ?? 1)) : 1;
         $providerCallLimit = max(1, (int) ($options['score-limit'] ?? 25));
         $workLimit = max(1, (int) ($options['work-limit'] ?? 250));
         $quiet = ($options['quiet'] ?? false) === true;
@@ -158,9 +180,9 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId): void {
             $startedAt = microtime(true);
-            $reconciledAgentReplyTasks = reconcileAgentReplyTasks($store, $databasePath);
+            $reconciledAgentReplyTasks = $taskId === null ? reconcileAgentReplyTasks($store, $databasePath) : 0;
             $executorRun = $store->startExecutorRun();
             $taskOutcomes = [];
             $before = $store->counts();
@@ -352,7 +374,7 @@ try {
                         emitTaskQueue($quiet, "  Continuation queued for remaining Fastmod work; this is not a failure or retry.\n");
                     }
                 }
-                });
+                }, $taskId);
                 $store->completeExecutorRun((int) $executorRun['id'], $summary, $taskOutcomes);
             } catch (Throwable $throwable) {
                 $store->failExecutorRun((int) $executorRun['id'], 'worker_exception');
@@ -427,10 +449,13 @@ function parseTaskQueueOptions(array $arguments): array
             $options[substr($argument, 2)] = true;
             continue;
         }
-        foreach (['limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'static-html-root', 'queue-database-path', 'log'] as $key) {
+        foreach (['task-id', 'post-id', 'content-hash', 'limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'static-html-root', 'queue-database-path', 'log'] as $key) {
             $prefix = '--' . $key . '=';
             if (str_starts_with($argument, $prefix)) {
                 $value = substr($argument, strlen($prefix));
+                if ($key === 'task-id' && (!ctype_digit($value) || (int) $value < 1)) {
+                    throw new InvalidArgumentException('--task-id must be a positive integer.');
+                }
                 $options[$key] = in_array($key, ['limit', 'score-limit', 'work-limit'], true) ? max(1, (int) $value) : $value;
                 continue 2;
             }
@@ -525,7 +550,8 @@ Usage:
   php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
-  php scripts/task_queue.php run [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php retry-agent-reply --post-id=... --content-hash=...
+  php scripts/task_queue.php run [--task-id=N] [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]
 
