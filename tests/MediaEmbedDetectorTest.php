@@ -8,6 +8,90 @@ use ForumRewrite\View\MediaEmbedDetector;
 
 final class MediaEmbedDetectorTest
 {
+    public function testTikTokAcceptsOnlyDirectVideoUrlsWithCompleteNumericIds(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach (['https://www.tiktok.com', 'http://tiktok.com', 'https://TIKTOK.COM'] as $base) {
+            $url = $base . '/@scout.2015/video/6718335390845095173/?lang=en&si=tracking';
+            assertSame(['provider' => 'tiktok', 'embedId' => '6718335390845095173'], $detector->classify($url));
+            assertSame(str_replace('&si=tracking', '', $url), $detector->detect($url)[0]['displayUrl']);
+        }
+        foreach ([
+            'https://tiktok.com.evil.test/@user/video/6718335390845095173',
+            'https://tiktok.com/@user/video/6718335390845095173extra',
+            'https://tiktok.com/@user/video/671833539084509517',
+            'https://tiktok.com/@user/video/6718335390845095173/extra',
+            'https://tiktok.com/@user',
+            'https://tiktok.com/@user/photo/6718335390845095173',
+            'https://tiktok.com/t/Zabc/',
+            'https://vm.tiktok.com/Zabc/',
+            'https://vt.tiktok.com/Zabc/',
+        ] as $url) {
+            assertSame(null, $detector->classify($url));
+        }
+    }
+
+    public function testSpotifyContentTypesAreValidatedWithoutConfusingTheirIdentifiers(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach (['track', 'album', 'playlist'] as $kind) {
+            $url = 'http://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl/?si=tracking';
+            assertSame(['provider' => 'spotify', 'embedId' => '11dFghVXANMlKmJXsNCbNl', 'contentKind' => $kind], $detector->classify($url));
+            assertSame(str_replace('?si=tracking', '', $url), $detector->detect($url)[0]['displayUrl']);
+        }
+        foreach ([
+            'https://open.spotify.com.evil.test/track/11dFghVXANMlKmJXsNCbNl',
+            'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNlX',
+            'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbN',
+            'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl/extra',
+            'https://open.spotify.com/artist/11dFghVXANMlKmJXsNCbNl',
+            'https://open.spotify.com/episode/11dFghVXANMlKmJXsNCbNl',
+            'https://spotify.link/short',
+            'spotify:track:11dFghVXANMlKmJXsNCbNl',
+        ] as $url) {
+            assertSame(null, $detector->classify($url));
+        }
+    }
+
+    public function testShortsUseTheYoutubeProviderAndPreserveSourceParameters(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach (['https://www.youtube.com', 'http://youtube.com', 'https://YOUTUBE.COM'] as $base) {
+            $url = $base . '/shorts/M7lc1UVf-VE/?t=4&tag=a%20b&tag=c&si=tracking#section';
+            $match = $detector->detect('Clip: ' . $url . '.')[0];
+            assertSame('youtube', $match['provider']);
+            assertSame('M7lc1UVf-VE', $match['embedId']);
+            assertSame('shorts', $match['contentKind']);
+            assertSame($url, $match['url']);
+            assertSame($base . '/shorts/M7lc1UVf-VE/?t=4&tag=a%20b&tag=c#section', $match['displayUrl']);
+        }
+    }
+
+    public function testRejectsLookalikeHostsIncompleteIdentifiersAndUnsupportedYoutubeForms(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach ([
+            'https://youtube.com.evil.test/watch?v=M7lc1UVf-VE',
+            'https://youtube.com@evil.test/watch?v=M7lc1UVf-VE',
+            'https://user@youtube.com/watch?v=M7lc1UVf-VE',
+            'https://youtu.be/M7lc1UVf-V',
+            'https://youtu.be/M7lc1UVf-VEextra',
+            'https://youtu.be/M7lc1UVf-VE/extra',
+            'https://youtube.com/watch?v=M7lc1UVf-VEextra',
+            'https://youtube.com/watch?v[]=M7lc1UVf-VE',
+            'https://youtube.com/shorts/M7lc1UVf-VE/extra',
+            'https://youtube.com/live/M7lc1UVf-VE',
+            'https://youtube.com/embed/M7lc1UVf-VE',
+            'https://m.youtube.com/watch?v=M7lc1UVf-VE',
+            'https://youtube.com/playlist?list=PL123',
+            'https://instagram.com.evil.test/p/Cabc123XYZ/',
+            'https://instagram.com/p/Cabc123XYZ/extra',
+            'https://instagram.com/p/Cabc123XYZ.invalid/',
+        ] as $url) {
+            assertSame(null, $detector->classify($url));
+        }
+    }
+
     public function testMatchesKnownYoutubeUrlShapes(): void
     {
         $detector = new MediaEmbedDetector();

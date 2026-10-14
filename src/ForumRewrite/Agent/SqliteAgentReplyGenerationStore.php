@@ -169,6 +169,25 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
         return $found;
     }
 
+    /** Reset only an unpublished, explicitly requested failure; repeat calls repair enqueue interruptions. */
+    public function retryRequestedForTarget(string $postId, string $contentHash): array
+    {
+        return $this->withImmediateTransaction(function () use ($postId, $contentHash): array {
+            $row = $this->findByTarget($postId, $contentHash);
+            if ($row === null || !is_array($row['request_context']['agent_reply_request'] ?? null)) {
+                throw new \InvalidArgumentException('No stored agent reply request exists for this target.');
+            }
+            if ($row['agent_post_id'] !== null || !in_array($row['status'], ['failed', 'requested'], true)) {
+                throw new \InvalidArgumentException('Only failed or already requeued unpublished requests can be retried.');
+            }
+            $stmt = $this->pdo->prepare("UPDATE post_generated_responses SET status = 'requested',
+                completed_at = NULL, failure_code = NULL, failure_message = NULL, retry_after = NULL
+                WHERE target_post_id = :post AND target_content_hash = :hash AND status = 'failed' AND agent_post_id IS NULL");
+            $stmt->execute(['post' => $postId, 'hash' => $contentHash]);
+            return $this->findByTarget($postId, $contentHash);
+        });
+    }
+
     public function claimNextRequested(int $limit = 1): array
     {
         $limit = max(1, $limit);

@@ -51,6 +51,7 @@ final class AgentResponseTaskTest
             AgentResponseTask::SUMMARY_AND_KEY_TAKEAWAYS_TYPE,
             AgentResponseTask::EXPLAIN_SIMPLY_TYPE,
             AgentResponseTask::CONSTRUCTIVE_COUNTERPOINT_TYPE,
+            AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE,
         ], array_column($modes, 'type'));
         assertSame('Logic analysis', $modes[0]['label']);
         assertSame('Logic analysis', AgentResponseTask::labelForType(AgentResponseTask::LOGIC_ANALYSIS_TYPE));
@@ -63,19 +64,19 @@ final class AgentResponseTaskTest
         $task = AgentResponseTask::forPost([
             'post_id' => 'post-123',
             'content_hash' => 'hash-123',
-        ], AgentResponseTask::LOGIC_ANALYSIS_TYPE);
+        ], AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE);
         $input = AgentResponseTask::generationInputForType([
             'post_id' => 'post-123',
             'content_hash' => 'hash-123',
             'body' => str_repeat('a', 6100),
-        ], AgentResponseTask::LOGIC_ANALYSIS_TYPE);
+        ], AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE);
         $stored = AgentResponseTask::fromStoredRequestContext([
             'agent_reply_request' => ['agent_response_task' => $task],
         ]);
 
-        assertSame(AgentResponseTask::LOGIC_ANALYSIS_TYPE, $task['type']);
-        assertSame(AgentResponseTask::LOGIC_ANALYSIS_TYPE, $stored['type']);
-        assertSame(AgentResponseTask::LOGIC_ANALYSIS_TYPE, $input['type']);
+        assertSame(AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, $task['type']);
+        assertSame(AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, $stored['type']);
+        assertSame(AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, $input['type']);
         assertSame(6000, strlen($input['target_body']));
     }
 

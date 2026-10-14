@@ -120,15 +120,14 @@ checked in the current code, not a guess.
       (`FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED`, depends on
       `FORUM_MEDIA_EMBEDS_ENABLED`), defaulted off; also needs a manual
       operator enable before it's visible anywhere.
-- [ ] Media-embed provider list beyond YouTube/Instagram — unscheduled,
-      flagged during Cycle 5's Step 2 for a future iteration. Suggested
-      platforms, prioritized by fit for the club's actual (rap/hip-hop)
-      content: **SoundCloud** (where independent hip-hop gets posted
-      first), **TikTok** (short clips, freestyles), **Spotify**
-      (track/album/playlist links), **Bandcamp** (indie/underground
-      releases) — higher priority than general social platforms
-      (**X/Twitter**, **Facebook**, **Vimeo**, **Twitch**) for this club's
-      content mix.
+- [ ] Continue media-provider expansion. **Spotify tracks/albums/playlists
+      and direct TikTok videos are implemented** on
+      `feature/top-five-media-embeds`, alongside YouTube Shorts; see the
+      [support checklist](media_embed_support_checklist.md). Remaining
+      candidates are unscheduled: **SoundCloud** and **Bandcamp** have
+      higher priority for the club's rap/hip-hop content than **X/Twitter**,
+      **Facebook**, **Vimeo**, and **Twitch**. Redirecting share links
+      remain a separate follow-up.
 - [ ] No "what's next" callout/banner on the board distinct from the
       generic thread list (cypherposium.com's two event CTAs are the
       closest reference).
@@ -224,3 +223,11 @@ uncertainty each has:
    existing `FORUM_MEDIA_EMBEDS_ENABLED` flag alone (not the inline-player
    flag), since this is a thread-title concern independent of how the
    embed itself renders.
+   **Extended by top-five media support** on `feature/top-five-media-embeds`:
+   YouTube Shorts, Spotify track/album/playlist players, and direct TikTok
+   video players share the existing flags and click-to-load behavior.
+   Source links remain visible outside players; Instagram previews are
+   responsive. Spotify/TikTok use body-derived titles and retain embeds
+   despite title/body duplicate suppression. See the
+   [implementation summary](top_five_media_embeds/top_five_media_embeds_step4_implementation_summary.md)
+   for live-provider, shared-view, theme, and regression verification.

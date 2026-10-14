@@ -90,7 +90,7 @@ final class SqliteFastScoreStore implements FastScoreStore
     }
 
     /** @return list<array<string, mixed>> */
-    public function claimPendingWork(int $limit): array
+    public function claimPendingWork(int $limit, ?array $target = null): array
     {
         $limit = max(1, $limit);
         $now = gmdate('c');
@@ -100,6 +100,7 @@ final class SqliteFastScoreStore implements FastScoreStore
                 'SELECT post_id, content_hash, rubric_revision
                  FROM fast_score_work
                  WHERE state = :state AND next_eligible_at <= :now
+                   AND (:target_post IS NULL OR (post_id = :target_post AND content_hash = :target_hash AND rubric_revision = :target_rubric))
                    AND NOT EXISTS (
                        SELECT 1 FROM fastmod_backfill_work AS backfill_work
                        WHERE backfill_work.post_id = fast_score_work.post_id
@@ -110,6 +111,9 @@ final class SqliteFastScoreStore implements FastScoreStore
                  LIMIT :limit'
             );
             $select->bindValue(':state', 'pending');
+            $select->bindValue(':target_post', $target['post_id'] ?? null);
+            $select->bindValue(':target_hash', $target['content_hash'] ?? null);
+            $select->bindValue(':target_rubric', $target['rubric_revision'] ?? null);
             $select->bindValue(':now', $now);
             $select->bindValue(':limit', $limit, PDO::PARAM_INT);
             $select->execute();

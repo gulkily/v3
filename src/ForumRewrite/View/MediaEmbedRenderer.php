@@ -9,6 +9,8 @@ final class MediaEmbedRenderer
     private const PROVIDER_LABELS = [
         'youtube' => ['icon' => '▶', 'label' => 'YouTube'],
         'instagram' => ['icon' => '📷', 'label' => 'Instagram'],
+        'spotify' => ['icon' => '♫', 'label' => 'Spotify'],
+        'tiktok' => ['icon' => '▶', 'label' => 'TikTok'],
     ];
 
     private const WARM_PREVIEW_ENDPOINT = '/internal/media-embeds/warm-preview';
@@ -61,6 +63,11 @@ final class MediaEmbedRenderer
         return $result;
     }
 
+    public function hasEmbeds(string $body): bool
+    {
+        return $this->detector->detect($body) !== [];
+    }
+
     private function renderCard(array $match, bool $inlinePlayerEnabled): string
     {
         if ($inlinePlayerEnabled && $match['provider'] === 'youtube') {
@@ -69,6 +76,26 @@ final class MediaEmbedRenderer
 
         if ($inlinePlayerEnabled && $match['provider'] === 'instagram') {
             return $this->renderInstagramCard($match);
+        }
+
+        if ($inlinePlayerEnabled && $match['provider'] === 'spotify') {
+            return $this->renderPlayerExpando(
+                $match,
+                'https://open.spotify.com/embed/' . $match['contentKind'] . '/' . $match['embedId'],
+                '♫ Listen on Spotify',
+                'Spotify ' . $match['contentKind'] . ' player',
+                ' media-embed-card--spotify',
+            );
+        }
+
+        if ($inlinePlayerEnabled && $match['provider'] === 'tiktok') {
+            return $this->renderPlayerExpando(
+                $match,
+                'https://www.tiktok.com/player/v1/' . $match['embedId'] . '?autoplay=0',
+                '▶ Watch on TikTok',
+                'TikTok video player',
+                ' media-embed-card--portrait',
+            );
         }
 
         return $this->renderPlainCard($match);
@@ -87,13 +114,25 @@ final class MediaEmbedRenderer
 
     private function renderYoutubeExpando(array $match): string
     {
-        $embedSrc = 'https://www.youtube-nocookie.com/embed/' . $this->escape($match['embedId']);
+        return $this->renderPlayerExpando(
+            $match,
+            'https://www.youtube-nocookie.com/embed/' . $match['embedId'],
+            '▶ Watch on YouTube',
+            'YouTube video player',
+            ($match['contentKind'] ?? '') === 'shorts' ? ' media-embed-card--portrait' : '',
+        );
+    }
 
-        return '<details class="media-embed-card media-embed-card--inline-player" data-media-embed-card data-provider="youtube">'
-            . '<summary>▶ Watch on YouTube</summary>'
+    private function renderPlayerExpando(array $match, string $embedSrc, string $summary, string $title, string $extraClass = ''): string
+    {
+        $provider = self::PROVIDER_LABELS[$match['provider']]['label'];
+        return '<span class="media-embed-card__source"><a class="media-embed-card__link" href="' . $this->escape($match['displayUrl']) . '">Open on ' . $this->escape($provider) . '</a></span>'
+            . '<details class="media-embed-card media-embed-card--inline-player' . $extraClass . '" data-media-embed-card data-provider="' . $this->escape($match['provider']) . '">'
+            . '<summary>' . $this->escape($summary) . '</summary>'
             . '<iframe class="media-embed-card__iframe" data-media-embed-iframe data-embed-src="' . $this->escape($embedSrc) . '"'
-            . ' title="YouTube video player" src=""'
+            . ' title="' . $this->escape($title) . '" src=""'
             . ' sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"'
+            . ' allow="autoplay; encrypted-media; fullscreen; picture-in-picture"'
             . ' referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allowfullscreen></iframe>'
             . '</details>';
     }

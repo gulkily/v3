@@ -96,7 +96,8 @@ final class MediaEmbedPreviewController
             return;
         }
 
-        $result = $this->youtubeFetcher->fetch($url);
+        // Normalize supported video forms for oEmbed without changing the post's source link.
+        $result = $this->youtubeFetcher->fetch('https://www.youtube.com/watch?v=' . $embedId);
         $store->put('youtube', $embedId, $result['title'] ?? null, $result['thumbnailUrl'] ?? null);
         $this->backfillThreadSubject($threadId, $result['title'] ?? null);
     }

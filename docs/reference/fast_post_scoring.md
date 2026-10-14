@@ -9,6 +9,9 @@ or internal workflows.
 Set `FAST_SCORING_ENABLED` and `FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED` to
 `true`. The scorer always uses the normal `LLM_*` provider settings. It may use
 `FAST_SCORING_LLM_MODEL` to select a lower-cost model from that same provider.
+An absent or blank override inherits `LLM_MODEL`; generated configuration defaults
+to inheritance. Explicit overrides are preserved, so use a model identifier valid
+for the configured endpoint (for example, `gpt-5-nano` for direct OpenAI).
 
 `FAST_SCORING_PROMPT_PATH` selects the rubric prompt. Its text must define exactly what probability 0 and 1 mean. The model receives the target post text; replies additionally receive bounded parent and root context. It returns only a numeric `probability` value.
 

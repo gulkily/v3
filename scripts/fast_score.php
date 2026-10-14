@@ -193,6 +193,40 @@ try {
 
     if (in_array($command, ['retry', 'invalidate'], true)) {
         [$postId, $contentHash, $rubricRevision] = fastScoreTarget($options);
+        if ($command === 'retry' && ($options['run'] ?? false) === true) {
+            $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+            $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
+            $readPdo = new PDO('sqlite:' . $databasePath);
+            $fetch = static function (string $id) use ($readPdo): ?array {
+                $stmt = $readPdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :id');
+                $stmt->execute(['id' => $id]);
+                return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            };
+            $factory = new FastScoreContextFactory($fetch);
+            $post = $fetch($postId);
+            $config = FastScoringConfig::fromPrivateConfig($privateConfig);
+            if ($post === null || $factory->forPost($post)['content_hash'] !== $contentHash
+                || FastScoringRubricRevision::fromConfig($config, $projectRoot) !== $rubricRevision) {
+                throw new InvalidArgumentException('Content or moderation rubric changed; enqueue current work instead.');
+            }
+            $queuePath = TaskQueueDatabaseConfig::path($projectRoot, $options['queue-database-path'] ?? null);
+            $result = (new \ForumRewrite\Support\ExecutionLock(dirname($queuePath) . '/forum-rewrite-task-queue.lock', 0))->withExclusiveLock(
+                static function () use ($store, $postId, $contentHash, $rubricRevision, $privateConfig, $projectRoot, $repositoryRoot, $readPdo, $factory, $fetch): array {
+                    $work = $store->findWork($postId, $contentHash, $rubricRevision);
+                    if ($work === null || !in_array($work['state'], ['failed', 'pending'], true)) {
+                        throw new InvalidArgumentException('Only failed or pending moderation work can be retried.');
+                    }
+                    if ($work['state'] === 'failed') {
+                        $store->retryWork($postId, $contentHash, $rubricRevision);
+                    }
+                    $workflow = FastScoreWorkflowFactory::fromPrivateConfig($privateConfig, $projectRoot, $fetch, fastScoreRecorder($projectRoot, $repositoryRoot, $privateConfig));
+                    return (new \ForumRewrite\Scoring\FastScoreSweepService($readPdo, $factory, $workflow, $store, $rubricRevision))->run(1, 1, null,
+                        ['post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
+                }
+            );
+            fwrite(STDOUT, json_encode($result, JSON_THROW_ON_ERROR) . "\n");
+            exit(($result['failed'] > 0 || $result['scored'] + $result['excluded'] !== 1) ? 1 : 0);
+        }
         $work = $command === 'retry'
             ? $store->retryWork($postId, $contentHash, $rubricRevision)
             : $store->invalidateWork($postId, $contentHash, $rubricRevision);
@@ -291,6 +325,9 @@ function fastScoreOptions(string $command, array $arguments): array
             'output-usd-per-million' => true,
         ],
         'retry' => [
+            'run' => false,
+            'database-path' => true,
+            'repository-root' => true,
             'post-id' => true,
             'content-hash' => true,
             'rubric-revision' => true,
@@ -367,7 +404,7 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 
 function fastScoreUsage($stream): void
 {
-    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--verbose] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
+    fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--verbose] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=... [--run]\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
 }
 
 /** @param array<string, string|bool> $options */

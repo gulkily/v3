@@ -14,7 +14,7 @@ final class MediaEmbedDetector
     ];
 
     /**
-     * @return list<array{provider: string, url: string, displayUrl: string, embedId: string, offset: int, length: int}>
+     * @return list<array{provider: string, url: string, displayUrl: string, embedId: string, offset: int, length: int, contentKind?: string}>
      */
     public function detect(string $body): array
     {
@@ -33,11 +33,9 @@ final class MediaEmbedDetector
                 continue;
             }
 
-            $matches[] = [
-                'provider' => $classified['provider'],
+            $matches[] = $classified + [
                 'url' => $url,
                 'displayUrl' => $this->stripTrackingParams($url),
-                'embedId' => $classified['embedId'],
                 'offset' => (int) $offset,
                 'length' => strlen($url),
             ];
@@ -52,20 +50,49 @@ final class MediaEmbedDetector
      * the media-embed preview warm endpoint) can validate and extract its embed
      * identifier through the exact same rules, rather than re-implementing them.
      *
-     * @return ?array{provider: string, embedId: string}
+     * @return ?array{provider: string, embedId: string, contentKind?: string}
      */
     public function classify(string $url): ?array
     {
-        if (preg_match('#^https?://(?:www\.)?youtube\.com/watch\?(?:[^\s&]*&)*v=([A-Za-z0-9_-]{6,})#i', $url, $matches) === 1) {
+        $parts = parse_url($url);
+        if ($parts === false || !in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)
+            || isset($parts['user']) || isset($parts['pass']) || isset($parts['port'])
+            || preg_match('/[\s<>"\\\\]/', $url) === 1) {
+            return null;
+        }
+
+        $host = strtolower($parts['host'] ?? '');
+        $path = $parts['path'] ?? '';
+        if (in_array($host, ['youtube.com', 'www.youtube.com'], true)) {
+            if ($path === '/watch') {
+                parse_str($parts['query'] ?? '', $query);
+                $id = $query['v'] ?? null;
+                if (is_string($id) && preg_match('/^[A-Za-z0-9_-]{11}$/D', $id) === 1) {
+                    return ['provider' => 'youtube', 'embedId' => $id];
+                }
+            }
+            if (preg_match('#^/shorts/([A-Za-z0-9_-]{11})/?$#D', $path, $matches) === 1) {
+                return ['provider' => 'youtube', 'embedId' => $matches[1], 'contentKind' => 'shorts'];
+            }
+        }
+
+        if ($host === 'youtu.be' && preg_match('#^/([A-Za-z0-9_-]{11})/?$#D', $path, $matches) === 1) {
             return ['provider' => 'youtube', 'embedId' => $matches[1]];
         }
 
-        if (preg_match('#^https?://youtu\.be/([A-Za-z0-9_-]{6,})#i', $url, $matches) === 1) {
-            return ['provider' => 'youtube', 'embedId' => $matches[1]];
-        }
-
-        if (preg_match('#^https?://(?:www\.)?instagram\.com/(?:p|reel)/([A-Za-z0-9_-]+)/?#i', $url, $matches) === 1) {
+        if (in_array($host, ['instagram.com', 'www.instagram.com'], true)
+            && preg_match('#^/(?:p|reel)/([A-Za-z0-9_-]+)/?$#D', $path, $matches) === 1) {
             return ['provider' => 'instagram', 'embedId' => $matches[1]];
+        }
+
+        if ($host === 'open.spotify.com'
+            && preg_match('#^/(track|album|playlist)/([A-Za-z0-9]{22})/?$#D', $path, $matches) === 1) {
+            return ['provider' => 'spotify', 'embedId' => $matches[2], 'contentKind' => $matches[1]];
+        }
+
+        if (in_array($host, ['tiktok.com', 'www.tiktok.com'], true)
+            && preg_match('#^/@[A-Za-z0-9_.]+/video/([0-9]{19})/?$#D', $path, $matches) === 1) {
+            return ['provider' => 'tiktok', 'embedId' => $matches[1]];
         }
 
         return null;
@@ -79,20 +106,14 @@ final class MediaEmbedDetector
             return $url;
         }
 
-        parse_str($parts['query'], $queryParams);
-
-        foreach (array_keys($queryParams) as $key) {
-            if (in_array($key, self::TRACKING_PARAMS, true) || str_starts_with($key, 'utm_')) {
-                unset($queryParams[$key]);
-            }
-        }
-
-        $query = http_build_query($queryParams);
-        $scheme = $parts['scheme'] ?? 'https';
-        $host = $parts['host'] ?? '';
-        $path = $parts['path'] ?? '';
-        $fragment = isset($parts['fragment']) ? '#' . $parts['fragment'] : '';
-
-        return $scheme . '://' . $host . $path . ($query !== '' ? '?' . $query : '') . $fragment;
+        $kept = array_filter(explode('&', $parts['query']), static function (string $pair): bool {
+            $key = urldecode(explode('=', $pair, 2)[0]);
+            return !in_array($key, self::TRACKING_PARAMS, true) && !str_starts_with($key, 'utm_');
+        });
+        $query = implode('&', $kept);
+        $queryStart = strpos($url, '?');
+        $fragmentStart = strpos($url, '#', $queryStart);
+        return substr($url, 0, $queryStart) . ($query !== '' ? '?' . $query : '')
+            . ($fragmentStart === false ? '' : substr($url, $fragmentStart));
     }
 }

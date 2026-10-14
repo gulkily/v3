@@ -11,6 +11,9 @@ checklists, and proposals remain at the top level or in the collections below.
 ## Feature folders
 
 - [Compose thread declutter](compose_thread_declutter/)
+- [Top five media embeds](top_five_media_embeds/)
+- [LLM model and completion failures](llm_model_and_completion_failures/)
+- [Scripture-oriented analysis](scripture_oriented_analysis/)
 - [Image upload enhancements](image_upload_enhancements/)
 - [Bookmarklet one-line copy](bookmarklet_one_line_copy/)
 

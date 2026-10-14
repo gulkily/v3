@@ -9,6 +9,52 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MediaEmbedRendererTest
 {
+    public function testTikTokHasDelayedPortraitPlaybackAndFlagOffFallback(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        $url = 'https://www.tiktok.com/@scout2015/video/6718335390845095173';
+        $html = $renderer->render($url, true, true);
+        assertSame(true, str_contains($html, 'data-embed-src="https://www.tiktok.com/player/v1/6718335390845095173?autoplay=0"'));
+        assertSame(true, str_contains($html, 'media-embed-card--portrait'));
+        assertSame(true, str_contains($html, 'src=""'));
+        assertSame(true, strpos($html, 'href="' . $url . '"') < strpos($html, '<details'));
+        assertSame(false, str_contains($html, 'warm-preview'));
+        assertSame(false, str_contains($renderer->render($url, true, false), '<iframe'));
+        assertSame($url, $renderer->render($url, false, true));
+    }
+
+    public function testSpotifyCardsPlayersAndFlagsWorkForEachContentType(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        foreach (['track', 'album', 'playlist'] as $kind) {
+            $url = 'https://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl';
+            $plain = $renderer->render($url, true, false);
+            assertSame(true, str_contains($plain, 'Spotify'));
+            assertSame(false, str_contains($plain, '<iframe'));
+            $player = $renderer->render($url, true, true);
+            assertSame(true, str_contains($player, 'data-embed-src="https://open.spotify.com/embed/' . $kind . '/11dFghVXANMlKmJXsNCbNl"'));
+            assertSame(true, str_contains($player, 'src=""'));
+            assertSame(true, strpos($player, 'href="' . $url . '"') < strpos($player, '<details'));
+            assertSame(false, str_contains($player, 'warm-preview'));
+            assertSame($url, $renderer->render($url, false, true));
+        }
+    }
+
+    public function testShortsHavePortraitPlaybackAndASourceLinkOutsideTheCollapsedPlayer(): void
+    {
+        $url = 'https://youtube.com/shorts/M7lc1UVf-VE?t=4&si=tracking';
+        $renderer = new MediaEmbedRenderer();
+        $html = $renderer->render($url, true, true);
+        assertSame(true, str_contains($html, 'media-embed-card--portrait'));
+        assertSame(true, str_contains($html, 'data-embed-src="https://www.youtube-nocookie.com/embed/M7lc1UVf-VE"'));
+        assertSame(true, str_contains($html, 'href="https://youtube.com/shorts/M7lc1UVf-VE?t=4"'));
+        assertSame(true, strpos($html, '<a ') < strpos($html, '<details'));
+        assertSame(false, str_contains($html, '<details open'));
+        assertSame(false, str_contains($html, 'si=tracking'));
+        assertSame(false, str_contains($renderer->render($url, true, false), '<iframe'));
+        assertSame(nl2br(htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')), $renderer->render($url, false, true));
+    }
+
     private function todaysBrOutput(string $value): string
     {
         return nl2br(htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

@@ -3,7 +3,8 @@ $subject = $threadTitle($thread);
 $showPinnedMarker ??= false;
 $showLabels ??= false;
 $isPinned = $showPinnedMarker && in_array('pinned', $thread['thread_labels'] ?? [], true);
-$previewDuplicatesTitle = trim((string) $thread['body_preview']) === trim($subject);
+$previewDuplicatesTitle = trim((string) $thread['body_preview']) === trim($subject)
+    && !$hasMediaEmbed($thread['body_preview']);
 $bareMediaEmbedWarmBeacon = '';
 if (($mediaEmbedsEnabled ?? false) && $subject === 'Untitled') {
     $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(

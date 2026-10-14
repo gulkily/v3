@@ -181,8 +181,9 @@ final class TaskQueueWorkerTest
             },
             null,
             null,
-            static function (array $claimedTask) use (&$received): void {
+            static function (array $claimedTask) use (&$received): array {
                 $received = $claimedTask['deduplication_key'];
+                return ['generation_status' => 'generated'];
             },
         );
 
@@ -212,6 +213,27 @@ final class TaskQueueWorkerTest
 
         assertSame(1, $summary['failed']);
         assertSame('agent_reply_task_invalid', $store->findById($task['id'])['failure_code']);
+    }
+
+    public function testReturnedReplyFailuresAreTerminalAndOutcomesAreDistinct(): void
+    {
+        foreach (['failed', 'unavailable', 'not_recommended', 'already_posted'] as $status) {
+            $store = $this->store();
+            $task = $store->enqueue(SqliteTaskQueueStore::AGENT_REPLY, 'p@h');
+            $calls = 0;
+            $worker = new TaskQueueWorker($store, static function (): void {}, null, null,
+                static function () use ($status, &$calls): array {
+                    $calls++;
+                    return ['generation_status' => $status, 'failure_code' => 'completion_limit_exhausted'];
+                });
+            $first = $worker->run();
+            $worker->run();
+            assertSame(1, $calls);
+            assertSame(in_array($status, ['failed', 'unavailable'], true) ? 1 : 0, $first['failed']);
+            if ($status === 'failed') {
+                assertSame('completion_limit_exhausted', $store->findById($task['id'])['failure_code']);
+            }
+        }
     }
 
     private function store(): SqliteTaskQueueStore
