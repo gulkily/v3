@@ -107,7 +107,7 @@
         const path = conversation
           ? "/api/private_messages/conversation?username_token=" + encodeURIComponent(counterpartUsernameToken) + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')
           : "/api/private_messages/" + encodeURIComponent(mailbox);
-        const response = await fetch(path, {
+        const response = await window.ForumPrivateMessageAvailability.request(path, {
           credentials: "same-origin",
           headers: { Accept: "application/json" },
         });

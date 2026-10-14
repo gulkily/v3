@@ -104,7 +104,7 @@
       rows.setAttribute('aria-busy', 'true');
       status.textContent = 'Loading conversations…';
       try {
-        const response = await fetch('/api/private_messages/conversations?cursor=' + encodeURIComponent(cursor), {
+        const response = await window.ForumPrivateMessageAvailability.request('/api/private_messages/conversations?cursor=' + encodeURIComponent(cursor), {
           credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
         });
         const payload = await response.json();

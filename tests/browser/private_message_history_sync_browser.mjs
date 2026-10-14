@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { checkOperatorMessagingFlag } from './private_message_operator_flag.mjs';
 import { mkdtemp, writeFile, rename, mkdir, rmdir, copyFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -171,11 +172,14 @@ try {
  // Quiescent isolated stores: restore the coordinated pair, removing the test outage send.
  await copyFile(messagePath+'.backup',messagePath);await copyFile(syncPath+'.backup',syncPath);
  const fresh=await device(target);page=await readAll(fresh,31);await page.close();await fresh.close();
+ const operator=await device(oldA),member=await device(target);
+ await checkOperatorMessagingFlag(operator,member,base,root,project);
+ await operator.close();await member.close();
  assert.deepEqual(JSON.parse(fixture({action:'inspect'})).originals,before);
  assert.deepEqual(errors,[]);
  for(const body of syncBodies) {assert(!body.includes('History secret'));assert(!body.includes('PRIVATE KEY BLOCK'));}
  assert(!log.includes('History secret'));assert(!log.includes('PRIVATE KEY BLOCK'));
- await writeFile(join(root,'report.json'),JSON.stringify({passed:true,mode:senderAssisted?'sender-assisted':'same-account',messages:31,checks:['no global history-sync notice or retry button','real signed approvals',...(senderAssisted?['recipient donors absent','restored sender contribution']:[]),'separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging'],syncRequests:syncBodies.length},null,2));
+ await writeFile(join(root,'report.json'),JSON.stringify({passed:true,mode:senderAssisted?'sender-assisted':'same-account',messages:31,checks:['no global history-sync notice or retry button','real signed approvals',...(senderAssisted?['recipient donors absent','restored sender contribution']:[]),'separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging','signed messaging toggle and member denial','disabled messaging preserves both private stores','environment overrides true and false lock operator control'],syncRequests:syncBodies.length},null,2));
  console.log('History sync browser checks passed. Artifacts: '+root);
  }
 } catch(error) {console.error('Browser artifacts: '+root);console.error(error);process.exitCode=1;}

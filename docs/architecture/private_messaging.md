@@ -4,6 +4,16 @@ Private messaging provides encrypted, signed text conversations between approved
 
 The implementation includes a unified Messages list, recipient discovery, conversation replies without a page reload, recoverable drafts and sends, paginated history, unread conversation counts, and compact presentation of unavailable messages. This overview describes the current repository implementation; deployment status depends on the individual site.
 
+## Server availability
+
+`FORUM_PRIVATE_MESSAGES_ENABLED` defaults to `true`. Root-approved operators can change **Private messages** through the existing signed [Feature Flags controls](/tools/feature-flags/). A valid deployment environment value takes precedence over the saved site value and locks the toggle; the controls show the effective state and source. Restart the PHP server to apply an environment change. This is one site-wide flag with no per-user exceptions or read-only mode.
+
+When disabled, fresh pages hide Messages navigation, unread badges, and profile/user composers and do not start messaging background work. All messaging pages, legacy Inbox/Sent routes, and `/api/private_messages` endpoints (including keys, read state, and history sync) deny access before opening private messaging storage. API responses are no-store HTTP 403 with `status: error`, `code: messaging_disabled`, and an explanatory `error`; pages show an unavailable message. Existing authentication, approval, and key checks still apply when enabled.
+
+Each new request uses the effective flag. Requests admitted before shutdown may finish; there is no immediate broadcast to every open tab. On detecting a disabled response, an open page shows a notice, stops further messaging requests and retries, and leaves draft text available to edit/copy. Disabling does not delete messages, unread progress, or history-sync state, and cannot retract content already downloaded or decrypted.
+
+After re-enabling, reload the page. Existing recoverable local drafts and pending send attempts remain available under the same browser identity/storage rules. If delivery was unconfirmed, use **Check previous send** to reconcile the original attempt before sending another message; shutdown is not proof that an already-admitted send failed. Losing browser storage or keys has the same limitations as before.
+
 ## Architectural choices
 
 | Choice | Implementation and reason |
@@ -250,7 +260,7 @@ The latest compact-message implementation record reports **62 focused tests pass
 - [Core encrypted messaging implementation](../plans/private_messaging/private_messaging_step4_implementation_summary.md)
 - [Conversation list implementation](../plans/private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md)
 - [Chat refinement implementation](../plans/private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md)
-- [Older history implementation](../plans/private_message_history_step4_implementation_summary.md)
+- [Older history implementation](../plans/private_message_history/private_message_history_step4_implementation_summary.md)
 - [Unread state implementation](../plans/private_message_unread/private_message_unread_step4_implementation_summary.md)
 - [Compact unavailable messages implementation](../plans/private_message_unavailable/private_message_unavailable_step4_implementation_summary.md)
 - [Usability master checklist](../plans/private_messaging_usability_master_checklist.md)

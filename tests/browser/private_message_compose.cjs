@@ -22,6 +22,7 @@ function composer(sender = 'alice', brokenStorage = false) {
     calls.push(JSON.parse(options.body));
     return request();
   } };
+  vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname, '../../public/assets/private_message_availability.js'), 'utf8'), context);
   vm.runInNewContext(source, context);
   window.ForumPrivateMessageComposer.bind(root);
   return { field, feedback, retry, type(text) { field.value = text; input.input(); }, send: () => events.submit(event), check: () => retries.click(event) };

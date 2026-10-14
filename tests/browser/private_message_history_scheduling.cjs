@@ -1,23 +1,25 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const events={},values=new Map(),requests=[];
 const source='a'.repeat(40),target='b'.repeat(40);
-let clock=100000,slow=false,interrupt=false;
+let clock=100000,slow=false,interrupt=false,shutdown=false;
 const realNow=Date.now;Date.now=()=>clock;
 global.sessionStorage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
 global.localStorage={getItem:k=>k==='forum_pki_username'?'alice':'saved-key'};
-global.CustomEvent=class {};
-global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),addEventListener:(k,v)=>events[k]=v,dispatchEvent:()=>{}};
+global.CustomEvent=class {constructor(type){this.type=type;}};
+global.MutationObserver=class {observe(){}};
+global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),querySelectorAll:()=>[],addEventListener:(k,v)=>events[k]=v,dispatchEvent:event=>{if(events[event.type])events[event.type](event)}};
 global.window={addEventListener:()=>{},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>({readPrivateKey:async()=>({getFingerprint:()=>source})})}};
 window.ForumPrivateMessageHistoryCrypto={digest:()=> 'digest',extractKeys:async()=>{if(slow){clock+=10001;slow=false;}return ['secret'];},readOriginal:async()=> 'verified',wrapHistoryKeys:async()=> 'encrypted'};
 global.fetch=async(url,options)=>{
  const body=options.body?JSON.parse(options.body):null;requests.push({url,body});
  if(interrupt){interrupt=false;document.hidden=true;events.visibilitychange();}
+ if(shutdown)return {status:403,clone:()=>({json:async()=>({code:'messaging_disabled'})})};
  const sender=url.endsWith('?mode=sender');
  const work={status:'ok',account:sender?'bob':'alice',source_account:'alice',mode:sender?'sender':'account',source,target,target_key:'target',
    messages:['one','two'].map(message_id=>({message_id,digest:'digest',encrypted_envelope:'original',sender_keys:['sender']})),checkpoint:{target,after_id:'two'},cycle_end:false};
  return {ok:true,json:async()=>url.includes('/work')?work:{status:'ok'}};
 };
-function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));events.DOMContentLoaded();return window.ForumPrivateMessageHistorySync.refresh();}
+function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_message_availability.js','utf8'));vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));events.DOMContentLoaded();return window.ForumPrivateMessageHistorySync.refresh();}
 (async()=>{
  await install();
  assert.equal(requests.filter(r=>r.url.includes('/work')).length,8);
@@ -40,5 +42,20 @@ function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_me
  const resumed=requests.find(r=>r.body?.mode==='sender').body;
  assert.deepEqual(resumed.items.map(r=>r.message_id),['one','two']);assert.equal(resumed.checkpoint.after_id,'two');
  assert([...values.values()].every(v=>['account','sender'].includes(v)));
+ requests.length=0;shutdown=true;await install();
+ assert.equal(requests.length,1,'Disabled response must not be retried');
+ assert.equal(window.ForumPrivateMessageHistorySync.state().state,'disabled');
+ await window.ForumPrivateMessageHistorySync.refresh();
+ await Promise.all(Array.from({length:8},(_,i)=>window.ForumPrivateMessageHistorySync.candidates('queued-'+i,'original')));
+ window.ForumPrivateMessageHistorySync.confirm('one','original');
+ assert.equal(requests.length,1,'Disabled background work remains stopped');
+ requests.length=0;
+ const running=install();
+ const queued=Array.from({length:8},(_,i)=>window.ForumPrivateMessageHistorySync.candidates('racing-'+i,'original'));
+ await Promise.allSettled([running,...queued]);
+ const admitted=requests.length;
+ assert(admitted>=1 && admitted<=3,'Only already-admitted requests may race with disable');
+ await window.ForumPrivateMessageHistorySync.refresh();
+ assert.equal(requests.length,admitted,'Queued requests must drain without network retries');
  console.log('Shared budget, reload fairness, visibility cancellation and interrupted sender retry passed.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>{Date.now=realNow});

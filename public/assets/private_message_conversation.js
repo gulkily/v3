@@ -162,7 +162,7 @@
       status.textContent = fresh ? 'Restarting history...' : 'Loading older messages...';
       readingPosition.correct();
       try {
-        const response = await fetch('/api/private_messages/conversation?username_token=' + encodeURIComponent(root.dataset.counterpartUsernameToken) + (fresh ? '' : '&cursor=' + encodeURIComponent(cursor)), {
+        const response = await window.ForumPrivateMessageAvailability.request('/api/private_messages/conversation?username_token=' + encodeURIComponent(root.dataset.counterpartUsernameToken) + (fresh ? '' : '&cursor=' + encodeURIComponent(cursor)), {
           credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: request.signal,
         });
         const page = await response.json().catch(() => null);
@@ -230,7 +230,7 @@
       } catch (error) {
         if (!isCurrent()) return;
         status.className = 'feedback feedback-error';
-        status.textContent = error.restart
+        status.textContent = error.code === 'messaging_disabled' ? error.message : error.restart
           ? 'This history position is no longer usable. Restart history to load a fresh recent window. Your conversation and draft are unchanged until it succeeds.'
           : error.authorization
             ? 'History access is unavailable. Check your sign-in and messaging eligibility, then retry. Your loaded conversation and draft are unchanged.'

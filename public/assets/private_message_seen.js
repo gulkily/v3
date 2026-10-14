@@ -29,7 +29,7 @@
       return rect.height > 0 && bottom > 0 && rect.bottom > 0 && rect.top < bottom;
     }
     async function acknowledge(explicitRetry) {
-      if (!root.isConnected || !window.ForumPrivateMessageUnread.sameIdentity()) return;
+      if (window.ForumPrivateMessageAvailability.isDisabled() || !root.isConnected || !window.ForumPrivateMessageUnread.sameIdentity()) return;
       if (pending || !settled || !token || token === acknowledged || (!explicitRetry && (token === failed || !visible()))) return;
       const candidate = token, current = generation;
       pending = true;
@@ -37,7 +37,7 @@
       root.dataset.readState = 'pending';
       retry.disabled = true;
       try {
-        const response = await fetch('/api/private_messages/read', {
+        const response = await window.ForumPrivateMessageAvailability.request('/api/private_messages/read', {
           method: 'POST', credentials: 'same-origin', cache: 'no-store', signal: request.signal,
           headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'ForumPrivateMessages', Accept: 'application/json' },
           body: JSON.stringify({ counterpart: counterpart, read_token: candidate }),
@@ -69,7 +69,7 @@
       }
     }
     function schedule() {
-      if (scheduled) return;
+      if (scheduled || window.ForumPrivateMessageAvailability.isDisabled()) return;
       scheduled = requestAnimationFrame(function () { scheduled = 0; acknowledge(false); });
     }
     root.addEventListener('private-message-reader-settled', function () { settled = true; schedule(); });
@@ -83,6 +83,14 @@
       schedule();
     });
     retry.addEventListener('click', function () { acknowledge(true); });
+    document.addEventListener('private-messaging-disabled', function () {
+      invalidate();
+      cancelAnimationFrame(scheduled); scheduled = 0;
+      root.dataset.readState = 'disabled';
+      feedback.hidden = false;
+      text.textContent = window.ForumPrivateMessageAvailability.message;
+      retry.hidden = reopen.hidden = true;
+    });
     document.addEventListener('private-message-identity-invalidated', invalidate);
     window.addEventListener('pagehide', invalidate);
     window.addEventListener('pageshow', schedule);

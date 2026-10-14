@@ -10,7 +10,7 @@
     try { return JSON.stringify(['username','public_key','private_key'].map(k=>localStorage.getItem('forum_pki_'+k)||'')); }
     catch (_) { return ''; }
   }
-  function valid(run) { return generation===run && original===identity() && !document.hidden; }
+  function valid(run) { return !window.ForumPrivateMessageAvailability.isDisabled() && generation===run && original===identity() && !document.hidden; }
   function publish(state) {
     stats.state=state;
     document.dispatchEvent(new CustomEvent('private-message-history-sync-state',{detail:{...stats}}));
@@ -25,7 +25,7 @@
         const cancel=()=>controller.abort();lifecycle.signal.addEventListener('abort',cancel,{once:true});
         const timeout=setTimeout(cancel,5000);
         try {
-          const response=await fetch(base+action,{credentials:'same-origin',cache:'no-store',signal:controller.signal,
+          const response=await window.ForumPrivateMessageAvailability.request(base+action,{credentials:'same-origin',cache:'no-store',signal:controller.signal,
             headers:{Accept:'application/json',...(input?{'Content-Type':'application/json','X-Requested-With':'ForumPrivateMessages'}:{})},
             ...(input?{method:'POST',body:JSON.stringify(input)}:{})});
           const result=await response.json();
@@ -42,7 +42,7 @@
     } finally {const next=requestWaiters.shift();if(next)next();else requestsInFlight--;}
   }
   async function candidates(messageId, envelope) {
-    if(!nav || original!==identity() || document.hidden) return [];
+    if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || original!==identity() || document.hidden) return [];
     const crypto=window.ForumPrivateMessageHistoryCrypto, digest=crypto.digest(envelope), run=generation;
     const cacheKey=messageId+':'+digest;
     if(candidateRequests.has(cacheKey)) return candidateRequests.get(cacheKey);
@@ -71,7 +71,7 @@
     candidateRequests.set(cacheKey,promise);return promise;
   }
   function confirm(messageId,envelope,transferId='') {
-    if(!nav || original!==identity() || document.hidden) return;
+    if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || original!==identity() || document.hidden) return;
     const digest=window.ForumPrivateMessageHistoryCrypto.digest(envelope);
     if(!aborter || (aborter.signal.aborted && !active)) aborter=new AbortController();
     request('acknowledge',{items:[{message_id:messageId,digest,transfer_id:transferId}]},generation).then(()=>{
@@ -144,7 +144,7 @@
     finally { clearTimeout(timer); }
   }
   function refresh(force=false) {
-    if(!nav || document.hidden) return Promise.resolve();
+    if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || document.hidden) return Promise.resolve();
     if(original!==identity()) { invalidate();return Promise.resolve(); }
     if(active) return active;
     if(!force && Date.now()-lastRun<5000) return Promise.resolve();
@@ -159,6 +159,7 @@
     if(!nav) return;
     account=nav.dataset.viewer;original=identity();
     try {if(sessionStorage.getItem('forum_history_sync_next_mode:'+account)==='sender')nextMode='sender';} catch (_) {}
+    document.addEventListener('private-messaging-disabled',()=>{generation++;if(aborter)aborter.abort();publish('disabled');});
     window.addEventListener('pagehide',()=>{generation++;if(aborter)aborter.abort();});
     window.addEventListener('pageshow',()=>refresh());
     window.addEventListener('focus',()=>refresh());
