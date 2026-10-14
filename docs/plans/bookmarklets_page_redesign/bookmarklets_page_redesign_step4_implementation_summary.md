@@ -14,3 +14,14 @@ Debug mode: disabled
 - Notes:
   - Chicago and word97 already render a leading icon through `.tool-launcher-button::before`; the redesign must reuse it rather than add a second glyph.
   - Because `tools.php` shares the base rules, all new rules must be scoped to a bookmarklets page class (Stage 2).
+
+## Stage 2 - Template structure
+- Changes:
+  - `templates/pages/bookmarklets.php`: added `bookmarklets-page` class on the card; shortened intro to a lead line plus a separate drag hint; wrapped each variant in `section.bookmarklet-group` with heading, note, and list.
+  - All `data-bookmarklet*` attributes, copy buttons, and feedback elements unchanged.
+- Verification:
+  - `php -l` on the template: no errors.
+  - Playwright against the dev server: 7 bookmarklet links have `javascript:` hrefs and all 7 copy buttons are enabled.
+  - `php tests/LocalAppSmokeTest.php`: exit 0.
+- Notes:
+  - No styling added yet; new elements render with existing styles until Stage 3.
