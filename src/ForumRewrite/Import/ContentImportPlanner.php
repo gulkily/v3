@@ -220,11 +220,19 @@ final class ContentImportPlanner
                 };
                 $entry['dependencies'][] = 'post:' . ($record->threadId ?? $record->postId);
                 $author = $record->authorIdentityId;
+                if ($record instanceof \ForumRewrite\Canonical\PostRetractionRecord) {
+                    $contents = (string) file_get_contents($root . '/' . $path);
+                    if (\ForumRewrite\Security\ReactionSignature::status($root, $path, $contents,
+                        $record->signerIdentityId(), $keyFallbackRoot) !== 'verified') {
+                        throw new RuntimeException('Imported retractions require a verified actor signature.');
+                    }
+                    if ($record->classification === 'operator') $entry['dependencies'][] = 'identity:' . $record->signerIdentityId();
+                }
             }
             if (isset($author)) {
                 $entry['dependencies'][] = 'identity:' . $author;
             }
-            $entry['key'] = preg_match('#^records/(thread-labels|post-reactions)/#', $path)
+            $entry['key'] = preg_match('#^records/(thread-labels|post-reactions|post-retractions)/#', $path)
                 ? ArchiveRecordCatalog::pathIdentityKey($path) : ArchiveRecordCatalog::identityKey($root, $path);
             if ($entry['key'] === null) {
                 throw new RuntimeException('Unrecognized canonical identity');

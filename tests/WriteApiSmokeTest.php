@@ -2574,6 +2574,17 @@ NODE;
         (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
         assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
         assertStringContains('retracted', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
+        $source = sys_get_temp_dir() . '/operator-import-' . bin2hex(random_bytes(6));
+        mkdir($source);
+        $this->copyDirectory($root . '/records', $source . '/records');
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($source, $root);
+        assertSame('duplicate', $plan[$prepared['record_path']]['state']);
+        $freshPath = $stale['record_path'];
+        file_put_contents($source . '/' . $freshPath, $stale['canonical_record']);
+        file_put_contents($source . '/' . $freshPath . '.asc', $this->signCanonicalRecord($operator['home'], $stale['canonical_record']));
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($source, $root);
+        assertSame('invalid', $plan[$freshPath]['state']);
+        assertStringContains('local acceptance evidence', $plan[$freshPath]['reason']);
         file_put_contents($root . '/' . $prepared['record_path'] . '.asc', 'forged');
         $rejected = false;
         try { (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']); }

@@ -20,3 +20,9 @@ Debug mode: disabled
 - Verification: six targeted tests passed, covering legacy rebuilds, operator suppression, raw source denial, persistence after seed removal/rebuild, forged signature rejection, and author suppression across served surfaces.
 - Notes: validation caches key on verified bytes/key and repository HEAD, so mutations or new revisions invalidate the decision. No signature or imported archive statement grants operator authority by itself.
 
+## Stage 4 - Import trust boundary
+
+- Changes: imported retractions require verified signatures; operator evidence is validated against destination history, never archive history. Path identity preserves duplicate recognition for validated operator records. Actor identity dependencies accompany operator evidence.
+- Verification: 11 targeted import/API tests passed, including forged/unsigned import rejection, accepted operator duplicate after revocation, signed-but-unaccepted operator rejection, and author reimport suppression.
+- Notes: importing a remote instance's operator decision cannot grant local authority; remote moderation propagation remains excluded. Locally accepted actions survive import of the original content.
+
