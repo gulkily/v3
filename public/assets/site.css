@@ -673,3 +673,15 @@ pre {
   height: 352px;
   aspect-ratio: auto;
 }
+
+.media-embed-card--preview {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.media-embed-card__thumbnail {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
