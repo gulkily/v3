@@ -928,6 +928,11 @@ PHP);
             assertStringContains('Request agent response', $approvedThreadPage);
             assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
             assertStringContains('Logic analysis', $approvedThreadPage);
+            $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            foreach ([$approvedThreadPage, $approvedPostPage] as $page) {
+                assertSame(1, substr_count($page, '"type":"scripture_oriented_analysis"'));
+                assertStringContains('Scripture-oriented analysis', $page);
+            }
             assertSame(2, substr_count($approvedThreadPage, 'data-action="request-agent-reply"'));
             assertSame('requested', $response['generation_status']);
             assertSame(1, substr_count($requestedThreadPage, 'data-action="request-agent-reply"'));
@@ -1717,6 +1722,12 @@ PHP);
 
     public function testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode(): void
     {
+        $this->assertSelectedModeLifecycle('logic_analysis', 'Logic analysis');
+        $this->assertSelectedModeLifecycle('scripture_oriented_analysis', 'Scripture-oriented analysis');
+    }
+
+    private function assertSelectedModeLifecycle(string $mode, string $label): void
+    {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
 
@@ -1728,7 +1739,7 @@ PHP);
             $request = json_decode($this->renderMethod(
                 $application,
                 'POST',
-                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=' . $mode
             ), true);
             $invalid = json_decode($this->renderMethod(
                 $application,
@@ -1740,6 +1751,12 @@ PHP);
                 'POST',
                 '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
             ), true);
+            $duplicate = json_decode($this->renderMethod(
+                $application, 'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=' . $mode
+            ), true);
+            assertSame('requested', $duplicate['generation_status']);
+            assertSame($label, $duplicate['response_mode_label']);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
             $claimed = $store->claimRequestedForPost($postId);
@@ -1750,18 +1767,18 @@ PHP);
                 ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
-            assertSame('Logic analysis', $request['response_mode_label']);
+            assertSame($label, $request['response_mode_label']);
             assertSame('error', $invalid['status']);
             assertSame('invalid response_mode', $invalid['error']);
             assertSame('error', $retired['status']);
             assertSame('invalid response_mode', $retired['error']);
-            assertSame('logic_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
-            assertSame('logic_analysis', $stored['response_intent']);
+            assertSame($mode, $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
+            assertSame($mode, $stored['response_intent']);
             assertSame('generated', $fulfilled['generation_status']);
             assertSame(1, $analysisCount);
             assertSame(true, str_starts_with($stored['analysis_hash'], 'task:'));
             assertStringContains(
-                'Logic analysis available.',
+                $label . ' available.',
                 $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId))
             );
         } finally {
@@ -2141,7 +2158,7 @@ NODE;
             $this->deleteTree($repositoryRoot . '/.git');
 
             $_COOKIE = ['identity_hint' => 'guest'];
-            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=scripture_oriented_analysis'), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
             $response = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
@@ -2149,6 +2166,9 @@ NODE;
             $row = $pdo->query('SELECT status, failure_code, failure_message, agent_post_id FROM post_generated_responses')->fetch();
 
             assertSame('requested', $request['generation_status']);
+            assertSame('Scripture-oriented analysis', $request['response_mode_label']);
+            assertStringContains('Scripture-oriented analysis failed.',
+                $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId)));
             assertSame('failed', $response['generation_status']);
             assertSame('posting_error', $response['failure_code']);
             assertSame('failed', $row['status']);
