@@ -59,3 +59,16 @@ Debug mode: disabled
   - `php tests/LocalAppSmokeTest.php`: exit 0.
 - Notes:
   - Remaining themes (console, sticker, lcd, forge, thermal, whitehot) were checked by probe and not individually reviewed by eye; Stage 6 covers a final pass.
+
+## Stage 6 - Regression pass and release readiness
+- Changes:
+  - None to application files. No smoke assertions needed updating: existing checks for the nav, `tools_bookmarklets.js` fingerprint, and `data-bookmarklet-kind` still hold, and no fingerprinted asset files were left uncommitted.
+- Verification:
+  - `php tests/LocalAppSmokeTest.php`: exit 0.
+  - Contact sheet at 375 px for console, sticker, lcd, forge, thermal, whitehot, word97, and chicago reviewed: chips read as draggable, copy buttons align, descriptions sit under their own button, no overflow.
+  - Playwright: all 7 links keep `javascript:` hrefs and all 7 copy buttons enable; copy shows "Copied" inside the viewport at 375 and 1280 px.
+  - `/tools/` matches the Stage 1 baseline in all 12 themes at both widths, apart from the unrelated 3x13 px theme-menu pixels in console at 1280 px. It is the only other page using `.tool-launcher-*`.
+  - Actual drag onto a browser bookmarks bar was not performed (not scriptable here); the link `href` and `data-bookmarklet` hooks are unchanged from before.
+  - Deployment, migration, and external-system checks: not applicable (template and CSS only).
+- Notes:
+  - Final commit count on the branch: 1 planning commit plus 6 stages, as planned.
