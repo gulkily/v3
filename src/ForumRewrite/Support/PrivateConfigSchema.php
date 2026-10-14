@@ -24,7 +24,7 @@ final class PrivateConfigSchema
             'FAST_SCORING_LLM_PROVIDER' => self::definition(null, 'string'),
             'FAST_SCORING_LLM_API_KEY' => self::definition(null, 'string', secret: true),
             'FAST_SCORING_LLM_API_BASE_URL' => self::definition(null, 'string'),
-            'FAST_SCORING_LLM_MODEL' => self::definition('openai/gpt-5-nano', 'string', template: true),
+            'FAST_SCORING_LLM_MODEL' => self::definition('', 'string', template: true),
             'FAST_SCORING_LLM_TIMEOUT_SECONDS' => self::definition(null, 'integer'),
             'FAST_SCORING_LLM_EXTRA_HEADERS' => self::definition(null, 'map'),
             'FAST_SCORING_PROMPT_PATH' => self::definition('prompts/fast_post_scoring_system.txt', 'path', template: true),
