@@ -180,7 +180,5 @@ final class TaskQueueWorker
         } catch (Throwable $throwable) {
             return $this->store->markFailed($id, 'agent_reply_fulfillment_failed', $throwable->getMessage(), true);
         }
-
-        return $this->store->markCompleted($id);
     }
 }

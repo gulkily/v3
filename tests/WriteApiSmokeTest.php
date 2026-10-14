@@ -1604,13 +1604,23 @@ PHP);
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
 
-            $baseCommand = 'php scripts/task_queue.php run --limit=2'
+            $queuedId = static function (string $target) use ($databasePath, $queuePath): int {
+                $stmt = (new PDO('sqlite:' . $databasePath))->prepare('SELECT target_content_hash FROM post_generated_responses WHERE target_post_id = ?');
+                $stmt->execute([$target]);
+                $task = (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(
+                    SqliteTaskQueueStore::AGENT_REPLY,
+                    AgentReplyTask::deduplicationKey($target, (string) $stmt->fetchColumn()),
+                );
+                return (int) $task['id'];
+            };
+            $taskId = $queuedId($postId);
+            $baseCommand = 'php scripts/task_queue.php run'
                 . ' --repository-root=' . escapeshellarg($repositoryRoot)
                 . ' --database-path=' . escapeshellarg($databasePath)
                 . ' --queue-database-path=' . escapeshellarg($queuePath);
             $dryRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --dry-run');
-            $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand);
-            $secondRun = $this->runCommand(dirname(__DIR__), $baseCommand);
+            $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --task-id=' . $taskId);
+            $secondRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --task-id=' . $taskId);
             $secondThreadResponse = $this->renderMethod(
                 $application,
                 'POST',
@@ -1620,7 +1630,7 @@ PHP);
             $_COOKIE = ['identity_hint' => 'guest'];
             $secondRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($secondPostId)), true);
             $_COOKIE = [];
-            $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet');
+            $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet --task-id=' . $queuedId($secondPostId));
             $pdo = new PDO('sqlite:' . $databasePath);
             $statement = $pdo->prepare('SELECT status, agent_post_id FROM post_generated_responses WHERE target_post_id = :post_id');
             $statement->execute(['post_id' => $postId]);

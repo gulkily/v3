@@ -225,7 +225,7 @@ try {
                 }
             );
             fwrite(STDOUT, json_encode($result, JSON_THROW_ON_ERROR) . "\n");
-            exit(($result['failed'] > 0 || $result['processed'] !== 1) ? 1 : 0);
+            exit(($result['failed'] > 0 || $result['scored'] + $result['excluded'] !== 1) ? 1 : 0);
         }
         $work = $command === 'retry'
             ? $store->retryWork($postId, $contentHash, $rubricRevision)

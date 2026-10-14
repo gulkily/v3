@@ -779,7 +779,6 @@ final class PostWorkflowService
     }
 
     /**
-     * @param array<string, mixed> $requestRow
      * @return array<string, mixed>
      */
     public function retryAgentReplyRequest(string $postId, string $contentHash): array
