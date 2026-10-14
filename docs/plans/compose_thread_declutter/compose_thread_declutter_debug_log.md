@@ -104,3 +104,26 @@ Revision: at the user's request, Stage 5 now removes the always-visible image he
 ### Uncertain assessments
 
 - Observation: Step 2 was already approved and does not name the help message; the removal fits its "compact image widget" requirement but was not itemized there. The user may want Step 2 amended for traceability.
+
+## 2026-10-14T22:10:00Z — Step 4
+
+All seven stages implemented on branch `compose-thread-declutter` (planning commit plus seven stage commits). Debug mode inherited as enabled.
+
+### Necessary/useful instructions
+
+- Source: [Step 4 Do — Stage Boundary Protocol](../../railspike/docs/workflow/step4_implementation_do.md#stage-boundary-protocol-required), verify, update summary, commit per stage. Contribution: caught that the image acceptance test depended on the description being visible before an image was attached and on the anonymous button being visible, before either change was committed. Suggestion: retain.
+- Source: [Step 3 Do — Key Risks](../../railspike/docs/workflow/step3_development_plan_do.md#structure), "early validation" per risk. Contribution: named the shared image partial and hidden-warning risks that the browser test and fixture-based checks then covered. Suggestion: retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Source: documentation-only verification rules. Applicability: application change; link/path checks did not apply.
+- Source: deployment/migration checks in the Step 4 After checklist. Applicability: no schema, API, or deployment change; recorded as not applicable.
+
+### Uncertain assessments
+
+- Source: [RAILSPIKE.md — Planning Artifacts](../../railspike/RAILSPIKE.md#planning-artifacts), commit discipline vs. a dirty working tree. Observation: `todo.txt` received uncommitted user edits mid-cycle and Step 4 requires marking completed items there. I committed only the single line I changed by staging a patched index copy; the instructions do not describe this case. Suggestion: clarify how to handle pre-existing user edits in a file the cycle must update.
+- Observation: mid-cycle user requests (remove "(optional)" labels, remove the image help text, move all buttons into the menu) arrived after Step 2 approval; they were absorbed into stages without re-approval because they only simplified approved scope. Suggestion: clarify whether such reductions need a Step 2 amendment.
