@@ -13,7 +13,7 @@ function makeButton() {
   const button = Object.assign(new Element(), {
     textContent: "Delete",
     parentElement: row,
-    closest: () => button,
+    closest: (selector) => selector === '[data-role="retraction-control"]' ? row : selector === '[data-action="retract-post"]' ? button : null,
     hasAttribute: (name) => name in attributes,
     getAttribute: (name) => (name in attributes ? attributes[name] : null),
     setAttribute: (name, value) => { attributes[name] = value; },

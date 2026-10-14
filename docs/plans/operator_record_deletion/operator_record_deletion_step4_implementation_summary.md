@@ -32,3 +32,9 @@ Debug mode: disabled
 - Verification: six targeted tests passed, including version-17 cache with both columns removed starting normally, rebuild command, schema fingerprint, operator notice/source attribution, and author suppression across served surfaces. Earlier placeholder/reply coverage also passed.
 - Notes: actor identity and acceptance evidence remain canonical; derived classification only controls presentation. Deploy application code with the schema change; do not downgrade to code that ignores operator retractions.
 
+## Stage 6 - Shared overflow placement
+
+- Changes: shared native details control renders … with the accessible name More actions and a Retract post option. Author/operator visibility is computed from existing eligibility, with no new QDB/Forte entry points. Shared feedback sits outside the disclosure; Escape closes it and restores summary focus.
+- Verification: four API/script tests passed, including operator root/post pages and ordinary author visibility. Real Chromium menu checks passed for keyboard activation, Escape/focus restoration, and mobile touch activation.
+- Notes: Playwright does not resolve native summary with getByRole(button) in this browser, so the browser fixture selects the explicitly named summary. Native disclosure semantics remain intact. Corrected an EOF whitespace warning from Stage 5.
+

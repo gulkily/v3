@@ -10,7 +10,7 @@
   }
 
   function feedbackNodeFor(button) {
-    const row = button.parentElement;
+    const row = button.closest('[data-role="retraction-control"]') || button.parentElement;
     return row ? row.querySelector('[data-role="retraction-feedback"]') : null;
   }
 
@@ -54,6 +54,15 @@
       button.removeAttribute("disabled");
     }
   }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape" || !(event.target instanceof Element)) return;
+    const menu = event.target.closest("details.post-more-actions");
+    if (!menu || !menu.open) return;
+    event.preventDefault();
+    menu.open = false;
+    menu.querySelector("summary").focus();
+  });
 
   document.addEventListener("click", function (event) {
     const button = event.target instanceof Element ? event.target.closest('[data-action="retract-post"]') : null;

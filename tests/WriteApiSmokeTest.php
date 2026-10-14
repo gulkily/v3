@@ -2540,6 +2540,15 @@ NODE;
         $second = $this->createAuthoredThread($app, 'operator-target-two', 'Second target prose');
         $operator = $this->linkSigningIdentity($app, 'operator-actor');
         $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $oldCookies = $_COOKIE;
+        $_COOKIE = ['identity_hint' => $operator['identity_id']];
+        try {
+            foreach (['/threads/', '/posts/'] as $prefix) {
+                $page = $this->renderMethod($app, 'GET', $prefix . $author['thread_id']);
+                assertStringContains('aria-label="More actions"', $page);
+                assertStringContains('>Retract post</button>', $page);
+            }
+        } finally { $_COOKIE = $oldCookies; }
         $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
         assertSame('ok', $prepared['status']);
         assertStringContains('Author-Identity-ID: ' . $author['identity_id'], $prepared['canonical_record']);

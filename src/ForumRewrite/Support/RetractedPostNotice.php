@@ -18,4 +18,3 @@ final class RetractedPostNotice
             ? 'This post was retracted by an operator.' : self::TEXT;
     }
 }
-

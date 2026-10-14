@@ -130,6 +130,9 @@ final class ThreadAndPostPageController
                 'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
+                'viewerCanRetractOthers' => $viewerProfile !== null
+                    && (int) ($viewerProfile['is_approved'] ?? 0) === 1
+                    && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, (string) $viewerProfile['identity_id']),
                 'viewerHasLiked' => $viewerHasLiked,
                 'viewerHasVoted' => $viewerHasVoted,
                 'voteCaptionPair' => $voteCaptionPair,
@@ -219,6 +222,9 @@ final class ThreadAndPostPageController
             [
                 'post' => $post,
                 'viewerProfile' => $viewerProfile,
+                'viewerCanRetractOthers' => $viewerProfile !== null
+                    && (int) ($viewerProfile['is_approved'] ?? 0) === 1
+                    && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, (string) $viewerProfile['identity_id']),
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
