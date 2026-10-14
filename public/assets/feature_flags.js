@@ -168,8 +168,14 @@
       }
     }).catch(function () {
       if (current !== navigationGeneration || !status) return;
-      var count = document.querySelector('[data-private-message-unread] [data-role="unread-count"]');
-      if (count) count.textContent = '?';
+      if (savedIdentity !== identity()) stopMessaging();
+      var link = document.querySelector('[data-private-message-unread]');
+      if (link) {
+        link.dataset.unreadState = 'unavailable';
+        link.title = 'Unread status unavailable. Reload the page.';
+        link.querySelector('[data-role="unread-count"]').textContent = '?';
+        link.querySelector('#private-message-unread-status').textContent = link.title;
+      }
       status.textContent = 'Saved. Navigation could not refresh. ';
       var reload = document.createElement('button');
       reload.type = 'button';
@@ -227,7 +233,10 @@
       }).finally(function () {
         pendingRows.delete(row);
         setPending(form, false);
-        if (focused && document.activeElement === document.body && !focused.hidden) focused.focus({ preventScroll: true });
+        if (focused && document.activeElement === document.body) {
+          var target = focused.closest('[hidden]') ? row.querySelector('.switch') : focused;
+          if (target) target.focus({ preventScroll: true });
+        }
       });
     });
   }

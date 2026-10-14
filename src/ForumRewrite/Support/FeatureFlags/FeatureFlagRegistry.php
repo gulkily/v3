@@ -35,7 +35,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::PRIVATE_MESSAGES_ENABLED,
                 'Private messages',
-                'Enable private messaging, including message history, unread status, and history sync. Disabling preserves stored messages. Re-enable and reload to resume.',
+                'Enable private messaging, including message history, unread status, and history sync. Disabling preserves stored messages. Messages navigation updates here immediately; reload other messaging pages after re-enabling.',
                 true,
                 self::PRIVATE_MESSAGES_ENABLED,
                 siteMutable: true,

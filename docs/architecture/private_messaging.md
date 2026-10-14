@@ -12,7 +12,11 @@ When disabled, fresh pages hide Messages navigation, unread badges, and profile/
 
 Each new request uses the effective flag. Requests admitted before shutdown may finish; there is no immediate broadcast to every open tab. On detecting a disabled response, an open page shows a notice, stops further messaging requests and retries, and leaves draft text available to edit/copy. Disabling does not delete messages, unread progress, or history-sync state, and cannot retract content already downloaded or decrypted.
 
-After re-enabling, reload the page. Existing recoverable local drafts and pending send attempts remain available under the same browser identity/storage rules. If delivery was unconfirmed, use **Check previous send** to reconcile the original attempt before sending another message; shutdown is not proof that an already-admitted send failed. Losing browser storage or keys has the same limitations as before.
+On the Feature Flags page, a successful signed toggle or reset updates the Messages link in place using the same server eligibility and navigation rendering as a full page. `GET /api/feature_flags/navigation` is a session-aware, no-store read returning canonical navigation HTML, messaging eligibility/viewer, and fingerprinted script URLs. Disabling immediately stops messaging work; enabling loads missing dependencies once, clears the obsolete disabled notice, refreshes unread status, and resumes bounded history sync. Cancelled work drains before restart and obsolete responses cannot undo the current state. Focus, scroll, unrelated settings, drafts, and durable progress are retained. An unread failure shows the existing unavailable indicator.
+
+If the flag saves but navigation or its dependencies cannot refresh, the row says **Saved. Navigation could not refresh.** and offers **Reload page**. This recovery reloads without repeating the signed write. A confirmed disable still stops messaging work even if refresh fails. Live updates apply only to this Feature Flags page, not other tabs, users, flags, or open composers.
+
+After re-enabling, reload other open messaging pages. Existing recoverable local drafts and pending send attempts remain available under the same browser identity/storage rules. If delivery was unconfirmed, use **Check previous send** to reconcile the original attempt before sending another message; shutdown is not proof that an already-admitted send failed. Losing browser storage or keys has the same limitations as before.
 
 ## Architectural choices
 

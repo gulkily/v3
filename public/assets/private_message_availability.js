@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  let disabled = false, generation = 0, observer = null;
+  let disabled = false, generation = 0, observer = null, noticeEnabled = true;
   const message = 'Private messaging is disabled on this server. Your draft is retained. Reload after messaging is re-enabled to resume.';
   const scopes = '[data-private-message-mailbox], [data-private-message-composer], [data-conversation-list]';
 
@@ -14,7 +14,7 @@
     document.querySelectorAll(scopes).forEach(root => {
       root.querySelectorAll('button').forEach(button => { if (!button.disabled) button.disabled = true; });
     });
-    if (!document.querySelector('[data-messaging-disabled-notice]')) {
+    if (noticeEnabled && !document.querySelector('[data-messaging-disabled-notice]')) {
       const notice = document.createElement('p');
       notice.dataset.messagingDisabledNotice = '1';
       notice.className = 'feedback feedback-error';
@@ -23,8 +23,9 @@
       (document.querySelector('main') || document.body).prepend(notice);
     }
   }
-  function disable() {
+  function disable(showNotice = true) {
     if (disabled) return;
+    noticeEnabled = showNotice;
     disabled = true;
     generation++;
     renderDisabled();
@@ -36,7 +37,7 @@
   }
   // Only the settings-page coordinator uses this after server confirmation.
   function setEnabled(enabled) {
-    if (!enabled) { disable(); return; }
+    if (!enabled) { disable(false); return; }
     generation++;
     disabled = false;
     if (observer) observer.disconnect();

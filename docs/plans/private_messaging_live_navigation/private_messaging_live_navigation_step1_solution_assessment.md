@@ -37,7 +37,7 @@ Propagate feature availability changes to all connected pages so their Messages 
 
 ## Recommendation
 
-Choose **Option B**, extending the [existing flag-save interaction](../../public/assets/feature_flags.js) and [shared navigation](../../templates/partials/nav.php).
+Choose **Option B**, extending the [existing flag-save interaction](../../../public/assets/feature_flags.js) and [shared navigation](../../../templates/partials/nav.php).
 
 - Update after successful confirmation, based on effective availability and current-user eligibility; rejected or locked changes must not imply access changed.
 - Preserve the Messages link's normal position, styling, accessibility, and usable unread state. Disabling stops associated messaging activity; re-enabling must not leave the page stuck in its prior disabled state or create duplicate links/background activity.

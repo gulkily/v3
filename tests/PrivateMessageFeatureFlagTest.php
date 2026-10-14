@@ -136,6 +136,22 @@ final class PrivateMessageFeatureFlagTest
         }
     }
 
+    public function testLiveNavigationMatchesEveryProfileLayout(): void
+    {
+        $previous = getenv('FORUM_SITE_ID');
+        try {
+            foreach (\ForumRewrite\SiteProfileRegistry::all() as $id => $profile) {
+                putenv('FORUM_SITE_ID=' . $id);
+                $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
+                $viewer = ['is_approved' => 1, '_authenticated_identity' => true, 'username_token' => 'alice'];
+                $state = $renderer->navigationState($viewer, 'tools');
+                $html = $renderer->renderLayout('Flags', '', 'tools', viewerProfile: $viewer);
+                preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $matches);
+                assertSame(preg_replace('/\s+/', ' ', trim($matches[0])), preg_replace('/\s+/', ' ', trim($state['html'])));
+            }
+        } finally { putenv($previous === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $previous); }
+    }
+
     private function request(string $root, string $method, string $path): array
     {
         $app = new Application($root, __DIR__ . '/fixtures/parity_minimal_v1', $root . '/read.sqlite3');
