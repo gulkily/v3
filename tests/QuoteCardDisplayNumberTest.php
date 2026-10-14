@@ -192,7 +192,7 @@ final class QuoteCardDisplayNumberTest
 
         assertStringNotContains('<b>&', $welcome);
         assertStringContains('<h2>Site News</h2>', $welcome);
-        assertStringContains('⚑ Flag something that', $welcome);
+        assertStringContains("buttons on any quote to vote, and flag anything that", $welcome);
         assertStringNotContains('[X] to flag', $welcome);
         assertStringNotContains('Recent activity', $welcome);
         assertSame(3, substr_count($welcome, 'class="qdb-news-item"'));
