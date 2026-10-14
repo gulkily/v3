@@ -85,6 +85,9 @@ for enabled, members in [(True,False),(False,False),(True,True)]:
         status, _, _ = request('/.static/current/index.html')
         assert status != 200
         if enabled and not members:
+            slug = next((repo / 'records/approval-seeds').glob('openpgp-*.txt')).stem
+            status, _, profile = request('/api/get_profile?profile_slug=' + slug)
+            assert status == 200 and b'Image-Upload-Allowed: yes' in profile, (status, profile)
             # PHP rejects oversized multipart requests before any canonical publication.
             before=subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'])
             payload=b'--image-boundary\r\nContent-Disposition: form-data; name="image"; filename="huge.png"\r\nContent-Type: image/png\r\n\r\n'+b'x'*(9*1024*1024)+b'\r\n--image-boundary--\r\n'
