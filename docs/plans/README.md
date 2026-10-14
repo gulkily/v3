@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [LLM model and completion failures](llm_model_and_completion_failures/)
 - [Scripture-oriented analysis](scripture_oriented_analysis/)
 - [Starfield key backup](starfield_key_backup/)
 
