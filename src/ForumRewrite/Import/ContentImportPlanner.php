@@ -44,7 +44,7 @@ final class ContentImportPlanner
         $entries = [];
         $byKey = [];
         foreach (self::files($source) as $path) {
-            $entry = $this->describe($source, $path);
+            $entry = $this->describe($source, $path, $destination);
             $entry['hash'] = hash_file('sha256', $source . '/' . $path);
             if ($entry['state'] === 'import') {
                 $key = $entry['key'];
@@ -158,7 +158,7 @@ final class ContentImportPlanner
         return $entries;
     }
 
-    private function describe(string $root, string $path): array
+    private function describe(string $root, string $path, ?string $keyFallbackRoot = null): array
     {
         $entry = ['state' => 'import', 'reason' => '', 'key' => ArchiveRecordCatalog::pathIdentityKey($path), 'dependencies' => []];
         if (ArchiveRecordCatalog::isSignaturePath($path) && !ArchiveRecordCatalog::isRecordPath($path)) {
@@ -166,7 +166,7 @@ final class ContentImportPlanner
             if (!is_file($root . '/' . $record)) {
                 return [...$entry, 'state' => 'invalid', 'reason' => 'Signature record is absent: ' . $record, 'record' => $record];
             }
-            $parent = $this->describe($root, $record);
+            $parent = $this->describe($root, $record, $keyFallbackRoot);
             if ($parent['state'] !== 'import') {
                 $parent['blocked_by'] = $record;
                 $parent['root_cause'] = $record;
@@ -183,7 +183,7 @@ final class ContentImportPlanner
             return [...$entry, 'state' => 'invalid', 'reason' => 'Record exceeds 16 MiB parser limit'];
         }
         try {
-            $repository = new CanonicalRecordRepository($root, requireLegacyTimestampMetadata: true);
+            $repository = new CanonicalRecordRepository($root, requireLegacyTimestampMetadata: true, signatureKeyFallbackRoot: $keyFallbackRoot);
             if (str_starts_with($path, 'records/posts/')) {
                 $contents = (string) file_get_contents($root . '/' . $path);
                 $post = $repository->loadPost($path); // Includes path and timestamp metadata validation.
@@ -216,6 +216,7 @@ final class ContentImportPlanner
                     'thread-subjects' => $repository->loadThreadSubject($path),
                     'thread-labels' => $repository->loadThreadLabel($path),
                     'post-reactions' => $repository->loadPostReaction($path),
+                    'post-retractions' => $repository->loadPostRetraction($path),
                 };
                 $entry['dependencies'][] = 'post:' . ($record->threadId ?? $record->postId);
                 $author = $record->authorIdentityId;
@@ -223,7 +224,8 @@ final class ContentImportPlanner
             if (isset($author)) {
                 $entry['dependencies'][] = 'identity:' . $author;
             }
-            $entry['key'] = ArchiveRecordCatalog::identityKey($root, $path);
+            $entry['key'] = preg_match('#^records/(thread-labels|post-reactions)/#', $path)
+                ? ArchiveRecordCatalog::pathIdentityKey($path) : ArchiveRecordCatalog::identityKey($root, $path);
             if ($entry['key'] === null) {
                 throw new RuntimeException('Unrecognized canonical identity');
             }

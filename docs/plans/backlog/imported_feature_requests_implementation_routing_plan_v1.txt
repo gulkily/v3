@@ -14,9 +14,9 @@ Branch reviewed: backlog/plans-2026-08-26
 - docs/plans/production_slow_actions_slice5_optimistic_approval_pending_plan_v1.md
 - docs/plans/agent_reply_manual_trigger_and_cron_plan_v1.md
 - docs/plans/anonymous_reply_vouching_options_plan_v1.md
-- docs/plans/site_text_search_step1_solution_assessment.md
-- docs/plans/user_specific_archives_step1_solution_assessment.md
-- docs/plans/browser_private_key_restore_step1_solution_assessment.md
+- docs/plans/site_text_search/site_text_search_step1_solution_assessment.md
+- docs/plans/user_specific_archives/user_specific_archives_step1_solution_assessment.md
+- docs/plans/browser_private_key_restore/browser_private_key_restore_step1_solution_assessment.md
 - docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md
 
 ## Routing Rule
@@ -128,7 +128,7 @@ adds new canonical/read-model contracts, or has open design questions.
 
 10. Site text search
     - Route: continue FDP from existing Step 1.
-    - Existing artifact: docs/plans/site_text_search_step1_solution_assessment.md.
+    - Existing artifact: docs/plans/site_text_search/site_text_search_step1_solution_assessment.md.
     - Next action: request "Approved Step 1" if the recommendation is accepted,
       then write site_text_search_step2_feature_description.md.
     - Why FDP: public search behavior, ranking expectations, result templates,
@@ -136,7 +136,7 @@ adds new canonical/read-model contracts, or has open design questions.
 
 11. User-specific archives
     - Route: continue FDP from existing Step 1.
-    - Existing artifact: docs/plans/user_specific_archives_step1_solution_assessment.md.
+    - Existing artifact: docs/plans/user_specific_archives/user_specific_archives_step1_solution_assessment.md.
     - Next action: request "Approved Step 1" if the request/cache boundary is
       accepted, then write user_specific_archives_step2_feature_description.md.
     - Why FDP: archive scope, throttling, cache freshness, storage cleanup, and
@@ -144,7 +144,7 @@ adds new canonical/read-model contracts, or has open design questions.
 
 12. Browser private key restore
     - Route: continue FDP from existing Step 1.
-    - Existing artifact: docs/plans/browser_private_key_restore_step1_solution_assessment.md.
+    - Existing artifact: docs/plans/browser_private_key_restore/browser_private_key_restore_step1_solution_assessment.md.
     - Next action: request "Approved Step 1" if local-only raw private-key import
       is accepted, then write browser_private_key_restore_step2_feature_description.md.
     - Why FDP: touches key material UX and browser identity recovery, even though

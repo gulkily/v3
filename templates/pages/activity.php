@@ -38,6 +38,7 @@
 ]), 2) ?>
 <?php endif; ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [
+        'signature_status' => in_array($item['record_family'] ?? '', ['thread_label', 'post_reaction'], true) ? ($item['source_signature_status'] ?? '') : '',
     'files' => $item['source_commit_files'] ?? [],
     'commit_sha' => $item['source_commit_sha'] ?? '',
     'commit_href' => $item['source_commit_href'] ?? '',

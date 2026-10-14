@@ -665,43 +665,59 @@
     root.hidden = state.hidden;
   }
 
-  async function applyThreadTag(threadId, tag) {
-    const response = await fetch("/api/apply_thread_tag", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-      body: new URLSearchParams({ thread_id: threadId, tag }).toString(),
-    });
-
-    const text = await response.text();
-    return {
-      text: text,
-      serverTiming: parseServerTimingHeader(response.headers && typeof response.headers.get === "function"
-        ? response.headers.get("Server-Timing")
-        : ""),
-    };
+  async function signedReactionFields(kind, target, tag) {
+    const storage = reactionStorage();
+    if (!storage || !storage.getItem("forum_pki_private_key")) return {};
+    const signing = window.ForumBrowserSigning;
+    if (!signing || typeof signing.signCanonicalRecord !== "function") {
+      throw new Error("Signing tools unavailable. Please retry.");
+    }
+    const author = currentReactionIdentityId();
+    if (!/^openpgp:[a-f0-9]{40}$/.test(author)) throw new Error("Signing identity unavailable. Please retry.");
+    const random = new Uint8Array(16);
+    window.crypto.getRandomValues(random);
+    const suffix = Array.from(random, byte => byte.toString(16).padStart(2, "0")).join("");
+    const prefix = kind === "thread" ? "thread-label" : "post-reaction";
+    const targetHeader = kind === "thread" ? "Thread-ID" : "Post-ID";
+    const tagHeader = kind === "thread" ? "Labels" : "Tags";
+    const created = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    const record = `Record-ID: ${prefix}-${suffix}\nCreated-At: ${created}\n${targetHeader}: ${target}\nOperation: add\n${tagHeader}: ${tag}\nAuthor-Identity-ID: ${author}\n\n`;
+    return { canonical_record: record, detached_signature: await signing.signCanonicalRecord(record) };
   }
 
-  async function applyPostTag(postId, tag) {
-    const response = await fetch("/api/apply_post_tag", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-      body: new URLSearchParams({ post_id: postId, tag }).toString(),
-    });
-
-    const text = await response.text();
-    return {
-      text: text,
-      serverTiming: parseServerTimingHeader(response.headers && typeof response.headers.get === "function"
-        ? response.headers.get("Server-Timing")
-        : ""),
+  async function submitReaction(kind, target, tag) {
+    const fields = { [kind === "thread" ? "thread_id" : "post_id"]: target, tag,
+      ...await signedReactionFields(kind, target, tag) };
+    const send = async () => {
+      const response = await fetch(kind === "thread" ? "/api/apply_thread_tag" : "/api/apply_post_tag", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: new URLSearchParams(fields).toString(),
+      });
+      return { text: await response.text(), serverTiming: parseServerTimingHeader(
+        response.headers && typeof response.headers.get === "function" ? response.headers.get("Server-Timing") : "") };
     };
+    let result = await send();
+    let prepared = null;
+    try { prepared = JSON.parse(result.text); } catch (error) { /* Legacy text response. */ }
+    if (prepared && prepared.error_code === "clock_skew" && fields.canonical_record) {
+      // Never sign a server response that silently changes the requested action.
+      const lines = fields.canonical_record.split("\n");
+      const replacement = String(prepared.canonical_record || "").split("\n");
+      if (lines.slice(2).join("\n") !== replacement.slice(2).join("\n")
+          || !replacement[0].startsWith(`Record-ID: ${kind === "thread" ? "thread-label" : "post-reaction"}-`)
+          || !/^Created-At: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(replacement[1])
+          || !prepared.prepare_token) throw new Error("Prepared reaction does not match your action.");
+      fields.canonical_record = prepared.canonical_record;
+      fields.detached_signature = await window.ForumBrowserSigning.signCanonicalRecord(fields.canonical_record);
+      fields.prepare_token = prepared.prepare_token;
+      result = await send();
+    }
+    return result;
   }
+
+  async function applyThreadTag(threadId, tag) { return submitReaction("thread", threadId, tag); }
+  async function applyPostTag(postId, tag) { return submitReaction("post", postId, tag); }
 
   async function ensureReactionIdentity(root, feedbackNode, timing) {
     let helper = window.__forumBrowserIdentity;

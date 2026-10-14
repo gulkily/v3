@@ -193,6 +193,11 @@ final class Application
             return;
         }
 
+        if (str_starts_with($path, '/images/')) {
+            (new \ForumRewrite\Http\ImageController($this->routeServices(), $this->repositoryRoot, $this->featureFlags()))->serve($method, substr($path, strlen('/images/')));
+            return;
+        }
+
         if ($path === '/api/set_identity_hint') {
             $this->identityHintController()->setIdentityHint($method, $query);
             return;
@@ -323,6 +328,16 @@ final class Application
 
         if ($path === '/api/create_prepared_post') {
             $this->writePostAndIdentityApiController()->createPreparedPost($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_retraction') {
+            $this->writePostAndIdentityApiController()->prepareRetraction($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_prepared_retraction') {
+            $this->writePostAndIdentityApiController()->createPreparedRetraction($method, $query);
             return;
         }
 
@@ -562,13 +577,18 @@ final class Application
             return;
         }
 
+        if ($path === '/downloads/images.tar') {
+            $this->instancePageController()->downloadImageBackup($method, 'images', isset($query['revision']) ? (string) $query['revision'] : null);
+            return;
+        }
+
         if ($path === '/downloads/repository.tar.gz') {
-            $this->instancePageController()->downloadRepository($method, 'tar.gz');
+            $this->instancePageController()->downloadRepository($method, 'tar.gz', isset($query['revision']) ? (string) $query['revision'] : null);
             return;
         }
 
         if ($path === '/downloads/repository.zip') {
-            $this->instancePageController()->downloadRepository($method, 'zip');
+            $this->instancePageController()->downloadRepository($method, 'zip', isset($query['revision']) ? (string) $query['revision'] : null);
             return;
         }
 
@@ -993,6 +1013,10 @@ final class Application
      */
     private function displayThreadTitle(array $thread): string
     {
+        if (($thread['retracted_at'] ?? null) !== null) {
+            return \ForumRewrite\Support\RetractedPostNotice::TITLE;
+        }
+
         return ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
@@ -1252,7 +1276,7 @@ final class Application
             $this->projectRoot . '/templates',
             $this->appVersion(),
             $this->featureFlags(),
-            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot)),
+            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
         );
     }
 
@@ -1327,7 +1351,7 @@ final class Application
     private function fetchThread(string $threadId): ?array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
+            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at,
                     threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
@@ -1352,7 +1376,7 @@ final class Application
     private function fetchThreadPosts(string $threadId): array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_identity_id, posts.author_label,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved,
@@ -1375,7 +1399,7 @@ final class Application
     {
         $hiddenWhere = $includeHidden ? '' : ' AND posts.is_hidden = 0';
         $stmt = $this->pdo()->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.author_label,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
                     posts.author_identity_id, posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved,
@@ -1773,7 +1797,7 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
-        if (str_starts_with($path, '/messages/conversation/')) {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/')) {
             return true;
         }
 
@@ -1791,7 +1815,7 @@ final class Application
             '/tools/sqlite', '/tools/sqlite/',
             '/offline', '/offline/', '/offline/reader', '/offline/reader/',
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
-            '/downloads/repository.tar.gz', '/downloads/repository.zip',
+            '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
@@ -1808,7 +1832,7 @@ final class Application
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
-            '/api/prepare_reply', '/api/create_prepared_post', '/api/create_identity',
+            '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',

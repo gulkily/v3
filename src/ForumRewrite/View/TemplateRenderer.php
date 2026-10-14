@@ -12,6 +12,7 @@ use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\Support\RetractedPostNotice;
 use ForumRewrite\Support\ThreadTitle;
 use RuntimeException;
 
@@ -449,6 +450,7 @@ final class TemplateRenderer
         $data = array_merge([
             'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
+            'imageContentEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
@@ -457,7 +459,7 @@ final class TemplateRenderer
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);
         $mediaEmbedsInlinePlayerEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED);
-        $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled, $mediaEmbedsInlinePlayerEnabled);
+        $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled, $mediaEmbedsInlinePlayerEnabled, $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED));
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);
@@ -467,7 +469,9 @@ final class TemplateRenderer
         $forteContentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e, true);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
-        $threadTitle = static fn (array $thread): string => ThreadTitle::displayTitle(
+        $threadTitle = static fn (array $thread): string => ($thread['retracted_at'] ?? null) !== null
+            ? RetractedPostNotice::TITLE
+            : ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
             (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
             (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),

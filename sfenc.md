@@ -1,224 +1,56 @@
-A spec is a text document — I'll write it directly here rather than as a file, since it's meant to be read.
+# Starfield Encoding Specification (SFENC) v0.2
 
----
+SFENC stores bytes in a lossless starfield PNG. It is **not encryption**. Key backups must encrypt their payload before encoding. v0.1 was unimplemented and not recoverable as specified; reject its version byte.
 
-# Starfield Encoding Specification (SFENC) v0.1
+## Limits and canonical encoder containers
 
-## Overview
+Input is 0–131072 bytes. Image width equals height and is the first of 256, 512, 1024, 2048 with capacity for all stars below. Reject files above 20 MiB, other dimensions, unsupported versions, lengths, compression, nonzero reserved bytes, or checksum failures before allocating from claimed lengths. All arithmetic below is integer arithmetic (division means floor), except no floating-point operations are needed at all.
 
-SFENC encodes arbitrary binary data into a PNG image that visually resembles a starfield with a galactic arm structure. The image is aesthetically plausible as generative art while being fully decodable by any conforming implementation.
+The payload is canonical gzip: header hex `1f8b08000000000000ff`, DEFLATE stored blocks, then little-endian CRC32 and original length. Split input into maximal 65535-byte blocks, with one empty block for empty input. Each block starts with byte 0 (nonfinal) or 1 (final), little-endian LEN and its 16-bit one's complement, then LEN bytes. No additional blocks, members or trailing data are permitted. Compression field is 1; v0.2 does not support zstd or uncompressed payloads. Stored blocks deliberately trade file size for reproducibility and bounded decoding without browser compression dependencies.
 
----
+PNG uses signature `89504e470d0a1a0a`, then exactly IHDR, IDAT, IEND. IHDR is width/height big-endian, depth 8, color 6 (RGBA), compression/filter/interlace 0. Each scanline has filter byte 0 then opaque RGBA bytes. One IDAT contains zlib header `7801`, the same stored-block algorithm over scanlines, then big-endian Adler32. Chunks use standard big-endian length and CRC32(type + data). IEND is empty. CRC32 is reflected IEEE polynomial `edb88320`, initial/final XOR `ffffffff`. Adler32 starts a=1,b=0, modulus 65521. These exact container rules define canonical **encoder output**. Decoders also accept lossless PNG re-encoding as specified below. No canvas/color conversion is used.
 
-## Definitions
+## Header
 
-- **Payload**: the raw bytes to be encoded, after compression
-- **Seed**: a 64-bit unsigned integer used to initialize the PRNG
-- **Canvas**: a 2D grid of RGBA pixels, width W × height H
-- **Star**: a pixel cluster centered at coordinates (x, y) whose visual properties encode one payload byte
-- **Background**: all pixels not belonging to any star; carries no payload data
+The first 22 pixels of row 0 contain 64 header bytes followed by two zero pad bytes, three sequential bytes per pixel in RGB; alpha is 255. Write the header last. All header integers are little-endian.
 
----
-
-## Image Structure
-
-The image is a **lossless PNG** (RGBA, 8 bits per channel). JPEG and any lossy format are explicitly forbidden — lossy compression corrupts pixel values and destroys the payload.
-
-### Dimensions
-
-W and H must each be multiples of 8. Minimum 256×256. Recommended minimum for real payloads: 1024×1024.
-
-Maximum storable bytes = `floor(W * H / 4)` — one byte per 4 pixels on average, accounting for star size and spacing margins. In practice, reserve 10% headroom.
-
-### Regions
-
-| Region | Location | Purpose |
+| Offset | Bytes | Value |
 |---|---|---|
-| Header | Top-left 16×1 pixels | Metadata (see below) |
-| Body | All remaining pixels | Background + stars |
+| 0 | 4 | `SFEN` |
+| 4 | 1 | 2 |
+| 5 | 3 | zero |
+| 8 | 8 | uint64 seed |
+| 16 | 8 | original payload length |
+| 24 | 8 | gzip length |
+| 32 | 1 | 1 (gzip) |
+| 33 | 3 | zero |
+| 36 | 4 | CRC32 of gzip bytes |
+| 40 | 24 | zero |
 
----
+## PRNG and placement
 
-## Header (16 pixels, 64 bytes)
+Every operation on PRNG words wraps modulo 2^64. SplitMix64 starts at seed; four times add `9e3779b97f4a7c15`, set z=state, set z=(z XOR (z>>30))*`bf58476d1ce4e5b9`, then z=(z XOR (z>>27))*`94d049bb133111eb`, and output z XOR (z>>31). Those outputs initialize s0..s3.
 
-The header occupies pixels (0,0) through (15,0). It is written **after** the background and stars, overwriting those pixels.
+xoshiro256** outputs rotl(s1*5,7)*9. Then t=s1<<17; s2^=s0; s3^=s1; s1^=s2; s0^=s3; s2^=t; s3=rotl(s3,45). rotl is a 64-bit left rotation. Draws return uint64, never floats.
 
-All multi-byte integers are **little-endian**.
+Let C=floor(W/5), R=floor((H-1)/5). Cells are row-major integers 0..C*R-1. Shuffle them with Fisher–Yates: for i=C*R-1 down to 1, j=nextUint64() mod (i+1), swap cells[i],cells[j]. Cell k has center (2+5*(k mod C), 3+5*floor(k/C)). Cells cannot overlap or reach the header.
 
-| Offset (bytes) | Size | Field |
-|---|---|---|
-| 0 | 4 | Magic: `0x53 0x46 0x45 0x4E` (`SFEN`) |
-| 4 | 1 | Version: `0x01` |
-| 5 | 3 | Reserved, set to zero |
-| 8 | 8 | Seed (uint64) |
-| 16 | 8 | Payload length in bytes before compression (uint64) |
-| 24 | 8 | Compressed length in bytes (uint64) |
-| 32 | 1 | Compression type: `0x00` = none, `0x01` = gzip, `0x02` = zstd |
-| 33 | 3 | Reserved, set to zero |
-| 36 | 4 | CRC32 of compressed payload bytes |
-| 40 | 24 | Reserved, set to zero |
+For gzip length L, N=ceil(105*L/100)+50. Choose the smallest permitted dimensions with C*R >= N, else reject. The first L shuffled cells carry gzip bytes; the remaining N-L carry nextUint64() mod 256, one draw per dummy. Neither background nor payload stars consume random numbers. Seed 0 is valid.
 
-Header bytes are packed into pixels as: `R = byte[4n], G = byte[4n+1], B = byte[4n+2], A = 255`. Alpha is always 255 throughout the image.
+## Pixels
 
----
+Fill background in row-major order. Let q=seed mod 256, base=2+((13*x+7*y+q) mod 6), distance=abs(10*y-5*H-3*(x-W/2)), glow=max(0,24-floor(distance/10)). RGB=(base+floor(3*glow/5),base+floor(7*glow/10),base+glow), alpha=255. This integer galactic band replaces v0.1's platform-dependent transcendental math.
 
-## Pseudo-Random Number Generator
+For byte b let v=192+(b mod 64), hue=floor(b/64). RGB by hue: 0=(v,v,v); 1=(floor(85*v/100),floor(90*v/100),v); 2=(v,v,floor(70*v/100)); 3=(v,floor(70*v/100),floor(60*v/100)). Hue is uniquely identifiable; v is max(R,G,B); decode b=64*hue+v-192 and require re-encoding b to reproduce RGB exactly.
 
-All implementations must use the **same PRNG** to produce identical star positions from the same seed.
+Draw each star with that RGB, alpha 255. Hue 0 draws center only; hue 1 adds four axial neighbors at distance 1; hue 2 draws the 3x3 square; hue 3 draws that square plus four axial neighbors at distance 2 (13 pixels). Shapes fit within their own 5x5 cell.
 
-Algorithm: **xoshiro256\*\*** (public domain, widely implemented)
+## Decode and conformance
 
-Initial state: seed the xoshiro256** state by running the 64-bit seed through the SplitMix64 generator for 4 rounds to produce 4 × 64-bit state words.
+Validate bounded PNG structure and every chunk CRC. Accept noninterlaced, 8-bit RGB (color type 2) or RGBA (type 6), contiguous multiple IDAT chunks, standard zlib DEFLATE compression, and row filters 0–4 (None, Sub, Up, Average, Paeth). Bound inflated data to exactly `H * (1 + W * channels)` before allocating/writing beyond that size. Reject unsupported critical chunks, transparency chunks, invalid chunk order, missing IEND, trailing data, and checksum/decompression failures. Other ancillary chunks may be ignored; interpret stored channel values directly, without color-profile transformations. Normalize RGB to RGBA by adding alpha 255.
 
-The PRNG produces a sequence of `float64` values in `[0, 1)` by taking the raw uint64 output and dividing by `2^64`.
+Extract header; validate fields, lengths and the canonical dimensions. Recreate shuffled cells. Decode the first L centers, verify gzip CRC against header **before** inflating, then verify bounded canonical gzip and its CRC/length. Re-render the starfield with the extracted seed and require exact equality of the **decoded RGBA pixels**, including alpha, background, header padding, dummy stars and shapes. Return original payload bytes only on success. Container compression, filter selection and metadata may differ; pixel changes are not tolerated.
 
----
+This decoder compatibility revision preserves version 2 and all existing canonical encoder vectors. It accepts lossless optimization such as removing the redundant opaque alpha channel, without weakening payload integrity checks. Resizing, JPEG conversion and other pixel-changing edits remain unsupported.
 
-## Background Generation
-
-The background is drawn first, before any stars, and provides the "galaxy" visual structure.
-
-### Galactic arm
-
-Define a central axis passing through `(W*0.5, H*0.48)` at angle `θ = 0.35` radians.
-
-For each pixel `(x, y)`, compute rotated coordinates:
-
-```
-dx = x - cx,  dy = y - cy
-rx = dx*cos(θ) + dy*sin(θ)
-ry = -dx*sin(θ) + dy*cos(θ)
-nebula = exp( -(rx²)/(W²·0.12) - (ry²)/(H²·0.006) )
-```
-
-### Per-pixel color
-
-For each pixel, draw the next PRNG float `n`:
-
-```
-base  = 2 + floor(n * 6)          // 2–7, near-black noise
-glow  = floor(nebula * 22)        // 0–22 nebula brightening
-R = base + floor(glow * 0.6)
-G = base + floor(glow * 0.7)
-B = base + glow
-A = 255
-```
-
-All values are clamped to `[0, 255]`.
-
-The PRNG is consumed **exactly once per pixel**, in row-major order (x from 0 to W-1, y from 0 to H-1), totaling `W*H` draws for the background pass.
-
----
-
-## Star Placement
-
-After the background pass, the PRNG continues (state not reset) to place stars.
-
-Star count `N` = `ceil(compressed_payload_length * 1.05) + 50` (5% surplus plus 50 dummy stars to pad visual density).
-
-For each star `i` from 0 to N-1:
-
-1. Draw float `p` from PRNG.
-2. If `p < 0.6`: place near the galactic arm (see below). Else: place uniformly.
-
-**Near-arm placement:**
-```
-t  = (rng() - 0.5) * W * 0.9
-spread = H * 0.04
-x  = cx + t*cos(θ) + (rng() - 0.5)*spread*2
-y  = cy - t*sin(θ) + (rng() - 0.5)*spread*2
-```
-This consumes 2 additional PRNG draws.
-
-**Uniform placement:**
-```
-x = rng() * W
-y = rng() * H
-```
-This consumes 2 additional PRNG draws.
-
-Both cases: clamp x to `[1, W-2]`, y to `[1, H-2]`, then `floor` to integer.
-
-Stars are stored in an ordered list. The first `compressed_payload_length` stars carry payload bytes. Remaining stars are drawn with a random byte (`floor(rng()*256)`) for visual filler — these PRNG draws must still occur to keep the sequence consistent.
-
----
-
-## Byte-to-Star Encoding
-
-Each payload byte `b` is encoded into the visual properties of one star centered at `(x, y)`.
-
-### Brightness (bits 0–6)
-
-```
-brightness = 180 + (b & 0x7F)    // range 180–255
-```
-
-### Color (bits 0–1, reused)
-
-```
-hue = b & 0x03
-```
-
-| hue | R | G | B |
-|---|---|---|---|
-| 0 | brightness | brightness | brightness | (white) |
-| 1 | floor(brightness·0.85) | floor(brightness·0.90) | brightness | (blue-white) |
-| 2 | brightness | brightness | floor(brightness·0.70) | (yellow) |
-| 3 | brightness | floor(brightness·0.70) | floor(brightness·0.60) | (red-orange) |
-
-### Size (bits 6–7)
-
-```
-sz = (b >> 6) & 0x03
-```
-
-| sz | Pixel offsets from center |
-|---|---|
-| 0 | `(0,0)` |
-| 1 | `(0,0),(±1,0),(0,±1)` — plus-shape, 5px |
-| 2 | sz=1 plus `(±1,±1)` — 9px |
-| 3 | `(0,0),(±2,0),(0,±2),(±1,0),(0,±1)` — 13px diffuse |
-
-All offset pixels receive the same RGB. Any offset that falls outside the canvas bounds is silently skipped.
-
-### Writing pixels
-
-For each pixel in the star's pixel set, set `R, G, B` as computed above and `A = 255`. Stars are written in order; later stars overwrite earlier ones if they overlap. The header is written last and overwrites any star pixels in that region.
-
----
-
-## Decoding
-
-1. Read the 16 header pixels; extract metadata. Verify magic bytes. Reject if version is unsupported.
-2. Re-initialize the same PRNG with the seed from the header.
-3. Re-run background generation, consuming exactly `W*H` PRNG draws (output discarded).
-4. Re-run star placement with `N` = same formula, consuming the same PRNG draws to reproduce the star coordinate list.
-5. For each of the first `compressed_payload_length` stars at `(x, y)`:
-   - Read `R` from the pixel at `(x, y)` (take the center pixel only).
-   - Recover `b = R - 180`. This gives the original byte.
-6. Assemble the byte array and decompress according to the compression type in the header.
-7. Verify CRC32 of the compressed bytes against the header value.
-8. Return the decompressed payload.
-
-> Note: the color and size bits are redundant with brightness for error-detection purposes but are not used in decoding — brightness alone recovers the byte.
-
----
-
-## Constraints and Edge Cases
-
-- If a star center pixel has been overwritten by a later star, decoding reads the later star's value. Encoders must detect and resolve star center collisions by resampling (re-draw from PRNG with a fixed retry limit of 10; if unresolved, log a warning and accept the collision — at low star densities this is negligible).
-- Minimum payload: 0 bytes is valid; produces a pure starfield with no data stars.
-- The PRNG seed may be any uint64, including 0. Seed 0 is valid.
-- Files produced by different implementations with the same seed and payload must be **bit-identical** in the body region (header reserved bytes may differ). This is the conformance requirement.
-
----
-
-## Recommended Compression
-
-Use **gzip** (type `0x01`) for maximum portability. zstd (type `0x02`) is preferred for large payloads (>1MB) where decode speed matters. Uncompressed (type `0x00`) is permitted for testing only.
-
----
-
-## Versioning
-
-This is version `0x01`. Future versions may change star encoding, PRNG, or background algorithms. Decoders must reject unknown version bytes rather than attempt to decode.
+Given identical payload and seed, the **entire PNG**, including its body, is byte-identical. Encryption is randomized: this promise concerns already-encrypted payload bytes, not separate encryption operations. `tests/fixtures/starfield/vectors.json` contains SHA256 conformance vectors; `tests/Support/starfield_reference.py` is an independent Python reference codec. Verify full payload range, empty input, all byte values, capacity boundaries and malformed input using its `--test` entry point.

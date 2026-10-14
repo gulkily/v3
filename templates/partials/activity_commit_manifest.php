@@ -9,6 +9,9 @@ $heading = (string) ($heading ?? 'Commit files');
 ?>
 <?php if ($files !== []): ?>
 <section class="activity-commit-manifest">
+<?php if (($signature_status ?? '') !== ''): ?>
+  <p class="meta">Record signature: <?= $e($signature_status) ?></p>
+<?php endif; ?>
 <?php if ($commitSha !== ''): ?>
   <p class="meta">Commit:
 <?php if ($commitHref !== ''): ?>

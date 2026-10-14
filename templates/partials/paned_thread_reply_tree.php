@@ -26,7 +26,10 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAu
     }
     $html .= $forteAuthor($post) . ' &middot; ' . $timestamp((string) ($post['created_at'] ?? ''));
     $html .= '</div>';
-    $html .= '<div class="paned-reply-body">' . $br($post['body']) . '</div>';
+    $isRetractedReply = ($post['retracted_at'] ?? null) !== null;
+    $html .= $isRetractedReply
+        ? '<div class="paned-reply-body retracted-post" data-retracted="true"><span class="meta">' . $e(\ForumRewrite\Support\RetractedPostNotice::TEXT) . '</span></div>'
+        : '<div class="paned-reply-body">' . $br($post['body']) . '</div>';
     $html .= '<div class="paned-reaction-row"><button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="like" data-post-id="' . $e($postId) . '" data-applied-label="Liked" aria-pressed="' . ($viewerHasLiked ? 'true' : 'false') . '"' . ($viewerHasLiked ? ' disabled' : '') . '>' . ($viewerHasLiked ? 'Liked' : 'Like') . '</button><button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="' . $e($postId) . '" data-applied-label="Flagged" aria-pressed="' . ($viewerHasFlagged ? 'true' : 'false') . '"' . ($viewerHasFlagged ? ' disabled' : '') . '>' . ($viewerHasFlagged ? 'Flagged' : 'Flag') . '</button><a class="paned-permalink-link" href="' . $permalinkHref . '" title="Permalink to this post" aria-label="Permalink to this post">#</a></div>';
     $html .= '<p class="paned-reaction-feedback" data-role="post-reaction-feedback" hidden></p>';
     $html .= '</div>';

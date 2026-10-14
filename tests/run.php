@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/ImageContentTest.php',
     __DIR__ . '/LegacyTimestampImportTest.php',
     __DIR__ . '/InstanceSourceResolverTest.php',
     __DIR__ . '/ImportInstanceCommandTest.php',
@@ -44,6 +45,7 @@ $testFiles = [
     __DIR__ . '/MediaEmbedBeaconTemplatesTest.php',
     __DIR__ . '/MediaEmbedPreviewControllerTest.php',
     __DIR__ . '/MediaEmbedInlinePlayerScriptTest.php',
+    __DIR__ . '/PostRetractionScriptTest.php',
     __DIR__ . '/TemplateRendererMediaEmbedsScriptTest.php',
     __DIR__ . '/FastScoringConfigTest.php',
     __DIR__ . '/FastScoreContextFactoryTest.php',
@@ -131,6 +133,8 @@ $testFiles = [
     __DIR__ . '/ReadModelSchemaTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',
     __DIR__ . '/ReadModelThreadSubjectsTest.php',
+    __DIR__ . '/ReadModelPostRetractionsTest.php',
+    __DIR__ . '/ReadModelPostReactionsTest.php',
     __DIR__ . '/LocalWriteServiceThreadSubjectTest.php',
     __DIR__ . '/ResumeTargetTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',

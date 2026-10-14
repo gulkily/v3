@@ -181,12 +181,32 @@ final class WritePostAndIdentityApiController
             return;
         }
 
+        if (str_starts_with((string) ($_SERVER['CONTENT_TYPE'] ?? ''), 'multipart/form-data')
+            && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0 && $_POST === [] && $_FILES === []) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Image request is empty or exceeds the server upload limit. Keep the draft, reselect a file of at most 5 MiB, and ask the operator to check PHP request limits.'], 413);
+            return;
+        }
+
         $phaseStartedAt = hrtime(true);
         $input = $this->routeServices->requestData($query);
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
 
         try {
-            $result = $this->routeServices->writer()->createPreparedPost($input);
+            $imagePath = null;
+            if (isset($_FILES['image'])) {
+                $file = $_FILES['image'];
+                if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+                    || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) {
+                    throw new RuntimeException('Image upload failed or exceeds the server request limit; preserve the draft and select the file again.');
+                }
+                $imagePath = $file['tmp_name'];
+                if (isset($input['canonical_record_base64'])) {
+                    $decoded = base64_decode((string) $input['canonical_record_base64'], true);
+                    if ($decoded === false) { throw new RuntimeException('Invalid signed record transport encoding.'); }
+                    $input['canonical_record'] = $decoded;
+                }
+            }
+            $result = $this->routeServices->writer()->createPreparedPost($input, $imagePath);
             $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $headers = $this->routeServices->serverTimingHeaders($result);
@@ -212,6 +232,50 @@ final class WritePostAndIdentityApiController
             $this->routeServices->enqueueFastScoreForPublishedPost($postId);
         } catch (\Throwable) {
             error_log('Fastmod enqueue failed after post publication.');
+        }
+    }
+
+    /** @param array<string, mixed> $query */
+    public function prepareRetraction(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->prepareRetraction($input));
+    }
+
+    /** @param array<string, mixed> $query */
+    public function createPreparedRetraction(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->finalizePreparedRetraction($input));
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     * @param callable(array<string, mixed>): array<string, mixed> $write
+     */
+    private function handleWrite(string $method, array $query, callable $write): void
+    {
+        $totalStartedAt = hrtime(true);
+        $timings = [];
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405);
+            return;
+        }
+
+        $phaseStartedAt = hrtime(true);
+        $input = $this->routeServices->requestData($query);
+        $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
+
+        try {
+            $result = $write($input);
+            $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
+            $headers = $this->routeServices->serverTimingHeaders($result);
+            unset($result['timings']);
+            $this->routeServices->sendJson($result, 200, $headers);
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson(
+                ['status' => 'error', 'error' => $exception->getMessage()],
+                400,
+                $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
+            );
         }
     }
 

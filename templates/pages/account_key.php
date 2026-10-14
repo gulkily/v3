@@ -33,6 +33,33 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
+      <details class="account-key-advanced" id="key-backup" data-key-backup>
+        <summary>Back up or restore your key</summary>
+        <div class="stack">
+          <div class="account-key-tabs" role="tablist" aria-label="Key backup and restore">
+            <button type="button" role="tab" id="key-backup-tab" aria-controls="key-backup-panel" aria-selected="false" tabindex="-1" data-backup-tab="backup">Backup</button>
+            <button type="button" role="tab" id="key-restore-tab" aria-controls="key-restore-panel" aria-selected="true" data-backup-tab="restore">Restore</button>
+          </div>
+          <div class="stack" id="key-backup-panel" role="tabpanel" aria-labelledby="key-backup-tab" data-backup-panel="backup" hidden>
+            <p>Keep access to your identity and private messages if you clear browser data or change devices. Backups are encrypted here in your browser.</p>
+            <p class="meta">Use a strong, unique passphrase and keep it somewhere safe. A forgotten passphrase cannot be recovered.</p>
+            <label>Backup passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
+            <label>Confirm passphrase <input type="password" data-backup-confirm autocomplete="new-password"></label>
+            <div class="button-row">
+              <button type="button" data-backup-download="text">Download text backup</button>
+              <button type="button" data-backup-download="png">Download Starfield PNG</button>
+            </div>
+            <p class="meta">Keep the original PNG file. Lossless PNG recompression is supported, but screenshots, resizing, and JPEG conversion can destroy the backup. Text is also available.</p>
+          </div>
+          <div class="stack" id="key-restore-panel" role="tabpanel" aria-labelledby="key-restore-tab" data-backup-panel="restore">
+            <p>Choose your encrypted text backup or Starfield PNG and enter its passphrase to restore your identity in this browser.</p>
+            <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
+            <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
+            <button type="button" data-backup-restore>Restore backup</button>
+          </div>
+          <p class="meta" data-backup-status role="status" aria-live="polite"></p>
+        </div>
+      </details>
       <details class="account-key-advanced">
         <summary>Advanced / technical details</summary>
         <div class="stack">
@@ -264,6 +291,8 @@ No browser private key saved yet.
       bindViewerCopyButtons();
       syncSimpleUI();
       mirrorAdvancedStatus();
+      window.addEventListener('forum:identity-changed', syncSimpleUI);
+      window.addEventListener('forum:identity-changed', mirrorAdvancedStatus);
       window.addEventListener('storage', syncSimpleUI);
       window.addEventListener('storage', mirrorAdvancedStatus);
       window.addEventListener('pageshow', syncSimpleUI);

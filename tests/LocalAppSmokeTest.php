@@ -63,6 +63,26 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testVersion16StartupRebuildsReactionEvidenceBeforeServingPage(): void
+    {
+        $directory = sys_get_temp_dir() . '/forum-reaction-schema-' . bin2hex(random_bytes(6));
+        mkdir($directory, 0700, true);
+        $database = $directory . '/index.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('DROP TABLE reaction_signatures');
+            $pdo->exec("UPDATE metadata SET value = '16' WHERE key = 'schema_version'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            assertSame('unsigned', $pdo->query("SELECT signature_status FROM reaction_signatures WHERE source_path = 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt'")->fetchColumn());
+        } finally {
+            $this->deleteTree($directory);
+        }
+    }
+
     public function testRequestRebuildsReadModelMissingSchemaFingerprint(): void
     {
         $directory = sys_get_temp_dir() . '/forum-rewrite-schema-fingerprint-' . bin2hex(random_bytes(6));
@@ -359,6 +379,14 @@ try {
     ob_start();
     $application->handle('GET', '/invites/');
     $invites = (string) ob_get_clean();
+    $qrScript = \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($argv[1] . '/public', '/assets/qrcode-generator.js');
+    $issueScript = \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($argv[1] . '/public', '/assets/invite_issuance.js');
+    if (!str_contains($invites, 'src="' . $qrScript . '"')
+        || strpos($invites, $qrScript) > strpos($invites, $issueScript)
+        || !str_contains($invites, 'data-role="invitation-qr" hidden')
+        || str_contains($board, $qrScript)) {
+        throw new RuntimeException('Invite QR assets/result were not wired exclusively to the invite page.');
+    }
     ob_start();
     $application->handle('GET', '/api/auth_status');
     $authStatus = (string) ob_get_clean();
@@ -2674,8 +2702,13 @@ PHP;
         [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
         $labelPath = 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt';
         $signaturePath = $labelPath . '.asc';
-        file_put_contents($repositoryRoot . '/' . $labelPath, (string) file_get_contents($repositoryRoot . '/' . $labelPath) . "\n");
-        file_put_contents($repositoryRoot . '/' . $signaturePath, "detached signature\n");
+        $fingerprint = '066236E516A3B74EC51B3B423A26034600DE67FD';
+        $publicKeyPath = 'records/public-keys/openpgp-' . $fingerprint . '.asc';
+        copy(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc', $repositoryRoot . '/' . $publicKeyPath);
+        $this->runCommand($repositoryRoot, 'git add ' . escapeshellarg($publicKeyPath));
+        $this->runCommand($repositoryRoot, 'git commit -m "Add reaction signer key before its signature"');
+        copy(__DIR__ . '/fixtures/openpgp_signature/signed-label.txt', $repositoryRoot . '/' . $labelPath);
+        copy(__DIR__ . '/fixtures/openpgp_signature/signed-label.txt.asc', $repositoryRoot . '/' . $signaturePath);
         $this->runCommand($repositoryRoot, 'git add ' . escapeshellarg($labelPath) . ' ' . escapeshellarg($signaturePath));
         $this->runCommand($repositoryRoot, 'git commit -m "Sign label record"');
 
@@ -2685,10 +2718,11 @@ PHP;
         $activityId = (int) $pdo->query('SELECT id FROM activity WHERE source_path = ' . $pdo->quote($labelPath))->fetchColumn();
         $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
         $forte = (string) $fortePayload['html'];
-        $publicKeyPath = 'records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc';
 
-        assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $classic) === 1);
-        assertTrue(preg_match('/Signer:\s+openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954/', $forte) === 1);
+        assertTrue(preg_match('/Signer:\s+openpgp:066236e516a3b74ec51b3b423a26034600de67fd/', $classic) === 1);
+        assertTrue(preg_match('/Signer:\s+openpgp:066236e516a3b74ec51b3b423a26034600de67fd/', $forte) === 1);
+        assertStringContains('verified', $classic);
+        assertStringContains('verified', $forte);
         assertStringContains('class="activity-commit-manifest__signature-divider"', $classic);
         assertStringContains('class="activity-commit-manifest__signature-divider"', $forte);
         assertTrue(preg_match('#Public key:\s+<a href="/source/current/' . preg_quote($publicKeyPath, '#') . '"#', $classic) === 1);
@@ -3695,6 +3729,23 @@ PHP;
         );
 
         assertStringContains('Write APIs are disabled against the committed fixture repository', $response);
+    }
+
+    public function testImageFlagMismatchBypassesStaleStaticArtifact(): void
+    {
+        $previous = getenv('FORUM_IMAGE_CONTENT_ENABLED');
+        ['controller' => $controller, 'staticHtmlRoot' => $static, 'publicRoot' => $public] = $this->buildFrontController();
+        mkdir($static . '/current', 0777, true);
+        file_put_contents($static . '/current/index.html', '<body data-image-content-state="1">STALE IMAGE PAGE</body>');
+        try {
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+            assertStringContains('STALE IMAGE PAGE', $this->renderFrontController($controller, 'GET', '/', []));
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=false');
+            assertStringNotContains('STALE IMAGE PAGE', $this->renderFrontController($controller, 'GET', '/', []));
+        } finally {
+            putenv($previous === false ? 'FORUM_IMAGE_CONTENT_ENABLED' : 'FORUM_IMAGE_CONTENT_ENABLED=' . $previous);
+            $this->deleteTree($static); $this->deleteTree($public);
+        }
     }
 
     public function testFrontControllerServesStaticArtifactForAnonymousEligibleRoute(): void

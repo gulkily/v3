@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SourcePathValidator;
 
 /**
@@ -40,13 +41,22 @@ final class SourceFileController
             return;
         }
 
+        if ($this->isRetracted($relativePath)) {
+            $this->sendRetracted();
+            return;
+        }
+
         $contents = $this->readCurrentFile($relativePath);
         if ($contents === null) {
             $this->routeServices->sendText("Source not found\n", 404);
             return;
         }
 
-        $this->routeServices->sendText($contents, 200);
+        $headers = [];
+        if (preg_match('#^records/(thread-labels|post-reactions)/[^/]+\.txt$#D', $relativePath)) {
+            $headers[] = 'X-Forum-Signature-Status: ' . $this->routeServices->activityService()->sourceSignatureStatus($relativePath, '', '');
+        }
+        $this->routeServices->sendText($contents, 200, $headers);
     }
 
     public function blob(string $commitSha, string $encodedRelativePath): void
@@ -59,6 +69,11 @@ final class SourceFileController
         $relativePath = SourcePathValidator::normalizeRoutePath($encodedRelativePath);
         if ($relativePath === null || !SourcePathValidator::isValidCanonicalPath($relativePath)) {
             $this->routeServices->sendText("Invalid source path\n", 400);
+            return;
+        }
+
+        if ($this->isRetracted($relativePath)) {
+            $this->sendRetracted();
             return;
         }
 
@@ -85,6 +100,24 @@ final class SourceFileController
         }
 
         $this->routeServices->sendText($details, 200);
+    }
+
+    /**
+     * The original file of a retracted post stays in the repository but is not served by the
+     * site, at the current path or at any historical commit.
+     */
+    private function isRetracted(string $relativePath): bool
+    {
+        if (!str_starts_with($relativePath, 'records/posts/')) {
+            return false;
+        }
+
+        return RetractedPosts::isRetractedPostPath($relativePath, RetractedPosts::effectivePostIds($this->repositoryRoot));
+    }
+
+    private function sendRetracted(): void
+    {
+        $this->routeServices->sendText("This post was retracted by its author.\n", 410);
     }
 
     private function readCurrentFile(string $relativePath): ?string

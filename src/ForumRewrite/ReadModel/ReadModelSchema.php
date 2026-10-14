@@ -16,6 +16,11 @@ final class ReadModelSchema
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             )',
+            'CREATE TABLE reaction_signatures (
+                source_path TEXT PRIMARY KEY,
+                author_identity_id TEXT NULL,
+                signature_status TEXT NOT NULL
+            )',
             'CREATE TABLE posts (
                 post_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
@@ -33,6 +38,7 @@ final class ReadModelSchema
                 approved_flag_count INTEGER NOT NULL DEFAULT 0,
                 is_hidden INTEGER NOT NULL DEFAULT 0,
                 hidden_reason TEXT NULL,
+                retracted_at TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )',
             'CREATE TABLE threads (
@@ -50,7 +56,8 @@ final class ReadModelSchema
                 event_date TEXT NULL,
                 event_location TEXT NULL,
                 event_link TEXT NULL,
-                event_time TEXT NULL
+                event_time TEXT NULL,
+                retracted_at TEXT NULL
             )',
             'CREATE TABLE profiles (
                 identity_id TEXT PRIMARY KEY,

@@ -41,7 +41,7 @@
      (LocalWriteService::isApprovedIdentity(), enforced in
      ReadModelBuilder/IncrementalReadModelUpdater's score loops) - a
      drive-by anon voter's vote never moves the score. Already assessed in
-     docs/plans/anonymous_reaction_scoring_step1_solution_assessment.md,
+     docs/plans/anonymous_reaction_scoring/anonymous_reaction_scoring_step1_solution_assessment.md,
      recommendation is Option B (count upvote/downvote toward score
      regardless of approval, leave Like/Flag and the write path alone) -
      scoped to its own plan/branch, not this one.

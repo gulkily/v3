@@ -17,7 +17,11 @@ $viewerHasFlaggedRoot = isset($viewerFlaggedPostIds[(string) $thread['root_post_
       </div>
     </div>
     <div class="post-card paned-post-card" data-post-id="<?= $e($thread['root_post_id']) ?>">
+<?php if (($thread['retracted_at'] ?? null) !== null): ?>
+      <div class="body retracted-post" data-retracted="true"><p class="meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::TEXT) ?></p></div>
+<?php else: ?>
       <div class="body"><?= $br($thread['root_post_body'] ?? $thread['body_preview']) ?></div>
+<?php endif; ?>
       <div class="paned-reaction-row">
         <button type="button" class="paned-reaction-button" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"<?= $viewerHasLiked ? ' disabled' : '' ?>><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
         <button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="<?= $e($thread['root_post_id']) ?>" data-applied-label="Flagged" aria-pressed="<?= $viewerHasFlaggedRoot ? 'true' : 'false' ?>"<?= $viewerHasFlaggedRoot ? ' disabled' : '' ?>><?= $viewerHasFlaggedRoot ? 'Flagged' : 'Flag' ?></button>

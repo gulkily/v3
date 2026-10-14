@@ -11,6 +11,7 @@ use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InstancePublicRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
+use ForumRewrite\Canonical\PostRetractionRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
@@ -316,6 +317,55 @@ final class CanonicalRecordParsersTest
         assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
         assertSame('Flagged reply-agent content', $record->reason);
         assertSame('', $record->body);
+    }
+
+    public function testParsesPostRetractionRecord(): void
+    {
+        $record = (new PostRetractionRecordParser())->parse($this->postRetractionContents());
+
+        assertSame('post-retraction-reply-001', $record->recordId);
+        assertSame('2026-10-13T12:00:00Z', $record->createdAt);
+        assertSame('reply-001', $record->postId);
+        assertSame('retract', $record->operation);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
+    }
+
+    public function testRejectsPostRetractionWithBodyOrBadOperationOrMismatchedRecordId(): void
+    {
+        $parser = new PostRetractionRecordParser();
+        $valid = $this->postRetractionContents();
+
+        assertThrows(
+            static fn () => $parser->parse($valid . "Deleted prose\n"),
+            'Post-retraction record must not carry a body.'
+        );
+        assertThrows(
+            static fn () => $parser->parse(str_replace('Operation: retract', 'Operation: restore', $valid)),
+            'Post-retraction Operation must be retract in V1.'
+        );
+        assertThrows(
+            static fn () => $parser->parse(str_replace('Post-ID: reply-001', 'Post-ID: reply-002', $valid)),
+            'Post-retraction Record-ID must be derived from Post-ID.'
+        );
+        assertThrows(
+            static fn () => $parser->parse(str_replace("Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n", '', $valid)),
+            'Missing required post-retraction header: Author-Identity-ID'
+        );
+    }
+
+    public function testRepositoryLoadsPostRetractionAndRejectsPathMismatch(): void
+    {
+        $tempRoot = $this->createTempFixtureRoot();
+        mkdir($tempRoot . '/records/post-retractions');
+        file_put_contents($tempRoot . '/records/post-retractions/post-retraction-reply-001.txt', $this->postRetractionContents());
+        file_put_contents($tempRoot . '/records/post-retractions/wrong-name.txt', $this->postRetractionContents());
+        $repository = new CanonicalRecordRepository($tempRoot);
+
+        assertSame('reply-001', $repository->loadPostRetraction('records/post-retractions/post-retraction-reply-001.txt')->postId);
+        assertThrows(
+            static fn () => $repository->loadPostRetraction('records/post-retractions/wrong-name.txt'),
+            'Post-retraction record path must match Record-ID.'
+        );
     }
 
     public function testParsesIssuedInvitationRecord(): void
@@ -669,6 +719,10 @@ final class CanonicalRecordParsersTest
             CanonicalPathResolver::postReaction('post-reaction-20260415153000-ab12cd34')
         );
         assertSame(
+            'records/post-retractions/post-retraction-reply-001.txt',
+            CanonicalPathResolver::postRetraction('post-retraction-reply-001')
+        );
+        assertSame(
             'records/feature-flag-changes/feature-flag-change-20261009120000-ab12cd34.txt',
             CanonicalPathResolver::featureFlagChange('feature-flag-change-20261009120000-ab12cd34')
         );
@@ -686,6 +740,11 @@ final class CanonicalRecordParsersTest
             sys_get_temp_dir() . '/unused-builder-public',
             new CanonicalRecordRepository($repositoryRoot)
         );
+    }
+
+    private function postRetractionContents(): string
+    {
+        return "Record-ID: post-retraction-reply-001\nCreated-At: 2026-10-13T12:00:00Z\nPost-ID: reply-001\nOperation: retract\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n";
     }
 
     private function invitationContents(string $action, string $authorIdentityId, ?string $destination = null, string $postId = 'reply-invite-001'): string

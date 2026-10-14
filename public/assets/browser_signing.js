@@ -292,6 +292,37 @@
     return characters;
   }
 
+  /**
+   * Tidies pasted IRC/chat transcripts for the QDB add form: drops leading
+   * timestamps, normalizes irssi-style "< nick>" to "<nick>", trims trailing
+   * whitespace and surrounding blank lines. Bracketed timestamps are always
+   * stripped; bare ones only when a chat marker follows, so prose such as
+   * "12:30 is fine" is left alone.
+   */
+  function cleanQuoteText(text) {
+    const bracketed = /^[ \t]*[\[(](?:\d{4}-\d{2}-\d{2}[ T])?\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AaPp][Mm])?[\])][ \t]*/;
+    const bare = /^[ \t]*(?:\d{4}-\d{2}-\d{2}[ T])?\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AaPp][Mm])?(?=[ \t]+(?:<|\*|-!-))[ \t]*/;
+    const lines = String(text === null || text === undefined ? "" : text)
+      .replace(/\r\n?/g, "\n")
+      .split("\n")
+      .map(function (line) {
+        let cleaned = line.replace(/[ \t]+$/, "");
+        cleaned = cleaned.replace(bracketed, "").replace(bare, "");
+        cleaned = cleaned.replace(/^(\s*)<\s+([^<>\s]+)>/, "$1<$2>");
+        return cleaned.replace(/^[ \t]+(?=[<*])/, "");
+      });
+
+    while (lines.length > 0 && lines[0].trim() === "") {
+      lines.shift();
+    }
+    while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
+      lines.pop();
+    }
+
+    const cleaned = lines.join("\n");
+    return { text: cleaned, changed: cleaned !== String(text === null || text === undefined ? "" : text) };
+  }
+
   function normalizeComposeText(text, options) {
     const config = options || {};
     const removeUnsupported = config.removeUnsupported === true;
@@ -386,7 +417,7 @@
       }
 
       const type = (field.getAttribute("type") || "text").toLowerCase();
-      return type !== "hidden" || field.name === "thread_id" || field.name === "parent_id";
+      return type !== "file" && (type !== "hidden" || field.name === "thread_id" || field.name === "parent_id");
     });
   }
 
@@ -1101,16 +1132,62 @@
     return null;
   }
 
+  function composeImageFile(form) {
+    const field = form.querySelector('[name="image"]');
+    return field && field.files && field.files[0] || null;
+  }
+
+  async function submitImageCompose(form) {
+    const file = composeImageFile(form);
+    if (!navigator.onLine || !window.crypto || !window.crypto.subtle) throw new Error("Image publication requires an online HTTPS connection (or localhost).");
+    if (!file || file.size > 5 * 1024 * 1024 || !["image/png", "image/jpeg"].includes(file.type)) throw new Error("Choose a JPEG/PNG of at most 5 MiB.");
+    const description = composeFormFieldValue(form, "image_description").trim();
+    if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
+    const bitmap = await createImageBitmap(file);
+    const width = bitmap.width, height = bitmap.height;
+    bitmap.close();
+    if (width > 4096 || height > 4096) throw new Error("Image dimensions must be at most 4096 pixels per side.");
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
+    const fields = collectSignedSubmitFields(form);
+    if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
+    const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
+    const identity = JSON.stringify(fields);
+    let pending = form.__pendingImagePost;
+    if (!pending || pending.identity !== identity) {
+      const response = await submitUrlEncoded(isReplyComposeForm(form) ? "/api/prepare_reply" : threadPrepareApiPath(form), fields);
+      const prepared = parsePreparedPostJsonResponse(response.text, response.serverTiming, "Unable to prepare image post.");
+      if (!prepared.ok) throw new Error(prepared.error);
+      pending = { identity: identity, prepared: prepared, signature: await signCanonicalRecord(prepared.canonicalRecord) };
+      form.__pendingImagePost = pending;
+    }
+    // Keep the exact prepared record on failure; retry cannot create a second post.
+    return finalizePreparedPost(Object.assign({}, fields, { imageFile: file }), pending.prepared, pending.signature);
+  }
+
   async function finalizePreparedPost(fields, prepared, detachedSignature) {
-    const result = await submitUrlEncoded("/api/create_prepared_post", {
+    const payload = {
       prepare_token: prepared.prepareToken,
       post_id: prepared.postId,
       record_path: prepared.recordPath,
       author_identity_id: fields.author_identity_id,
       canonical_record: prepared.canonicalRecord,
       detached_signature: detachedSignature,
-    });
-
+    };
+    let result;
+    if (fields.imageFile) {
+      const data = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        // Multipart string fields normalize LF to CRLF. Preserve signed bytes exactly.
+        if (key === "canonical_record") data.append("canonical_record_base64", btoa(Array.from(new TextEncoder().encode(value), b => String.fromCharCode(b)).join("")));
+        else data.append(key, value);
+      });
+      data.append("image", fields.imageFile);
+      const response = await fetch("/api/create_prepared_post", { method: "POST", credentials: "same-origin", body: data });
+      result = { text: await response.text(), serverTiming: {} };
+    } else {
+      result = await submitUrlEncoded("/api/create_prepared_post", payload);
+    }
     return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to finalize signed post.");
   }
 
@@ -1174,6 +1251,84 @@
     finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
 
     return finalPreparedApprovalFailure(finalized);
+  }
+
+  function parseRetractionResponse(text, serverTiming, fallbackMessage) {
+    let data = null;
+    try {
+      data = JSON.parse(String(text || ""));
+    } catch (error) {
+      data = null;
+    }
+
+    if (!data || data.status !== "ok") {
+      const rawError = data && data.error ? String(data.error) : fallbackMessage;
+      const classified = classifyPreparedPostFailure(rawError);
+      return {
+        ok: false,
+        error: classified.friendlyMessage,
+        rawError: rawError,
+        technicalDetails: classified.technicalDetails,
+        serverTiming: serverTiming || {},
+      };
+    }
+
+    return {
+      ok: true,
+      prepareToken: data.prepare_token || "",
+      postId: data.post_id || "",
+      threadId: data.thread_id || "",
+      recordPath: data.record_path || "",
+      canonicalRecord: data.canonical_record || "",
+      alreadyRetracted: data.already_retracted === true,
+      retractionStatus: data.retraction_status || "",
+      failedStep: data.failed_step || "",
+      commitSha: data.commit_sha || "",
+      serverTiming: serverTiming || {},
+    };
+  }
+
+  async function submitSignedRetraction(postId) {
+    await ensureActionIdentity(null, null);
+    const authorIdentityId = currentAuthorIdentityId();
+    if (!authorIdentityId) {
+      return {
+        ok: false,
+        error: "No saved browser identity is available to sign this deletion.",
+        technicalDetails: "Retraction signing requires a stored browser fingerprint.",
+      };
+    }
+
+    const preparedResponse = await submitUrlEncoded("/api/prepare_retraction", {
+      post_id: String(postId || ""),
+      author_identity_id: authorIdentityId,
+    });
+    const prepared = parseRetractionResponse(
+      preparedResponse.text,
+      preparedResponse.serverTiming,
+      "Unable to prepare the deletion for signing."
+    );
+    if (!prepared.ok || prepared.alreadyRetracted) {
+      return prepared;
+    }
+
+    const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
+    const finalizedResponse = await submitUrlEncoded("/api/create_prepared_retraction", {
+      prepare_token: prepared.prepareToken,
+      post_id: prepared.postId,
+      record_path: prepared.recordPath,
+      author_identity_id: authorIdentityId,
+      canonical_record: prepared.canonicalRecord,
+      detached_signature: detachedSignature,
+    });
+    const finalized = parseRetractionResponse(
+      finalizedResponse.text,
+      finalizedResponse.serverTiming,
+      "Unable to finalize the signed deletion."
+    );
+    finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
+
+    return finalized;
   }
 
   async function retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, previousResult) {
@@ -1317,6 +1472,7 @@
       insertPendingReplyCard: insertPendingReplyCard,
       insertPendingThreadShell: insertPendingThreadShell,
       isInlineReplyComposer: isInlineReplyComposer,
+      cleanQuoteText: cleanQuoteText,
       isQuoteComposeForm: isQuoteComposeForm,
       isReplyComposeForm: isReplyComposeForm,
       isThreadComposeForm: isThreadComposeForm,
@@ -1990,10 +2146,10 @@
     };
   }
 
-  function saveImportedBrowserIdentity(identity) {
+  function saveImportedBrowserIdentity(identity, preserveText = false) {
     localStorage.setItem(storageKeys.username, normalizeUsername(identity.username || "guest"));
     localStorage.setItem(storageKeys.publicKey, normalizeNewlines(String(identity.publicKey || "")).trim() + "\n");
-    localStorage.setItem(storageKeys.privateKey, normalizedArmoredPrivateKey(identity.privateKey || ""));
+    localStorage.setItem(storageKeys.privateKey, preserveText ? identity.privateKey : normalizedArmoredPrivateKey(identity.privateKey || ""));
     localStorage.setItem(storageKeys.fingerprint, String(identity.fingerprint || "").trim().toUpperCase());
     localStorage.removeItem(storageKeys.publishedFingerprint);
     localStorage.removeItem(storageKeys.composePromptCancelled);
@@ -2176,6 +2332,9 @@
     });
 
     renderUndoState(root);
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new Event("forum:identity-changed"));
+    }
   }
 
   async function promptForUsername(promptMessage, cancellationMessage) {
@@ -2655,6 +2814,56 @@
     }
   }
 
+  async function importAccountPrivateKey(root, text, expectedFingerprint = "") {
+    const previousIdentity = browserIdentitySnapshot();
+    const previousClearedKey = clearedKeypairBackup;
+    const identity = await deriveIdentityFromPrivateKey(text);
+    if (expectedFingerprint) {
+      const previousKey = previousIdentity[storageKeys.privateKey];
+      const previousFingerprint = previousKey
+        ? (await deriveIdentityFromPrivateKey(previousKey)).fingerprint.toLowerCase() : "";
+      const accountFingerprint = String(root.dataset.authenticatedIdentityId || "").replace(/^openpgp:/, "").toLowerCase();
+      if (identity.fingerprint.toLowerCase() !== expectedFingerprint ||
+          (previousFingerprint && previousFingerprint !== expectedFingerprint) ||
+          (accountFingerprint && accountFingerprint !== expectedFingerprint)) {
+        throw new Error("Backup fingerprint does not match this account. Use a separate browser profile to restore another identity.");
+      }
+      identity.privateKey = text;
+    }
+    if (JSON.stringify(previousIdentity) !== JSON.stringify(browserIdentitySnapshot())) {
+      throw new Error("The browser identity changed. Try restoring again.");
+    }
+    const identityKeys = [storageKeys.username, storageKeys.publicKey, storageKeys.privateKey, storageKeys.fingerprint];
+    let installed = null;
+    const stillInstalled = () => installed && identityKeys.every((key, index) => localStorage.getItem(key) === installed[index]);
+    try {
+      saveImportedBrowserIdentity(identity, Boolean(expectedFingerprint));
+      installed = identityKeys.map(key => localStorage.getItem(key));
+      renderSavedState(root);
+      await publishPublicKeyWithRetry(root);
+      if (!stillInstalled()) throw new Error("The browser identity changed in another tab. Restore again when other identity actions have finished.");
+      if (expectedFingerprint && window.PrivateSiteAuth && typeof window.PrivateSiteAuth.authenticate === "function") {
+        // A restored key must also resume the public site's session, not only members-only sessions.
+        await window.PrivateSiteAuth.authenticate();
+      } else {
+        await authenticatePrivateSiteIfAvailable();
+      }
+      if (!stillInstalled()) throw new Error("The browser identity changed in another tab. Restore again when other identity actions have finished.");
+      return identity;
+    } catch (error) {
+      // Do not overwrite a newer identity installed by another tab during a request.
+      if (!installed || stillInstalled()) {
+        restoreBrowserIdentitySnapshot(previousIdentity);
+        clearedKeypairBackup = previousClearedKey;
+      }
+      throw error;
+    } finally {
+      renderSavedState(root);
+      const field = root.querySelector('[data-role="public-key-field"]');
+      if (field) field.value = localStorage.getItem(storageKeys.publicKey) || "";
+    }
+  }
+
   function bindAccountKeyPage(root) {
     if (rootIsBrowserSigningBound(root)) {
       return false;
@@ -2672,13 +2881,24 @@
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
     const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
     const automaticGuestPublicationInput = root.querySelector('[data-role="automatic-guest-publication"]');
+    if (window.ForumKeyBackupUI) {
+      window.ForumKeyBackupUI.bind(root, {
+        snapshot: browserIdentitySnapshot,
+        restore: async (text, fingerprint) => {
+          const identity = await importAccountPrivateKey(root, text, fingerprint);
+          setStatus(statusNode, `Restored browser keypair for ${identity.username}. Public key linked.`, "ok");
+          return identity;
+        },
+      });
+    }
+
 
     renderSavedState(root);
     if (automaticGuestPublicationInput) {
       automaticGuestPublicationInput.checked = automaticGuestPublicationIsImmediate();
     }
     if (hasBrowserKeypair()) {
-      void syncIdentityHint(preferredIdentityHint());
+      void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
 
     window.addEventListener("pageshow", function () {
@@ -2756,34 +2976,14 @@
 
     if (restorePrivateButton) {
       restorePrivateButton.addEventListener("click", async function () {
-        const previousIdentity = browserIdentitySnapshot();
         restorePrivateButton.disabled = true;
-
         try {
           setStatus(statusNode, "Reading private key from clipboard...", "info");
-          const clipboardText = await readClipboardText();
-          setStatus(statusNode, "Validating private key...", "info");
-          const identity = await deriveIdentityFromPrivateKey(clipboardText);
-          saveImportedBrowserIdentity(identity);
-          renderSavedState(root);
-          if (publicKeyField) {
-            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
-          }
-
-          setStatus(statusNode, "Publishing your public key in the background...", "info");
-          await publishPublicKeyWithRetry(root);
-          await authenticatePrivateSiteIfAvailable();
-          if (publicKeyField) {
-            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
-          }
+          const text = await readClipboardText();
+          setStatus(statusNode, "Validating and linking your public key...", "info");
+          const identity = await importAccountPrivateKey(root, text);
           setStatus(statusNode, `Restored browser keypair for ${identity.username}. Public key linked.`, "ok");
         } catch (error) {
-          restoreBrowserIdentitySnapshot(previousIdentity);
-          renderSavedState(root);
-          if (publicKeyField) {
-            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
-          }
-
           const status = statusFromError(error, "Unable to restore browser private key.");
           setStatus(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
         } finally {
@@ -2904,11 +3104,14 @@
     const fieldNormalizationStatusNodes = form ? Array.from(root.querySelectorAll('[data-role="compose-field-normalization-status"]')) : [];
     const removeUnsupportedButtons = form ? Array.from(root.querySelectorAll('[data-action="remove-unsupported-compose-characters"]')) : [];
     const clearFieldsButtons = form ? Array.from(root.querySelectorAll('[data-action="clear-compose-fields"]')) : [];
+    const cleanQuoteButtons = form ? Array.from(root.querySelectorAll('[data-action="clean-quote-text"]')) : [];
     const normalizationStatusNode = root.querySelector('[data-role="compose-normalization-status"]');
     const normalizationMessageNode = root.querySelector('[data-role="compose-normalization-message"]');
     if (!form) {
       return;
     }
+    const imageInput = form.querySelector('[name="image"]');
+    if (imageInput) imageInput.disabled = false;
     const draftKey = composeDraftKey(form);
     const unicodeAuthoredTextEnabled = root.dataset.unicodeAuthoredText === "1";
     const emojiAuthoredTextEnabled = unicodeAuthoredTextEnabled && root.dataset.emojiAuthoredText === "1";
@@ -3132,11 +3335,34 @@
     }
 
     function clearComposeFields() {
+      const imageField = form.querySelector('[name="image"]');
+      if (imageField) imageField.value = "";
+      delete form.__pendingImagePost;
       textFields.forEach(function (field) {
         field.value = "";
       });
       clearComposeDraft(form);
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
+    }
+
+    function cleanQuoteBody() {
+      const bodyField = fieldByName("body");
+      if (!bodyField) {
+        return;
+      }
+
+      const result = cleanQuoteText(bodyField.value);
+      if (result.changed) {
+        bodyField.value = result.text;
+      }
+      normalizeComposeFields({ removeUnsupported: false });
+      if (normalizationStatusNode && normalizationStatusNode.dataset.kind === "error") {
+        return;
+      }
+      updateComposeNormalizationStatus(
+        result.changed ? "Cleaned up the pasted quote." : "Nothing to clean up.",
+        "ok"
+      );
     }
 
     function clearTransientComposeStatus() {
@@ -3359,6 +3585,10 @@
       button.addEventListener("click", clearComposeFields);
     });
 
+    cleanQuoteButtons.forEach(function (button) {
+      button.addEventListener("click", cleanQuoteBody);
+    });
+
     function primaryComposeSubmitter() {
       return submitButtons.find(function (button) {
         return !button.disabled && !isAnonymousComposeSubmitter(button);
@@ -3415,6 +3645,9 @@
       }
 
       try {
+        if (isAnonymousComposeSubmitter(submitter) && composeImageFile(form)) {
+          throw new Error("Image attachments require signed publication by an approved member. Remove the image to post anonymously.");
+        }
         if (isAnonymousComposeSubmitter(submitter)) {
           clearComposeAuthorIdentity(form);
           setStatus(statusNode, "Sending anonymous post...", "ok");
@@ -3428,6 +3661,16 @@
         await ensureComposeIdentity(root, statusNode, timing);
         markActionTiming(timing, "forum_identity_ready");
         ensureComposeAuthorIdentity(form);
+        if (composeImageFile(form)) {
+          setStatus(statusNode, "Validating, signing and uploading image…", "ok");
+          const result = await submitImageCompose(form);
+          if (!result.ok) throw new Error(result.error);
+          clearComposeDraftForPendingSubmit(form);
+          completeActionTiming(timing, "ok");
+          if (isReplyComposeForm(form)) navigateToCanonicalReply(result, composeFormFieldValue(form, "return_to"));
+          else navigateToCanonicalThread(result, composeFormFieldValue(form, "return_to"));
+          return;
+        }
         if (isThreadComposeForm(form) && await submitOptimisticThread(timing)) {
           return;
         }
@@ -3505,6 +3748,7 @@
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
+  window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
   window.ForumBrowserSigning.prepareOutboxPost = prepareOutboxPost;
   window.ForumBrowserSigning.finalizeOutboxPost = finalizeOutboxPost;

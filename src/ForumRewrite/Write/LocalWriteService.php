@@ -12,6 +12,8 @@ use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
+use ForumRewrite\Canonical\PostRetractionRecordParser;
+use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadSubjectRecordParser;
@@ -36,6 +38,8 @@ use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
 use RuntimeException;
+use ForumRewrite\Images\ImageReference;
+use ForumRewrite\Images\ImageStore;
 
 class LocalWriteService
 {
@@ -94,6 +98,9 @@ class LocalWriteService
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
+            if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
+                throw new RuntimeException('Image attachments require signed publication by an approved member.');
+            }
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
             $eventDate = $this->normalizeEventDate((string) ($input['event_date'] ?? ''));
@@ -151,6 +158,9 @@ class LocalWriteService
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
+            if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
+                throw new RuntimeException('Image attachments require signed publication by an approved member.');
+            }
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
@@ -232,6 +242,7 @@ class LocalWriteService
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
+            $this->assertImageAuthor($body, $authorIdentityId);
             $createdAt = $this->canonicalTimestampNow();
             $eventDate = $this->normalizeEventDate((string) ($input['event_date'] ?? ''));
             $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
@@ -277,6 +288,7 @@ class LocalWriteService
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
             $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
+            $this->assertImageAuthor($body, $authorIdentityId);
             $createdAt = $this->canonicalTimestampNow();
 
             $this->assertReplyTarget($threadId, $parentId);
@@ -311,9 +323,9 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
-    public function createPreparedPost(array $input): array
+    public function createPreparedPost(array $input, ?string $imagePath = null): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input, $imagePath): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -340,10 +352,6 @@ class LocalWriteService
                 'author_identity_id'
             );
 
-            if ($this->postTargetExists($postId)) {
-                throw new RuntimeException('Prepared post target already exists.');
-            }
-
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
             [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
             $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
@@ -365,6 +373,27 @@ class LocalWriteService
                 throw new RuntimeException('Prepared post canonical record does not match prepared metadata.');
             }
 
+            $image = $this->assertImageAuthor($record->body, $authorIdentityId);
+            $imageStore = $image !== null ? new ImageStore($this->repositoryRoot) : null;
+            if ($image !== null) {
+                if ($imagePath === null) { throw new RuntimeException('Select the image again to publish or repair this attachment.'); }
+                $imageStore->validateUpload($imagePath, $image);
+            } elseif ($imagePath !== null) {
+                throw new RuntimeException('Uploaded image is not bound to the signed post.');
+            }
+            if ($this->postTargetExists($postId)) {
+                // Image finalization is retryable after a lost response or interrupted save.
+                $committed = $this->runGitCommand(['show', 'HEAD:' . $recordPath], 'Unable to verify existing image post');
+                if ($image === null || rtrim($committed, "\n") !== rtrim($canonicalRecord, "\n")) {
+                    throw new RuntimeException('Prepared post target already exists.');
+                }
+                $imageStore->put($imagePath, $image);
+                $head = $this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read repository revision');
+                $this->synchronizePostDerivedState($record, $head, true);
+                $this->invalidator()->invalidateReply($threadId, $postId);
+                return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'record_path' => $recordPath, 'commit_sha' => $head];
+            }
+
             $threadLabels = $this->extractThreadLabelsFromBody($record->body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
@@ -382,6 +411,12 @@ class LocalWriteService
             }
             $commitResult = $this->commitCanonicalWrite($writtenPaths, ($record->isReply() ? 'Create signed reply ' : 'Create signed thread ') . $postId);
             $commitSha = $commitResult['commit_sha'];
+            if ($image !== null) {
+                try { $imageStore->put($imagePath, $image); }
+                catch (RuntimeException $error) {
+                    throw new RuntimeException('Post ' . $postId . ' committed, but image save failed. Retry this signed submission with the same image: ' . $error->getMessage());
+                }
+            }
             $timings = array_merge($timings, $commitResult['timings']);
             $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
 
@@ -392,7 +427,7 @@ class LocalWriteService
                 $this->invalidator()->invalidateBoardThread($postId);
             }
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
-            $this->deletePreparedPost($prepareToken);
+            if ($image === null) { $this->deletePreparedPost($prepareToken); }
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
@@ -405,6 +440,15 @@ class LocalWriteService
                 'timings' => $timings,
             ];
         });
+    }
+
+    private function assertImageAuthor(string $body, string $identity): ?array
+    {
+        $image = ImageReference::fromBody($body);
+        if ($image !== null && (!$this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED) || !$this->isApprovedIdentity($identity))) {
+            throw new RuntimeException('Image attachments require enabled image support and an approved signing identity.');
+        }
+        return $image;
     }
 
     private function buildThreadPostRecord(
@@ -489,6 +533,218 @@ class LocalWriteService
     }
 
     /**
+     * Prepares the canonical retraction record for the post's author to sign. A retraction
+     * that already exists is not re-signed; its derived-state refresh is retried instead.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareRetraction(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $totalStartedAt = hrtime(true);
+            $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+            $post = $this->requireRetractablePost($postId, $authorIdentityId);
+            $threadId = $post->threadId ?? $post->postId;
+            $recordPath = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
+
+            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
+            }
+
+            $createdAt = $this->canonicalTimestampNow();
+            $contents = 'Record-ID: ' . PostRetractionRecordParser::RECORD_ID_PREFIX . $postId . "\n"
+                . "Created-At: {$createdAt}\n"
+                . "Post-ID: {$postId}\n"
+                . "Operation: retract\n"
+                . "Author-Identity-ID: {$authorIdentityId}\n"
+                . "\n";
+            (new PostRetractionRecordParser())->parse($contents);
+
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'retraction',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'author_identity_id' => $authorIdentityId,
+                'created_at' => $createdAt,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+                'already_retracted' => false,
+                'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+            ]);
+        });
+    }
+
+    /**
+     * Verifies the author's detached signature, commits the tombstone, and refreshes derived
+     * state. The result's `retraction_status` is `complete`, or `partial` with the failed step
+     * when the commit succeeded but a refresh did not; a repeat call retries the refresh.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedRetraction(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $timings = [];
+            $totalStartedAt = hrtime(true);
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+
+            if (($prepared['kind'] ?? '') !== 'retraction') {
+                throw new RuntimeException('Prepared post is not a retraction.');
+            }
+            if (strtotime((string) $prepared['expires_at']) < time()) {
+                throw new RuntimeException('Prepared post has expired.');
+            }
+
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $authorIdentityId = $this->requireOpenPgpIdentityId(
+                $this->requirePreparedMatch($input, $prepared, 'author_identity_id'),
+                'author_identity_id'
+            );
+
+            $record = (new PostRetractionRecordParser())->parse($canonicalRecord);
+            if ($record->postId !== $postId
+                || $record->authorIdentityId !== $authorIdentityId
+                || CanonicalPathResolver::postRetraction($record->recordId) !== $recordPath
+            ) {
+                throw new RuntimeException('Prepared retraction canonical record does not match prepared metadata.');
+            }
+
+            $post = $this->requireRetractablePost($postId, $authorIdentityId);
+            $threadId = $post->threadId ?? $post->postId;
+            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                $this->deletePreparedPost($prepareToken);
+
+                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
+            }
+
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $phaseStartedAt = hrtime(true);
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+
+            $commitResult = $this->commitCanonicalWrite(
+                [$recordPath, $recordPath . '.asc'],
+                'Retract post ' . $postId . ' by ' . $authorIdentityId
+            );
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+            $this->deletePreparedPost($prepareToken);
+
+            $failedStep = null;
+            try {
+                $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($commitSha));
+            } catch (RuntimeException) {
+                $failedStep = 'read_model_refresh';
+            }
+            try {
+                $this->invalidateRetractedPostArtifacts();
+            } catch (\Throwable) {
+                $failedStep ??= 'artifact_invalidate';
+            }
+
+            return $this->retractionResult($postId, $threadId, $recordPath, $failedStep, $timings, hrtime(true) - $totalStartedAt, false, $commitSha);
+        });
+    }
+
+    private function requireRetractablePost(string $postId, string $authorIdentityId): PostRecord
+    {
+        $post = null;
+        foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                $post = $this->canonicalRepository->loadPost($candidate);
+                break;
+            }
+        }
+        if ($post === null) {
+            throw new RuntimeException('Post to retract was not found.');
+        }
+        if ($post->authorIdentityId === null || $post->authorIdentityId !== $authorIdentityId) {
+            throw new RuntimeException('Only the post author can retract this post.');
+        }
+        if (RetractedPosts::isAuthorityPost($post)) {
+            throw new RuntimeException('Identity, approval, and invitation records cannot be retracted.');
+        }
+
+        return $post;
+    }
+
+    /**
+     * A retracted post can appear in tag, profile, listing, and snapshot artifacts as well as
+     * its own pages, so every generated presentation file is retired, not just the thread's.
+     */
+    private function invalidateRetractedPostArtifacts(): void
+    {
+        $this->invalidator()->invalidateAllGeneratedPresentation();
+    }
+
+    /**
+     * When the retraction was already committed and derived state is still stale, the refresh
+     * is retried here so repeating the request recovers a partial retraction.
+     *
+     * @param array<string, float> $timings
+     * @return array<string, mixed>
+     */
+    private function retractionResult(
+        string $postId,
+        string $threadId,
+        string $recordPath,
+        ?string $failedStep,
+        array $timings,
+        float|int $elapsedNanoseconds,
+        bool $alreadyRetracted,
+        ?string $commitSha = null,
+    ): array {
+        if ($alreadyRetracted && $this->staleMarker()->exists()) {
+            $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'));
+            try {
+                $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($head));
+            } catch (RuntimeException) {
+                $failedStep = 'read_model_refresh';
+            }
+        }
+
+        $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
+
+        return [
+            'status' => 'ok',
+            'retraction_status' => $failedStep === null ? 'complete' : 'partial',
+            'failed_step' => $failedStep,
+            'already_retracted' => $alreadyRetracted,
+            'post_id' => $postId,
+            'thread_id' => $threadId,
+            'record_path' => $recordPath,
+            'signature_path' => $recordPath . '.asc',
+            'commit_sha' => $commitSha,
+            'timings' => $timings,
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $input
      * @return array<string, string>
      */
@@ -515,9 +771,12 @@ class LocalWriteService
                 throw new RuntimeException('QDB caption tags may be applied only to QDB quotes.');
             }
 
+            $signed = $this->signedReactionInput('thread', $input, $threadId, $tag, $authorIdentityId);
+
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             if (($isQdbCaptionVote && $this->hasQdbVoteFromIdentity($threadId, $authorIdentityId))
                 || $this->hasThreadTagFromIdentity($threadId, $tag, $authorIdentityId)) {
+                $this->recoverReactionDerivedState();
                 return [
                     'status' => 'ok',
                     'thread_id' => $threadId,
@@ -534,11 +793,16 @@ class LocalWriteService
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
-            $this->writeFile($recordPath, $contents);
+            [$recordPath, $contents] = $signed ?? $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
+            if ($signed === null) {
+                $this->writeFile($recordPath, $contents);
+            } else {
+                $this->beginSignedReactionWrite($signed);
+                $this->writeSignedReactionPair($signed);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Apply thread tag ' . $tag . ' to ' . $threadId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply thread tag ' . $tag . ' to ' . $threadId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -547,6 +811,9 @@ class LocalWriteService
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateBoardThread($threadId);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            if ($signed !== null) {
+                $this->finishSignedReactionWrite($recordPath);
+            }
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             return [
@@ -624,10 +891,12 @@ class LocalWriteService
 
             $post = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($postId));
             $threadId = $post->threadId ?? $post->postId;
+            $signed = $this->signedReactionInput('post', $input, $postId, $tag, $authorIdentityId);
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             if ($this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId)) {
                 $state = $this->currentPostReactionState($postId);
 
+                $this->recoverReactionDerivedState();
                 return [
                     'status' => 'ok',
                     'post_id' => $postId,
@@ -646,11 +915,16 @@ class LocalWriteService
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
-            $this->writeFile($recordPath, $contents);
+            [$recordPath, $contents] = $signed ?? $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
+            if ($signed === null) {
+                $this->writeFile($recordPath, $contents);
+            } else {
+                $this->beginSignedReactionWrite($signed);
+                $this->writeSignedReactionPair($signed);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite([$recordPath], 'Apply post tag ' . $tag . ' to ' . $postId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply post tag ' . $tag . ' to ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -663,6 +937,9 @@ class LocalWriteService
                 $this->invalidator()->invalidateBoardThread($postId);
             }
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
+            if ($signed !== null) {
+                $this->finishSignedReactionWrite($recordPath);
+            }
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
             $state = $this->currentPostReactionState($postId);
@@ -2509,7 +2786,10 @@ class LocalWriteService
      */
     private function withTimedWriteLock(callable $callback): array
     {
-        $locked = $this->executionLock()->withExclusiveLockTimed($callback);
+        $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
+            $this->recoverSignedReactionWrites();
+            return $callback();
+        });
         $result = $locked['result'];
         if (($result['commit_sha'] ?? null) !== null && $this->enqueueOfflineSnapshotPublication !== null) {
             try {
@@ -2599,6 +2879,141 @@ class LocalWriteService
         }
 
         return $labels;
+    }
+
+    private function reactionJournalDirectory(): string
+    {
+        return dirname($this->databasePath) . '/signed-reaction-writes-' . substr(hash('sha256', $this->repositoryRoot), 0, 16);
+    }
+
+    private function atomicReactionFile(string $path, string $bytes, int $mode = 0600): void
+    {
+        if (!is_dir(dirname($path))) mkdir(dirname($path), 0700, true);
+        $temporary = tempnam(dirname($path), '.reaction-');
+        if ($temporary === false) throw new RuntimeException('Unable to stage reaction file.');
+        try {
+            if (file_put_contents($temporary, $bytes) !== strlen($bytes) || !chmod($temporary, $mode) || !rename($temporary, $path)) {
+                throw new RuntimeException('Unable to publish reaction file.');
+            }
+        } finally {
+            if (is_file($temporary)) unlink($temporary);
+        }
+    }
+
+    private function beginSignedReactionWrite(array $signed): void
+    {
+        $this->atomicReactionFile($this->reactionJournalDirectory() . '/' . hash('sha256', $signed[0]) . '.json',
+            json_encode($signed, JSON_THROW_ON_ERROR));
+    }
+
+    private function finishSignedReactionWrite(string $path): void
+    {
+        $journal = $this->reactionJournalDirectory() . '/' . hash('sha256', $path) . '.json';
+        if (is_file($journal) && !unlink($journal)) throw new RuntimeException('Unable to finish reaction journal.');
+    }
+
+    private function writeSignedReactionPair(array $signed): void
+    {
+        // Publish the signature first: a crash must never leave a new apparently unsigned vote.
+        foreach ([$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]] as $relative => $bytes) {
+            $path = $this->repositoryRoot . '/' . $relative;
+            if (file_exists($path)) {
+                if (file_get_contents($path) !== $bytes) throw new RuntimeException('Reaction recovery collision: ' . $relative);
+                continue;
+            }
+            $this->atomicReactionFile($path, $bytes, 0644);
+        }
+    }
+
+    private function recoverReactionDerivedState(): void
+    {
+        if ($this->staleMarker()->exists()) {
+            $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'));
+            $this->refreshDerivedStateAfterCommit($head);
+            $this->invalidator()->invalidateAllGeneratedPresentation();
+        }
+    }
+
+    private function recoverSignedReactionWrites(): void
+    {
+        foreach (glob($this->reactionJournalDirectory() . '/*.json') ?: [] as $journal) {
+            $signed = json_decode((string) file_get_contents($journal), true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($signed) || count($signed) !== 3 || !is_string($signed[0] ?? null)
+                || !preg_match('#^records/(thread-labels|post-reactions)/[A-Za-z0-9_-]+\.txt$#D', $signed[0])) {
+                throw new RuntimeException('Invalid reaction recovery journal.');
+            }
+            $record = str_starts_with($signed[0], 'records/thread-labels/')
+                ? (new ThreadLabelRecordParser())->parse($signed[1]) : (new PostReactionRecordParser())->parse($signed[1]);
+            if (basename($signed[0]) !== $record->recordId . '.txt') throw new RuntimeException('Reaction recovery path mismatch.');
+            [$key, $fingerprint] = $this->publicKeyForIdentity($record->authorIdentityId ?? '');
+            if (!$this->signatureVerifier->verifyDetached($key, $signed[1], $signed[2], $fingerprint)['ok']) {
+                throw new RuntimeException('Reaction recovery signature is invalid.');
+            }
+            $this->writeSignedReactionPair($signed);
+            $paths = [$signed[0], $signed[0] . '.asc'];
+            $dirty = trim($this->runGitCommand(array_merge(['status', '--porcelain', '--'], $paths), 'Unable to inspect reaction recovery'));
+            $head = $dirty === ''
+                ? trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'))
+                : $this->commitCanonicalWrite($paths, 'Recover signed reaction ' . $record->recordId)['commit_sha'];
+            $this->refreshDerivedStateAfterCommit($head);
+            $this->invalidator()->invalidateAllGeneratedPresentation();
+            $this->finishSignedReactionWrite($signed[0]);
+        }
+    }
+
+    private function signedReactionInput(string $kind, array $input, string $target, string $tag, string $author): ?array
+    {
+        if (!array_key_exists('canonical_record', $input) && !array_key_exists('detached_signature', $input) && !array_key_exists('prepare_token', $input)) {
+            return null;
+        }
+        $contents = (string) ($input['canonical_record'] ?? '');
+        $signature = (string) ($input['detached_signature'] ?? '');
+        if ($contents === '' || $signature === '' || strlen($contents) > 4096 || strlen($signature) > 16384) {
+            throw new RuntimeException('A complete signed reaction record and signature are required.');
+        }
+        $record = $kind === 'thread' ? (new ThreadLabelRecordParser())->parse($contents) : (new PostReactionRecordParser())->parse($contents);
+        $prefix = $kind === 'thread' ? 'thread-label' : 'post-reaction';
+        if (!preg_match('/^' . $prefix . '-[a-zA-Z0-9][a-zA-Z0-9_-]{0,100}$/D', $record->recordId)) {
+            throw new RuntimeException('Invalid signed reaction record identifier.');
+        }
+        $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
+        $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
+        $expected = "Record-ID: {$record->recordId}\nCreated-At: {$record->createdAt}\n{$targetHeader}: {$target}\nOperation: add\n{$tagHeader}: {$tag}\nAuthor-Identity-ID: {$author}\n\n";
+        if ($contents !== $expected) {
+            throw new RuntimeException('Signed reaction must match the requested author, target, and tag exactly.');
+        }
+        [$key, $fingerprint] = $this->publicKeyForIdentity($author);
+        $verification = $this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint);
+        if (!$verification['ok']) {
+            throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+        }
+        $path = $kind === 'thread' ? CanonicalPathResolver::threadLabel($record->recordId) : CanonicalPathResolver::postReaction($record->recordId);
+        if (isset($input['prepare_token'])) {
+            $token = $this->requireHexToken((string) $input['prepare_token'], 'prepare_token');
+            $prepared = $this->loadPreparedPost($token);
+            if (($prepared['kind'] ?? '') !== 'reaction-' . $kind
+                || ($prepared['canonical_record'] ?? '') !== $contents
+                || ($prepared['author_identity_id'] ?? '') !== $author
+                || strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared reaction is expired or does not match this action.');
+            }
+        } elseif (abs(time() - strtotime($record->createdAt)) > 300) {
+            [$preparedPath, $preparedContents] = $kind === 'thread'
+                ? $this->buildThreadLabelRecord($target, [$tag], $author, $this->canonicalTimestampNow())
+                : $this->buildPostReactionRecord($target, [$tag], $author, $this->canonicalTimestampNow());
+            $prepared = $this->storePreparedPost($preparedPath, $preparedContents, [
+                'kind' => 'reaction-' . $kind, 'author_identity_id' => $author,
+            ]);
+            throw new ReactionClockSkew($prepared + ['canonical_record' => $preparedContents]);
+        }
+
+        foreach ([$path => $contents, $path . '.asc' => $signature] as $candidate => $bytes) {
+            if (file_exists($this->repositoryRoot . '/' . $candidate)
+                && file_get_contents($this->repositoryRoot . '/' . $candidate) !== $bytes) {
+                throw new RuntimeException('Signed reaction record identifier collision.');
+            }
+        }
+        return [$path, $contents, $signature];
     }
 
     /**
@@ -2700,7 +3115,7 @@ class LocalWriteService
     {
         $policy = new QdbVoteScoringPolicy($this->qdbVoteCaptionCatalog());
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $this->canonicalRepository->loadThreadLabel('records/thread-labels/' . basename($path));
+            try { $record = $this->canonicalRepository->loadThreadLabel('records/thread-labels/' . basename($path)); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
                 continue;
             }
@@ -2795,7 +3210,7 @@ class LocalWriteService
     {
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
             $relativePath = 'records/thread-labels/' . basename($path);
-            $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+            try { $record = $this->canonicalRepository->loadThreadLabel($relativePath); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
                 continue;
             }
@@ -2812,7 +3227,7 @@ class LocalWriteService
     {
         foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
             $relativePath = 'records/post-reactions/' . basename($path);
-            $record = $this->canonicalRepository->loadPostReaction($relativePath);
+            try { $record = $this->canonicalRepository->loadPostReaction($relativePath); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->postId !== $postId || $record->authorIdentityId !== $identityId) {
                 continue;
             }

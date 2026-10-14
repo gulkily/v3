@@ -92,6 +92,7 @@ try {
     fwrite(STDOUT, "Indexing existing canonical records in the target repository...\n");
     $existingIndex = buildExistingRecordIndex($repositoryRoot);
     $sourceFiles = canonicalSourceFiles($sourceRoot);
+    $reactionPlan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($sourceRoot, $repositoryRoot);
     $sourceFileCount = count($sourceFiles);
     $progressInterval = max(1, min(100, (int) ceil($sourceFileCount / 20)));
 
@@ -133,7 +134,20 @@ try {
             continue;
         }
 
-        $sourceKey = canonicalIdentityKey($sourceRoot, $relativePath);
+        $reactionEntry = preg_match('#^records/(thread-labels|post-reactions)/#', $relativePath)
+            ? ($reactionPlan[$relativePath] ?? null) : null;
+        if ($reactionEntry !== null && !in_array($reactionEntry['state'], ['import', 'duplicate'], true)) {
+            if ($reactionEntry['state'] === 'conflict') {
+                $summary['conflicts']++;
+                $conflictPaths[] = $arguments['dry_run'] ? $relativePath
+                    : saveConflict($conflictRoot, $relativePath, $sourceContents, $reactionEntry['reason']);
+            } else {
+                $summary['invalid_skipped']++;
+            }
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
+            continue;
+        }
+        $sourceKey = $reactionEntry['key'] ?? canonicalIdentityKey($sourceRoot, $relativePath);
         if ($sourceKey === null) {
             $summary['invalid_skipped']++;
             reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
@@ -266,7 +280,7 @@ try {
         fwrite(STDOUT, "No new files were imported; skipping staging, commit, and derived rebuilds.\n");
     }
 
-    fwrite(STDOUT, "Repository archive import complete.\n");
+    fwrite(STDOUT, "Repository archive import complete.\nImage files are separate and are not transferred. Image references require the source image collection; use the image backup runbook for complete restoration.\n");
     fwrite(STDOUT, "Archive: {$archivePath}\n");
     fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
     fwrite(STDOUT, sprintf("Canonical files considered: %d\n", $summary['seen']));

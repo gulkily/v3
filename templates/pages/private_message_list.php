@@ -1,6 +1,7 @@
 <section class="stack" data-conversation-list data-page-cursor="<?= $e($page['page_cursor']) ?>" data-next-cursor="<?= $e($page['next_cursor'] ?? '') ?>" data-viewer="<?= $e($viewerProfile['username_token']) ?>">
   <article class="card">
     <h1>Messages</h1>
+<?= $indent($partial('partials/key_backup_reminder.php'), 4) ?>
     <p data-role="empty"<?= $page['conversations'] !== [] ? ' hidden' : '' ?>>No messages yet</p>
     <button type="button" data-role="unread-retry" hidden>Retry unread status</button>
   </article>

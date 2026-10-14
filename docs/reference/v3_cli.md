@@ -421,6 +421,9 @@ Deletes a canonical file under `records/` with `git rm`, commits the
 removal, rebuilds the read model, and rebuilds static artifacts when an
 artifact root is resolved (via argument or `FORUM_PUBLIC_ARTIFACT_ROOT`).
 
+This is the operator removal mechanism. Authors retract their own posts through
+the site instead; see [Author post retraction](author_post_retraction.md).
+
 - `record_path_or_id` — a relative path (e.g. `records/thread-labels/thread-label-20260530000001-zenrules.txt`) or an unambiguous filename stem (e.g. `thread-label-20260530000001-zenrules`)
 - `repository_root` — canonical records checkout to delete from
 - `database_path` — SQLite file to rebuild after deletion
@@ -671,3 +674,14 @@ before they ship.
 - `artifact_root` — directory to scan; defaults to `FORUM_PUBLIC_ARTIFACT_ROOT` or `public/`
 
 Startup dependency failures list missing capabilities, group required Ubuntu extension installs into one command, and show optional recovery separately. Commands are highlighted on terminals unless `NO_COLOR` is set. `dependency-check` is an alias for `check-dependencies`.
+
+## Verify or restore image backups
+
+`./v3 images verify|restore <images.tar> <repository_root> <database_path>
+[--image-root=/private/images]` checks a revision-matched image/repository pair.
+`verify` stages and validates without activation; `restore` atomically installs
+into a fresh private image directory or accepts an identical existing store.
+It never overwrites a different store. Exit 0 means complete verification/restore;
+exit 1 includes actionable failure text. Rebuild the read model after restoring.
+See [Image backup and recovery](../runbooks/image_backup.md) for the full sequence,
+limits, deployment requirements, and interrupted-operation recovery.

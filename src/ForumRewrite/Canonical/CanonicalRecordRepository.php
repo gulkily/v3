@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Canonical;
 
+use ForumRewrite\Security\ReactionSignature;
+
 final class CanonicalRecordRepository
 {
     /** @var array<string,string> */
@@ -18,10 +20,12 @@ final class CanonicalRecordRepository
         private readonly ThreadLabelRecordParser $threadLabelParser = new ThreadLabelRecordParser(),
         private readonly ThreadSubjectRecordParser $threadSubjectParser = new ThreadSubjectRecordParser(),
         private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
+        private readonly PostRetractionRecordParser $postRetractionParser = new PostRetractionRecordParser(),
         private readonly FeatureFlagChangeRecordParser $featureFlagChangeParser = new FeatureFlagChangeRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
         private readonly bool $requireLegacyTimestampMetadata = false,
+        private readonly ?string $signatureKeyFallbackRoot = null,
     ) {
     }
 
@@ -196,13 +200,17 @@ final class CanonicalRecordRepository
     public function loadThreadLabel(string $relativePath): ThreadLabelRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/thread-labels/');
-        $record = $this->threadLabelParser->parse($this->read($relativePath));
+        $contents = $this->read($relativePath);
+        $record = $this->threadLabelParser->parse($contents);
 
         $expectedPath = CanonicalPathResolver::threadLabel($record->recordId);
         if ($relativePath !== $expectedPath) {
             throw new CanonicalRecordParseException('Thread-label record path must match Record-ID.');
         }
 
+        if (ReactionSignature::status($this->repositoryRoot, $relativePath, $contents, $record->authorIdentityId, $this->signatureKeyFallbackRoot) === 'invalid') {
+            throw new CanonicalRecordParseException('Invalid reaction signature: ' . $relativePath);
+        }
         return $record;
     }
 
@@ -222,11 +230,27 @@ final class CanonicalRecordRepository
     public function loadPostReaction(string $relativePath): PostReactionRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/post-reactions/');
-        $record = $this->postReactionParser->parse($this->read($relativePath));
+        $contents = $this->read($relativePath);
+        $record = $this->postReactionParser->parse($contents);
 
         $expectedPath = CanonicalPathResolver::postReaction($record->recordId);
         if ($relativePath !== $expectedPath) {
             throw new CanonicalRecordParseException('Post-reaction record path must match Record-ID.');
+        }
+
+        if (ReactionSignature::status($this->repositoryRoot, $relativePath, $contents, $record->authorIdentityId, $this->signatureKeyFallbackRoot) === 'invalid') {
+            throw new CanonicalRecordParseException('Invalid reaction signature: ' . $relativePath);
+        }
+        return $record;
+    }
+
+    public function loadPostRetraction(string $relativePath): PostRetractionRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/post-retractions/');
+        $record = $this->postRetractionParser->parse($this->read($relativePath));
+
+        if ($relativePath !== CanonicalPathResolver::postRetraction($record->recordId)) {
+            throw new CanonicalRecordParseException('Post-retraction record path must match Record-ID.');
         }
 
         return $record;

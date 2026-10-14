@@ -17,7 +17,7 @@ Not scheduled yet. Captured for later FDP Step 1 when picked up.
 ## Why this matters now
 
 - Related to the already-done
-  [`anonymous_reaction_scoring_step1_solution_assessment.md`](anonymous_reaction_scoring_step1_solution_assessment.md),
+  [`anonymous_reaction_scoring_step1_solution_assessment.md`](anonymous_reaction_scoring/anonymous_reaction_scoring_step1_solution_assessment.md),
   whose Option C ("lower the bar for approved generally... e.g. on first
   browser-generated identity") is effectively a lighter version of this
   idea. That assessment explicitly deferred it: "it changes shared

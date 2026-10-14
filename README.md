@@ -17,6 +17,7 @@ repo root.
 Operational how-tos for running and maintaining a deployment:
 
 - [Production Deploy Runbook](docs/runbooks/production_deploy.md) — first-time setup, directory layout, environment variables
+- [Image backup and recovery](docs/runbooks/image_backup.md) — private image storage, feature gating, portable backups and restoration
 - [Operator Recovery Runbook](docs/runbooks/operator_recovery.md) — read-model status, stale-marker recovery, lock contention, write failures
 - [Offline Reading Runbook](docs/runbooks/offline_reading.md) — public snapshot limits, refresh, and browser-cache recovery
 - [Theme Development Guide](docs/runbooks/theme_development_guide.md) — how to add or modify a theme
@@ -47,6 +48,7 @@ that stays accurate even as implementation details move around:
 ### Reference
 
 - [Authentication Modes and Access](docs/reference/authentication_modes.md) — public and members-only access, browser identities, approval, and session recovery
+- [Browser key backups](docs/reference/key_backups.md) — encrypted text/Starfield downloads and recovery
 - [`v3` CLI Reference](docs/reference/v3_cli.md) — every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `codex-handoff run`/`test-local`, `task-queue`), plus the 3 standalone operator scripts not wired into `./v3`
 - [Fastmod](docs/reference/fast_post_scoring.md) — configuration and approved-operator workflow for focused 0–1 LLM moderation scores
 

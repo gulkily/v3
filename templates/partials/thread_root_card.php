@@ -50,6 +50,7 @@ $agentReplyIsUnfinished = $agentReplyPostedId === ''
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
 $postAnchorId = 'post-' . (string) $post['post_id'];
+$isRetracted = ($post['retracted_at'] ?? null) !== null;
 $postBody = (string) $post['body'];
 $postBodyFirstLineSegments = preg_split('/\r\n|\r|\n/', $postBody, 2);
 $postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
@@ -108,11 +109,19 @@ if (!$metaVisible) {
     'viewerHasFlagged' => $viewerHasFlaggedPost,
 ]) ?>
   </p>
+<?php if ($isRetracted): ?>
+  <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::TEXT) ?></p>
+<?php else: ?>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
+<?php endif; ?>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>
 <?= $bareMediaEmbedWarmBeacon ?>
+<?php if ($isRetracted): ?>
+<?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
+<?php else: ?>
   <div class="body"><?= $br($postBodyDisplay) ?></div>
+<?php endif; ?>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
 <?php if ($metaVisible && !$isQdbQuoteRoot): ?>
@@ -120,7 +129,7 @@ if (!$metaVisible) {
 <?php endif; ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
-$postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false))
+$postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false)) && !$isRetracted
     ? (($postAnalysesByPostId[$post['post_id']] ?? null))
     : null;
 $postAnalysisModeration = is_array($postAnalysis) && is_array($postAnalysis['moderation'] ?? null) ? $postAnalysis['moderation'] : [];
@@ -170,7 +179,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?php if (!$isQdbQuoteRoot): ?>
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
 <?php endif; ?>
-<?php if (!$isQdbQuoteRoot): ?>
+<?php if (!$isQdbQuoteRoot && !$isRetracted): ?>
     <button
       type="button"
       class="thread-reaction-button"
@@ -191,7 +200,10 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
 <?php endif; ?>
-<?php if ($showAgentReplyRequestButton): ?>
+<?php if (!$isQdbQuoteRoot): ?>
+<?= $partial('partials/retract_post_control.php') ?>
+<?php endif; ?>
+<?php if ($showAgentReplyRequestButton && !$isRetracted): ?>
     <button
       type="button"
       class="thread-reaction-button"
@@ -199,7 +211,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       data-post-id="<?= $e($post['post_id']) ?>"
     >Request agent response</button>
 <?php endif; ?>
-<?php if ($showCodexHandoffButton): ?>
+<?php if ($showCodexHandoffButton && !$isRetracted): ?>
     <button
       type="button"
       class="thread-reaction-button"

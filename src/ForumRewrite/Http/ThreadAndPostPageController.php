@@ -158,6 +158,7 @@ final class ThreadAndPostPageController
             $this->identityScripts([
                 '/assets/inline_reply_form.js',
                 '/assets/thread_reactions.js',
+                '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
             ]),
         );
@@ -217,6 +218,7 @@ final class ThreadAndPostPageController
             'post.php',
             [
                 'post' => $post,
+                'viewerProfile' => $viewerProfile,
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
@@ -240,6 +242,7 @@ final class ThreadAndPostPageController
             'board',
             $this->identityScripts([
                 '/assets/thread_reactions.js',
+                '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
             ]),
         );
@@ -249,7 +252,7 @@ final class ThreadAndPostPageController
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+            try { $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path)); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
             if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
                 continue;
             }

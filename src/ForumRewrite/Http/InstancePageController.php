@@ -40,21 +40,27 @@ final class InstancePageController
 
     public function renderBackup(): string
     {
+        $imageStore = new \ForumRewrite\Images\ImageStore($this->repositoryRoot);
+        $imageBackupAvailable = is_dir($imageStore->root) || \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
+        $revision = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        $revisionQuery = $imageBackupAvailable ? '?revision=' . rawurlencode($revision) : '';
         return $this->routeServices->renderPageTemplate(
             'instance.php',
             [
+                'imageBackupAvailable' => $imageBackupAvailable,
+                'imageBackupHref' => '/downloads/images.tar' . $revisionQuery,
                 'siteName' => SiteConfig::displayName(),
                 'admins' => ToolsPageSupport::fetchSeedApprovedUsers($this->routeServices->pdo()),
                 'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
                 'backupSnapshot' => $this->fetchBackupSnapshot(),
                 'downloads' => [
                     [
-                        'href' => '/downloads/repository.tar.gz',
+                        'href' => '/downloads/repository.tar.gz' . $revisionQuery,
                         'label' => 'Content repository (.tar.gz)',
                         'description' => 'Tarball of the full repository, including .git history.',
                     ],
                     [
-                        'href' => '/downloads/repository.zip',
+                        'href' => '/downloads/repository.zip' . $revisionQuery,
                         'label' => 'Content repository (.zip)',
                         'description' => 'ZIP archive of the full repository, including .git history.',
                     ],
@@ -70,13 +76,17 @@ final class InstancePageController
         );
     }
 
-    public function downloadRepository(string $method, string $format): void
+    public function downloadRepository(string $method, string $format, ?string $revision = null): void
     {
         if ($method !== 'GET') {
             $this->routeServices->sendHtml($this->methodNotAllowedPage(), 405);
             return;
         }
 
+        if ($revision !== null || is_dir((new \ForumRewrite\Images\ImageStore($this->repositoryRoot))->root)) {
+            $this->downloadImageBackup($method, $format, $revision);
+            return;
+        }
         $download = $this->buildRepositoryArchive($format);
         $this->routeServices->sendDownload(
             $download['path'],
@@ -84,6 +94,21 @@ final class InstancePageController
             $this->repositoryArchiveDownloadFilename($download['extension']),
             true
         );
+    }
+
+    public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null): void
+    {
+        if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
+        try {
+            $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision);
+        } catch (RuntimeException $error) {
+            $this->routeServices->sendText($error->getMessage() . "\n", 409, ['Cache-Control: private, no-store']);
+            return;
+        }
+        register_shutdown_function(static function () use ($download): void { if (is_file($download['path'])) { @unlink($download['path']); } });
+        if (!headers_sent()) { header('Cache-Control: private, no-store'); }
+        $type = $kind === 'images' ? 'application/x-tar' : ($kind === 'zip' ? 'application/zip' : 'application/gzip');
+        $this->routeServices->sendDownload($download['path'], $type, SiteConfig::siteName() . '-' . ($kind === 'images' ? 'images' : 'repository') . '-' . $download['revision'] . '.' . $download['extension'], true);
     }
 
     public function downloadReadModelDatabase(string $method): void
