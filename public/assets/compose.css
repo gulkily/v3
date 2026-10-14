@@ -134,3 +134,7 @@
 .image-compose-fields input[type="text"] { min-height: 44px; box-sizing: border-box; max-width: 100%; }
 .image-upload-help { margin-bottom: 0; }
 @media (max-width: 480px) { .image-upload-dropzone { align-items: stretch; flex-direction: column; } .image-upload-choose { width: 100% !important; } }
+@media (max-width: 480px) {
+  .compose-form-actions { flex-wrap: wrap; }
+  .compose-form-actions > button { flex: 1 1 44%; min-height: 44px; overflow-wrap: normal; }
+}

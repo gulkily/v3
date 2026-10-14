@@ -122,7 +122,8 @@
       const text = await response.text();
       const values = Object.fromEntries(text.split('\n').filter(line=>line.includes(': ')).map(line=>{const at=line.indexOf(': ');return [line.slice(0,at),line.slice(at+2)];}));
       const allowed = response.ok && values['Identity-ID'] === identity && values['Approved'] === 'yes' && values['Image-Upload-Allowed'] === 'yes';
-      if (serial !== form.__imageEligibilitySerial || identity !== await form.__imageIdentity()) return false;
+      const currentIdentity = await form.__imageIdentity();
+      if (serial !== form.__imageEligibilitySerial || identity !== currentIdentity) return false;
       displayEligibility(form, allowed);
       return allowed;
     } catch { return false; } finally { clearTimeout(timer); }

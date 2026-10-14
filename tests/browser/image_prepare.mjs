@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {chromium} from 'playwright-core';
-const browser = await chromium.launch({executablePath:process.env.BROWSER_PATH || '/usr/bin/google-chrome',headless:true,args:['--no-sandbox']});
+import {chromium, webkit} from 'playwright-core';
+const browser = await (process.env.IMAGE_BROWSER==='webkit' ? webkit.launch({headless:true}) : chromium.launch({executablePath:process.env.BROWSER_PATH || '/usr/bin/google-chrome',headless:true,args:['--no-sandbox']}));
 try {
  const page = await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
  await page.addScriptTag({path:'public/assets/image_prepare.js'});
