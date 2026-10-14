@@ -1,0 +1,9 @@
+> **Feature plan:** [Step 1](./test_runner_elapsed_time_step1_solution_assessment.md) · [Step 2](./test_runner_elapsed_time_step2_feature_description.md) · [Step 3](./test_runner_elapsed_time_step3_development_plan.md) · [Step 4](./test_runner_elapsed_time_step4_implementation_summary.md)
+
+Debug mode: disabled
+
+## Stage 1 - Timed test results
+
+- Changes: Added monotonic total-run timing and individual test duration to every completed PASS/FAIL line, using the approved bracketed seconds format. Both timings share the completion measurement; slow-test reporting reuses the same duration. Multiline diagnostics remain below the timed first line. Added subprocess fixtures and behavior checks, synchronized the interruption test with fixture readiness, isolated child test-history files, and documented the format in README. Existing CLI delegates use the same runner.
+- Verification: `./v3 test TestRunnerBehaviorTest` — 6 passed. A terminal run through `./v3 test AgentReplyCommandTest::testAgentReplyLiveTestHelpDescribesProviderCheck` showed the expected format. The final redirected `./v3 test` run passed all 1,161 tests. Log validation confirmed all 1,161 result lines have both timings, nondecreasing run time, and individual durations no greater than run time. PHP syntax checks passed for the runner, behavior tests, and fixture; plan navigation links resolve; `git diff --check` passed.
+- Notes: The initial full run had 1,160 passes and one failure in the existing three-second `testStartAcceptsPortShorthand` check. Both startup checks then passed in isolation, followed by the clean full repeat; no startup code or tests were changed. Planning commit: `d70ab65f`; branch: `feature/test-runner-elapsed-time`. No deployment, database migration, or external-service verification is required for this CLI-only change. No implementation scope changes.

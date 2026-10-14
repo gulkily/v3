@@ -6,7 +6,7 @@ const realNow=Date.now;Date.now=()=>clock;
 global.sessionStorage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
 global.localStorage={getItem:k=>k==='forum_pki_username'?'alice':'saved-key'};
 global.CustomEvent=class {constructor(type){this.type=type;}};
-global.MutationObserver=class {observe(){}};
+global.MutationObserver=class {observe(){} disconnect(){}};
 global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),querySelectorAll:()=>[],addEventListener:(k,v)=>events[k]=v,dispatchEvent:event=>{if(events[event.type])events[event.type](event)}};
 global.window={addEventListener:()=>{},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>({readPrivateKey:async()=>({getFingerprint:()=>source})})}};
 window.ForumPrivateMessageHistoryCrypto={digest:()=> 'digest',extractKeys:async()=>{if(slow){clock+=10001;slow=false;}return ['secret'];},readOriginal:async()=> 'verified',wrapHistoryKeys:async()=> 'encrypted'};
@@ -57,5 +57,31 @@ function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_me
  assert(admitted>=1 && admitted<=3,'Only already-admitted requests may race with disable');
  await window.ForumPrivateMessageHistorySync.refresh();
  assert.equal(requests.length,admitted,'Queued requests must drain without network retries');
+ // Re-enable during an old in-flight request: no overlapping run or stale shutdown.
+ shutdown=false;
+ window.ForumPrivateMessageAvailability.setEnabled(true);
+ const realFetch=global.fetch;
+ let release, held=false;
+ global.fetch=async(url,options)=>{
+   if(!held){held=true;return new Promise(resolve=>{release=()=>resolve({status:403,clone:()=>({json:async()=>({code:'messaging_disabled'})})});});}
+   return realFetch(url,options);
+ };
+ requests.length=0;
+ const oldRun=window.ForumPrivateMessageHistorySync.start({dataset:{viewer:'alice'}});
+ while(!held) await new Promise(resolve=>setImmediate(resolve));
+ window.ForumPrivateMessageAvailability.setEnabled(false);
+ window.ForumPrivateMessageAvailability.setEnabled(true);
+ const restarted=window.ForumPrivateMessageHistorySync.start({dataset:{viewer:'alice'}});
+ assert.equal(requests.length,0,'A new run must wait for cancelled work to drain');
+ release();
+ await Promise.all([oldRun,restarted]);
+ assert.equal(window.ForumPrivateMessageAvailability.isDisabled(),false);
+ assert.equal(requests.filter(r=>r.url.includes('/work')).length,8,'One bounded run resumes');
+ assert.notEqual(window.ForumPrivateMessageHistorySync.state().state,'disabled');
+ window.ForumPrivateMessageHistorySync.stop();
+ const stopped=requests.length;
+ await window.ForumPrivateMessageHistorySync.refresh();
+ assert.equal(requests.length,stopped,'Explicit stop prevents focus/refresh work');
+ global.fetch=realFetch;
  console.log('Shared budget, reload fairness, visibility cancellation and interrupted sender retry passed.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>{Date.now=realNow});

@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  let nav, viewer, originalIdentity, generation = 0, scheduled;
+  let nav, viewer, originalIdentity, generation = 0, scheduled, listening = false;
   function identity() {
     try { return JSON.stringify([localStorage.getItem('forum_pki_public_key'), localStorage.getItem('forum_pki_username')]); }
     catch (error) { return ''; }
@@ -71,34 +71,45 @@
     }
   }
   function schedule() {
-    if (window.ForumPrivateMessageAvailability.isDisabled()) return;
+    if (!nav || window.ForumPrivateMessageAvailability.isDisabled()) return;
     generation++;
     clearTimeout(scheduled);
     scheduled = setTimeout(refresh, 0);
   }
-  window.ForumPrivateMessageUnread = { refresh: refresh, sameIdentity: sameIdentity, acceptsState: valid };
-  document.addEventListener('DOMContentLoaded', function () {
-    nav = document.querySelector('[data-private-message-unread]');
+  function stop() {
+    generation++;
+    clearTimeout(scheduled);
+    nav = null;
+  }
+  function start(navElement) {
+    if (nav === navElement && nav && nav.isConnected) return;
+    stop();
+    nav = navElement;
     if (!nav) return;
     viewer = nav.dataset.viewer;
     originalIdentity = identity();
-    document.querySelectorAll('[data-role="unread-retry"]').forEach(button => button.addEventListener('click', schedule));
-    document.addEventListener('private-messaging-disabled', function () {
-      generation++; clearTimeout(scheduled);
-      unavailable(window.ForumPrivateMessageAvailability.message);
-    });
-    document.addEventListener('private-message-rows-changed', schedule);
-    window.addEventListener('focus', schedule);
-    window.addEventListener('pageshow', schedule);
-    window.addEventListener('pagehide', function () { generation++; clearTimeout(scheduled); });
-    window.addEventListener('storage', function (event) {
-      if (event.key === null || ['forum_pki_public_key', 'forum_pki_username'].includes(event.key)) {
-        generation++;
-        document.dispatchEvent(new CustomEvent('private-message-identity-invalidated'));
-        schedule();
-      }
-    });
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) schedule(); });
+    if (!listening) {
+      listening = true;
+      document.querySelectorAll('[data-role="unread-retry"]').forEach(button => button.addEventListener('click', schedule));
+      document.addEventListener('private-messaging-disabled', function () {
+        if (nav) unavailable(window.ForumPrivateMessageAvailability.message);
+        stop();
+      });
+      document.addEventListener('private-message-rows-changed', schedule);
+      window.addEventListener('focus', schedule);
+      window.addEventListener('pageshow', schedule);
+      window.addEventListener('pagehide', function () { generation++; clearTimeout(scheduled); });
+      window.addEventListener('storage', function (event) {
+        if (event.key === null || ['forum_pki_public_key', 'forum_pki_username'].includes(event.key)) {
+          generation++;
+          document.dispatchEvent(new CustomEvent('private-message-identity-invalidated'));
+          schedule();
+        }
+      });
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) schedule(); });
+    }
     schedule();
-  });
+  }
+  window.ForumPrivateMessageUnread = { refresh, sameIdentity, acceptsState: valid, start, stop };
+  document.addEventListener('DOMContentLoaded', () => start(document.querySelector('[data-private-message-unread]')));
 })();

@@ -151,11 +151,7 @@ final class TemplateRenderer
 
         $navItems = $this->navItems($viewerProfile);
         if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')) {
-            $scriptPaths = array_merge($scriptPaths, [
-                '/assets/openpgp_loader.js', '/assets/browser_signing.js',
-                '/assets/private_message_unread.js', '/assets/private_message_history_crypto.js',
-                '/assets/private_message_history_sync.js',
-            ]);
+            $scriptPaths = array_merge($scriptPaths, $this->messagingScriptPaths());
         }
         if (array_filter($scriptPaths, static fn (string $path): bool => str_starts_with($path, '/assets/private_message'))) {
             array_unshift($scriptPaths, '/assets/private_message_availability.js');
@@ -278,6 +274,29 @@ final class TemplateRenderer
         $hint = (string) ($_COOKIE[ThemeRegistry::THEME_HINT_COOKIE] ?? '');
 
         return in_array($hint, $explicitThemeNames, true) ? $hint : null;
+    }
+
+    /** Canonical navigation and dependencies for the current authenticated viewer. */
+    public function navigationState(?array $viewerProfile, string $activeSection): array
+    {
+        $items = $this->navItems($viewerProfile);
+        $messages = array_values(array_filter($items, static fn (array $item): bool => $item['section'] === 'messages'));
+        return [
+            'html' => $this->renderFragment('partials/nav.php', ['navItems' => $items, 'activeSection' => $activeSection]),
+            'messaging_enabled' => $messages !== [],
+            'viewer' => $messages[0]['viewer'] ?? null,
+            'scripts' => $messages === [] ? [] : array_map($this->assetPath(...), $this->messagingScriptPaths()),
+        ];
+    }
+
+    private function messagingScriptPaths(): array
+    {
+        return [
+            '/assets/private_message_availability.js',
+            '/assets/openpgp_loader.js', '/assets/browser_signing.js',
+            '/assets/private_message_unread.js', '/assets/private_message_history_crypto.js',
+            '/assets/private_message_history_sync.js',
+        ];
     }
 
     /**

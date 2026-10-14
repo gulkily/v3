@@ -322,7 +322,7 @@ FORUM_APP_VERSION_NOTIFICATION=false ./v3 start
 
 Registered site feature flags are visible at `/tools/feature-flags/`. A root-approved operator changes a mutable flag by signing the server-prepared action with their browser key. A successful action writes the current snapshot to `records/instance/feature-flags.txt` and commits an immutable signed record under `records/feature-flag-changes/`.
 
-**Private messages** is enabled by default. A root-approved operator can disable it at `/tools/feature-flags/`, or a deployment can set `FORUM_PRIVATE_MESSAGES_ENABLED=false` in the PHP server environment. A valid environment value overrides the saved site choice and locks the site toggle; restart the server after changing its environment. Disable blocks messaging pages/APIs, unread updates, and history sync and hides messaging controls on fresh pages. Stored messages and progress remain intact. Requests already admitted may finish; open pages stop messaging when they receive a disabled response. Re-enable and reload to resume, retaining existing recoverable drafts and checking unconfirmed sends before sending again. See [messaging availability and recovery](docs/architecture/private_messaging.md#server-availability).
+**Private messages** is enabled by default. A root-approved operator can disable it at `/tools/feature-flags/`, or a deployment can set `FORUM_PRIVATE_MESSAGES_ENABLED=false` in the PHP server environment. A valid environment value overrides the saved site choice and locks the site toggle; restart the server after changing its environment. Disable blocks messaging pages/APIs, unread updates, and history sync and hides messaging controls on fresh pages. Stored messages and progress remain intact. Requests already admitted may finish; open pages stop messaging when they receive a disabled response. On the Feature Flags page, a confirmed toggle or reset immediately updates Messages navigation for the current user and stops or resumes its background work. If the setting saves but navigation cannot refresh, use the offered Reload page action. Other open messaging pages still require a reload after re-enabling, retaining existing recoverable drafts and checking unconfirmed sends before sending again. See [messaging availability and recovery](docs/architecture/private_messaging.md#server-availability).
 
 `FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED` is off by default. Enable it from that Feature Flags page (or set it to `true` in the deployment environment) to prepare a browser-local `guest` keypair for new visitors before their first signed action. The private key stays in the browser. Automatic preparation defers public-key publication by default; Account Key offers a per-browser immediate-publication preference. Later authentication or identity-readiness flows can also publish the saved key. Disabling the flag stops future automatic preparation but does not remove a keypair already saved in a browser. Preparing a keypair does not grant membership approval.
 
@@ -542,6 +542,21 @@ projects/configurations, and HTTP/terminal checks. It changes no system packages
 or real application state. Missing shared-extension cases are skipped when the
 runtime compiled that extension statically.
 
-The custom test runner reports tests that take at least 5 seconds by default.
+Each completed test result includes total run time on the left and that test's
+duration on the right, in seconds:
+
+```text
+[12.34s] PASS ExampleTest::testSomething [0.56s]
+```
+
+Both timings use two decimal places; very fast tests may show `0.00s`. Run time
+includes runner startup and time between tests. This format applies to full and
+filtered runs, including redirected logs. Results print after completion;
+unfinished tests do not receive a result on interruption. FAIL lines use the same
+format, with multiline diagnostic details continuing below the timed first line.
+Summary lines and output printed directly by tests remain unchanged. Log consumers
+should account for the timing prefix before PASS/FAIL.
+
+The slow-test summary reports tests that take at least 5 seconds by default.
 Override the cutoff with `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS`, for example
 `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS=1 ./v3 test`.

@@ -12,6 +12,14 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Image upload enhancements](image_upload_enhancements/)
 
+- [Private messaging live navigation](private_messaging_live_navigation/)
+
+- [Private messaging feature flag](private_messaging_feature_flag/)
+
+- [Hide Messages new-message form](hide_messages_new_message_form/)
+
+- [Rebuild progress and history batching](rebuild_thread_label_stall/)
+- [Authentication modes documentation](authentication_modes_documentation/)
 - [Starfield key backup](starfield_key_backup/)
 
 - [Account key approval safety](account_key_approval_safety/)
@@ -21,7 +29,6 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Agent response harness simplification](agent_response_harness_simplification/)
 - [Agent response modes](agent_response_modes/)
 - [Anonymous reaction scoring](anonymous_reaction_scoring/) — recorded steps: 1.
-- [Authentication modes documentation](authentication_modes_documentation/)
 - [Automatic guest identity](automatic_guest_identity/)
 - [Browser private key restore](browser_private_key_restore/) — recorded steps: 1.
 - [Case insensitive tags](case_insensitive_tags/)
@@ -47,7 +54,6 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Forte reply likes](forte_reply_likes/)
 - [Forte unauthenticated vote identity setup](forte_unauthenticated_vote_identity_setup/)
 - [Guided PHP setup fallback](guided_php_setup_fallback/)
-- [Hide Messages new-message form](hide_messages_new_message_form/)
 - [Identity bootstrap signature verification](identity_bootstrap_signature_verification/)
 - [Image content](image_content/)
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)
@@ -101,7 +107,6 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Private message history](private_message_history/) — recorded steps: 2, 3, 4.
 - [Private message reader refinement](private_message_reader_refinement/)
 - [Private message unread state](private_message_unread/)
-- [Private messaging feature flag](private_messaging_feature_flag/)
 - [Private messaging](private_messaging/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)
 - [QDB archive importer](qdb_archive_importer/)
@@ -125,7 +130,6 @@ checklists, and proposals remain at the top level or in the collections below.
 - [QDB vote caption sets](qdb_vote_caption_sets/)
 - [Read model schema version integrity](read_model_schema_version_integrity/)
 - [Read-model failure experience](read_model_failure_experience/)
-- [Rebuild progress and history batching](rebuild_thread_label_stall/)
 - [Runtime detail pages](runtime_detail_pages/)
 - [Sender-assisted private message history synchronization](private_message_sender_history_sync/)
 - [Server cooperative content deletion](server_cooperative_content_deletion/)
@@ -135,6 +139,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Startup dependency recovery](startup_dependency_recovery/) — Ubuntu 22.04/24.04 reviewed Y/n recovery, startup continuation and acceptance evidence.
 - [Status lock wait notice](status_lock_wait_notice/)
 - [Test-run summary report](test_run_summary_report/)
+- [Test runner elapsed time](test_runner_elapsed_time/)
 - [Thread card remove preview](thread_card_remove_preview/)
 - [Thread compact view](thread_compact_view/) — recorded steps: 3.
 - [Thread continuation merge](thread_continuation_merge/)

@@ -1601,8 +1601,17 @@ PHP);
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $queuePath = sys_get_temp_dir() . '/forum-rewrite-agent-reply-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
         $previousLlmProviderEnv = $this->useStubLlmProvider();
-        putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $artifactRoot);
-        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+        $previousEnvironment = [];
+        foreach ([
+            'FORUM_PUBLIC_ARTIFACT_ROOT' => $artifactRoot,
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => $queuePath,
+            'FORUM_SECRETS_PATH' => $artifactRoot . '/unused-secrets.php',
+            'FAST_SCORING_ENABLED' => 'false',
+            'FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED' => 'false',
+        ] as $key => $value) {
+            $previousEnvironment[$key] = getenv($key);
+            putenv($key . '=' . $value);
+        }
 
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -1619,6 +1628,7 @@ PHP);
             $baseCommand = 'php scripts/task_queue.php run --limit=2'
                 . ' --repository-root=' . escapeshellarg($repositoryRoot)
                 . ' --database-path=' . escapeshellarg($databasePath)
+                . ' --static-html-root=' . escapeshellarg($artifactRoot . '/static_html')
                 . ' --queue-database-path=' . escapeshellarg($queuePath);
             $dryRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --dry-run');
             $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand);
@@ -1655,8 +1665,9 @@ PHP);
             assertSame(true, is_string($quietRow['agent_post_id']) && $quietRow['agent_post_id'] !== '');
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
-            putenv('FORUM_PUBLIC_ARTIFACT_ROOT');
-            putenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+            foreach ($previousEnvironment as $key => $value) {
+                $this->restoreEnvironmentValue($key, $value);
+            }
             @unlink($queuePath);
             $_COOKIE = [];
         }

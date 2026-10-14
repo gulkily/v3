@@ -109,6 +109,49 @@ final class PrivateMessageFeatureFlagTest
         } finally { putenv($previous === false ? $key : $key . '=' . $previous); }
     }
 
+    public function testLiveNavigationUsesCanonicalEligibilityAndDependencies(): void
+    {
+        $key = FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED;
+        $members = FeatureFlagRegistry::APPROVED_MEMBERS_ONLY;
+        $old = [getenv($key), getenv($members)];
+        putenv($key); putenv($members);
+        try {
+            foreach ([false, true] as $enabled) {
+                foreach ([false, true] as $membersOnly) {
+                    $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates', featureFlags: new FeatureFlagEvaluator(siteValues: [$key => $enabled, $members => $membersOnly]));
+                    foreach ([null, ['is_approved' => 0], ['is_approved' => 1, '_authenticated_identity' => false],
+                        ['is_approved' => 1, '_authenticated_identity' => true, 'username_token' => 'alice'],
+                        ['is_approved' => 1, '_authenticated_identity' => true, '_members_only_access' => false, 'username_token' => 'alice']] as $viewer) {
+                        $state = $renderer->navigationState($viewer, 'tools');
+                        $page = $renderer->renderLayout('Flags', '', 'tools', viewerProfile: $viewer);
+                        assertSame(str_contains($page, 'data-private-message-unread'), $state['messaging_enabled']);
+                        assertSame($state['messaging_enabled'], str_contains($state['html'], 'data-private-message-unread'));
+                        assertSame($state['messaging_enabled'] ? 'alice' : null, $state['viewer']);
+                        assertSame($state['messaging_enabled'], $state['scripts'] !== []);
+                    }
+                }
+            }
+        } finally {
+            foreach ([$key, $members] as $i => $name) { putenv($old[$i] === false ? $name : $name . '=' . $old[$i]); }
+        }
+    }
+
+    public function testLiveNavigationMatchesEveryProfileLayout(): void
+    {
+        $previous = getenv('FORUM_SITE_ID');
+        try {
+            foreach (\ForumRewrite\SiteProfileRegistry::all() as $id => $profile) {
+                putenv('FORUM_SITE_ID=' . $id);
+                $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
+                $viewer = ['is_approved' => 1, '_authenticated_identity' => true, 'username_token' => 'alice'];
+                $state = $renderer->navigationState($viewer, 'tools');
+                $html = $renderer->renderLayout('Flags', '', 'tools', viewerProfile: $viewer);
+                preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $matches);
+                assertSame(preg_replace('/\s+/', ' ', trim($matches[0])), preg_replace('/\s+/', ' ', trim($state['html'])));
+            }
+        } finally { putenv($previous === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $previous); }
+    }
+
     private function request(string $root, string $method, string $path): array
     {
         $app = new Application($root, __DIR__ . '/fixtures/parity_minimal_v1', $root . '/read.sqlite3');

@@ -2,11 +2,9 @@
   <article class="card">
     <h1>Messages</h1>
 <?= $indent($partial('partials/key_backup_reminder.php'), 4) ?>
+    <p data-role="empty"<?= $page['conversations'] !== [] ? ' hidden' : '' ?>>No messages yet</p>
     <button type="button" data-role="unread-retry" hidden>Retry unread status</button>
   </article>
-  <div data-role="empty"<?= $page['conversations'] !== [] ? ' hidden' : '' ?>>
-    <p>No messages yet</p>
-  </div>
   <div class="stack" data-role="rows">
 <?php foreach ($page['conversations'] as $conversation): ?>
 <?= $indent($partial('partials/private_message_conversation_row.php', ['conversation' => $conversation]), 4) ?>
