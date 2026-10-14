@@ -47,6 +47,25 @@ symlink(dirname(__DIR__, 2) . '/public', $root . '/public');
 mkdir($root . '/state/private', 0700, true);
 mkdir($root . '/sessions', 0700);
 LocalRepositoryBootstrap::initializeLocalRepository(dirname(__DIR__, 2), $root . '/repository');
+// Backup recovery exercises the real members-only publication path, which needs
+// a canonical identity as well as the synthetic conversation directory below.
+if (isset($input['canonical_identity'])) {
+    $profile = $input['canonical_identity'];
+    $fingerprint = strtolower($profile['fingerprint']);
+    if (!preg_match('/^[a-f0-9]{40}$/D', $fingerprint)) {
+        throw new RuntimeException('Invalid fixture fingerprint');
+    }
+    $upper = strtoupper($fingerprint);
+    foreach (['identity', 'public-keys', 'posts', 'approval-seeds'] as $directory) {
+        if (!is_dir($root . '/repository/records/' . $directory)) {
+            mkdir($root . '/repository/records/' . $directory, 0700, true);
+        }
+    }
+    file_put_contents($root . '/repository/records/posts/backup-fixture.txt', "Post-ID: backup-fixture\nCreated-At: 2026-01-01T00:00:00Z\nBoard-Tags: identity internal\n\nBackup fixture.\n");
+    file_put_contents($root . '/repository/records/public-keys/openpgp-' . $upper . '.asc', $profile['publicKey']);
+    file_put_contents($root . '/repository/records/identity/identity-openpgp-' . $fingerprint . '.txt', "Post-ID: identity-openpgp-{$fingerprint}\nBoard-Tags: identity\nSubject: identity bootstrap\nUsername: alice\nIdentity-ID: openpgp:{$fingerprint}\nSigner-Fingerprint: {$upper}\nBootstrap-By-Post: backup-fixture\nBootstrap-By-Thread: backup-fixture\n\n" . $profile['publicKey']);
+    file_put_contents($root . '/repository/records/approval-seeds/openpgp-' . $fingerprint . '.txt', "Approved-Identity-ID: openpgp:{$fingerprint}\nSeed-Reason: isolated backup browser fixture\n\n");
+}
 (new ReadModelBuilder($root . '/repository', $root . '/read.sqlite3', new CanonicalRecordRepository($root . '/repository')))->rebuild();
 $pdo = new PDO('sqlite:' . $root . '/read.sqlite3');
 $add = $pdo->prepare('INSERT INTO profiles (identity_id, profile_slug, username, username_token, fallback_label,
@@ -58,6 +77,9 @@ foreach ($input['profiles'] as $profile) {
     if (str_starts_with($profile['name'], 'user-') || $profile['name'] === 'pending' || $profile['name'] === 'keyless') {
         $id .= '-' . $profile['name'];
         $slug .= '-' . $profile['name'];
+    }
+    if (isset($input['canonical_identity']) && $profile['name'] === 'alice') {
+        continue;
     }
     $add->execute(['id' => $id, 'slug' => $slug, 'name' => $profile['name'], 'fingerprint' => strtoupper($profile['fingerprint']),
         'key' => $profile['publicKey'], 'approved' => $profile['name'] === 'pending' ? 0 : 1]);

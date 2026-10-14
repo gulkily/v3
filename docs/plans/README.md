@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Starfield key backup](starfield_key_backup/)
+
 - [Account key approval safety](account_key_approval_safety/)
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
 - [Agent response direct preflight](agent_response_direct_preflight/)

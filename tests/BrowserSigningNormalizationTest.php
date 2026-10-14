@@ -132,6 +132,71 @@ NODE;
         return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
     }
 
+    private function runCleanQuote(string $text): array
+    {
+        $script = <<<'NODE'
+global.window = {};
+global.localStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} },
+};
+global.navigator = {};
+const fs = require('fs');
+const vm = require('vm');
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+process.stdout.write(JSON.stringify(window.__forumComposeNormalization.cleanQuoteText(process.argv[2])));
+NODE;
+
+        $command = sprintf(
+            'node -e %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/browser_signing.js'),
+            escapeshellarg($text),
+        );
+        $output = [];
+        $exitCode = 0;
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Node helper execution failed: ' . implode("\n", $output));
+        }
+
+        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function testCleanQuoteTextStripsIrssiTimestampsAndTidiesNicks(): void
+    {
+        $input = "02:20:51 < DigDug> I just had a funny realization...\n"
+            . "02:20:58 < DigDug> I'm working on a prompting system\n"
+            . "02:21:07 < DigDug> But my installation instructions were written for a human audience lol\n";
+        $result = $this->runCleanQuote($input);
+
+        assertSame(
+            "<DigDug> I just had a funny realization...\n<DigDug> I'm working on a prompting system\n<DigDug> But my installation instructions were written for a human audience lol",
+            $result['text']
+        );
+        assertSame(true, $result['changed']);
+    }
+
+    public function testCleanQuoteTextHandlesBracketedTimestampsActionsAndOpPrefixes(): void
+    {
+        $input = "[12:01:02] <@alice> hi\r\n(12:01) <bob> yo  \n  12:02:00  * carol waves\n[1:05 PM] <dave> late";
+        $result = $this->runCleanQuote($input);
+
+        assertSame("<@alice> hi\n<bob> yo\n* carol waves\n<dave> late", $result['text']);
+    }
+
+    public function testCleanQuoteTextLeavesProseTimesAndCleanQuotesAlone(): void
+    {
+        $prose = "<alice> let's meet\n12:30 is when the bus leaves";
+        $result = $this->runCleanQuote($prose);
+
+        assertSame($prose, $result['text']);
+        assertSame(false, $result['changed']);
+    }
+
     public function testNormalizeComposeAsciiRewritesCommonPunctuation(): void
     {
         $result = $this->runHelper('“hello”… — test');

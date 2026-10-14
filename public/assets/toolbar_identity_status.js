@@ -38,4 +38,5 @@
 
   syncIdentityIndicator();
   window.addEventListener('storage', syncIdentityIndicator);
+  window.addEventListener('forum:identity-changed', syncIdentityIndicator);
 })();
