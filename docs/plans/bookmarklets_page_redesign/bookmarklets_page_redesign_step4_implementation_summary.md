@@ -46,3 +46,16 @@ Debug mode: disabled
   - Copy feedback "Copied" renders fully inside the viewport at 375 and 1280 px.
 - Notes:
   - On the row layout the feedback bubble briefly overlays the start of the description; acceptable since it is transient.
+
+## Stage 5 - Theme fidelity and contrast
+- Changes:
+  - `public/assets/tools.css`: arena-only override for the page's hint and group-note text, derived from `--ink` at reduced opacity, because arena's `--ink-soft` (#666 on black) measured 3.66:1.
+  - No other theme needed an override; chicago and word97 keep their existing icon treatment and button styling.
+- Verification:
+  - Screenshots of all 12 themes (dark, light, console, chicago, word97, sticker, vapor, lcd, forge, arena, thermal, whitehot) at 1280 px and 375 px captured; dark, light, chicago, vapor, and arena reviewed visually.
+  - Scripted contrast probe over note, hint, chip, copy, and description text: all themes at or above 4.5:1 for text except arena notes (fixed above). The probe's chip and copy readings for vapor and arena (1 to 2) are artifacts of gradient and transparent backgrounds; the screenshots show readable labels.
+  - Chip and copy button top and height match in every theme.
+  - `/tools/` screenshots match baseline (only the unrelated 3x13 px theme-menu difference noted in Stage 3).
+  - `php tests/LocalAppSmokeTest.php`: exit 0.
+- Notes:
+  - Remaining themes (console, sticker, lcd, forge, thermal, whitehot) were checked by probe and not individually reviewed by eye; Stage 6 covers a final pass.
