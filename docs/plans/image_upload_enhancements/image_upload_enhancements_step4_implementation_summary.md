@@ -11,3 +11,8 @@ Debug mode: enabled
 - Changes: New signed publications undergo strict decoding before persistence; exact committed-post retries/repair retain historical limits. Multipart MIME must match inspected contents.
 - Verification: `php tests/run.php ImageUploadValidatorTest ImageContentTest WriteApiSmokeTest::testImageSignedPublicationRejectsTamperingAndRetriesSafely` — 7/7 passed, including signed oversized rejection with no persisted object/post and exact legacy repair.
 - Notes: Replaced the historical test PNG with a valid CRC fixture; the old sample passed header checks but failed strict decoding. Global ImageReference limits remain unchanged.
+
+## Stage 3 - Client preparation
+- Changes: Added shared local JPEG/PNG/WebP/GIF/BMP preparation, header-based predecode bounds (32 MiB, 40 MP, 16384 edge), 2048-edge output, lossless alpha preservation, JPEG orientation and byte-bound shrinking. Decode timeout and resource cleanup included.
+- Verification: `node tests/browser/image_prepare.mjs` passed in Chromium with touch/mobile viewport: >5 MiB PNG, >4096-edge JPEG, transparent WebP/PNG, GIF, rotated EXIF JPEG, no upscaling and invalid/oversized inputs.
+- Notes: Formats requiring unavailable decoders (including HEIC/AVIF) receive export guidance. Actual handheld-device testing is not represented by viewport emulation.
