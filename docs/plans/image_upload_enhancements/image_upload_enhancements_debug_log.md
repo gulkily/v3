@@ -123,3 +123,23 @@ Debug mode remains enabled. User-reported Chrome collapse and Firefox selection 
 ### Uncertain assessments
 
 - Source: [Step 4 After — environment verification](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Observation: automated file-chooser interception and explicit focus ordering reproduce the failure, but do not constitute manual testing of OS-specific native dialog chrome. Suggestion: retain browser-specific regression coverage and distinguish automation from manual deployment checks. No new server/deployment changes were required.
+
+## 2026-10-14T12:20:20.930602+00:00 — Step 4 — Revision: friendly image-only titles
+
+Debug mode remains enabled. User-requested title fallback implemented and committed with focused tests and summary.
+
+### Necessary/useful instructions
+
+- Source: [Step 4 After — final verification](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Contribution: verified the shared title helper with canonical image references and preservation of explicit titles and prose; 19 focused tests pass. No signed record mutation or migration is needed. Suggestion: retain scope-appropriate verification.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Source: [Step 4 After — deployment dependencies](../../railspike/docs/workflow/step4_implementation_after.md#final-verification-checklist). Applicability: this display-only fallback requires no runtime configuration or external-system changes. Suggestion: retain conditional applicability.
+
+### Uncertain assessments
+
+- No supported findings. Browser picker behavior was not changed or re-tested in this title-only follow-up.
