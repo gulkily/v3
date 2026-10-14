@@ -5,9 +5,30 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Support\ThreadTitle;
+use ForumRewrite\Images\ImageReference;
 
 final class ThreadTitleTest
 {
+    public function testImageOnlyTitleUsesFriendlyFallback(): void
+    {
+        foreach (['png', 'jpg'] as $type) {
+            foreach (['', 'A photo description'] as $description) {
+                $body = ImageReference::line(['sha256' => str_repeat('a', 64), 'type' => $type, 'bytes' => 100, 'width' => 20, 'height' => 10, 'description' => $description]);
+                foreach ([false, true] as $mediaEnabled) {
+                    assertSame('Image', ThreadTitle::displayTitle(' ', "\n$body\n\n", 'thread-1', 80, $mediaEnabled));
+                }
+                assertSame('My photo', ThreadTitle::displayTitle('My photo', $body, 'thread-1'));
+                assertSame('Accompanying text', ThreadTitle::displayTitle('', "Accompanying text\n$body", 'thread-1'));
+                assertSame('Accompanying text', ThreadTitle::displayTitle('', "$body\nAccompanying text", 'thread-1'));
+            }
+        }
+    }
+
+    public function testMalformedImageReferenceRemainsOrdinaryTitleText(): void
+    {
+        assertSame('Image-v1: invalid reference', ThreadTitle::displayTitle('', 'Image-v1: invalid reference', 'thread-1'));
+    }
+
     public function testDisplayTitlePrefersSubject(): void
     {
         assertSame('Explicit subject', ThreadTitle::displayTitle(' Explicit subject ', 'Body text', 'thread-1'));

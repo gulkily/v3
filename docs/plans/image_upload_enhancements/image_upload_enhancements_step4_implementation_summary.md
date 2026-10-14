@@ -1,0 +1,53 @@
+> **Feature plan:** [Step 1](./image_upload_enhancements_step1_solution_assessment.md) · [Step 2](./image_upload_enhancements_step2_feature_description.md) · [Step 3](./image_upload_enhancements_step3_development_plan.md) · [Step 4](./image_upload_enhancements_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+## Stage 1 - Server decoding readiness
+- Changes: Added bounded new-upload JPEG/PNG decoding, CRC/truncation checks and APNG rejection; documented serving-runtime GD requirements. Installed matching php8.1-gd locally.
+- Verification: `php tests/run.php ImageUploadValidatorTest` (2/2 passed); valid JPEG/PNG, damage, animation, limits and missing GD are covered.
+- Notes: No upload wiring yet; historical reads/restores remain independent of GD.
+
+## Stage 2 - Upload policy and legacy compatibility
+- Changes: New signed publications undergo strict decoding before persistence; exact committed-post retries/repair retain historical limits. Multipart MIME must match inspected contents.
+- Verification: `php tests/run.php ImageUploadValidatorTest ImageContentTest WriteApiSmokeTest::testImageSignedPublicationRejectsTamperingAndRetriesSafely` — 7/7 passed, including signed oversized rejection with no persisted object/post and exact legacy repair.
+- Notes: Replaced the historical test PNG with a valid CRC fixture; the old sample passed header checks but failed strict decoding. Global ImageReference limits remain unchanged.
+
+## Stage 3 - Client preparation
+- Changes: Added shared local JPEG/PNG/WebP/GIF/BMP preparation, header-based predecode bounds (32 MiB, 40 MP, 16384 edge), 2048-edge output, lossless alpha preservation, JPEG orientation and byte-bound shrinking. Decode timeout and resource cleanup included.
+- Verification: `node tests/browser/image_prepare.mjs` passed in Chromium with touch/mobile viewport: >5 MiB PNG, >4096-edge JPEG, transparent WebP/PNG, GIF, rotated EXIF JPEG, no upscaling and invalid/oversized inputs.
+- Notes: Formats requiring unavailable decoders (including HEIC/AVIF) receive export guidance. Actual handheld-device testing is not represented by viewport emulation.
+
+## Stage 4 - Prepared-image signing and recovery
+- Changes: Loaded shared preparation/state modules through both canonical layouts; signing/hash/multipart consume prepared bytes only. Selection clears original file input, supersedes stale preparation, clears stale signed attempts, and retains prepared copies across retries. Busy locking, reset cleanup and Outbox exclusion use the shared attachment state.
+- Verification: `node tests/browser/image_compose_transport.cjs`, `node tests/browser/image_prepare.mjs`, JavaScript syntax and PHP renderer lint passed. Tests cover reuse of signed retries, text changes, offline rejection, rapid replacement, lock and source-input clearing.
+- Notes: Preview controls and permission-aware visibility follow in Stages 5–6. Original files remain untouched on the user's device.
+
+## Stage 5 - Eligibility-aware controls
+- Changes: Shared fields start hidden. A no-store profile capability response combines approval, feature state and decoder readiness. Browser checks secure/online context and actual saved signing identity, refreshes on identity/storage/network/focus changes, ignores stale responses and rechecks before submission. Server authorization remains authoritative.
+- Verification: Browser signed thread/reply suite passed, including approved controls, simulated revocation, offline hiding, guest hiding, authenticated private-site composing and retry. Transport unit and signed API integration checks passed.
+- Notes: Profile queries remain behind the existing members-only access gate; no new public access exception was added.
+
+## Stage 6 - Accessible shared uploader
+- Changes: Added preview, status, file/replace/remove controls, scoped drag/drop and image paste, text-paste preservation, and 44-pixel targets. Shared compose styles now also load in Forte. A retained-attachment recovery control remains available when the uploader is hidden after eligibility loss.
+- Verification: Browser suite passed file/drop/paste selection, preview/removal, normal text-paste preservation, keyboard focus and mobile target sizing, plus signed publication and recovery. Client preparation and transport tests passed.
+- Notes: All composers reuse the same fields/controller. The separately requested collapsed selector remains deferred, as in the approved plan.
+
+## Stage 7 - Integration and regression verification
+- Changes: Added direct signed-upload bypass cases, native WebKit coverage, large-source publication, Forte multi-composer isolation and QDB quote publication. Fixed an eligibility response race and wrapped narrow-screen compose action buttons after visual inspection.
+- Verification: Chromium and WebKit image browser suites passed; preparation suite passed in both engines; transport test and 7 focused PHP tests passed. Direct requests reject oversized dimensions/bytes, truncated data, APNG, false MIME and mismatched hashes without a new commit. Apache/mod_php image routing and request-limit tests passed.
+- Notes: Full PHP suite: 1,159 run, 1,151 passed, 8 failed. All eight reproduce on unchanged `main` (same private configuration where relevant): two LocalAppSmokeTest expectations, two OfflineSnapshotBootstrapTest schema fixtures, two OfflineSnapshotPublishCommandTest cases, one QuoteCardDisplayNumberTest copy expectation and one WriteApiSmokeTest task-queue case. No new failures identified. WebKit uses native multipart transport because Playwright route.fetch corrupts its binary replay; Chromium verifies lost-response retry. Expected WebKit offline access-control diagnostics are recorded separately from JavaScript errors. No physical-device test was performed.
+
+## Stage 8 - Operations, legacy recovery and task closure
+- Changes: Documented accepted inputs, resource/output bounds, serving-PHP GD checks, deployment smoke checks and rollback. Marked completed uploader/downsampling/visibility tasks in todo.txt; kept broad format support partial and LLM descriptions open. Preserved the user's separate collapsed-selector edit unstaged.
+- Verification: Focused PHP suite passed 7/7 with explicit >2048-pixel legacy backup/restore and exact signed repair coverage. Apache/mod_php suite passed, including serving-runtime capability confirmation, feature/membership gates, retained backup access and oversized-request rejection. New prepared-image backup/restore and feature-off/on retention passed in both browser suites.
+- Notes: No production deployment performed. The local PHP CLI and isolated Apache runtime have GD JPEG/PNG support; deployment runtimes must enable it. Physical handheld photo-picker behavior remains a deployment smoke check. Full-suite baseline failures are recorded in Stage 7.
+
+## Follow-up - Native file-picker regressions
+- Changes: Focus/visibility refreshes preserve established eligibility for the same signing identity while checking it again. Identity changes, offline state, denied responses and errors still invalidate eligibility; submission still rechecks. A picker result is retained even if eligibility changes while browsing, preventing silent text-only publication. Inline composers stay expanded while a picker is open or an attachment is selected/preparing; cancellation restores normal empty-composer behavior.
+- Verification: `IMAGE_PICKER_ONLY=1 node tests/browser/image_content_browser.mjs` and the same command with `IMAGE_BROWSER=firefox` passed native chooser tests with delayed focus-triggered approval responses: home/dedicated forms, empty/text bodies, visible preview, successful image publication and cancellation. Both collapse and missing-preview assertions fail when served pre-fix scripts. Existing Chromium integration, preparation and transport suites passed; `php tests/run.php BrowserSigningNormalizationTest` passed 80/80; syntax and whitespace checks passed.
+- Notes: This repairs the reported approved workflow, without changing upload authorization or expanding image-format scope. User todo edits remain untouched; no deployment performed.
+
+## Follow-up - Friendly image-only titles
+- Changes: Shared thread-title rendering removes valid canonical image metadata before deriving a body excerpt, and uses `Image` when no prose remains. Explicit subjects remain authoritative. This also fixes existing image-only records without changing signed content.
+- Verification: `php tests/run.php ThreadTitleTest ImageContentTest` — 19/19 passed. Added PNG/JPEG cases with and without descriptions, media flags, explicit titles, accompanying prose before/after the attachment, and malformed references. `git diff --check` passed.
+- Notes: No migration or deployment dependency. Existing completed todo entries remain marked; the user's pending collapsed-selector edit remains untouched.

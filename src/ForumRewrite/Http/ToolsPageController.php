@@ -154,6 +154,19 @@ final class ToolsPageController
         );
     }
 
+    public function featureFlagNavigation(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $this->routeServices->sendJson(
+            ['status' => 'ok'] + $this->routeServices->navigationState('tools'),
+            200,
+            $this->routeServices->noStoreHeaders(),
+        );
+    }
+
     public function featureFlags(): string
     {
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();

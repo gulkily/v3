@@ -77,6 +77,11 @@
         return;
       }
 
+      const form = details.querySelector('[data-compose-form]');
+      if (form && (form.__imagePickerOpen || window.ForumImageUpload?.has(form))) {
+        return;
+      }
+
       const active = document.activeElement;
       if (active && details.contains(active)) {
         return;

@@ -95,12 +95,12 @@
     );
   }
 
-  function bookmarkletSource(baseOrigin, kind, mode) {
+  function bookmarkletScript(baseOrigin, kind, mode) {
     var fn = kind === "tweet" ? tweetComposeUrl : composeUrl;
 
     if (mode === "new-window") {
       return (
-        "javascript:(function(){var u=(" +
+        "(function(){var u=(" +
         fn.toString() +
         ")(" +
         JSON.stringify(baseOrigin) +
@@ -111,7 +111,7 @@
     }
 
     return (
-      "javascript:(function(){var u=(" +
+      "(function(){var u=(" +
       fn.toString() +
       ")(" +
       JSON.stringify(baseOrigin) +
@@ -121,6 +121,37 @@
     );
   }
 
+  function bookmarkletSource(baseOrigin, kind, mode) {
+    // Encode the URL instead of stripping whitespace from executable JavaScript.
+    return "javascript:" + encodeURIComponent(bookmarkletScript(baseOrigin, kind, mode));
+  }
+
+  async function copySource(source) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(source);
+        return;
+      } catch (error) {
+        // Older browsers and restricted contexts may still allow a user-initiated copy.
+      }
+    }
+    var field = document.createElement("textarea");
+    field.value = source;
+    field.readOnly = true;
+    field.tabIndex = -1;
+    field.setAttribute("aria-hidden", "true");
+    field.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+    document.body.appendChild(field);
+    try {
+      field.select();
+      if (!document.execCommand || !document.execCommand("copy")) {
+        throw new Error("Copy unavailable");
+      }
+    } finally {
+      field.remove();
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var baseOrigin = window.location.origin;
 
@@ -128,6 +159,26 @@
       var kind = link.getAttribute("data-bookmarklet-kind") || "clip";
       var mode = link.getAttribute("data-bookmarklet-mode") || "same-window";
       link.setAttribute("href", bookmarkletSource(baseOrigin, kind, mode));
+      var item = link.closest(".tool-launcher-item");
+      var button = item.querySelector("[data-bookmarklet-copy]");
+      var feedback = item.querySelector("[data-bookmarklet-feedback]");
+      var feedbackTimer;
+      button.disabled = false;
+      button.addEventListener("click", async function () {
+        clearTimeout(feedbackTimer);
+        feedback.textContent = "";
+        button.disabled = true;
+        try {
+          await copySource(link.getAttribute("href"));
+          feedback.textContent = "Copied";
+        } catch (error) {
+          feedback.textContent = "Copy failed. Try again.";
+        } finally {
+          button.disabled = false;
+          button.focus({ preventScroll: true });
+          feedbackTimer = setTimeout(function () { feedback.textContent = ""; }, 4000);
+        }
+      });
     });
   });
 })();

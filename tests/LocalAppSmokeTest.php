@@ -1804,7 +1804,7 @@ PHP;
         assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
         assertStringContains('/forte', $tools);
         assertStringContains('Classic three-pane newsreader view of the whole board - folders, thread list, and preview.', $tools);
-        assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
+        assertStringContains('tool-launcher-button" href="/account/key/"', $tools);
         assertStringContains('tools-nav-divider', $tools);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $tools);
         assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $tools);
@@ -2489,19 +2489,33 @@ PHP;
 
     public function testFeatureFlagsPageShowsLockedBadgeWithReasonForNonMutableFlags(): void
     {
-        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-locked-' . bin2hex(random_bytes(6));
-        mkdir($repositoryRoot, 0777, true);
-        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
-        $databasePath = sys_get_temp_dir() . '/forum-rewrite-flags-locked-' . bin2hex(random_bytes(6)) . '.sqlite3';
-        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        $root = sys_get_temp_dir() . '/forum-rewrite-flags-locked-' . bin2hex(random_bytes(6));
+        mkdir($root, 0700, true);
+        $previousEnvironment = ['FORUM_SECRETS_PATH' => getenv('FORUM_SECRETS_PATH')];
+        foreach ((new FeatureFlagRegistry())->all() as $definition) {
+            $previousEnvironment[$definition->environmentVariable] = getenv($definition->environmentVariable);
+            putenv($definition->environmentVariable);
+        }
+        // Exercise registry defaults regardless of the developer's private settings.
+        putenv('FORUM_SECRETS_PATH=' . $root . '/unused-secrets.php');
 
-        $featureFlags = $this->render($application, '/tools/feature-flags/');
+        try {
+            $repositoryRoot = $root . '/repository';
+            $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $root . '/index.sqlite3');
+            $featureFlags = $this->render($application, '/tools/feature-flags/');
 
-        assertStringContains('badge-locked', $featureFlags);
-        assertStringContains('title="Not configurable from the site."', $featureFlags);
-        assertStringContains('locked</span>', $featureFlags);
-        assertStringContains('feature-flag-info-icon', $featureFlags);
-        assertStringContains('title="Not configurable from the site." aria-label="Not configurable from the site."', $featureFlags);
+            assertStringContains('badge-locked', $featureFlags);
+            assertStringContains('title="Not configurable from the site."', $featureFlags);
+            assertStringContains('locked</span>', $featureFlags);
+            assertStringContains('feature-flag-info-icon', $featureFlags);
+            assertStringContains('title="Not configurable from the site." aria-label="Not configurable from the site."', $featureFlags);
+        } finally {
+            foreach ($previousEnvironment as $key => $value) {
+                putenv($value === false ? $key : $key . '=' . $value);
+            }
+            $this->deleteTree($root);
+        }
     }
 
     public function testFeatureFlagsPageDimsAndWarnsOnDependencyBlockedFlag(): void
@@ -2947,6 +2961,10 @@ PHP;
         assertStringContains('data-bookmarklet-kind="tweet"', $bookmarklets);
         assertStringContains('window.getSelection().toString().trim()', $bookmarkletAsset);
         assertStringContains('tweetComposeUrl', $bookmarkletAsset);
+        assertSame(7, substr_count($bookmarklets, 'data-bookmarklet-copy'));
+        assertStringContains('aria-label="Copy Tweet bookmarklet (new-window)"', $bookmarklets);
+        assertStringContains('title="Copy one-line bookmarklet"', $bookmarklets);
+        assertStringContains('role="status"', $bookmarklets);
         $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
         assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
         assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);

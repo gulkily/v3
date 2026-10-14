@@ -12,7 +12,7 @@ final class ImageContentTest
 {
     public static function png(): string
     {
-        return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=');
+        return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC');
     }
 
     public function testReferenceAndImmutableStore(): void
@@ -76,6 +76,11 @@ final class ImageContentTest
             $store = new ImageStore($base . '/repo');
             $store->put($base . '/pixel.png', $ref);
             file_put_contents($base . '/repo/records/posts/pixel.txt', "Post-ID: pixel\nCreated-At: 2026-10-13T00:00:00Z\nBoard-Tags: general\n\n" . ImageReference::line($ref) . "\n");
+            $legacy = imagecreatetruecolor(2049, 1);
+            imagepng($legacy, $base . '/legacy.png'); imagedestroy($legacy);
+            $legacyRef = ImageStore::inspect($base . '/legacy.png', 'Legacy wide image');
+            $store->put($base . '/legacy.png', $legacyRef);
+            file_put_contents($base . '/repo/records/posts/legacy.txt', "Post-ID: legacy\nCreated-At: 2026-10-13T00:00:00Z\nBoard-Tags: general\n\n" . ImageReference::line($legacyRef) . "\n");
             $git = 'git -C ' . escapeshellarg($base . '/repo');
             foreach (['init -q', 'config user.name Test', 'config user.email test@example.test', 'add .', 'commit -qm Initial'] as $command) {
                 exec($git . ' ' . $command . ' 2>&1', $output, $status);
@@ -90,13 +95,14 @@ final class ImageContentTest
             $manifest = json_decode($tar['manifest.json']->getContent(), true, 512, JSON_THROW_ON_ERROR);
             assertSame($head, $manifest['repository_head']);
             assertSame(self::png(), $tar['objects/' . ImageReference::filename($ref)]->getContent());
-            assertSame(1, count($manifest['objects']));
+            assertSame(2, count($manifest['objects']));
             $restore = new \ForumRewrite\Images\ImageRestore();
             $result = $restore->run($images['path'], $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images', true);
             assertSame('verified', $result['status']);
             assertSame(false, is_dir($base . '/restored-images'));
             $result = $restore->run($images['path'], $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images');
             assertSame('restored', $result['status']);
+            assertSame(file_get_contents($base . '/legacy.png'), file_get_contents($base . '/restored-images/' . ImageReference::filename($legacyRef)));
             assertSame(self::png(), file_get_contents($base . '/restored-images/' . ImageReference::filename($ref)));
             assertSame($result, $restore->run($images['path'], $base . '/repo', $base . '/cache/index.sqlite3', $base . '/restored-images'));
             $bad = $base . '/unsafe.tar';

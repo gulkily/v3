@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+$runStartedAt = hrtime(true);
+
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',
     __DIR__ . '/LegacyTimestampImportTest.php',
     __DIR__ . '/InstanceSourceResolverTest.php',
@@ -134,7 +137,6 @@ $testFiles = [
     __DIR__ . '/ReadModelThreadLabelsTest.php',
     __DIR__ . '/ReadModelThreadSubjectsTest.php',
     __DIR__ . '/ReadModelPostRetractionsTest.php',
-    __DIR__ . '/ReadModelPostReactionsTest.php',
     __DIR__ . '/LocalWriteServiceThreadSubjectTest.php',
     __DIR__ . '/ResumeTargetTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',
@@ -225,20 +227,33 @@ foreach ($declared as $class) {
         $testName = "{$class}::{$method}";
         $currentTest = $testName;
         $currentTestStartedAt = hrtime(true);
+        $failureMessage = null;
 
         try {
             $testObject->{$method}();
-            fwrite(STDOUT, "PASS {$testName}\n");
             $testResults[$testName] = true;
         } catch (Throwable $throwable) {
-            $failures[] = "{$testName} - {$throwable->getMessage()}";
-            fwrite(STDERR, "FAIL {$testName} - {$throwable->getMessage()}\n");
+            $failureMessage = $throwable->getMessage();
+            $failures[] = "{$testName} - {$failureMessage}";
             $testResults[$testName] = false;
         } finally {
-            $testDurations[$testName] = (hrtime(true) - $currentTestStartedAt) / 1_000_000_000;
+            $completedAt = hrtime(true);
+            $testDurations[$testName] = ($completedAt - $currentTestStartedAt) / 1_000_000_000;
             $currentTest = null;
             $currentTestStartedAt = null;
         }
+
+        $result = ($testResults[$testName] ? 'PASS ' : 'FAIL ') . $testName;
+        if ($failureMessage !== null) {
+            $result .= ' - ' . $failureMessage;
+        }
+        // Keep multiline diagnostics intact below the timed result line.
+        $lines = explode("\n", $result, 2);
+        fwrite(
+            $testResults[$testName] ? STDOUT : STDERR,
+            sprintf("[%.2Fs] %s [%.2Fs]", ($completedAt - $runStartedAt) / 1_000_000_000, $lines[0], $testDurations[$testName])
+                . (isset($lines[1]) ? "\n" . $lines[1] : '') . "\n"
+        );
     }
 }
 

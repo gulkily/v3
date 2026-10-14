@@ -49,9 +49,9 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
   assert.equal(await row.getByRole('switch').getAttribute('aria-checked'), 'true');
   const denied = await member.request.post(base + '/api/prepare_feature_flag_change', { data: { key, value: 'false' } });
   assert.equal(denied.status(), 403, 'An ordinary approved member cannot change the flag');
-  async function toggle(value) {
+  async function toggle(value, reset = false) {
     const finalized = page.waitForResponse(response => response.url().endsWith('/api/finalize_feature_flag_change'));
-    await row.getByRole('switch').click();
+    await (reset ? row.locator('.feature-flag-reset-form button') : row.getByRole('switch')).click();
     const response = await finalized;
     const result = await response.json();
     assert.equal(response.status(), 200, JSON.stringify(result));
@@ -59,8 +59,13 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
     assert.equal(result.effective_value, String(value));
     await page.waitForFunction(({ key, value }) => document.querySelector(`[data-flag-key="${key}"] [role="switch"]`).getAttribute('aria-checked') === String(value), { key, value });
     assert.equal((await readFile(join(root, 'repository', result.record_path + '.asc'), 'utf8')).includes('PGP SIGNATURE'), true);
+    await page.waitForFunction(key => !document.querySelector(`[data-flag-key="${key}"] [role="switch"]`).disabled, key);
   }
+  const navigation = await page.request.get(base + '/api/feature_flags/navigation');
+  assert.match(navigation.headers()['cache-control'], /no-store/);
+  assert.equal((await navigation.json()).messaging_enabled, true, 'Navigation resolves the authenticated session');
   await toggle(false);
+  await page.waitForFunction(() => !document.querySelector('[data-private-message-unread]'));
   // Finish admitted work and let this stale settings page observe the disabled response.
   await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
   const digest = async name => createHash('sha256').update(await readFile(join(root, 'state/private', name))).digest('hex');
@@ -89,9 +94,43 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
   await checkOverride(operator, root, project, true); // Overrides the saved false.
   await toggle(true);
   await checkOverride(operator, root, project, false); // Overrides the saved true.
-  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
   assert.equal(await page.locator('[data-private-message-unread]').count(), 1);
+  assert.equal(await page.locator('[data-private-message-unread]').isVisible(), true);
+  assert.equal(await page.locator('[data-messaging-disabled-notice]').count(), 0);
+  await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
+  assert.notEqual(await page.evaluate(() => window.ForumPrivateMessageHistorySync.state().state), 'disabled');
   assert.equal((await member.request.get(base + '/api/private_messages/conversations')).status(), 200);
+  await toggle(false);
+  await page.reload(); // Exercise a settings page that has never loaded messaging assets.
+  assert.equal(await page.locator('script[src*="private_message"]').count(), 0);
+  await page.evaluate(() => { window.navigationSentinel = 'retained'; });
+  let syncRequests = 0;
+  page.on('request', request => { if (request.url().includes('/api/private_messages/history_sync/')) syncRequests++; });
+  await toggle(true, true); // Signed reset restores the enabled default.
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
+  await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
+  assert(syncRequests > 0, 'Initially disabled page resumes history sync');
+  assert.equal(await page.evaluate(() => window.navigationSentinel), 'retained', 'No full-page reload');
+  const themes = await page.locator('[data-theme-option]').evaluateAll(nodes => nodes.map(node => node.dataset.themeOption));
+  for (const theme of themes) {
+    await page.getByRole('button', { name: 'Choose theme', exact: true }).click();
+    await page.locator(`[data-theme-option="${theme}"]`).click();
+    await toggle(false);
+    assert.equal(await page.locator('[data-private-message-unread]').count(), 0);
+    const stopped = syncRequests;
+    await page.evaluate(() => { window.dispatchEvent(new Event('focus')); document.dispatchEvent(new Event('visibilitychange')); });
+    await page.waitForTimeout(100);
+    assert.equal(syncRequests, stopped, 'No disabled background traffic');
+    await toggle(true);
+    await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
+    assert.equal(await page.locator('[data-private-message-unread]').isVisible(), true, theme);
+    assert.equal(await page.locator('[data-private-message-unread]').count(), 1, theme);
+  }
+  await page.locator('[data-private-message-unread]').click();
+  await page.waitForURL(base + '/messages');
+  assert.equal(await page.locator('[data-conversation-list]').count(), 1);
+
   await page.close();
   console.log('Signed messaging toggle, retained stores, fresh pages, permissions and both deployment overrides passed.');
 }

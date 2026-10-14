@@ -2,7 +2,7 @@
   'use strict';
   const base='/api/private_messages/history_sync/';
   let nextMode='account';
-  let nav, account='', original='', generation=0, active=null, aborter=null, lastRun=0;
+  let nav, account='', original='', generation=0, active=null, aborter=null, lastRun=0, listening=false;
   const stats={state:'waiting',verified:0,contributed:0,unavailable:0};
   const verifiedIds=new Set(), candidateRequests=new Map();
   let requestsInFlight=0;const requestWaiters=[];
@@ -10,7 +10,7 @@
     try { return JSON.stringify(['username','public_key','private_key'].map(k=>localStorage.getItem('forum_pki_'+k)||'')); }
     catch (_) { return ''; }
   }
-  function valid(run) { return !window.ForumPrivateMessageAvailability.isDisabled() && generation===run && original===identity() && !document.hidden; }
+  function valid(run) { return !!nav && !window.ForumPrivateMessageAvailability.isDisabled() && generation===run && original===identity() && !document.hidden; }
   function publish(state) {
     stats.state=state;
     document.dispatchEvent(new CustomEvent('private-message-history-sync-state',{detail:{...stats}}));
@@ -41,9 +41,9 @@
       throw Error('History synchronization unavailable.');
     } finally {const next=requestWaiters.shift();if(next)next();else requestsInFlight--;}
   }
-  async function candidates(messageId, envelope) {
-    if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || original!==identity() || document.hidden) return [];
-    const crypto=window.ForumPrivateMessageHistoryCrypto, digest=crypto.digest(envelope), run=generation;
+  async function candidates(messageId, envelope, run=generation) {
+    if(!valid(run)) return [];
+    const crypto=window.ForumPrivateMessageHistoryCrypto, digest=crypto.digest(envelope);
     const cacheKey=messageId+':'+digest;
     if(candidateRequests.has(cacheKey)) return candidateRequests.get(cacheKey);
     const promise=(async()=>{
@@ -67,19 +67,20 @@
       } while(after && valid(run));
       if(!valid(run)) throw Error('History identity changed.');
       return result;
-    })().finally(()=>candidateRequests.delete(cacheKey));
+    })().finally(()=>{if(candidateRequests.get(cacheKey)===promise)candidateRequests.delete(cacheKey);});
     candidateRequests.set(cacheKey,promise);return promise;
   }
   function confirm(messageId,envelope,transferId='') {
     if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || original!==identity() || document.hidden) return;
-    const digest=window.ForumPrivateMessageHistoryCrypto.digest(envelope);
+    const run=generation, digest=window.ForumPrivateMessageHistoryCrypto.digest(envelope);
     if(!aborter || (aborter.signal.aborted && !active)) aborter=new AbortController();
-    request('acknowledge',{items:[{message_id:messageId,digest,transfer_id:transferId}]},generation).then(()=>{
+    request('acknowledge',{items:[{message_id:messageId,digest,transfer_id:transferId}]},run).then(()=>{
+      if(!valid(run))return;
       const key=messageId+':'+digest;
       if(!verifiedIds.has(key)) {verifiedIds.add(key);stats.verified++;publish(stats.state);}
     }).catch(()=>{ /* Reading remains valid if a scheduling receipt is lost. */ });
   }
-  async function ownKeys(row, privateKey) {
+  async function ownKeys(row, privateKey, run) {
     const crypto=window.ForumPrivateMessageHistoryCrypto;
     if(crypto.digest(row.encrypted_envelope)!==row.digest) throw Error('Envelope changed.');
     try {
@@ -87,7 +88,7 @@
       await crypto.readOriginal(row.encrypted_envelope,keys,row.sender_keys);
       return {keys,transfer_id:''};
     } catch (_) {
-      for(const candidate of await candidates(row.message_id,row.encrypted_envelope)) {
+      for(const candidate of await candidates(row.message_id,row.encrypted_envelope,run)) {
         try {await crypto.readOriginal(row.encrypted_envelope,candidate.keys,row.sender_keys);return candidate;} catch (_) {}
       }
       throw Error('History not currently recoverable.');
@@ -106,6 +107,7 @@
       if(!privateKey) { publish('waiting'); return; }
       const pgp=await window.__forumBrowserIdentity.ensureOpenPgpApi(['readPrivateKey']);
       const fingerprint=(await pgp.readPrivateKey({armoredKey:privateKey})).getFingerprint().toLowerCase();
+      if(!valid(current))return;
       const finished={account:false,sender:false};
       for(let batch=0;batch<8 && Date.now()<deadline;batch++) {
         const mode=finished[nextMode]?(nextMode==='account'?'sender':'account'):nextMode;
@@ -113,6 +115,7 @@
         // Persist only scheduling preference, never recovered key material; survive short visits/reloads.
         try {sessionStorage.setItem('forum_history_sync_next_mode:'+account,nextMode);} catch (_) {}
         const work=await request(mode==='sender'?'work?mode=sender':'work',null,current);
+        if(!valid(current))return;
         if(mode==='sender' && work.mode!=='sender') {finished.sender=true;if(finished.account)break;continue;} // Older server during rollout.
         if((mode==='sender'?work.source_account:work.account)!==account || work.source!==fingerprint) throw Error('Saved key does not match authenticated identity.');
         const entries=[], receipts=[];
@@ -120,25 +123,29 @@
         for(const row of work.messages) {
           if(!valid(current)) throw Error('History identity changed.');
           try {
-            const result=await ownKeys(row,privateKey);
+            const result=await ownKeys(row,privateKey,current);
+            if(!valid(current))return;
             receipts.push({message_id:row.message_id,digest:row.digest,transfer_id:result.transfer_id});
             if(result.transfer_id) document.dispatchEvent(new CustomEvent('private-message-history-restored',{detail:{messageId:row.message_id}}));
             if(!verifiedIds.has(row.message_id+':'+row.digest)) {verifiedIds.add(row.message_id+':'+row.digest);stats.verified++;}
             if(work.target && (mode==='sender' || work.target!==fingerprint)) entries.push({message_id:row.message_id,digest:row.digest,keys:result.keys});
-          } catch (_) { stats.unavailable++; }
+          } catch (_) { if(!valid(current))return;stats.unavailable++; }
           if(Date.now()>=deadline) { checkpoint=mode==='sender'?null:{target:work.target,after_id:row.message_id};break; }
         }
         if(entries.length) {
           const ciphertext=await crypto.wrapHistoryKeys({account:work.account,source_account:account,source:fingerprint,target:work.target,privateKey,targetKey:work.target_key,entries});
           await request('transfers',{account:work.account,target:work.target,ciphertext,items:entries.map(({message_id,digest})=>({message_id,digest}))},current);
+          if(!valid(current))return;
           stats.contributed+=entries.length;
         }
         // Confirm our own verified access even while contributing to another target.
         await request('acknowledge',{items:receipts,checkpoint,mode},current);
+        if(!valid(current))return;
         publish('working');
         if(work.cycle_end && checkpoint) finished[mode]=true;
         if(finished.account && finished.sender) break;
       }
+      if(!valid(current))return;
       publish(stats.unavailable?'waiting':'ready');
     } catch (_) { if(valid(current)) publish('error'); }
     finally { clearTimeout(timer); }
@@ -153,18 +160,38 @@
     return active;
   }
   function invalidate() { generation++; if(aborter) aborter.abort();verifiedIds.clear();candidateRequests.clear();stats.verified=0;publish('identity-changed'); }
-  window.ForumPrivateMessageHistorySync={refresh:()=>refresh(true),state:()=>({...stats}),candidates,confirm};
-  document.addEventListener('DOMContentLoaded',function () {
-    nav=document.querySelector('[data-private-message-unread]');
-    if(!nav) return;
-    account=nav.dataset.viewer;original=identity();
+  function stop() {
+    generation++;
+    if(aborter)aborter.abort();
+    nav=null;
+    candidateRequests.clear();
+    publish('disabled');
+  }
+  function start(navElement) {
+    if(nav===navElement && nav)return active || Promise.resolve();
+    stop();
+    nav=navElement;
+    if(!nav)return Promise.resolve();
+    const previousAccount=account, previousIdentity=original;
+    account=nav.dataset.viewer;original=identity();lastRun=0;
+    if(previousAccount!==account || previousIdentity!==original) {
+      verifiedIds.clear();stats.verified=0;stats.contributed=0;stats.unavailable=0;
+    }
+    nextMode='account';
     try {if(sessionStorage.getItem('forum_history_sync_next_mode:'+account)==='sender')nextMode='sender';} catch (_) {}
-    document.addEventListener('private-messaging-disabled',()=>{generation++;if(aborter)aborter.abort();publish('disabled');});
-    window.addEventListener('pagehide',()=>{generation++;if(aborter)aborter.abort();});
-    window.addEventListener('pageshow',()=>refresh());
-    window.addEventListener('focus',()=>refresh());
-    window.addEventListener('storage',event=>{if(event.key===null || ['forum_pki_username','forum_pki_public_key','forum_pki_private_key'].includes(event.key)) invalidate();});
-    document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;if(aborter)aborter.abort();}else refresh();});
-    refresh();
-  });
+    if(!listening) {
+      listening=true;
+      document.addEventListener('private-messaging-disabled',stop);
+      window.addEventListener('pagehide',()=>{generation++;if(aborter)aborter.abort();});
+      window.addEventListener('pageshow',()=>refresh());
+      window.addEventListener('focus',()=>refresh());
+      window.addEventListener('storage',event=>{if(event.key===null || ['forum_pki_username','forum_pki_public_key','forum_pki_private_key'].includes(event.key)) invalidate();});
+      document.addEventListener('visibilitychange',()=>{if(document.hidden){generation++;if(aborter)aborter.abort();}else refresh();});
+    }
+    const current=generation;
+    // Let the cancelled run drain before starting another bounded run.
+    return Promise.resolve(active).then(()=>{if(valid(current))return refresh(true);});
+  }
+  window.ForumPrivateMessageHistorySync={refresh:()=>refresh(true),state:()=>({...stats}),candidates,confirm,start,stop};
+  document.addEventListener('DOMContentLoaded',()=>start(document.querySelector('[data-private-message-unread]')));
 })();

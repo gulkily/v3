@@ -420,6 +420,11 @@ final class RouteServices
         );
     }
 
+    public function navigationState(string $activeSection): array
+    {
+        return $this->renderer->navigationState($this->defaultViewerProfile(), $activeSection);
+    }
+
     public function assetPath(string $path): string
     {
         return $this->renderer->assetPath($path);
