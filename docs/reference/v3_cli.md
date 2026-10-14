@@ -65,8 +65,16 @@ and existing-plan policy.
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
 Checks local-server prerequisites before application loading, logs, or bootstrap.
-Missing required capabilities return 1 with manual recovery guidance; optional
-limitations warn without blocking. Stop the launcher with Ctrl+C or SIGTERM.
+Missing required capabilities produce runtime-specific recovery guidance.
+On Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution packages, terminal input/output
+and root or potentially usable sudo allow a reviewed `Recover missing dependencies
+and continue startup? [Y/n]` prompt. Enter/Y/y accepts; n/N/invalid input/EOF or
+pre-execution cancellation stops without changes. Optional intl is a separate,
+default-off choice; optional-only limitations never trigger recovery.
+Authenticate sudo after consent. Success plus fresh readiness resumes startup
+once with the original address, logging options and caller identity; failures
+return 1 without starting a listener. Redirected startup never prompts or installs.
+Options are validated before recovery. Stop the launcher with Ctrl+C or SIGTERM.
 
 - `--listen-all` — bind `0.0.0.0:8000` instead of `127.0.0.1:8000`
 - `host:port` — bind an explicit address or bare port number instead of the default
@@ -76,26 +84,47 @@ limitations warn without blocking. Stop the launcher with Ctrl+C or SIGTERM.
 ## Check local-server prerequisites
 
 ```
-./v3 check-dependencies [--help]
-./v3 dependency-check [--help]
+./v3 check-dependencies [--install|--help]
+./v3 dependency-check [--install|--help]
 ```
 
 Uses the same checks as startup without starting the server or changing application
-state. Reports Bash 4.1+, Git, PHP CLI 8.1+, PDO/PDO SQLite, mbstring, and PHP
+state. Without `--install`, it is read-only and noninteractive. Reports Bash 4.1+,
+Git, PHP CLI 8.1+, PDO/PDO SQLite, mbstring, and PHP
 process execution; intl, PCNTL, terminal shell execution, and `stty` are optional.
 Returns 0 when required capabilities pass (even with warnings), or 1 for missing,
 disabled, or unusable required capabilities. `-h`/`--help` returns 0 without
-checking PHP or Git; other arguments are rejected.
+checking PHP or Git. `--install` selects the interactive mode below; other
+arguments are rejected.
 
 Status rows use ✓/✗/!/? for available, unavailable, optional limitations, and
 unchecked capabilities. Runtime details and recovery instructions follow the
 readiness result. Terminals show colored statuses and highlighted setup commands;
 redirected output and `NO_COLOR` use plain text with the same symbols.
 
-Follow manual recovery guidance and retry with the same startup options. This
-command never prompts or installs software, and does not validate repository,
-database, permissions, listening address, other-command, or deployment readiness.
-See [local setup and launcher prerequisites](../../README.md#php-setup).
+With `--install`, Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution users can review required
+packages, explicitly select optional intl, and confirm the full resolved APT
+transaction. Confirmation requires terminal input/output and exact `yes`;
+no unattended bypass is supported. Root or sudo privileges are needed only after
+confirmation. Metadata refresh precedes installation; a changed transaction needs
+new confirmation. Installation preserves configuration and rejects removals,
+unverified sources and other PHP runtime families. Custom runtimes, PATH or
+configuration problems, and unsupported environments retain manual recovery.
+
+Installation returns 0 only when the requested package operation succeeds and
+required readiness passes, or a ready no-op (including declined optional-only
+setup). It returns 1 for refusal, cancelled installation, package failure, or
+remaining required problems. Package outcome is separate from readiness. Failure
+or interruption may leave partial changes; no rollback, repair or automatic retry
+is performed. If package processes survive interruption, reassessment is deferred
+and manual inspection is required. Declining before execution makes no changes;
+declining a revised transaction after refresh leaves only refreshed metadata.
+
+After explicit `--install`, retry startup manually with the same options. Recovery
+accepted from `start` continues automatically only after success. Neither check mode validates
+repository, database, permissions, listening address, other-command, or deployment
+readiness. See [installation scope, source restrictions and recovery](../../README.md#install-missing-local-server-dependencies)
+and [external launcher prerequisites](../../README.md#launcher-and-optional-support).
 
 ## Run the test suite
 
@@ -201,11 +230,31 @@ is unavailable, `./v3 tui` makes no change and directs the operator to:
 ```
 
 Rebuilds the SQLite read model from canonical records in the repository root.
-Reports source scanning, candidate construction and validation, lock wait, and
-promotion phases. During candidate construction, it emits read-model stages and
-bounded record-parsing progress checkpoints. It also prints source record
-counts (posts, identities, approval seeds) and resulting read-model table counts
-(posts, threads, profiles, activity).
+Reports source scanning, candidate construction and validation, lock wait,
+promotion, and offline snapshot readiness. Indexing reports parsing, history
+resolution, sorting/derivation, and writes separately, with elapsed milliseconds.
+A parsing count such as `210/210` means those files have been examined; it does
+not mean indexing or the rebuild is finished. Counters name their work unit
+(records, posts, threads, profiles, or history lines), include skipped records,
+and emit at most 100 intermediate checkpoints plus start/final boundaries per
+loop. Approval replay identifies each pass. Empty loops report `0/0`.
+
+Thread labels, post reactions, and signed feature-flag changes resolve source
+commits in a single history walk per nonempty family, rather than one Git
+invocation per record. Other long operations identify their start and outcome;
+blocking Git, storage, and lock operations do not emit a heartbeat or estimate
+remaining time. A failed operation reports `failed`, with existing errors and
+recovery guidance preserved. Missing Git history retains the existing nullable
+provenance/omitted-flag-activity behavior; a failed Git read may therefore be
+followed by successful completion of the containing fallback operation.
+
+Timings cover the named operation and may nest; do not sum them to calculate
+total rebuild duration. Repeated timing keys accumulate across approval passes
+or repeated history reads. The final `Elapsed` line measures the overall CLI
+run. Output also includes source counts (posts, identities, approval seeds) and
+resulting model counts (posts, threads, profiles, activity). Phase timings and
+query-count comparisons help locate remaining costs; production speed depends
+on repository history and storage.
 
 `diagnose` is read-only: it reports SQLite sidecars, the application rebuild
 lock, and Linux `/proc` file holders. If a stopped process left sidecars behind,

@@ -157,6 +157,9 @@ final class TemplateRenderer
                 '/assets/private_message_history_sync.js',
             ]);
         }
+        if (array_filter($scriptPaths, static fn (string $path): bool => str_starts_with($path, '/assets/private_message'))) {
+            array_unshift($scriptPaths, '/assets/private_message_availability.js');
+        }
         $scriptPaths = array_values(array_unique($scriptPaths));
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -323,7 +326,8 @@ final class TemplateRenderer
             ));
         }
 
-        if ($viewerProfile !== null
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)
+            && $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
             && (($viewerProfile['_authenticated_identity'] ?? true) === true)) {
             $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'viewer' => $viewerProfile['username_token'] ?? ''];

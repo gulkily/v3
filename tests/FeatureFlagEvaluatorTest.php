@@ -9,6 +9,26 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 
 final class FeatureFlagEvaluatorTest
 {
+    public function testMessagingFlagDefaultsAndOverrides(): void
+    {
+        $key = FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED;
+        $this->withEnvironment([], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator())->evaluate($key);
+            assertSame(true, $state->effectiveValue);
+            assertSame(true, $state->canChangeFromSite());
+            assertSame(false, (new FeatureFlagEvaluator(siteValues: [$key => false]))->isEnabled($key));
+        });
+        foreach (['true' => true, 'false' => false] as $value => $expected) {
+            $this->withEnvironment([$key => $value], function () use ($key, $expected): void {
+                $state = (new FeatureFlagEvaluator(siteValues: [$key => !$expected]))->evaluate($key);
+                assertSame($expected, $state->effectiveValue);
+                assertSame('environment', $state->source);
+                assertSame(true, $state->isLocked());
+                assertSame(false, $state->canChangeFromSite());
+            });
+        }
+    }
+
     public function testDefaultsMatchExistingSiteFlags(): void
     {
         $this->withEnvironment([], function (): void {
@@ -125,6 +145,7 @@ final class FeatureFlagEvaluatorTest
         );
 
         assertSame([
+            FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
@@ -414,6 +435,7 @@ PHP);
     private function withEnvironment(array $values, callable $callback): void
     {
         $keys = [
+            FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,

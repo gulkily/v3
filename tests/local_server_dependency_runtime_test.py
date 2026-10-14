@@ -180,10 +180,8 @@ def main():
         assert '✗ FAIL: PDO SQLite driver\n' in concise.stderr, concise.stderr
         assert '✗ FAIL: mbstring extension\n' in concise.stderr, concise.stderr
         assert 'combining marks are rejected' in concise.stderr, concise.stderr
-        if '8.3.' in concise.stderr:
-            assert 'sudo apt-get install php8.3-sqlite3 php8.3-mbstring\n' in concise.stderr, concise.stderr
-            assert 'Optional Unicode normalization:\n  sudo apt-get install php8.3-intl' in concise.stderr, concise.stderr
-            assert concise.stderr.count('administrator privileges') == 1, concise.stderr
+        assert 'No package mapping was verified' in concise.stderr
+        assert 'sudo apt-get install' not in concise.stderr
         assert 'same options' in concise.stderr and './v3 check-dependencies' in concise.stderr
         startup_args = [str(wrapper), str(project / 'scripts/check_local_server_dependencies.php'),
                         'startup', '1', 'ubuntu-24.04']
@@ -191,8 +189,6 @@ def main():
         startup_env.pop('NO_COLOR', None)
         code, startup_colored = terminal_report(startup_args, startup_env)
         assert code == 1 and b'\x1b[31m' in startup_colored, startup_colored
-        if '8.3.' in concise.stderr:
-            assert b'\x1b[1;36msudo apt-get install php8.3-sqlite3 php8.3-mbstring\x1b[0m' in startup_colored
         code, startup_plain = terminal_report(startup_args, {**startup_env, 'NO_COLOR': ''})
         assert code == 1 and b'\x1b' not in startup_plain, startup_plain
         print('PASS: concise startup groups required installs separately from optional recovery')

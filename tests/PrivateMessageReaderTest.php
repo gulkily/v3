@@ -18,6 +18,7 @@ const api = {
 global.window = { localStorage: { getItem() { return phase === 'missing' ? '' : 'key'; } },
   __forumBrowserIdentity: { async ensureOpenPgpApi() { if (phase === 'support') throw Error(); return api; } } };
 global.document = { addEventListener() {} };
+vm.runInThisContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[1]), 'private_message_availability.js'), 'utf8'));
 vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 (async () => {
  const results = {};
@@ -42,6 +43,7 @@ const requests = [];
 global.window = { localStorage: { getItem() { return ''; } }, ForumPrivateMessages: { async recipientKeys() { return ['key']; } } };
 global.document = { addEventListener() {} };
 global.fetch = async url => { requests.push(url); return { ok: true, async json() { return { status: 'ok', messages: [{ message_id: 'old', sender_username_token: 'bob', encrypted_envelope: 'cipher' }] }; } }; };
+vm.runInThisContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[1]), 'private_message_availability.js'), 'utf8'));
 vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 const roots = ['snapshot-one', 'snapshot-two'].map(cursor => {
   const nodes = new Map();
@@ -92,6 +94,7 @@ global.window = {
   __forumBrowserIdentity: { async ensureOpenPgpApi() { return openpgp; } }
 };
 global.document = { addEventListener() {}, querySelectorAll() { return []; } };
+vm.runInThisContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[1]), 'private_message_availability.js'), 'utf8'));
 vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 (async () => {
   const generate = (name) => openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name }], format: 'armored' });
@@ -196,6 +199,7 @@ global.window = {
   ForumPrivateMessages: { async recipientKeys() { return ['bob public key']; } }
 };
 global.document = { addEventListener() {}, querySelectorAll() { return []; } };
+vm.runInThisContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[1]), 'private_message_availability.js'), 'utf8'));
 vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 (async () => {
   window.ForumPrivateMessageReader.bindMailbox(root);

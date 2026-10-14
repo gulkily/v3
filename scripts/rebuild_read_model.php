@@ -7,6 +7,7 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\ReadModel\ReadModelCandidateBuilder;
 use ForumRewrite\ReadModel\ReadModelCandidatePromoter;
 use ForumRewrite\ReadModel\ReadModelRecovery;
+use ForumRewrite\ReadModel\RebuildProgress;
 use ForumRewrite\Offline\OfflineSnapshotBootstrap;
 use ForumRewrite\PresentationPathResolver;
 use ForumRewrite\SiteProfileRegistry;
@@ -110,7 +111,9 @@ try {
     $approvedMembersOnly = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
         ->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
         ->effectiveValue;
-    $snapshot = (new OfflineSnapshotBootstrap($staticHtmlRoot))->ensure($databasePath, !$approvedMembersOnly);
+    $snapshot = (new RebuildProgress(static function (string $message): void {
+        fwrite(STDOUT, $message . "\n");
+    }))->measure('Offline snapshot bootstrap', fn (): array => (new OfflineSnapshotBootstrap($staticHtmlRoot))->ensure($databasePath, !$approvedMembersOnly));
     $snapshotMessage = match ($snapshot['status']) {
         'published' => 'published at ' . $snapshot['path'],
         'already_available' => 'already available at ' . $snapshot['path'],

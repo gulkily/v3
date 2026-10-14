@@ -23,7 +23,7 @@ if grep -Eq 'exec:|php:.*not found' "${FIXTURE}/err"; then
   fail 'shell-level PHP error remains'
 fi
 grep -Fq '### PHP setup' "${ROOT}/README.md" || fail 'setup reference is missing'
-for command in help '--help' 'fdp sync --help' 'check-dependencies --help' 'check-dependencies -h'; do
+for command in help '--help' 'railspike sync --help' 'check-dependencies --help' 'check-dependencies -h'; do
   read -r -a arguments <<<"${command}"
   PATH="${FIXTURE}/bin" "${ROOT}/v3" "${arguments[@]}" >"${FIXTURE}/out" 2>"${FIXTURE}/err"
   [[ -s "${FIXTURE}/out" && ! -s "${FIXTURE}/err" ]] || fail "help failed: ${command}"
@@ -52,7 +52,7 @@ chmod +x "${FIXTURE}/bin/"{uname,apt-get,sudo}
 export V3_TEST_INSTALL_MARKER="${FIXTURE}/installation-attempt"
 check_platform ubuntu-24.04 'ID=ubuntu' 'VERSION_ID="24.04"'
 check_platform ubuntu-24.04 "ID='ubuntu'" "VERSION_ID='24.04'"
-check_platform generic 'ID=ubuntu' 'VERSION_ID=22.04'
+check_platform ubuntu-22.04 'ID=ubuntu' 'VERSION_ID=22.04'
 check_platform generic 'ID=debian' 'VERSION_ID=24.04'
 check_platform generic 'ID=ubuntu'
 check_platform generic 'ID=ubuntu' 'ID=ubuntu' 'VERSION_ID=24.04'

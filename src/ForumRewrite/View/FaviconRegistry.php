@@ -11,6 +11,8 @@ final class FaviconRegistry
     /** @var array<string, string> */
     private const PATHS = [
         'default' => '/favicon.ico',
+        'chouse' => '/assets/favicon-chouse.ico',
+        'qdb' => '/assets/favicon-qdb.ico',
         'mitrapclub' => '/assets/favicon-mitrapclub.ico',
     ];
 

@@ -106,9 +106,6 @@ final class PrivateMessagePageControllerTest
             $viewer = $this->viewer('alice-key', 'alice');
             $html = $this->renderMailbox($databasePath, $store, $viewer, 'conversations');
             assertStringContains('<h1>Messages</h1>', $html);
-            assertStringContains('data-role="recipient-form"', $html);
-            assertStringContains('<option value="bob">', $html);
-            assertStringNotContains('<option value="alice">', $html);
             assertSame(1, substr_count($html, 'data-counterpart="bob"'));
             assertStringContains('href="/messages/conversation/bob"', $html);
             assertStringNotContains('secret envelope', $html);
@@ -117,6 +114,11 @@ final class PrivateMessagePageControllerTest
             $other = $this->renderMailbox($databasePath, $store, $this->viewer('eve-key', 'eve'), 'conversations');
             assertStringContains('No messages yet', $other);
             assertStringNotContains('list-2', $other);
+            foreach ([$html, $other] as $listHtml) {
+                assertStringNotContains('data-role="recipient-form"', $listHtml);
+                assertStringNotContains('data-role="new-message"', $listHtml);
+                assertStringNotContains('data-action="new-message"', $listHtml);
+            }
             $denied = $this->apiMailbox($databasePath, $store, ['identity_id' => 'pending', 'username_token' => 'alice', 'is_approved' => 0], 'conversations');
             assertSame('error', $denied['status']);
             assertSame(false, isset($denied['conversations']));

@@ -26,7 +26,7 @@
       names.every(name => typeof state.conversations[name] === 'boolean');
   }
   async function refresh() {
-    if (!nav || !nav.isConnected) return;
+    if (!nav || !nav.isConnected || window.ForumPrivateMessageAvailability.isDisabled()) return;
     const current = ++generation;
     if (!sameIdentity()) { unavailable('Identity changed. Reload Messages before checking unread status.'); return; }
     const names = Array.from(new Set(rows().map(row => row.dataset.counterpart).filter(Boolean)));
@@ -39,7 +39,7 @@
           const batch = names.slice(index, index + 25);
           const query = new URLSearchParams();
           batch.forEach(name => query.append('counterparts[]', name));
-          const response = await fetch('/api/private_messages/unread?' + query, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+          const response = await window.ForumPrivateMessageAvailability.request('/api/private_messages/unread?' + query, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
           const state = await response.json();
           if (current !== generation || !nav.isConnected) return;
           if (!sameIdentity()) throw new Error('Identity changed. Reload Messages before checking unread status.');
@@ -71,6 +71,7 @@
     }
   }
   function schedule() {
+    if (window.ForumPrivateMessageAvailability.isDisabled()) return;
     generation++;
     clearTimeout(scheduled);
     scheduled = setTimeout(refresh, 0);
@@ -82,6 +83,10 @@
     viewer = nav.dataset.viewer;
     originalIdentity = identity();
     document.querySelectorAll('[data-role="unread-retry"]').forEach(button => button.addEventListener('click', schedule));
+    document.addEventListener('private-messaging-disabled', function () {
+      generation++; clearTimeout(scheduled);
+      unavailable(window.ForumPrivateMessageAvailability.message);
+    });
     document.addEventListener('private-message-rows-changed', schedule);
     window.addEventListener('focus', schedule);
     window.addEventListener('pageshow', schedule);

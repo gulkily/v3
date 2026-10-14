@@ -41,7 +41,7 @@
      (LocalWriteService::isApprovedIdentity(), enforced in
      ReadModelBuilder/IncrementalReadModelUpdater's score loops) - a
      drive-by anon voter's vote never moves the score. Already assessed in
-     docs/plans/anonymous_reaction_scoring_step1_solution_assessment.md,
+     docs/plans/anonymous_reaction_scoring/anonymous_reaction_scoring_step1_solution_assessment.md,
      recommendation is Option B (count upvote/downvote toward score
      regardless of approval, leave Like/Flag and the write path alone) -
      scoped to its own plan/branch, not this one.
@@ -59,22 +59,5 @@
      after the qdb archive importer, not before - see that plan's
      "Sequencing decision".
 
-there's a bug where the user ends up at the lobby page once
-	when already has a keypair
-
-/123 quote id links should not redirect to /threads, but just render in-place
-
-when adding a new quote, it should also get a quote id?
-	- RESOLVED, see item 2 above.
-
-some pages are different width than others, the layout shifts.
-	could be scrollbars?
-
-what should we modularize that we've embedded?
-
-take more design queues from qdb.us
-	up and down arrows on vote buttons
-	vote button captions (variable)
-	filled in buttons for some things
 
 remove the theme selector so it doesn't detract from the look?

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Standalone: run only after the launcher checks PHP compatibility, before autoload/bootstrap.
 $mode = $argv[1] ?? 'report';
-if (!in_array($mode, ['startup', 'report'], true)) {
+if (!in_array($mode, ['startup', 'report', 'facts'], true)) {
     fwrite(STDERR, "Unknown local dependency report mode.\n");
     exit(1);
 }
@@ -33,7 +33,7 @@ $result = static function (bool $available, string $name, string $guidance = '')
         if ($mode === 'report') {
             fwrite($output, '  ' . $paint("✗ FAIL: {$name}", '31') . "\n");
             $recovery[] = [$name, $guidance];
-        } else {
+        } elseif ($mode === 'startup') {
             $startupFailures[] = [$name, $guidance];
         }
     } elseif ($mode === 'report') {
@@ -45,12 +45,9 @@ $skip = static function (string $name, string $reason) use ($mode, $output, $pai
         fwrite($output, '  ' . $paint("? SKIP: {$name} ({$reason})", '90') . "\n");
     }
 };
-$extensionGuidance = static function (string $extension, string $package) use ($platform): string {
-    $guidance = "Install/enable {$extension} for the selected PHP CLI, then retry the same command with the same options.";
-    if ($platform === 'ubuntu-24.04' && PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION === 3) {
-        $guidance .= " Ubuntu 24.04/APT with PHP 8.3: sudo apt-get install php8.3-{$package} (manual, administrator privileges; omit sudo in a root shell).";
-    }
-    return $guidance;
+$packageGuidance = array_combine(['common', 'sqlite3', 'mbstring', 'intl'], array_pad(array_slice($argv, 4, 4), 4, ''));
+$extensionGuidance = static function (string $extension, string $package) use ($packageGuidance): string {
+    return $packageGuidance[$package] ?: "Inspect php --ini and php -m for the selected CLI. Check PHPRC, PHP_INI_SCAN_DIR and disabled modules; use that PHP installation's instructions for {$extension}. No package mapping was verified.";
 };
 $pdoReady = class_exists(PDO::class, false);
 $result($pdoReady, 'PDO extension', $extensionGuidance('PDO', 'common'));
@@ -124,7 +121,7 @@ $optional = static function (bool $available, string $name, string $guidance) us
         if ($mode === 'report') {
             fwrite($output, '  ' . $paint("! WARN: Optional {$name} unavailable", '33') . "\n");
             $recovery[] = ['Optional ' . $name, $guidance];
-        } else {
+        } elseif ($mode === 'startup') {
             $startupWarnings[] = [$name, $guidance];
         }
     } elseif ($mode === 'report') {
@@ -161,10 +158,9 @@ if ($mode === 'startup' && ($startupFailures !== [] || $startupWarnings !== []))
     $packages = [];
     foreach ($startupFailures as [$name, $guidance]) {
         fwrite($output, '  ' . $paint("✗ FAIL: {$name}", '31') . "\n");
-        if (preg_match('/sudo apt-get install (php8\.3-[a-z0-9]+)/', $guidance, $match)) {
+        if (preg_match('/sudo apt-get install (php8\.[13]-[a-z0-9]+)/', $guidance, $match)) {
             $packages[] = $match[1];
-        } elseif (str_starts_with($guidance, 'Install/enable')) {
-            fwrite($output, "    Install/enable this extension for the selected PHP CLI.\n");
+
         } else {
             fwrite($output, "    {$guidance}\n");
         }
@@ -180,14 +176,16 @@ if ($mode === 'startup' && ($startupFailures !== [] || $startupWarnings !== []))
     fwrite($output, "\nSelected PHP CLI: " . PHP_BINARY . ' (PHP ' . PHP_VERSION . ")\n"
         . 'CLI configuration: ' . (php_ini_loaded_file() ?: 'no php.ini loaded') . "\n");
     if ($packages !== []) {
-        fwrite($output, "\nInstall required extensions (Ubuntu 24.04):\n  "
+        fwrite($output, "\nInstall required extensions (verified Ubuntu distribution packages):\n  "
             . $paint('sudo apt-get install ' . implode(' ', array_unique($packages)), '1;36') . "\n");
     }
     $optionalInstall = false;
     foreach ($startupWarnings as [$name, $guidance]) {
-        if (preg_match('/sudo apt-get install (php8\.3-[a-z0-9]+)/', $guidance, $match)) {
+        if (preg_match('/sudo apt-get install (php8\.[13]-[a-z0-9]+)/', $guidance, $match)) {
             $optionalInstall = true;
             fwrite($output, "\nOptional Unicode normalization:\n  " . $paint('sudo apt-get install ' . $match[1], '1;36') . "\n");
+        } elseif ($name === 'intl normalization') {
+            fwrite($output, "Optional Unicode normalization: {$guidance}\n");
         }
     }
     if ($packages !== [] || $optionalInstall) {
@@ -196,6 +194,19 @@ if ($mode === 'startup' && ($startupFailures !== [] || $startupWarnings !== []))
     fwrite($output, "\nDetails: " . $paint('./v3 check-dependencies', '1;36') . "\n");
     if ($failed) {
         fwrite($output, "After setup, retry your ./v3 start command with the same options.\n");
+    }
+}
+
+// Stable machine facts share the very same capability probes as human reports.
+if ($mode === 'facts') {
+    foreach ([
+        'version' => PHP_VERSION_ID, 'binary' => PHP_BINARY,
+        'pdo' => (int) $pdoReady, 'sqlite' => (int) $sqliteReady,
+        'mbstring' => (int) $mbstringReady,
+        'intl' => (int) class_exists(Normalizer::class, false),
+        'ready' => (int) !$failed,
+    ] as $key => $value) {
+        fwrite(STDOUT, $key . "\t" . $value . "\n");
     }
 }
 

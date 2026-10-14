@@ -1,5 +1,4 @@
 codebase readability
-====================
 
 \$toolNavOptions should be searchable to its origin point (calling function)
 
@@ -7,7 +6,6 @@ codebase readability
 
 
 operator status
-===============
 
 Later: implement shared lifecycle status (Option B from the `v3 status`
 assessment) so operator reporting can identify manual and queued rebuilds
@@ -21,13 +19,6 @@ terminal operator ui (`./v3 tui`)
 	later: guided destructive workflows with review, confirmation, output, cancellation
 	keep scripts as executor/validator; do not duplicate web feature-flags ui
 	use whiptail with dependency check and cli fallback
-
-
-forte
-=====
-the thread info popup should be formatted like a message (gray header, white body)
-create an option/setting/feature flag to bypass the popup and go straight to the thread
-have it already presented in mini-thread view in the activity
 
 scoring
 -------
@@ -45,7 +36,6 @@ html pages should be marked up with the templates used to build them
 clean up the failing tests
 
 offline support feature stub
-============================
 Tracked in `docs/plans/backlog/offline_support_roadmap.md`.
 	Completed: bounded public read-only Board/thread snapshot.
 	Next: snapshot lifecycle confidence and cache controls.
@@ -64,7 +54,6 @@ convert user-facing versioning to more human-readable
 	or traditional M.m.r semantic versioning (for things like the app itself)
 
 feature flags page
-===================
 add search/filter toolbar (search input + status chips: All/Enabled/Overridden/Locked)
 to /tools/feature-flags/ — deferred from the layout/badges/grouping redesign,
 see docs/plans/feature_flags_redesign_step2/3_*.md
@@ -73,7 +62,6 @@ plan/features for dealing with duplicate related items
 	how to merge duplicate threads, posts, and comments
 
 general URL canonicalization
-=============================
 beyond the narrow per-provider tracking-param strip shipped for mitrapclub
 media-embed cards (docs/plans/mitrapclub_media_embeds_step2/3_*.md), a
 general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
@@ -88,33 +76,8 @@ explore server-cooperative content deletion
 	Discussion: docs/plans/backlog/server_cooperative_content_deletion_discussion.md
 	Initial scope: users retract their own posts with server help; cross-instance cooperation is a future possibility.
 
-youtube embeds
-	should be full width of the container module
-	should remove border from iframe
-	what else?
-
 make it easy to import/sync content from another instance
 	make this schedulable too
-
-gate pm feature behind a feature flag
-
-qdb pages need better titles
-
-how to bring a new keypair up to date on private conversations
-	1. collect all the message ids and their passphrases
-	2. encrypt them all for the new keypair and send as private message
-	3. ???
-	4. profit
-	what triggers this though? how do we figure out we need to do this?
-		basically when a new keypair is approved, we need to check if:
-			- there are already other keypairs approved for the same user
-			- there are private messages that were sent to the user with the old keypair
-			- anything else?
-
-
-add more authentication modes
-	- top idea is that approval is allowed ONLY by admin or same-username
-	- second idea is completely open authentication (for low-risk platforms)
 
 identify targets for "ephemeral testing"
 	see https://zenmemes.com/threads/thread-20261006122804-184a64b6 
@@ -148,3 +111,5 @@ unify thread-label and post-reaction record formats
 	keep existing signed and unsigned records compatible without rewriting signed bytes
 	account for imports, activity, signature companions, and duplicate detection
 	separate follow-up to signed_thread_label_records
+
+continue testing installation on system without dependencies installed

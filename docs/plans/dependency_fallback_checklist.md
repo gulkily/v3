@@ -4,6 +4,8 @@ Future dependency checks should explain what is missing, help users recover, and
 
 Unchecked items represent future work, including improvements to existing error messages.
 
+Recent Ubuntu 22.04 findings: [recovery fixes and follow-up checks](local_server_dependency_recovery_checklist.md). Process follow-up: [Railspike failure report](local_server_dependency_recovery_railspike_failure_report.md).
+
 ## Local-server delivery progress
 
 This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader workflow items below remain unchecked when their full scope is not delivered. Evidence and stage results: [implementation summary](local_server_dependency_checks/local_server_dependency_checks_step4_implementation_summary.md).
@@ -58,6 +60,6 @@ This delivery covers only `./v3 start` and `./v3 check-dependencies`; broader wo
 - [ ] Keep optional dependencies from blocking unrelated commands and help.
 - [ ] Verify failures occur before avoidable state changes; document partial changes and recovery for installation attempts.
 
-## Proposed next local-server slice
+## Opt-in local-server installation
 
-- [ ] Explicit opt-in batch dependency installation followed by readiness verification: [Step 1 assessment](./local_server_dependency_install_step1_solution_assessment.md). Awaiting Step 1 review; no installer implemented.
+- [x] Explicit `--install` through both aliases: reviewed required/selected optional batches, terminal confirmation, verified Ubuntu 24.04/PHP 8.3 mapping, root/sudo execution, fresh readiness and manual startup retry. Real clean-image installation, declines, failures, interrupts and HTTP read/write/shutdown passed: [implementation summary](./local_server_dependency_install/local_server_dependency_install_step4_implementation_summary.md) and [exact evidence](./local_server_dependency_install/local_server_dependency_install_test_evidence.json). Other platform candidates remain in the [categorized support checklist](./local_server_dependency_install/local_server_dependency_platform_support_checklist.md).

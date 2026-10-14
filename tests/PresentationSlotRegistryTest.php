@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\View\FaviconRegistry;
 
 final class PresentationSlotRegistryTest
 {
@@ -38,5 +39,24 @@ final class PresentationSlotRegistryTest
             $invalidSelection['presentationSlots'][$slot] = 'untrusted-selection';
             assertSame($definition['fallback'], PresentationSlotRegistry::resolve($invalidSelection, $slot));
         }
+    }
+
+    public function testEachSiteResolvesItsOwnFaviconAndZenmemesKeepsTheDefault(): void
+    {
+        $expected = [
+            'zenmemes' => '/favicon.ico',
+            'chouse' => '/assets/favicon-chouse.ico',
+            'qdb' => '/assets/favicon-qdb.ico',
+            'mitrapclub' => '/assets/favicon-mitrapclub.ico',
+        ];
+        $profiles = SiteProfileRegistry::all();
+        foreach ($expected as $site => $path) {
+            assertSame($path, FaviconRegistry::resolve($profiles[$site]));
+            assertSame(true, is_file(__DIR__ . '/../public' . $path));
+        }
+
+        $unselected = $profiles['chouse'];
+        unset($unselected['presentationSlots']['favicon']);
+        assertSame('/favicon.ico', FaviconRegistry::resolve($unselected));
     }
 }
