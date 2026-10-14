@@ -7,6 +7,8 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 
 ## Feature folders
 
+- [Private messaging live navigation](private_messaging_live_navigation/)
+
 - [Private messaging feature flag](private_messaging_feature_flag/)
 
 - [Hide Messages new-message form](hide_messages_new_message_form/)
