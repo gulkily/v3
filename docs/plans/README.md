@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Image upload enhancements](image_upload_enhancements/)
+
 - [Starfield key backup](starfield_key_backup/)
 
 - [Account key approval safety](account_key_approval_safety/)
