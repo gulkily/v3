@@ -144,7 +144,7 @@
 .compose-disclosure > summary:focus-visible { outline: 3px solid var(--accent-color, #356bd8); outline-offset: 2px; }
 .compose-disclosure > label { display: block; margin-top: .5rem; }
 
-.compose-action-menu { position: relative; flex: 0 0 auto; }
+.compose-action-menu { position: relative; flex: 0 0 auto; order: 99; margin-left: auto; }
 .compose-action-menu-toggle { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; box-sizing: border-box; border: 1px solid var(--border-color, #a8a8a8); border-radius: .5rem; font-weight: 700; user-select: none; }
 .compose-action-menu-toggle::-webkit-details-marker { display: none; }
 .compose-action-menu-toggle:focus-visible { outline: 3px solid var(--accent-color, #356bd8); outline-offset: 2px; }

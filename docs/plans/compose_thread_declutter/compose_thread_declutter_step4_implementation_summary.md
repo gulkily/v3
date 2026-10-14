@@ -91,3 +91,11 @@ Debug mode: enabled
   - Not verified in a real browser: the events-enabled layout (fixture has events off; covered by render tests), the paned new-thread dialog, the QDB add page, a 390 px mobile pass of the new menu, and an end-to-end unsupported-character warning opening its expando.
   - Reply-form action buttons were intentionally left as they were.
   - The user's `todo.txt` additions (bottom-right "..." button, making the image and body modules look like the other modules) are not part of this cycle.
+
+## Follow-up - "..." always last
+- Changes:
+  - `public/assets/compose.css`: `.compose-action-menu` gets `order: 99` and `margin-left: auto` so the toggle sits at the end of the action row even if a script appends another button later.
+- Verification:
+  - DOM order check in Chromium on `/compose/thread`, `/` (compact), and `/forte` (paned dialog): the menu is the last child of every thread action row.
+- Notes:
+  - It was already last in the committed markup; this makes the position independent of DOM order. Reply-form rows have no menu and are unchanged.
