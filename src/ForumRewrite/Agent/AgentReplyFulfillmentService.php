@@ -185,7 +185,7 @@ final class AgentReplyFulfillmentService
                     (string) $context['post_id'],
                     (string) $context['content_hash'],
                     (string) $generationContext['analysis_hash'],
-                    'analysis_suggestion_error',
+                    $throwable instanceof \ForumRewrite\Llm\CompletionLimitException ? 'completion_limit_exhausted' : 'analysis_suggestion_error',
                     $throwable->getMessage(),
                     $this->failureDiagnostics($throwable)
                 );

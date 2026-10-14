@@ -875,6 +875,7 @@ final class PostWorkflowService
             $provider,
             $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
+            AgentResponseGenerator::completionTokenLimit(PrivateConfig::load($this->projectRoot)),
         );
     }
 

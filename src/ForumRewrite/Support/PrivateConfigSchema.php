@@ -17,6 +17,7 @@ final class PrivateConfigSchema
             'LLM_API_BASE_URL' => self::definition('', 'string', template: true),
             'LLM_MODEL' => self::definition('', 'string', template: true),
             'LLM_TIMEOUT_SECONDS' => self::definition(60, 'integer', template: true),
+            'AGENT_REPLY_MAX_COMPLETION_TOKENS' => self::definition(8192, 'integer', template: true),
             'LLM_EXTRA_HEADERS' => self::definition([], 'map', template: true),
             'LLM_POST_ANALYSIS_PROMPT_PATH' => self::definition('prompts/dedalus_post_analysis_system.txt', 'path', template: true),
             'FAST_SCORING_ENABLED' => self::definition(false, 'boolean', template: true),

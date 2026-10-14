@@ -19,7 +19,19 @@ final class AgentResponseGenerator
         private readonly TextChatProvider $provider,
         private readonly bool $unicodeAuthoredTextEnabled,
         private readonly bool $emojiAuthoredTextEnabled,
+        private readonly int $maxCompletionTokens = 8192,
     ) {
+        self::completionTokenLimit(['AGENT_REPLY_MAX_COMPLETION_TOKENS' => $maxCompletionTokens]);
+    }
+
+    public static function completionTokenLimit(array $config): int
+    {
+        $value = array_key_exists('AGENT_REPLY_MAX_COMPLETION_TOKENS', $config) ? $config['AGENT_REPLY_MAX_COMPLETION_TOKENS'] : 8192;
+        if ((!is_int($value) && !(is_string($value) && preg_match('/^[0-9]+$/D', $value)))
+            || (float) $value < 1 || (float) $value > 32768) {
+            throw new \InvalidArgumentException('AGENT_REPLY_MAX_COMPLETION_TOKENS must be an integer from 1 to 32768.');
+        }
+        return (int) $value;
     }
 
     /**
@@ -33,7 +45,7 @@ final class AgentResponseGenerator
         }
 
         $completion = $this->provider->completeTextChat($this->messages($task), [
-            'max_completion_tokens' => 2000,
+            'max_completion_tokens' => $this->maxCompletionTokens,
             'exchange_context' => [
                 'call_type' => 'agent_response_task',
                 'post_id' => (string) ($task['post_id'] ?? ''),

@@ -685,3 +685,12 @@ It never overwrites a different store. Exit 0 means complete verification/restor
 exit 1 includes actionable failure text. Rebuild the read model after restoring.
 See [Image backup and recovery](../runbooks/image_backup.md) for the full sequence,
 limits, deployment requirements, and interrupted-operation recovery.
+
+### Agent reply completion allowance
+
+`AGENT_REPLY_MAX_COMPLETION_TOKENS` in private configuration (or the environment)
+controls reply generation: default 8192, integer range 1–32768. Invalid values
+fail before a provider call. Larger allowances can increase cost and latency;
+they do not guarantee model support or successful completion. Exhausted replies,
+including partial text, are rejected rather than published. Correct settings and
+explicitly retry affected work; no automatic budget escalation occurs.
