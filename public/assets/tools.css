@@ -32,6 +32,36 @@
   display: block;
 }
 
+.bookmarklet-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.bookmarklet-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0.3rem;
+  color: inherit;
+  background: var(--button-bg);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.bookmarklet-copy:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.bookmarklet-feedback:empty {
+  display: none;
+}
+
 @media (max-width: 560px) {
   .tool-launcher-item {
     flex-direction: column;

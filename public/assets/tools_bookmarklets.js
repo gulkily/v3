@@ -95,12 +95,12 @@
     );
   }
 
-  function bookmarkletSource(baseOrigin, kind, mode) {
+  function bookmarkletScript(baseOrigin, kind, mode) {
     var fn = kind === "tweet" ? tweetComposeUrl : composeUrl;
 
     if (mode === "new-window") {
       return (
-        "javascript:(function(){var u=(" +
+        "(function(){var u=(" +
         fn.toString() +
         ")(" +
         JSON.stringify(baseOrigin) +
@@ -111,7 +111,7 @@
     }
 
     return (
-      "javascript:(function(){var u=(" +
+      "(function(){var u=(" +
       fn.toString() +
       ")(" +
       JSON.stringify(baseOrigin) +
@@ -121,6 +121,11 @@
     );
   }
 
+  function bookmarkletSource(baseOrigin, kind, mode) {
+    // Encode the URL instead of stripping whitespace from executable JavaScript.
+    return "javascript:" + encodeURIComponent(bookmarkletScript(baseOrigin, kind, mode));
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var baseOrigin = window.location.origin;
 
@@ -128,6 +133,26 @@
       var kind = link.getAttribute("data-bookmarklet-kind") || "clip";
       var mode = link.getAttribute("data-bookmarklet-mode") || "same-window";
       link.setAttribute("href", bookmarkletSource(baseOrigin, kind, mode));
+      var item = link.closest(".tool-launcher-item");
+      var button = item.querySelector("[data-bookmarklet-copy]");
+      var feedback = item.querySelector("[data-bookmarklet-feedback]");
+      var feedbackTimer;
+      button.disabled = false;
+      button.addEventListener("click", async function () {
+        clearTimeout(feedbackTimer);
+        feedback.textContent = "";
+        button.disabled = true;
+        try {
+          await navigator.clipboard.writeText(link.getAttribute("href"));
+          feedback.textContent = "Copied";
+        } catch (error) {
+          feedback.textContent = "Copy failed. Try again.";
+        } finally {
+          button.disabled = false;
+          button.focus({ preventScroll: true });
+          feedbackTimer = setTimeout(function () { feedback.textContent = ""; }, 4000);
+        }
+      });
     });
   });
 })();

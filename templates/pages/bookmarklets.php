@@ -26,6 +26,7 @@ $bookmarkletSections = [
 <?php foreach ($bookmarklets as $bookmarklet): ?>
 <?php if ($bookmarklet['mode'] !== $section['mode']) { continue; } ?>
       <li class="tool-launcher-item">
+        <div class="bookmarklet-actions">
         <a
           class="tool-launcher-button"
           href="#"
@@ -33,6 +34,13 @@ $bookmarkletSections = [
           data-bookmarklet-kind="<?= $e($bookmarklet['bookmarklet_kind']) ?>"
           data-bookmarklet-mode="<?= $e($bookmarklet['mode']) ?>"
         ><?= $e($bookmarklet['label']) ?></a>
+        <button type="button" class="bookmarklet-copy" data-bookmarklet-copy disabled
+          aria-label="<?= $e('Copy ' . $bookmarklet['label'] . ' bookmarklet (' . $bookmarklet['mode'] . ')') ?>"
+          title="Copy one-line bookmarklet">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg>
+        </button>
+        <span class="bookmarklet-feedback meta" data-bookmarklet-feedback role="status" aria-live="polite" aria-atomic="true"></span>
+        </div>
         <p class="tool-launcher-description"><?= $e($bookmarklet['description']) ?></p>
       </li>
 <?php endforeach; ?>
