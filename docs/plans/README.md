@@ -162,3 +162,5 @@ and repair its navigation and affected references. See the
 [transition guide](../reference/railspike_workflow.md) for existing FDP cycles.
 
 - [Signed thread labels and post reactions](signed_thread_label_records/)
+
+- [Operator post retraction](./operator_record_deletion/operator_record_deletion_step1_solution_assessment.md) — extend signed retraction to operators and move the action into a shared overflow menu.
