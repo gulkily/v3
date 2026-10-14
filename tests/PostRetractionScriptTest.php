@@ -29,7 +29,7 @@ final class PostRetractionScriptTest
         assertSame(true, $result['complete']['disabled']);
 
         assertSame(['submit' => 1, 'confirm' => 1, 'reload' => 0], $result['partial']['calls']);
-        assertSame('Retry deletion', $result['partial']['label']);
+        assertSame('Retry retraction', $result['partial']['label']);
         assertSame(false, $result['partial']['disabled']);
         assertSame(true, str_contains($result['partial']['feedback'], 'read_model_refresh'));
 

@@ -2906,6 +2906,32 @@ NODE;
         $this->deleteTree($archive);
     }
 
+    public function testRetractionArtifactFailureRetriesWithoutAnotherCommit(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'artifact-retraction', 'Artifact recovery prose');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $prepared = $writer->prepareRetraction(['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']]);
+        symlink($root, $artifacts . '/threads');
+        file_put_contents($artifacts . '/threads.html', 'Artifact recovery prose');
+        $result = $writer->finalizePreparedRetraction([
+            'prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ]);
+        assertSame('partial', $result['retraction_status']);
+        assertSame('artifact_invalidate', $result['failed_step']);
+        $head = $this->gitOutput($root, 'rev-parse HEAD');
+        $retry = ['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']];
+        assertSame('partial', $writer->prepareRetraction($retry)['retraction_status']);
+        unlink($artifacts . '/threads');
+        assertSame('complete', $writer->prepareRetraction($retry)['retraction_status']);
+        assertSame(false, is_file($artifacts . '/threads.html'));
+        assertSame($head, $this->gitOutput($root, 'rev-parse HEAD'));
+    }
+
     public function testRetractionRefreshFailureReportsPartialAndRetryRecovers(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

@@ -38,3 +38,9 @@ Debug mode: disabled
 - Verification: four API/script tests passed, including operator root/post pages and ordinary author visibility. Real Chromium menu checks passed for keyboard activation, Escape/focus restoration, and mobile touch activation.
 - Notes: Playwright does not resolve native summary with getByRole(button) in this browser, so the browser fixture selects the explicitly named summary. Native disclosure semantics remain intact. Corrected an EOF whitespace warning from Stage 5.
 
+## Stage 7 - Browser signing and visible recovery
+
+- Changes: browser submits actor_identity_id and signs the canonical target/actor record with its own key. Confirmation/progress/completion say retract. Submission closes the menu; partial status exposes a standalone Retry retraction outside it. Controls are disabled together during submission. Server retries now repeat artifact invalidation even when the read model is already refreshed.
+- Verification: four focused PHP/DOM tests passed, including real artifact invalidation failure and recovery without another commit. Real Chromium author/operator signing and accurate attribution passed, including mobile operator use, cancellation, and simulated partial-response recovery with unchanged HEAD. Menu keyboard/touch checks also passed.
+- Notes: browser partial response is injected after a real successful commit; separate server tests cause actual read-model/artifact failures. Together they verify UI and server recovery boundaries.
+

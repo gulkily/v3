@@ -752,6 +752,11 @@ class LocalWriteService
             }
         }
 
+        if ($alreadyRetracted) {
+            try { $this->invalidateRetractedPostArtifacts(); }
+            catch (\Throwable) { $failedStep ??= 'artifact_invalidate'; }
+        }
+
         $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
 
         return [

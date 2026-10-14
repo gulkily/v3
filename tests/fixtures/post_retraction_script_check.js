@@ -9,7 +9,7 @@ class Element {}
 function makeButton() {
   const attributes = { "data-action": "retract-post", "data-post-id": "thread-1", "data-confirm": "Sure?", "data-done": "Done text." };
   const feedback = { hidden: true, textContent: "", className: "" };
-  const row = { querySelector: () => feedback };
+  const row = { querySelector: (selector) => selector === '[data-role="retraction-feedback"]' ? feedback : null };
   const button = Object.assign(new Element(), {
     textContent: "Delete",
     parentElement: row,

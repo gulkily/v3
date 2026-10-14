@@ -24,6 +24,9 @@ $canRetractPost = ($post['retracted_at'] ?? null) === null
           >Retract post</button>
         </div>
       </details>
+      <button type="button" class="thread-reaction-button" data-role="retraction-retry" data-action="retract-post"
+        data-post-id="<?= $e($post['post_id']) ?>" data-confirm="<?= $e(\ForumRewrite\Support\RetractedPostNotice::CONFIRM) ?>"
+        data-done="<?= $e(\ForumRewrite\Support\RetractedPostNotice::DONE) ?>" hidden>Retry retraction</button>
       <p class="meta retraction-feedback" data-role="retraction-feedback" hidden></p>
     </div>
 <?php endif; ?>

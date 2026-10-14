@@ -1290,23 +1290,23 @@
 
   async function submitSignedRetraction(postId) {
     await ensureActionIdentity(null, null);
-    const authorIdentityId = currentAuthorIdentityId();
-    if (!authorIdentityId) {
+    const actorIdentityId = currentAuthorIdentityId();
+    if (!actorIdentityId) {
       return {
         ok: false,
-        error: "No saved browser identity is available to sign this deletion.",
+        error: "No saved browser identity is available to sign this retraction.",
         technicalDetails: "Retraction signing requires a stored browser fingerprint.",
       };
     }
 
     const preparedResponse = await submitUrlEncoded("/api/prepare_retraction", {
       post_id: String(postId || ""),
-      author_identity_id: authorIdentityId,
+      actor_identity_id: actorIdentityId,
     });
     const prepared = parseRetractionResponse(
       preparedResponse.text,
       preparedResponse.serverTiming,
-      "Unable to prepare the deletion for signing."
+      "Unable to prepare the retraction for signing."
     );
     if (!prepared.ok || prepared.alreadyRetracted) {
       return prepared;
@@ -1317,14 +1317,14 @@
       prepare_token: prepared.prepareToken,
       post_id: prepared.postId,
       record_path: prepared.recordPath,
-      author_identity_id: authorIdentityId,
+      actor_identity_id: actorIdentityId,
       canonical_record: prepared.canonicalRecord,
       detached_signature: detachedSignature,
     });
     const finalized = parseRetractionResponse(
       finalizedResponse.text,
       finalizedResponse.serverTiming,
-      "Unable to finalize the signed deletion."
+      "Unable to finalize the signed retraction."
     );
     finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
 

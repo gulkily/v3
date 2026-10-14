@@ -22,36 +22,43 @@
       return;
     }
 
-    button.setAttribute("disabled", "disabled");
-    setFeedback(feedback, "Signing and submitting your deletion...", "ok");
+    const control = button.closest('[data-role="retraction-control"]');
+    const retry = control ? control.querySelector('[data-role="retraction-retry"]') : null;
+    const menu = control ? control.querySelector('details.post-more-actions') : null;
+    if (menu) { menu.open = false; menu.querySelector('summary').focus(); }
+    const buttons = control && control.querySelectorAll ? Array.from(control.querySelectorAll('[data-action="retract-post"]')) : [button];
+    buttons.forEach(function (action) { action.setAttribute("disabled", "disabled"); });
+    setFeedback(feedback, "Signing and submitting your retraction...", "ok");
 
     try {
       const result = await signing.submitSignedRetraction(button.getAttribute("data-post-id") || "");
       if (!result || !result.ok) {
-        setFeedback(feedback, result && result.error ? result.error : "Unable to delete this post.", "error");
-        button.removeAttribute("disabled");
+        setFeedback(feedback, result && result.error ? result.error : "Unable to retract this post.", "error");
+        buttons.forEach(function (action) { action.removeAttribute("disabled"); });
         return;
       }
 
       if (result.retractionStatus === "partial") {
         setFeedback(
           feedback,
-          "Your deletion was recorded, but updating the site did not finish (" + (result.failedStep || "unknown step") + "). "
+          "Your retraction was recorded, but updating the site did not finish (" + (result.failedStep || "unknown step") + "). "
             + "Retry to finish removing it.",
           "error"
         );
-        button.textContent = "Retry deletion";
-        button.removeAttribute("disabled");
+        if (retry) retry.hidden = false;
+        else button.textContent = "Retry retraction";
+        buttons.forEach(function (action) { action.removeAttribute("disabled"); });
         return;
       }
 
-      setFeedback(feedback, button.getAttribute("data-done") || "Post deleted.", "ok");
+      if (retry) retry.hidden = true;
+      setFeedback(feedback, button.getAttribute("data-done") || "Post retracted.", "ok");
       window.setTimeout(function () {
         window.location.reload();
       }, 1500);
     } catch (error) {
-      setFeedback(feedback, error instanceof Error ? error.message : "Unable to delete this post.", "error");
-      button.removeAttribute("disabled");
+      setFeedback(feedback, error instanceof Error ? error.message : "Unable to retract this post.", "error");
+      buttons.forEach(function (action) { action.removeAttribute("disabled"); });
     }
   }
 
@@ -71,7 +78,7 @@
     }
 
     event.preventDefault();
-    const confirmText = button.getAttribute("data-confirm") || "Delete this post?";
+    const confirmText = button.getAttribute("data-confirm") || "Retract this post?";
     if (!window.confirm(confirmText)) {
       return;
     }
