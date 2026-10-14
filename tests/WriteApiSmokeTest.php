@@ -2147,6 +2147,32 @@ NODE;
         }
     }
 
+    public function testInvalidReplyBudgetFailsWithoutPublicationAndHasActionableFeedback(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previous = $this->useStubLlmProvider();
+        $oldBudget = getenv('AGENT_REPLY_MAX_COMPLETION_TOKENS');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId));
+            putenv('AGENT_REPLY_MAX_COMPLETION_TOKENS=0');
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $result = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
+            assertSame('failed', $result['generation_status']);
+            assertSame('provider_configuration_error', $result['failure_code']);
+            foreach (['threads', 'posts'] as $surface) {
+                assertStringContains('Provider configuration needs correction',
+                    $this->renderMethod($application, 'GET', '/' . $surface . '/' . rawurlencode($postId)));
+            }
+        } finally {
+            putenv($oldBudget === false ? 'AGENT_REPLY_MAX_COMPLETION_TOKENS' : 'AGENT_REPLY_MAX_COMPLETION_TOKENS=' . $oldBudget);
+            $this->restoreLlmProviderEnv($previous);
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyRecordsPostingFailureAfterGeneration(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

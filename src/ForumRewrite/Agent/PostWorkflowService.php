@@ -313,7 +313,7 @@ final class PostWorkflowService
             'post_id' => (string) ($row['target_post_id'] ?? ''),
             'generation_status' => 'failed',
             'failure_code' => $row['failure_code'] ?? null,
-            'failure_message' => $row['failure_message'] ?? null,
+            'failure_message' => AgentReplyFailure::message((string) ($row['failure_code'] ?? '')),
             'retry_after' => $row['retry_after'] ?? null,
         ];
     }
@@ -784,7 +784,15 @@ final class PostWorkflowService
      */
     public function fulfillAgentReplyRequest(array $requestRow): array
     {
-        return $this->agentReplyFulfillmentService()->fulfillRequest($requestRow);
+        try {
+            return $this->agentReplyFulfillmentService()->fulfillRequest($requestRow);
+        } catch (\InvalidArgumentException $error) {
+            $row = (new SqliteAgentReplyGenerationStore($this->pdo()))->saveFailed(
+                (string) $requestRow['target_post_id'], (string) $requestRow['target_content_hash'],
+                (string) ($requestRow['analysis_hash'] ?? ''), 'provider_configuration_error', $error->getMessage(),
+            );
+            return $this->failedAgentReplyResponse($row);
+        }
     }
 
     /**

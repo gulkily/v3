@@ -22,7 +22,7 @@ final class TaskQueueWorker
      * @param callable(int):void $rebuildReadModel
      * @param (callable():array<string, mixed>)|null $runFastScoreSweep
      * @param (callable():void)|null $publishOfflineSnapshot
-     * @param (callable(array<string, mixed>):void)|null $fulfillAgentReply
+     * @param (callable(array<string, mixed>):array)|null $fulfillAgentReply
      */
     public function __construct(
         private readonly SqliteTaskQueueStore $store,
@@ -161,7 +161,20 @@ final class TaskQueueWorker
         }
 
         try {
-            ($this->fulfillAgentReply)($task);
+            $outcome = ($this->fulfillAgentReply)($task);
+            $status = (string) ($outcome['generation_status'] ?? 'unavailable');
+            if ($status === 'failed') {
+                $code = (string) ($outcome['failure_code'] ?? 'agent_reply_fulfillment_failed');
+                // Fulfillment records failures durably. Recovery must reset that record
+                // before another claim; repeating this queue task alone cannot retry it.
+                return $this->store->markFailed($id, $code, \ForumRewrite\Agent\AgentReplyFailure::message($code), false);
+            }
+            if (!in_array($status, ['generated', 'already_posted', 'not_recommended'], true)) {
+                return $this->store->markFailed($id, 'agent_reply_unavailable', 'Reply request is unavailable for fulfillment; inspect its stored state.', false);
+            }
+            $reason = (string) ($outcome['reason'] ?? '');
+            $this->store->recordTaskProgress($id, 'Agent reply outcome: ' . $status . ($reason === '' ? '' : ' (' . $reason . ')'));
+            return array_merge($this->store->markCompleted($id), ['generation_status' => $status, 'reason' => $reason]);
         } catch (InvalidArgumentException $exception) {
             return $this->store->markFailed($id, 'agent_reply_task_invalid', $exception->getMessage(), false);
         } catch (Throwable $throwable) {

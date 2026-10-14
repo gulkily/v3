@@ -250,15 +250,25 @@ try {
                     $publisher->publishUpdate($databasePath);
                     $publisher->publish($databasePath);
                 },
-                static function (array $task) use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot): void {
+                static function (array $task) use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot): array {
                     $target = AgentReplyTask::targetFromDeduplicationKey((string) ($task['deduplication_key'] ?? ''));
                     $replyStore = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
                     $request = $replyStore->claimOrResumeRequestedForTarget($target['post_id'], $target['content_hash']);
                     if ($request === null) {
-                        return;
+                        $existing = $replyStore->findByTarget($target['post_id'], $target['content_hash']);
+                        if (($existing['agent_post_id'] ?? null) !== null) {
+                            return ['generation_status' => 'already_posted'];
+                        }
+                        if (($existing['status'] ?? '') === 'failed') {
+                            return ['generation_status' => 'failed', 'failure_code' => $existing['failure_code']];
+                        }
+                        if (($existing['status'] ?? '') === 'skipped') {
+                            return ['generation_status' => 'not_recommended', 'reason' => $existing['failure_code']];
+                        }
+                        return ['generation_status' => 'unavailable'];
                     }
 
-                    (new Application(
+                    return (new Application(
                         $projectRoot,
                         $repositoryRoot,
                         $databasePath,
@@ -294,6 +304,8 @@ try {
                     'id' => $taskId,
                     'status' => (string) $task['status'],
                     'failure_code' => isset($task['failure_code']) ? (string) $task['failure_code'] : null,
+                    'generation_status' => $task['generation_status'] ?? null,
+                    'reason' => $task['reason'] ?? null,
                 ];
                 emitTaskQueue($quiet, sprintf(
                     "Finished task id=%d status=%s elapsed=%.3fs failure=%s\n",
