@@ -2,6 +2,8 @@
 
 Debug mode: disabled
 
+Status: Superseded as the active proposal by [top five media embeds Step 1](top_five_media_embeds/top_five_media_embeds_step1_solution_assessment.md). Retained for context; its broader YouTube URL suggestions are not automatically included in the new scope.
+
 ## Original Query
 
 Please choose the next logical thing and write Step 1
