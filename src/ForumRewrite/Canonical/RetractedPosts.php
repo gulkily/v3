@@ -34,7 +34,7 @@ final class RetractedPosts
     /**
      * Ids of posts whose retraction is effective in the repository's current files.
      *
-     * @return array<string, true>
+     * @return array<string, string>
      */
     public static function effectivePostIds(string $repositoryRoot): array
     {
@@ -48,7 +48,7 @@ final class RetractedPosts
                         continue;
                     }
                     if (self::applies($repository->loadPost($candidate), $retraction)) {
-                        $ids[$retraction->postId] = true;
+                        $ids[$retraction->postId] = $retraction->classification;
                     }
                     break;
                 }

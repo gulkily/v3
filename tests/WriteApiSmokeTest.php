@@ -2556,8 +2556,9 @@ NODE;
         $accepted = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
         $_POST = [];
         assertSame('complete', $accepted['retraction_status']);
+        assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
         assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
-        assertStringContains('retracted', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
+        assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
         $stale = $this->prepareRetractionRequest($app, $operator['identity_id'], $second['thread_id']);
         $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($operator['identity_id'], 8) . '.txt'));
         $this->runCommand($root, 'git commit -m "Revoke operator"');
@@ -2573,7 +2574,7 @@ NODE;
         assertSame(true, $retry['already_retracted']);
         (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
         assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
-        assertStringContains('retracted', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
+        assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
         $source = sys_get_temp_dir() . '/operator-import-' . bin2hex(random_bytes(6));
         mkdir($source);
         $this->copyDirectory($root . '/records', $source . '/records');
@@ -2721,7 +2722,7 @@ NODE;
         $this->renderMethod($application, 'POST', '/api/create_prepared_retraction');
         $_POST = [];
 
-        $notice = 'This post was deleted by its author.';
+        $notice = 'This post was retracted by its author.';
         $thread = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
         assertStringContains($notice, $thread);
         assertStringContains('Reply that stays visible.', $thread);
@@ -2844,7 +2845,7 @@ NODE;
             $thread = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
             assertSame(false, str_contains($thread, 'zze2eprose'));
             assertStringContains('Guest reply that stays.', $thread);
-            assertStringContains('This post was deleted by its author.', $thread);
+            assertStringContains('This post was retracted by its author.', $thread);
             foreach (['/', '/activity/', '/latest', '/top', '/users/', '/api/list_index', '/api/get_post?post_id=' . $authorReply, '/profiles/' . rawurlencode($author['profile_slug']), '/api/get_profile?profile_slug=' . rawurlencode($author['profile_slug'])] as $route) {
                 assertSame(false, str_contains($this->renderMethod($application, 'GET', $route), 'zze2eprose'), 'Prose at ' . $route);
             }

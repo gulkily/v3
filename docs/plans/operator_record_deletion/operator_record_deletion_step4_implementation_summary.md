@@ -26,3 +26,9 @@ Debug mode: disabled
 - Verification: 11 targeted import/API tests passed, including forged/unsigned import rejection, accepted operator duplicate after revocation, signed-but-unaccepted operator rejection, and author reimport suppression.
 - Notes: importing a remote instance's operator decision cannot grant local authority; remote moderation propagation remains excluded. Locally accepted actions survive import of the original content.
 
+## Stage 5 - Accurate attribution and cache migration
+
+- Changes: derived author/operator classification is carried by post/thread rows and all existing retraction queries. Shared notices, QDB/Forte placeholders, and current/historical source denial identify the actual action class. Listing titles remain unchanged. Schema version 18 triggers rebuild of prior caches.
+- Verification: six targeted tests passed, including version-17 cache with both columns removed starting normally, rebuild command, schema fingerprint, operator notice/source attribution, and author suppression across served surfaces. Earlier placeholder/reply coverage also passed.
+- Notes: actor identity and acceptance evidence remain canonical; derived classification only controls presentation. Deploy application code with the schema change; do not downgrade to code that ignores operator retractions.
+

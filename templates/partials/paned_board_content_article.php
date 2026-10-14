@@ -18,7 +18,7 @@ $viewerHasFlaggedRoot = isset($viewerFlaggedPostIds[(string) $thread['root_post_
     </div>
     <div class="post-card paned-post-card" data-post-id="<?= $e($thread['root_post_id']) ?>">
 <?php if (($thread['retracted_at'] ?? null) !== null): ?>
-      <div class="body retracted-post" data-retracted="true"><p class="meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::TEXT) ?></p></div>
+      <div class="body retracted-post" data-retracted="true"><p class="meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($thread)) ?></p></div>
 <?php else: ?>
       <div class="body"><?= $br($thread['root_post_body'] ?? $thread['body_preview']) ?></div>
 <?php endif; ?>

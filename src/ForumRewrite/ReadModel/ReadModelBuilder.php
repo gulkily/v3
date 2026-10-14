@@ -157,12 +157,12 @@ final class ReadModelBuilder
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, retracted_at, sequence_number)
-             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :retracted_at, :sequence_number)'
+            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, retracted_at, retraction_class, sequence_number)
+             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :author_identity_id, :retracted_at, :retraction_class, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, retracted_at)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, retracted_at, retraction_class)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at, :retraction_class)'
         );
 
         $retractions = $this->loadPostRetractions();
@@ -185,6 +185,7 @@ final class ReadModelBuilder
                 'subject' => $isRetracted ? null : $record->subject,
                 'body' => $isRetracted ? '' : $record->body,
                 'retracted_at' => $retractedAt,
+                'retraction_class' => $isRetracted ? $retractions[$record->postId]->classification : null,
                 'board_tags_json' => json_encode($record->boardTags, JSON_THROW_ON_ERROR),
                 'thread_type' => $record->threadType,
                 'author_identity_id' => $record->authorIdentityId,
@@ -233,6 +234,7 @@ final class ReadModelBuilder
                 'thread_type' => $post['thread_type'],
                 'author_identity_id' => $post['author_identity_id'],
                 'retracted_at' => $post['retracted_at'],
+                'retraction_class' => $post['retraction_class'],
                 'sequence_number' => $post['sequence_number'],
             ]);
 
@@ -254,6 +256,7 @@ final class ReadModelBuilder
                     'event_link' => $post['event_link'],
                     'event_time' => $post['event_time'],
                     'retracted_at' => $post['retracted_at'],
+                'retraction_class' => $post['retraction_class'],
                 ];
             }
 

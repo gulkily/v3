@@ -110,7 +110,7 @@ if (!$metaVisible) {
 ]) ?>
   </p>
 <?php if ($isRetracted): ?>
-  <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::TEXT) ?></p>
+  <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($post)) ?></p>
 <?php else: ?>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php endif; ?>

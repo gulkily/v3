@@ -276,3 +276,12 @@ Metadata also includes `post_reaction_invalid_count`, parallel to
 `thread_label_invalid_count`. A missing signer key makes a supplied signature
 invalid, never unsigned. Raw source bytes are unchanged; current-source responses
 expose `X-Forum-Signature-Status`, and activity source metadata shows the status.
+
+## Operator retraction attribution
+
+Schema version 18 adds nullable `retraction_class` to `posts` and `threads`.
+It is `author` or `operator` for an effective retraction and null otherwise.
+The root classification is copied into the thread row for paned views.
+Target, actor, signature, timestamp, and operator acceptance authority remain
+canonical evidence; this column is derived presentation metadata. Startup
+rebuilds a version 17 cache before executing queries using the new column.

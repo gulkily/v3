@@ -42,7 +42,7 @@ final class SourceFileController
         }
 
         if ($this->isRetracted($relativePath)) {
-            $this->sendRetracted();
+            $this->sendRetracted($relativePath);
             return;
         }
 
@@ -73,7 +73,7 @@ final class SourceFileController
         }
 
         if ($this->isRetracted($relativePath)) {
-            $this->sendRetracted();
+            $this->sendRetracted($relativePath);
             return;
         }
 
@@ -115,9 +115,11 @@ final class SourceFileController
         return RetractedPosts::isRetractedPostPath($relativePath, RetractedPosts::effectivePostIds($this->repositoryRoot));
     }
 
-    private function sendRetracted(): void
+    private function sendRetracted(string $relativePath): void
     {
-        $this->routeServices->sendText("This post was retracted by its author.\n", 410);
+        $classes = RetractedPosts::effectivePostIds($this->repositoryRoot);
+        $class = $classes[pathinfo($relativePath, PATHINFO_FILENAME)] ?? 'author';
+        $this->routeServices->sendText(\ForumRewrite\Support\RetractedPostNotice::text(['retraction_class' => $class]) . "\n", 410);
     }
 
     private function readCurrentFile(string $relativePath): ?string
