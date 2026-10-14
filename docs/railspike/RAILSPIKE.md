@@ -22,12 +22,18 @@ Each phase file ends with instructions for when to proceed so you never overrun 
 
 ## Railspike Debug Mode
 
-Debug mode is optional feedback for improving Railspike's instructions, not application debugging. New workflows default to disabled. Enable or disable it with a plain-language request such as “Enable Railspike debug mode for this workflow” or “Disable Railspike debug mode.”
+Debug mode is optional feedback for improving Railspike's instructions, not application debugging. New workflows default to disabled unless the consuming project opts in. Enable or disable it for a workflow with a plain-language request such as “Enable Railspike debug mode for this workflow” or “Disable Railspike debug mode.”
+
+**Project default**:
+- An optional `.railspike_debug_on` file at the consuming-project root enables debug by default for new workflows. Only file presence matters: do not read or validate its contents. Empty, arbitrary, or “false” contents all enable the default; unreadable contents do not matter when file presence is established. An absent marker leaves the default disabled.
+- Use the consuming-project root established for the workflow and its `docs/plans/`, not the current shell directory or an installed Railspike directory. For standalone work on Railspike, this is the Railspike repository root; for submodule or vendored installations, it is the host project root. Do not search ancestor directories or apply nested-project or user-global inheritance.
+- Consult the marker only for a new workflow without an explicit mode request. If the consuming root or marker's file presence cannot be established, ask for clarification instead of assuming absence. A directory at the marker path is not a marker file; clarify that mismatch when lookup is needed.
+- Record the resolved mode in the first artifact as a snapshot. Adding or removing the marker affects future workflows only; editing its contents has no effect. Workflow-specific overrides do not create, remove, or edit the marker.
 
 **Durable state and recovery**:
 - Record `Debug mode: enabled` or `Debug mode: disabled` immediately below the current artifact's Plan navigation bar; inherit it into subsequent artifacts, including the Step 4 summary. If no artifact exists, record it when creating the first one.
 - On step entry, resumption after context loss, and before a completed-step handoff, read this contract and the current artifact's field. If the next artifact does not exist, inherit from the latest completed artifact. Historical fields are snapshots, not competing current settings.
-- The latest explicit user enable/disable request takes precedence; update the current field accordingly. Default missing state to disabled only for a clearly new workflow without an enable request. For resumed work, ask for clarification when available evidence cannot resolve missing or conflicting state; never silently reset it.
+- Resolve mode in this order: latest explicit user enable/disable request, existing workflow state, project default for a clearly new workflow, then disabled when no marker exists. Update the current field for an explicit request. For resumed work, ask for clarification when available evidence cannot resolve missing or conflicting state; never use the project marker to repair uncertain resumed state or silently reset it.
 - Mode changes do not approve steps or authorize advancing, branching, or committing. During Step 4, record changes in the summary and include them in the next authorized stage commit; never amend completed commits.
 
 **Completed-step report**: When enabled, save the complete diagnostic report in the debug log. In each completed Step 1–4 handoff, include exactly one short debug line linking to the saved log, before requesting approval where applicable. Do not repeat findings, group headings, or empty-group markers in the conversation, or narrate diagnostic collection. Phases and implementation stages do not trigger reports. When disabled, emit no diagnostics or debug link and preserve existing logs.

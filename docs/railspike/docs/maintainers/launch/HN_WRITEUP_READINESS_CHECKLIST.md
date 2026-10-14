@@ -7,7 +7,7 @@ Use this checklist to make Railspike easy to evaluate in a few minutes and to en
 ## Product Proof
 
 - [x] State the project in one clear sentence: Railspike helps you review, combine, and revise agent plans in Markdown before approving work on code, documentation, tests, or checklists.
-- [ ] Select and write replacement examples from the [case-study candidates](./docs/case-study-candidates.md); case studies are the last item in the [positioning checklist](./docs/positioning-checklist.md).
+- [ ] Select and write replacement examples from the [case-study candidates](../case-study-candidates.md); case studies are the last item in the [positioning checklist](../positioning-checklist.md).
 - [ ] Include a complete feature cycle with its original request, reproducible prompts, planning artifacts, verification, and stage commits.
 - [ ] Explain the outcome and support any comparison with recorded evidence.
 - [x] Keep claims narrow; do not claim that Railspike eliminates hallucinations or replaces engineering judgment.
@@ -31,7 +31,7 @@ Use this checklist to make Railspike easy to evaluate in a few minutes and to en
 ## Repository Readiness
 
 - [x] Add a license appropriate for intended reuse. (MIT)
-- [x] Decide and document the release/versioning approach. See [Releases and Versioning](./docs/RELEASES.md).
+- [x] Decide and document the release/versioning approach. See [Releases and Versioning](../RELEASES.md).
 - [ ] Create a tagged first release once the new launch materials are committed, pushed, and reviewed on the public repository.
 - [ ] Verify Markdown links, paths, commands, and Mermaid rendering from a clean checkout after the launch-material commit is publicly available. Run local link/path and submodule-workflow checks; GitHub rendering still needs published review.
 - [x] Add contribution guidance if outside contributions are wanted.
