@@ -126,6 +126,32 @@
     return "javascript:" + encodeURIComponent(bookmarkletScript(baseOrigin, kind, mode));
   }
 
+  async function copySource(source) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(source);
+        return;
+      } catch (error) {
+        // Older browsers and restricted contexts may still allow a user-initiated copy.
+      }
+    }
+    var field = document.createElement("textarea");
+    field.value = source;
+    field.readOnly = true;
+    field.tabIndex = -1;
+    field.setAttribute("aria-hidden", "true");
+    field.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+    document.body.appendChild(field);
+    try {
+      field.select();
+      if (!document.execCommand || !document.execCommand("copy")) {
+        throw new Error("Copy unavailable");
+      }
+    } finally {
+      field.remove();
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var baseOrigin = window.location.origin;
 
@@ -143,7 +169,7 @@
         feedback.textContent = "";
         button.disabled = true;
         try {
-          await navigator.clipboard.writeText(link.getAttribute("href"));
+          await copySource(link.getAttribute("href"));
           feedback.textContent = "Copied";
         } catch (error) {
           feedback.textContent = "Copy failed. Try again.";
