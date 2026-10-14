@@ -32,7 +32,8 @@ still physically removes a canonical file and is a separate operation.
 - Physical purge of history, artifacts, and backups is a later slice under the
   same record.
 
-The site's confirmation and completion text states this; the wording lives in
+The completion text explains these limits; confirmation asks “Retract this post?”.
+The wording lives in
 `src/ForumRewrite/Support/RetractedPostNotice.php`.
 
 ## Record format

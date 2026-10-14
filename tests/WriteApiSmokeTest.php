@@ -2802,7 +2802,7 @@ NODE;
             $_COOKIE = ['identity_hint' => $author['identity_id']];
             $asAuthor = $this->renderMethod($application, 'GET', $threadPath);
             assertStringContains('data-action="retract-post"', $asAuthor);
-            assertStringContains('does not erase it from the site&#039;s version history or backups', $asAuthor);
+            assertStringContains('data-confirm="Retract this post?"', $asAuthor);
             assertStringContains('post_retraction.', $asAuthor);
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($author['thread_id']));
             assertStringContains('data-action="retract-post"', $postPage);

@@ -177,5 +177,12 @@
 .post-more-actions > summary::-webkit-details-marker { display: none; }
 .post-more-actions > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .post-more-actions-panel { position: absolute; inset-inline-end: 0; z-index: 40; min-width: 9rem; padding: 0.5rem; border: 1px solid var(--line); background-color: var(--page-bg); background-image: linear-gradient(var(--panel), var(--panel)); }
-.post-more-actions-panel button { min-height: 2.5rem; width: 100%; text-align: start; }
+.post-more-actions-panel button {
+  box-sizing: border-box;
+  min-height: 2.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
 .post-retraction-control .retraction-feedback { flex-basis: 100%; margin: 0; }

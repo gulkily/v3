@@ -63,3 +63,8 @@ Debug mode: disabled
 - Changes: moved the shared retraction control after agent response and Codex handoff buttons in both post and thread-root cards.
 - Verification: two existing PHP tests passed; real Chromium confirmed the overflow control is the final action with agent responses available on thread and individual post pages. Real operator signing still passed; PHP syntax and diff checks passed.
 - Notes: user-requested placement refinement following the eight completed stages.
+
+## Follow-up - Balanced menu spacing and short confirmation
+
+- Changes: dropdown action has equal horizontal padding, zero margin, a contained box width, and centered text. Confirmation is now “Retract this post?” (three words); updated the reference and existing confirmation assertion.
+- Verification: three existing PHP/script tests and both browser scripts passed. A rendered mobile-page geometry check confirmed equal left/right panel spacing and padding; operator signing still passed. Diff checks passed.
