@@ -21,7 +21,7 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
    if(senderMode && url.endsWith('/work?mode=sender'))Object.assign(work,{mode:'sender',source_account:'alice',account:'bob',messages:[row],checkpoint:{target:'',after_id:''}});
    return {ok:true,json:async()=>url.includes('/work')?work:{status:'ok',transfer_id:'uploaded'}};
  };
- vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
+ vm.runInThisContext(fs.readFileSync('public/assets/private_message_availability.js','utf8'));vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
  events.DOMContentLoaded();await window.ForumPrivateMessageHistorySync.refresh();
  const uploaded=requests.find(r=>r.url.endsWith('/transfers')).body;
  assert.equal(uploaded.target,target.fp);assert.equal(storageWrites,0);

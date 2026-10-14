@@ -29,14 +29,14 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
    } else if(url.endsWith('/acknowledge')) receipts.push(JSON.parse(options.body));
    return {ok:true,json:async()=>result};
  };
- vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
+ vm.runInThisContext(fs.readFileSync('public/assets/private_message_availability.js','utf8'));vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
  vm.runInThisContext(fs.readFileSync('public/assets/private_message_reader.js','utf8'));
  listeners.DOMContentLoaded.forEach(fn=>fn());await window.ForumPrivateMessageHistorySync.refresh();
  const read=id=>window.ForumPrivateMessageReader.decryptEnvelope({messageId:id,encryptedEnvelope:envelopes[id],senderPublicKeyArmors:[sender.publicKey]});
  const good=await read('signed');assert.equal(good.kind,'verified');assert.equal(good.plaintext,'signed historical secret');
  const bad=await read('unsigned');assert.equal(bad.kind,'bad-signature');assert(!('plaintext' in bad));
  // A fresh coordinator has no recovered secret cache; retained server ciphertext still works.
- vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
+ vm.runInThisContext(fs.readFileSync('public/assets/private_message_availability.js','utf8'));vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
  listeners.DOMContentLoaded.at(-1)();await window.ForumPrivateMessageHistorySync.refresh();
  assert.equal((await read('signed')).kind,'verified');
  await new Promise(resolve=>setTimeout(resolve,0));

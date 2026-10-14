@@ -35,6 +35,7 @@ window.ForumPrivateMessageReader = { async decryptEnvelope({ encryptedEnvelope }
   if (encryptedEnvelope === 'bad') return { kind: 'bad-signature', message: 'Signature could not be verified.', plaintext: 'DO NOT SHOW' };
   return { kind: 'verified', plaintext: '<script>safe text</script>\n preview' };
 } };
+vm.runInThisContext(fs.readFileSync(require('node:path').join(__dirname, '../../public/assets/private_message_availability.js'), 'utf8'));
 vm.runInThisContext(fs.readFileSync(require('node:path').join(__dirname, '../../public/assets/message_time.js'), 'utf8'));
 vm.runInThisContext(fs.readFileSync(require('node:path').join(__dirname, '../../public/assets/private_message_list.js'), 'utf8'));
 const message = counterpart => ({ counterpart, message_id: counterpart, sender_username_token: counterpart, encrypted_envelope: counterpart, created_at: '2026-10-09T12:00:00Z' });

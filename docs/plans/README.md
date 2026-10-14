@@ -8,6 +8,7 @@ Existing FDP cycles keep their approved process; unrelated historical plans stay
 ## Feature folders
 
 - [Invite QR code](invite_qr_code/)
+- [Private messaging feature flag](private_messaging_feature_flag/)
 
 - [Hide Messages new-message form](hide_messages_new_message_form/)
 
