@@ -14,6 +14,7 @@ final class AgentResponseTask
     public const EXPLAIN_JOKE_OR_REFERENCE_TYPE = 'explain_joke_or_reference';
     public const SUMMARY_AND_KEY_TAKEAWAYS_TYPE = 'summary_and_key_takeaways';
     public const EXPLAIN_SIMPLY_TYPE = 'explain_simply';
+    public const SCRIPTURE_ORIENTED_ANALYSIS_TYPE = 'scripture_oriented_analysis';
     public const CONSTRUCTIVE_COUNTERPOINT_TYPE = 'constructive_counterpoint';
 
     /**
@@ -69,6 +70,10 @@ final class AgentResponseTask
             [
                 'type' => self::CONSTRUCTIVE_COUNTERPOINT_TYPE,
                 'label' => 'Constructive counterpoint',
+            ],
+            [
+                'type' => self::SCRIPTURE_ORIENTED_ANALYSIS_TYPE,
+                'label' => 'Scripture-oriented analysis',
             ],
         ];
     }

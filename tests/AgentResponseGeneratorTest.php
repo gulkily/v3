@@ -102,6 +102,10 @@ final class AgentResponseGeneratorTest
             AgentResponseTask::CONSTRUCTIVE_COUNTERPOINT_TYPE => 'Give the strongest reasonable alternative view',
         ];
 
+        $expectedInstructions[AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE] = trim(
+            file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_oriented_analysis.txt')
+        );
+
         foreach ($expectedInstructions as $type => $instruction) {
             $provider = new FakeTextChatProvider('A response.');
             $generator = new AgentResponseGenerator($provider, true, true);

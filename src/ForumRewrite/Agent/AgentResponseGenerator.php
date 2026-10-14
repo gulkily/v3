@@ -116,6 +116,7 @@ final class AgentResponseGenerator
             AgentResponseTask::SUMMARY_AND_KEY_TAKEAWAYS_TYPE => 'agent_response_summary_and_key_takeaways.txt',
             AgentResponseTask::EXPLAIN_SIMPLY_TYPE => 'agent_response_explain_simply.txt',
             AgentResponseTask::CONSTRUCTIVE_COUNTERPOINT_TYPE => 'agent_response_constructive_counterpoint.txt',
+            AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE => 'agent_response_scripture_oriented_analysis.txt',
             default => 'agent_response_default_text_reply.txt',
         });
     }
