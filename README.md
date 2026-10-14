@@ -542,6 +542,21 @@ projects/configurations, and HTTP/terminal checks. It changes no system packages
 or real application state. Missing shared-extension cases are skipped when the
 runtime compiled that extension statically.
 
-The custom test runner reports tests that take at least 5 seconds by default.
+Each completed test result includes total run time on the left and that test's
+duration on the right, in seconds:
+
+```text
+[12.34s] PASS ExampleTest::testSomething [0.56s]
+```
+
+Both timings use two decimal places; very fast tests may show `0.00s`. Run time
+includes runner startup and time between tests. This format applies to full and
+filtered runs, including redirected logs. Results print after completion;
+unfinished tests do not receive a result on interruption. FAIL lines use the same
+format, with multiline diagnostic details continuing below the timed first line.
+Summary lines and output printed directly by tests remain unchanged. Log consumers
+should account for the timing prefix before PASS/FAIL.
+
+The slow-test summary reports tests that take at least 5 seconds by default.
 Override the cutoff with `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS`, for example
 `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS=1 ./v3 test`.

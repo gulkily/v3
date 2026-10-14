@@ -4,6 +4,49 @@ declare(strict_types=1);
 
 final class TestRunnerBehaviorTest
 {
+    public function testCompletedResultsShowRunTimeAndIndividualDuration(): void
+    {
+        [$exitCode, $stdout, $stderr] = $this->runCommand(
+            dirname(__DIR__),
+            $this->phpCommand() . ' tests/fixtures/test_runner_timing.php RunnerTimingFixtureTest'
+        );
+
+        assertSame(1, $exitCode);
+        assertSame(2, preg_match_all('/^\[(\d+\.\d{2})s\] PASS RunnerTimingFixtureTest::(testPass|testFast) \[(\d+\.\d{2})s\]$/m', $stdout, $passes, PREG_SET_ORDER));
+        assertSame(1, preg_match('/^\[(\d+\.\d{2})s\] FAIL RunnerTimingFixtureTest::testFailure - First failure line \[(\d+\.\d{2})s\]\nDiagnostic detail\n\n$/', $stderr, $failure));
+        assertSame('testPass', $passes[0][2]);
+        assertSame('testFast', $passes[1][2]);
+        // Constructor/setup belongs to run time, not individual test duration.
+        assertTrue((float) $passes[0][1] - (float) $passes[0][3] >= 0.09);
+        assertTrue((float) $passes[0][3] >= 0.02);
+        assertTrue((float) $passes[1][1] >= (float) $passes[0][1]);
+        assertTrue((float) $failure[1] >= (float) $passes[1][1]);
+        assertTrue((float) $failure[1] >= (float) $failure[2]);
+        assertStringContains("fixture output\n[", $stdout);
+        assertStringContains('Summary: 3 run, 2 passed, 1 failed', $stdout);
+        assertStringContains('RunnerTimingFixtureTest::testFailure - First failure line (+2 more lines, see FAIL output above)', $stdout);
+        assertStringNotContains('] FAIL ', $stdout);
+        assertStringNotContains('] PASS ', $stderr);
+    }
+
+    public function testFilteredFastResultHasTimingWithoutSlowReport(): void
+    {
+        [$exitCode, $stdout, $stderr] = $this->runCommand(
+            dirname(__DIR__),
+            $this->phpCommand() . ' tests/fixtures/test_runner_timing.php RunnerTimingFixtureTest::testFast'
+        );
+
+        assertSame(0, $exitCode);
+        assertSame('', $stderr);
+        assertSame(1, preg_match('/^\[\d+\.\d{2}s\] PASS RunnerTimingFixtureTest::testFast \[\d+\.\d{2}s\]$/m', $stdout));
+        assertStringContains('Summary: 1 run, 1 passed, 0 failed', $stdout);
+        assertStringNotContains('Tests at or above', $stdout);
+        assertStringNotContains('testPass', $stdout);
+        assertStringNotContains('testFailure', $stdout);
+        assertStringNotContains('elapsed', $stdout);
+        assertStringNotContains('duration', $stdout);
+    }
+
     public function testCompletedRunReportsTestsAtOrAboveConfiguredThreshold(): void
     {
         [$exitCode, $stdout, $stderr] = $this->runCommand(
@@ -18,6 +61,7 @@ final class TestRunnerBehaviorTest
         assertStringContains('Tests at or above 0.00 seconds:', $stdout);
         assertStringContains('AgentReplyCommandTest::testAgentReplyLiveTestHelpDescribesProviderCheck', $stdout);
         assertStringContains(' ms ', $stdout);
+        assertSame(1, preg_match('/^\[\d+\.\d{2}s\] PASS AgentReplyCommandTest::testAgentReplyLiveTestHelpDescribesProviderCheck \[\d+\.\d{2}s\]$/m', $stdout));
         assertSame('', $stderr);
     }
 
@@ -25,13 +69,14 @@ final class TestRunnerBehaviorTest
     {
         [$exitCode, $stdout, $stderr] = $this->runCommand(
             dirname(__DIR__),
-            $this->phpCommand() . ' tests/run.php AgentReplyCommandTest::testAgentReplyLiveTestHelpDescribesProviderCheck'
+            './v3 test AgentReplyCommandTest::testAgentReplyLiveTestHelpDescribesProviderCheck'
         );
 
         assertSame(0, $exitCode);
         assertStringContains('Summary: 1 run, 1 passed, 0 failed', $stdout);
         assertStringNotContains('Tests at or above', $stdout);
         assertStringNotContains(' ms ', $stdout);
+        assertSame(1, preg_match('/^\[\d+\.\d{2}s\] PASS AgentReplyCommandTest::testAgentReplyLiveTestHelpDescribesProviderCheck \[\d+\.\d{2}s\]$/m', $stdout));
         assertSame('', $stderr);
     }
 
@@ -65,7 +110,9 @@ final class TestRunnerBehaviorTest
         }
 
         fclose($pipes[0]);
-        usleep(250_000);
+        stream_set_timeout($pipes[1], 5);
+        $ready = fgets($pipes[1]);
+        usleep(150_000);
         proc_terminate($process, SIGINT);
         $stdout = stream_get_contents($pipes[1]);
         $stderr = stream_get_contents($pipes[2]);
@@ -74,10 +121,13 @@ final class TestRunnerBehaviorTest
         proc_close($process);
         $combinedOutput = (string) $stdout . (string) $stderr;
 
+        assertSame("SIGNAL_FIXTURE_READY\n", $ready);
         assertStringContains('Interrupted by signal', $combinedOutput);
         assertStringContains('Tests at or above 0.10 seconds so far:', $combinedOutput);
         assertStringContains('TestRunnerBehaviorTest::testSignalFixtureSleepsUntilInterrupted', $combinedOutput);
         assertStringContains('running when interrupted', $combinedOutput);
+        assertStringNotContains('] PASS ', $combinedOutput);
+        assertStringNotContains('] FAIL ', $combinedOutput);
     }
 
     public function testSignalFixtureSleepsUntilInterrupted(): void
@@ -86,6 +136,7 @@ final class TestRunnerBehaviorTest
             return;
         }
 
+        fwrite(STDOUT, "SIGNAL_FIXTURE_READY\n");
         sleep(10);
     }
 
@@ -99,6 +150,8 @@ final class TestRunnerBehaviorTest
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w'],
         ];
+        $historyPath = sys_get_temp_dir() . '/forum-runner-behavior-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $command = 'FORUM_TEST_HISTORY_DB_PATH=' . escapeshellarg($historyPath) . ' ' . $command;
         $process = proc_open($command, $descriptor, $pipes, $cwd);
         if (!is_resource($process)) {
             throw new RuntimeException('Unable to run command.');
@@ -110,6 +163,7 @@ final class TestRunnerBehaviorTest
         fclose($pipes[1]);
         fclose($pipes[2]);
         $exitCode = proc_close($process);
+        @unlink($historyPath);
 
         return [$exitCode, (string) $stdout, (string) $stderr];
     }
