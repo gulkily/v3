@@ -111,9 +111,9 @@ try {
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.evaluate(()=>window.ForumBrowserSigning.ensureActionIdentity());
  await page.locator('[name="body"]').fill('Browser image thread');
+ await page.locator('[data-compose-disclosure="tags-subject"] > summary').click();
  await page.locator('[name="subject"]').fill('Image acceptance');
- await page.locator('[name="image_description"]').fill('Two dark pixels & <caption>');
- assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after fill');
+ assert.equal(await page.locator('.image-upload-description').isVisible(),false,'description hidden before an image is attached');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.setViewportSize({width:390,height:844});
  const choose=page.locator('.image-upload-choose');await choose.focus();
@@ -133,6 +133,9 @@ try {
  assert.equal(await page.evaluate(()=>{const data=new DataTransfer();data.setData('text/plain','ordinary text');const e=new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data});document.querySelector('[name="body"]').dispatchEvent(e);return e.defaultPrevented;}),false);
  await page.setViewportSize({width:1280,height:900});
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
+ await page.locator('.image-upload-description').waitFor({state:'visible'});
+ await page.locator('[name="image_description"]').fill('Two dark pixels & <caption>');
+ assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after fill');
  const preparedPng=Buffer.from(await page.evaluate(async()=>Array.from(new Uint8Array(await (await ForumImageUpload.ready(document.querySelector('[data-compose-form]'))).file.arrayBuffer()))));
  // Send correctly signed requests that bypass all browser preparation.
  const wide=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2049;c.height=1;return c.toDataURL('image/png').split(',')[1];}),'base64');
@@ -162,6 +165,7 @@ try {
 
  assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after file selection');
  // Anonymous must preserve the draft and refuse the attachment.
+ await page.locator('.compose-action-menu > summary').click();
  await page.locator('[data-action="submit-anonymous-compose"]').click();
  await page.getByText('Image attachments require signed publication by an approved member.',{exact:false}).waitFor();
  assert.equal(outcomes.length,0);

@@ -110,7 +110,7 @@
           status.hidden = false;
         });
       });
-      actions.appendChild(button);
+      (form.querySelector(".compose-action-menu-list") || actions).appendChild(button);
       form.appendChild(status);
     });
   });
