@@ -44,3 +44,19 @@ Debug mode: enabled
 - Notes:
   - Browser test uses a fixture, not the real `browser_signing.js` warning flow; the real flow toggles the same `hidden` attribute on the same nodes, but an end-to-end check with an unsupported character is left for Stage 7's manual pass.
   - The script is loaded globally (layout) rather than per page, matching how the draft-clear script is loaded.
+
+## Stage 5 - Compact image widget
+- Changes:
+  - `templates/partials/image_compose_fields.php`: one-row widget (choose + remove buttons, small preview, status line); the border, "or drop it here" text, and the always-visible help message are gone; the legend is visually hidden; the description input is wrapped in a label hidden until an image is attached (the input stays in the DOM).
+  - `public/assets/image_upload.js`: `render()` shows the description only while an image state exists.
+  - `public/assets/compose.css`: slimmed image styles (no fieldset border/padding, smaller preview, drop highlight kept).
+  - User request mid-stage: all "(optional)" labels removed from the thread form, event fields, and image widget; the intro line no longer says "optional".
+  - `tests/browser/image_content_browser.mjs`: opens the Subject & tags expando before filling subject and fills the description after the image is attached.
+- Verification:
+  - `node tests/browser/image_content_browser.mjs` (Chromium): passed after the two test adjustments above.
+  - `node tests/browser/image_compose_transport.cjs`: ran clean.
+  - `php tests/run.php ImageContentTest LocalAppSmokeTest PresentationProfileMatrixTest LazyComposeSigningTest`: 147 run, 147 passed.
+- Notes:
+  - The widget markup is shared, so reply, board, QDB add, and paned dialogs get it automatically; visual checks per surface are in Stage 7.
+  - Description text is preserved (hidden) if the image is removed and is only read by signing when an image is attached.
+  - Removing the help message also removed the "reselect after reloading" hint, as approved; failure/recovery messages are unchanged.

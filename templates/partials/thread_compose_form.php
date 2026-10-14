@@ -66,11 +66,11 @@ $threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
   </details>
 <?php if ($eventSupportEnabled): ?>
   <details class="compose-disclosure" data-compose-disclosure="event"<?= $threadComposeEventOpen ? ' open' : '' ?>>
-    <summary>Event <span class="meta">(optional)</span> <span class="meta" data-role="compose-disclosure-summary"><?= $e($threadComposeEventSummary) ?></span></summary>
-    <label>Event date (optional)<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"></label>
-    <label>Event time (optional)<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
-    <label>Event location (optional)<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
-    <label>Event link (optional)<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
+    <summary>Event <span class="meta" data-role="compose-disclosure-summary"><?= $e($threadComposeEventSummary) ?></span></summary>
+    <label>Event date<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"></label>
+    <label>Event time<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
+    <label>Event location<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
+    <label>Event link<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
   </details>
 <?php endif; ?>
 <?php endif; ?>

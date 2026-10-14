@@ -95,6 +95,7 @@
     status.dataset.error = String(Boolean(form.__imageInputNotice || state?.error));
     fields.querySelector('.image-upload-choose').textContent = state ? 'Replace image' : 'Choose an image';
     const remove = fields.querySelector('.image-upload-remove');remove.hidden = !state;
+    const description = fields.querySelector('.image-upload-description');if (description) description.hidden = !state;
     fields.querySelectorAll('button').forEach(button=>{button.disabled=busy || form.__imageEligible===false;});
     const recovery = form.querySelector('.image-upload-recovery');
     if (recovery) { recovery.hidden = !state || form.__imageEligible !== false; recovery.querySelector('button').disabled = busy; }
