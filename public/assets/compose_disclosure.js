@@ -54,8 +54,43 @@
     openIfWarning(details);
   }
 
+  var menuSelector = 'details.compose-action-menu';
+
+  function closeMenus(except) {
+    Array.prototype.forEach.call(document.querySelectorAll(menuSelector + '[open]'), function (menu) {
+      if (menu !== except) {
+        menu.open = false;
+      }
+    });
+  }
+
+  function startMenus() {
+    document.addEventListener('click', function (event) {
+      var target = event.target;
+      var menu = target && target.closest ? target.closest(menuSelector) : null;
+      if (menu && target.closest('.compose-action-menu-list button')) {
+        window.setTimeout(function () { menu.open = false; }, 0);
+      }
+      closeMenus(menu);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+      var menu = document.querySelector(menuSelector + '[open]');
+      if (menu) {
+        menu.open = false;
+        var toggle = menu.querySelector('summary');
+        if (toggle) {
+          toggle.focus();
+        }
+      }
+    });
+  }
+
   function start() {
     Array.prototype.forEach.call(document.querySelectorAll(selector), init);
+    startMenus();
     document.addEventListener('click', function (event) {
       var target = event.target;
       if (target && target.closest && target.closest('[data-action="clear-compose-fields"]')) {

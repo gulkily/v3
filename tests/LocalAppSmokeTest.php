@@ -1958,6 +1958,7 @@ PHP;
         assertFingerprintedAsset($composeThread, 'browser_signing.js');
         assertStringContains('data-role="compose-identity-status" hidden', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
+        assertStringContains('<details class="compose-action-menu" data-role="compose-action-menu">', $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
         assertStringContains('class="nav"', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);

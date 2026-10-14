@@ -82,11 +82,16 @@ $threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
 <?php endif; ?>
   <div class="compose-form-actions<?= $isCompactThreadCompose ? ' compact-thread-compose-actions' : '' ?>">
     <button type="submit"><?= $e($threadComposeSubmitLabel) ?></button>
-    <button type="submit" data-action="submit-anonymous-compose"><?= $e($threadComposeAnonymousLabel) ?></button>
+    <details class="compose-action-menu" data-role="compose-action-menu">
+      <summary class="compose-action-menu-toggle" aria-label="More actions" title="More actions">&hellip;</summary>
+      <div class="compose-action-menu-list">
+        <button type="submit" data-action="submit-anonymous-compose"><?= $e($threadComposeAnonymousLabel) ?></button>
 <?php if ($threadComposeAuthoringOperation === 'quote'): ?>
-    <button type="button" class="compose-clear-button" data-action="clean-quote-text" title="Remove timestamps and tidy nick formatting in the pasted chat">Remove timestamps</button>
+        <button type="button" class="compose-clear-button" data-action="clean-quote-text" title="Remove timestamps and tidy nick formatting in the pasted chat">Remove timestamps</button>
 <?php endif; ?>
-    <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
+        <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
+      </div>
+    </details>
   </div>
   <input type="hidden" name="author_identity_id" value="">
   <input type="hidden" name="return_to" value="<?= $e($returnTo ?? '') ?>">

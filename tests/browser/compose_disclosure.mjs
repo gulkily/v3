@@ -12,7 +12,9 @@ try {
       <p data-role="compose-field-normalization-status" hidden>warn</p></details>
     <details data-compose-disclosure="event"><summary>Event <span data-role="compose-disclosure-summary"></span></summary>
       <input name="event_date" value=""><input name="event_time" value=""><input name="event_location" value=""></details>
-    <button type="button" data-action="clear-compose-fields" onclick="document.querySelector('[name=subject]').value=''">Clear</button>
+    <details class="compose-action-menu"><summary aria-label="More actions">...</summary><div class="compose-action-menu-list">
+      <button type="button" data-action="clear-compose-fields" onclick="document.querySelector('[name=subject]').value=''">Clear</button></div></details>
+    <button type="button" id="outside">Outside</button>
   </form>`);
   await page.addScriptTag({content: script});
   const open = name => page.$eval(`[data-compose-disclosure="${name}"]`, el => el.open);
@@ -23,7 +25,16 @@ try {
   await page.evaluate(() => { document.querySelector('[data-role="compose-field-normalization-status"]').hidden = false; });
   await page.waitForFunction(() => document.querySelector('[data-compose-disclosure="tags-subject"]').open);
   assert.equal(await open('event'), false);
+  await page.click('.compose-action-menu > summary');
+  assert.equal(await page.$eval('.compose-action-menu', el => el.open), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$eval('.compose-action-menu', el => el.open), false);
+  await page.click('.compose-action-menu > summary');
+  await page.click('#outside');
+  assert.equal(await page.$eval('.compose-action-menu', el => el.open), false);
+  await page.click('.compose-action-menu > summary');
   await page.click('[data-action="clear-compose-fields"]');
+  await page.waitForFunction(() => !document.querySelector('.compose-action-menu').open);
   await page.waitForFunction(() => document.querySelector('[data-compose-disclosure="tags-subject"] [data-role="compose-disclosure-summary"]').textContent === 'general');
   console.log('compose_disclosure: ok');
 } finally {

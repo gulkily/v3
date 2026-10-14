@@ -60,3 +60,19 @@ Debug mode: enabled
   - The widget markup is shared, so reply, board, QDB add, and paned dialogs get it automatically; visual checks per surface are in Stage 7.
   - Description text is preserved (hidden) if the image is removed and is only read by signing when an image is attached.
   - Removing the help message also removed the "reselect after reloading" hint, as approved; failure/recovery messages are unchanged.
+
+## Stage 6 - "..." action menu
+- Changes:
+  - `templates/partials/thread_compose_form.php`: only the primary submit stays in the action row; "Create thread anonymously" (a submit button), the quote-only "Remove timestamps", and "Clear fields" moved into a `<details class="compose-action-menu">` with a "..." toggle at the end of the row. The menu stays inside the form, with attributes unchanged.
+  - `public/assets/compose.css`: menu toggle (44 px) and upward-opening list with 44 px items, aligned to the right edge.
+  - `public/assets/compose_disclosure.js`: closes the menu after an item is chosen, on Escape (focus returns to the toggle), and on an outside click.
+  - `tests/LocalAppSmokeTest.php`, `tests/browser/compose_disclosure.mjs`, `tests/browser/image_content_browser.mjs`: menu markup assertion, open/close behavior, and the image acceptance test opens the menu before the anonymous attempt.
+- Verification:
+  - `node tests/browser/compose_disclosure.mjs`: ok.
+  - `node tests/browser/image_content_browser.mjs` (Chromium): passed, including anonymous-submit refusal from inside the menu.
+  - `php tests/run.php LocalAppSmokeTest LazyComposeSigningTest OfflineOutboxComposeTest BrowserSigningNormalizationTest PresentationProfileMatrixTest`: all passed.
+- Notes:
+  - `testStartAcceptsPortShorthand` and `testStartAcceptsColonPortShorthand` failed in two earlier runs (3 s `timeout` on `v3 start`) and passed on re-run with and without these changes; they look timing-sensitive and unrelated.
+  - Implicit Enter-key submission still uses the first submit button, which remains the primary action.
+  - The reply form's own buttons are unchanged, per the approved scope.
+  - `todo.txt` has uncommitted user edits (new compose-form items, including placing the "..." button at the bottom-right corner); it is deliberately left out of stage commits.

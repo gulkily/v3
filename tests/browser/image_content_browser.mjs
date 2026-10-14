@@ -165,6 +165,7 @@ try {
 
  assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after file selection');
  // Anonymous must preserve the draft and refuse the attachment.
+ await page.locator('.compose-action-menu > summary').click();
  await page.locator('[data-action="submit-anonymous-compose"]').click();
  await page.getByText('Image attachments require signed publication by an approved member.',{exact:false}).waitFor();
  assert.equal(outcomes.length,0);
