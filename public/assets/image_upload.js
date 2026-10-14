@@ -12,7 +12,9 @@
     notify(form);
   }
   function select(form, file) {
-    if (form.__imageBusy || form.__imageEligible === false) return;
+    // A picker opened while eligible may return during a permission refresh.
+    // Retain its selection even if permission was lost; never silently post text.
+    if (form.__imageBusy) return;
     clear(form);
     if (!file) return;
     const state = {file:null,error:null,promise:null,url:null};
@@ -30,7 +32,15 @@
     const input = form.querySelector('[name="image"]');
     if (!input || form.__imageBound) return;
     form.__imageBound = true;
-    input.addEventListener('change', () => select(form, input.files && input.files[0]));
+    input.addEventListener('click', () => { form.__imagePickerOpen = true; });
+    input.addEventListener('change', () => {
+      select(form, input.files && input.files[0]);
+      form.__imagePickerOpen = false;
+    });
+    input.addEventListener('cancel', () => {
+      form.__imagePickerOpen = false;
+      form.querySelector('.image-upload-choose')?.focus({preventScroll:true});
+    });
     form.addEventListener('reset', () => { if (!form.__imageBusy) clear(form); });
     const fields = form.querySelector('.image-compose-fields');
     if (fields) {
@@ -63,10 +73,12 @@
     }
     if (identity) {
       form.__imageIdentity = identity;
-      const refresh = () => { void refreshEligibility(form); };
-      ['forum:identity-changed','storage','online','offline','focus'].forEach(name => window.addEventListener(name, refresh));
+      const invalidate = () => { void refreshEligibility(form); };
+      const refresh = () => { void refreshEligibility(form, true); };
+      ['forum:identity-changed','storage','offline'].forEach(name => window.addEventListener(name, invalidate));
+      ['online','focus'].forEach(name => window.addEventListener(name, refresh));
       document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-      refresh();
+      invalidate();
     }
   }
   function render(form) {
@@ -108,13 +120,18 @@
     if (fields) fields.hidden = !allowed;
     lock(form, Boolean(form.__imageBusy));
   }
-  async function refreshEligibility(form) {
+  async function refreshEligibility(form, preserveCurrent = false) {
     const serial = form.__imageEligibilitySerial = (form.__imageEligibilitySerial || 0) + 1;
-    displayEligibility(form, false);
+    if (!preserveCurrent) displayEligibility(form, false);
     let timer;
     try {
-      if (!navigator.onLine || !window.isSecureContext || !window.crypto?.subtle || document.body.dataset.imageContentState !== '1') return false;
+      if (!navigator.onLine || !window.isSecureContext || !window.crypto?.subtle || document.body.dataset.imageContentState !== '1') {
+        displayEligibility(form, false);
+        return false;
+      }
       const identity = await form.__imageIdentity();
+      if (serial !== form.__imageEligibilitySerial) return false;
+      if (identity !== form.__imageEligibleIdentity) displayEligibility(form, false);
       if (!/^openpgp:[a-f0-9]{40,64}$/.test(identity)) return false;
       const controller = new AbortController();
       timer = setTimeout(() => controller.abort(), 8000);
@@ -123,10 +140,15 @@
       const values = Object.fromEntries(text.split('\n').filter(line=>line.includes(': ')).map(line=>{const at=line.indexOf(': ');return [line.slice(0,at),line.slice(at+2)];}));
       const allowed = response.ok && values['Identity-ID'] === identity && values['Approved'] === 'yes' && values['Image-Upload-Allowed'] === 'yes';
       const currentIdentity = await form.__imageIdentity();
-      if (serial !== form.__imageEligibilitySerial || identity !== currentIdentity) return false;
+      if (serial !== form.__imageEligibilitySerial) return false;
+      if (identity !== currentIdentity) { displayEligibility(form, false); return false; }
+      form.__imageEligibleIdentity = allowed ? identity : null;
       displayEligibility(form, allowed);
       return allowed;
-    } catch { return false; } finally { clearTimeout(timer); }
+    } catch {
+      if (serial === form.__imageEligibilitySerial) displayEligibility(form, false);
+      return false;
+    } finally { clearTimeout(timer); }
   }
   async function assertEligible(form) {
     if (!await refreshEligibility(form)) throw new Error('Image uploading is unavailable for this identity or connection. Your draft is retained; reconnect or remove the attachment to post text.');

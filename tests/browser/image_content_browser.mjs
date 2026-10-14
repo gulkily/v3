@@ -8,7 +8,7 @@ import { runInThisContext } from 'node:vm';
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
-import { chromium, webkit } from 'playwright-core';
+import { chromium, webkit, firefox } from 'playwright-core';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const root = await mkdtemp(join(tmpdir(), 'image-content-browser-'));
@@ -33,7 +33,7 @@ let log='';server.stderr.on('data',b=>{log+=b;});
 let browser;
 try {
  for(let i=0;i<100;i++){try{await fetch(base+'/api/version');break;}catch{await new Promise(r=>setTimeout(r,50));}}
- browser=await (process.env.IMAGE_BROWSER==='webkit' ? webkit.launch({headless:true}) : chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/opt/google/chrome/chrome',headless:true,args:['--no-sandbox']}));
+ browser=await (process.env.IMAGE_BROWSER==='webkit' ? webkit.launch({headless:true}) : process.env.IMAGE_BROWSER==='firefox' ? firefox.launch({headless:true}) : chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/opt/google/chrome/chrome',headless:true,args:['--no-sandbox']}));
  const context=await browser.newContext({serviceWorkers:'block',hasTouch:true,viewport:{width:390,height:844}});
  await context.addInitScript(({keys,fingerprint})=>{
   localStorage.setItem('forum_pki_public_key',keys.publicKey);localStorage.setItem('forum_pki_private_key',keys.privateKey);
@@ -46,6 +46,47 @@ try {
  const initialAuth = await context.request.post(base+'/api/authenticate_identity',{data:{challenge:initialChallenge,detached_signature:initialSignature,identity_id:'openpgp:'+fingerprint}});
  assert.equal(initialAuth.status(),200,await initialAuth.text());
  const page=await context.newPage();const errors=[],expectedOfflineErrors=[];page.on('pageerror',e=>{if(process.env.IMAGE_BROWSER==='webkit' && e.message.includes('due to access control checks.')) expectedOfflineErrors.push(e.message);else errors.push(e.message);});
+ if(process.env.IMAGE_PICKER_ONLY==='1') {
+   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC','base64');
+   for(const [path,body] of [['/',''],['/','Photo and text'],['/compose/thread',''],['/compose/thread','Photo and text']]) {
+     await page.goto(base+path);
+     const details=page.locator('[data-inline-reply-details]').first();
+     if(path==='/') await details.locator('[data-inline-reply-trigger]').click();
+     const form=page.locator('[data-compose-form]').first();
+     await form.locator('.image-upload-choose').waitFor();
+     if(path==='/' && body==='') {
+       const cancelChooser=page.waitForEvent('filechooser');await form.locator('.image-upload-choose').click();
+       await (await cancelChooser).setFiles([]);await form.locator('[name="image"]').dispatchEvent('cancel');
+       await page.evaluate(()=>{const button=document.createElement('button');button.textContent='outside composer';document.body.append(button);button.focus();});
+       await page.waitForFunction(()=>!document.querySelector('[data-inline-reply-details]').open);
+       await details.locator('[data-inline-reply-trigger]').click();
+     }
+     if(body) await form.locator('[name="body"]').fill(body);
+     // Hold the focus-triggered approval request until after the chooser returns.
+     let release, reached;const gate=new Promise(r=>{release=r;});const started=new Promise(r=>{reached=r;});
+     await page.route('**/api/get_profile?*', async route=>{reached();await gate;await route.continue();});
+     try {
+       const chooserPromise=page.waitForEvent('filechooser');
+       await form.locator('.image-upload-choose').click();const chooser=await chooserPromise;
+       await page.evaluate(()=>{document.activeElement.blur();window.dispatchEvent(new Event('focus'));});
+       await started;
+       if(path==='/') assert.equal(await details.evaluate(e=>e.open),true,'Composer must stay open while the picker owns focus');
+       // An OS picker returns focus before its change event in affected browsers.
+       await chooser.setFiles({name:'picker.png',mimeType:'image/png',buffer:png});
+       await form.locator('.image-upload-preview img').waitFor({timeout:3000});
+       if(path==='/') assert.equal(await details.evaluate(e=>e.open),true,'Image-only home composer must stay expanded');
+       assert.equal(await form.locator('[name="image"]').isDisabled(),false,'Refresh must not disable the active file picker');
+     } finally {release();await page.unrouteAll({behavior:'wait'});}
+     await form.evaluate(form=>ForumImageUpload.assertEligible(form));
+     const publication=page.waitForResponse(r=>r.url().endsWith('/api/create_prepared_post')).then(r=>r.status());
+     // Both empty-body and text-plus-image drafts must publish an attachment.
+     await form.locator('button[type="submit"]').first().click();
+     assert.equal(await publication,200);
+     await page.waitForURL(/\/threads\//);
+     await page.locator('.post-image img').first().evaluate(e=>e.decode());
+   }
+   console.log(JSON.stringify({status:'passed',browser:process.env.IMAGE_BROWSER||'chromium',checks:['native file chooser','focus refresh/change race','home composer remains expanded','cancel restores empty-composer collapse','image-only and text-plus-image publication from home and dedicated page']}));
+ } else {
  const outcomes=[]; let loseResponse=true;
  const webkitRun=process.env.IMAGE_BROWSER==='webkit';
  // WebKit's Playwright route.fetch does not faithfully replay binary multipart files.
@@ -213,5 +254,6 @@ try {
  await anonymous.close();
  assert.deepEqual(errors,[]);
  console.log(JSON.stringify({status:'passed',root,expectedOfflineErrors:expectedOfflineErrors.length,thread:thread.post_id,reply:reply.post_id,checks:['browser signed thread/reply',webkitRun?'native WebKit multipart upload':'lost-response retry without duplication','fresh-instance/Forte/QDB rendering','anonymous draft preservation','verified image delivery','revision-matched backups','CLI verify/restore/rebuild','identical restored bytes','flag off','member access']},null,2));
+ }
 } catch(error){ if (browser) {const p=browser.contexts()[0]?.pages()[0]; if(p) {console.error('Page:',p.url(),await p.locator('[data-role="compose-identity-status"]').allTextContents());await p.screenshot({path:join(root,'failure.png')});}} console.error('Fixture:',root,'\nServer log tail:',log.slice(-10000));throw error;}
 finally{if(browser)await browser.close();server.kill('SIGTERM');await once(server,'exit');}

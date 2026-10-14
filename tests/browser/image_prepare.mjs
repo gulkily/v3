@@ -36,8 +36,11 @@ try {
    results.push({width:state.width,same:state===await ForumImageUpload.ready(form),sourceCleared:form.querySelector('input').value===''});
    ForumImageUpload.lock(form,false);ForumImageUpload.clear(form);
    results.push({cleared:!ForumImageUpload.has(form)});
+   form.__imageEligible=false;ForumImageUpload.select(form,await source(2,1,'image/png'));
+   results.push({retainedWhileUnavailable:ForumImageUpload.has(form) && Boolean((await ForumImageUpload.ready(form)).file)});
    return results;
  });
+ assert.ok(results[10].retainedWhileUnavailable);
  assert.equal(results[0].width,2048);assert.ok(results[1].input>5*1024*1024);assert.ok(results[1].bytes<=5*1024*1024);
  assert.equal(results[2].type,'image/png');assert.equal(results[2].alpha,0);assert.equal(results[3].width,2);
  assert.deepEqual(results[8],{width:2,same:true,sourceCleared:true});assert.ok(results[9].cleared);
