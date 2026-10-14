@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Bookmarklet one-line copy](bookmarklet_one_line_copy/)
+
 - [Private messaging live navigation](private_messaging_live_navigation/)
 
 - [Private messaging feature flag](private_messaging_feature_flag/)
