@@ -41,7 +41,7 @@ final class ProfileRegressionContract
             'boardMarker' => $card === 'quote' ? 'class="card post-card quote-card"' : 'class="card thread-card"',
             'navigationMarker' => $navigation === 'qdb' ? '>Welcome</a>' : '>Board</a>',
             'composePath' => $isQdbExperience ? '/add' : '/compose/thread',
-            'composeMarker' => $compose === 'qdb' ? 'class="stack qdb-add-page"' : '<h1>Compose Thread</h1>',
+            'composeMarker' => $compose === 'qdb' ? 'class="stack qdb-add-page"' : '<h1>New thread</h1>',
             'aboutHackable' => $about === 'chouse',
             'brandedTheme' => $stylesheet === 'site' ? null : $stylesheet,
         ];
