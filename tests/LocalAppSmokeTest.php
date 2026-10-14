@@ -3058,6 +3058,9 @@ PHP;
             $enabledForte = $this->render($enabled, '/forte');
 
             assertStringContains('name="event_date"', $enabledCompose);
+            assertStringContains('data-compose-disclosure="event">', $enabledCompose);
+            $enabledPrefilledCompose = $this->render($enabled, '/compose/thread?event_date=2026-11-01');
+            assertStringContains('data-compose-disclosure="event" open>', $enabledPrefilledCompose);
             assertStringContains('data-event-block', $enabledBoard);
             assertStringContains('data-event-block', $enabledThread);
             assertStringContains('name="event_date"', $enabledForte);

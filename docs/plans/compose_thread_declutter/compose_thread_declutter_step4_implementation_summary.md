@@ -22,3 +22,13 @@ Debug mode: enabled
 - Notes:
   - Query-string and quote-supplied values are covered by the same non-default rule; the error open path is not yet covered by a test and the normalization-warning open path arrives in Stage 4.
   - Event inputs are still visible; Stage 3 wraps them.
+
+## Stage 3 - Event expando
+- Changes:
+  - `templates/partials/thread_compose_form.php`: the four event inputs sit in `<details data-compose-disclosure="event">` (only when event support is enabled). Opens when any event value is present or an error is shown; summary lists date/time/location.
+  - `tests/LocalAppSmokeTest.php`: closed-by-default and open-when-prefilled assertions with events enabled.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest PresentationProfileMatrixTest LazyComposeSigningTest OfflineOutboxComposeTest`: 145 run, 145 passed.
+- Notes:
+  - The disabled-events case is covered by the existing `name="event_date"` absence assertions.
+  - Warning auto-open and live summary updates come in Stage 4.

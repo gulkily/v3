@@ -10,6 +10,9 @@ $threadComposeAction = (string) ($action ?? '/compose/thread');
 $threadComposeAuthoringOperation = (string) ($authoringOperation ?? 'thread');
 $threadComposeTagsSubjectOpen = (string) $boardTags !== 'general' || (string) $subject !== '' || ($error ?? null) !== null;
 $threadComposeTagsSubjectSummary = trim(((string) $subject !== '' ? (string) $subject . ' · ' : '') . (string) $boardTags);
+$threadComposeEventValues = array_values(array_filter([(string) ($eventDate ?? ''), (string) ($eventTime ?? ''), (string) ($eventLocation ?? '')], static fn (string $value): bool => $value !== ''));
+$threadComposeEventOpen = $threadComposeEventValues !== [] || (string) ($eventLink ?? '') !== '' || ($error ?? null) !== null;
+$threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
 ?>
 <form method="post"<?= $threadComposeAction !== '' ? ' action="' . $e($threadComposeAction) . '"' : '' ?> class="<?= $e($threadComposeFormClass) ?>" data-compose-form data-compose-kind="thread" data-authoring-operation="<?= $e($threadComposeAuthoringOperation) ?>">
 <?php if ($isCompactThreadCompose): ?>
@@ -62,10 +65,13 @@ $threadComposeTagsSubjectSummary = trim(((string) $subject !== '' ? (string) $su
     </p>
   </details>
 <?php if ($eventSupportEnabled): ?>
-  <label>Event date (optional)<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"></label>
-  <label>Event time (optional)<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
-  <label>Event location (optional)<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
-  <label>Event link (optional)<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
+  <details class="compose-disclosure" data-compose-disclosure="event"<?= $threadComposeEventOpen ? ' open' : '' ?>>
+    <summary>Event <span class="meta">(optional)</span> <span class="meta" data-role="compose-disclosure-summary"><?= $e($threadComposeEventSummary) ?></span></summary>
+    <label>Event date (optional)<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"></label>
+    <label>Event time (optional)<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
+    <label>Event location (optional)<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
+    <label>Event link (optional)<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
+  </details>
 <?php endif; ?>
 <?php endif; ?>
   <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
