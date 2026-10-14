@@ -57,3 +57,9 @@ Debug mode: disabled
 - All eight stages completed sequentially with their summary updates and separate commits, following the planning-only commit on feature/operator-record-retraction.
 - Normal entry, signed author/operator outcome, visible partial recovery, role enforcement, migration from schema 17, audit evidence, rebuild and reimport persistence verified. Every existing action uses … → Retract post; QDB/Forte receive actor-aware notices without new action entry points.
 - Plans organized with working navigation/index; debug mode remains disabled. Changes remain on the feature branch for review; no deployment or merge performed.
+
+## Follow-up - Overflow control last in the action row
+
+- Changes: moved the shared retraction control after agent response and Codex handoff buttons in both post and thread-root cards.
+- Verification: two existing PHP tests passed; real Chromium confirmed the overflow control is the final action with agent responses available on thread and individual post pages. Real operator signing still passed; PHP syntax and diff checks passed.
+- Notes: user-requested placement refinement following the eight completed stages.
