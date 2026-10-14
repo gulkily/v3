@@ -13,6 +13,9 @@ final class TextChatCompletionDecoder
      */
     public static function decodeOpenAiCompatiblePayload(array $response): string
     {
+        if (($response['choices'][0]['finish_reason'] ?? '') === 'length') {
+            throw new CompletionLimitException();
+        }
         $message = $response['choices'][0]['message'] ?? null;
         $text = is_array($message) ? self::contentToText($message['content'] ?? null) : '';
         if ($text === '') {
@@ -31,6 +34,9 @@ final class TextChatCompletionDecoder
      */
     public static function decodeAnthropicPayload(array $response): string
     {
+        if (($response['stop_reason'] ?? '') === 'max_tokens') {
+            throw new CompletionLimitException();
+        }
         $text = self::contentToText($response['content'] ?? null);
         if ($text !== '') {
             return $text;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Support;
 
+use ForumRewrite\Images\ImageReference;
 use ForumRewrite\View\MediaEmbedDetector;
 
 final class ThreadTitle
@@ -19,9 +20,22 @@ final class ThreadTitle
             return 'Untitled';
         }
 
+        try {
+            $image = ImageReference::fromBody($body);
+        } catch (\RuntimeException) {
+            $image = null;
+        }
+        if ($image !== null) {
+            $imageLine = ImageReference::line($image);
+            $body = implode("\n", array_filter(explode("\n", $body), static fn (string $line): bool => $line !== $imageLine));
+        }
+
         $excerpt = self::bodyExcerpt($body, $limit);
         if ($excerpt !== '') {
             return $excerpt;
+        }
+        if ($image !== null) {
+            return 'Image';
         }
 
         return trim($fallbackId) !== '' ? $fallbackId : 'Untitled thread';

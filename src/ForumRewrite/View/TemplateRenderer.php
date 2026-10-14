@@ -157,6 +157,9 @@ final class TemplateRenderer
             array_unshift($scriptPaths, '/assets/private_message_availability.js');
         }
         $scriptPaths = array_values(array_unique($scriptPaths));
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
+            array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
+        }
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
             $assetScriptPaths[] = $this->assetPath($scriptPath);
@@ -398,6 +401,9 @@ final class TemplateRenderer
             $scriptPaths = array_merge($scriptPaths, [
                 '/assets/media_embed_inline_player.js',
             ]);
+        }
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
+            array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
         }
         $assetScriptPaths = [];
         foreach (array_values(array_unique($scriptPaths)) as $scriptPath) {

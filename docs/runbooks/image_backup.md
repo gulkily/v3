@@ -99,3 +99,40 @@ Image references use SHA-256 and metadata, not hostnames or filesystem paths.
 A future bucket adapter must preserve these identities, authorization, complete
 inventories, revision-bound exports, and independent restoration. Credentials and
 provider URLs belong in deployment configuration, never signed posts or backups.
+
+## Upload decoder readiness
+
+New uploads require PHP GD with JPEG and PNG decoding in the **serving PHP runtime**.
+Run `php -r 'var_export(gd_info());'` for the CLI launcher; separately check the
+web-server PHP configuration when using Apache/FPM. Enable the matching GD package
+(for this Ubuntu/PHP 8.1 runtime: `sudo apt-get install php8.1-gd`) and reload the
+serving process. Missing decoding support rejects uploads; existing reads and
+backup/restore do not require GD. Never replace decoding checks with header checks.
+
+## Prepared uploads and rollout
+
+The browser accepts JPEG, PNG, WebP, GIF and BMP when its decoder supports them.
+Source preparation is bounded at 32 MiB, 40 megapixels and 16384 pixels per edge.
+HEIC/AVIF or unsupported sources need export to a supported format. Output is a
+still JPEG/PNG, at most 2048 pixels per edge and 5 MiB; smaller sources are never
+upscaled. Transparent inputs retain alpha. Only that prepared copy leaves the
+browser. No original-image migration or deletion runs against existing storage.
+
+The server checks the actual upload, decoding, still-image structure, dimensions,
+size and signed metadata independently. It rejects rather than re-encodes invalid
+signed bytes. The 2048-pixel policy applies to new posts; historical reads, backups,
+restores and repair of an exact existing signed attachment keep the old contract.
+
+Before enabling uploads on a deployment, confirm GD JPEG/PNG support in its serving
+PHP process, then use an approved identity to publish a large photo and transparent
+image from the normal composer. Verify a description, mobile preview, lost-response
+retry and a matching backup/restore pair. Check `/api/get_profile` for that identity:
+`Image-Upload-Allowed: yes` confirms feature/approval/decoder readiness, not permission
+to bypass signed publication. Browser tests cover Chromium and WebKit touch layouts;
+real-device camera/photo-picker behavior still needs a deployment smoke check.
+
+For rollback, disable `FORUM_IMAGE_CONTENT_ENABLED` through the existing operator
+controls before reverting code. Retain the private image directory and matching
+repository backup. Prepared images use the existing reference/storage formats and
+remain readable by the previous release when image support is re-enabled. Do not
+rewrite signed references or delete retained images.

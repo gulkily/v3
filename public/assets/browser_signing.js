@@ -1133,20 +1133,21 @@
   }
 
   function composeImageFile(form) {
+    if (window.ForumImageUpload) return window.ForumImageUpload.has(form);
     const field = form.querySelector('[name="image"]');
     return field && field.files && field.files[0] || null;
   }
 
   async function submitImageCompose(form) {
-    const file = composeImageFile(form);
     if (!navigator.onLine || !window.crypto || !window.crypto.subtle) throw new Error("Image publication requires an online HTTPS connection (or localhost).");
-    if (!file || file.size > 5 * 1024 * 1024 || !["image/png", "image/jpeg"].includes(file.type)) throw new Error("Choose a JPEG/PNG of at most 5 MiB.");
+    if (!window.ForumImageUpload) throw new Error("Image preparation is unavailable. Reload and select the image again.");
+    window.ForumImageUpload.lock(form, true);
+    try {
+    await window.ForumImageUpload.assertEligible(form);
+    const preparedImage = await window.ForumImageUpload.ready(form);
+    const file = preparedImage.file, width = preparedImage.width, height = preparedImage.height;
     const description = composeFormFieldValue(form, "image_description").trim();
     if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
-    const bitmap = await createImageBitmap(file);
-    const width = bitmap.width, height = bitmap.height;
-    bitmap.close();
-    if (width > 4096 || height > 4096) throw new Error("Image dimensions must be at most 4096 pixels per side.");
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
     const fields = collectSignedSubmitFields(form);
     if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
@@ -1162,7 +1163,10 @@
       form.__pendingImagePost = pending;
     }
     // Keep the exact prepared record on failure; retry cannot create a second post.
-    return finalizePreparedPost(Object.assign({}, fields, { imageFile: file }), pending.prepared, pending.signature);
+    if (preparedImage !== form.__imageState) throw new Error('The attachment changed. Review the draft and retry.');
+    if (fields.author_identity_id !== await form.__imageIdentity()) throw new Error('The signing identity changed. Review the draft and retry.');
+    return await finalizePreparedPost(Object.assign({}, fields, { imageFile: file }), pending.prepared, pending.signature);
+    } finally { window.ForumImageUpload.lock(form, false); }
   }
 
   async function finalizePreparedPost(fields, prepared, detachedSignature) {
@@ -3111,7 +3115,13 @@
       return;
     }
     const imageInput = form.querySelector('[name="image"]');
-    if (imageInput) imageInput.disabled = false;
+    if (imageInput) {
+      imageInput.disabled = !window.ForumImageUpload;
+      if (window.ForumImageUpload) window.ForumImageUpload.bind(form, async function () {
+        if (!localStorage.getItem(storageKeys.privateKey) || !localStorage.getItem(storageKeys.publicKey)) return '';
+        return 'openpgp:' + String(await ensureStoredFingerprint()).toLowerCase();
+      });
+    }
     const draftKey = composeDraftKey(form);
     const unicodeAuthoredTextEnabled = root.dataset.unicodeAuthoredText === "1";
     const emojiAuthoredTextEnabled = unicodeAuthoredTextEnabled && root.dataset.emojiAuthoredText === "1";
@@ -3335,6 +3345,7 @@
     }
 
     function clearComposeFields() {
+      if (window.ForumImageUpload) window.ForumImageUpload.clear(form);
       const imageField = form.querySelector('[name="image"]');
       if (imageField) imageField.value = "";
       delete form.__pendingImagePost;

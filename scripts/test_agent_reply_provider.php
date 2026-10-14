@@ -20,7 +20,9 @@ try {
         exit(0);
     }
 
-    $config = LlmProviderConfig::fromPrivateConfig(PrivateConfig::load($projectRoot));
+    $privateConfig = PrivateConfig::load($projectRoot);
+    $config = LlmProviderConfig::fromPrivateConfig($privateConfig);
+    $completionLimit = \ForumRewrite\Agent\AgentResponseGenerator::completionTokenLimit($privateConfig);
     $timeoutSeconds = isset($options['timeout'])
         ? max(1, (int) $options['timeout'])
         : min(max(1, $config->timeoutSeconds), 30);
@@ -61,8 +63,8 @@ try {
             ],
         ],
         [
-            'max_completion_tokens' => 2000,
-            'max_tokens' => 2000,
+            'max_completion_tokens' => $completionLimit,
+            'max_tokens' => $completionLimit,
         ]
     );
     $responseText = trim((string) ($result['response_text'] ?? ''));

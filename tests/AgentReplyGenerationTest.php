@@ -8,6 +8,29 @@ use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 
 final class AgentReplyGenerationTest
 {
+    public function testExplicitRetryPreservesModeAndCannotResetClaimedOrPostedWork(): void
+    {
+        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
+        $store->requestForTarget($this->context(), ['agent_response_task' => ['type' => 'scripture_oriented_analysis']]);
+        $store->saveFailed('root-001', 'hash-001', 'a', 'completion_limit_exhausted', 'Limit reached');
+        $first = $store->retryRequestedForTarget('root-001', 'hash-001');
+        $second = $store->retryRequestedForTarget('root-001', 'hash-001');
+        assertSame('requested', $first['status']);
+        assertSame('scripture_oriented_analysis', $second['request_context']['agent_reply_request']['agent_response_task']['type']);
+        assertSame(null, $second['failure_code']);
+        assertSame('pending', $store->claimRequestedForTarget('root-001', 'hash-001')['status']);
+        assertSame(null, $store->claimRequestedForTarget('root-001', 'hash-001'));
+        foreach ([false, true] as $posted) {
+            if ($posted) { $store->markPosted('root-001', 'hash-001', 'reply', 'agent', 'agent'); }
+            try {
+                $store->retryRequestedForTarget('root-001', 'hash-001');
+                throw new RuntimeException('Active/published retry accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('Only failed', $expected->getMessage());
+            }
+        }
+    }
+
     public function testStoreSavesAndHydratesCompletedGenerationRows(): void
     {
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));

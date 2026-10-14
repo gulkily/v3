@@ -36,6 +36,47 @@ final class AgentResponseGeneratorTest
         ], $provider->options['exchange_context']);
     }
 
+    public function testCompletionBudgetIsBoundedAndPassedToProvider(): void
+    {
+        foreach ([1, 8192, 32768] as $limit) {
+            $provider = new FakeTextChatProvider('Reply.');
+            (new AgentResponseGenerator($provider, true, true, $limit))->generate(['type' => AgentResponseTask::DEFAULT_TYPE]);
+            assertSame($limit, $provider->options['max_completion_tokens']);
+        }
+        assertSame(8192, AgentResponseGenerator::completionTokenLimit([]));
+        assertSame(123, AgentResponseGenerator::completionTokenLimit(['AGENT_REPLY_MAX_COMPLETION_TOKENS' => '123']));
+        foreach ([null, 0, -1, 32769, '', 'oops', 1.5, true, '1e3'] as $invalid) {
+            try {
+                AgentResponseGenerator::completionTokenLimit(['AGENT_REPLY_MAX_COMPLETION_TOKENS' => $invalid]);
+                throw new RuntimeException('Invalid budget accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('integer from 1 to 32768', $expected->getMessage());
+            }
+        }
+    }
+
+    public function testExhaustedResponsesRejectEvenPartialText(): void
+    {
+        foreach (['', 'Partial reply'] as $text) {
+            foreach (['openai', 'anthropic'] as $provider) {
+                try {
+                    if ($provider === 'openai') {
+                        \ForumRewrite\Llm\TextChatCompletionDecoder::decodeOpenAiCompatiblePayload([
+                            'choices' => [['finish_reason' => 'length', 'message' => ['content' => $text]]],
+                        ]);
+                    } else {
+                        \ForumRewrite\Llm\TextChatCompletionDecoder::decodeAnthropicPayload([
+                            'stop_reason' => 'max_tokens', 'content' => [['type' => 'text', 'text' => $text]],
+                        ]);
+                    }
+                    throw new RuntimeException('Exhausted response accepted');
+                } catch (\ForumRewrite\Llm\CompletionLimitException $expected) {
+                    assertStringContains('explicitly retry', $expected->getMessage());
+                }
+            }
+        }
+    }
+
     public function testGeneratorRejectsEmptyTextAndUnsupportedTasks(): void
     {
         $generator = new AgentResponseGenerator(new FakeTextChatProvider(''), true, true);
@@ -101,6 +142,10 @@ final class AgentResponseGeneratorTest
             AgentResponseTask::EXPLAIN_SIMPLY_TYPE => 'Restate the supplied forum content in plain language',
             AgentResponseTask::CONSTRUCTIVE_COUNTERPOINT_TYPE => 'Give the strongest reasonable alternative view',
         ];
+
+        $expectedInstructions[AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE] = trim(
+            file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_oriented_analysis.txt')
+        );
 
         foreach ($expectedInstructions as $type => $instruction) {
             $provider = new FakeTextChatProvider('A response.');

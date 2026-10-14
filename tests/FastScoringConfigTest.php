@@ -27,6 +27,17 @@ final class FastScoringConfigTest
         assertSame(false, $config->automaticEnqueue);
     }
 
+    public function testBlankModelInheritsAndExplicitGatewayModelIsPreserved(): void
+    {
+        foreach ([null, '', '   ', 'gateway/custom-model'] as $override) {
+            $config = FastScoringConfig::fromPrivateConfig([
+                'LLM_PROVIDER' => 'openai', 'LLM_MODEL' => 'gpt-5-nano',
+                'FAST_SCORING_LLM_MODEL' => $override,
+            ]);
+            assertSame($override === 'gateway/custom-model' ? $override : 'gpt-5-nano', $config->provider->model);
+        }
+    }
+
     public function testFastScoringKeepsTheApplicationProviderAndMayUseALowerCostModel(): void
     {
         $config = FastScoringConfig::fromPrivateConfig([

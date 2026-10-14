@@ -282,7 +282,11 @@
 
     if (result.generation_status === "failed") {
       placeAgentReplyFeedback(node, false);
-      setFeedback(node, agentReplySubject(result) + " request failed.", "");
+      const detail = result.failure_code === "completion_limit_exhausted"
+        ? " Completion limit reached. Ask an operator to adjust the allowance and retry."
+        : result.failure_code === "provider_configuration_error"
+          ? " Provider configuration needs correction before an operator retries." : "";
+      setFeedback(node, agentReplySubject(result) + " request failed." + detail, "");
       return true;
     }
 

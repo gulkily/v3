@@ -105,7 +105,7 @@ final class ForteBoardController
             'Forte',
             'paned-reader-body',
             ['/assets/toolbar_identity_status.js', '/assets/paned_board_reader.js', '/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
-            ['/assets/forte.css'],
+            ['/assets/compose.css', '/assets/forte.css'],
         );
     }
 

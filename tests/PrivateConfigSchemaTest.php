@@ -16,7 +16,7 @@ final class PrivateConfigSchemaTest
         assertSame('replace-with-real-key', $defaults['LLM_API_KEY']);
         assertSame(60, $defaults['LLM_TIMEOUT_SECONDS']);
         assertSame(false, $defaults['FAST_SCORING_ENABLED']);
-        assertSame('openai/gpt-5-nano', $defaults['FAST_SCORING_LLM_MODEL']);
+        assertSame('', $defaults['FAST_SCORING_LLM_MODEL']);
         assertSame(true, $defaults['LLM_CONVERSATION_UI_ENABLED']);
         assertSame(false, array_key_exists('DEDALUS_API_KEY', $defaults));
         assertSame(true, in_array('PRIVATE_MESSAGE_DATABASE_PATH', PrivateConfigSchema::environmentKeys(), true));

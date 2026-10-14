@@ -332,6 +332,7 @@ function renderPrivateConfigFile(array $config, array $existing, bool $includeCo
         $contents .= "\n    // External provider request timeout in seconds.\n";
     }
     $contents .= renderConfigLine('LLM_TIMEOUT_SECONDS', (int) $config['LLM_TIMEOUT_SECONDS']);
+    $contents .= renderConfigLine('AGENT_REPLY_MAX_COMPLETION_TOKENS', $config['AGENT_REPLY_MAX_COMPLETION_TOKENS']);
 
     if ($includeComments) {
         $contents .= "\n    // Optional provider headers. OpenRouter commonly uses HTTP-Referer and X-Title.\n";

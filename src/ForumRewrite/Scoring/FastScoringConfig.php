@@ -29,7 +29,7 @@ final class FastScoringConfig
                 $fallback->provider,
                 $fallback->apiKey,
                 $fallback->baseUrl,
-                self::stringValue($config['FAST_SCORING_LLM_MODEL'] ?? $fallback->model),
+                (self::stringValue($config['FAST_SCORING_LLM_MODEL'] ?? '') ?: $fallback->model),
                 $fallback->timeoutSeconds,
                 $fallback->postAnalysisPromptPath,
                 $fallback->extraHeaders,

@@ -44,6 +44,9 @@ if ($agentReplyPostedId !== '') {
     $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' skipped.';
 } elseif ($agentReplyStatus === 'failed') {
     $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' failed.';
+    if (in_array((string) ($agentReply['failure_code'] ?? ''), ['completion_limit_exhausted', 'provider_configuration_error'], true)) {
+        $agentReplyFeedbackText .= ' ' . \ForumRewrite\Agent\AgentReplyFailure::message((string) $agentReply['failure_code']);
+    }
 }
 $agentReplyIsUnfinished = $agentReplyPostedId === ''
     && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true);

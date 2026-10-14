@@ -118,3 +118,23 @@
     grid-template-columns: minmax(0, 1fr) auto auto;
   }
 }
+
+.image-compose-fields { min-width: 0; border: 1px solid var(--border-color, #a8a8a8); border-radius: .75rem; padding: .75rem; margin: .75rem 0; }
+.image-compose-fields[hidden], .image-upload-recovery[hidden], .image-compose-fields [hidden] { display: none !important; }
+.image-upload-dropzone { position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; padding: .65rem; border: 2px dashed var(--border-color, #888); border-radius: .5rem; }
+.image-upload-dropzone.is-dragging { outline: 3px solid var(--accent-color, #356bd8); outline-offset: 2px; }
+.image-compose-fields button, .image-upload-recovery button { min-width: 44px; min-height: 44px; width: auto; margin: 0; padding: .6rem .9rem; touch-action: manipulation; }
+.image-compose-fields button:focus-visible, .image-compose-fields input:focus-visible, .image-upload-recovery button:focus-visible { outline: 3px solid var(--accent-color, #356bd8); outline-offset: 3px; }
+.image-upload-input { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; opacity: 0; pointer-events: none; }
+.image-upload-preview { margin-top: .75rem; }
+.image-upload-preview img { display: block; max-width: 100%; max-height: 240px; width: auto; height: auto; border-radius: .35rem; }
+.image-upload-status { margin: .5rem 0; overflow-wrap: anywhere; }
+.image-upload-status[data-error="true"] { color: var(--danger-color, #a52323); }
+.image-compose-fields label { display: block; margin-top: .65rem; }
+.image-compose-fields input[type="text"] { min-height: 44px; box-sizing: border-box; max-width: 100%; }
+.image-upload-help { margin-bottom: 0; }
+@media (max-width: 480px) { .image-upload-dropzone { align-items: stretch; flex-direction: column; } .image-upload-choose { width: 100% !important; } }
+@media (max-width: 480px) {
+  .compose-form-actions { flex-wrap: wrap; }
+  .compose-form-actions > button { flex: 1 1 44%; min-height: 44px; overflow-wrap: normal; }
+}

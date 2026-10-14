@@ -334,6 +334,23 @@ final class WriteApiSmokeTest
             assertStringContains('Image unavailable', $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $imageUrl));
             putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
             assertSame(ImageContentTest::png(), file_get_contents((new \ForumRewrite\Images\ImageStore($root))->resolve($ref)));
+            // New oversized uploads fail even when correctly signed; exact legacy repair remains valid.
+            $large = imagecreatetruecolor(2049, 1);
+            imagepng($large, $source); imagedestroy($large);
+            $largeRef = \ForumRewrite\Images\ImageStore::inspect($source, 'Legacy wide image');
+            $largeInput = array_replace($input, ['body' => \ForumRewrite\Images\ImageReference::line($largeRef)]);
+            $largePrepared = $writer->prepareThread($largeInput);
+            $largeFinal = $largePrepared + ['author_identity_id' => $identity, 'detached_signature' => $this->signCanonicalRecord($key['home'], $largePrepared['canonical_record'])];
+            try { $writer->createPreparedPost($largeFinal, $source); throw new \LogicException('New oversized upload accepted'); }
+            catch (RuntimeException $e) { assertStringContains('2048', $e->getMessage()); }
+            assertSame(false, is_file($root . '/' . $largePrepared['record_path']));
+            assertSame(false, is_file((new \ForumRewrite\Images\ImageStore($root))->root . '/' . \ForumRewrite\Images\ImageReference::filename($largeRef)));
+            file_put_contents($root . '/' . $largePrepared['record_path'], $largePrepared['canonical_record']);
+            file_put_contents($root . '/' . $largePrepared['record_path'] . '.asc', $largeFinal['detached_signature']);
+            $this->runCommand($root, 'git add ' . escapeshellarg($largePrepared['record_path']) . ' ' . escapeshellarg($largePrepared['record_path'] . '.asc'));
+            $this->runCommand($root, 'git commit -qm "Historical image fixture"');
+            $writer->createPreparedPost($largeFinal, $source);
+            assertSame(file_get_contents($source), file_get_contents((new \ForumRewrite\Images\ImageStore($root))->resolve($largeRef)));
         } finally {
             $_POST = [];
             putenv($old === false ? 'FORUM_IMAGE_CONTENT_ENABLED' : 'FORUM_IMAGE_CONTENT_ENABLED=' . $old);
@@ -928,6 +945,11 @@ PHP);
             assertStringContains('Request agent response', $approvedThreadPage);
             assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
             assertStringContains('Logic analysis', $approvedThreadPage);
+            $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            foreach ([$approvedThreadPage, $approvedPostPage] as $page) {
+                assertSame(1, substr_count($page, '"type":"scripture_oriented_analysis"'));
+                assertStringContains('Scripture-oriented analysis', $page);
+            }
             assertSame(2, substr_count($approvedThreadPage, 'data-action="request-agent-reply"'));
             assertSame('requested', $response['generation_status']);
             assertSame(1, substr_count($requestedThreadPage, 'data-action="request-agent-reply"'));
@@ -1608,14 +1630,24 @@ PHP);
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
 
-            $baseCommand = 'php scripts/task_queue.php run --limit=2'
+            $queuedId = static function (string $target) use ($databasePath, $queuePath): int {
+                $stmt = (new PDO('sqlite:' . $databasePath))->prepare('SELECT target_content_hash FROM post_generated_responses WHERE target_post_id = ?');
+                $stmt->execute([$target]);
+                $task = (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(
+                    SqliteTaskQueueStore::AGENT_REPLY,
+                    AgentReplyTask::deduplicationKey($target, (string) $stmt->fetchColumn()),
+                );
+                return (int) $task['id'];
+            };
+            $taskId = $queuedId($postId);
+            $baseCommand = 'php scripts/task_queue.php run'
                 . ' --repository-root=' . escapeshellarg($repositoryRoot)
                 . ' --database-path=' . escapeshellarg($databasePath)
                 . ' --static-html-root=' . escapeshellarg($artifactRoot . '/static_html')
                 . ' --queue-database-path=' . escapeshellarg($queuePath);
             $dryRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --dry-run');
-            $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand);
-            $secondRun = $this->runCommand(dirname(__DIR__), $baseCommand);
+            $firstRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --task-id=' . $taskId);
+            $secondRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --task-id=' . $taskId);
             $secondThreadResponse = $this->renderMethod(
                 $application,
                 'POST',
@@ -1625,7 +1657,7 @@ PHP);
             $_COOKIE = ['identity_hint' => 'guest'];
             $secondRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($secondPostId)), true);
             $_COOKIE = [];
-            $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet');
+            $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet --task-id=' . $queuedId($secondPostId));
             $pdo = new PDO('sqlite:' . $databasePath);
             $statement = $pdo->prepare('SELECT status, agent_post_id FROM post_generated_responses WHERE target_post_id = :post_id');
             $statement->execute(['post_id' => $postId]);
@@ -1728,6 +1760,12 @@ PHP);
 
     public function testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode(): void
     {
+        $this->assertSelectedModeLifecycle('logic_analysis', 'Logic analysis');
+        $this->assertSelectedModeLifecycle('scripture_oriented_analysis', 'Scripture-oriented analysis');
+    }
+
+    private function assertSelectedModeLifecycle(string $mode, string $label): void
+    {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $previousLlmProviderEnv = $this->useStubLlmProvider();
 
@@ -1739,7 +1777,7 @@ PHP);
             $request = json_decode($this->renderMethod(
                 $application,
                 'POST',
-                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=logic_analysis'
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=' . $mode
             ), true);
             $invalid = json_decode($this->renderMethod(
                 $application,
@@ -1751,6 +1789,12 @@ PHP);
                 'POST',
                 '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=facts_analysis'
             ), true);
+            $duplicate = json_decode($this->renderMethod(
+                $application, 'POST',
+                '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=' . $mode
+            ), true);
+            assertSame('requested', $duplicate['generation_status']);
+            assertSame($label, $duplicate['response_mode_label']);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
             $claimed = $store->claimRequestedForPost($postId);
@@ -1761,18 +1805,18 @@ PHP);
                 ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
-            assertSame('Logic analysis', $request['response_mode_label']);
+            assertSame($label, $request['response_mode_label']);
             assertSame('error', $invalid['status']);
             assertSame('invalid response_mode', $invalid['error']);
             assertSame('error', $retired['status']);
             assertSame('invalid response_mode', $retired['error']);
-            assertSame('logic_analysis', $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
-            assertSame('logic_analysis', $stored['response_intent']);
+            assertSame($mode, $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
+            assertSame($mode, $stored['response_intent']);
             assertSame('generated', $fulfilled['generation_status']);
             assertSame(1, $analysisCount);
             assertSame(true, str_starts_with($stored['analysis_hash'], 'task:'));
             assertStringContains(
-                'Logic analysis available.',
+                $label . ' available.',
                 $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId))
             );
         } finally {
@@ -2141,6 +2185,89 @@ NODE;
         }
     }
 
+    public function testOperatorRetryRepairsHistoricalCompletionAndRunsOnlySelectedTask(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $queuePath = sys_get_temp_dir() . '/reply-retry-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previous = $this->useStubLlmProvider();
+        $oldQueue = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        $oldArtifacts = getenv('FORUM_PUBLIC_ARTIFACT_ROOT');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+        putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $artifacts);
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $post = $this->createAnalyzedThread($app, $db);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($post) . '&response_mode=scripture_oriented_analysis');
+            $pdo = new PDO('sqlite:' . $db);
+            $hash = (string) $pdo->query('SELECT target_content_hash FROM post_generated_responses')->fetchColumn();
+            $replies = new SqliteAgentReplyGenerationStore($pdo);
+            $replies->saveFailed($post, $hash, 'task:old', 'analysis_suggestion_error', 'Historical length failure');
+            $queue = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            foreach ($queue->claimNext(100) as $old) { $queue->markCompleted($old['id']); }
+            $unrelated = $queue->enqueue(SqliteTaskQueueStore::AGENT_REPLY, 'unrelated@hash');
+            try {
+                $app->retryAgentReplyRequest($post, 'wrong-version');
+                throw new RuntimeException('Stale recovery accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('content changed', $expected->getMessage());
+            }
+            // Simulate interruption between resetting the reply and enqueueing its task.
+            $app->retryAgentReplyRequest($post, $hash);
+            $args = ' --repository-root=' . escapeshellarg($root) . ' --database-path=' . escapeshellarg($db)
+                . ' --queue-database-path=' . escapeshellarg($queuePath);
+            $retry = 'php scripts/task_queue.php retry-agent-reply --post-id=' . escapeshellarg($post)
+                . ' --content-hash=' . escapeshellarg($hash) . $args;
+            $output = $this->runCommand(dirname(__DIR__), $retry);
+            assertSame(1, preg_match('/task_id=(\d+)/', $output, $match));
+            assertStringContains('task_id=' . $match[1], $this->runCommand(dirname(__DIR__), $retry));
+            $run = 'php scripts/task_queue.php run --task-id=' . $match[1] . $args;
+            assertStringContains('completed=1', $this->runCommand(dirname(__DIR__), $run));
+            assertStringContains('claimed=0', $this->runCommand(dirname(__DIR__), $run));
+            assertSame('queued', $queue->findById($unrelated['id'])['status']);
+            $row = $replies->findByTarget($post, $hash);
+            assertSame('posted', $row['status']);
+            assertSame('scripture_oriented_analysis', $row['response_intent']);
+            try {
+                $app->retryAgentReplyRequest($post, $hash);
+                throw new RuntimeException('Published recovery accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('Only failed', $expected->getMessage());
+            }
+        } finally {
+            $this->restoreLlmProviderEnv($previous);
+            putenv($oldQueue === false ? 'FORUM_TASK_QUEUE_DATABASE_PATH' : 'FORUM_TASK_QUEUE_DATABASE_PATH=' . $oldQueue);
+            putenv($oldArtifacts === false ? 'FORUM_PUBLIC_ARTIFACT_ROOT' : 'FORUM_PUBLIC_ARTIFACT_ROOT=' . $oldArtifacts);
+            $_COOKIE = [];
+        }
+    }
+
+    public function testInvalidReplyBudgetFailsWithoutPublicationAndHasActionableFeedback(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previous = $this->useStubLlmProvider();
+        $oldBudget = getenv('AGENT_REPLY_MAX_COMPLETION_TOKENS');
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->createAnalyzedThread($application, $databasePath);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId));
+            putenv('AGENT_REPLY_MAX_COMPLETION_TOKENS=0');
+            $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
+            $result = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
+            assertSame('failed', $result['generation_status']);
+            assertSame('provider_configuration_error', $result['failure_code']);
+            foreach (['threads', 'posts'] as $surface) {
+                assertStringContains('Provider configuration needs correction',
+                    $this->renderMethod($application, 'GET', '/' . $surface . '/' . rawurlencode($postId)));
+            }
+        } finally {
+            putenv($oldBudget === false ? 'AGENT_REPLY_MAX_COMPLETION_TOKENS' : 'AGENT_REPLY_MAX_COMPLETION_TOKENS=' . $oldBudget);
+            $this->restoreLlmProviderEnv($previous);
+            $_COOKIE = [];
+        }
+    }
+
     public function testGenerateAgentReplyRecordsPostingFailureAfterGeneration(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2152,7 +2279,7 @@ NODE;
             $this->deleteTree($repositoryRoot . '/.git');
 
             $_COOKIE = ['identity_hint' => 'guest'];
-            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=scripture_oriented_analysis'), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
             $response = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
@@ -2160,6 +2287,9 @@ NODE;
             $row = $pdo->query('SELECT status, failure_code, failure_message, agent_post_id FROM post_generated_responses')->fetch();
 
             assertSame('requested', $request['generation_status']);
+            assertSame('Scripture-oriented analysis', $request['response_mode_label']);
+            assertStringContains('Scripture-oriented analysis failed.',
+                $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId)));
             assertSame('failed', $response['generation_status']);
             assertSame('posting_error', $response['failure_code']);
             assertSame('failed', $row['status']);
