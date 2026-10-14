@@ -32,3 +32,15 @@ Debug mode: enabled
 - Notes:
   - The disabled-events case is covered by the existing `name="event_date"` absence assertions.
   - Warning auto-open and live summary updates come in Stage 4.
+
+## Stage 4 - Expando client behavior
+- Changes:
+  - `public/assets/compose_disclosure.js` (new): opens a disclosure when a normalization-status node inside it becomes visible, refreshes the collapsed summary on input, and refreshes after "Clear fields".
+  - `templates/layout.php` / `TemplateRenderer.php`: load the script next to `compose_draft_clear.js` on every page, so it covers all compose surfaces.
+  - `tests/browser/compose_disclosure.mjs` (new, self-contained fixture) and a fingerprinted-asset assertion in `LocalAppSmokeTest`.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest PresentationProfileMatrixTest VersionCheckBehaviorTest`: 146 run, 146 passed.
+  - `CHROMIUM_PATH=<playwright chromium> node tests/browser/compose_disclosure.mjs`: ok (summary update, warning auto-open, summary after clear).
+- Notes:
+  - Browser test uses a fixture, not the real `browser_signing.js` warning flow; the real flow toggles the same `hidden` attribute on the same nodes, but an end-to-end check with an unsupported character is left for Stage 7's manual pass.
+  - The script is loaded globally (layout) rather than per page, matching how the draft-clear script is loaded.

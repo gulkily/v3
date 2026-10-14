@@ -1915,6 +1915,7 @@ PHP;
         assertFingerprintedAsset($board, 'site.css');
         assertFingerprintedAsset($board, 'theme_toggle.js');
         assertFingerprintedAsset($board, 'compose_draft_clear.js');
+        assertFingerprintedAsset($board, 'compose_disclosure.js');
         assertFingerprintedAsset($board, 'version_check.js');
         assertStringNotContains('/assets/thread_density_toggle.', $board);
         assertStringNotContains('data-role="thread-density-toggle"', $board);
