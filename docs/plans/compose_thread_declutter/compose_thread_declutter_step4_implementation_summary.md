@@ -76,3 +76,18 @@ Debug mode: enabled
   - Implicit Enter-key submission still uses the first submit button, which remains the primary action.
   - The reply form's own buttons are unchanged, per the approved scope.
   - `todo.txt` has uncommitted user edits (new compose-form items, including placing the "..." button at the bottom-right corner); it is deliberately left out of stage commits.
+
+## Stage 7 - Cross-surface verification and closeout
+- Changes:
+  - `public/assets/outbox_compose.js`: the thread composer's "Save thread to Outbox" button is now appended to the "..." menu (reply forms unchanged), so "..." is the last control in the row and the primary button is the only other visible action.
+  - `public/assets/compose.css`: menu items share one font size/padding (the "Clear fields" item was smaller).
+  - `todo.txt`: marked "collapse the image selector…" done (only that line is committed; the user's separate uncommitted additions to the file were left untouched).
+- Verification:
+  - Manual browser pass with screenshots (Chromium, 900 px) of `/compose/thread` (default, with a prepared image and the menu open), the board inline composer, and the reply page; the QDB add route is not part of the browser fixture, so it is covered by the render tests only.
+  - `php tests/run.php LocalAppSmokeTest PresentationProfileMatrixTest LazyComposeSigningTest OfflineOutboxComposeTest BrowserSigningNormalizationTest ImageContentTest ImageUploadValidatorTest VersionCheckBehaviorTest PrivateMessageComposerTest`: 241 run, 241 passed.
+  - `node tests/browser/compose_disclosure.mjs`, `node tests/browser/image_compose_transport.cjs`, `node tests/browser/image_content_browser.mjs`: passed.
+  - `php scripts/check_static_artifacts.php`: all fingerprinted asset references resolve.
+- Notes:
+  - Not verified in a real browser: the events-enabled layout (fixture has events off; covered by render tests), the paned new-thread dialog, the QDB add page, a 390 px mobile pass of the new menu, and an end-to-end unsupported-character warning opening its expando.
+  - Reply-form action buttons were intentionally left as they were.
+  - The user's `todo.txt` additions (bottom-right "..." button, making the image and body modules look like the other modules) are not part of this cycle.
