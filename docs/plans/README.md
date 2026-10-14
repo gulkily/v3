@@ -11,6 +11,7 @@ checklists, and proposals remain at the top level or in the collections below.
 ## Feature folders
 
 - [Image upload enhancements](image_upload_enhancements/)
+- [Bookmarklet one-line copy](bookmarklet_one_line_copy/)
 
 - [Private messaging live navigation](private_messaging_live_navigation/)
 
