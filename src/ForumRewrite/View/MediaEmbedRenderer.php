@@ -10,6 +10,7 @@ final class MediaEmbedRenderer
         'youtube' => ['icon' => '▶', 'label' => 'YouTube'],
         'instagram' => ['icon' => '📷', 'label' => 'Instagram'],
         'spotify' => ['icon' => '♫', 'label' => 'Spotify'],
+        'tiktok' => ['icon' => '▶', 'label' => 'TikTok'],
     ];
 
     private const WARM_PREVIEW_ENDPOINT = '/internal/media-embeds/warm-preview';
@@ -84,6 +85,16 @@ final class MediaEmbedRenderer
                 '♫ Listen on Spotify',
                 'Spotify ' . $match['contentKind'] . ' player',
                 ' media-embed-card--spotify',
+            );
+        }
+
+        if ($inlinePlayerEnabled && $match['provider'] === 'tiktok') {
+            return $this->renderPlayerExpando(
+                $match,
+                'https://www.tiktok.com/player/v1/' . $match['embedId'] . '?autoplay=0',
+                '▶ Watch on TikTok',
+                'TikTok video player',
+                ' media-embed-card--portrait',
             );
         }
 

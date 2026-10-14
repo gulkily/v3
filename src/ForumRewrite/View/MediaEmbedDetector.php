@@ -90,6 +90,11 @@ final class MediaEmbedDetector
             return ['provider' => 'spotify', 'embedId' => $matches[2], 'contentKind' => $matches[1]];
         }
 
+        if (in_array($host, ['tiktok.com', 'www.tiktok.com'], true)
+            && preg_match('#^/@[A-Za-z0-9_.]+/video/([0-9]{19})/?$#D', $path, $matches) === 1) {
+            return ['provider' => 'tiktok', 'embedId' => $matches[1]];
+        }
+
         return null;
     }
 

@@ -8,6 +8,29 @@ use ForumRewrite\View\MediaEmbedDetector;
 
 final class MediaEmbedDetectorTest
 {
+    public function testTikTokAcceptsOnlyDirectVideoUrlsWithCompleteNumericIds(): void
+    {
+        $detector = new MediaEmbedDetector();
+        foreach (['https://www.tiktok.com', 'http://tiktok.com', 'https://TIKTOK.COM'] as $base) {
+            $url = $base . '/@scout.2015/video/6718335390845095173/?lang=en&si=tracking';
+            assertSame(['provider' => 'tiktok', 'embedId' => '6718335390845095173'], $detector->classify($url));
+            assertSame(str_replace('&si=tracking', '', $url), $detector->detect($url)[0]['displayUrl']);
+        }
+        foreach ([
+            'https://tiktok.com.evil.test/@user/video/6718335390845095173',
+            'https://tiktok.com/@user/video/6718335390845095173extra',
+            'https://tiktok.com/@user/video/671833539084509517',
+            'https://tiktok.com/@user/video/6718335390845095173/extra',
+            'https://tiktok.com/@user',
+            'https://tiktok.com/@user/photo/6718335390845095173',
+            'https://tiktok.com/t/Zabc/',
+            'https://vm.tiktok.com/Zabc/',
+            'https://vt.tiktok.com/Zabc/',
+        ] as $url) {
+            assertSame(null, $detector->classify($url));
+        }
+    }
+
     public function testSpotifyContentTypesAreValidatedWithoutConfusingTheirIdentifiers(): void
     {
         $detector = new MediaEmbedDetector();

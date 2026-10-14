@@ -25,3 +25,9 @@ Debug mode: disabled
 - Changes: A new bare-link template regression caught title/body de-duplication hiding Spotify cards entirely. Added the shared renderer's `hasEmbeds(string): bool` helper and used it in board/root templates so recognized media remains visible even when its URL is the displayed title. No provider-specific duplicate rendering path was added.
 - Verification: Detector/renderer/beacon/title/controller/script-inclusion suites: **60 passed, 0 failed**. Real Spotify track preview entered playback through the actual renderer/script at 360px; iframe measured 360×352, source link stayed visible, keyboard expansion loaded once, reopening did not reload. Stage 1 also confirmed real album and playlist preview playback.
 - Notes: Unsupported Spotify artists, podcasts, URI schemes, share redirects, and malformed IDs remain outside scope. No Spotify title fetching, subject writes, schema changes, or flag changes.
+
+## Stage 4 - Direct TikTok videos
+
+- Changes: Added explicit TikTok video URLs with complete 19-digit IDs and optional `www.`; reused plain cards and the shared expando/source-link renderer. The official player loads in a portrait frame with autoplay explicitly disabled. Profile/photo/redirect URLs remain unsupported.
+- Verification: Focused detection/rendering/title/beacon/controller/script-inclusion suites: **64 passed, 0 failed**. Real TikTok `6718335390845095173` played through the actual renderer/script at 360px with advancing media time, a 360×640 frame, visible source link, one request on keyboard expansion, and no navigation on reopening.
+- Notes: TikTok threads retain body-derived titles and no metadata beacon. No provider-controlled HTML/scripts, new fetch endpoint, schema, or flag changes.

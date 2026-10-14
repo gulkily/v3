@@ -9,6 +9,20 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MediaEmbedRendererTest
 {
+    public function testTikTokHasDelayedPortraitPlaybackAndFlagOffFallback(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        $url = 'https://www.tiktok.com/@scout2015/video/6718335390845095173';
+        $html = $renderer->render($url, true, true);
+        assertSame(true, str_contains($html, 'data-embed-src="https://www.tiktok.com/player/v1/6718335390845095173?autoplay=0"'));
+        assertSame(true, str_contains($html, 'media-embed-card--portrait'));
+        assertSame(true, str_contains($html, 'src=""'));
+        assertSame(true, strpos($html, 'href="' . $url . '"') < strpos($html, '<details'));
+        assertSame(false, str_contains($html, 'warm-preview'));
+        assertSame(false, str_contains($renderer->render($url, true, false), '<iframe'));
+        assertSame($url, $renderer->render($url, false, true));
+    }
+
     public function testSpotifyCardsPlayersAndFlagsWorkForEachContentType(): void
     {
         $renderer = new MediaEmbedRenderer();
