@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Scripture-oriented analysis](scripture_oriented_analysis/)
 - [Starfield key backup](starfield_key_backup/)
 
 - [Account key approval safety](account_key_approval_safety/)
