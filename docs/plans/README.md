@@ -10,7 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Fastmod graded visibility — neutral intake slice](fastmod_prepublication_hold/)
+- [Fastmod graded visibility — neutral intake slice](fastmod_prepublication_hold/) · [Cross-cycle checklist and QDB voting request](fastmod_prepublication_hold/fastmod_development_checklist.md)
 
 - [Compose thread declutter](compose_thread_declutter/)
 - [Top five media embeds](top_five_media_embeds/)
