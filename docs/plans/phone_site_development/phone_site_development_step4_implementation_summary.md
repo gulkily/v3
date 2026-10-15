@@ -23,3 +23,8 @@ Implementation in progress. Live server acceptance is pending.
 - Changes: signed answers bound to pending question revision; signed change requests bound to current assessment; retained actor/question/answer/change history; atomic requeue; shared thread controls for both journeys.
 - Verification: `php tests/run.php RailspikeWorkflowTest` — 4 passed, including question/answer/assessment/change flow and stale revision rejection. JavaScript syntax and diff whitespace checks passed.
 - Notes: ordinary forum replies never resume work automatically; only explicit signed workflow actions do so.
+
+## Stage 5 - Revision-bound approval and handoff
+- Changes: Approve Step 1 records the exact revision/digest and operator; approved workflow visibly stops at the Step 2 handoff. Subsequent requested changes invalidate the active approval while preserving evidence.
+- Verification: `php tests/run.php RailspikeWorkflowTest` — 5 passed, including wrong digest, replay, operator revocation, approval invalidation, and zero extra tasks on approval. JavaScript syntax and diff checks passed.
+- Notes: no Step 2, implementation, legacy-runner, or deployment dispatch is attached to approval.

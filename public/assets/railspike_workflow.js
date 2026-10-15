@@ -63,10 +63,12 @@
       });
       button('Send answers', () => act('answer', row.post_id, row, { revision: latest.number, answers: answers.map(a => a.value) }), panel);
     }
-    if (row.state === 'review' && latest) {
+    if (['review', 'approved'].includes(row.state) && latest) {
       const label = node('label', 'Requested changes'); const input = node('textarea'); input.maxLength = 16000; label.append(input); panel.append(label);
+      if (row.state === 'review') button('Approve Step 1', () => act('approve', row.post_id, row, { revision: latest.number, digest: latest.digest }), panel);
       button('Request changes', () => act('changes', row.post_id, row, { revision: latest.number, text: input.value }), panel);
     }
+    if (row.handoff) panel.append(node('p', row.handoff));
     for (const item of row.history) {
       const entry = node('details'); entry.append(node('summary', item.action + ' · ' + item.actor));
       if (item.answers) item.answers.forEach((a, i) => entry.append(node('p', item.questions[i] + ': ' + a)));

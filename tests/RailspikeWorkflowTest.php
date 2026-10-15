@@ -90,4 +90,23 @@ final class RailspikeWorkflowTest
         $this->rejects(fn () => $service->apply($stale,'valid',$actor));
     }
 
+    public function testApprovalBindsDigestStopsAndCanBeInvalidated(): void
+    {
+        [$store,$service,$actor,$root,$pdo]=$this->fixture();
+        $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
+        $row['state']='review'; $row['revisions']=[['number'=>1,'digest'=>'digest','artifact'=>'assessment','questions'=>[],'kind'=>'assessment']]; $store->save($row);
+        $text=$service->prepare(['action'=>'approve','workflow_id'=>$row['id'],'version'=>1,'payload'=>['revision'=>1,'digest'=>'wrong']],$actor);
+        $this->rejects(fn () => $service->apply($text,'valid',$actor));
+        $before=(int)$pdo->query('SELECT COUNT(*) FROM internal_tasks')->fetchColumn();
+        $text=$service->prepare(['action'=>'approve','workflow_id'=>$row['id'],'version'=>1,'payload'=>['revision'=>1,'digest'=>'digest']],$actor);
+        $approved=$service->apply($text,'valid',$actor); assertSame('approved',$approved['state']);
+        assertSame($actor['identity_id'],$approved['approval']['actor']);
+        assertSame($before,(int)$pdo->query('SELECT COUNT(*) FROM internal_tasks')->fetchColumn());
+        assertSame($approved['version'],$service->apply($text,'valid',$actor)['version']);
+        $changes=$service->prepare(['action'=>'changes','workflow_id'=>$row['id'],'version'=>$approved['version'],'payload'=>['revision'=>1,'text'=>'Reconsider']],$actor);
+        $changed=$service->apply($changes,'valid',$actor); assertSame(false,isset($changed['approval']));
+        unlink($root.'/records/approval-seeds/openpgp-'.str_repeat('a',40).'.txt');
+        $this->rejects(fn () => $service->apply($text,'valid',$actor));
+    }
+
 }

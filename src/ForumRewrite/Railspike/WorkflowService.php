@@ -78,19 +78,26 @@ final class WorkflowService
         $kind=$action['action']; $payload=$action['payload'] ?? [];
         $latest=$row['revisions'] === [] ? null : $row['revisions'][array_key_last($row['revisions'])];
         if (!is_array($payload)) throw new RuntimeException('Action payload must be an object.');
+        if ($kind==='approve' && $row['state']==='review' && $latest !== null && ($payload['revision'] ?? null)===$latest['number'] && ($payload['digest'] ?? '')===$latest['digest']) {
+            $row['approval']=['actor'=>$actor['identity_id'],'revision'=>$latest['number'],'digest'=>$latest['digest'],'at'=>gmdate('c')];
+            $row['history'][]=['action'=>'approve']+$row['approval'];
+            $row['state']='approved';
+            $row['handoff']='Step 1 approved. Next: start Railspike Step 2 through a separately authorized planning handoff. No implementation has started.';
+            return $row;
+        }
         if ($kind==='answer' && $row['state']==='questions' && $latest !== null && ($payload['revision'] ?? null)===$latest['number']) {
             $answers=$payload['answers'] ?? null;
             if (!is_array($answers) || !array_is_list($answers) || count($answers)!==count($latest['questions'])) throw new RuntimeException('Answer every pending question.');
             foreach ($answers as $answer) if (!is_string($answer) || trim($answer)==='' || strlen($answer)>8000) throw new RuntimeException('Each answer must contain 1–8000 bytes.');
             $row['history'][]=['action'=>'answer','revision'=>$latest['number'],'questions'=>$latest['questions'],'answers'=>$answers,'actor'=>$actor['identity_id'],'at'=>gmdate('c')];
-        } elseif ($kind==='changes' && $row['state']==='review' && $latest !== null && ($payload['revision'] ?? null)===$latest['number']) {
+        } elseif ($kind==='changes' && in_array($row['state'],['review','approved'],true) && $latest !== null && ($payload['revision'] ?? null)===$latest['number']) {
             $text=$payload['text'] ?? null;
             if (!is_string($text) || trim($text)==='' || strlen($text)>16000) throw new RuntimeException('Describe the requested changes in 1–16000 bytes.');
             $row['history'][]=['action'=>'changes','revision'=>$latest['number'],'text'=>$text,'actor'=>$actor['identity_id'],'at'=>gmdate('c')];
         } else {
             throw new RuntimeException('This action does not match the current workflow state or revision.');
         }
-        $row['state']='queued'; unset($row['approval'],$row['failure'],$row['failure_detail']);
+        $row['state']='queued'; unset($row['approval'],$row['handoff'],$row['failure'],$row['failure_detail']);
         return $row;
     }
 
