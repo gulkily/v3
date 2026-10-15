@@ -150,10 +150,11 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, string>
      */
-    public function createReply(array $input, ?array $agentResponse = null): array
+    public function createReply(array $input, ?array $agentResponse = null, ?callable $beforeWrite = null): array
     {
-        return $this->withTimedWriteLock(function () use ($input, $agentResponse): array {
+        return $this->withTimedWriteLock(function () use ($input, $agentResponse, $beforeWrite): array {
             $this->assertWritableRepository();
+            if ($beforeWrite !== null) { $beforeWrite(); }
             $timings = [];
             $totalStartedAt = hrtime(true);
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');

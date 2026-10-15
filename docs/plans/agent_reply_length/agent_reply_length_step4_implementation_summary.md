@@ -15,3 +15,9 @@ Debug mode: disabled
 - Changes: Added optional validated canonical Agent-Response metadata and derived JSON column; schema version 18, full/incremental replay, deterministic expansion publication IDs, and recovery of canonical writes interrupted before commit/read-model refresh. Metadata is passed through a server-only writer argument, not public input fields.
 - Verification: Parser/schema/startup suites: 47 passed, including prior-version startup rebuild before page access. Writer round-trip/rebuild/replay test passed; an initial test cursor held a SQLite read lock and was corrected before the successful rerun. Isolated `./v3 rebuild` and normal page access passed. Diff check passed.
 - Notes: Existing records need no migration; only the disposable read model changes. Existing expansion publication is reconciled under the canonical write lock.
+
+## Stage 3 - Expansion request and fulfillment
+
+- Changes: Added an internal expansion task, dedicated editable prompt with both source texts, request/status endpoints, verified scripture eligibility (including trusted historical request provenance), shared request deduplication, and targeted operator recovery. New scripture responses carry canonical provenance. Expansion rechecks source versions, visibility, and requester approval before and after generation and under the write lock; interrupted posting reconciles its stable canonical identity.
+- Verification: Task/generator/store/worker and isolated expansion API tests: 43 passed. Covered duplicate claims/requests, canonical replay/rebuild, source edits/hiding, requester revocation during generation, exhaustion and explicit retry, and recursion rejection. Diff check passed.
+- Notes: No separate LLM provider, automatic expansion, or response-length quota was introduced. Failed provider calls remain failures; stale source work is skipped without publication.

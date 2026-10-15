@@ -802,8 +802,20 @@ final class PostWorkflowService
     /**
      * @return array<string, mixed>
      */
+    public function scriptureExpansionService(): ScriptureExpansionService
+    {
+        return new ScriptureExpansionService($this->pdo(), $this->repositoryRoot, TaskQueueDatabaseConfig::path($this->projectRoot),
+            $this->fetchPost, fn (array $post): array => $this->postAnalysisContext($post, false),
+            fn (): ?AgentResponseGenerator => $this->agentResponseGenerator(), ($this->writerFactory)(),
+            $this->agentIdentityService(), $this->agentResponseRequestsEnabled());
+    }
+
     public function retryAgentReplyRequest(string $postId, string $contentHash): array
     {
+        $stored = (new SqliteAgentReplyGenerationStore($this->pdo()))->findByTarget($postId, $contentHash);
+        if (AgentResponseTask::fromStoredRequestContext($stored['request_context'] ?? [])['type'] === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE) {
+            return $this->scriptureExpansionService()->retry($postId, $contentHash);
+        }
         $post = ($this->fetchPost)($postId);
         if (!$this->agentResponseRequestsEnabled() || $post === null
             || ($post['retracted_at'] ?? null) !== null
@@ -820,6 +832,9 @@ final class PostWorkflowService
     public function fulfillAgentReplyRequest(array $requestRow): array
     {
         try {
+            if (AgentResponseTask::fromStoredRequestContext($requestRow['request_context'] ?? [])['type'] === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE) {
+                return $this->scriptureExpansionService()->fulfill($requestRow);
+            }
             return $this->agentReplyFulfillmentService()->fulfillRequest($requestRow);
         } catch (\InvalidArgumentException $error) {
             $row = (new SqliteAgentReplyGenerationStore($this->pdo()))->saveFailed(
