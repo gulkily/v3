@@ -653,6 +653,8 @@ class LocalWriteService
                 throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
             }
 
+            $attribution = $record->classification === 'operator'
+                ? $this->retractionAttributionEvidence($record, $canonicalRecord) : '';
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
@@ -660,7 +662,7 @@ class LocalWriteService
 
             $commitResult = $this->commitCanonicalWrite(
                 [$recordPath, $recordPath . '.asc'],
-                'Retract post ' . $postId . ' by ' . $authorIdentityId
+                'Retract post ' . $postId . ' by ' . $authorIdentityId . $attribution
             );
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
@@ -680,6 +682,40 @@ class LocalWriteService
 
             return $this->retractionResult($postId, $threadId, $recordPath, $failedStep, $timings, hrtime(true) - $totalStartedAt, false, $commitSha);
         });
+    }
+
+    /** Local acceptance metadata only: never part of the signer's canonical record. */
+    private function retractionAttributionEvidence(\ForumRewrite\Canonical\PostRetractionRecord $record, string $contents): string
+    {
+        $username = null;
+        try {
+            $pdo = $this->readModelPdo();
+            $metadata = ReadModelMetadata::readMetadata($pdo);
+            $fresh = !$this->staleMarker()->exists()
+                && ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
+                && realpath($metadata['repository_root'] ?? '') === realpath($this->repositoryRoot)
+                && ($metadata['repository_head'] ?? '') === ReadModelMetadata::repositoryHead($this->repositoryRoot)
+                && trim($this->runGitCommand(['status', '--porcelain', '--', 'records'], 'Cannot inspect account evidence')) === '';
+            if ($fresh) {
+                $query = $pdo->prepare('SELECT username_token, is_approved FROM profiles WHERE identity_id = ?');
+                $query->execute([$record->signerIdentityId()]);
+                $actor = $query->fetch(\PDO::FETCH_ASSOC);
+                $query->execute([$record->authorIdentityId]);
+                $author = $query->fetch(\PDO::FETCH_ASSOC);
+                if ($actor && $author && (int) $actor['is_approved'] === 1 && (int) $author['is_approved'] === 1
+                    && $actor['username_token'] !== '' && $actor['username_token'] !== null
+                    && $actor['username_token'] === $author['username_token']) {
+                    $username = $actor['username_token'];
+                }
+            }
+        } catch (\Throwable) {
+            // Presentation uncertainty must neither grant authority nor prevent a valid retraction.
+        }
+        return "\n\nRetraction-Attribution: " . json_encode([
+            'version' => 1, 'sha256' => hash('sha256', $contents),
+            'actor' => $record->signerIdentityId(), 'author' => $record->authorIdentityId,
+            'attribution' => $username === null ? 'operator' : 'author', 'username' => $username,
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
     }
 
     private function requireRetractablePost(string $postId, string $authorIdentityId): PostRecord

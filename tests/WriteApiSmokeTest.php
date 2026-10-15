@@ -2506,6 +2506,46 @@ NODE;
         assertStringContains('https://example.test/cypher-night', $threadPage);
     }
 
+    public function testOperatorRetractionCapturesAccountEvidenceAtAcceptance(): void
+    {
+        foreach (['same', 'different', 'unapproved', 'revoked', 'dirty'] as $scenario) {
+            [$root, $db, $artifacts] = $this->createTempEnvironment();
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $author = $this->createAuthoredThread($app, 'AccountEvidence', 'Evidence target');
+            $operator = $this->linkSigningIdentity($app, $scenario === 'different' ? 'OtherAccount' : 'accountevidence');
+            $this->seedApprovedIdentity($root, $operator['identity_id']);
+            if ($scenario !== 'unapproved') $this->seedApprovedIdentity($root, $author['identity_id']);
+            $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+            assertSame('ok', $prepared['status']);
+            if ($scenario === 'revoked') {
+                $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($author['identity_id'], 8) . '.txt'));
+                $this->runCommand($root, 'git commit -m "Revoke target before acceptance"');
+            }
+            if ($scenario === 'dirty') file_put_contents($root . '/records/uncommitted.txt', 'Uncommitted account evidence');
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'], 'actor_identity_id' => $operator['identity_id'],
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($operator['home'], $prepared['canonical_record'])];
+            $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+            $_POST = [];
+            assertSame('complete', $result['retraction_status']);
+            $message = $this->gitOutput($root, 'show -s --format=%B HEAD');
+            assertSame(1, preg_match('/^Retraction-Attribution: (.+)$/m', $message, $match));
+            $evidence = json_decode($match[1], true, 512, JSON_THROW_ON_ERROR);
+            assertSame($scenario === 'same' ? 'author' : 'operator', $evidence['attribution']);
+            assertSame($scenario === 'same' ? 'accountevidence' : null, $evidence['username']);
+            assertSame(hash('sha256', $prepared['canonical_record']), $evidence['sha256']);
+            assertSame($operator['identity_id'], $evidence['actor']);
+            assertSame($author['identity_id'], $evidence['author']);
+            assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
+            assertStringContains('Retraction-Class: operator', $prepared['canonical_record']);
+            $before = $this->latestCommitSha($root);
+            $retry = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+            assertSame(true, $retry['already_retracted']);
+            assertSame($before, $this->latestCommitSha($root));
+        }
+    }
+
     public function testOperatorRetractionAuthorityRequiresLocalAcceptanceHistory(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
