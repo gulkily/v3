@@ -100,6 +100,7 @@ if ($isRunTail) {
 <?php if ($metaLine !== '' && $isContinuation): ?>
   <?= $metaLine ?>
 <?php endif; ?>
+<?= $partial('partials/scripture_expansion.php') ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
 $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false)) && !$isRetracted

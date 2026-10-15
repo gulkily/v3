@@ -702,7 +702,100 @@
     });
   }
 
+  function bindScriptureExpansions() {
+    document.querySelectorAll('[data-scripture-expansion]').forEach(function (node) {
+      if (node.dataset.expansionBound === "1") return;
+      node.dataset.expansionBound = "1";
+      const id = node.dataset.postId;
+      const button = node.querySelector('[data-action="expand-scripture"]');
+      const feedback = node.querySelector('[data-expansion-feedback]');
+      const details = node.querySelector('[data-expansion-details]');
+      const body = node.querySelector('[data-expansion-body]');
+      let state = node.dataset.expansionState;
+      let pending = false;
+      let timer = null;
+      const storageKey = "scripture-expansion:" + id;
+      function requestedHere(value) {
+        try {
+          if (value === true) sessionStorage.setItem(storageKey, "1");
+          if (value === false) sessionStorage.removeItem(storageKey);
+          return sessionStorage.getItem(storageKey) === "1";
+        } catch (_) { return false; }
+      }
+      function schedule() {
+        clearTimeout(timer);
+        timer = setTimeout(function () { update(false); }, 3000);
+      }
+      function show(result) {
+        state = result.generation_status;
+        node.dataset.expansionState = state;
+        if (state === "generated" && typeof result.expansion_body === "string") {
+          // Match the server's readable line breaks without treating model text as HTML.
+          body.replaceChildren();
+          result.expansion_body.split("\n").forEach(function (line, index) {
+            if (index) body.appendChild(document.createElement("br"));
+            body.appendChild(document.createTextNode(line));
+          });
+          details.hidden = false;
+          if (requestedHere()) { details.open = true; requestedHere(false); }
+          if (button) button.hidden = true;
+          feedback.textContent = "Expansion ready.";
+          clearTimeout(timer);
+          return;
+        }
+        if (state === "requested" || state === "in_progress") {
+          feedback.textContent = "Expansion requested. Additional reflection will appear here when ready.";
+          if (button) button.disabled = true;
+          schedule();
+        } else if (state === "failed") {
+          feedback.textContent = result.failure_message || "Expansion failed. An operator can inspect and retry.";
+          if (button) { button.disabled = false; button.textContent = "Check expansion status"; }
+          clearTimeout(timer);
+        } else if (state === "available") {
+          feedback.textContent = "";
+          if (button) { button.disabled = false; button.textContent = "Expand"; }
+        } else {
+          details.hidden = true;
+          body.replaceChildren();
+          feedback.textContent = "Expansion is unavailable for this response or its current source.";
+          if (button) button.hidden = true;
+          clearTimeout(timer);
+        }
+      }
+      async function update(request) {
+        if (pending || !node.isConnected) return;
+        if (!request && document.hidden) { schedule(); return; }
+        pending = true;
+        if (request) requestedHere(true);
+        if (button) button.disabled = true;
+        try {
+          const response = await fetch(request ? "/api/expand_agent_reply" : "/api/agent_expansion_status?post_id=" + encodeURIComponent(id), {
+            method: request ? "POST" : "GET", credentials: "same-origin",
+            headers: { "Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+            body: request ? new URLSearchParams({post_id: id}).toString() : undefined
+          });
+          const result = await response.json();
+          if (!response.ok || result.status !== "ok") {
+            if ([403, 404, 409].includes(response.status)) { show({generation_status: "unavailable"}); return; }
+            throw new Error("Expansion request unavailable");
+          }
+          show(result);
+        } catch (_) {
+          feedback.textContent = "Could not check expansion. Try again or refresh this page.";
+          if (button) { button.disabled = false; button.textContent = "Check expansion status"; }
+          // Retry status only; never repeat a provider request automatically.
+          if (requestedHere() || state === "requested" || state === "in_progress") schedule();
+          state = "check_status";
+        } finally { pending = false; }
+      }
+      if (button) button.addEventListener("click", function () { update(state === "available"); });
+      if (state === "requested" || state === "in_progress") schedule();
+      if (state === "generated" && requestedHere()) { details.open = true; requestedHere(false); }
+    });
+  }
+
   function boot() {
+    bindScriptureExpansions();
     bindAgentReplyRequestButtons();
     bindCodexHandoffButtons();
 
