@@ -22,18 +22,21 @@ function makeButton() {
   return { button, feedback, attributes };
 }
 
-async function scenario(confirmAnswer, submit) {
+async function scenario(confirmAnswer, submit, slow = false) {
   const handlers = [];
-  const timers = [];
+  const timers = new Map();
+  let nextTimer = 0;
+  let finish;
   const calls = { submit: 0, confirm: 0, reload: 0 };
   const context = {
     Element,
     Error,
     document: { addEventListener: (type, handler) => handlers.push({ type, handler }) },
     window: {
-      ForumBrowserSigning: submit ? { submitSignedRetraction: async (id) => { calls.submit += 1; return submit(id); } } : {},
+      ForumBrowserSigning: submit ? { submitSignedRetraction: async (id) => { calls.submit += 1; if (slow) await new Promise(resolve => { finish = resolve; }); return submit(id); } } : {},
       confirm: () => { calls.confirm += 1; return confirmAnswer; },
-      setTimeout: (fn) => { timers.push(fn); },
+      setTimeout: (fn, delay) => { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; },
+      clearTimeout: (id) => timers.delete(id),
       location: { reload: () => { calls.reload += 1; } },
     },
   };
@@ -41,8 +44,15 @@ async function scenario(confirmAnswer, submit) {
   vm.runInContext(source, context);
   const { button, feedback, attributes } = makeButton();
   handlers.find((h) => h.type === "click").handler({ target: button, preventDefault: () => {} });
+  const initialHidden = feedback.hidden;
+  let progress = null;
+  if (slow) {
+    for (const timer of timers.values()) { if (timer.delay !== 300) throw new Error('Unexpected progress delay'); timer.fn(); }
+    progress = feedback.textContent;
+    finish();
+  }
   await new Promise((resolve) => setImmediate(resolve));
-  timers.forEach((fn) => fn());
+  if (timers.size && !slow) throw new Error('Progress timer was not cancelled');
   return {
     calls,
     feedback: feedback.textContent,
@@ -50,6 +60,8 @@ async function scenario(confirmAnswer, submit) {
     feedbackClass: feedback.className,
     disabled: "disabled" in attributes,
     label: button.textContent,
+    initialHidden,
+    progress,
   };
 }
 
@@ -57,9 +69,11 @@ async function scenario(confirmAnswer, submit) {
   const out = {
     declined: await scenario(false, async () => ({ ok: true, retractionStatus: "complete" })),
     complete: await scenario(true, async () => ({ ok: true, retractionStatus: "complete" })),
+    slow: await scenario(true, async () => ({ ok: true, retractionStatus: "complete" }), true),
     partial: await scenario(true, async () => ({ ok: true, retractionStatus: "partial", failedStep: "read_model_refresh" })),
     failure: await scenario(true, async () => ({ ok: false, error: "Only the post author can retract this post." })),
     unavailable: await scenario(true, null),
+    thrown: await scenario(true, async () => { throw new Error('Transport failure'); }),
   };
   process.stdout.write(JSON.stringify(out));
 })();

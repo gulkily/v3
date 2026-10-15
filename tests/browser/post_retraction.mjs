@@ -51,9 +51,26 @@ try {
     const post = posts[scenario];
     await page.goto(base + '/posts/' + post.post_id);
     const control = page.locator('[data-role="retraction-control"]').first();
-    await control.locator('summary').click();
+    await control.locator('.post-more-actions > summary').click();
     await control.getByRole('button', { name: 'Retract post', exact: true }).click();
     assert.equal(confirmations, 1);
+    if (scenario === 'operator') {
+      // Long transport errors remain readable even on a narrow screen.
+      await page.evaluate(() => {
+        window.originalRetraction = window.ForumBrowserSigning.submitSignedRetraction;
+        window.ForumBrowserSigning.submitSignedRetraction = async () => ({ ok: false, error: 'x'.repeat(1500) });
+      });
+      await control.getByRole('button', { name: 'Retract post', exact: true }).click();
+      await control.locator('[data-role="retraction-details"]').getByText('Details', { exact: true }).click();
+      const fits = await control.evaluate(node => {
+        const card = node.closest('article') || node.closest('.post-card') || node.parentElement;
+        const text = node.querySelector('[data-role="retraction-details"] p');
+        return text.scrollWidth <= text.clientWidth + 1 && node.getBoundingClientRect().right <= card.getBoundingClientRect().right + 1;
+      });
+      assert.equal(fits, true, 'Long error details must fit within the post');
+      await page.evaluate(() => { window.ForumBrowserSigning.submitSignedRetraction = window.originalRetraction; });
+      await control.locator('.post-more-actions > summary').click();
+    }
     let simulated = false;
     if (scenario === 'partial') {
       await page.route('**/api/create_prepared_retraction', async route => {
@@ -77,7 +94,8 @@ try {
     if (role === 'operator') assert.match(record, new RegExp(`Actor-Identity-ID: ${identities.operator}`));
     if (scenario === 'partial') {
       await control.getByRole('button', { name: 'Retry retraction', exact: true }).waitFor({ state: 'visible' });
-      assert.equal(await control.locator('details').getAttribute('open'), null);
+      assert.equal(await control.locator('details.post-more-actions').getAttribute('open'), null);
+      assert.equal(await control.locator('[data-role="retraction-feedback"]').textContent(), 'Retracted. Site update incomplete.');
       assert.equal(simulated, true);
       await page.unroute('**/api/create_prepared_retraction');
       const before = spawnSync('git', ['-C', join(root, 'repository'), 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout;

@@ -171,7 +171,7 @@
   }
 }
 
-.post-retraction-control { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
+.post-retraction-control { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; min-width: 0; max-width: 100%; }
 .post-more-actions { position: relative; }
 .post-more-actions > summary { cursor: pointer; list-style: none; min-width: 2.5rem; min-height: 2.5rem; display: grid; place-items: center; }
 .post-more-actions > summary::-webkit-details-marker { display: none; }
@@ -185,4 +185,5 @@
   padding: 0.5rem 0.75rem;
   text-align: center;
 }
-.post-retraction-control .retraction-feedback { flex-basis: 100%; margin: 0; }
+.post-retraction-control .retraction-feedback,
+.post-retraction-control .retraction-details { flex-basis: 100%; min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; margin: 0; }
