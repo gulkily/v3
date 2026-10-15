@@ -1184,7 +1184,9 @@ class LocalWriteService
             $name = strtolower(trim((string) ($input['username'] ?? '')));
             if (preg_match('/^[a-z0-9._-]{1,80}$/D', $name) !== 1) throw new RuntimeException('Invalid profile name.');
             $id = 'profile-name-' . bin2hex(random_bytes(16));
-            $contents = "Record-ID: {$id}\nCreated-At: " . $this->canonicalTimestampNow()
+            $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
+            $createdAt = gmdate('Y-m-d\TH:i:s\Z', max(time(), $latest === null ? 0 : strtotime($latest['Created-At']) + 1));
+            $contents = "Record-ID: {$id}\nCreated-At: " . $createdAt
                 . "\nOperation: set-name\nAuthor-Identity-ID: {$identity}\nUsername: {$name}\n\n";
             (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
             return $this->storePreparedPost('records/profile-names/' . $id . '.txt', $contents, [

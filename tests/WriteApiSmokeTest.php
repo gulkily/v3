@@ -57,6 +57,23 @@ final class WriteApiSmokeTest
             }
             assertSame('chosen-name', $writer->finalizePreparedProfileName($signed)['username']);
             assertSame($before, file_get_contents($bootstrap));
+            $pdo = (new ReadModelConnection($db))->open();
+            assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+            $pdo->exec("UPDATE profiles SET username = 'temporary-reader', username_token = 'temporary-reader'");
+            $pdo->exec("UPDATE metadata SET value = '19' WHERE key = 'schema_version'");
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            assertStringContains('chosen-name', $this->renderMethod($app, 'GET', '/profiles/openpgp-' . substr($identity, 8)));
+            assertSame('20', $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            $writer->linkIdentity(['public_key' => $other['public_key']]);
+            assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+            $again = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'final-name']);
+            $writer->finalizePreparedProfileName($again + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $again['canonical_record'])]);
+            assertSame('final-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+            file_put_contents($root . '/' . $again['record_path'] . '.asc', 'forged');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+
             assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
             try {
                 $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => "invalid\nheader"]);

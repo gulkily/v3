@@ -640,6 +640,7 @@ final class ReadModelBuilder
         );
 
         $paths = $this->findRelativePaths('records/identity');
+        $names = ProfileNames::latest($this->repositoryRoot);
         $profiles = [];
         $claimedUsernameTokens = [];
         foreach ($this->progressItems('parsing_identity_records', $paths) as $index => $relativePath) {
@@ -650,7 +651,7 @@ final class ReadModelBuilder
             }
 
             $publicKey = $this->canonicalRepository->loadPublicKey($publicKeyPath);
-            $username = $identity->username !== '' ? $identity->username : 'guest';
+            $username = $names[$identity->identityId]['Username'] ?? ($identity->username !== '' ? $identity->username : 'guest');
             $usernameToken = strtolower($username);
             $fallbackLabel = $username . '-' . substr(strtolower($identity->signerFingerprint), 0, 8);
             $profile = [
