@@ -28,3 +28,8 @@ Debug mode: enabled
 - Changes: Added nonmutating no-store bearer inspection, signed same-recipient recovery under the write lock, destination in final results, and already-approved access without consuming unused invites. Different recipients cannot recover a consumed invite.
 - Verification: Signed invitation policy/recovery smoke test and PrivateSiteAuthTest — 10 passed. Tests cover nonconsumption on inspection/approved entry, lost-response recovery without extra canonical writes, forged ownership, foreign recipient, exact destination, and policy recheck at acceptance; diff check passed.
 - Notes: Inspection reveals only targeted/available-or-used state, never recipient identity or a successful recovery claim. Recovery requires a new signed prepared operation and retained member approval.
+
+## Stage 6 - Automatic authenticated arrival
+- Changes: Targeted invites inspect before key creation, silently prepare/reuse identity, redeem/sign, force fresh approval verification without auth navigation, and replace Lobby with the validated target. Untargeted invites stay manual. Invite pages suppress competing auth/guest startup; errors retain the bearer for explicit retry and expose Account/board recovery links.
+- Verification: 90 existing auth/identity tests passed; expanded auth/issuance suite — 19 passed. New redemption harness covers automatic/manual separation, exact target, fresh auth contract, network retry, storage/auth/unsafe-target failures, and invalid tokens without key creation.
+- Notes: Target handoff no longer depends on sessionStorage or an intermediate reload. Missing resources retain the normal authenticated Not Found page and site navigation. Repeated clicks are serialized; retries are user-triggered after failure.

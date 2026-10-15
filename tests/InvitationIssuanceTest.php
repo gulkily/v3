@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 final class InvitationIssuanceTest
 {
+    public function testTargetedRedemptionAndRecovery(): void
+    {
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/invite_redemption.cjs') . ' 2>&1', $output, $status);
+        if ($status !== 0) throw new RuntimeException(implode("\n", $output));
+        assertSame(0, $status);
+    }
+
     public function testGeneratedQrAndCopyFallback(): void
     {
         exec('node ' . escapeshellarg(__DIR__ . '/browser/invitation_issuance.cjs') . ' 2>&1', $output, $status);

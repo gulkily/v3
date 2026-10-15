@@ -2261,6 +2261,7 @@
   }
 
   function scheduleAutomaticGuestIdentity(root) {
+    if (window.location && /^#invite=/.test(window.location.hash || "")) return false;
     if (automaticGuestIdentityStarted || !automaticGuestKeypairEnabled() || hasBrowserKeypair()) {
       return false;
     }
