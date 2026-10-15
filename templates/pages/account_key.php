@@ -114,46 +114,26 @@ No browser private key saved yet.
         </div>
       </details>
       <details class="account-key-advanced" id="key-technical">
-        <summary>Under the hood: keys and storage</summary>
+        <summary>Storage and privacy</summary>
         <div class="stack">
-          <div class="account-key-where">
-            <p class="account-key-label">Where things live</p>
-            <ul class="meta">
-              <li><strong>In this browser only:</strong> your private key, public key, username, and fingerprint, in local storage. Backup passphrases are used here and never sent to the server.</li>
-              <li><strong>On the server:</strong> your public key once it is published (at your first signed action, or immediately if you enable the setting below), and the posts you sign.</li>
-              <li><strong>In a cookie:</strong> an identity hint, kept for 30 days, that lets the server show which profile this browser last used.</li>
-            </ul>
+          <ul class="meta account-key-where">
+            <li><strong>This browser:</strong> private key, public key, username, and fingerprint (local storage). Backup passphrases never leave it.</li>
+            <li><strong>Server:</strong> your public key once published, at your first signed action or immediately if enabled below, plus your signed posts.</li>
+            <li><strong>Cookie:</strong> an identity hint, kept 30 days, so the server can show which profile this browser last used.</li>
+          </ul>
+          <p class="meta" data-role="browser-key-status">
+            <span data-role="browser-key-status-message">Ready.</span>
+            <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
+          </p>
+          <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
+          <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
+          <p class="meta">
+            <strong>Identity hint:</strong> <?= $e($identityHint !== '' ? $identityHint : 'none') ?>
+            · <strong>Saved browser identity:</strong> <span data-role="identity-id-field">none</span>
+          </p>
+          <div class="button-row account-key-advanced-actions">
+            <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
           </div>
-          <section class="account-key-group stack" aria-labelledby="key-group-storage">
-            <h3 id="key-group-storage">Storage and identity</h3>
-            <div>
-              <p class="account-key-label">Browser key status</p>
-              <p class="meta" data-role="browser-key-status">
-                <span data-role="browser-key-status-message">Ready.</span>
-                <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
-              </p>
-            </div>
-            <fieldset class="stack">
-              <legend class="account-key-label">Automatic guest identity</legend>
-              <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
-              <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
-            </fieldset>
-            <div>
-              <p class="account-key-label">Identity hint cookie (30 days)</p>
-              <p class="meta"><?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
-              <p class="meta">
-                <strong>Saved browser identity:</strong>
-                <span data-role="identity-id-field">none</span>
-              </p>
-            </div>
-          </section>
-          <section class="account-key-group account-key-group-danger stack" aria-labelledby="key-group-danger">
-            <h3 id="key-group-danger">Remove from this browser</h3>
-            <p class="meta">Removes the saved keypair from this browser. Without a backup, it cannot be recovered after the undo link is gone.</p>
-            <div class="button-row account-key-advanced-actions">
-              <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
-            </div>
-          </section>
         </div>
       </details>
     </div>

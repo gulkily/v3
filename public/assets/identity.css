@@ -88,15 +88,7 @@
 .account-key-simple-status[data-kind="ok"] {
   color: var(--status-ok);
 }
-.account-key-section {
-  padding-top: 1.25rem;
-  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);
-}
-.account-key-section h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.15rem;
-}
-.account-key-where ul {
+.account-key-where {
   margin: 0;
   padding-left: 1.1rem;
 }
@@ -113,22 +105,6 @@
   min-width: 0;
   font-size: 0.85rem;
   overflow-wrap: anywhere;
-}
-.account-key-group {
-  padding: 1rem;
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-}
-.account-key-group h3 {
-  margin: 0;
-  font-family: var(--ui-font);
-  font-size: 1rem;
-}
-.account-key-group-private {
-  border-color: var(--status-warning);
-}
-.account-key-group-danger {
-  border-style: dashed;
 }
 .account-key-warning {
   margin: 0;

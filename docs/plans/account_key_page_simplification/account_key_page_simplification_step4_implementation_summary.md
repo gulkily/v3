@@ -45,3 +45,15 @@ Branch: `account-key-page-simplification` (stacked on the unmerged `account-key-
   - `FORMAT=text node tests/browser/key_backup_ui.mjs`: passed.
 - Notes:
   - Hidden buttons are removed from the focus order; the old drawer still holds storage and clear until Stage 5.
+
+## Stage 5 - Storage and privacy expando
+- Changes:
+  - `templates/pages/account_key.php`: the old "Under the hood" drawer is now the flat sibling expando "Storage and privacy" (`#key-technical`): a three-line where-things-live note, browser key status with Undo, the guest-publication setting, identity hint and saved identity, and Clear Saved Keypair. Group boxes and headings removed.
+  - `public/assets/identity.css`: deleted the `.account-key-group*` and `.account-key-section*` styles that no longer apply.
+  - `tests/LocalAppSmokeTest.php`: drawer label assertion now "Storage and privacy".
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: 222 passed; existing assertions on the guest-publication and "Saved browser identity" copy were kept intact by preserving that text.
+  - Chromium run with the expando collapsed: card status read "All set! Posting as alice."; Clear removed the key (fingerprint "No key yet", status "Removed this browser keypair.", Undo visible); Undo restored it with the fingerprint back; the guest-publication setting persisted across reload.
+  - `FORMAT=text node tests/browser/key_backup_ui.mjs`: passed.
+- Notes:
+  - Collapsed `<details>` content stays in the DOM, so status mirroring to the card works without opening it.
