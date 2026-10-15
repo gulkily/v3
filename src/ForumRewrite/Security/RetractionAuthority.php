@@ -15,9 +15,32 @@ final class RetractionAuthority
 
     public static function acceptedOperator(string $root, string $path, string $contents, PostRetractionRecord $record): bool
     {
+        return self::acceptedCommitMessage($root, $path, $contents, $record) !== null;
+    }
+
+    /** Display attribution is evidence from the same local event that accepted operator authority. */
+    public static function acceptedAttribution(string $root, string $path, string $contents, PostRetractionRecord $record): string
+    {
+        if ($record->classification !== 'operator') return 'author';
+        $message = self::acceptedCommitMessage($root, $path, $contents, $record);
+        if ($message === null || preg_match_all('/^Retraction-Attribution: (.*)$/m', $message, $matches) !== 1) return 'operator';
+        $evidence = json_decode($matches[1][0], true);
+        if (!is_array($evidence) || ($evidence['version'] ?? null) !== 1
+            || ($evidence['sha256'] ?? null) !== hash('sha256', $contents)
+            || ($evidence['actor'] ?? null) !== $record->signerIdentityId()
+            || ($evidence['author'] ?? null) !== $record->authorIdentityId
+            || ($evidence['attribution'] ?? null) !== 'author'
+            || !is_string($evidence['username'] ?? null)
+            || trim($evidence['username']) === ''
+            || strtolower($evidence['username']) !== $evidence['username']) return 'operator';
+        return 'author';
+    }
+
+    private static function acceptedCommitMessage(string $root, string $path, string $contents, PostRetractionRecord $record): ?string
+    {
         $head = trim(self::git($root, ['rev-parse', 'HEAD']));
         $key = hash('sha256', serialize([$root, $head, $path, $contents]));
-        if (isset(self::$cache[$key])) return self::$cache[$key];
+        if (array_key_exists($key, self::$cache)) return self::$cache[$key];
         if (count(self::$cache) >= 1024) self::$cache = [];
         $actor = $record->signerIdentityId();
         $subject = 'Retract post ' . $record->postId . ' by ' . $actor;
@@ -34,12 +57,12 @@ final class RetractionAuthority
             if (preg_match('/^100(?:644|755) blob /', self::git($root, ['ls-tree', $parent, '--', $seedPath])) !== 1) continue;
             try {
                 $seed = (new ApprovalSeedRecordParser())->parse(self::git($root, ['show', $parent . ':' . $seedPath]));
-                if ($seed->approvedIdentityId === $actor) return self::$cache[$key] = true;
+                if ($seed->approvedIdentityId === $actor) return self::$cache[$key] = self::git($root, ['show', '-s', '--format=%B', $commit]);
             } catch (\Throwable) {
                 continue;
             }
         }
-        return self::$cache[$key] = false;
+        return self::$cache[$key] = null;
     }
 
     public static function currentOperator(string $root, string $actor): bool

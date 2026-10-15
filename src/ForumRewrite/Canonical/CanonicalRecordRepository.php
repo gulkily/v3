@@ -263,7 +263,8 @@ final class CanonicalRecordRepository
                 throw new CanonicalRecordParseException('Operator retraction lacks local acceptance evidence: ' . $relativePath);
             }
             return new PostRetractionRecord($record->recordId, $record->createdAt, $record->postId,
-                $record->operation, $record->authorIdentityId, $record->actorIdentityId, $record->classification, true);
+                $record->operation, $record->authorIdentityId, $record->actorIdentityId, $record->classification, true,
+                \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($authorityRoot, $relativePath, $contents, $record));
         }
         return $record;
     }

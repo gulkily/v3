@@ -2539,10 +2539,51 @@ NODE;
             assertSame($author['identity_id'], $evidence['author']);
             assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
             assertStringContains('Retraction-Class: operator', $prepared['canonical_record']);
+            $loaded = (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']);
+            assertSame('operator', $loaded->classification);
+            assertSame($scenario === 'same' ? 'author' : 'operator', $loaded->attribution);
+            if ($scenario === 'same') {
+                $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($author['identity_id'], 8) . '.txt'));
+                $this->runCommand($root, 'git commit -m "Revoke target after acceptance"');
+                assertSame('author', (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path'])->attribution);
+            }
             $before = $this->latestCommitSha($root);
             $retry = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
             assertSame(true, $retry['already_retracted']);
             assertSame($before, $this->latestCommitSha($root));
+        }
+    }
+
+    public function testRetractionAttributionRequiresOneBoundLocalAcceptanceEvent(): void
+    {
+        foreach (['valid', 'missing', 'malformed', 'duplicate', 'hash', 'actor', 'author', 'empty', 'version', 'later'] as $scenario) {
+            [$root, $db, $artifacts] = $this->createTempEnvironment();
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $operator = $this->linkSigningIdentity($app, 'evidence-operator');
+            $this->seedApprovedIdentity($root, $operator['identity_id']);
+            $actor = $operator['identity_id'];
+            $author = 'openpgp:' . str_repeat('b', 40);
+            $contents = "Record-ID: post-retraction-root-001\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: root-001\nOperation: retract\n"
+                . "Author-Identity-ID: {$author}\nActor-Identity-ID: {$actor}\nRetraction-Class: operator\n\n";
+            $record = (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($contents);
+            $path = 'records/post-retractions/post-retraction-root-001.txt';
+            mkdir($root . '/records/post-retractions');
+            file_put_contents($root . '/' . $path, $contents);
+            $evidence = ['version' => 1, 'sha256' => hash('sha256', $contents), 'actor' => $actor,
+                'author' => $author, 'attribution' => 'author', 'username' => 'account'];
+            if (in_array($scenario, ['hash', 'actor', 'author'], true)) $evidence[$scenario === 'hash' ? 'sha256' : $scenario] = 'wrong';
+            if ($scenario === 'empty') $evidence['username'] = '';
+            if ($scenario === 'version') $evidence['version'] = 2;
+            $trailer = "\n\nRetraction-Attribution: " . ($scenario === 'malformed' ? '{broken' : json_encode($evidence));
+            if ($scenario === 'duplicate') $trailer .= $trailer;
+            $subject = 'Retract post root-001 by ' . $actor;
+            $this->runCommand($root, 'git add ' . escapeshellarg($path));
+            assertSame('operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents, $record));
+            $this->runCommand($root, 'git commit -m ' . escapeshellarg($subject . (in_array($scenario, ['missing', 'later'], true) ? '' : $trailer)));
+            if ($scenario === 'later') $this->runCommand($root, 'git commit --allow-empty -m ' . escapeshellarg($subject . $trailer));
+            assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+            assertSame($scenario === 'valid' ? 'author' : 'operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents, $record));
+            assertSame('operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents . "\n", $record));
         }
     }
 

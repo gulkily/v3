@@ -8,3 +8,8 @@ Implementation in progress.
 - Changes: finalization captures a versioned local commit trailer binding attribution and canonical username to the retraction hash, actor, and target. Fresh approved profiles and a clean canonical tree are required for author wording; uncertainty retains operator wording. Signed records and API fields are unchanged.
 - Verification: `php tests/run.php WriteApiSmokeTest::testOperatorRetractionCapturesAccountEvidenceAtAcceptance WriteApiSmokeTest::testOperatorRetractionSignsAsActorAndRechecksPrivilegeAtFinalize` — 2 passed. Covers normalized same-account keys, different accounts, unapproved target, approval revoked after prepare, dirty evidence, unchanged signed bytes, retries, and existing operator authority.
 - Notes: account state is checked at finalization under the existing write lock, before writing the tombstone. Historical records have no new evidence and remain conservative.
+
+## Stage 2 - Shared accepted attribution
+- Changes: RetractionAuthority resolves attribution from the same accepted Git event used for operator authority; PostRetractionRecord carries it separately from its unchanged authorization classification. Missing, duplicate, malformed, mismatched, or later-added evidence retains operator wording.
+- Verification: four targeted WriteApiSmokeTest methods passed (acceptance capture, bound-event validation, historical authority, and operator finalize/recovery). Coverage includes unaccepted/import-style records, altered bytes, cache changes with HEAD, and approval removed after acceptance.
+- Notes: existing local Git trust boundary is retained. No historical reconstruction from present-day profiles; an accepted author decision remains stable after approval changes.

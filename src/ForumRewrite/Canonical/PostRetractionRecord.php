@@ -15,6 +15,7 @@ final class PostRetractionRecord
         public readonly ?string $actorIdentityId = null,
         public readonly string $classification = 'author',
         public readonly bool $operatorAccepted = false,
+        public readonly ?string $attribution = null,
     ) {
     }
 
