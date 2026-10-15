@@ -1174,6 +1174,58 @@ class LocalWriteService
         });
     }
 
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function prepareProfileName(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $identity = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $this->publicKeyForIdentity($identity);
+            $name = strtolower(trim((string) ($input['username'] ?? '')));
+            if (preg_match('/^[a-z0-9._-]{1,80}$/D', $name) !== 1) throw new RuntimeException('Invalid profile name.');
+            $id = 'profile-name-' . bin2hex(random_bytes(16));
+            $contents = "Record-ID: {$id}\nCreated-At: " . $this->canonicalTimestampNow()
+                . "\nOperation: set-name\nAuthor-Identity-ID: {$identity}\nUsername: {$name}\n\n";
+            (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
+            return $this->storePreparedPost('records/profile-names/' . $id . '.txt', $contents, [
+                'kind' => 'profile-name', 'author_identity_id' => $identity, 'username' => $name,
+            ]) + ['status' => 'ok', 'canonical_record' => $contents, 'record_path' => 'records/profile-names/' . $id . '.txt'];
+        });
+    }
+
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function finalizePreparedProfileName(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($token);
+            $contents = (string) ($input['canonical_record'] ?? '');
+            if (($prepared['kind'] ?? '') !== 'profile-name' || strtotime($prepared['expires_at']) < time()
+                || hash('sha256', $contents) !== $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared profile name mismatch or expiry.');
+            }
+            $identity = $this->requirePreparedMatch($input, $prepared, 'author_identity_id');
+            $path = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $record = (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
+            if ($record['Author-Identity-ID'] !== $identity || $path !== 'records/profile-names/' . $record['Record-ID'] . '.txt') {
+                throw new RuntimeException('Prepared profile name metadata mismatch.');
+            }
+            [$key, $fingerprint] = $this->publicKeyForIdentity($identity);
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            if (!$this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint)['ok']) {
+                throw new RuntimeException('Profile name signature verification failed.');
+            }
+            $this->writeFile($path, $contents);
+            $this->writeFile($path . '.asc', $signature);
+            $commit = $this->commitCanonicalWrite([$path, $path . '.asc'], 'Set profile name for ' . $identity);
+            $this->refreshDerivedStateAfterCommit($commit['commit_sha']);
+            $this->invalidator()->invalidateAllGeneratedPresentation();
+            $this->deletePreparedPost($token);
+            return ['status' => 'ok', 'identity_id' => $identity, 'username' => $record['Username'], 'commit_sha' => $commit['commit_sha']];
+        });
+    }
+
     /**
      * @param array<string, mixed> $input
      * @return array<string, mixed>

@@ -27,6 +27,49 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testSignedProfileNamePreservesIdentityAndRejectsForgery(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('temporary-reader');
+        $other = $this->createSigningKey('other-reader');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $bootstrap = $root . '/records/identity/identity-' . str_replace(':', '-', $identity) . '.txt';
+            $before = file_get_contents($bootstrap);
+            $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'chosen-name']);
+            $signed = $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($other['home'], $prepared['canonical_record'])];
+            try {
+                $writer->finalizePreparedProfileName($signed);
+                throw new RuntimeException('Expected signature rejection.');
+            } catch (RuntimeException $e) {
+                assertStringContains('signature verification failed', $e->getMessage());
+            }
+            $signed['detached_signature'] = $this->signCanonicalRecord($key['home'], $prepared['canonical_record']);
+            $tampered = $signed;
+            $tampered['canonical_record'] = str_replace('chosen-name', 'forged-name', $signed['canonical_record']);
+            try {
+                $writer->finalizePreparedProfileName($tampered);
+                throw new RuntimeException('Expected mismatch rejection.');
+            } catch (RuntimeException $e) {
+                assertStringContains('mismatch', $e->getMessage());
+            }
+            assertSame('chosen-name', $writer->finalizePreparedProfileName($signed)['username']);
+            assertSame($before, file_get_contents($bootstrap));
+            assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
+            try {
+                $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => "invalid\nheader"]);
+                throw new RuntimeException('Expected name rejection.');
+            } catch (RuntimeException $e) {
+                assertStringContains('Invalid profile name', $e->getMessage());
+            }
+        } finally {
+            $this->deleteTree($key['home']);
+            $this->deleteTree($other['home']);
+        }
+    }
+
     public function testSignedThreadReactionPreservesBytesAndRejectsTampering(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();

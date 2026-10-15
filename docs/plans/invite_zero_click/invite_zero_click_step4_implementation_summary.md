@@ -8,3 +8,8 @@ Debug mode: enabled
 - Changes: Invite captures path/query/fragment; checking destination prefills the source once and preserves edits. Shared server validation accepts fragments and rejects off-site/control/backslash escapes; client validation agrees.
 - Verification: `php tests/run.php InvitationIssuanceTest CanonicalRecordParsersTest` — 53 passed; `git diff --check` passed.
 - Notes: Existing fragment-rejection expectation updated for the approved behavior; browser acceptance remains Stage 7.
+
+## Stage 2 - Signed naming records
+- Changes: Immutable signed profile-name records with validated timestamps/names, prepare/finalize API routing, signer verification and prepared-record binding. Existing keys and bootstrap records are untouched.
+- Verification: `php tests/run.php WriteApiSmokeTest::testSignedProfileNamePreservesIdentityAndRejectsForgery` passed, including foreign signature, tampered payload, invalid name and byte preservation checks; PHP lint and diff checks passed.
+- Notes: Name syntax follows existing normalized username characters, bounded to 80 characters. Existing duplicate-name routing policy is retained; projection support follows in Stage 3.
