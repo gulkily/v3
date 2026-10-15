@@ -13,10 +13,13 @@ $authenticatedIdentityId = is_array($viewerProfile)
 ?>
 <section class="stack" data-account-key-root data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <article class="card">
-    <h1>Account Key</h1>
+    <header class="account-key-header">
+      <h1>Account Key</h1>
+      <p class="account-key-lead">Your identity here is a cryptographic key kept in this browser. Set it up once, back it up, and your posts are signed as you.</p>
+    </header>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <div class="stack">
-      <div class="account-key-simple-surface stack">
+      <div class="account-key-simple-surface account-key-status-card stack">
         <p class="account-key-simple-state">
           <span class="account-key-status-dot" data-role="simple-status-dot" aria-hidden="true"></span>
           <span class="account-key-status-badge" data-role="simple-status-badge">Not set up yet</span>
