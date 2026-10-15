@@ -26,3 +26,9 @@ Debug mode: disabled
 - Verification: 29 producer/integration tests plus four provenance tests passed; coverage verifies cross-thread summary propagation, unknown cached-summary denial, bounded scoring context, prompt exclusion, and persisted thread context. Initial 41 producer/store tests also passed.
 - Notes: no core schema change or diagnostic-log rewrite. Legacy analysis summaries without evidence remain usable by existing analysis behavior but cannot make an exchange inspectable.
 
+## Stage 5 - Agent prompt provenance
+
+- Changes: agent task input captures the primary post and the actual thread-subject/parent-preview dependencies. Generator passes the captured manifest to exchange recording without adding it to model prompts; missing identity evidence marks legacy inputs uncertain. Unused analysis summaries/comments do not overblock a task that never sends them.
+- Verification: 27 agent/task/store/integration tests passed, including captured-input stability after source changes, unknown parent provenance, bounded prompts, and persisted request context.
+- Notes: queued fulfillment retains existing content/hash validation and input assembly behavior. Legacy replies sourced from completed analysis make no additional provider call; their recorded analysis exchanges are covered by Stage 4.
+
