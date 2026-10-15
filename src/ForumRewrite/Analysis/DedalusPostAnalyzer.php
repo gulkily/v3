@@ -52,6 +52,8 @@ final class DedalusPostAnalyzer implements PostAnalyzer
 
     public function analyze(array $context): array
     {
+        $dependencies = $context['exchange_dependencies'] ?? \ForumRewrite\Llm\ExchangeDependencies::manifest([], false);
+        unset($context['exchange_dependencies']);
         $completion = $this->provider->completeStructuredChat(
             'ForumPostAnalysis',
             [
@@ -71,6 +73,7 @@ final class DedalusPostAnalyzer implements PostAnalyzer
                     'call_type' => 'post_analysis',
                     'post_id' => $context['post_id'] ?? null,
                     'content_hash' => $context['content_hash'] ?? null,
+                    'exchange_dependencies' => $dependencies,
                 ],
             ]
         );

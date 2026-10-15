@@ -174,6 +174,7 @@ final class DedalusPostAnalyzerTest
                 assertSame('user', $messages[1]['role']);
                 assertSame('object', $jsonSchema['type']);
                 assertSame(8000, $options['max_completion_tokens']);
+                assertSame(false, $options['exchange_context']['exchange_dependencies']['complete']);
 
                 return [
                     'provider' => 'dedalus',

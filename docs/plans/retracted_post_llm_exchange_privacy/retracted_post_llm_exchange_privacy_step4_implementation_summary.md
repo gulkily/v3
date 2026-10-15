@@ -20,3 +20,9 @@ Debug mode: disabled
 - Verification: six targeted tests passed, including 205 newer hidden rows above older visible results, visible offsets, post-link suppression, list filtering, direct denial, and unchanged raw row count.
 - Notes: raw internal store reads retain their existing behavior; every application exchange UI reader uses the guarded store.
 
+## Stage 4 - Analysis and Fastmod input provenance
+
+- Changes: analysis input assembly records primary/root/parent/comment/related dependencies and propagates cached-summary origins. Analysis service stores provenance alongside new cached analysis diagnostics for every analyzer; unknown legacy summary origins mark the next exchange uncertain. Fastmod input assembly captures parent/root dependencies. Producers pass provenance to recording context, excluding it from model prompts.
+- Verification: 29 producer/integration tests plus four provenance tests passed; coverage verifies cross-thread summary propagation, unknown cached-summary denial, bounded scoring context, prompt exclusion, and persisted thread context. Initial 41 producer/store tests also passed.
+- Notes: no core schema change or diagnostic-log rewrite. Legacy analysis summaries without evidence remain usable by existing analysis behavior but cannot make an exchange inspectable.
+

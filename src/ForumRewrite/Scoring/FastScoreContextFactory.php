@@ -34,13 +34,17 @@ final class FastScoreContextFactory
             'post_text' => $this->limit($this->postText($post), self::TARGET_TEXT_LIMIT),
         ];
 
+        $ids = [$postId];
         if (!$isReply) {
+            $context['exchange_dependencies'] = \ForumRewrite\Llm\ExchangeDependencies::manifest($ids);
             return $context;
         }
 
         $parentId = trim((string) ($post['parent_id'] ?? ''));
         $parent = $parentId === '' ? null : ($this->fetchPost)($parentId);
         $thread = $threadId === '' ? null : ($this->fetchPost)($threadId);
+        foreach ([$parent, $thread] as $source) if ($source !== null) $ids[] = (string) ($source['post_id'] ?? '');
+        $context['exchange_dependencies'] = \ForumRewrite\Llm\ExchangeDependencies::manifest($ids);
         $context['reply_context'] = array_filter([
             'parent_text' => $parent === null ? null : $this->limit($this->postText($parent), self::REPLY_CONTEXT_TEXT_LIMIT),
             'thread_root_text' => $thread === null || $threadId === $parentId

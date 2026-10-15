@@ -17,6 +17,7 @@ final class FastPostScorerTest
             'post_id' => 'post-1',
             'content_hash' => 'hash-1',
             'post_text' => 'Target text',
+            'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest(['post-1', 'parent']),
         ]);
 
         assertSame('scored', $result['status']);
@@ -25,6 +26,8 @@ final class FastPostScorerTest
         assertSame('FastPostScore', $provider->schemaName);
         assertSame(1024, $provider->options['max_completion_tokens']);
         assertSame('fast_post_score', $provider->options['exchange_context']['call_type']);
+        assertSame(['parent', 'post-1'], $provider->options['exchange_context']['exchange_dependencies']['post_ids']);
+        assertSame(false, str_contains($provider->messages[1]['content'], 'exchange_dependencies'));
         assertSame(['probability'], $provider->schema['required']);
         assertSame(false, array_key_exists('reason', $provider->schema['properties']));
         assertStringContains('Target text', $provider->messages[1]['content']);

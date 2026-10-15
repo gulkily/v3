@@ -42,6 +42,34 @@ final class ExchangeDependenciesTest
         assertSame(null, ExchangeDependencies::classify($row));
     }
 
+    public function testAnalysisPropagatesSummaryOriginsAndWithholdsUnknownSummaries(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        foreach (\ForumRewrite\ReadModel\ReadModelSchema::statements() as $statement) $pdo->exec($statement);
+        $posts = [
+            'root' => ['post_id' => 'root', 'thread_id' => 'root', 'parent_id' => null, 'body' => 'Root words'],
+            'reply' => ['post_id' => 'reply', 'thread_id' => 'root', 'parent_id' => 'root', 'body' => 'Reply words'],
+        ];
+        $service = new \ForumRewrite\Agent\PostWorkflowService(static fn () => $pdo, dirname(__DIR__), '', '', null, null,
+            new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator(), static fn () => throw new RuntimeException('unused writer'),
+            static fn ($id) => $posts[$id] ?? null, static fn () => array_values($posts), static fn () => null);
+        $initial = $service->postAnalysisContext($posts['reply']);
+        assertSame(true, $initial['exchange_dependencies']['complete']);
+        assertSame(['reply', 'root'], $initial['exchange_dependencies']['post_ids']);
+        $root = $service->postAnalysisContext($posts['root'], false);
+        $store = new \ForumRewrite\Analysis\SqlitePostAnalysisStore($pdo);
+        $store->saveComplete('root', $root['content_hash'], ['post_summary' => 'Summary from other input', 'raw_response' => []]);
+        assertSame(false, $service->postAnalysisContext($posts['reply'])['exchange_dependencies']['complete']);
+        $store->saveComplete('root', $root['content_hash'], ['post_summary' => 'Summary from other input', 'raw_response' => [
+            '_forum_exchange_dependencies' => ExchangeDependencies::manifest(['root', 'cross-thread-source']),
+        ]]);
+        $known = $service->postAnalysisContext($posts['reply']);
+        assertSame(true, $known['exchange_dependencies']['complete']);
+        assertSame(['cross-thread-source', 'reply', 'root'], $known['exchange_dependencies']['post_ids']);
+        assertSame(false, array_key_exists('_exchange_dependencies', $known['thread_comments'][0]));
+    }
+
     public function testUnavailableOrMissingTargetStateIsNeverEmptyState(): void
     {
         $root = sys_get_temp_dir() . '/exchange-state-' . bin2hex(random_bytes(6));

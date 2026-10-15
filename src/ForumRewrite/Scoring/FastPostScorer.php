@@ -21,6 +21,8 @@ final class FastPostScorer implements FastScoreProvider
      */
     public function score(array $context): array
     {
+        $dependencies = $context['exchange_dependencies'] ?? \ForumRewrite\Llm\ExchangeDependencies::manifest([], false);
+        unset($context['exchange_dependencies']);
         try {
             $completion = $this->provider->completeStructuredChat(
                 'FastPostScore',
@@ -35,6 +37,7 @@ final class FastPostScorer implements FastScoreProvider
                         'call_type' => 'fast_post_score',
                         'post_id' => $context['post_id'] ?? null,
                         'content_hash' => $context['content_hash'] ?? null,
+                        'exchange_dependencies' => $dependencies,
                     ],
                 ],
             );
