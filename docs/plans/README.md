@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Account retraction attribution](account_retraction_attribution/)
+
 - [Private messaging live navigation](private_messaging_live_navigation/)
 
 - [Private messaging feature flag](private_messaging_feature_flag/)
