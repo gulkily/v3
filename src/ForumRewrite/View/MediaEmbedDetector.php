@@ -96,7 +96,7 @@ final class MediaEmbedDetector
         }
 
         $release = BandcampReleaseUrl::parse($url);
-        if ($release !== null && $release['kind'] === 'album') {
+        if ($release !== null) {
             return ['provider' => 'bandcamp', 'embedId' => $release['url'], 'contentKind' => $release['kind']];
         }
 

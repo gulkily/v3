@@ -8,6 +8,19 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MusicMediaEmbedTest
 {
+    public function testBandcampTracksHaveTheirOwnCompactPlayerAndNormalTitles(): void
+    {
+        $url = 'https://lyndseyscott.bandcamp.com/track/plz-plz-universal-soul';
+        $m = (new MediaEmbedDetector())->classify($url);
+        assertSame('track', $m['contentKind']);
+        assertSame($url, $m['embedId']);
+        $html = (new MediaEmbedRenderer())->render($url, true, true);
+        assertSame(true, str_contains($html, 'media-embed-card--track'));
+        assertSame(true, str_contains($html, rawurlencode($url)));
+        assertSame(null, \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url));
+        assertSame($url, \ForumRewrite\Support\ThreadTitle::displayTitle('', $url, 'id', 200, true));
+    }
+
     public function testBandcampAlbumsUseDeferredDiscoveryAndNormalTitles(): void
     {
         $url = 'https://lyndseyscott.bandcamp.com/album/well-held?tag=music&si=tracking';

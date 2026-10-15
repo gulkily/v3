@@ -29,3 +29,9 @@ Implementation in progress; production flags remain unchanged.
 - Changes: album cards use the canonical renderer; expansion invokes a same-origin, both-flags-gated resolution endpoint, then loads the reconstructed player. Accessible pending/failure status and persistent source links survive lookup errors. No network work during HTML rendering or title writes.
 - Verification: controller/resolver/music/script suites — 12 passed. Isolated live album thread/reply resolved the supplied album, loaded its track list, and played audio: native media element reported `paused=false`, `currentTime=3.24944`, no media error. Method/flag/invalid-input tests verify rejected requests do not fetch or create the read model.
 - Notes: Bandcamp uses its visible artwork Play control in this layout; its separate `#play` element is hidden. Client validates returned player destinations and avoids loading a player closed during discovery.
+
+## Stage 5 - Bandcamp tracks
+
+- Changes: track detection/resolution uses the shared album path with track-only metadata and a compact 120px presentation. Track IDs cannot be confused with iframe fallback links to the parent album.
+- Verification: controller/resolver/music/detector/renderer/script/title suites — 55 passed. Isolated live thread/reply for the supplied track displayed `PLZ PLZ Universal Soul`, resolved `track=3419983385`, and played audio: `paused=false`, `currentTime=3.195704`, no media error.
+- Notes: album behavior remains covered. Shipped-theme and mobile checks follow in Stage 6.

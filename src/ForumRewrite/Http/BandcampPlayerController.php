@@ -24,7 +24,7 @@ final class BandcampPlayerController
         }
         $url = $query['url'] ?? null;
         $release = is_string($url) && strlen($url) <= 2048 ? BandcampReleaseUrl::parse($url) : null;
-        if ($release === null || $release['kind'] !== 'album') {
+        if ($release === null) {
             $this->services->sendJson(['status' => 'unavailable'], 400, ['Cache-Control: no-store']);
             return;
         }

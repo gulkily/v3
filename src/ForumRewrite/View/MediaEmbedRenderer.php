@@ -83,7 +83,7 @@ final class MediaEmbedRenderer
         if ($inlinePlayerEnabled && $match['provider'] === 'bandcamp') {
             return $this->renderPlayerExpando(
                 $match, '', '♫ Listen on Bandcamp', 'Bandcamp ' . $match['contentKind'] . ' player',
-                ' media-embed-card--bandcamp',
+                ' media-embed-card--bandcamp' . ($match['contentKind'] === 'track' ? ' media-embed-card--track' : ''),
                 '/internal/media-embeds/bandcamp-player?url=' . rawurlencode($match['embedId']),
             );
         }

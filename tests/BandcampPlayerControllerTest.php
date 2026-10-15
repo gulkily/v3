@@ -45,6 +45,17 @@ final class BandcampPlayerControllerTest
         }
     }
 
+    public function testTrackDiscoverySelectsTrackRatherThanAlbum(): void
+    {
+        $this->withController(true, true, function ($controller) {
+            ob_start(); $controller->resolve('GET', ['url' => 'https://lyndseyscott.bandcamp.com/track/plz-plz-universal-soul']); $data = json_decode(ob_get_clean(), true);
+            assertSame('ready', $data['status']);
+            assertSame(true, str_contains($data['embedSrc'], '/track=3419983385/'));
+            assertSame(false, str_contains($data['embedSrc'], '/album='));
+            assertSame(true, str_contains($data['embedSrc'], '/tracklist=false/'));
+        }, fn () => ['status' => 200, 'type' => 'text/html', 'body' => '<meta property="og:video" content="https://bandcamp.com/EmbeddedPlayer/v=2/track=3419983385/size=large/">']);
+    }
+
     private function withController(bool $cards, bool $players, callable $test, callable $transport): void
     {
         $root = sys_get_temp_dir() . '/bandcamp-controller-' . bin2hex(random_bytes(8));
