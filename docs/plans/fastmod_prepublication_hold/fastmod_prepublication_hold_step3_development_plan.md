@@ -91,3 +91,8 @@ Debug mode: enabled
 ## Execution discipline
 
 After explicit Approved Step 3, branch, organize/commit approved plans, then commit each verified stage with its summary before starting the next. Stage 1 unresolved decisions block dependents. Slice 1 completion does not authorize slices 2–3.
+
+
+## Stage 1 validation result — implementation blocked
+
+The approved investigation found that the remaining stages need approximately 14–21 hour-sized units, not seven. The [Step 4 summary](./fastmod_prepublication_hold_step4_implementation_summary.md) records code-path evidence, the pending-data lifecycle, per-stage estimates and the canonical-history constraint. Per the Completion Contract, stop before Stage 2 and obtain approval for a revised scope or larger stage budget. This evidence addendum does not replace the approved stages or authorize a new implementation plan.
