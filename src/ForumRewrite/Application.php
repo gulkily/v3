@@ -1329,7 +1329,7 @@ final class Application
             return null;
         }
 
-        $this->llmExchangeStore = new SqliteLlmExchangeStore(new PDO('sqlite:' . $path));
+        $this->llmExchangeStore = new SqliteLlmExchangeStore(new PDO('sqlite:' . $path), new \ForumRewrite\Llm\ExchangeVisibility($this->repositoryRoot));
 
         return $this->llmExchangeStore;
     }

@@ -74,7 +74,7 @@ final class LlmExchangesController
         $exchange = ($this->llmExchangeStore)()?->find($exchangeId);
         if ($exchange === null) {
             $this->routeServices->sendHtml(
-                $this->routeServices->renderMessagePage('Not Found', 'Not Found', 'LLM exchange not found.', 'tools'),
+                $this->routeServices->renderMessagePage('Unavailable', 'Unavailable', 'LLM exchange unavailable.', 'tools'),
                 404
             );
             return;

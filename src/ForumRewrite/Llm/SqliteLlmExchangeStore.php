@@ -10,6 +10,7 @@ final class SqliteLlmExchangeStore
 {
     public function __construct(
         private readonly PDO $pdo,
+        private readonly ?ExchangeVisibility $visibility = null,
     ) {
         $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     }
@@ -36,7 +37,9 @@ final class SqliteLlmExchangeStore
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
 
-        return is_array($row) ? $this->hydrate($row) : null;
+        if (!is_array($row)) return null;
+        $exchange = $this->hydrate($row);
+        return $this->visibility === null || $this->visibility->allows($exchange) ? $exchange : null;
     }
 
     /** @return list<array<string, mixed>> */

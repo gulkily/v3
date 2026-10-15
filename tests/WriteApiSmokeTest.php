@@ -2631,6 +2631,51 @@ NODE;
         assertSame(true, $rejected);
     }
 
+    public function testRetractionMakesDirectAndContextOnlyLlmExchangeDetailsUnavailable(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $exchangeDb = sys_get_temp_dir() . '/exchange-privacy-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $config = $exchangeDb . '.php';
+        file_put_contents($config, '<?php return ' . var_export(['LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb], true) . ';');
+        $previous = getenv('FORUM_SECRETS_PATH');
+        $cookies = $_COOKIE;
+        putenv('FORUM_SECRETS_PATH=' . $config);
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $author = $this->createAuthoredThread($app, 'exchange-author', 'Exchange private prose');
+            $pdo = new PDO('sqlite:' . $exchangeDb);
+            $recorder = new \ForumRewrite\Llm\LlmExchangeRecorder($pdo);
+            $ids = [];
+            foreach ([[$author['thread_id'], [$author['thread_id']]], ['root-001', ['root-001', $author['thread_id']]], ['root-001', ['root-001']]] as $index => [$primary, $dependencies]) {
+                $ids[] = $recorder->record(['call_type' => 'post_analysis', 'post_id' => $primary,
+                    'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest($dependencies)],
+                    ['payload' => ['messages' => [['role' => 'user', 'content' => $index === 2 ? 'Unrelated prompt' : 'Exchange private prose']]]],
+                    ['body' => 'Exchange response prose'], 'completed', 1, ['message' => 'Exchange error prose']);
+            }
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertStringContains('Exchange private prose', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]));
+            $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'], 'record_path' => $prepared['record_path'],
+                'author_identity_id' => $author['identity_id'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+            $this->renderMethod($app, 'POST', '/api/create_prepared_retraction');
+            $_POST = [];
+            foreach (array_slice($ids, 0, 2) as $id) {
+                $page = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $id);
+                assertStringContains('LLM exchange unavailable.', $page);
+                assertSame(false, str_contains($page, 'Exchange private prose'));
+                assertSame(false, str_contains($page, 'Exchange response prose'));
+                assertSame(false, str_contains($page, 'Exchange error prose'));
+            }
+            assertStringContains('Unrelated prompt', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[2]));
+            assertSame(3, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
+        } finally {
+            $_POST = []; $_COOKIE = $cookies;
+            putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
+            unlink($config);
+        }
+    }
+
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

@@ -8,3 +8,9 @@ Debug mode: disabled
 - Verification: three focused tests passed for complete/incomplete manifests, both legacy provider layouts, unidentified context, invalid IDs, missing target, and forged retraction signature.
 - Notes: unknown derived-summary provenance is never inferred from its owning post. Missing operator history makes exchange access unavailable rather than assuming no retraction. Diagnostic payloads are not modified.
 
+## Stage 2 - Guard direct exchange access
+
+- Changes: shared visibility policy takes a fresh strict retraction snapshot and denies affected or uncertain dependency sets. Application's UI store now guards find(); unavailable detail responses disclose no payload, irrespective of viewer approval. Raw internal store access remains available for diagnostics, without serving it through the application.
+- Verification: five focused tests passed. Integration coverage verifies direct and context-only denial after signed author retraction, absence of request/response/error prose, unrelated detail availability, and unchanged diagnostic rows.
+- Notes: list and post-link reads are wired in Stage 3; no operator inspection bypass is introduced.
+
