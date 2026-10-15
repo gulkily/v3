@@ -8,7 +8,7 @@ use PDO;
 
 final class ReadModelMetadata
 {
-    public const SCHEMA_VERSION = '17';
+    public const SCHEMA_VERSION = '19';
 
     /**
      * @return array{schema_version:string,schema_fingerprint:string}

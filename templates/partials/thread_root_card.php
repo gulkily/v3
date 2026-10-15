@@ -113,7 +113,7 @@ if (!$metaVisible) {
 ]) ?>
   </p>
 <?php if ($isRetracted): ?>
-  <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::TEXT) ?></p>
+  <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($post)) ?></p>
 <?php else: ?>
   <p class="quote-card-body"><?= $br($postBody) ?></p>
 <?php endif; ?>
@@ -203,9 +203,6 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
 <?php endif; ?>
-<?php if (!$isQdbQuoteRoot): ?>
-<?= $partial('partials/retract_post_control.php') ?>
-<?php endif; ?>
 <?php if ($showAgentReplyRequestButton && !$isRetracted): ?>
     <button
       type="button"
@@ -221,6 +218,9 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       data-action="request-codex-handoff"
       data-post-id="<?= $e($post['post_id']) ?>"
     >Handoff to Codex</button>
+<?php endif; ?>
+<?php if (!$isQdbQuoteRoot): ?>
+<?= $partial('partials/retract_post_control.php') ?>
 <?php endif; ?>
 <?php if ($postLlmExchanges !== []): ?>
     <span class="meta">LLM exchanges: <?php foreach ($postLlmExchanges as $index => $exchange): ?><?php if ($index > 0): ?>, <?php endif; ?><a href="/tools/llm-exchanges/<?= (int) $exchange['id'] ?>">#<?= (int) $exchange['id'] ?></a><?php endforeach; ?></span>

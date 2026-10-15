@@ -42,7 +42,7 @@ final class LlmExchangesController
         if (!($this->viewerCanInspect)()) {
             $this->routeServices->sendHtml(
                 $this->routeServices->renderMessagePage('LLM Exchanges', 'LLM Exchanges', self::FORBIDDEN_MESSAGE, 'tools'),
-                403
+                403, ['Cache-Control: private, no-store']
             );
             return;
         }
@@ -57,7 +57,7 @@ final class LlmExchangesController
                 'LLM Exchanges',
                 'tools'
             ),
-            200
+            200, ['Cache-Control: private, no-store']
         );
     }
 
@@ -66,7 +66,7 @@ final class LlmExchangesController
         if (!($this->viewerCanInspect)()) {
             $this->routeServices->sendHtml(
                 $this->routeServices->renderMessagePage('LLM Exchange', 'LLM Exchange', self::FORBIDDEN_MESSAGE, 'tools'),
-                403
+                403, ['Cache-Control: private, no-store']
             );
             return;
         }
@@ -74,8 +74,8 @@ final class LlmExchangesController
         $exchange = ($this->llmExchangeStore)()?->find($exchangeId);
         if ($exchange === null) {
             $this->routeServices->sendHtml(
-                $this->routeServices->renderMessagePage('Not Found', 'Not Found', 'LLM exchange not found.', 'tools'),
-                404
+                $this->routeServices->renderMessagePage('Unavailable', 'Unavailable', 'LLM exchange unavailable.', 'tools'),
+                404, ['Cache-Control: private, no-store']
             );
             return;
         }
@@ -90,7 +90,7 @@ final class LlmExchangesController
                 'LLM Exchange ' . $exchangeId,
                 'tools'
             ),
-            200
+            200, ['Cache-Control: private, no-store']
         );
     }
 }

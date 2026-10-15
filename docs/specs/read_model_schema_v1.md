@@ -65,6 +65,9 @@ One row per canonical post record (both thread roots and replies).
 | `approved_flag_count` | INTEGER | default 0 |
 | `is_hidden` | INTEGER | default 0; moderation flag |
 | `hidden_reason` | TEXT NULL | |
+| `retracted_at` | TEXT NULL | accepted retraction timestamp |
+| `retraction_class` | TEXT NULL | author or operator authorization classification for an effective retraction |
+| `retraction_attribution` | TEXT NULL | accepted display attribution: author or operator, independent of authorization |
 | `sequence_number` | INTEGER | |
 
 ### `threads`
@@ -84,6 +87,9 @@ One row per thread (keyed by its root post).
 | `thread_labels_json` | TEXT | JSON array |
 | `score_total` | INTEGER | default 0 |
 | `vote_count` | INTEGER | default 0; distinct upvote/downvote events |
+| `retracted_at` | TEXT NULL | root retraction timestamp |
+| `retraction_class` | TEXT NULL | root author/operator authorization classification |
+| `retraction_attribution` | TEXT NULL | root accepted display attribution |
 
 ### `profiles`
 
@@ -276,3 +282,31 @@ Metadata also includes `post_reaction_invalid_count`, parallel to
 `thread_label_invalid_count`. A missing signer key makes a supplied signature
 invalid, never unsigned. Raw source bytes are unchanged; current-source responses
 expose `X-Forum-Signature-Status`, and activity source metadata shows the status.
+
+## Operator retraction attribution
+
+Schema version 18 adds nullable `retraction_class` to `posts` and `threads`.
+It is `author` or `operator` for an effective retraction and null otherwise.
+The root classification is copied into the thread row for paned views.
+Target, actor, signature, timestamp, and operator acceptance authority remain
+canonical evidence; this column is derived presentation metadata. Startup
+rebuilds a version 17 cache before executing queries using the new column.
+
+
+## Account retraction attribution (schema version 19)
+
+Nullable `retraction_attribution` on `posts` and `threads` separates displayed
+account authorship from `retraction_class`, which continues to reflect signed
+author/operator authorization. Both are null for unretracted posts. Startup
+rebuilds version 18 caches before queries use the new field.
+
+New operator retractions record a versioned `Retraction-Attribution` JSON trailer
+in their local acceptance commit. It binds the decision to the canonical record
+SHA-256, actual actor, target author, and shared canonical username (when both
+keys are approved). The shared resolver requires the same local acceptance event
+as operator authority; a trailer is local operator evidence, not signer evidence
+or an imported claim. Missing or invalid evidence retains operator wording.
+Signed records, signatures, permissions, and source suppression do not change.
+Later approval changes and rebuilds preserve the accepted decision. Retain the
+canonical repository's local Git history in backups and deployment transfers;
+a records-only copy cannot establish local operator acceptance or attribution.

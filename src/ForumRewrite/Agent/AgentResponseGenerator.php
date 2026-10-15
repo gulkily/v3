@@ -35,7 +35,7 @@ final class AgentResponseGenerator
     }
 
     /**
-     * @param array<string, string> $task
+     * @param array<string, mixed> $task
      * @return array<string, mixed>
      */
     public function generate(array $task): array
@@ -50,6 +50,7 @@ final class AgentResponseGenerator
                 'call_type' => 'agent_response_task',
                 'post_id' => (string) ($task['post_id'] ?? ''),
                 'content_hash' => (string) ($task['content_hash'] ?? ''),
+                'exchange_dependencies' => $task['exchange_dependencies'] ?? \ForumRewrite\Llm\ExchangeDependencies::manifest([], false),
             ],
         ]);
         if (trim((string) ($completion['response_text'] ?? '')) === '') {
@@ -75,7 +76,7 @@ final class AgentResponseGenerator
     }
 
     /**
-     * @param array<string, string> $task
+     * @param array<string, mixed> $task
      * @return list<array{role:string, content:string}>
      */
     private function messages(array $task): array
@@ -93,7 +94,7 @@ final class AgentResponseGenerator
         ];
     }
 
-    /** @param array<string, string> $task */
+    /** @param array<string, mixed> $task */
     private function taskPrompt(array $task, string $type): string
     {
         return "Task: {$type}\n\n"

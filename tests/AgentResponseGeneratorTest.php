@@ -33,6 +33,7 @@ final class AgentResponseGeneratorTest
             'call_type' => 'agent_response_task',
             'post_id' => 'post-123',
             'content_hash' => 'hash-123',
+            'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest([], false),
         ], $provider->options['exchange_context']);
     }
 
@@ -75,6 +76,24 @@ final class AgentResponseGeneratorTest
                 }
             }
         }
+    }
+
+    public function testCapturedAgentInputsRetainOnlyActualPromptDependencies(): void
+    {
+        $context = ['post_id' => 'target', 'thread_id' => 'root', 'parent_id' => 'parent',
+            'thread_subject' => 'Root title', 'parent_body_preview' => 'Parent prose', 'body' => 'Target prose',
+            'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest([], false)];
+        $task = AgentResponseTask::defaultGenerationInput($context);
+        assertSame(['parent', 'root', 'target'], $task['exchange_dependencies']['post_ids']);
+        assertSame(true, $task['exchange_dependencies']['complete']);
+        // Later changes to the source array cannot relabel an already captured task.
+        $context['parent_id'] = 'different-parent';
+        $provider = new FakeTextChatProvider('Reply');
+        (new AgentResponseGenerator($provider, true, true))->generate($task);
+        assertSame(['parent', 'root', 'target'], $provider->options['exchange_context']['exchange_dependencies']['post_ids']);
+        assertSame(false, str_contains($provider->messages[1]['content'], 'exchange_dependencies'));
+        unset($context['parent_id']);
+        assertSame(false, AgentResponseTask::defaultGenerationInput($context)['exchange_dependencies']['complete']);
     }
 
     public function testGeneratorRejectsEmptyTextAndUnsupportedTasks(): void

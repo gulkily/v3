@@ -42,7 +42,7 @@ final class SourceFileController
         }
 
         if ($this->isRetracted($relativePath)) {
-            $this->sendRetracted();
+            $this->sendRetracted($relativePath);
             return;
         }
 
@@ -53,7 +53,7 @@ final class SourceFileController
         }
 
         $headers = [];
-        if (preg_match('#^records/(thread-labels|post-reactions)/[^/]+\.txt$#D', $relativePath)) {
+        if (preg_match('#^records/(thread-labels|post-reactions|post-retractions)/[^/]+\.txt$#D', $relativePath)) {
             $headers[] = 'X-Forum-Signature-Status: ' . $this->routeServices->activityService()->sourceSignatureStatus($relativePath, '', '');
         }
         $this->routeServices->sendText($contents, 200, $headers);
@@ -73,7 +73,7 @@ final class SourceFileController
         }
 
         if ($this->isRetracted($relativePath)) {
-            $this->sendRetracted();
+            $this->sendRetracted($relativePath);
             return;
         }
 
@@ -115,9 +115,11 @@ final class SourceFileController
         return RetractedPosts::isRetractedPostPath($relativePath, RetractedPosts::effectivePostIds($this->repositoryRoot));
     }
 
-    private function sendRetracted(): void
+    private function sendRetracted(string $relativePath): void
     {
-        $this->routeServices->sendText("This post was retracted by its author.\n", 410);
+        $attributions = RetractedPosts::effectiveAttributions($this->repositoryRoot);
+        $attribution = $attributions[pathinfo($relativePath, PATHINFO_FILENAME)] ?? 'author';
+        $this->routeServices->sendText(\ForumRewrite\Support\RetractedPostNotice::text(['retraction_attribution' => $attribution]) . "\n", 410);
     }
 
     private function readCurrentFile(string $relativePath): ?string

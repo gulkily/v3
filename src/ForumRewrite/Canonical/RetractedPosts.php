@@ -22,7 +22,8 @@ final class RetractedPosts
             return false;
         }
 
-        return array_intersect($post->boardTags, self::AUTHORITY_TAGS) === [];
+        return ($retraction->classification !== 'operator' || $retraction->operatorAccepted)
+            && array_intersect($post->boardTags, self::AUTHORITY_TAGS) === [];
     }
 
     public static function isAuthorityPost(PostRecord $post): bool
@@ -33,9 +34,20 @@ final class RetractedPosts
     /**
      * Ids of posts whose retraction is effective in the repository's current files.
      *
-     * @return array<string, true>
+     * @return array<string, string>
      */
     public static function effectivePostIds(string $repositoryRoot): array
+    {
+        return self::effectiveValues($repositoryRoot, false);
+    }
+
+    /** @return array<string, string> Display attribution, never used to grant suppression authority. */
+    public static function effectiveAttributions(string $repositoryRoot): array
+    {
+        return self::effectiveValues($repositoryRoot, true);
+    }
+
+    private static function effectiveValues(string $repositoryRoot, bool $attribution): array
     {
         $repository = new CanonicalRecordRepository($repositoryRoot);
         $ids = [];
@@ -47,7 +59,7 @@ final class RetractedPosts
                         continue;
                     }
                     if (self::applies($repository->loadPost($candidate), $retraction)) {
-                        $ids[$retraction->postId] = true;
+                        $ids[$retraction->postId] = $attribution ? ($retraction->attribution ?? $retraction->classification) : $retraction->classification;
                     }
                     break;
                 }

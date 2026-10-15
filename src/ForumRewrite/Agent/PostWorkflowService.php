@@ -116,6 +116,26 @@ final class PostWorkflowService
             }
         }
 
+        $ids = [(string) $post['post_id']];
+        foreach ([$thread, $parent] as $source) if ($source !== null) $ids[] = (string) $source['post_id'];
+        $complete = true;
+        foreach ($context['thread_comments'] ?? [] as $index => $comment) {
+            $ids[] = $comment['post_id'];
+            if (($comment['post_summary'] ?? '') !== '') {
+                $dependencies = \ForumRewrite\Llm\ExchangeDependencies::classify([
+                    'related_post_id' => $comment['post_id'],
+                    'context' => ['exchange_dependencies' => $comment['_exchange_dependencies'] ?? null],
+                ]);
+                if ($dependencies === null) $complete = false;
+                else $ids = array_merge($ids, $dependencies);
+            }
+            unset($context['thread_comments'][$index]['_exchange_dependencies']);
+        }
+        foreach ($context['related_content'] ?? [] as $related) {
+            $ids[] = $related['post_id'];
+            $ids[] = $related['thread_id'];
+        }
+        $context['exchange_dependencies'] = \ForumRewrite\Llm\ExchangeDependencies::manifest($ids, $complete);
         return $context;
     }
 
@@ -179,6 +199,7 @@ final class PostWorkflowService
                     : '',
                 'body' => $body,
                 'body_truncated' => strlen((string) $post['body']) > strlen($body),
+                '_exchange_dependencies' => $analysis['raw_response']['_forum_exchange_dependencies'] ?? null,
             ];
         }
 

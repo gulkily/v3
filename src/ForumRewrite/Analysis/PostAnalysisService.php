@@ -76,6 +76,8 @@ final class PostAnalysisService
                 $unicodeRisk = $this->storeUnicodeRiskReview($postId, $contentHash, $unicodeRisk, $analysis['unicode_risk_review']);
                 $analysis['unicode_risk'] = $unicodeRisk;
             }
+            $analysis['raw_response']['_forum_exchange_dependencies'] = $analysisContext['exchange_dependencies']
+                ?? \ForumRewrite\Llm\ExchangeDependencies::manifest([], false);
             $stored = $this->store->saveComplete($postId, $contentHash, $analysis);
             if ($unicodeRisk !== null) {
                 $stored['unicode_risk'] = $unicodeRisk;

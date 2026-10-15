@@ -65,6 +65,7 @@ $testFiles = [
     __DIR__ . '/LlmProviderConfigTest.php',
     __DIR__ . '/LazyComposeSigningTest.php',
     __DIR__ . '/LlmExchangeDatabaseConfigTest.php',
+    __DIR__ . '/ExchangeDependenciesTest.php',
     __DIR__ . '/LlmExchangeRecorderTest.php',
     __DIR__ . '/VisitorStatisticsDatabaseConfigTest.php',
     __DIR__ . '/VisitorStatisticsStoreTest.php',

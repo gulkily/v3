@@ -12,6 +12,15 @@ final class PostRetractionRecord
         public readonly string $postId,
         public readonly string $operation,
         public readonly string $authorIdentityId,
+        public readonly ?string $actorIdentityId = null,
+        public readonly string $classification = 'author',
+        public readonly bool $operatorAccepted = false,
+        public readonly ?string $attribution = null,
     ) {
+    }
+
+    public function signerIdentityId(): string
+    {
+        return $this->actorIdentityId ?? $this->authorIdentityId;
     }
 }

@@ -170,3 +170,20 @@
     background: var(--panel);
   }
 }
+
+.post-retraction-control { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; min-width: 0; max-width: 100%; }
+.post-more-actions { position: relative; }
+.post-more-actions > summary { cursor: pointer; list-style: none; min-width: 2.5rem; min-height: 2.5rem; display: grid; place-items: center; }
+.post-more-actions > summary::-webkit-details-marker { display: none; }
+.post-more-actions > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.post-more-actions-panel { position: absolute; inset-inline-end: 0; z-index: 40; min-width: 9rem; padding: 0.5rem; border: 1px solid var(--line); background-color: var(--page-bg); background-image: linear-gradient(var(--panel), var(--panel)); }
+.post-more-actions-panel button {
+  box-sizing: border-box;
+  min-height: 2.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+.post-retraction-control .retraction-feedback,
+.post-retraction-control .retraction-details { flex-basis: 100%; min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; margin: 0; }

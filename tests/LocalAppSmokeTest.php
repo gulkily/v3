@@ -63,6 +63,46 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testVersion18StartupRebuildsRetractionAttributionBeforeServingPage(): void
+    {
+        $directory = sys_get_temp_dir() . '/forum-retraction-schema-' . bin2hex(random_bytes(6));
+        mkdir($directory, 0700, true);
+        $database = $directory . '/index.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('ALTER TABLE posts DROP COLUMN retraction_attribution');
+            $pdo->exec('ALTER TABLE threads DROP COLUMN retraction_attribution');
+            $pdo->exec("UPDATE metadata SET value = '18' WHERE key = 'schema_version'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            assertSame(null, $pdo->query("SELECT retraction_attribution FROM posts WHERE post_id = 'root-001'")->fetchColumn());
+            assertSame(null, $pdo->query("SELECT retraction_attribution FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+        } finally { $this->deleteTree($directory); }
+    }
+
+    public function testVersion17StartupRebuildsRetractionClassificationBeforeServingPage(): void
+    {
+        $directory = sys_get_temp_dir() . '/forum-retraction-schema-' . bin2hex(random_bytes(6));
+        mkdir($directory, 0700, true);
+        $database = $directory . '/index.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('ALTER TABLE posts DROP COLUMN retraction_class');
+            $pdo->exec('ALTER TABLE threads DROP COLUMN retraction_class');
+            $pdo->exec("UPDATE metadata SET value = '17' WHERE key = 'schema_version'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            assertSame(null, $pdo->query("SELECT retraction_class FROM posts WHERE post_id = 'root-001'")->fetchColumn());
+            assertSame(null, $pdo->query("SELECT retraction_class FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+        } finally { $this->deleteTree($directory); }
+    }
+
     public function testVersion16StartupRebuildsReactionEvidenceBeforeServingPage(): void
     {
         $directory = sys_get_temp_dir() . '/forum-reaction-schema-' . bin2hex(random_bytes(6));

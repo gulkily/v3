@@ -1900,6 +1900,9 @@ PHP);
             assertSame('requested', $request['generation_status']);
             assertSame('generated', $response['generation_status']);
             assertSame($replyId, $context['post_id']);
+            assertSame(true, $context['exchange_dependencies']['complete']);
+            assertSame(true, in_array($threadId, $context['exchange_dependencies']['post_ids'], true));
+            assertSame(true, in_array($replyId, $context['exchange_dependencies']['post_ids'], true));
             assertSame($threadId, $context['thread_comments'][0]['post_id']);
             assertSame("Root body?\n", $context['thread_comments'][0]['body']);
             assertSame('The post says: Root body?', $context['thread_comments'][0]['post_summary']);
@@ -2644,6 +2647,367 @@ NODE;
         assertStringContains('https://example.test/cypher-night', $threadPage);
     }
 
+    public function testOperatorRetractionCapturesAccountEvidenceAtAcceptance(): void
+    {
+        foreach (['same', 'different', 'unapproved', 'revoked', 'dirty', 'empty', 'missing'] as $scenario) {
+            [$root, $db, $artifacts] = $this->createTempEnvironment();
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $author = $this->createAuthoredThread($app, 'AccountEvidence', 'Evidence target');
+            $operator = $this->linkSigningIdentity($app, $scenario === 'different' ? 'OtherAccount' : 'accountevidence');
+            $this->seedApprovedIdentity($root, $operator['identity_id']);
+            if ($scenario !== 'unapproved') $this->seedApprovedIdentity($root, $author['identity_id']);
+            if (in_array($scenario, ['empty', 'missing'], true)) {
+                foreach ([$author, $operator] as $identity) {
+                    $path = CanonicalPathResolver::identity(substr($identity['identity_id'], 8));
+                    file_put_contents($root . '/' . $path, preg_replace('/^Username:.*\n/m', $scenario === 'empty' ? "Username: \n" : '', file_get_contents($root . '/' . $path)));
+                }
+                $this->runCommand($root, 'git add records/identity');
+                $this->runCommand($root, 'git commit -m "Empty legacy canonical usernames"');
+            }
+            $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+            assertSame('ok', $prepared['status']);
+            if ($scenario === 'revoked') {
+                $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($author['identity_id'], 8) . '.txt'));
+                $this->runCommand($root, 'git commit -m "Revoke target before acceptance"');
+            }
+            if ($scenario === 'dirty') file_put_contents($root . '/records/uncommitted.txt', 'Uncommitted account evidence');
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'], 'actor_identity_id' => $operator['identity_id'],
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($operator['home'], $prepared['canonical_record'])];
+            $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+            $_POST = [];
+            assertSame('complete', $result['retraction_status']);
+            $message = $this->gitOutput($root, 'show -s --format=%B HEAD');
+            assertSame(1, preg_match('/^Retraction-Attribution: (.+)$/m', $message, $match));
+            $evidence = json_decode($match[1], true, 512, JSON_THROW_ON_ERROR);
+            assertSame($scenario === 'same' ? 'author' : 'operator', $evidence['attribution']);
+            assertSame($scenario === 'same' ? 'accountevidence' : null, $evidence['username']);
+            assertSame(hash('sha256', $prepared['canonical_record']), $evidence['sha256']);
+            assertSame($operator['identity_id'], $evidence['actor']);
+            assertSame($author['identity_id'], $evidence['author']);
+            assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
+            assertStringContains('Retraction-Class: operator', $prepared['canonical_record']);
+            $loaded = (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']);
+            assertSame('operator', $loaded->classification);
+            assertSame($scenario === 'same' ? 'author' : 'operator', $loaded->attribution);
+            $notice = $scenario === 'same' ? 'retracted by its author' : 'retracted by an operator';
+            foreach (['/threads/' . $author['thread_id'], '/posts/' . $author['thread_id'],
+                '/forte?selected=' . $author['thread_id'], '/source/current/' . $author['record_path'],
+                '/source/blob/' . $result['commit_sha'] . '/' . $author['record_path']] as $route) {
+                $output = $this->renderMethod($app, 'GET', $route);
+                assertStringContains($notice, $output, $scenario . ' at ' . $route);
+                assertSame(false, str_contains($output, 'Evidence target'));
+            }
+            $pdo = new PDO('sqlite:' . $db);
+            foreach (['posts', 'threads'] as $table) {
+                $idColumn = $table === 'posts' ? 'post_id' : 'root_post_id';
+                $query = $pdo->prepare('SELECT retraction_class, retraction_attribution FROM ' . $table . ' WHERE ' . $idColumn . ' = ?');
+                $query->execute([$author['thread_id']]);
+                assertSame(['retraction_class' => 'operator', 'retraction_attribution' => $scenario === 'same' ? 'author' : 'operator'], $query->fetch(PDO::FETCH_ASSOC));
+            }
+            unset($query, $pdo);
+            assertSame('operator', \ForumRewrite\Canonical\RetractedPosts::effectivePostIds($root)[$author['thread_id']]);
+            if ($scenario === 'same') {
+                $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($author['identity_id'], 8) . '.txt'));
+                $this->runCommand($root, 'git commit -m "Revoke target after acceptance"');
+                assertSame('author', (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path'])->attribution);
+                (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+                assertStringContains($notice, $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
+                assertStringContains($notice, $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
+            }
+            $before = $this->latestCommitSha($root);
+            $retry = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+            assertSame(true, $retry['already_retracted']);
+            assertSame($before, $this->latestCommitSha($root));
+        }
+    }
+
+    public function testSameAccountQuoteAndReplyNoticesShareAcceptedAttribution(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->linkSigningIdentity($app, 'quote-account');
+        $operator = $this->linkSigningIdentity($app, 'QUOTE-ACCOUNT');
+        $this->seedApprovedIdentity($root, $author['identity_id']);
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $finalize = function (array $prepared, array $key, string $endpoint) use ($app): array {
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'], 'author_identity_id' => $key['identity_id'],
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            try { return json_decode($this->renderMethod($app, 'POST', $endpoint), true, 512, JSON_THROW_ON_ERROR); }
+            finally { $_POST = []; }
+        };
+        $previousSite = getenv('FORUM_SITE_ID');
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $quote = json_decode($this->renderMethod($app, 'POST', '/api/prepare_quote?board_tags=general&body=Account%20quote&author_identity_id=' . $author['identity_id']), true);
+            assertSame('ok', $finalize($quote, $author, '/api/create_prepared_post')['status']);
+            $replyId = $this->createAuthoredReply($app, $author, $quote['post_id'], 'Account reply');
+            foreach ([$replyId, $quote['post_id']] as $postId) {
+                $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $postId);
+                assertSame('complete', $finalize($prepared, $operator, '/api/create_prepared_retraction')['retraction_status']);
+            }
+            $page = $this->renderMethod($app, 'GET', '/threads/' . $quote['post_id']);
+            assertStringContains('quote-card-body meta', $page);
+            assertSame(2, substr_count($page, 'This post was retracted by its author.'));
+            assertSame(false, str_contains($page, 'retracted by an operator'));
+        } finally { putenv($previousSite === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $previousSite); }
+        $paned = $this->renderMethod($app, 'GET', '/forte?selected=' . $quote['post_id']);
+        assertSame(2, substr_count($paned, 'This post was retracted by its author.'));
+        assertSame(false, str_contains($paned, 'retracted by an operator'));
+        $pdo = new PDO('sqlite:' . $db);
+        foreach ([\ForumRewrite\ReadModel\AuthoredContentRepository::visibleThreads($pdo, [$author['identity_id']]),
+            \ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts($pdo, [$author['identity_id']])] as $rows) {
+            assertSame(true, count($rows) > 0);
+            foreach ($rows as $row) {
+                assertSame('operator', $row['retraction_class']);
+                assertSame('author', $row['retraction_attribution']);
+            }
+        }
+    }
+
+    public function testApprovedOrdinarySameAccountKeyCannotRetractAnotherKeyPost(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'ordinary-account', 'Ordinary account target');
+        $other = $this->linkSigningIdentity($app, 'ORDINARY-ACCOUNT');
+        $service = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        foreach ([$author, $other] as $identity) {
+            $pdo = new PDO('sqlite:' . $db);
+            $query = $pdo->prepare('SELECT bootstrap_post_id, bootstrap_thread_id FROM profiles WHERE identity_id = ?');
+            $query->execute([$identity['identity_id']]);
+            $target = $identity + $query->fetch(PDO::FETCH_ASSOC);
+            unset($query, $pdo);
+            $this->approveIdentity($service, $target);
+        }
+        $denied = $this->prepareRetractionRequest($app, $other['identity_id'], $author['thread_id']);
+        assertSame('error', $denied['status']);
+        assertStringContains('Only the post author', $denied['error']);
+        assertStringContains('Ordinary account target', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
+    }
+
+    public function testRetractionAttributionRequiresOneBoundLocalAcceptanceEvent(): void
+    {
+        foreach (['valid', 'missing', 'malformed', 'duplicate', 'hash', 'actor', 'author', 'empty', 'version', 'later'] as $scenario) {
+            [$root, $db, $artifacts] = $this->createTempEnvironment();
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $operator = $this->linkSigningIdentity($app, 'evidence-operator');
+            $this->seedApprovedIdentity($root, $operator['identity_id']);
+            $actor = $operator['identity_id'];
+            $author = 'openpgp:' . str_repeat('b', 40);
+            $contents = "Record-ID: post-retraction-root-001\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: root-001\nOperation: retract\n"
+                . "Author-Identity-ID: {$author}\nActor-Identity-ID: {$actor}\nRetraction-Class: operator\n\n";
+            $record = (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($contents);
+            $path = 'records/post-retractions/post-retraction-root-001.txt';
+            mkdir($root . '/records/post-retractions');
+            file_put_contents($root . '/' . $path, $contents);
+            $evidence = ['version' => 1, 'sha256' => hash('sha256', $contents), 'actor' => $actor,
+                'author' => $author, 'attribution' => 'author', 'username' => 'account'];
+            if (in_array($scenario, ['hash', 'actor', 'author'], true)) $evidence[$scenario === 'hash' ? 'sha256' : $scenario] = 'wrong';
+            if ($scenario === 'empty') $evidence['username'] = '';
+            if ($scenario === 'version') $evidence['version'] = 2;
+            $trailer = "\n\nRetraction-Attribution: " . ($scenario === 'malformed' ? '{broken' : json_encode($evidence));
+            if ($scenario === 'duplicate') $trailer .= $trailer;
+            $subject = 'Retract post root-001 by ' . $actor;
+            $this->runCommand($root, 'git add ' . escapeshellarg($path));
+            assertSame('operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents, $record));
+            $this->runCommand($root, 'git commit -m ' . escapeshellarg($subject . (in_array($scenario, ['missing', 'later'], true) ? '' : $trailer)));
+            if ($scenario === 'later') $this->runCommand($root, 'git commit --allow-empty -m ' . escapeshellarg($subject . $trailer));
+            assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+            assertSame($scenario === 'valid' ? 'author' : 'operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents, $record));
+            assertSame('operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents . "\n", $record));
+        }
+    }
+
+    public function testOperatorRetractionAuthorityRequiresLocalAcceptanceHistory(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $operator = $this->linkSigningIdentity($app, 'history-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $actor = $operator['identity_id'];
+        $contents = "Record-ID: post-retraction-root-001\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: root-001\nOperation: retract\n"
+            . "Author-Identity-ID: openpgp:" . str_repeat('b', 40) . "\nActor-Identity-ID: {$actor}\nRetraction-Class: operator\n\n";
+        $parser = new \ForumRewrite\Canonical\PostRetractionRecordParser();
+        $record = $parser->parse($contents);
+        $path = 'records/post-retractions/post-retraction-root-001.txt';
+        mkdir($root . '/records/post-retractions');
+        file_put_contents($root . '/' . $path, $contents);
+        file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($operator['home'], $contents));
+        assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $contents, $actor));
+        assertSame(false, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+        $this->runCommand($root, 'git add records/post-retractions');
+        $this->runCommand($root, 'git commit -m ' . escapeshellarg('Retract post root-001 by ' . $actor));
+        assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+        $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($actor, 8) . '.txt'));
+        $this->runCommand($root, 'git commit -m "Remove operator privilege"');
+        assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+        $changed = str_replace('12:00:00Z', '12:00:01Z', $contents);
+        assertSame(false, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $changed, $parser->parse($changed)));
+        $legacy = preg_replace('/Actor-Identity-ID:.*\nRetraction-Class: operator\n/', '', $contents);
+        assertSame('author', $parser->parse($legacy)->classification);
+    }
+
+    public function testOperatorRetractionSignsAsActorAndRechecksPrivilegeAtFinalize(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'operator-target', 'Operator target prose');
+        $second = $this->createAuthoredThread($app, 'operator-target-two', 'Second target prose');
+        $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $author['thread_id'] . '&parent_id=' . $author['thread_id'] . '&body=Operator%20reply%20remains');
+        $original = sys_get_temp_dir() . '/operator-original-' . bin2hex(random_bytes(6));
+        $this->copyDirectory($root . '/records', $original . '/records');
+        $operator = $this->linkSigningIdentity($app, 'operator-actor');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $protectedPath = 'records/posts/operator-protected.txt';
+        file_put_contents($root . '/' . $protectedPath,
+            "Post-ID: operator-protected\nCreated-At: 2026-10-14T12:00:00Z\nBoard-Tags: identity approval\n"
+            . "Author-Identity-ID: " . $author['identity_id'] . "\n\nProtected authority fixture.\n");
+        $this->runCommand($root, 'git add ' . escapeshellarg($protectedPath));
+        $this->runCommand($root, 'git commit -m "Add protected authority fixture"');
+        $protected = $this->prepareRetractionRequest($app, $operator['identity_id'], 'operator-protected');
+        assertSame('error', $protected['status']);
+        assertStringContains('cannot be retracted', $protected['error']);
+        $oldCookies = $_COOKIE;
+        $_COOKIE = ['identity_hint' => $operator['identity_id']];
+        try {
+            foreach (['/threads/', '/posts/'] as $prefix) {
+                $page = $this->renderMethod($app, 'GET', $prefix . $author['thread_id']);
+                assertStringContains('aria-label="More actions"', $page);
+                assertStringContains('>Retract post</button>', $page);
+            }
+        } finally { $_COOKIE = $oldCookies; }
+        $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+        assertSame('ok', $prepared['status']);
+        assertStringContains('Author-Identity-ID: ' . $author['identity_id'], $prepared['canonical_record']);
+        assertStringContains('Actor-Identity-ID: ' . $operator['identity_id'], $prepared['canonical_record']);
+        $fields = [
+            'prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'actor_identity_id' => $operator['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+        ];
+        $_POST = $fields + ['detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        $bad = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+        assertSame('error', $bad['status']);
+        $_POST = $fields + ['detached_signature' => $this->signCanonicalRecord($operator['home'], $prepared['canonical_record'])];
+        $accepted = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+        $_POST = [];
+        assertSame('complete', $accepted['retraction_status']);
+        $commit = $accepted['commit_sha'];
+        $commitDetail = json_decode($this->renderMethod($app, 'GET', '/api/forte_commit_detail?sha=' . $commit), true);
+        assertStringContains($operator['identity_id'], $commitDetail['html']);
+        assertStringContains('post retraction record', $commitDetail['html']);
+        assertStringContains('Operator reply remains', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
+        assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
+        assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
+        assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
+        $stale = $this->prepareRetractionRequest($app, $operator['identity_id'], $second['thread_id']);
+        $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($operator['identity_id'], 8) . '.txt'));
+        $this->runCommand($root, 'git commit -m "Revoke operator"');
+        $_POST = ['prepare_token' => $stale['prepare_token'], 'post_id' => $stale['post_id'],
+            'record_path' => $stale['record_path'], 'author_identity_id' => $operator['identity_id'],
+            'canonical_record' => $stale['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($operator['home'], $stale['canonical_record'])];
+        $denied = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+        $_POST = [];
+        assertSame('error', $denied['status']);
+        assertSame(false, is_file($root . '/' . $stale['record_path']));
+        $retry = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
+        assertSame(true, $retry['already_retracted']);
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
+        assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
+        $this->runCommand($root, 'git rm ' . escapeshellarg($author['record_path']) . ' ' . escapeshellarg($author['record_path'] . '.asc'));
+        $this->runCommand($root, 'git commit -m "Remove original retracted post"');
+        $report = (new \ForumRewrite\Import\ContentImportRunner($root, $db))->run($original, function () use ($root, $db): void {
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        });
+        assertSame('complete', $report['status']);
+        clearstatcache(true);
+        assertSame(true, is_file($root . '/' . $author['record_path']));
+        $restoredPage = $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']);
+        assertSame(false, str_contains($restoredPage, 'Operator target prose'));
+        assertStringContains('retracted by an operator', $restoredPage);
+        assertStringContains('Operator reply remains', $restoredPage);
+        $source = sys_get_temp_dir() . '/operator-import-' . bin2hex(random_bytes(6));
+        mkdir($source);
+        $this->copyDirectory($root . '/records', $source . '/records');
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($source, $root);
+        assertSame('duplicate', $plan[$prepared['record_path']]['state']);
+        $freshPath = $stale['record_path'];
+        file_put_contents($source . '/' . $freshPath, $stale['canonical_record']);
+        file_put_contents($source . '/' . $freshPath . '.asc', $this->signCanonicalRecord($operator['home'], $stale['canonical_record']));
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($source, $root);
+        assertSame('invalid', $plan[$freshPath]['state']);
+        assertStringContains('local acceptance evidence', $plan[$freshPath]['reason']);
+        file_put_contents($root . '/' . $prepared['record_path'] . '.asc', 'forged');
+        $rejected = false;
+        try { (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']); }
+        catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { $rejected = true; }
+        assertSame(true, $rejected);
+    }
+
+    public function testRetractionMakesDirectAndContextOnlyLlmExchangeDetailsUnavailable(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $exchangeDb = sys_get_temp_dir() . '/exchange-privacy-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $config = $exchangeDb . '.php';
+        file_put_contents($config, '<?php return ' . var_export(['LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb], true) . ';');
+        $previous = getenv('FORUM_SECRETS_PATH');
+        $cookies = $_COOKIE;
+        putenv('FORUM_SECRETS_PATH=' . $config);
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $author = $this->createAuthoredThread($app, 'exchange-author', 'Exchange private prose');
+            $pdo = new PDO('sqlite:' . $exchangeDb);
+            $recorder = new \ForumRewrite\Llm\LlmExchangeRecorder($pdo);
+            $ids = [];
+            foreach ([[$author['thread_id'], [$author['thread_id']]], ['root-001', ['root-001', $author['thread_id']]], ['root-001', ['root-001']]] as $index => [$primary, $dependencies]) {
+                $ids[] = $recorder->record(['call_type' => 'post_analysis', 'post_id' => $primary,
+                    'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest($dependencies)],
+                    ['payload' => ['messages' => [['role' => 'user', 'content' => $index === 2 ? 'Unrelated prompt' : 'Exchange private prose']]]],
+                    ['body' => 'Exchange response prose'], 'completed', 1, ['message' => 'Exchange error prose']);
+            }
+            $rawRows = $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertStringContains('Exchange private prose', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]));
+            $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'], 'record_path' => $prepared['record_path'],
+                'author_identity_id' => $author['identity_id'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+            $this->renderMethod($app, 'POST', '/api/create_prepared_retraction');
+            $_POST = [];
+            foreach (array_slice($ids, 0, 2) as $id) {
+                $page = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $id);
+                assertStringContains('LLM exchange unavailable.', $page);
+                assertSame(false, str_contains($page, 'Exchange private prose'));
+                assertSame(false, str_contains($page, 'Exchange response prose'));
+                assertSame(false, str_contains($page, 'Exchange error prose'));
+            }
+            assertStringContains('Unrelated prompt', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[2]));
+            $list = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/');
+            assertSame(false, str_contains($list, '/tools/llm-exchanges/' . $ids[0] . '/'));
+            assertSame(false, str_contains($list, '/tools/llm-exchanges/' . $ids[1] . '/'));
+            assertStringContains('/tools/llm-exchanges/' . $ids[2] . '/', $list);
+            $post = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+            assertSame(false, str_contains($post, 'LLM exchanges:'));
+            $rootPost = $this->renderMethod($app, 'GET', '/posts/root-001');
+            assertSame(false, str_contains($rootPost, '/tools/llm-exchanges/' . $ids[1] . '"'));
+            assertStringContains('/tools/llm-exchanges/' . $ids[2] . '"', $rootPost);
+
+            assertSame(3, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
+            assertSame($rawRows, $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC));
+            assertTrue(is_file($root . '/' . $prepared['record_path'] . '.asc'));
+        } finally {
+            $_POST = []; $_COOKIE = $cookies;
+            putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
+            unlink($config);
+        }
+    }
+
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2773,7 +3137,7 @@ NODE;
         $this->renderMethod($application, 'POST', '/api/create_prepared_retraction');
         $_POST = [];
 
-        $notice = 'This post was deleted by its author.';
+        $notice = 'This post was retracted by its author.';
         $thread = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
         assertStringContains($notice, $thread);
         assertStringContains('Reply that stays visible.', $thread);
@@ -2815,7 +3179,7 @@ NODE;
             $_COOKIE = ['identity_hint' => $author['identity_id']];
             $asAuthor = $this->renderMethod($application, 'GET', $threadPath);
             assertStringContains('data-action="retract-post"', $asAuthor);
-            assertStringContains('does not erase it from the site&#039;s version history or backups', $asAuthor);
+            assertStringContains('data-confirm="Retract this post?"', $asAuthor);
             assertStringContains('post_retraction.', $asAuthor);
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($author['thread_id']));
             assertStringContains('data-action="retract-post"', $postPage);
@@ -2896,7 +3260,7 @@ NODE;
             $thread = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
             assertSame(false, str_contains($thread, 'zze2eprose'));
             assertStringContains('Guest reply that stays.', $thread);
-            assertStringContains('This post was deleted by its author.', $thread);
+            assertStringContains('This post was retracted by its author.', $thread);
             foreach (['/', '/activity/', '/latest', '/top', '/users/', '/api/list_index', '/api/get_post?post_id=' . $authorReply, '/profiles/' . rawurlencode($author['profile_slug']), '/api/get_profile?profile_slug=' . rawurlencode($author['profile_slug'])] as $route) {
                 assertSame(false, str_contains($this->renderMethod($application, 'GET', $route), 'zze2eprose'), 'Prose at ' . $route);
             }
@@ -2946,6 +3310,32 @@ NODE;
         $assertSuppressed();
 
         $this->deleteTree($archive);
+    }
+
+    public function testRetractionArtifactFailureRetriesWithoutAnotherCommit(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'artifact-retraction', 'Artifact recovery prose');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $prepared = $writer->prepareRetraction(['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']]);
+        symlink($root, $artifacts . '/threads');
+        file_put_contents($artifacts . '/threads.html', 'Artifact recovery prose');
+        $result = $writer->finalizePreparedRetraction([
+            'prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ]);
+        assertSame('partial', $result['retraction_status']);
+        assertSame('artifact_invalidate', $result['failed_step']);
+        $head = $this->gitOutput($root, 'rev-parse HEAD');
+        $retry = ['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']];
+        assertSame('partial', $writer->prepareRetraction($retry)['retraction_status']);
+        unlink($artifacts . '/threads');
+        assertSame('complete', $writer->prepareRetraction($retry)['retraction_status']);
+        assertSame(false, is_file($artifacts . '/threads.html'));
+        assertSame($head, $this->gitOutput($root, 'rev-parse HEAD'));
     }
 
     public function testRetractionRefreshFailureReportsPartialAndRetryRecovers(): void

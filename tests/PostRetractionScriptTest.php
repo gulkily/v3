@@ -25,19 +25,24 @@ final class PostRetractionScriptTest
         assertSame(false, $result['declined']['disabled']);
 
         assertSame(['submit' => 1, 'confirm' => 1, 'reload' => 1], $result['complete']['calls']);
-        assertSame('Done text.', $result['complete']['feedback']);
+        assertSame(true, $result['complete']['feedbackHidden']);
+        assertSame(true, $result['complete']['initialHidden']);
+        assertSame('Retracting…', $result['slow']['progress']);
+        assertSame(1, $result['slow']['calls']['reload']);
         assertSame(true, $result['complete']['disabled']);
 
         assertSame(['submit' => 1, 'confirm' => 1, 'reload' => 0], $result['partial']['calls']);
-        assertSame('Retry deletion', $result['partial']['label']);
+        assertSame('Retry retraction', $result['partial']['label']);
         assertSame(false, $result['partial']['disabled']);
-        assertSame(true, str_contains($result['partial']['feedback'], 'read_model_refresh'));
+        assertSame('Retracted. Site update incomplete.', $result['partial']['feedback']);
 
-        assertSame('Only the post author can retract this post.', $result['failure']['feedback']);
+        assertSame('Retraction failed. Try again.', $result['failure']['feedback']);
         assertSame(false, $result['failure']['disabled']);
+        assertSame('Retraction failed. Try again.', $result['thrown']['feedback']);
+        assertSame(false, $result['thrown']['disabled']);
 
         assertSame(0, $result['unavailable']['calls']['submit']);
-        assertSame(true, str_contains($result['unavailable']['feedback'], 'Browser signing is unavailable'));
+        assertSame('Signing unavailable. Refresh and try again.', $result['unavailable']['feedback']);
     }
 }
 

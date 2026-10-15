@@ -247,12 +247,25 @@ final class CanonicalRecordRepository
     public function loadPostRetraction(string $relativePath): PostRetractionRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/post-retractions/');
-        $record = $this->postRetractionParser->parse($this->read($relativePath));
-
+        $contents = $this->read($relativePath);
+        $record = $this->postRetractionParser->parse($contents);
         if ($relativePath !== CanonicalPathResolver::postRetraction($record->recordId)) {
             throw new CanonicalRecordParseException('Post-retraction record path must match Record-ID.');
         }
-
+        $status = ReactionSignature::status($this->repositoryRoot, $relativePath, $contents,
+            $record->signerIdentityId(), $this->signatureKeyFallbackRoot);
+        if ($status === 'invalid' || ($record->classification === 'operator' && $status !== 'verified')) {
+            throw new CanonicalRecordParseException('Invalid retraction signature: ' . $relativePath);
+        }
+        if ($record->classification === 'operator') {
+            $authorityRoot = $this->signatureKeyFallbackRoot ?? $this->repositoryRoot;
+            if (!\ForumRewrite\Security\RetractionAuthority::acceptedOperator($authorityRoot, $relativePath, $contents, $record)) {
+                throw new CanonicalRecordParseException('Operator retraction lacks local acceptance evidence: ' . $relativePath);
+            }
+            return new PostRetractionRecord($record->recordId, $record->createdAt, $record->postId,
+                $record->operation, $record->authorIdentityId, $record->actorIdentityId, $record->classification, true,
+                \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($authorityRoot, $relativePath, $contents, $record));
+        }
         return $record;
     }
 

@@ -10,7 +10,7 @@
   }
 
   function feedbackNodeFor(button) {
-    const row = button.parentElement;
+    const row = button.closest('[data-role="retraction-control"]') || button.parentElement;
     return row ? row.querySelector('[data-role="retraction-feedback"]') : null;
   }
 
@@ -18,42 +18,70 @@
     const signing = window.ForumBrowserSigning || null;
     const feedback = feedbackNodeFor(button);
     if (!signing || typeof signing.submitSignedRetraction !== "function") {
-      setFeedback(feedback, "Browser signing is unavailable. Refresh this page and try again.", "error");
+      setFeedback(feedback, "Signing unavailable. Refresh and try again.", "error");
       return;
     }
 
-    button.setAttribute("disabled", "disabled");
-    setFeedback(feedback, "Signing and submitting your deletion...", "ok");
+    const control = button.closest('[data-role="retraction-control"]');
+    const retry = control ? control.querySelector('[data-role="retraction-retry"]') : null;
+    const menu = control ? control.querySelector('details.post-more-actions') : null;
+    if (menu) { menu.open = false; menu.querySelector('summary').focus(); }
+    const buttons = control && control.querySelectorAll ? Array.from(control.querySelectorAll('[data-action="retract-post"]')) : [button];
+    buttons.forEach(function (action) { action.setAttribute("disabled", "disabled"); });
+    if (feedback) feedback.hidden = true;
+    const progressTimer = window.setTimeout(function () {
+      setFeedback(feedback, "Retracting…", "ok");
+    }, 300);
+    function stopProgress() { window.clearTimeout(progressTimer); }
+    function reportFailure(detail) {
+      setFeedback(feedback, "Retraction failed. Try again.", "error");
+      const details = control ? control.querySelector('[data-role="retraction-details"]') : null;
+      if (details) {
+        details.querySelector('p').textContent = detail || "Unable to retract this post.";
+        details.hidden = false;
+      }
+    }
+    const details = control ? control.querySelector('[data-role="retraction-details"]') : null;
+    if (details) { details.hidden = true; details.open = false; }
 
     try {
       const result = await signing.submitSignedRetraction(button.getAttribute("data-post-id") || "");
+      stopProgress();
       if (!result || !result.ok) {
-        setFeedback(feedback, result && result.error ? result.error : "Unable to delete this post.", "error");
-        button.removeAttribute("disabled");
+        reportFailure(result && result.error);
+        buttons.forEach(function (action) { action.removeAttribute("disabled"); });
         return;
       }
 
       if (result.retractionStatus === "partial") {
         setFeedback(
           feedback,
-          "Your deletion was recorded, but updating the site did not finish (" + (result.failedStep || "unknown step") + "). "
-            + "Retry to finish removing it.",
+          "Retracted. Site update incomplete.",
           "error"
         );
-        button.textContent = "Retry deletion";
-        button.removeAttribute("disabled");
+        if (retry) retry.hidden = false;
+        else button.textContent = "Retry retraction";
+        buttons.forEach(function (action) { action.removeAttribute("disabled"); });
         return;
       }
 
-      setFeedback(feedback, button.getAttribute("data-done") || "Post deleted.", "ok");
-      window.setTimeout(function () {
-        window.location.reload();
-      }, 1500);
+      if (retry) retry.hidden = true;
+      window.location.reload();
     } catch (error) {
-      setFeedback(feedback, error instanceof Error ? error.message : "Unable to delete this post.", "error");
-      button.removeAttribute("disabled");
+      stopProgress();
+      reportFailure(error instanceof Error ? error.message : null);
+      buttons.forEach(function (action) { action.removeAttribute("disabled"); });
     }
   }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape" || !(event.target instanceof Element)) return;
+    const menu = event.target.closest("details.post-more-actions");
+    if (!menu || !menu.open) return;
+    event.preventDefault();
+    menu.open = false;
+    menu.querySelector("summary").focus();
+  });
 
   document.addEventListener("click", function (event) {
     const button = event.target instanceof Element ? event.target.closest('[data-action="retract-post"]') : null;
@@ -62,7 +90,7 @@
     }
 
     event.preventDefault();
-    const confirmText = button.getAttribute("data-confirm") || "Delete this post?";
+    const confirmText = button.getAttribute("data-confirm") || "Retract this post?";
     if (!window.confirm(confirmText)) {
       return;
     }

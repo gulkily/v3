@@ -109,7 +109,7 @@ final class AgentResponseTask
 
     /**
      * @param array<string, mixed> $context
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function defaultGenerationInput(array $context): array
     {
@@ -118,7 +118,7 @@ final class AgentResponseTask
 
     /**
      * @param array<string, mixed> $context
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public static function generationInputForType(array $context, string $type): array
     {
@@ -126,7 +126,7 @@ final class AgentResponseTask
             throw new \InvalidArgumentException('Unsupported agent response task type.');
         }
 
-        return [
+        $input = [
             'type' => $type,
             'post_id' => (string) ($context['post_id'] ?? ''),
             'content_hash' => (string) ($context['content_hash'] ?? ''),
@@ -135,6 +135,15 @@ final class AgentResponseTask
             'target_body' => self::limit((string) ($context['body'] ?? ''), 6000),
             'parent_body_preview' => self::limit((string) ($context['parent_body_preview'] ?? ''), 1200),
         ];
+        $ids = [$input['post_id']];
+        $complete = true;
+        foreach (['thread_subject' => 'thread_id', 'parent_body_preview' => 'parent_id'] as $field => $idField) {
+            if ($input[$field] === '') continue;
+            if (!\ForumRewrite\Llm\ExchangeDependencies::validId($context[$idField] ?? null)) $complete = false;
+            else $ids[] = $context[$idField];
+        }
+        $input['exchange_dependencies'] = \ForumRewrite\Llm\ExchangeDependencies::manifest($ids, $complete);
+        return $input;
     }
 
     /**

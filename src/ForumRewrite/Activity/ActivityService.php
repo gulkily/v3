@@ -535,10 +535,12 @@ final class ActivityService
         bool $authorIdentityIdIsCanonical = false
     ): string
     {
-        if (preg_match('#^records/(thread-labels|post-reactions)/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $sourcePath)) {
+        if (preg_match('#^records/(thread-labels|post-reactions|post-retractions)/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $sourcePath)) {
             try {
                 $contents = (string) file_get_contents($this->repositoryRoot . '/' . $sourcePath);
-                $author = (new \ForumRewrite\Canonical\GenericTextRecordParser())->parse($contents)->headers['Author-Identity-ID'] ?? null;
+                $author = str_starts_with($sourcePath, 'records/post-retractions/')
+                    ? (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($contents)->signerIdentityId()
+                    : ((new \ForumRewrite\Canonical\GenericTextRecordParser())->parse($contents)->headers['Author-Identity-ID'] ?? null);
                 return \ForumRewrite\Security\ReactionSignature::status($this->repositoryRoot, $sourcePath, $contents, $author);
             } catch (RuntimeException) {
                 return 'invalid';
@@ -880,6 +882,7 @@ final class ActivityService
             str_starts_with($path, 'records/posts/') => 'post record',
             str_starts_with($path, 'records/thread-labels/') => 'thread label record',
             str_starts_with($path, 'records/post-reactions/') => 'post reaction record',
+            str_starts_with($path, 'records/post-retractions/') => 'post retraction record',
             str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
             str_starts_with($path, 'records/identity/') => 'identity record',
             str_starts_with($path, 'records/approval-seeds/') => 'approval seed record',
@@ -970,6 +973,9 @@ final class ActivityService
             }
             if (str_starts_with($recordPath, 'records/post-reactions/')) {
                 return (new \ForumRewrite\Canonical\PostReactionRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))->authorIdentityId;
+            }
+            if (str_starts_with($recordPath, 'records/post-retractions/')) {
+                return (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))->signerIdentityId();
             }
             if (str_starts_with($recordPath, 'records/feature-flag-changes/')) {
                 return $repository->loadFeatureFlagChange($recordPath)->operatorIdentityId;

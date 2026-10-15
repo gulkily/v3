@@ -20,6 +20,7 @@ final class FastScoreContextFactoryTest
         ]);
 
         assertSame('thread', $context['post_kind']);
+        assertSame(['thread-1'], $context['exchange_dependencies']['post_ids']);
         assertStringContains('Subject', $context['post_text']);
         assertStringContains('[truncated]', $context['post_text']);
         assertSame(false, array_key_exists('reply_context', $context));
@@ -40,6 +41,8 @@ final class FastScoreContextFactoryTest
         ]);
 
         assertSame('reply', $context['post_kind']);
+        assertSame(['parent-1', 'reply-1', 'thread-1'], $context['exchange_dependencies']['post_ids']);
+        assertSame(true, $context['exchange_dependencies']['complete']);
         assertSame('Reply text', $context['post_text']);
         assertStringContains('[truncated]', $context['reply_context']['parent_text']);
         assertStringContains('Root', $context['reply_context']['thread_root_text']);
