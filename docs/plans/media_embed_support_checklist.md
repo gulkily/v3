@@ -65,6 +65,14 @@ fetch deadline; system DNS uses the host resolver. Challenge pages, timeouts, an
 unavailable content retain source access with an unavailable-player message when
 discovery fails. Opening a player does not guarantee full playback or availability.
 
+Bandcamp chooses its standard light or dark player background from the selected
+theme's panel brightness and uses the theme's source-link color. Low-contrast link
+colors fall back to readable black or white. Theme changes apply on the next
+expansion, leaving an open player uninterrupted; reopening with the same palette
+does not reload it. Release-ID caching remains independent of theme. Bandcamp's
+internal player surfaces use its own light/dark palette rather than arbitrary
+site background colors.
+
 Both existing embed flags govern these providers; no new deployment flag or
 credentials are required. No lookup occurs during post rendering or with players
 disabled. Implementation and local acceptance evidence are recorded in the

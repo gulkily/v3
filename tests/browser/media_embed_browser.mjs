@@ -191,6 +191,13 @@ try {
       }
       await page.locator('details[data-media-embed-card]').evaluateAll(ds => ds.forEach(d => { d.open = true; }));
       await page.waitForFunction(() => [...document.querySelectorAll('iframe[data-media-embed-iframe]')].every(i => i.getAttribute('src')));
+      const expectedPalette = { light: ['ffffff', '0b3ea8'], dark: ['333333', 'd9e7ff'], mitrapclub: ['333333', 'ff7a45'] }[theme === 'auto' ? 'light' : theme];
+      if (expectedPalette) {
+        for (const iframe of await page.locator('details[data-provider="bandcamp"] iframe').all()) {
+          const src = await iframe.getAttribute('src');
+          assert(src.includes(`/bgcol=${expectedPalette[0]}/linkcol=${expectedPalette[1]}/`), `${theme}: incorrect Bandcamp palette: ${src}`);
+        }
+      }
       for (const iframe of await page.locator('iframe[data-media-embed-iframe]').all()) {
         const box = await iframe.boundingBox();
         assert(box.x >= -1 && box.x + box.width <= width + 1, `${theme} ${width}: ${JSON.stringify(box)}`);
@@ -198,6 +205,54 @@ try {
       if (['dark', 'mitrapclub'].includes(theme)) await page.screenshot({ path: join(tmpdir(), `media-embed-${theme}-${width}.png`) });
     }
   }
+  // Theme changes preserve open players; the next expansion picks up new colors.
+  await setFlags({ site: 'mitrapclub' });
+  await page.evaluate(() => localStorage.setItem('forum-mitrapclub-theme', 'light'));
+  await page.goto(base + '/threads/' + mixed.thread_id);
+  await page.waitForFunction(() => document.documentElement.dataset.resolvedTheme === 'light');
+  const themedAlbum = page.locator('details[data-provider="bandcamp"]').first();
+  await themedAlbum.locator('summary').click();
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src')?.includes('/bgcol=ffffff/'));
+  const lightSource = await themedAlbum.locator('iframe').getAttribute('src');
+  const selectTheme = async theme => {
+    await page.locator('[data-action="theme-toggle"]').click();
+    await page.locator(`[data-theme-option="${theme}"]`).click();
+    await page.waitForFunction(theme => document.documentElement.dataset.resolvedTheme === theme, theme === 'auto' ? 'light' : theme);
+  };
+  await selectTheme('dark');
+  const darkNavigation = page.waitForEvent('requestfinished', { predicate: request => request.url().includes('bandcamp.com/EmbeddedPlayer/') && request.url().includes('/bgcol=333333/') });
+  assert.equal(await themedAlbum.locator('iframe').getAttribute('src'), lightSource, 'theme change interrupted an open player');
+  await themedAlbum.locator('summary').click();
+  await themedAlbum.locator('summary').click();
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src')?.includes('/bgcol=333333/linkcol=d9e7ff/'));
+  await darkNavigation;
+  const requestsAfterTheme = playerRequests.length;
+  await themedAlbum.locator('summary').click();
+  await themedAlbum.locator('summary').click();
+  await page.waitForTimeout(100);
+  assert.equal(playerRequests.length, requestsAfterTheme, 'unchanged palette reloaded a player');
+  await selectTheme('auto');
+  const autoLightSource = await themedAlbum.locator('iframe').getAttribute('src');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.waitForFunction(() => document.documentElement.dataset.resolvedTheme === 'dark');
+  assert.equal(await themedAlbum.locator('iframe').getAttribute('src'), autoLightSource, 'system theme change interrupted an open player');
+  await themedAlbum.locator('summary').click();
+  await themedAlbum.locator('summary').click();
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src')?.includes('/bgcol=333333/'));
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.waitForFunction(() => document.documentElement.dataset.resolvedTheme === 'light');
+  await themedAlbum.locator('summary').click();
+  await themedAlbum.locator('summary').click();
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src')?.includes('/bgcol=ffffff/'));
+  // Translucent surfaces are composited; unreadable theme links get a safe fallback.
+  await themedAlbum.evaluate(details => {
+    details.style.setProperty('--panel', 'rgba(0, 0, 0, 0.5)');
+    details.previousElementSibling.querySelector('a').style.color = 'rgb(255, 255, 255)';
+  });
+  await themedAlbum.locator('summary').click();
+  await themedAlbum.locator('summary').click();
+  await page.waitForFunction(() => /\/bgcol=ffffff\/linkcol=000000\//.test(document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src')));
+  assert((await themedAlbum.locator('iframe').getAttribute('data-embed-src')).includes('/bgcol=ffffff/linkcol=0687f5/'), 'theme colors leaked into the neutral cached player source');
   assert.deepEqual(errors, []);
   const liveResults = [];
   if (live) {
