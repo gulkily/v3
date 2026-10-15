@@ -2,9 +2,10 @@
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
-  <article class="card tool-launcher">
+  <article class="card tool-launcher bookmarklets-page">
     <h1>Bookmarklets</h1>
-    <p>Bookmarklets let you jump into Compose Thread from another page with the current page URL or selected text already filled in. Drag a bookmarklet link to your bookmarks bar, then activate it while viewing another page.</p>
+    <p class="bookmarklets-lead">Jump into Compose Thread from any page with its URL or your selected text already filled in.</p>
+    <p class="bookmarklets-hint meta">Drag a button to your bookmarks bar, then click it while viewing another page.</p>
 <?php
 $bookmarkletSections = [
     [
@@ -20,8 +21,9 @@ $bookmarkletSections = [
 ];
 ?>
 <?php foreach ($bookmarkletSections as $section): ?>
+    <section class="bookmarklet-group">
     <h2><?= $e($section['heading']) ?></h2>
-    <p class="meta"><?= $e($section['note']) ?></p>
+    <p class="meta bookmarklet-group-note"><?= $e($section['note']) ?></p>
     <ul class="tool-launcher-list">
 <?php foreach ($bookmarklets as $bookmarklet): ?>
 <?php if ($bookmarklet['mode'] !== $section['mode']) { continue; } ?>
@@ -45,6 +47,7 @@ $bookmarkletSections = [
       </li>
 <?php endforeach; ?>
     </ul>
+    </section>
 <?php endforeach; ?>
   </article>
 </section>

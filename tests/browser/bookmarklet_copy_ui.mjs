@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 const base = process.env.BOOKMARKLET_BASE_URL || 'http://127.0.0.1:18765';
 const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', args:['--no-sandbox']});
+// The copied text is unencoded one-line JavaScript; the link href stays percent-encoded.
+const oneLine=href=>'javascript:'+decodeURIComponent(href.slice('javascript:'.length)).replace(/\s*[\r\n]+\s*/g,' ');
 try {
   const context = await browser.newContext({permissions:['clipboard-read','clipboard-write'], serviceWorkers:'block'});
   if (process.env.BOOKMARKLET_EXPECT_STATIC === '1') {
@@ -26,7 +28,7 @@ try {
     await button.focus();
     await page.keyboard.press(i%2 ? 'Space' : 'Enter');
     await page.waitForFunction(i=>document.querySelectorAll('[data-bookmarklet-feedback]')[i].textContent==='Copied', i);
-    assert.equal(await page.evaluate(()=>navigator.clipboard.readText()), await page.locator('[data-bookmarklet]').nth(i).getAttribute('href'));
+    assert.equal(await page.evaluate(()=>navigator.clipboard.readText()), oneLine(await page.locator('[data-bookmarklet]').nth(i).getAttribute('href')));
     assert.equal(await button.evaluate(b=>b===document.activeElement), true);
   }
   // Probe fallback success/failure, cleanup, and retry independently of OS permissions.
@@ -39,7 +41,7 @@ try {
     },mode);
     await page.locator('[data-bookmarklet-copy]').first().click();
     await page.waitForFunction(()=>document.querySelector('[data-bookmarklet-feedback]').textContent==='Copied');
-    assert.equal(await page.evaluate(()=>window.copies[0]),await page.locator('[data-bookmarklet]').first().getAttribute('href'));
+    assert.equal(await page.evaluate(()=>window.copies[0]),oneLine(await page.locator('[data-bookmarklet]').first().getAttribute('href')));
     assert.equal(await page.locator('textarea').count(),0);
     await page.evaluate(()=>document.execCommand=()=>false);
     await page.locator('[data-bookmarklet-copy]').first().click();
