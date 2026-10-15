@@ -787,8 +787,10 @@ final class ReadModelBuilder
                 default => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
             };
             $label = $this->activityLabelForPost($post);
+            $receipt = in_array($kind, ['approval', 'invitation'], true)
+                ? \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $post['source_path']) : null;
             $stmt->execute([
-                'created_at' => $post['created_at'],
+                'created_at' => $receipt['accepted_at'] ?? $post['created_at'],
                 'kind' => $kind,
                 'record_family' => $recordFamily,
                 'action_key' => $post['source_path'],

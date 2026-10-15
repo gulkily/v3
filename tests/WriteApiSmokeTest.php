@@ -6056,6 +6056,75 @@ NODE;
         }
     }
 
+    public function testOperatorSecurityReviewRequiresAuthenticatedRootAndCorrelatesPolicyChanges(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('security-operator');
+        $previousSession = $_SESSION ?? [];
+        $previousFlag = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_POST = ['public_key' => $key['public_key']];
+            $response = $this->renderMethod($app, 'POST', '/api/link_identity');
+            $_POST = [];
+            $operator = $this->extractValue($response, 'identity_id');
+            $this->seedApprovedIdentity($root, $operator);
+            $target = $this->linkGeneratedIdentity($app, 'security-target');
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $change = function (bool $value) use ($writer, $operator, $key): void {
+                $prepared = $writer->prepareFeatureFlagChange(['key' => 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL', 'value' => $value ? 'true' : 'false'], $operator);
+                if (($prepared['wrote_record'] ?? '') === 'no') return;
+                $writer->finalizePreparedFeatureFlagChange($prepared + ['detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])], $operator);
+            };
+            $change(false);
+            $change(true);
+            $grant = $this->approveIdentity($writer, $target, $operator);
+            $change(false);
+            if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+            $paths = ['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/api/forte_activity_detail?view=security&id=1', '/api/forte_commit_detail?view=security&sha=' . $grant['commit_sha'], '/activity/?view=security&format=rss'];
+            foreach ([null, $target['identity_id']] as $viewer) {
+                $_SESSION = $viewer === null ? [] : ['authenticated_identity_id' => $viewer];
+                $_COOKIE = ['identity_hint' => $operator];
+                foreach ($paths as $path) {
+                    $denied = $this->renderMethod($app, 'GET', $path);
+                    assertSame(403, http_response_code());
+                    assertStringContains('Authenticated root-approved operator access required', $denied);
+                    assertStringNotContains('Acceptance receipt', $denied);
+                }
+            }
+            $_SESSION = ['authenticated_identity_id' => $operator];
+            $_COOKIE = [];
+            foreach (['/activity/?view=security', '/forte/activity/?view=security'] as $path) {
+                $page = $this->renderMethod($app, 'GET', $path);
+                assertSame(200, http_response_code());
+                assertStringContains('Operator security review', $page);
+                assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true', $page);
+                assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false', $page);
+                assertStringContains('security-target', $page);
+            }
+            $pdo = (new ReadModelConnection($db))->open();
+            $query = $pdo->prepare('SELECT id FROM activity WHERE post_id = ?');
+            $query->execute([$grant['post_id']]);
+            $id = (int) $query->fetchColumn();
+            $query->closeCursor();
+            $detail = $this->renderMethod($app, 'GET', '/api/forte_activity_detail?view=security&id=' . $id);
+            assertStringContains('Acceptance receipt', $detail);
+            assertStringContains('Affected account: security-target', $detail);
+            $pagination = $this->renderMethod($app, 'GET', '/api/forte_activity_page?view=security');
+            assertSame('ok', json_decode($pagination, true, 512, JSON_THROW_ON_ERROR)['status']);
+            $this->renderMethod($app, 'GET', '/activity/?view=security&format=rss');
+            assertSame(406, http_response_code());
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertStringContains('security-target', $this->renderMethod($app, 'GET', '/activity/?view=security'));
+        } finally {
+            $_POST = []; $_COOKIE = []; $_SESSION = $previousSession;
+            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+            putenv($previousFlag === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previousFlag);
+            $this->deleteTree($key['home']);
+        }
+    }
+
     public function testAlreadyApprovedUserCannotBeApprovedAgain(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

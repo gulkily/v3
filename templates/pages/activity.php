@@ -3,10 +3,17 @@
     <h1>Activity</h1>
     <div class="nav">
 <?php foreach ($viewOptions as $option): ?>
+<?php if ($view === 'security' && $option['label'] === 'RSS') continue; ?>
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
       <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
+<?php if ($canSecurityReview): ?>
+      <a href="/activity/?view=security">Operator security review</a>
+<?php endif; ?>
     </div>
+<?php if ($view === 'security'): ?>
+    <p>Current cross-account policy: <?= $approvalPolicyEnabled ? 'enabled' : 'restricted' ?>. Account key grants and recorded approval-policy changes. Restricting future cross-account approvals does not revoke previously accepted keys. Deployment-only policy changes and missing historical acceptance facts remain unknown.</p>
+<?php endif; ?>
   </article>
 <?php foreach ($items as $item): ?>
 <?php if ($item['kind'] === 'site_feature_flag'): ?>
@@ -23,6 +30,9 @@
     <p class="meta"><?= $e($item['kind']) ?></p>
     <p><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a></p>
     <p><?= $e($item['label']) ?></p>
+<?php if ($view === 'security'): ?>
+<?= $partial('partials/approval_security_review.php', ['item' => $item]) ?>
+<?php endif; ?>
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
     <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
 <?php endif; ?>

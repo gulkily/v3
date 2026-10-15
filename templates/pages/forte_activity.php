@@ -48,3 +48,7 @@ foreach ($viewCounts as $viewCount) {
   </div>
 <?= $indent($partial('partials/paned_content_summary_dialog.php'), 1) ?>
 </div>
+
+<?php if ($selectedView === 'security'): ?>
+<p>Current cross-account policy: <?= $approvalPolicyEnabled ? 'enabled' : 'restricted' ?>. Operator security review: restricting future grants does not revoke accepted keys. Deployment-only policy changes and missing historical acceptance facts remain unknown.</p>
+<?php endif; ?>

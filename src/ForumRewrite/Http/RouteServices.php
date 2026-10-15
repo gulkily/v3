@@ -102,9 +102,17 @@ final class RouteServices
      * calls one page render makes into it - see
      * docs/plans/activity_subsystem_extraction_plan_v1.md.
      */
+    public function securityReviewAllowed(): bool
+    {
+        $id = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        if ($id === '' || !\ForumRewrite\Security\ApprovalPolicy::isOperator($this->repositoryRoot, $id)) return false;
+        $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->pdo(), $id);
+        return $profile !== null && (int) $profile['is_approved'] === 1;
+    }
+
     public function activityService(): ActivityService
     {
-        return $this->activityService ??= new ActivityService($this->pdo(...), $this->repositoryRoot, $this->databasePath);
+        return $this->activityService ??= new ActivityService($this->pdo(...), $this->repositoryRoot, $this->databasePath, $this->securityReviewAllowed(...));
     }
 
     public function writer(): LocalWriteService
@@ -501,7 +509,9 @@ final class RouteServices
             'ETag: ' . $etag,
         ], $headers);
 
-        if ($statusCode === 200 && HtmlResponseCache::requestMatches($etag)) {
+        $noStore = false;
+        foreach ($headers as $value) { if (str_contains(strtolower($value), 'no-store')) $noStore = true; }
+        if ($statusCode === 200 && !$noStore && HtmlResponseCache::requestMatches($etag)) {
             http_response_code(304);
             foreach ($headers as $headerValue) {
                 header($headerValue);

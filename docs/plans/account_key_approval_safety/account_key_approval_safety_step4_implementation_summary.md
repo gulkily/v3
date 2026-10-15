@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Status: Implementation in progress. Stages 1–4 are implemented; stages 5–6 remain. This is not a release completion report.
+Status: Implementation in progress. Stages 1–5 are implemented; Stage 6 release verification and documentation remain. This is not a release completion report.
 
 Planning commit: `febc1e03` on `feature/account-key-approval-safety`.
 
@@ -42,3 +42,11 @@ Planning commit: `febc1e03` on `feature/account-key-approval-safety`.
 - Changes: Approval invalidation now includes the username, every same-account profile, and Forte variants; invitation acceptance uses the same invalidation path. History pages cap key pages at 100 (default 50) and candidate grant reads at 100 per key; ordinary bootstrap replies are filtered before the cap. No new public feed or device/IP data.
 - Verification: The broad history/audit/LocalAppSmokeTest run passed 151 tests, including static publication, private membership boundaries, profile and source routes. After the final history-field change, five focused tests passed again without warnings: pagination/snapshot preservation, approved private profile, restricted anonymous account/receipt routes, static artifact rendering, and classic/Forte history/API/evidence/invalidation. A separate signed invitation/rebuild test passed and checks its history classification/time. Profile presentation/theme checks passed in an earlier 15-test run. `git diff --check` passed.
 - Notes: No database migration or production changes. The history is the current account's approved keys with available grant evidence, not a revocation log. Operator correlation remains Stage 5. A template field was added while the broad process still held an older class definition, producing transient missing-field warnings; the final fresh-process static/history rerun passed without those warnings.
+
+## Stage 5 - Authenticated operator security review
+
+- Changes: Extended the shared ActivityService filter and classic/Forte activity controls with `view=security`, joining direct approvals, invitation redemptions, and recorded cross-account-policy changes. Grant details link the affected account and receipt and show immutable acceptance context. Legacy facts and deployment-only policy changes remain explicitly unknown. Settings link to review; banners explain that restriction does not revoke existing grants.
+- Changes: Both HTTP routing and the data service require an authenticated session whose identity is currently approved and canonically root-seeded. Identity hints cannot authorize review. The same route guard covers pages, pagination, item detail, and commit-detail requests with the security view. Successful and denied responses use no-store; no-store HTML bypasses conditional 304 responses. RSS is unavailable for this view. No restricted activity projection is added to public/offline tables; static activity lookup already excludes query routes and the worker excludes these responses.
+- Changes: Receipted grant activity uses actual acceptance time in full/incremental projections, preserving preparation dates in the signed source records. Existing signed flag event times and source commits remain the policy-change evidence; same-second ordering can require commit inspection.
+- Verification: An 18-test targeted run passed activity recovery/list/detail/pagination, manifest consistency, static ETag behavior, offline worker/public snapshot boundaries, authenticated operator correlation, and approval rebuild parity. Two final focused flag/operator tests passed. Extended `node tests/browser/invite_zero_click.mjs` passed public and members-only flows with actual signing/authentication, operator page/API no-store headers, member and forged-hint denial, RSS rejection, invitation acceptance/recovery, naming, rebuild, expiry, revocation, storage denial, and lost-response recovery. `git diff --check` passed.
+- Notes: No production changes. Existing profile/source/activity evidence retains its established audience; the new correlation view is restricted. Stage 6 will document local deployment, rebuild and rollback limits and record final checks.

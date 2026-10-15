@@ -128,7 +128,9 @@ final class Application
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
-        if ($this->approvedMembersOnlyEnabled()
+        $securityReviewRequest = ($query['view'] ?? '') === 'security'
+            && in_array($path, ['/activity', '/activity/', '/forte/activity', '/forte/activity/', '/api/forte_activity_page', '/api/forte_activity_detail', '/api/forte_commit_detail'], true);
+        if ($securityReviewRequest || $this->approvedMembersOnlyEnabled()
             || in_array($path, ['/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/api/private_messages/history_sync/')
@@ -154,6 +156,20 @@ final class Application
         }
 
         $this->ensureReadModel();
+
+        if ($securityReviewRequest) {
+            if (!$this->routeServices()->securityReviewAllowed()) {
+                $this->sendText("Authenticated root-approved operator access required.\n", 403, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            if (($query['format'] ?? '') === 'rss') {
+                $this->sendText("Operator security review is available as an authenticated page, not an RSS feed.\n", 406, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            foreach ($this->routeServices()->noStoreHeaders() as $header) header($header);
+        }
+
+
         $this->observeVisitorPageRequest($method, $path);
 
         // Gate the whole namespace before any messaging controller opens private storage.
@@ -625,7 +641,7 @@ final class Application
                 return;
             }
 
-            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all')), 200);
+            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all')), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
             return;
         }
 
@@ -821,7 +837,7 @@ final class Application
                 (string) ($query['selected'] ?? ''),
                 (string) ($query['sort'] ?? ''),
                 (string) ($query['dir'] ?? ''),
-            ), 200);
+            ), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
             return;
         }
 

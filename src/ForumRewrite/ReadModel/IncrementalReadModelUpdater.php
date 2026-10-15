@@ -1043,6 +1043,8 @@ class IncrementalReadModelUpdater
     private function insertActivity(PDO $pdo, PostRecord $record, string $boardTagsJson, string $commitSha): void
     {
         $author = $this->loadAuthorProfile($pdo, $record->authorIdentityId);
+        $receipt = in_array($this->activityKindForPost($record), ['approval', 'invitation'], true)
+            ? \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $this->postSourcePath($record->postId)) : null;
         $stmt = $pdo->prepare(
             'INSERT INTO activity (
                 created_at, kind, record_family, action_key, post_id, thread_id, label, board_tags_json,
@@ -1055,7 +1057,7 @@ class IncrementalReadModelUpdater
              )'
         );
         $stmt->execute([
-            'created_at' => $record->createdAt,
+            'created_at' => $receipt['accepted_at'] ?? $record->createdAt,
             'kind' => $this->activityKindForPost($record),
             'record_family' => $this->activityRecordFamilyForPost($record),
             'action_key' => $this->postSourcePath($record->postId),

@@ -56,4 +56,7 @@ $hasRelevantFiles = $relevantFiles !== [];
 <?php endif; ?>
     </div>
   </div>
+<?php if (array_key_exists('security_review', $item)): ?>
+<?= $partial('partials/approval_security_review.php', ['item' => $item]) ?>
+<?php endif; ?>
 </article>

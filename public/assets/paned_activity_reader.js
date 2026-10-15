@@ -150,7 +150,7 @@
 
     renderCommitDetailArticle(sha, '<p class="meta">Loading…</p>');
 
-    fetch("/api/forte_commit_detail?sha=" + encodeURIComponent(sha))
+    fetch("/api/forte_commit_detail?sha=" + encodeURIComponent(sha) + (currentViewFromUrl() === "security" ? "&view=security" : ""))
       .then(function (response) {
         if (!response.ok) {
           throw new Error("commit detail fetch failed");
@@ -221,7 +221,7 @@
       existing.innerHTML = '<div class="body"><p class="meta">Loading…</p></div>';
       contentPane.appendChild(existing);
     }
-    fetch("/api/forte_activity_detail?id=" + encodeURIComponent(id))
+    fetch("/api/forte_activity_detail?id=" + encodeURIComponent(id) + (currentViewFromUrl() === "security" ? "&view=security" : ""))
       .then(function (response) {
         if (!response.ok) {
           throw new Error("activity detail fetch failed");
