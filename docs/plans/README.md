@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Music media embeds](music_media_embeds/)
+
 - [Bookmarklets page redesign](bookmarklets_page_redesign/)
 - [Repository directory cleanup](repository_directory_cleanup/)
 
