@@ -368,6 +368,16 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testInternalDestinationsPreserveFragmentsAndRejectBrowserEscapes(): void
+    {
+        foreach (['/threads/a?q=1#reply', '/'] as $value) {
+            assertTrue(\ForumRewrite\Support\InternalDestination::isValid($value));
+        }
+        foreach (['//evil.test', '/\\evil.test', '/%2fevil.test', '/%5cevil.test', "/a%0d%0ab", 'https://evil.test'] as $value) {
+            assertSame(false, \ForumRewrite\Support\InternalDestination::isValid($value));
+        }
+    }
+
     public function testParsesIssuedInvitationRecord(): void
     {
         $record = (new InvitationRecordParser())->parse($this->invitationContents(

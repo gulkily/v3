@@ -43,7 +43,7 @@ const checkbox = {
   addEventListener(type, listener) { listeners[type] = listener; },
   setAttribute(name, value) { this.attributes[name] = value; }
 };
-const destination = { disabled: false, value: '', dataset: {}, addEventListener() {}, focus() {} };
+const destination = { disabled: false, value: '', dataset: { sourceDestination: '/threads/source?q=1#reply' }, addEventListener() {}, focus() {} };
 const destinationFields = { hidden: false };
 const link = { addEventListener() {}, select() {} };
 const form = {
@@ -68,13 +68,19 @@ ready();
 const initial = { hidden: destinationFields.hidden, disabled: destination.disabled, expanded: checkbox.attributes['aria-expanded'] };
 checkbox.checked = true;
 listeners.change();
+const prefilled = destination.value;
+destination.value = "/edited";
 const checked = { hidden: destinationFields.hidden, disabled: destination.disabled, expanded: checkbox.attributes['aria-expanded'] };
 checkbox.checked = false;
 listeners.change();
 const unchecked = { hidden: destinationFields.hidden, disabled: destination.disabled, expanded: checkbox.attributes['aria-expanded'] };
-process.stdout.write(JSON.stringify({ initial, checked, unchecked }));
+checkbox.checked = true;
+listeners.change();
+process.stdout.write(JSON.stringify({ initial, checked, unchecked, prefilled, edited: destination.value }));
 NODE);
 
+        assertSame('/threads/source?q=1#reply', $result['prefilled']);
+        assertSame('/edited', $result['edited']);
         assertSame(['hidden' => true, 'disabled' => true, 'expanded' => 'false'], $result['initial']);
         assertSame(['hidden' => false, 'disabled' => false, 'expanded' => 'true'], $result['checked']);
         assertSame(['hidden' => true, 'disabled' => true, 'expanded' => 'false'], $result['unchecked']);
@@ -186,7 +192,7 @@ NODE);
 
         assertSame(['/', '/activity/', '/users/', '/tools/', '/threads/root-001'], $result['valid']['values']);
         assertSame(['/', '/activity/', '/users/', '/tools/'], $result['external']['values']);
-        assertSame(['/', '/activity/', '/users/', '/tools/'], $result['fragment']['values']);
+        assertSame(['/', '/activity/', '/users/', '/tools/', '/threads/root-001#reply-1'], $result['fragment']['values']);
         assertSame('/users/', $result['valid']['selected']);
         assertSame(false, $result['valid']['menuOpen']);
         assertSame(true, $result['valid']['focused']);

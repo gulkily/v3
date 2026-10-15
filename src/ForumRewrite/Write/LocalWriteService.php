@@ -3632,8 +3632,7 @@ class LocalWriteService
         if ($value === '') {
             return null;
         }
-        if (strlen($value) > 500 || !str_starts_with($value, '/') || str_starts_with($value, '//')
-            || str_contains($value, "\n") || str_contains($value, "\r") || str_contains($value, '#')) {
+        if (!\ForumRewrite\Support\InternalDestination::isValid($value)) {
             throw new RuntimeException('destination must be an internal absolute path.');
         }
 

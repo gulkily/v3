@@ -83,8 +83,10 @@
 
   function validInvitationDestination(value) {
     const destination = String(value || "").trim();
-    if (destination === "" || destination.length > 500 || !/^\/(?!\/)/.test(destination)
-      || /[\r\n#]/.test(destination)) {
+    let decoded;
+    try { decoded = decodeURIComponent(destination); } catch (error) { return ""; }
+    if (destination === "" || destination.length > 500 || !/^\/(?!\/)/.test(decoded)
+      || /[\u0000-\u0020\u007f\\]/.test(decoded)) {
       return "";
     }
     return destination;
@@ -153,8 +155,13 @@
     recentInvitationDestinations().forEach(function (recentDestination) {
       addDestinationOption(destinationOptions, recentDestination);
     });
+    let destinationInitialized = false;
     const syncDestination = function () {
       const isIncluded = includeDestination.checked;
+      if (isIncluded && !destinationInitialized) {
+        if (!destination.value) destination.value = validInvitationDestination(destination.dataset.sourceDestination);
+        destinationInitialized = true;
+      }
       destination.disabled = !isIncluded;
       if (destinationFields) destinationFields.hidden = !isIncluded;
       if (!isIncluded && destinationMenu) destinationMenu.open = false;
