@@ -44,6 +44,23 @@ final class AgentResponseMetadata
         return hash('sha256', json_encode([(string) $post['post_id'], (string) ($post['subject'] ?? ''), (string) $post['body']], JSON_THROW_ON_ERROR));
     }
 
+    public static function validExpansion(array $expansion, ?array $initial, ?array $source): bool
+    {
+        if ($initial === null || $source === null) { return false; }
+        foreach ([$expansion, $initial, $source] as $post) {
+            if (!empty($post['is_hidden']) || ($post['retracted_at'] ?? $post['source_retracted_at'] ?? null) !== null) { return false; }
+        }
+        if (($expansion['author_label'] ?? '') !== 'reply-agent' || ($initial['author_label'] ?? '') !== 'reply-agent'
+            || empty($initial['author_identity_id']) || $initial['author_identity_id'] !== ($expansion['author_identity_id'] ?? null)) { return false; }
+        try {
+            $meta = self::decode($expansion['agent_response_json'] ?? null, $expansion['parent_id'] ?? null);
+            return ($meta['type'] ?? '') === self::EXPANSION && $meta['expansion_of'] === $initial['post_id']
+                && $initial['parent_id'] === $source['post_id'] && $meta['source_post_id'] === $source['post_id']
+                && $initial['thread_id'] === $source['thread_id'] && $expansion['thread_id'] === $source['thread_id']
+                && $meta['initial_hash'] === self::postHash($initial) && $meta['source_hash'] === self::postHash($source);
+        } catch (CanonicalRecordParseException) { return false; }
+    }
+
     public static function expansionId(string $initialReplyId): string
     {
         return 'reply-expansion-' . hash('sha256', $initialReplyId);

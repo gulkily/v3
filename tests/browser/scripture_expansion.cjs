@@ -54,5 +54,52 @@ assert.equal(setup.status, 0, setup.stdout + setup.stderr);
       console.log('PASS ' + surface + ' ' + width + ': request, progress, auto-open, safe text, keyboard, shared result');
       await page.close();
     }
+    const page = await browser.newPage({viewport:{width:375,height:800}});
+    const metadata = JSON.parse(readFileSync(join(fixture, 'fixture.json'), 'utf8'));
+    await page.route('**/*', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/offline-fixture') return route.fulfill({contentType:'text/html',body:'<main id="saved"></main><script src="/assets/sql-wasm.js"></script><script src="/assets/offline_reader.js"></script>'});
+      if (url.pathname === '/snapshot.sqlite3' || url.pathname === '/unavailable.sqlite3') return route.fulfill({path:join(fixture,url.pathname.slice(1))});
+      if (url.pathname.startsWith('/assets/')) {
+        const path = join(project,'public',url.pathname.replace(/^\//,''));
+        if (existsSync(path)) return route.fulfill({path});
+      }
+      return route.fulfill({status:404,body:''});
+    });
+    await page.goto('http://scripture.test/offline-fixture');
+    await page.evaluate(async id => {
+      const SQL = await initSqlJs({locateFile:name => '/assets/' + name});
+      const bytes = await (await fetch('/snapshot.sqlite3')).arrayBuffer();
+      const db = new SQL.Database(new Uint8Array(bytes));
+      window.testSql = SQL;
+      window.testSnapshotDatabase = db;
+      window.forumOfflineSnapshot.renderThreadDetail({database:db,content:document.getElementById('saved'),threadId:id,setStatus(){}});
+    }, metadata.source);
+    assert.equal(await page.locator('article').count(),2);
+    assert.equal(await page.locator('details').count(),1);
+    assert.equal(await page.locator('[data-action="expand-scripture"]').count(),0);
+    await page.locator('summary').focus(); await page.keyboard.press('Enter');
+    assert.notEqual(await page.locator('details').getAttribute('open'),null);
+    await page.evaluate(id => {
+      const db = window.testSnapshotDatabase;
+      db.run("DELETE FROM posts WHERE agent_response_json LIKE '%scripture_expansion%'");
+      db.run('ALTER TABLE posts DROP COLUMN agent_response_json');
+      window.forumOfflineSnapshot.renderThreadDetail({database:db,content:document.getElementById('saved'),threadId:id,setStatus(){}});
+    }, metadata.source);
+    assert.equal(await page.locator('article').count(),2);
+    await page.evaluate(async id => {
+      const update = new window.testSql.Database(new Uint8Array(await (await fetch('/snapshot.sqlite3')).arrayBuffer()));
+      window.forumOfflineSnapshot.applyUpdate(window.testSnapshotDatabase,update);
+      window.forumOfflineSnapshot.renderThreadDetail({database:window.testSnapshotDatabase,content:document.getElementById('saved'),threadId:id,setStatus(){}});
+    }, metadata.source);
+    assert.equal(await page.locator('details').count(),1);
+    await page.evaluate(async id => {
+      const update = new window.testSql.Database(new Uint8Array(await (await fetch('/unavailable.sqlite3')).arrayBuffer()));
+      window.forumOfflineSnapshot.applyUpdate(window.testSnapshotDatabase,update);
+      window.forumOfflineSnapshot.renderThreadDetail({database:window.testSnapshotDatabase,content:document.getElementById('saved'),threadId:id,setStatus(){}});
+    }, metadata.source);
+    assert.equal(await page.locator('details').count(),0);
+    console.log('PASS offline snapshot: supplementary content, no generation controls, keyboard, legacy schema/updates, source revocation');
+    await page.close();
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

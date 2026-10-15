@@ -2250,6 +2250,48 @@ NODE;
         });
     }
 
+    public function testScriptureExpansionCacheAndOfflineVisibility(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory): void {
+            @mkdir($artifacts . '/posts', 0700, true);
+            file_put_contents($artifacts . '/posts/' . $initial . '.html', 'old initial artifact');
+            $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+            $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial));
+            assertSame('generated', $done['generation_status']);
+            assertSame(false, is_file($artifacts . '/posts/' . $initial . '.html'));
+            $_COOKIE = [];
+            $public = $this->renderMethod($app, 'GET', '/posts/' . $initial);
+            assertStringContains('Further scripture reflection', $public);
+            assertStringNotContains('data-action="expand-scripture"', $public);
+            $oldDetailFlag = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+            try {
+                (new StaticArtifactBuilder(dirname(__DIR__), $root, $db, $artifacts))->buildFromReadModel();
+                assertStringContains('Further scripture reflection', file_get_contents($artifacts . '/posts/' . $initial . '.html'));
+                assertStringNotContains('data-action="expand-scripture"', file_get_contents($artifacts . '/threads/' . $source . '.html'));
+            } finally {
+                putenv($oldDetailFlag === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED' : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $oldDetailFlag);
+            }
+            $snapshot = new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder();
+            $snapshot->build($db, $directory . '/complete.sqlite3');
+            $copy = new PDO('sqlite:' . $directory . '/complete.sqlite3');
+            $stmt = $copy->prepare('SELECT agent_response_json FROM posts WHERE post_id = ?');
+            $stmt->execute([$done['agent_post_id']]);
+            assertSame('scripture_expansion', json_decode($stmt->fetchColumn(), true)['type']);
+            $stmt->closeCursor(); $copy = null;
+            foreach (['is_hidden = 1', "retracted_at = '2026-10-15T00:00:00Z'", "body = body || ' changed'"] as $index => $change) {
+                $pdo->exec('UPDATE posts SET ' . $change . " WHERE post_id = " . $pdo->quote($source));
+                assertStringNotContains('Further scripture reflection', $this->renderMethod($app, 'GET', '/posts/' . $initial));
+                $snapshot->build($db, $directory . '/stale-' . $index . '.sqlite3');
+                $copy = new PDO('sqlite:' . $directory . '/stale-' . $index . '.sqlite3');
+                $stmt = $copy->prepare('SELECT COUNT(*) FROM posts WHERE post_id = ?');
+                $stmt->execute([$done['agent_post_id']]);
+                assertSame(0, (int) $stmt->fetchColumn()); $stmt->closeCursor(); $copy = null;
+                if ($index < 2) { $pdo->exec('UPDATE posts SET is_hidden = 0, retracted_at = NULL WHERE post_id = ' . $pdo->quote($source)); }
+            }
+        });
+    }
+
     public function testScriptureExpansionFailureRetryAndSourceRace(): void
     {
         foreach (['exhaustion', 'changed', 'revoked'] as $case) {

@@ -210,6 +210,9 @@ class LocalWriteService
             $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
+            if (($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION) {
+                $this->invalidator()->invalidateReply($threadId, $parentId);
+            }
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
