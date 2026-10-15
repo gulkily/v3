@@ -59,3 +59,10 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 - [Usenet Forte Agent Interface](usenet_forte_agent_interface_step1_solution_assessment.md)
 - [`v3` Start Port Shorthand](v3_start_port_shorthand_step1_solution_assessment.md)
 - [`v3` Terminal Operator UI](v3_terminal_operator_ui_step1_solution_assessment.md)
+
+## Project notes and proposals
+
+- [QDB work notes](qdb_todo.txt)
+- [Messaging usability proposal](improve_messaging.txt)
+- [Documentation index rewrite proposal](docs_page_changes_revised.txt)
+- [Reported interaction friction](related_feature_requests.txt)
