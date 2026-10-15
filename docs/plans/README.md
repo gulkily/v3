@@ -195,3 +195,4 @@ and repair its navigation and affected references. See the
 - [Retracted post LLM exchange privacy](./retracted_post_llm_exchange_privacy/retracted_post_llm_exchange_privacy_step1_solution_assessment.md) — suppress recorded exchanges containing retracted content.
 
 - [Phone site development](./phone_site_development/phone_site_development_step1_solution_assessment.md) — operator phone intake through reviewed Railspike Step 1; later lifecycle tracked in the companion checklist.
+- [Scripture response quality and latency](./scripture_response_quality/scripture_response_quality_step1_solution_assessment.md) — proportionate scripture replies and faster complete delivery.
