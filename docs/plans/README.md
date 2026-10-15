@@ -181,3 +181,5 @@ and repair its navigation and affected references. See the
 - [Operator post retraction](./operator_record_deletion/operator_record_deletion_step1_solution_assessment.md) — extend signed retraction to operators and move the action into a shared overflow menu.
 
 - [Retracted post LLM exchange privacy](./retracted_post_llm_exchange_privacy/retracted_post_llm_exchange_privacy_step1_solution_assessment.md) — suppress recorded exchanges containing retracted content.
+
+- [Phone site development](./phone_site_development/phone_site_development_step1_solution_assessment.md) — operator phone intake through reviewed Railspike Step 1; later lifecycle tracked in the companion checklist.
