@@ -96,6 +96,33 @@
   margin: 0 0 0.25rem;
   font-size: 1.15rem;
 }
+.account-key-group {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+.account-key-group h3 {
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: 1rem;
+}
+.account-key-group-private {
+  border-color: var(--status-warning);
+}
+.account-key-group-danger {
+  border-style: dashed;
+}
+.account-key-warning {
+  margin: 0;
+}
+.account-key-reveal > summary {
+  cursor: pointer;
+  font-family: var(--ui-font);
+  font-size: 0.9rem;
+}
+.account-key-reveal[open] > summary {
+  margin-bottom: 0.75rem;
+}
 .account-key-advanced {
   padding-top: 0.1rem;
   border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);

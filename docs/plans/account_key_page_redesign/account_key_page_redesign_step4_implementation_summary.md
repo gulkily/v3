@@ -36,3 +36,16 @@ Branch: `account-key-page-redesign`. Planning commit: `docs: add account key pag
   - 1100px and 375px: no horizontal overflow.
 - Notes:
   - The script's `area.open = true` for `#key-backup` links is now a harmless no-op because the section is always visible.
+
+## Stage 4 - Technical content grouped by intent
+- Changes:
+  - `templates/pages/account_key.php`: the technical drawer ("Under the hood: keys and storage") now has four labeled groups: Public key (viewer, copy, load, link-identity form), Private key (warning, viewer in a collapsed native disclosure, restore/copy), Storage and identity (status with undo, guest publication, hint cookie, saved identity), and Remove from this browser (clear keypair, dashed border). All hooks kept.
+  - `public/assets/identity.css`: group, warning, reveal, and danger styles.
+  - `tests/LocalAppSmokeTest.php`: updated the drawer label assertion.
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: 220 passed.
+  - `FORMAT=text` and `FORMAT=png node tests/browser/key_backup_ui.mjs`: both passed.
+  - Chromium at 375px: no horizontal overflow; private-key viewer not visible until "Show private key" is opened.
+- Notes:
+  - The private-key viewer stays in the DOM, so script updates still land.
+  - The drawer wording ("Under the hood") and whether it should default to open are reviewed in Stage 5.

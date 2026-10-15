@@ -66,41 +66,12 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <p class="meta" data-backup-status role="status" aria-live="polite"></p>
         </div>
       </section>
-      <details class="account-key-advanced">
-        <summary>Advanced / technical details</summary>
+      <details class="account-key-advanced" id="key-technical">
+        <summary>Under the hood: keys and storage</summary>
         <div class="stack">
-          <div>
-            <p class="account-key-label">Browser key status</p>
-            <p class="meta" data-role="browser-key-status">
-              <span data-role="browser-key-status-message">Ready.</span>
-              <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
-            </p>
-          </div>
-          <fieldset class="stack">
-            <legend class="account-key-label">Automatic guest identity</legend>
-            <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
-            <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
-          </fieldset>
-          <div class="button-row account-key-advanced-actions">
-            <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
-            <button type="button" data-action="restore-private-key">Restore Private Key</button>
-            <button type="button" data-action="copy-public-key">Copy Public Key</button>
-            <button type="button" data-action="copy-private-key">Copy Private Key</button>
-            <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
-          </div>
-          <div class="stack">
-            <p class="account-key-label">Identity hint cookie</p>
-            <p class="meta"><?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
-            <p class="meta">
-              <strong>Saved browser identity:</strong>
-              <span data-role="identity-id-field">none</span>
-            </p>
-          </div>
-          <form method="post" class="stack">
-            <label>Public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
-            <button type="submit">Link identity</button>
-          </form>
-          <div class="stack">
+          <section class="account-key-group stack" aria-labelledby="key-group-public">
+            <h3 id="key-group-public">Public key</h3>
+            <p class="meta">Safe to share. This is what others use to verify your posts.</p>
             <div class="account-key-viewer-header">
               <label class="account-key-viewer-label" for="saved-public-key-viewer">Saved public key</label>
               <button type="button" class="account-key-viewer-copy" data-copy-source="public">Copy</button>
@@ -108,16 +79,65 @@ $authenticatedIdentityId = is_array($viewerProfile)
             <pre id="saved-public-key-viewer" data-role="public-key-viewer">
 No browser public key saved yet.
             </pre>
-          </div>
-          <div class="stack">
-            <div class="account-key-viewer-header">
-              <label class="account-key-viewer-label" for="saved-private-key-viewer">Saved private key</label>
-              <button type="button" class="account-key-viewer-copy" data-copy-source="private">Copy</button>
+            <div class="button-row account-key-advanced-actions">
+              <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
+              <button type="button" data-action="copy-public-key">Copy Public Key</button>
             </div>
-            <pre id="saved-private-key-viewer" data-role="private-key-viewer">
+            <form method="post" class="stack">
+              <label>Link a public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
+              <button type="submit">Link identity</button>
+            </form>
+          </section>
+          <section class="account-key-group account-key-group-private stack" aria-labelledby="key-group-private">
+            <h3 id="key-group-private">Private key</h3>
+            <p class="account-key-warning"><strong>Never share this.</strong> Anyone with your private key can post as you. It is stored unencrypted in this browser; use the backup above for a protected copy.</p>
+            <details class="account-key-reveal">
+              <summary>Show private key</summary>
+              <div class="stack">
+                <div class="account-key-viewer-header">
+                  <label class="account-key-viewer-label" for="saved-private-key-viewer">Saved private key</label>
+                  <button type="button" class="account-key-viewer-copy" data-copy-source="private">Copy</button>
+                </div>
+                <pre id="saved-private-key-viewer" data-role="private-key-viewer">
 No browser private key saved yet.
             </pre>
-          </div>
+              </div>
+            </details>
+            <div class="button-row account-key-advanced-actions">
+              <button type="button" data-action="restore-private-key">Restore Private Key</button>
+              <button type="button" data-action="copy-private-key">Copy Private Key</button>
+            </div>
+          </section>
+          <section class="account-key-group stack" aria-labelledby="key-group-storage">
+            <h3 id="key-group-storage">Storage and identity</h3>
+            <div>
+              <p class="account-key-label">Browser key status</p>
+              <p class="meta" data-role="browser-key-status">
+                <span data-role="browser-key-status-message">Ready.</span>
+                <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
+              </p>
+            </div>
+            <fieldset class="stack">
+              <legend class="account-key-label">Automatic guest identity</legend>
+              <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
+              <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
+            </fieldset>
+            <div>
+              <p class="account-key-label">Identity hint cookie</p>
+              <p class="meta"><?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
+              <p class="meta">
+                <strong>Saved browser identity:</strong>
+                <span data-role="identity-id-field">none</span>
+              </p>
+            </div>
+          </section>
+          <section class="account-key-group account-key-group-danger stack" aria-labelledby="key-group-danger">
+            <h3 id="key-group-danger">Remove from this browser</h3>
+            <p class="meta">Removes the saved keypair from this browser. Without a backup, it cannot be recovered after the undo link is gone.</p>
+            <div class="button-row account-key-advanced-actions">
+              <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
+            </div>
+          </section>
         </div>
       </details>
     </div>
