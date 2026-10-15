@@ -203,6 +203,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/railspike_workflow') {
+            (new \ForumRewrite\Http\RailspikeWorkflowController($this->routeServices(), $this->authenticatedViewerProfile(...), $this->projectRoot, $this->repositoryRoot))->handle($method, $query);
+            return;
+        }
+
         if ($path === '/api/set_identity_hint') {
             $this->identityHintController()->setIdentityHint($method, $query);
             return;

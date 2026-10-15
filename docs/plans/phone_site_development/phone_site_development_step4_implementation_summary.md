@@ -13,3 +13,8 @@ Implementation in progress. Live server acceptance is pending.
 - Changes: allowlisted assessment task; atomic request/task insertion in the private queue database; CLI worker wiring; read-only isolated checkout runner with stdin prompts, explicit model, structured output, 90-second maximum and output cap; validated private revision persistence.
 - Verification: `php tests/run.php RailspikeWorkflowTest TaskQueueWorkerTest TaskQueueStoreTest` — 28 passed. PHP syntax checks and diff whitespace checks passed.
 - Notes: missing executable/workspace/model/home yields visible failure. Actual zenmemes credentials and sandbox support remain external acceptance requirements. No real model call was made during unit verification.
+
+## Stage 3 - Phone request and status controls
+- Changes: shared public-safe mount in root/reply cards; authenticated operator-only no-store workflow API; same-origin JSON and signature enforcement; shared browser menu/status/history renderer, explicit refresh and bounded polling; standalone post and thread script wiring.
+- Verification: PHP/JavaScript syntax checks passed; `php tests/run.php RailspikeWorkflowTest CodexHandoffDraftServiceTest` — 7 passed; diff whitespace checks passed. Full browser journey is scheduled in Stage 8.
+- Notes: no workflow data is embedded in public HTML; private data is fetched after operator authentication. Legacy endpoints and preview contracts remain separate and unchanged.
