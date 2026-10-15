@@ -221,6 +221,9 @@ final class AgentReplyFulfillmentService
         $stored = $posting;
 
         try {
+            if (($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE) {
+                ScriptureTiming::record(dirname(__DIR__, 3), $postId, 'publication_started');
+            }
             $identity = $this->identityService->ensureReplyAgentIdentity();
             $writeResult = $this->writer->createReply([
                 'thread_id' => (string) $post['thread_id'],
@@ -241,6 +244,9 @@ final class AgentReplyFulfillmentService
                 (string) $identity['profile_slug']
             );
 
+            if (($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE) {
+                ScriptureTiming::record(dirname(__DIR__, 3), $postId, 'publication_finished');
+            }
             return $this->generatedResponse($posted, $existing !== null);
         } catch (\Throwable $throwable) {
             $failed = $this->generationStore->saveFailed(

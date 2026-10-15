@@ -829,7 +829,11 @@ final class PostWorkflowService
         return new ScriptureExpansionService($this->pdo(), $this->repositoryRoot, TaskQueueDatabaseConfig::path($this->projectRoot),
             $this->fetchPost, fn (array $post): array => $this->postAnalysisContext($post, false),
             fn (): ?AgentResponseGenerator => $this->agentResponseGenerator(), ($this->writerFactory)(),
-            $this->agentIdentityService(), $this->agentResponseRequestsEnabled());
+            $this->agentIdentityService(), $this->agentResponseRequestsEnabled(),
+            function (int $taskId, string $replyId): void {
+                ScriptureTiming::record($this->projectRoot, $replyId, 'enqueued');
+                $this->dispatchScriptureTask($taskId);
+            });
     }
 
     public function retryAgentReplyRequest(string $postId, string $contentHash): array
@@ -853,8 +857,12 @@ final class PostWorkflowService
 
     public function fulfillAgentReplyRequest(array $requestRow): array
     {
+        $scripture = false;
         try {
-            if (AgentResponseTask::fromStoredRequestContext($requestRow['request_context'] ?? [])['type'] === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE) {
+            $type = AgentResponseTask::fromStoredRequestContext($requestRow['request_context'] ?? [])['type'];
+            $scripture = in_array($type, [AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, AgentResponseTask::SCRIPTURE_EXPANSION_TYPE], true);
+            if ($scripture) { ScriptureTiming::record($this->projectRoot, (string) $requestRow['target_post_id'], 'worker_started'); }
+            if ($type === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE) {
                 return $this->scriptureExpansionService()->fulfill($requestRow);
             }
             return $this->agentReplyFulfillmentService()->fulfillRequest($requestRow);
@@ -864,6 +872,8 @@ final class PostWorkflowService
                 (string) ($requestRow['analysis_hash'] ?? ''), 'provider_configuration_error', $error->getMessage(),
             );
             return $this->failedAgentReplyResponse($row);
+        } finally {
+            if ($scripture) { ScriptureTiming::record($this->projectRoot, (string) $requestRow['target_post_id'], 'worker_finished'); }
         }
     }
 
@@ -941,6 +951,7 @@ final class PostWorkflowService
         );
         $task = AgentResponseTask::fromStoredRequestContext($requestRow['request_context'] ?? []);
         if (($queued['enqueued'] ?? false) && ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE) {
+            ScriptureTiming::record($this->projectRoot, $postId, 'enqueued');
             $this->dispatchScriptureTask((int) $queued['id']);
         }
     }

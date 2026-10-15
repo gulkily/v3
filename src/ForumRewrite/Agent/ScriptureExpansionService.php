@@ -27,6 +27,7 @@ final class ScriptureExpansionService
         private readonly LocalWriteService $writer,
         private readonly AgentIdentityService $identity,
         private readonly bool $requestsEnabled,
+        private readonly mixed $dispatch = null,
     ) {}
 
     public function sources(string $replyId): array
@@ -99,8 +100,11 @@ final class ScriptureExpansionService
     private function enqueue(string $replyId, string $hash): void
     {
         if (!is_dir(dirname($this->queuePath))) { mkdir(dirname($this->queuePath), 0700, true); }
-        (new SqliteTaskQueueStore(new PDO('sqlite:' . $this->queuePath)))->enqueue(
+        $queued = (new SqliteTaskQueueStore(new PDO('sqlite:' . $this->queuePath)))->enqueue(
             SqliteTaskQueueStore::AGENT_REPLY, AgentReplyTask::deduplicationKey($replyId, $hash));
+        if (($queued['enqueued'] ?? false) && $this->dispatch !== null) {
+            ($this->dispatch)((int) $queued['id'], $replyId);
+        }
     }
 
     public function retry(string $replyId, string $hash): array
@@ -184,6 +188,7 @@ final class ScriptureExpansionService
             $context = $row['request_context'];
             $stored = $this->store()->saveComplete($context, $generation);
             $verify();
+            ScriptureTiming::record(dirname(__DIR__, 3), $id, 'publication_started');
             $identity = $this->identity->ensureReplyAgentIdentity();
             if ($identity['identity_id'] !== $initial['author_identity_id']) {
                 throw new ExpansionSourceException('Expansion agent identity differs from initial author.');
@@ -194,6 +199,7 @@ final class ScriptureExpansionService
                 'body' => $canonical?->body ?? $stored['response_text'], 'author_identity_id' => $identity['identity_id'],
             ], $meta, $verify);
             $this->store()->markPosted($id, $hash, $write['post_id'], $identity['identity_id'], $identity['profile_slug']);
+            ScriptureTiming::record(dirname(__DIR__, 3), $id, 'publication_finished');
             return ['status' => 'ok', 'generation_status' => 'generated', 'agent_post_id' => $write['post_id']];
         } catch (ExpansionSourceException $error) {
             $this->store()->markSkipped($id, $hash, 'expansion_source_unavailable');

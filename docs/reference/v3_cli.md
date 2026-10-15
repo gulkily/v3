@@ -759,3 +759,40 @@ to qualify; copying the response prefix does not establish eligibility.
 Static/offline views retain stored supplementary content without generation
 controls. Snapshot schema 4 carries provenance and unavailable-expansion IDs;
 updates upgrade older metadata columns and remove unavailable expansion content.
+
+### Scripture quality and latency controls
+
+These settings are opt-in until comparative evaluation passes:
+
+- `SCRIPTURE_RESPONSE_GUIDANCE=current|revised` selects the original prompt pair
+  or `prompts/agent_response_scripture_oriented_analysis_revised.txt` and
+  `prompts/agent_response_scripture_expansion_revised.txt`. Default: `current`.
+- `SCRIPTURE_RESPONSE_REASONING_EFFORT` defaults to blank (provider default).
+  Explicit `minimal|low|medium|high` currently supports direct OpenAI GPT-5,
+  GPT-5 mini, and GPT-5 nano, including their 2025-08-07 snapshots. Unsupported
+  combinations fail before generation. This setting applies only to scripture
+  initial replies and expansions, never moderation or other response modes.
+- `SCRIPTURE_RESPONSE_IMMEDIATE_DISPATCH=true` wakes the existing queue worker
+  for each newly queued scripture request. Default: false. The host needs CLI
+  PHP, `proc_open`, and `nohup`; PHP must be on PATH for FPM/CGI hosts. The worker
+  waits up to 60 seconds for the queue lock, then leaves work queued for normal
+  scheduled recovery. Keep the regular worker schedule: dispatch is an accelerator,
+  not a substitute for recovery. It never repeats a failed provider generation.
+- `SCRIPTURE_RESPONSE_TIMING_ENABLED=true` appends phase markers (post ID, event,
+  millisecond timestamp) to private `state/private/scripture_timing.jsonl`.
+  Default: false. Disable after diagnosis and rotate/remove this private log as
+  needed; it contains no forum text or credentials. Browser timing supplies the
+  submission and visible-completion boundaries; phase durations must not be
+  summed twice when work overlaps.
+
+`GET /api/scripture_reply_status?post_id=SOURCE` reads existing initial-response
+status without generating work. The browser polls pending scripture requests,
+imports the canonical rendered reply card when ready, and preserves drafts.
+Status respects discussion access and hidden/retracted sources/results. Existing
+expansion status and polling remain available. Technical worker invocations may
+use `task-queue run --task-id=N --lock-wait-seconds=0..60`; the default wait is zero.
+
+To roll back candidate behavior, restore `current`, clear explicit reasoning,
+and disable immediate dispatch. Existing canonical replies and queued requests
+remain intact. Correct failed settings and use explicit targeted retry; changing
+configuration does not rewrite old replies or silently regenerate failures.
