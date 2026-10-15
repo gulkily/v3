@@ -36,8 +36,11 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
-      <details class="account-key-advanced" id="key-backup" data-key-backup>
-        <summary>Back up or restore your key</summary>
+      <section class="account-key-section stack" id="key-backup" data-key-backup aria-labelledby="key-backup-heading">
+        <div>
+          <h2 id="key-backup-heading">Back up and restore</h2>
+          <p class="meta">Your key lives only in this browser. A backup lets you recover it after clearing data or on another device.</p>
+        </div>
         <div class="stack">
           <div class="account-key-tabs" role="tablist" aria-label="Key backup and restore">
             <button type="button" role="tab" id="key-backup-tab" aria-controls="key-backup-panel" aria-selected="false" tabindex="-1" data-backup-tab="backup">Backup</button>
@@ -62,7 +65,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
           </div>
           <p class="meta" data-backup-status role="status" aria-live="polite"></p>
         </div>
-      </details>
+      </section>
       <details class="account-key-advanced">
         <summary>Advanced / technical details</summary>
         <div class="stack">

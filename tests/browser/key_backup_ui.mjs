@@ -91,7 +91,6 @@ try {
   fresh.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   restored.on('pageerror',e=>errors.push(e.message));
   await restored.goto(base+'/account/key/');
-  await restored.locator('#key-backup > summary').click();
   await restored.getByRole('tab',{name:'Restore',exact:true}).click();
   const upload=()=>restored.locator('[data-backup-file]').setInputFiles({name:format==='png'?'backup.png':'backup.txt',mimeType:format==='png'?'image/png':'text/plain',buffer:backup});
   if(format==='png'){
@@ -150,7 +149,6 @@ try {
   await restored.goto(base+'/messages/conversation/user-01');
   await restored.locator('[data-role="private-message-plaintext"]').filter({hasText:'Original private conversation'}).first().waitFor({state:'visible'});
   await restored.goto(base+'/account/key/');
-  await restored.locator('#key-backup > summary').click();
   await restored.getByRole('tab',{name:'Restore',exact:true}).click();
   await restored.evaluate(()=>{
     for(const key of ['forum_pki_username','forum_pki_public_key','forum_pki_private_key','forum_pki_fingerprint'])localStorage.removeItem(key);

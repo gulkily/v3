@@ -24,3 +24,15 @@ Branch: `account-key-page-redesign`. Planning commit: `docs: add account key pag
   - Other themes not individually screenshotted; styles use existing tokens only (`--line`, `--panel`, `--ink`). Full theme matrix is part of Stage 6.
 - Notes:
   - Fingerprint display not added (needs script change; out of Stage 2 scope).
+
+## Stage 3 - Prominent backup and restore
+- Changes:
+  - `templates/pages/account_key.php`: the collapsed "Back up or restore your key" drawer is now a visible section with heading and one-line explanation; `#key-backup`, `data-key-backup`, tabs, panels, and all warnings are unchanged.
+  - `public/assets/identity.css`: section spacing and heading style.
+  - `tests/browser/key_backup_ui.mjs`: removed the two clicks on the old `<summary>`, which no longer exists.
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: 220 passed.
+  - `FORMAT=text` and `FORMAT=png node tests/browser/key_backup_ui.mjs`: both passed (download, reminder, rejection, rollback, exact restore, decryption).
+  - 1100px and 375px: no horizontal overflow.
+- Notes:
+  - The script's `area.open = true` for `#key-backup` links is now a harmless no-op because the section is always visible.
