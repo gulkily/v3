@@ -12,13 +12,15 @@ final class CodexAssessmentRunner
 
     public function readiness(): array
     {
-        $workspace=realpath(getenv('FORUM_RAILSPIKE_WORKSPACE') ?: '') ?: '';
-        $home=realpath(getenv('FORUM_RAILSPIKE_CODEX_HOME') ?: '') ?: '';
+        $workspaceInput=getenv('FORUM_RAILSPIKE_WORKSPACE') ?: '';
+        $homeInput=getenv('FORUM_RAILSPIKE_CODEX_HOME') ?: '';
+        $workspace=$workspaceInput === '' ? '' : (realpath($workspaceInput) ?: '');
+        $home=$homeInput === '' ? '' : (realpath($homeInput) ?: '');
         $binary=getenv('FORUM_CODEX_EXECUTABLE') ?: '';
         $model=getenv('FORUM_RAILSPIKE_MODEL') ?: '';
         $project=realpath($this->projectRoot) ?: $this->projectRoot;
         if ($workspace==='' || !is_dir($workspace.'/.git') && !is_file($workspace.'/.git') || $workspace===$project || str_starts_with($workspace,$project.'/') || str_starts_with($project,$workspace.'/')) throw new RuntimeException('Configure a separate FORUM_RAILSPIKE_WORKSPACE Git checkout.');
-        if ($home==='' || !is_writable($home) || str_starts_with($home,$workspace.'/') || str_starts_with($home,$project.'/public/') || $home===$workspace) throw new RuntimeException('Configure a private writable FORUM_RAILSPIKE_CODEX_HOME outside the checkout.');
+        if ($home==='' || !is_writable($home) || str_starts_with($home,$workspace.'/') || str_starts_with($home,$project.'/') || $home===$project || $home===$workspace) throw new RuntimeException('Configure a private writable FORUM_RAILSPIKE_CODEX_HOME outside the checkout.');
         if ($binary==='' || !is_executable($binary) || !str_starts_with($binary,'/') || $model==='') throw new RuntimeException('Configure absolute FORUM_CODEX_EXECUTABLE and FORUM_RAILSPIKE_MODEL.');
         return compact('workspace','home','binary','model');
     }

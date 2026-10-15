@@ -1,5 +1,7 @@
 # Production Deploy Runbook
 
+For operator phone-to-Railspike intake, see [deployment and Codex worker configuration](phone_site_development.md).
+
 This runbook describes the intended production deployment model for the PHP forum rewrite.
 
 ## Deployment Model

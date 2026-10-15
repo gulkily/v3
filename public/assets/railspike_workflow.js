@@ -33,8 +33,8 @@
   }
   function render(mount, eligible, row) {
     // Preserve an open panel or typed response across status polling.
-    if (mount.dataset.version === (row ? String(row.version) + row.state : 'start')) return;
-    mount.dataset.version = row ? String(row.version) + row.state : 'start';
+    if (mount.dataset.version === (row ? String(row.version) + row.state : 'start:' + eligible)) return;
+    mount.dataset.version = row ? String(row.version) + row.state : 'start:' + eligible;
     mount.style.flexBasis = '100%'; mount.style.minWidth = '0'; mount.style.width = '100%';
     mount.replaceChildren(); mount.hidden = !eligible && !row;
     if (mount.hidden) return;
@@ -100,7 +100,7 @@
   window.ForumRailspike = { act, refresh, button, node };
   async function init() {
     if (!mounts().length && !document.querySelector('[data-railspike-activity]')) return;
-    try { if (window.PrivateSiteAuth && localStorage.getItem('forum_pki_private_key')) await window.PrivateSiteAuth.authenticate(); await refresh(); } catch (_) { /* Account controls handle login failures. */ }
+    try { const auth = await fetch('/api/auth_status', { credentials: 'same-origin', cache: 'no-store' }); if (auth.status === 401 && window.PrivateSiteAuth && localStorage.getItem('forum_pki_private_key')) await window.PrivateSiteAuth.authenticate(); await refresh(); } catch (_) { /* Account controls handle login failures. */ }
     let attempts = 0;
     const timer = setInterval(() => { if (++attempts > 120) { clearInterval(timer); return; } refresh().catch(() => {}); }, 5000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh().catch(() => {}); });

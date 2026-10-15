@@ -145,4 +145,36 @@ final class RailspikeWorkflowTest
         assertSame([],$store->find($row['id'])['revisions']);
     }
 
+    public function testRealProcessAdapterBoundsExecutionAndValidatesOutput(): void
+    {
+        $root=sys_get_temp_dir().'/codex-adapter-'.bin2hex(random_bytes(5));
+        mkdir($root.'/workspace/.git',0700,true); mkdir($root.'/home',0700);
+        $binary=$root.'/fake-codex';
+        file_put_contents($binary, <<<'STUB'
+#!/usr/bin/php
+<?php
+$prompt=stream_get_contents(STDIN);
+if (!in_array('read-only',$argv,true) || !in_array('--ignore-user-config',$argv,true) || !in_array('approval_policy="never"',$argv,true)) exit(9);
+$out=$argv[array_search('-o',$argv,true)+1];
+if (str_contains($prompt,'request-slow')) sleep(8);
+if (str_contains($prompt,'request-invalid')) { file_put_contents($out,'{}'); exit(0); }
+file_put_contents($out,json_encode(['kind'=>'questions','questions'=>['Which phone?'],'assessment'=>'']));
+STUB);
+        chmod($binary,0700);
+        $vars=['FORUM_RAILSPIKE_WORKSPACE'=>$root.'/workspace','FORUM_RAILSPIKE_CODEX_HOME'=>$root.'/home','FORUM_CODEX_EXECUTABLE'=>$binary,'FORUM_RAILSPIKE_MODEL'=>'fixture-model','FORUM_RAILSPIKE_TIMEOUT_SECONDS'=>'5'];
+        $old=[]; foreach ($vars as $k=>$v) { $old[$k]=getenv($k); putenv($k.'='.$v); }
+        try {
+            $runner=new \ForumRewrite\Railspike\CodexAssessmentRunner(dirname(__DIR__));
+            $row=['request'=>'request-valid','context'=>[],'history'=>[]];
+            assertSame('questions',$runner($row)['kind']);
+            $this->rejects(fn () => $runner(array_merge($row,['request'=>'request-invalid'])));
+            $started=microtime(true);
+            $this->rejects(fn () => $runner(array_merge($row,['request'=>'request-slow'])));
+            assertSame(true,microtime(true)-$started<7);
+            assertSame([],glob($root.'/home/assessment-*'));
+            putenv('FORUM_RAILSPIKE_CODEX_HOME');
+            $this->rejects(fn () => $runner->readiness());
+        } finally { foreach ($old as $k=>$v) putenv($v===false ? $k : $k.'='.$v); }
+    }
+
 }
