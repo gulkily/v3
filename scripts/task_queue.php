@@ -121,6 +121,9 @@ try {
         $counts = $store->counts();
         $heartbeat = $store->executorHeartbeatStatus();
         fwrite(STDOUT, "Task queue status\n");
+        foreach ((new \ForumRewrite\Railspike\WorkflowStore($pdo))->recent() as $workflow) {
+            fwrite(STDOUT, sprintf("Railspike workflow=%s post=%s state=%s version=%d\n", $workflow['id'], $workflow['post_id'], $workflow['state'], $workflow['version']));
+        }
         fwrite(STDOUT, "Queue database: {$queuePath}\n");
         fwrite(STDOUT, sprintf(
             "Queued: %d, running: %d, completed: %d, failed: %d\n",

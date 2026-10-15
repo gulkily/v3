@@ -80,6 +80,15 @@
   }
   async function refresh() {
     if (busy || document.hidden) return;
+    const activity = document.querySelector('[data-railspike-activity]');
+    if (activity) {
+      const response = await fetch(endpoint + '?activity=1', { credentials: 'same-origin', cache: 'no-store' });
+      activity.replaceChildren(); activity.hidden = !response.ok;
+      if (response.ok) {
+        const data = await response.json(); activity.append(node('h2', 'Site development · operators only'));
+        data.workflows.forEach(row => { const link = node('a', row.post_id + ' · ' + row.state); link.href = '/threads/' + encodeURIComponent(row.thread_id) + '#post-' + encodeURIComponent(row.post_id); const p = node('p'); p.append(link); activity.append(p); });
+      }
+    }
     for (const id of new Set(mounts().map(m => m.dataset.railspikeThread))) {
       const response = await fetch(endpoint + '?thread_id=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' });
       if (response.status === 403) { mounts().forEach(m => { m.replaceChildren(); m.hidden = true; delete m.dataset.version; }); return; }
@@ -90,7 +99,7 @@
   }
   window.ForumRailspike = { act, refresh, button, node };
   async function init() {
-    if (!mounts().length) return;
+    if (!mounts().length && !document.querySelector('[data-railspike-activity]')) return;
     try { if (window.PrivateSiteAuth && localStorage.getItem('forum_pki_private_key')) await window.PrivateSiteAuth.authenticate(); await refresh(); } catch (_) { /* Account controls handle login failures. */ }
     let attempts = 0;
     const timer = setInterval(() => { if (++attempts > 120) { clearInterval(timer); return; } refresh().catch(() => {}); }, 5000);

@@ -33,3 +33,8 @@ Implementation in progress. Live server acceptance is pending.
 - Changes: reconcile missing/terminal queue tasks against private workflow evidence after abandoned-task recovery; signed retry; retained revision evidence independent of queue pruning; late-result rejection via run token and version.
 - Verification: `php tests/run.php RailspikeWorkflowTest TaskQueueWorkerTest TaskQueueStoreTest` — 32 passed, including expired claim, retry, repeated result delivery, history deletion, and late result. Diff checks passed.
 - Notes: initial crash fixture used a fresh claim and correctly did not trigger recovery; corrected it to an expired claim. Existing queue abandonment window is 900 seconds. Waiting questions/review never occupy a task.
+
+## Stage 7 - Private visibility and compatibility
+- Changes: operator-only recent workflow activity fetched at read time; thread links and CLI queue status share workflow IDs; API discovery lists the signed workflow contract. No private workflow projection is written to canonical/public activity or offline snapshots.
+- Verification: 62 targeted tests passed across workflow, handoff draft/store/runner, queue command/store/worker, and agent task suites. PHP/JavaScript syntax and whitespace checks passed; source inspection confirms public read-model/offline code is untouched.
+- Notes: existing `fdp_step1`, handoff events, and agent-reply behavior remain compatible. Browser/API privacy checks are included in Stage 8.

@@ -1,3 +1,4 @@
+<section data-railspike-activity hidden aria-label="Private site development activity"></section>
 <section class="stack">
   <article class="card">
     <h1>Activity</h1>

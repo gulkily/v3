@@ -24,6 +24,10 @@ final class RailspikeWorkflowController
             $store=WorkflowFactory::open($this->projectRoot,$this->repositoryRoot,$this->routes->databasePath());
             $service=new WorkflowService($store,$this->routes->pdo(),$this->repositoryRoot);
             if ($method==='GET') {
+                if (($query['activity'] ?? '')==='1') {
+                    $items=array_map(static fn ($r) => array_intersect_key($r,array_flip(['id','post_id','thread_id','state','version','created_at'])), $store->recent());
+                    $this->routes->sendJson(['status'=>'ok','workflows'=>$items],200,$headers); return;
+                }
                 $threadId=(string)($query['thread_id'] ?? '');
                 $q=$this->routes->pdo()->prepare('SELECT * FROM threads WHERE root_post_id=?'); $q->execute([$threadId]); $thread=$q->fetch(\PDO::FETCH_ASSOC) ?: [];
                 $q=$this->routes->pdo()->prepare('SELECT * FROM posts WHERE thread_id=?'); $q->execute([$threadId]);

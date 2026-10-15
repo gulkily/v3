@@ -65,6 +65,12 @@ final class WorkflowStore
         $id=$q->fetchColumn(); return $id === false ? null : $this->find($id);
     }
 
+    public function recent(): array
+    {
+        return array_map(static fn ($s) => json_decode($s,true,64,JSON_THROW_ON_ERROR),
+            $this->pdo->query('SELECT data FROM railspike_workflows ORDER BY rowid DESC LIMIT 50')->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     public function forThread(string $id): array
     {
         $q=$this->pdo->prepare('SELECT data FROM railspike_workflows WHERE thread_id=? ORDER BY rowid'); $q->execute([$id]);
