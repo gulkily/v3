@@ -1,6 +1,6 @@
 # Private messaging usability master checklist
 
-Deliver the improvements in [the messaging proposal](../../improve_messaging.txt)
+Deliver the improvements in [the messaging proposal](backlog/improve_messaging.txt)
 through four independently usable releases: find and start conversations, read
 and reply comfortably, retrieve older history, and track unread conversations.
 Use this checklist to track coverage across the releases and the
