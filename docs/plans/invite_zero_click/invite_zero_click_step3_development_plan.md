@@ -67,4 +67,3 @@ Application change: normal Invite button → unchecked destination opt-in, sourc
 - Verification approach: UI-generated links/QR; public/private × fresh/pending/approved; source opt-in, exact targets, naming, recovery, untargeted flow; affected PHP/JS suites and isolated ./v3 rebuild.
 - Risks or open questions: Compare unrelated baseline failures; block release on feature failures. Roll back code without deleting keys/records; document older-version naming limits.
 - Canonical components/API contracts touched: Test harness/browser fixtures, operator docs, Step 4 summary.
-
