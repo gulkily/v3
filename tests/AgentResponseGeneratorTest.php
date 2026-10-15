@@ -21,6 +21,9 @@ final class AgentResponseGeneratorTest
         assertSame('low', $provider->options['reasoning_effort']);
         assertSame(8192, $provider->options['max_completion_tokens']);
         assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_oriented_analysis_revised.txt')), $provider->messages[1]['content']);
+        $generator->generate(['type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, 'original_post' => 'Concern.', 'initial_answer' => 'Initial.']);
+        assertSame('low', $provider->options['reasoning_effort']);
+        assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_expansion_revised.txt')), $provider->messages[1]['content']);
         $generator->generate(['type' => AgentResponseTask::LOGIC_ANALYSIS_TYPE]);
         assertSame(false, isset($provider->options['reasoning_effort']));
         assertSame(false, str_contains($provider->messages[1]['content'], 'Examples illustrate judgment'));

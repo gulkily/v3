@@ -59,5 +59,21 @@ const env = {...process.env, ...JSON.parse(readFileSync(join(directory, 'environ
       discovery:automatic?'automatic worker and status polling':'explicit browser reload after public CLI worker',provider:'stub'};
     appendFileSync(join(directory,'measurements.jsonl'),JSON.stringify(result)+'\n');
     console.log(JSON.stringify(result));
+    if (process.argv.includes('--expand')) {
+      if (process.argv.includes('--busy')) {
+        const holder = spawn('php', ['-r', '$h=fopen($argv[1],"c+");flock($h,LOCK_EX);echo "ready\\n";sleep(3);',
+          join(directory,'private/forum-rewrite-task-queue.lock')]);
+        await new Promise(resolve => holder.stdout.once('data', resolve));
+      }
+      const expansionStarted = performance.now();
+      await page.locator('[data-action="expand-scripture"]').click();
+      await page.getByText('Expansion ready.',{exact:true}).waitFor();
+      assert.notEqual(await page.locator('[data-expansion-details]').getAttribute('open'),null);
+      const initialId = await page.locator('.post-card[data-agent-authored="reply-agent"]').getAttribute('data-post-id');
+      const original = await context.request.get(base + '/api/agent_expansion_status?post_id=' + initialId);
+      const duplicate = await context.request.post(base + '/api/expand_agent_reply',{form:{post_id:initialId}});
+      assert.equal((await original.json()).agent_post_id,(await duplicate.json()).agent_post_id);
+      console.log(JSON.stringify({expansion_ms:performance.now()-expansionStarted,initialId}));
+    }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; });
