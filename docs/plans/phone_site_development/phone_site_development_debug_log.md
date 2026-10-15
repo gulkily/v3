@@ -55,3 +55,23 @@ No supported findings.
 
 - **Source:** Step 3 Do/After, one-page deliverable versus six required fields per stage plus Completion Contract, Key Risks, and navigation. The eight-stage draft is 82 Markdown lines and 983 words; a standard printed page is unlikely to contain it legibly. Required fields and verification details were preserved. Recommend a word/line budget proportional to stage count, or permitting a one-page overview with stage detail, rather than an unspecified physical-page requirement. No print-layout compliance is claimed.
 - **Source:** Step 3 Do, atomic stage sizing. The one-hour estimates rely on reuse of existing signing, queue, and rendering components. Stage 1 must validate that assumption before dependent work; newly discovered complexity requires splitting or renewed Step 2 scope approval rather than silently exceeding the cap.
+
+## 2026-10-15 22:27:35 UTC — Step 4 local implementation handoff
+
+Debug mode: enabled, inherited from Step 3 and preserved in the implementation summary. Live release acceptance remains pending external verification.
+
+### Necessary/useful instructions
+
+- **Source:** `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate, and `RAILSPIKE.md`, Planning Artifacts. The first branch commit contains approved plans, their debug log, and index/reference repairs; the summary appears in Stage 1's later commit. The checklist was intentionally excluded from the planning commit and committed with Stage 8. Retain the gate: it makes approval scope and auxiliary content auditable.
+- **Source:** `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Eight stage-scoped commits each include the summary update and recorded tests. Final history inspection verified all eight and the planning-only first commit. Retain this protocol for interruption recovery and review.
+- **Source:** Step 4 Do, canonical component/contract reuse. Root/reply cards share one mount and browser workflow renderer; existing session/signature verification and the normal queue/CLI are reused. Legacy handoff tests passed without changing the compatibility field. Retain the reuse requirement.
+- **Source:** `docs/railspike/docs/workflow/step4_implementation_after.md`, Contract and external verification. The 390px browser journey exposed missing API session wiring, redundant reauthentication, and fixture approval-state setup; these were corrected before handoff. Local deterministic worker tests are distinguished from a real-agent server acceptance run throughout the summary, checklist, and runbook. Retain the explicit environment/evidence boundary.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- **Source:** Step 4 After, applicable-environment verification. No production SSH/deployment target or worker credentials were configured during this work. The runbook supplies exact configuration and live acceptance steps, but actual zenmemes authentication/model availability/sandbox support and release acceptance remain unverified. Do not count the full-goal checklist's first release as completed until that evidence exists.
+- **Source:** Step 3 sizing versus Step 4 verification. The bounded eight-stage implementation was feasible locally; its final stage still has an external release gate. Clarify whether a stage with delivered code/documentation but pending operator-environment acceptance should be labeled locally delivered or incomplete; this handoff explicitly uses locally delivered and does not claim a production-ready release.
