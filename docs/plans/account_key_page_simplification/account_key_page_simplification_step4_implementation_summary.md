@@ -34,3 +34,14 @@ Branch: `account-key-page-simplification` (stacked on the unmerged `account-key-
   - `FORMAT=text` and `FORMAT=png node tests/browser/key_backup_ui.mjs`: both passed, including the "Back up your key" reminder link, which opens the collapsed expando through the existing hash handling in `key_backup_ui.js` (no script change needed).
 - Notes:
   - Opening from `#key-backup` is covered by the reminder step in the browser test; direct visits stay collapsed.
+
+## Stage 4 - Keys expando
+- Changes:
+  - `templates/pages/account_key.php`: new collapsed sibling expando "Keys" (`#key-keys`) holding the public key viewer with Copy, the private key behind a nested "Private key" disclosure with a one-line warning, Restore Private Key, Load Saved Public Key, and the link-a-public-key form. The public/private group boxes and their intro lines were removed from the old drawer.
+  - The separate Copy Public Key and Copy Private Key buttons are kept in a `hidden` row; the viewer Copy buttons trigger them as before.
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: 222 passed.
+  - Chromium run after set up: public viewer filled; private viewer hidden until its disclosure opens; public Copy yielded a PGP PUBLIC KEY BLOCK and private Copy a PGP PRIVATE KEY BLOCK from the clipboard.
+  - `FORMAT=text node tests/browser/key_backup_ui.mjs`: passed.
+- Notes:
+  - Hidden buttons are removed from the focus order; the old drawer still holds storage and clear until Stage 5.

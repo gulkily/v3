@@ -72,6 +72,47 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <p class="meta" data-backup-status role="status" aria-live="polite"></p>
         </div>
       </details>
+      <details class="account-key-advanced" id="key-keys">
+        <summary>Keys</summary>
+        <div class="stack">
+          <div class="stack">
+            <div class="account-key-viewer-header">
+              <label class="account-key-viewer-label" for="saved-public-key-viewer">Public key <span class="meta">(safe to share)</span></label>
+              <button type="button" class="account-key-viewer-copy" data-copy-source="public">Copy</button>
+            </div>
+            <pre id="saved-public-key-viewer" data-role="public-key-viewer">
+No browser public key saved yet.
+            </pre>
+          </div>
+          <details class="account-key-reveal">
+            <summary>Private key</summary>
+            <div class="stack">
+              <p class="account-key-warning"><strong>Never share this.</strong> Anyone with it can post as you.</p>
+              <div class="account-key-viewer-header">
+                <label class="account-key-viewer-label" for="saved-private-key-viewer">Saved private key</label>
+                <button type="button" class="account-key-viewer-copy" data-copy-source="private">Copy</button>
+              </div>
+              <pre id="saved-private-key-viewer" data-role="private-key-viewer">
+No browser private key saved yet.
+              </pre>
+              <div class="button-row account-key-advanced-actions">
+                <button type="button" data-action="restore-private-key">Restore Private Key</button>
+              </div>
+            </div>
+          </details>
+          <div class="button-row account-key-advanced-actions">
+            <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
+          </div>
+          <form method="post" class="stack">
+            <label>Link a public key<textarea name="public_key" rows="6" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
+            <button type="submit">Link identity</button>
+          </form>
+          <div class="button-row" hidden>
+            <button type="button" data-action="copy-public-key">Copy Public Key</button>
+            <button type="button" data-action="copy-private-key">Copy Private Key</button>
+          </div>
+        </div>
+      </details>
       <details class="account-key-advanced" id="key-technical">
         <summary>Under the hood: keys and storage</summary>
         <div class="stack">
@@ -83,46 +124,6 @@ $authenticatedIdentityId = is_array($viewerProfile)
               <li><strong>In a cookie:</strong> an identity hint, kept for 30 days, that lets the server show which profile this browser last used.</li>
             </ul>
           </div>
-          <section class="account-key-group stack" aria-labelledby="key-group-public">
-            <h3 id="key-group-public">Public key</h3>
-            <p class="meta">Safe to share. This is what others use to verify your posts.</p>
-            <div class="account-key-viewer-header">
-              <label class="account-key-viewer-label" for="saved-public-key-viewer">Saved public key</label>
-              <button type="button" class="account-key-viewer-copy" data-copy-source="public">Copy</button>
-            </div>
-            <pre id="saved-public-key-viewer" data-role="public-key-viewer">
-No browser public key saved yet.
-            </pre>
-            <div class="button-row account-key-advanced-actions">
-              <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
-              <button type="button" data-action="copy-public-key">Copy Public Key</button>
-            </div>
-            <form method="post" class="stack">
-              <p class="meta">Already have a public key? Paste it to link it to this browser's identity.</p>
-              <label>Link a public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
-              <button type="submit">Link identity</button>
-            </form>
-          </section>
-          <section class="account-key-group account-key-group-private stack" aria-labelledby="key-group-private">
-            <h3 id="key-group-private">Private key</h3>
-            <p class="account-key-warning"><strong>Never share this.</strong> Anyone with your private key can post as you. It is stored unencrypted in this browser; use the backup above for a protected copy.</p>
-            <details class="account-key-reveal">
-              <summary>Show private key</summary>
-              <div class="stack">
-                <div class="account-key-viewer-header">
-                  <label class="account-key-viewer-label" for="saved-private-key-viewer">Saved private key</label>
-                  <button type="button" class="account-key-viewer-copy" data-copy-source="private">Copy</button>
-                </div>
-                <pre id="saved-private-key-viewer" data-role="private-key-viewer">
-No browser private key saved yet.
-            </pre>
-              </div>
-            </details>
-            <div class="button-row account-key-advanced-actions">
-              <button type="button" data-action="restore-private-key">Restore Private Key</button>
-              <button type="button" data-action="copy-private-key">Copy Private Key</button>
-            </div>
-          </section>
           <section class="account-key-group stack" aria-labelledby="key-group-storage">
             <h3 id="key-group-storage">Storage and identity</h3>
             <div>
