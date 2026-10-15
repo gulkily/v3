@@ -48,7 +48,9 @@ final class ExchangeDependencies
             $system = $messages[0]['content'] ?? null;
             $messages = [$messages[1]];
         }
-        $expected = trim((string) file_get_contents(dirname(__DIR__, 3) . '/prompts/fast_post_scoring_system.txt'));
+        $expected = @file_get_contents(dirname(__DIR__, 3) . '/prompts/fast_post_scoring_system.txt');
+        if (!is_string($expected) || trim($expected) === '') return null;
+        $expected = trim($expected);
         if (!is_string($system) || trim($system) !== $expected || count($messages) !== 1
             || ($messages[0]['role'] ?? null) !== 'user' || !is_string($messages[0]['content'] ?? null)) return null;
         $input = json_decode($messages[0]['content'], true);

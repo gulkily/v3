@@ -20,6 +20,9 @@ still physically removes a canonical file and is a separate operation.
   thread root keeps its row with the title `Deleted post`.
 - `/source/current/...` and `/source/blob/<commit>/...` answer `410` for the
   retracted post's record file.
+- Recorded LLM exchanges containing the post as input or context are withheld
+  from links, lists, and direct URLs; uncertain historical exchanges are also
+  withheld. See [LLM exchange privacy](llm_exchange_privacy.md).
 - Generated static artifacts and served snapshot copies are retired so they are
   rebuilt without the post.
 

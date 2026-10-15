@@ -14,6 +14,14 @@ final class ExchangeRetractionState
     public static function read(string $root): ?array
     {
         if (!is_dir($root . '/records') || !is_readable($root . '/records')) return null;
+        if (file_exists($root . '/.git')) {
+            $tracked = []; $code = 0;
+            exec('git -C ' . escapeshellarg($root) . ' ls-tree -r --name-only HEAD -- records/post-retractions 2>/dev/null', $tracked, $code);
+            if ($code !== 0) return null;
+            foreach ($tracked as $path) {
+                if (str_ends_with($path, '.txt') && (!is_file($root . '/' . $path) || !is_readable($root . '/' . $path))) return null;
+            }
+        }
         $directory = $root . '/records/post-retractions';
         if (!file_exists($directory)) return [];
         if (!is_dir($directory) || !is_readable($directory) || is_link($directory)) return null;

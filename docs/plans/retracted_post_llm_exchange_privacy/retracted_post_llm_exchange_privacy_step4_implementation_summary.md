@@ -38,3 +38,16 @@ Debug mode: disabled
 - Verification: 15 focused provider/store/API tests passed, including real transport failure on loopback for both providers, retained provenance and redacted credentials, late/error records after retraction, existing store state changes, and malformed-state denial.
 - Notes: static builder/front-controller mappings do not generate or serve exchange pages; service-worker exchange navigation is network-first with no exchange fallback. Browser headers and stale-artifact behavior receive end-to-end coverage in Stage 7. No cross-request visibility cache is introduced.
 
+## Stage 7 - End-to-end privacy and documentation
+
+- Changes: browser fixture covers author/operator signed retractions, affected and context-only exchanges, unknown historical records, unrelated visibility, conditional saved URLs, links/lists, no-store headers, seeded stale artifacts, late/error records, and state failure/recovery. Strict state also denies access when a committed retraction file is missing. Added the exchange privacy reference and linked it from retraction behavior.
+- Verification: full suite 1172 run, 1165 passed, 7 failed; exact failure set matches the previously verified baseline. Final focused run passed 24/24, then strengthened state/API coverage passed 8/8. Real Chromium privacy flow passed for both roles and all listed recovery/cache cases; all eight recorded browser-fixture rows remained stored. Changed PHP syntax, plan navigation, and diff checks passed.
+- Baseline failures: existing core-route navigation assertion; two offline snapshot bootstrap and two offline publication tests; QDB welcome copy assertion; configuration-dependent queued agent-reply test. These are the same seven failures reproduced and documented in the operator retraction cycle, with no new failing test.
+- Notes: legacy allowlist intentionally covers only proven root Fastmod layouts with the standard prompt; other historical or incomplete derived-input records remain withheld. Missing trusted repository state denies access. No exchange payload deletion, provider-side erasure, or deployment was performed.
+
+## Final verification
+
+- Seven stages completed sequentially, each with a separate commit and this summary update, after the planning-only commit on feature/retracted-post-llm-exchange-privacy.
+- Normal retraction-to-inspection outcome, direct URL denial, both roles, historical uncertainty, unaffected records, result limits, live state, late/errors, cache bypass prevention, restart, and preserved raw rows/audit evidence verified.
+- No core read-model schema migration. New provenance lives in existing recording context and new cached-analysis metadata; existing exchange rows are not rewritten. Preserve the guarded reader on rollback and trusted canonical retraction history on restore.
+- Plans/index are organized, debug mode remains disabled, and references describe retention boundaries and conservative historical exclusions. External deployment and previously downloaded/browser-held copies are outside scope.

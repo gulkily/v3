@@ -84,6 +84,15 @@ final class ExchangeDependenciesTest
         mkdir($root . '/records/posts');
         file_put_contents($root . '/records/posts/target.txt', "Post-ID: target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\nProse\n");
         assertSame(['target' => true], ExchangeRetractionState::read($root));
+        foreach (['init -q', 'add records', '-c user.name=Privacy -c user.email=privacy@example.test commit -qm evidence'] as $command) {
+            exec('git -C ' . escapeshellarg($root) . ' ' . $command . ' 2>&1', $output, $code);
+            assertSame(0, $code);
+        }
+        $saved = file_get_contents($path);
+        unlink($path);
+        assertSame(null, ExchangeRetractionState::read($root));
+        file_put_contents($path, $saved);
+
         file_put_contents($path . '.asc', 'forged');
         assertSame(null, ExchangeRetractionState::read($root));
     }
