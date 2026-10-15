@@ -2,7 +2,6 @@
   <input type="hidden" data-role="private-message-read-token" value="<?= $e($historyPage['read_token'] ?? '') ?>">
   <article class="card">
     <h1>Conversation with <a href="/user/<?= $e(rawurlencode($counterpartUsernameToken)) ?>"><?= $e($counterpartUsernameToken) ?></a></h1>
-<?= $indent($partial('partials/key_backup_reminder.php'), 4) ?>
     <p><a href="/messages">Back to Messages</a></p>
   </article>
   <div class="private-message-history-controls" data-role="history-controls">
