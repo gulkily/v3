@@ -15,3 +15,19 @@ Debug mode: enabled
   - Browser computed-style check: not run in this stage (headed Chrome under WSLg); deferred to the Stage 5 sweep.
 - Notes:
   - Other disabled-looking controls (`.nav-link:disabled` via `opacity: 0.55`, `.thread-reaction-button[disabled]`, forte `.paned-toolbar-btn:disabled`) were left unchanged; the new selector also outranks forte's `:disabled` rule for buttons inside Word 97.
+
+## Stage 2 - Win Dark selectable
+- Changes:
+  - `ThemeRegistry.php`: `windark` / "Win Dark" (mode `dark`) after Word 97; `SiteProfileRegistry.php`: added to all four profiles' permitted themes.
+  - New `public/assets/theme-windark.css`: dark palette variables, swatch, and menu row.
+  - `tests/LocalAppSmokeTest.php`: allow-list string and `data-theme-option="windark"` assertion.
+  - Blend table (for review before Stage 3):
+    - From Chicago: dark-teal desktop background gradient (`--page-bg`), soft rounded-less shell and widened 860px shell.
+    - From Word 97: navy active color (brightened for dark), Times body font + Tahoma UI font, bevel/emboss button style, MDI-style title bars and composer bar.
+    - Dark-specific: neutral charcoal panels (`#2b2b2b`), black/`#6a6a6a` bevel pair replacing white/gray.
+- Verification:
+  - `php scripts/build_static_artifacts.php` rebuilt; `php tests/run.php ThemeRegistryTest` 10/10; `SiteProfile` filter passed; `LocalAppSmokeTest` 138/140.
+  - The two failures are `testStartAcceptsPortShorthand` (fails on the unmodified baseline) and `testStartAcceptsColonPortShorthand`, the same output-contains-port assertion on local server start; neither touches themes.
+- Notes:
+  - Stage 2 has no scoped chrome yet, so the theme currently renders base styles with dark variables.
+  - Production needs `php scripts/build_static_artifacts.php` after deploy, per the theme guide.
