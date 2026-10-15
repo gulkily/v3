@@ -8,6 +8,24 @@ use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
 
 final class OpenAiCompatibleStructuredChatProviderTest
 {
+    public function testExplicitReasoningAppliesOnlyToSupportedTextRequests(): void
+    {
+        $provider = new OpenAiCompatibleStructuredChatProvider('openai', 'test-key', 'https://api.openai.com', 'gpt-5-nano');
+        $method = new ReflectionMethod($provider, 'textPayloadFor');
+        $payload = $method->invoke($provider, [], ['reasoning_effort' => 'low', 'max_completion_tokens' => 8192]);
+        assertSame('low', $payload['reasoning_effort']);
+        assertSame(8192, $payload['max_completion_tokens']);
+        assertSame(false, isset($method->invoke($provider, [], [])['reasoning_effort']));
+        $structured = (new ReflectionMethod($provider, 'payloadFor'))->invoke($provider, 'Score', [], [], ['reasoning_effort' => 'low']);
+        assertSame(false, isset($structured['reasoning_effort']));
+        try {
+            $method->invoke($provider, [], ['reasoning_effort' => 'none']);
+            throw new RuntimeException('Unsupported effort accepted');
+        } catch (InvalidArgumentException $expected) {
+            assertStringContains('Unsupported explicit reasoning', $expected->getMessage());
+        }
+    }
+
     public function testProviderBuildsJsonSchemaChatCompletionPayload(): void
     {
         $provider = new OpenAiCompatibleStructuredChatProvider('openrouter', 'test-key', 'https://openrouter.ai/api', 'openai/gpt-5-nano');

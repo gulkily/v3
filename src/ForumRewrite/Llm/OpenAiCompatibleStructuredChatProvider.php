@@ -88,11 +88,20 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
      */
     private function textPayloadFor(array $messages, array $options): array
     {
-        return [
+        $payload = [
             'model' => $this->model,
             'messages' => $messages,
             'max_completion_tokens' => max(1, (int) ($options['max_completion_tokens'] ?? 800)),
         ];
+        if (isset($options['reasoning_effort'])) {
+            if ($this->providerName !== 'openai'
+                || preg_match('/^gpt-5(?:-nano|-mini)?(?:-2025-08-07)?$/D', $this->model) !== 1
+                || !in_array($options['reasoning_effort'], ['minimal', 'low', 'medium', 'high'], true)) {
+                throw new \InvalidArgumentException('Unsupported explicit reasoning effort for this provider/model.');
+            }
+            $payload['reasoning_effort'] = $options['reasoning_effort'];
+        }
+        return $payload;
     }
 
     /**

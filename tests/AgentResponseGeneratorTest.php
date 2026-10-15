@@ -11,6 +11,45 @@ use ForumRewrite\Llm\StubTextChatProvider;
 
 final class AgentResponseGeneratorTest
 {
+    public function testScriptureCandidatesAreScopedAndDoNotReduceCompletionAllowance(): void
+    {
+        $provider = new FakeTextChatProvider('Reply.');
+        $config = ['LLM_PROVIDER' => 'openai', 'LLM_MODEL' => 'gpt-5-nano',
+            'SCRIPTURE_RESPONSE_GUIDANCE' => 'revised', 'SCRIPTURE_RESPONSE_REASONING_EFFORT' => 'low'];
+        $generator = new AgentResponseGenerator($provider, true, true, 8192, $config);
+        $generator->generate(['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'A concern.']);
+        assertSame('low', $provider->options['reasoning_effort']);
+        assertSame(8192, $provider->options['max_completion_tokens']);
+        assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_oriented_analysis_revised.txt')), $provider->messages[1]['content']);
+        $generator->generate(['type' => AgentResponseTask::LOGIC_ANALYSIS_TYPE]);
+        assertSame(false, isset($provider->options['reasoning_effort']));
+        assertSame(false, str_contains($provider->messages[1]['content'], 'Examples illustrate judgment'));
+        // An unsupported scripture configuration must not break unrelated tasks.
+        $bad = new AgentResponseGenerator($provider, true, true, 8192, ['SCRIPTURE_RESPONSE_GUIDANCE' => 'bad']);
+        $bad->generate(['type' => AgentResponseTask::DEFAULT_TYPE]);
+        try {
+            $bad->generate(['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE]);
+            throw new RuntimeException('Invalid scripture configuration accepted');
+        } catch (InvalidArgumentException $expected) {
+            assertSame('provider_configuration_error', \ForumRewrite\Agent\AgentReplyFailure::code($expected));
+        }
+    }
+
+    public function testScriptureReasoningRejectsUnsupportedProvidersAndModels(): void
+    {
+        foreach ([['openrouter', 'openai/gpt-5-nano'], ['anthropic', 'claude'], ['openai', 'other']] as [$provider, $model]) {
+            try {
+                \ForumRewrite\Agent\ScriptureResponseSettings::fromConfig([
+                    'LLM_PROVIDER' => $provider, 'LLM_MODEL' => $model, 'SCRIPTURE_RESPONSE_REASONING_EFFORT' => 'low',
+                ]);
+                throw new RuntimeException('Unsupported scripture reasoning accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('supported OpenAI GPT-5', $expected->getMessage());
+            }
+        }
+        assertSame(null, \ForumRewrite\Agent\ScriptureResponseSettings::fromConfig([])->reasoningEffort);
+    }
+
     public function testGeneratorUsesDelimitedTaskInputAndReturnsNormalizedText(): void
     {
         $provider = new FakeTextChatProvider('A clear reply.');
