@@ -13,7 +13,7 @@ The Messages reminder is local to this browser and key. It clears when a verifie
 ## Format and validation
 
 - Text is a password-encrypted OpenPGP message containing a versioned envelope with the exact UTF-8 armored key text and fingerprint. Both bundled OpenPGP versions are supported.
-- PNG follows [SFENC v0.2](../../sfenc.md). It wraps that same encrypted text. SFENC itself provides encoding and corruption detection, not encryption.
+- PNG follows [SFENC v0.2](../specs/sfenc.md). It wraps that same encrypted text. SFENC itself provides encoding and corruption detection, not encryption.
 - Browser keys up to 32 KiB are supported. SFENC payloads are limited to 128 KiB and PNG inputs to 20 MiB. Payload decoding uses bounded stored DEFLATE; PNG decoding accepts bounded standard DEFLATE and all five PNG row filters without canvas color conversion.
 - No database migration or server-side private-key handling is required. New scripts use the existing asset fingerprint resolver. Deployment uses the normal application release process; this feature does not need a production canary that writes identities.
 
