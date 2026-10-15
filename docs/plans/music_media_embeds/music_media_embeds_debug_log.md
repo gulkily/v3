@@ -52,3 +52,22 @@ Debug mode: enabled, inherited from Step 2 and recorded in Step 3.
 
 - `docs/railspike/docs/workflow/step3_development_plan_after.md`, one-page target: six stages with six required fields plus exact URL boundaries cannot reasonably fit a printed page. Provider acceptance/discovery details were placed in linked feasibility notes to keep the stage plan scannable; clarify whether such supporting material counts toward the page target.
 - Phase-order guidance: the After file was inspected before the initial provisional draft was written. Its checklist was used for the completed handoff, with no next-step instructions opened; clarify whether early read-only inspection is forbidden or merely unnecessary.
+
+## 2026-10-15T20:01:07Z — Step 4
+
+Debug mode: enabled, inherited from Step 3 and preserved in the summary.
+
+### Necessary/useful instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_before.md`, planning gate: branch creation and the initial docs-only commit preserved the approved scope before runtime changes. Feature files, supporting acceptance evidence, and navigation were organized together. Retain.
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol: each of six stages has a verified artifact/summary commit before dependent work. The protocol made the album discovery prerequisite and separate track behavior reviewable. Retain.
+- `docs/railspike/docs/workflow/step4_implementation_after.md`, Completion Contract: real thread/reply playback, secondary shared views, error recovery, theme checks, and production exclusions were verified/documented rather than stopping at parser tests. Retain.
+
+### Redundant/unnecessary instructions
+
+- No new supported findings beyond the repetition recorded in Step 1.
+
+### Uncertain assessments
+
+- `docs/railspike/docs/workflow/step3_development_plan_do.md`, stage sizing: Bandcamp fetching/cache groundwork required 279 lines including meaningful tests and URL policy, exceeding the suggested 50-line alternative while remaining within the one-hour size guideline. Clarify that the time target can govern security-sensitive integrations where splitting by line count would obscure review.
+- `docs/railspike/docs/workflow/step4_implementation_after.md`, phase order: the final checklist was read while the final verification runs were underway, before the Stage 6 commit. Final gates were applied only after all stage commits; clarify whether early read-only inspection is disallowed.
