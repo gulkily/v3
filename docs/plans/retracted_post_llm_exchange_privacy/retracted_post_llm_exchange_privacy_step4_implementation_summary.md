@@ -32,3 +32,9 @@ Debug mode: disabled
 - Verification: 27 agent/task/store/integration tests passed, including captured-input stability after source changes, unknown parent provenance, bounded prompts, and persisted request context.
 - Notes: queued fulfillment retains existing content/hash validation and input assembly behavior. Legacy replies sourced from completed analysis make no additional provider call; their recorded analysis exchanges are covered by Stage 4.
 
+## Stage 6 - Failure, timing, and cache boundaries
+
+- Changes: exchange UI responses explicitly use private, no-store caching. Shared readers retain live state checks for completed/error rows recorded after retraction. Existing provider recording already preserves the entire supplied context on failures; verified both transports rather than duplicating their recording logic.
+- Verification: 15 focused provider/store/API tests passed, including real transport failure on loopback for both providers, retained provenance and redacted credentials, late/error records after retraction, existing store state changes, and malformed-state denial.
+- Notes: static builder/front-controller mappings do not generate or serve exchange pages; service-worker exchange navigation is network-first with no exchange fallback. Browser headers and stale-artifact behavior receive end-to-end coverage in Stage 7. No cross-request visibility cache is introduced.
+

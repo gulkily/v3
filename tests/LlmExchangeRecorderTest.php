@@ -40,6 +40,29 @@ final class LlmExchangeRecorderTest
         assertSame(false, str_contains($row['request_json'], 'Bearer test-key'));
     }
 
+    public function testBothProvidersRetainDependencyContextOnTransportFailures(): void
+    {
+        foreach (['openai', 'anthropic'] as $name) {
+            $pdo = new PDO('sqlite::memory:');
+            $recorder = new LlmExchangeRecorder($pdo);
+            $provider = $name === 'openai'
+                ? new \ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider('openai', 'test-key', 'http://127.0.0.1:1', 'test', 1, [], $recorder)
+                : new \ForumRewrite\Llm\AnthropicStructuredChatProvider('test-key', 'http://127.0.0.1:1', 'test', 1, [], $recorder);
+            $manifest = \ForumRewrite\Llm\ExchangeDependencies::manifest(['target', 'parent']);
+            try {
+                $provider->completeTextChat([['role' => 'user', 'content' => 'Sensitive context']], [
+                    'exchange_context' => ['call_type' => 'agent_response_task', 'post_id' => 'target', 'exchange_dependencies' => $manifest],
+                ]);
+                throw new RuntimeException('Expected failed transport');
+            } catch (\ForumRewrite\Analysis\ProviderRequestException) {}
+            $row = $pdo->query('SELECT * FROM llm_exchanges')->fetch(PDO::FETCH_ASSOC);
+            assertSame('transport_error', $row['status']);
+            assertSame($manifest, json_decode($row['context_json'], true)['exchange_dependencies']);
+            assertSame(true, str_contains($row['request_json'], 'Sensitive context'));
+            assertSame(false, str_contains($row['request_json'], 'test-key'));
+        }
+    }
+
     public function testDisabledRecorderDoesNotCreateExchangeRows(): void
     {
         $pdo = new PDO('sqlite::memory:');

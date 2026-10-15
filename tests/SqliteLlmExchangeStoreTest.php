@@ -57,4 +57,28 @@ final class SqliteLlmExchangeStoreTest
         assertSame(208, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
     }
 
+    public function testExistingStoreRechecksStateForLateAndFailedProviderResults(): void
+    {
+        $root = sys_get_temp_dir() . '/exchange-race-' . bin2hex(random_bytes(6));
+        mkdir($root . '/records/posts', 0700, true);
+        file_put_contents($root . '/records/posts/target.txt', "Post-ID: target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\nProse\n");
+        $pdo = new PDO('sqlite::memory:');
+        $recorder = new LlmExchangeRecorder($pdo);
+        $store = new SqliteLlmExchangeStore($pdo, new \ForumRewrite\Llm\ExchangeVisibility($root));
+        $context = ['post_id' => 'target', 'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest(['target'])];
+        $first = $recorder->record($context, ['body' => 'prose'], [], 'completed', 1);
+        assertSame($first, $store->find($first)['id']);
+        mkdir($root . '/records/post-retractions');
+        $path = $root . '/records/post-retractions/post-retraction-target.txt';
+        file_put_contents($path, "Record-ID: post-retraction-target\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: target\nOperation: retract\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\n");
+        $late = $recorder->record($context, ['body' => 'prose'], ['body' => 'late prose'], 'completed', 1);
+        $failed = $recorder->record($context, [], [], 'provider_error', 1, ['message' => 'error prose']);
+        foreach ([$first, $late, $failed] as $id) assertSame(null, $store->find($id));
+        assertSame([], $store->recent());
+        assertSame([], $store->forPost('target'));
+        file_put_contents($path, 'malformed');
+        assertSame(null, $store->find($first));
+        assertSame(3, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
+    }
+
 }
