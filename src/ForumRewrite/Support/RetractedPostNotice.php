@@ -14,7 +14,7 @@ final class RetractedPostNotice
 
     public static function text(array $post): string
     {
-        return ($post['retraction_class'] ?? null) === 'operator'
+        return ($post['retraction_attribution'] ?? $post['retraction_class'] ?? null) === 'operator'
             ? 'This post was retracted by an operator.' : self::TEXT;
     }
 }

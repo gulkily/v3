@@ -40,6 +40,7 @@ final class ReadModelSchema
                 hidden_reason TEXT NULL,
                 retracted_at TEXT NULL,
                 retraction_class TEXT NULL,
+                retraction_attribution TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )',
             'CREATE TABLE threads (
@@ -59,7 +60,8 @@ final class ReadModelSchema
                 event_link TEXT NULL,
                 event_time TEXT NULL,
                 retracted_at TEXT NULL,
-                retraction_class TEXT NULL
+                retraction_class TEXT NULL,
+                retraction_attribution TEXT NULL
             )',
             'CREATE TABLE profiles (
                 identity_id TEXT PRIMARY KEY,

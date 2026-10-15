@@ -2542,10 +2542,30 @@ NODE;
             $loaded = (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']);
             assertSame('operator', $loaded->classification);
             assertSame($scenario === 'same' ? 'author' : 'operator', $loaded->attribution);
+            $notice = $scenario === 'same' ? 'retracted by its author' : 'retracted by an operator';
+            foreach (['/threads/' . $author['thread_id'], '/posts/' . $author['thread_id'],
+                '/forte?selected=' . $author['thread_id'], '/source/current/' . $author['record_path'],
+                '/source/blob/' . $result['commit_sha'] . '/' . $author['record_path']] as $route) {
+                $output = $this->renderMethod($app, 'GET', $route);
+                assertStringContains($notice, $output, $scenario . ' at ' . $route);
+                assertSame(false, str_contains($output, 'Evidence target'));
+            }
+            $pdo = new PDO('sqlite:' . $db);
+            foreach (['posts', 'threads'] as $table) {
+                $idColumn = $table === 'posts' ? 'post_id' : 'root_post_id';
+                $query = $pdo->prepare('SELECT retraction_class, retraction_attribution FROM ' . $table . ' WHERE ' . $idColumn . ' = ?');
+                $query->execute([$author['thread_id']]);
+                assertSame(['retraction_class' => 'operator', 'retraction_attribution' => $scenario === 'same' ? 'author' : 'operator'], $query->fetch(PDO::FETCH_ASSOC));
+            }
+            unset($query, $pdo);
+            assertSame('operator', \ForumRewrite\Canonical\RetractedPosts::effectivePostIds($root)[$author['thread_id']]);
             if ($scenario === 'same') {
                 $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($author['identity_id'], 8) . '.txt'));
                 $this->runCommand($root, 'git commit -m "Revoke target after acceptance"');
                 assertSame('author', (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path'])->attribution);
+                (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+                assertStringContains($notice, $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
+                assertStringContains($notice, $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
             }
             $before = $this->latestCommitSha($root);
             $retry = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);

@@ -117,9 +117,9 @@ final class SourceFileController
 
     private function sendRetracted(string $relativePath): void
     {
-        $classes = RetractedPosts::effectivePostIds($this->repositoryRoot);
-        $class = $classes[pathinfo($relativePath, PATHINFO_FILENAME)] ?? 'author';
-        $this->routeServices->sendText(\ForumRewrite\Support\RetractedPostNotice::text(['retraction_class' => $class]) . "\n", 410);
+        $attributions = RetractedPosts::effectiveAttributions($this->repositoryRoot);
+        $attribution = $attributions[pathinfo($relativePath, PATHINFO_FILENAME)] ?? 'author';
+        $this->routeServices->sendText(\ForumRewrite\Support\RetractedPostNotice::text(['retraction_attribution' => $attribution]) . "\n", 410);
     }
 
     private function readCurrentFile(string $relativePath): ?string

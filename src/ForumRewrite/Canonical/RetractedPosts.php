@@ -38,6 +38,17 @@ final class RetractedPosts
      */
     public static function effectivePostIds(string $repositoryRoot): array
     {
+        return self::effectiveValues($repositoryRoot, false);
+    }
+
+    /** @return array<string, string> Display attribution, never used to grant suppression authority. */
+    public static function effectiveAttributions(string $repositoryRoot): array
+    {
+        return self::effectiveValues($repositoryRoot, true);
+    }
+
+    private static function effectiveValues(string $repositoryRoot, bool $attribution): array
+    {
         $repository = new CanonicalRecordRepository($repositoryRoot);
         $ids = [];
         foreach (glob($repositoryRoot . '/records/post-retractions/*.txt') ?: [] as $path) {
@@ -48,7 +59,7 @@ final class RetractedPosts
                         continue;
                     }
                     if (self::applies($repository->loadPost($candidate), $retraction)) {
-                        $ids[$retraction->postId] = $retraction->classification;
+                        $ids[$retraction->postId] = $attribution ? ($retraction->attribution ?? $retraction->classification) : $retraction->classification;
                     }
                     break;
                 }
