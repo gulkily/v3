@@ -397,6 +397,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/scripture_reply_status') {
+            $this->postWorkflowApiController()->scriptureReplyStatus($method, $query);
+            return;
+        }
+
         if ($path === '/api/codex_handoff') {
             $this->postWorkflowApiController()->codexHandoff($method, $query);
             return;
@@ -1901,7 +1906,7 @@ final class Application
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
-            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
+            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',

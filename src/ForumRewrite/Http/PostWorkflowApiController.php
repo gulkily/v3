@@ -90,6 +90,23 @@ final class PostWorkflowApiController
         }
     }
 
+    public function scriptureReplyStatus(string $method, array $query): void
+    {
+        $headers = $this->routeServices->noStoreHeaders();
+        if ($method !== 'GET') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headers);
+            return;
+        }
+        $post = ($this->fetchPost)(trim((string) ($query['post_id'] ?? '')));
+        try {
+            if ($post === null) { throw new \InvalidArgumentException('Unavailable.'); }
+            $result = $this->postWorkflowService()->scriptureReplyStatus($post);
+            $this->routeServices->sendJson($result, 200, $headers);
+        } catch (\InvalidArgumentException) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Scripture reply unavailable.'], 404, $headers);
+        }
+    }
+
     public function scorePost(string $method, array $query): void
     {
         $this->routeServices->sendJson([
