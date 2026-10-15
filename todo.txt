@@ -123,9 +123,6 @@ in word97 theme, disabled buttons don't look disabled
 
 make a dark version of chicago/word97
 
-the invite path needs to be fixed:
-	- the target link feature doesn't seem to work at all
-	- if there's a target link, we need to end up at the link with zero clicks,
-		even if it's a closed resource
-		we can ask for the username later
-			at first, we can just make an approved placeholder key or something
+xInvite path repaired: opt-in source-page destination, zero-click targeted entry,
+	member access, same-key later naming, and interrupted-redemption recovery.
+	See docs/reference/invitation_entry.md and docs/plans/invite_zero_click/.

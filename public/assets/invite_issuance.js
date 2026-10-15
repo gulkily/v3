@@ -86,7 +86,7 @@
     let decoded;
     try { decoded = decodeURIComponent(destination); } catch (error) { return ""; }
     if (destination === "" || destination.length > 500 || !/^\/(?!\/)/.test(decoded)
-      || /[\u0000-\u0020\u007f\\]/.test(decoded)) {
+      || /[\u0000-\u0020\u007f\\]/.test(destination) || /[\u0000-\u001f\u007f\\]/.test(decoded)) {
       return "";
     }
     return destination;

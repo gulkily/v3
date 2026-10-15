@@ -370,7 +370,7 @@ final class CanonicalRecordParsersTest
 
     public function testInternalDestinationsPreserveFragmentsAndRejectBrowserEscapes(): void
     {
-        foreach (['/threads/a?q=1#reply', '/'] as $value) {
+        foreach (['/threads/a?q=1#reply', '/search?q=hello%20world', '/'] as $value) {
             assertTrue(\ForumRewrite\Support\InternalDestination::isValid($value));
         }
         foreach (['//evil.test', '/\\evil.test', '/%2fevil.test', '/%5cevil.test', "/a%0d%0ab", 'https://evil.test'] as $value) {

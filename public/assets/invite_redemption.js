@@ -12,7 +12,7 @@
     value = String(value || "");
     let decoded;
     try { decoded = decodeURIComponent(value); } catch (error) { return ""; }
-    return value.length <= 500 && /^\/(?!\/)/.test(decoded) && !/[\u0000-\u0020\u007f\\]/.test(decoded) ? value : "";
+    return value.length <= 500 && /^\/(?!\/)/.test(decoded) && !/[\u0000-\u0020\u007f\\]/.test(value) && !/[\u0000-\u001f\u007f\\]/.test(decoded) ? value : "";
   }
   async function ensureRedemptionIdentity(root, status, targeted) {
     const identity = window.__forumBrowserIdentity;
@@ -68,6 +68,7 @@
         if (inspected.targeted && !target) throw new Error("Invitation destination is unavailable. Your membership is saved; use the board link below.");
         // Keep the bearer in the current page until access succeeds, allowing reload/retry
         // after a lost response. Replace the Lobby entry so Back does not redeem again.
+        try { sessionStorage.removeItem("forum_invite_destination"); } catch (error) {}
         window.location.replace(target || "/");
       } catch (error) {
         feedback(status, (error && error.message || "Unable to redeem invitation.") + " Retry here or ask the sender for help.", "error");

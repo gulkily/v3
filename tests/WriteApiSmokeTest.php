@@ -37,6 +37,7 @@ final class WriteApiSmokeTest
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
             $bootstrap = $root . '/records/identity/identity-' . str_replace(':', '-', $identity) . '.txt';
             $before = file_get_contents($bootstrap);
+            $concurrent = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'stale-name']);
             $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'chosen-name']);
             $signed = $prepared + ['author_identity_id' => $identity,
                 'detached_signature' => $this->signCanonicalRecord($other['home'], $prepared['canonical_record'])];
@@ -56,6 +57,12 @@ final class WriteApiSmokeTest
                 assertStringContains('mismatch', $e->getMessage());
             }
             assertSame('chosen-name', $writer->finalizePreparedProfileName($signed)['username']);
+            try {
+                $writer->finalizePreparedProfileName($concurrent + ['author_identity_id' => $identity,
+                    'detached_signature' => $this->signCanonicalRecord($key['home'], $concurrent['canonical_record'])]);
+                throw new RuntimeException('Expected stale-name rejection.');
+            } catch (RuntimeException $e) { assertStringContains('newer username', $e->getMessage()); }
+
             assertSame($before, file_get_contents($bootstrap));
             $pdo = (new ReadModelConnection($db))->open();
             assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);

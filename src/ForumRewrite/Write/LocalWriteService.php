@@ -1218,6 +1218,10 @@ class LocalWriteService
             if (!$this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint)['ok']) {
                 throw new RuntimeException('Profile name signature verification failed.');
             }
+            $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
+            if ($latest !== null && $record['Created-At'] <= $latest['Created-At']) {
+                throw new RuntimeException('A newer username was saved. Retry to prepare a fresh name change.');
+            }
             $this->writeFile($path, $contents);
             $this->writeFile($path . '.asc', $signature);
             $commit = $this->commitCanonicalWrite([$path, $path . '.asc'], 'Set profile name for ' . $identity);
