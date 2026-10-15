@@ -2420,6 +2420,34 @@ NODE;
         }
     }
 
+    public function testExpansionProvenanceSurvivesRebuildAndPublicationReplay(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $meta = ['type' => 'scripture_oriented_analysis', 'source_post_id' => 'root-001', 'source_hash' => str_repeat('a', 64)];
+        $initial = $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Scripture response.'], $meta);
+        $expansion = ['type' => 'scripture_expansion', 'source_post_id' => 'root-001', 'source_hash' => str_repeat('a', 64),
+            'expansion_of' => $initial['post_id'], 'initial_hash' => str_repeat('b', 64)];
+        $input = ['thread_id' => 'root-001', 'parent_id' => $initial['post_id'], 'body' => 'Additional context.'];
+        $first = $writer->createReply($input, $expansion);
+        $again = $writer->createReply($input, $expansion);
+        assertSame($first['post_id'], $again['post_id']);
+        assertSame(true, $again['already_posted']);
+        $record = (new CanonicalRecordRepository($root))->loadPost('records/posts/' . $first['post_id'] . '.txt');
+        assertSame($expansion, $record->agentResponse);
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        $pdo = new PDO('sqlite:' . $db);
+        $stmt = $pdo->prepare('SELECT agent_response_json FROM posts WHERE post_id = ?');
+        $stmt->execute([$first['post_id']]);
+        assertSame($expansion, json_decode($stmt->fetchColumn(), true));
+        $stmt->closeCursor();
+        $pdo = null;
+        // Recover a canonical file written before its commit/read-model refresh.
+        $this->runCommand($root, 'git reset --soft HEAD~1');
+        $writer->createReply($input, $expansion);
+        assertSame('', trim($this->runCommand($root, 'git status --porcelain')));
+    }
+
     public function testOperatorRetryRepairsHistoricalCompletionAndRunsOnlySelectedTask(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

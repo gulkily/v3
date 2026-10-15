@@ -57,6 +57,7 @@ One row per canonical post record (both thread roots and replies).
 | `body` | TEXT | |
 | `board_tags_json` | TEXT | JSON array |
 | `thread_type` | TEXT NULL | |
+| `agent_response_json` | TEXT NULL | Optional canonical response kind, source/version, and expansion parent/version; introduced in schema 18. |
 | `author_identity_id` | TEXT NULL | |
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |
@@ -331,3 +332,11 @@ feeds and the pending-users latest-activity column show them only while the
 `FORUM_USERNAME_CHANGES_ENABLED` flag is on. They appear in the `all` and
 `identity` views.
 Unsigned/malformed updates are ignored. Existing duplicate-name route policy remains.
+### Agent response provenance (schema version 22)
+
+Optional `Agent-Response` JSON on canonical reply records identifies
+`scripture_oriented_analysis` or `scripture_expansion`, its source post/version,
+and (for expansion) the initial reply/version. `posts.agent_response_json`
+replays this metadata on rebuild. Expansion records use a deterministic ID
+based on their initial reply; publication retries reconcile that canonical file
+rather than creating another reply. Older records remain valid without metadata.

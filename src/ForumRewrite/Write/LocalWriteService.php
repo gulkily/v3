@@ -150,9 +150,9 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, string>
      */
-    public function createReply(array $input): array
+    public function createReply(array $input, ?array $agentResponse = null): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input, $agentResponse): array {
             $this->assertWritableRepository();
             $timings = [];
             $totalStartedAt = hrtime(true);
@@ -168,11 +168,28 @@ class LocalWriteService
 
             $this->assertReplyTarget($threadId, $parentId);
 
-            $postId = $this->generateRecordId('reply');
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
+            $postId = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
+                ? \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($parentId) : $this->generateRecordId('reply');
+            $existingPath = CanonicalPathResolver::post($postId);
+            if (is_file($this->repositoryRoot . '/' . $existingPath)) {
+                $existing = $this->canonicalRepository->loadPost($existingPath);
+                if (($existing->agentResponse['expansion_of'] ?? null) !== $parentId || $existing->authorIdentityId !== $authorIdentityId) {
+                    throw new RuntimeException('Expansion publication identity conflict.');
+                }
+                $dirty = trim($this->runGitCommand(['status', '--porcelain', '--', $existingPath], 'Unable to inspect expansion publication'));
+                $head = $dirty !== ''
+                    ? $this->commitCanonicalWrite([$existingPath], 'Recover expansion ' . $postId)['commit_sha']
+                    : trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
+                $this->refreshDerivedStateAfterCommit($head);
+                $this->invalidator()->invalidateReply($threadId, $postId);
+                $this->invalidator()->invalidateReply($threadId, $parentId);
+                return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'already_posted' => true];
+            }
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse);
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
+                ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
@@ -503,7 +520,8 @@ class LocalWriteService
         string $threadId,
         string $parentId,
         string $body,
-        ?string $authorIdentityId
+        ?string $authorIdentityId,
+        ?array $agentResponse = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -511,6 +529,7 @@ class LocalWriteService
             . "Thread-ID: {$threadId}\n"
             . "Parent-ID: {$parentId}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . ($agentResponse !== null ? 'Agent-Response: ' . json_encode($agentResponse, JSON_THROW_ON_ERROR) . "\n" : '')
             . "\n{$body}";
     }
 
