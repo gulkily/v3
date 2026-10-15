@@ -24,3 +24,13 @@ Branch: `account-key-page-simplification` (stacked on the unmerged `account-key-
   - `FORMAT=text node tests/browser/key_backup_ui.mjs`: passed.
 - Notes:
   - Restore is covered by the backup browser test; the card relies on the same identity-change events.
+
+## Stage 3 - Backup and restore as a collapsed expando
+- Changes:
+  - `templates/pages/account_key.php`: the visible backup section is again a native `<details id="key-backup" data-key-backup>` labeled "Back up or restore", collapsed by default; tabs, panels, and warnings kept; the redundant intro paragraph and heading removed.
+  - `tests/browser/key_backup_ui.mjs`: restored the two clicks that open the expando on a direct page visit.
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: 222 passed.
+  - `FORMAT=text` and `FORMAT=png node tests/browser/key_backup_ui.mjs`: both passed, including the "Back up your key" reminder link, which opens the collapsed expando through the existing hash handling in `key_backup_ui.js` (no script change needed).
+- Notes:
+  - Opening from `#key-backup` is covered by the reminder step in the browser test; direct visits stay collapsed.
