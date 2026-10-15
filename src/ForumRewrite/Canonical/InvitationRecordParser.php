@@ -46,7 +46,7 @@ final class InvitationRecordParser
             if ($expiresAt === null || !$this->isUtcTimestamp($expiresAt)) {
                 throw new CanonicalRecordParseException('Issued invitations require Expires-At in RFC 3339 UTC format.');
             }
-            if ($destination !== null && !$this->isInternalDestination($destination)) {
+            if ($destination !== null && !\ForumRewrite\Support\InternalDestination::isValid($destination)) {
                 throw new CanonicalRecordParseException('Invitation Destination must be an internal absolute path.');
             }
         } elseif ($expiresAt !== null || $destination !== null) {
@@ -68,13 +68,4 @@ final class InvitationRecordParser
         }
     }
 
-    private function isInternalDestination(string $value): bool
-    {
-        return strlen($value) <= 500
-            && str_starts_with($value, '/')
-            && !str_starts_with($value, '//')
-            && !str_contains($value, "\n")
-            && !str_contains($value, "\r")
-            && !str_contains($value, '#');
-    }
 }

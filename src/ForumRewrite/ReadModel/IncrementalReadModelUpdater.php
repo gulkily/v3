@@ -468,7 +468,7 @@ class IncrementalReadModelUpdater
      */
     private function insertProfile(PDO $pdo, IdentityBootstrapRecord $identity): array
     {
-        $username = $identity->username !== '' ? $identity->username : 'guest';
+        $username = ProfileNames::latest($this->repositoryRoot)[$identity->identityId]['Username'] ?? ($identity->username !== '' ? $identity->username : 'guest');
         $usernameToken = strtolower($username);
         $profile = [
             'identity_id' => $identity->identityId,

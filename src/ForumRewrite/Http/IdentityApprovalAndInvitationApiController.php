@@ -202,6 +202,22 @@ final class IdentityApprovalAndInvitationApiController
         }
     }
 
+    /** @param array<string, mixed> $query */
+    public function inspectInvitation(string $method, array $query): void
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $input = $this->routeServices->requestData($query);
+            $result = $this->routeServices->writer()->inspectInvitation(trim((string) ($input['invite_token'] ?? '')));
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $e) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $e->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        }
+    }
+
     /**
      * @param array<string, mixed> $query
      */

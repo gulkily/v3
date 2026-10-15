@@ -310,3 +310,14 @@ Signed records, signatures, permissions, and source suppression do not change.
 Later approval changes and rebuilds preserve the accepted decision. Retain the
 canonical repository's local Git history in backups and deployment transfers;
 a records-only copy cannot establish local operator acceptance or attribution.
+
+## Profile name projections (schema version 20)
+
+Signed immutable `records/profile-names/profile-name-<32 hex>.txt` updates
+override bootstrap usernames without changing keys, profile slugs or approvals.
+Only valid records with verified owner signatures and matching filenames apply.
+The greatest `(Created-At, Record-ID)` determines the current name; writes use
+strictly increasing timestamps per identity. Existing profile, username-route,
+author and activity fields carry the effective name; no new tables are required.
+Name writes rebuild the derived model and invalidate generated presentation.
+Unsigned/malformed updates are ignored. Existing duplicate-name route policy remains.

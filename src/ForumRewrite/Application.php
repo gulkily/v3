@@ -416,6 +416,13 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name') {
+            $controller = $this->writePostAndIdentityApiController();
+            if ($path === '/api/prepare_profile_name') $controller->prepareProfileName($method, $query);
+            else $controller->finalizeProfileName($method, $query);
+            return;
+        }
+
         if ($path === '/api/approve_user') {
             $this->identityApprovalAndInvitationApiController()->approveUser($method);
             return;
@@ -438,6 +445,11 @@ final class Application
 
         if ($path === '/api/create_prepared_invitation') {
             $this->identityApprovalAndInvitationApiController()->createPreparedInvitation($method, $query);
+            return;
+        }
+
+        if ($path === '/api/inspect_invitation') {
+            $this->identityApprovalAndInvitationApiController()->inspectInvitation($method, $query);
             return;
         }
 
@@ -1774,7 +1786,8 @@ final class Application
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
-            || $path === '/api/prepare_invitation_redemption'
+            || $path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name'
+            || $path === '/api/inspect_invitation' || $path === '/api/prepare_invitation_redemption'
             || $path === '/api/create_prepared_invitation'
         ) {
             return true;
@@ -1840,7 +1853,8 @@ final class Application
             '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
-            '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
+            '/api/prepare_profile_name', '/api/finalize_profile_name',
+            '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',

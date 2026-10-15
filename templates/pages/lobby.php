@@ -25,8 +25,9 @@ $hasMembersOnlyAccess = $viewerProfile !== null
   </article>
   <article class="card" data-invitation-redemption hidden>
     <h2>Board invitation</h2>
-    <p>Redeem this invitation. If you do not yet have a browser key, you will be guided through creating one.</p>
+    <p>Opening an invitation with a destination automatically redeems it and opens that page. You can choose a username later in Account.</p>
     <button type="button" data-action="redeem-invitation">Redeem invitation</button>
-    <p class="meta" data-role="invitation-redemption-feedback" hidden></p>
+    <p class="meta" data-role="invitation-redemption-feedback" role="status" hidden></p>
+    <p><a href="/account/key/">Review or restore your account</a> · <a href="/">Go to the board</a></p>
   </article>
 </section>
