@@ -107,6 +107,7 @@ final class ThreadAndPostPageController
             }
         }
         $posts = ($this->fetchThreadPosts)($threadId);
+        $posts = array_values(array_filter($posts, static fn (array $row): bool => !self::isScriptureExpansion($row)));
         $viewerPostFlags = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'flag', (string) $viewerProfile['identity_id'])
             : [];
@@ -143,6 +144,7 @@ final class ThreadAndPostPageController
                 'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
                 'llmExchangesByPostId' => $llmExchangesByPostId,
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,
                 'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
@@ -184,6 +186,12 @@ final class ThreadAndPostPageController
         return RssFeed::feed(($this->displayThreadTitle)($thread), '/threads/' . $threadId . '?format=rss', $items);
     }
 
+    private static function isScriptureExpansion(array $post): bool
+    {
+        $meta = json_decode((string) ($post['agent_response_json'] ?? ''), true);
+        return ($post['author_label'] ?? '') === 'reply-agent' && ($meta['type'] ?? '') === 'scripture_expansion';
+    }
+
     public function post(string $postId): ?string
     {
         $post = ($this->fetchPost)($postId, true);
@@ -196,6 +204,14 @@ final class ThreadAndPostPageController
         }
 
         $service = $this->postWorkflowService();
+        if (self::isScriptureExpansion($post)) {
+            $parent = ($this->fetchPost)((string) $post['parent_id']);
+            try {
+                $status = $service->scriptureExpansionService()->status((string) $post['parent_id']);
+                if ($parent === null || ($status['agent_post_id'] ?? '') !== $post['post_id']) { return null; }
+                $post = $parent;
+            } catch (\InvalidArgumentException) { return null; }
+        }
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
         $viewerPostFlags = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'flag', (string) $viewerProfile['identity_id'])
@@ -227,6 +243,7 @@ final class ThreadAndPostPageController
                 'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
+                'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
                 'llmExchangesByPostId' => $llmExchangesByPostId,
                 'fastScore' => ($this->latestFastScoreForPost)($post),
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,

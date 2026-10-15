@@ -2216,6 +2216,9 @@ NODE;
     {
         $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts): void {
             $api = '/api/expand_agent_reply?post_id=' . rawurlencode($initial);
+            foreach (['/threads/' . $source, '/posts/' . $initial] as $path) {
+                assertStringContains('data-action="expand-scripture"', $this->renderMethod($app, 'GET', $path));
+            }
             $_COOKIE = [];
             assertSame('forbidden', json_decode($this->renderMethod($app, 'POST', $api), true)['error']);
             $_COOKIE = ['identity_hint' => 'guest'];
@@ -2228,6 +2231,15 @@ NODE;
             $status = json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . rawurlencode($initial)), true);
             assertSame('generated', $status['generation_status']);
             assertSame('Stub agent response.', trim($status['expansion_body']));
+            foreach (['/threads/' . $source, '/posts/' . $initial] as $path) {
+                $html = $this->renderMethod($app, 'GET', $path);
+                assertStringContains('<summary>Further scripture reflection</summary>', $html);
+                assertStringNotContains('data-action="expand-scripture"', $html);
+                assertStringNotContains('id="post-' . $done['agent_post_id'] . '"', $html);
+            }
+            $_COOKIE = [];
+            assertStringContains('<summary>Further scripture reflection</summary>', $this->renderMethod($app, 'GET', '/posts/' . $initial));
+            $_COOKIE = ['identity_hint' => 'guest'];
             assertSame($done['agent_post_id'], json_decode($this->renderMethod($app, 'POST', $api), true)['agent_post_id']);
             assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $done['agent_post_id']), true)['status']);
             // Replaying a claim after canonical publication makes no replacement.

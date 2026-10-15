@@ -449,6 +449,7 @@ final class PostWorkflowService
             $task = AgentResponseTask::fromStoredRequestContext(
                 is_array($generation['request_context'] ?? null) ? $generation['request_context'] : []
             );
+            if ($task['type'] === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE) { continue; }
             $generation['response_mode_label'] = AgentResponseTask::labelForType((string) ($task['type'] ?? ''));
 
             $generations[(string) $context['post_id']] = $generation;
@@ -781,6 +782,22 @@ final class PostWorkflowService
     /**
      * @return array<string, mixed>
      */
+    public function scriptureExpansionsForPosts(array $posts): array
+    {
+        $result = [];
+        $service = null;
+        foreach ($posts as $post) {
+            if (($post['author_label'] ?? '') !== AgentIdentityService::USERNAME) { continue; }
+            try {
+                $service ??= $this->scriptureExpansionService();
+                $result[$post['post_id']] = $service->status((string) $post['post_id']);
+            } catch (\InvalidArgumentException|\ForumRewrite\Canonical\CanonicalRecordParseException) {
+                // Unrecognized, stale, recursive, or unavailable sources expose no expansion.
+            }
+        }
+        return $result;
+    }
+
     public function scriptureExpansionService(): ScriptureExpansionService
     {
         return new ScriptureExpansionService($this->pdo(), $this->repositoryRoot, TaskQueueDatabaseConfig::path($this->projectRoot),

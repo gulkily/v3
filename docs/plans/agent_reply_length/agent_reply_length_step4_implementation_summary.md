@@ -21,3 +21,9 @@ Debug mode: disabled
 - Changes: Added an internal expansion task, dedicated editable prompt with both source texts, request/status endpoints, verified scripture eligibility (including trusted historical request provenance), shared request deduplication, and targeted operator recovery. New scripture responses carry canonical provenance. Expansion rechecks source versions, visibility, and requester approval before and after generation and under the write lock; interrupted posting reconciles its stable canonical identity.
 - Verification: Task/generator/store/worker and isolated expansion API tests: 43 passed. Covered duplicate claims/requests, canonical replay/rebuild, source edits/hiding, requester revocation during generation, exhaustion and explicit retry, and recursion rejection. Diff check passed.
 - Notes: No separate LLM provider, automatic expansion, or response-length quota was introduced. Failed provider calls remain failures; stale source work is skipped without publication.
+
+## Stage 4 - Shared reader controls
+
+- Changes: Thread/post cards offer Expand only to eligible members, poll durable status without automatically retrying generation, open completed content for the requester, and retain accessible collapsed shared results. Expansion text is never injected as HTML. Canonical expansion children are presented once as supplementary content; their direct post route resolves through the validated initial response.
+- Verification: Request/publication/rebuild rendering test passed. Chromium checks passed on thread/post pages at 1280px and 375px: keyboard request, polling/progress, requester auto-open, collapse/reopen, shared completed display, safe text, and no viewport overflow. JS syntax/diff checks passed.
+- Notes: Native details/summary provides keyboard semantics. Fixed an existing long agent-feedback label overflowing narrow action rows while validating this experience.
