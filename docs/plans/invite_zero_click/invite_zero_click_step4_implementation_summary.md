@@ -23,3 +23,8 @@ Debug mode: enabled
 - Changes: Identity preparation accepts a temporary name without prompting, preserving existing keys. Account offers Choose username through signed preparation/finalization, updates local labels after successful save, and reconciles authenticated server names on render.
 - Verification: BrowserSigningNormalizationTest — 81 passed, including concurrent noninteractive temporary-key generation; JavaScript syntax check passed. Backend naming/continuity regression from Stage 3 remains passing.
 - Notes: No arrival-time prompt; Account naming uses existing browser status and signing components. Full browser rename acceptance follows in Stage 7.
+
+## Stage 5 - Invitation inspection and recovery
+- Changes: Added nonmutating no-store bearer inspection, signed same-recipient recovery under the write lock, destination in final results, and already-approved access without consuming unused invites. Different recipients cannot recover a consumed invite.
+- Verification: Signed invitation policy/recovery smoke test and PrivateSiteAuthTest — 10 passed. Tests cover nonconsumption on inspection/approved entry, lost-response recovery without extra canonical writes, forged ownership, foreign recipient, exact destination, and policy recheck at acceptance; diff check passed.
+- Notes: Inspection reveals only targeted/available-or-used state, never recipient identity or a successful recovery claim. Recovery requires a new signed prepared operation and retained member approval.

@@ -5919,12 +5919,23 @@ NODE;
             $issue = $writer->prepareInvitation([
                 'issuer_identity_id' => $issuer['identity_id'], 'thread_id' => $issuer['thread_id'],
                 'parent_id' => $issuer['parent_id'], 'verification_hash' => 'sha256:' . hash('sha256', $token),
-                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600),
+                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600), 'destination' => '/threads/root-001?q=1#reply-001',
             ]);
             $writer->finalizePreparedInvitation($issue + [
                 'author_identity_id' => $issuer['identity_id'],
                 'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $issue['canonical_record']),
             ]);
+            $countBeforeInspection = $this->countCanonicalPostFiles($root);
+            assertSame(['status' => 'ok', 'targeted' => true, 'state' => 'available'], $writer->inspectInvitation($token));
+            assertSame($countBeforeInspection, $this->countCanonicalPostFiles($root));
+            $approvedAttempt = $writer->prepareInvitationRedemption([
+                'recipient_identity_id' => $issuer['identity_id'], 'thread_id' => $issuer['thread_id'],
+                'parent_id' => $issuer['parent_id'], 'invite_token' => $token,
+            ]);
+            $approvedResult = $writer->finalizePreparedInvitation($approvedAttempt + ['author_identity_id' => $issuer['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $approvedAttempt['canonical_record'])]);
+            assertSame(true, $approvedResult['already_approved']);
+            assertSame('available', $writer->inspectInvitation($token)['state']);
             $redeem = $writer->prepareInvitationRedemption([
                 'recipient_identity_id' => $recipient['identity_id'], 'thread_id' => $recipient['thread_id'],
                 'parent_id' => $recipient['parent_id'], 'invite_token' => $token,
@@ -5944,6 +5955,28 @@ NODE;
             assertSame($before, $this->countCanonicalPostFiles($root));
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
             assertSame('ok', $writer->finalizePreparedInvitation($signed)['status']);
+            assertSame('used', $writer->inspectInvitation($token)['state']);
+            $afterSuccess = $this->countCanonicalPostFiles($root);
+            $retry = $writer->prepareInvitationRedemption([
+                'recipient_identity_id' => $recipient['identity_id'], 'thread_id' => $recipient['thread_id'],
+                'parent_id' => $recipient['parent_id'], 'invite_token' => $token,
+            ]);
+            $recovery = $retry + ['author_identity_id' => $recipient['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $retry['canonical_record'])];
+            try {
+                $writer->finalizePreparedInvitation($recovery);
+                throw new RuntimeException('Expected forged recovery rejection.');
+            } catch (RuntimeException $e) { assertStringContains('signature verification failed', $e->getMessage()); }
+            $recovery['detached_signature'] = $this->signCanonicalRecord($recipientKey['home'], $retry['canonical_record']);
+            $result = $writer->finalizePreparedInvitation($recovery);
+            assertSame(true, $result['recovered']);
+            assertSame('/threads/root-001?q=1#reply-001', $result['destination']);
+            assertSame($afterSuccess, $this->countCanonicalPostFiles($root));
+            try {
+                $writer->prepareInvitationRedemption(['recipient_identity_id' => $issuer['identity_id'], 'invite_token' => $token]);
+                throw new RuntimeException('Expected foreign-recipient rejection.');
+            } catch (RuntimeException $e) { assertStringContains('another identity', $e->getMessage()); }
+
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $recipient['identity_id']);
