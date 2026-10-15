@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Word 97 disabled buttons and dark Win9x theme](word97_disabled_and_dark_theme/)
 - [Account key page simplification](account_key_page_simplification/)
 - [Account key page redesign](account_key_page_redesign/)
 - [Bookmarklets page redesign](bookmarklets_page_redesign/)
