@@ -318,7 +318,9 @@ final class PublicOfflineSnapshotBuilder
             if (($meta['type'] ?? '') !== 'scripture_expansion') { continue; }
             $find->execute([$expansion['parent_id']]); $initial = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
             $find->execute([$meta['source_post_id'] ?? '']); $original = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
-            if (!\ForumRewrite\Canonical\AgentResponseMetadata::validExpansion($expansion, $initial, $original)) {
+            $find->execute([$expansion['thread_id']]); $thread = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
+            if ($thread === null || !empty($thread['is_hidden']) || ($thread['retracted_at'] ?? null) !== null
+                || !\ForumRewrite\Canonical\AgentResponseMetadata::validExpansion($expansion, $initial, $original)) {
                 $insert->execute([$expansion['post_id']]);
             }
         }

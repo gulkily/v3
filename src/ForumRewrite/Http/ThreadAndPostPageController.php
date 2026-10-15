@@ -175,6 +175,7 @@ final class ThreadAndPostPageController
 
         $items = [];
         foreach (($this->fetchThreadPosts)($threadId) as $post) {
+            if (self::isScriptureExpansion($post)) { continue; }
             $items[] = RssFeed::item(
                 $post['post_id'],
                 '/posts/' . $post['post_id'],

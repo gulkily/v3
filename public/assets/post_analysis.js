@@ -715,12 +715,14 @@
       let pending = false;
       let timer = null;
       const storageKey = "scripture-expansion:" + id;
+      let requestedLocally = false;
       function requestedHere(value) {
+        if (typeof value === "boolean") requestedLocally = value;
         try {
           if (value === true) sessionStorage.setItem(storageKey, "1");
           if (value === false) sessionStorage.removeItem(storageKey);
-          return sessionStorage.getItem(storageKey) === "1";
-        } catch (_) { return false; }
+          return requestedLocally || sessionStorage.getItem(storageKey) === "1";
+        } catch (_) { return requestedLocally; }
       }
       function schedule() {
         clearTimeout(timer);

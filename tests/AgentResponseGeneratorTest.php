@@ -45,6 +45,8 @@ final class AgentResponseGeneratorTest
         ]);
         assertStringContains('Original concern.', $provider->messages[1]['content']);
         assertStringContains('Existing reflection.', $provider->messages[1]['content']);
+        assertSame(1, substr_count($provider->messages[1]['content'], 'Original concern.'));
+        assertSame(1, substr_count($provider->messages[1]['content'], 'Existing reflection.'));
         assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_expansion.txt')), $provider->messages[1]['content']);
         assertSame(false, AgentResponseTask::isSelectableType(AgentResponseTask::SCRIPTURE_EXPANSION_TYPE));
     }
