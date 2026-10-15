@@ -27,6 +27,15 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <div>
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
+        </div>
+        <div class="account-key-fingerprint">
+          <p class="account-key-label">Fingerprint</p>
+          <p class="account-key-fingerprint-row">
+            <code class="account-key-fingerprint-value" data-role="fingerprint-field">No key yet</code>
+            <button type="button" class="account-key-viewer-copy" data-action="copy-fingerprint" hidden>Copy</button>
+          </p>
+        </div>
+        <div>
           <p class="meta account-key-profile-link" data-role="profile-link-wrap"<?= $viewerProfileHref === '' ? ' hidden' : '' ?>><a data-role="profile-link" href="<?= $e($viewerProfileHref !== '' ? $viewerProfileHref : '/account/key/') ?>"><?= $e($viewerProfileLabel !== '' ? $viewerProfileLabel : 'View profile') ?></a></p>
         </div>
         <div class="account-key-simple-actions">
@@ -224,6 +233,17 @@ No browser private key saved yet.
       var generateButton = root.querySelector('[data-action="generate-browser-key"]');
       var clearIdentityButton = root.querySelector('[data-action="clear-browser-identity"]');
       var simpleStatus = root.querySelector('#simple-status');
+      var fingerprintField = root.querySelector('[data-role="fingerprint-field"]');
+      var copyFingerprint = root.querySelector('[data-action="copy-fingerprint"]');
+      var fingerprint = storedFingerprint();
+
+      if (fingerprintField) {
+        fingerprintField.textContent = fingerprint || 'No key yet';
+      }
+
+      if (copyFingerprint) {
+        copyFingerprint.hidden = fingerprint === '';
+      }
 
       if (usernameField) {
         usernameField.textContent = username;
@@ -315,6 +335,30 @@ No browser private key saved yet.
       });
     }
 
+    function bindFingerprintCopy() {
+      var root = accountKeyRoot();
+      var button = root && root.querySelector('[data-action="copy-fingerprint"]');
+      if (!button) {
+        return;
+      }
+
+      button.addEventListener('click', function () {
+        var value = storedFingerprint();
+        if (value === '') {
+          return;
+        }
+
+        function done() {
+          button.textContent = 'Copied';
+          window.setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).then(done, function () {});
+        }
+      });
+    }
+
     function initAccountKeySimpleUi() {
       var root = accountKeyRoot();
       if (!root) {
@@ -324,6 +368,7 @@ No browser private key saved yet.
       var statusNode = root.querySelector('[data-role="browser-key-status"]');
 
       bindViewerCopyButtons();
+      bindFingerprintCopy();
       syncSimpleUI();
       mirrorAdvancedStatus();
       window.addEventListener('forum:identity-changed', syncSimpleUI);

@@ -103,6 +103,17 @@
 .account-key-where li + li {
   margin-top: 0.35rem;
 }
+.account-key-fingerprint-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+.account-key-fingerprint-value {
+  min-width: 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
 .account-key-group {
   padding: 1rem;
   border: 1px solid var(--line);

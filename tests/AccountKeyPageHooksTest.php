@@ -55,6 +55,8 @@ final class AccountKeyPageHooksTest
         'id="saved-public-key-viewer"',
         'id="saved-private-key-viewer"',
         'name="public_key"',
+        'data-role="fingerprint-field"',
+        'data-action="copy-fingerprint"',
     ];
 
     public function testTemplateKeepsScriptAndTestHooks(): void

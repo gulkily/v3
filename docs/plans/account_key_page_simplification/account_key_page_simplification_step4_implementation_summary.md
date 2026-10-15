@@ -12,3 +12,15 @@ Branch: `account-key-page-simplification` (stacked on the unmerged `account-key-
   - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: 222 passed, 0 failed.
 - Notes:
   - Hook list derived from the current template, `browser_signing.js`, `key_backup_ui.js`, and `key_backup_ui.mjs`.
+
+## Stage 2 - Fingerprint on the status card
+- Changes:
+  - `templates/pages/account_key.php`: added a Fingerprint field and Copy action to the status card; the page script fills it from the stored fingerprint on the existing sync events, shows "No key yet" when absent, and copies the lowercase value (same form as the profile URL).
+  - `public/assets/identity.css`: fingerprint row styles.
+  - `tests/AccountKeyPageHooksTest.php`: asserts the new hooks.
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: passed.
+  - Chromium run: empty state initially with Copy hidden; after set up the card showed `2e8112...731b`, matching the profile link's `openpgp-` fingerprint and the clipboard after Copy; after clear it returned to "No key yet".
+  - `FORMAT=text node tests/browser/key_backup_ui.mjs`: passed.
+- Notes:
+  - Restore is covered by the backup browser test; the card relies on the same identity-change events.
