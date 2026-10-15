@@ -70,4 +70,24 @@ final class RailspikeWorkflowTest
         $this->rejects(fn () => (new \ForumRewrite\Railspike\CodexAssessmentRunner($root))->readiness());
     }
 
+    public function testClarificationAndRevisionActionsAreBoundToCurrentQuestion(): void
+    {
+        [$store,$service,$actor,$root,$pdo]=$this->fixture();
+        $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
+        $task=new \ForumRewrite\Railspike\AssessmentTask($store,static fn ($r) => ['kind'=>'questions','questions'=>['Which navigation?'],'assessment'=>'']);
+        $task(['deduplication_key'=>$row['id'].'@1']);
+        $row=$store->find($row['id']); assertSame('questions',$row['state']);
+        $stale=$service->prepare(['action'=>'answer','workflow_id'=>$row['id'],'version'=>$row['version'],'payload'=>['revision'=>2,'answers'=>['Main']]],$actor);
+        $this->rejects(fn () => $service->apply($stale,'valid',$actor));
+        $text=$service->prepare(['action'=>'answer','workflow_id'=>$row['id'],'version'=>$row['version'],'payload'=>['revision'=>1,'answers'=>['Main']]],$actor);
+        $next=$service->apply($text,'valid',$actor);
+        assertSame('queued',$next['state']); assertSame(['Main'],$next['history'][0]['answers']);
+        $task=new \ForumRewrite\Railspike\AssessmentTask($store,static fn ($r) => ['kind'=>'assessment','questions'=>[],'assessment'=>"## Problem Statement\nMain\n## Option A\nMenu\n## Option B\nToolbar\n## Recommendation\nMenu"]);
+        $task(['deduplication_key'=>$row['id'].'@'.$next['version']]);
+        $row=$store->find($row['id']);
+        $next=$service->apply($service->prepare(['action'=>'changes','workflow_id'=>$row['id'],'version'=>$row['version'],'payload'=>['revision'=>2,'text'=>'Prefer toolbar']],$actor),'valid',$actor);
+        assertSame('queued',$next['state']); assertSame('Prefer toolbar',$next['history'][1]['text']);
+        $this->rejects(fn () => $service->apply($stale,'valid',$actor));
+    }
+
 }

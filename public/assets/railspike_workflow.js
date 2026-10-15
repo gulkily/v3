@@ -55,6 +55,24 @@
       if (revision.artifact) { const pre = node('pre', revision.artifact); pre.style.whiteSpace = 'pre-wrap'; pre.style.overflowWrap = 'anywhere'; details.append(pre); }
       panel.append(details);
     }
+    const latest = row.revisions[row.revisions.length - 1];
+    if (row.state === 'questions' && latest) {
+      const answers = latest.questions.map(question => {
+        const label = node('label', question); const input = node('textarea'); input.maxLength = 8000;
+        label.append(input); panel.append(label); return input;
+      });
+      button('Send answers', () => act('answer', row.post_id, row, { revision: latest.number, answers: answers.map(a => a.value) }), panel);
+    }
+    if (row.state === 'review' && latest) {
+      const label = node('label', 'Requested changes'); const input = node('textarea'); input.maxLength = 16000; label.append(input); panel.append(label);
+      button('Request changes', () => act('changes', row.post_id, row, { revision: latest.number, text: input.value }), panel);
+    }
+    for (const item of row.history) {
+      const entry = node('details'); entry.append(node('summary', item.action + ' · ' + item.actor));
+      if (item.answers) item.answers.forEach((a, i) => entry.append(node('p', item.questions[i] + ': ' + a)));
+      if (item.text) entry.append(node('p', item.text));
+      panel.append(entry);
+    }
     mount.append(panel);
   }
   async function refresh() {

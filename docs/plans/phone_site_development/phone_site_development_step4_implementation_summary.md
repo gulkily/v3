@@ -18,3 +18,8 @@ Implementation in progress. Live server acceptance is pending.
 - Changes: shared public-safe mount in root/reply cards; authenticated operator-only no-store workflow API; same-origin JSON and signature enforcement; shared browser menu/status/history renderer, explicit refresh and bounded polling; standalone post and thread script wiring.
 - Verification: PHP/JavaScript syntax checks passed; `php tests/run.php RailspikeWorkflowTest CodexHandoffDraftServiceTest` — 7 passed; diff whitespace checks passed. Full browser journey is scheduled in Stage 8.
 - Notes: no workflow data is embedded in public HTML; private data is fetched after operator authentication. Legacy endpoints and preview contracts remain separate and unchanged.
+
+## Stage 4 - Clarification and revisions
+- Changes: signed answers bound to pending question revision; signed change requests bound to current assessment; retained actor/question/answer/change history; atomic requeue; shared thread controls for both journeys.
+- Verification: `php tests/run.php RailspikeWorkflowTest` — 4 passed, including question/answer/assessment/change flow and stale revision rejection. JavaScript syntax and diff whitespace checks passed.
+- Notes: ordinary forum replies never resume work automatically; only explicit signed workflow actions do so.

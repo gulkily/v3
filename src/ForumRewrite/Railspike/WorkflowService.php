@@ -66,6 +66,7 @@ final class WorkflowService
                 $row=$this->store->requireVersion((string)$a['workflow_id'], (int)$a['version']);
                 $row=$this->transition($row,$a,$actor);
                 $row['version']++; $this->store->save($row);
+                if ($row['state']==='queued') $this->store->schedule($row);
             }
             $this->store->record($receipt,$row['id'],$text,$signature);
             return $row;
@@ -74,7 +75,23 @@ final class WorkflowService
 
     private function transition(array $row, array $action, array $actor): array
     {
-        throw new RuntimeException('This workflow action is not available yet.');
+        $kind=$action['action']; $payload=$action['payload'] ?? [];
+        $latest=$row['revisions'] === [] ? null : $row['revisions'][array_key_last($row['revisions'])];
+        if (!is_array($payload)) throw new RuntimeException('Action payload must be an object.');
+        if ($kind==='answer' && $row['state']==='questions' && $latest !== null && ($payload['revision'] ?? null)===$latest['number']) {
+            $answers=$payload['answers'] ?? null;
+            if (!is_array($answers) || !array_is_list($answers) || count($answers)!==count($latest['questions'])) throw new RuntimeException('Answer every pending question.');
+            foreach ($answers as $answer) if (!is_string($answer) || trim($answer)==='' || strlen($answer)>8000) throw new RuntimeException('Each answer must contain 1–8000 bytes.');
+            $row['history'][]=['action'=>'answer','revision'=>$latest['number'],'questions'=>$latest['questions'],'answers'=>$answers,'actor'=>$actor['identity_id'],'at'=>gmdate('c')];
+        } elseif ($kind==='changes' && $row['state']==='review' && $latest !== null && ($payload['revision'] ?? null)===$latest['number']) {
+            $text=$payload['text'] ?? null;
+            if (!is_string($text) || trim($text)==='' || strlen($text)>16000) throw new RuntimeException('Describe the requested changes in 1–16000 bytes.');
+            $row['history'][]=['action'=>'changes','revision'=>$latest['number'],'text'=>$text,'actor'=>$actor['identity_id'],'at'=>gmdate('c')];
+        } else {
+            throw new RuntimeException('This action does not match the current workflow state or revision.');
+        }
+        $row['state']='queued'; unset($row['approval'],$row['failure'],$row['failure_detail']);
+        return $row;
     }
 
     private function post(string $id): array
