@@ -2508,13 +2508,21 @@ NODE;
 
     public function testOperatorRetractionCapturesAccountEvidenceAtAcceptance(): void
     {
-        foreach (['same', 'different', 'unapproved', 'revoked', 'dirty'] as $scenario) {
+        foreach (['same', 'different', 'unapproved', 'revoked', 'dirty', 'empty', 'missing'] as $scenario) {
             [$root, $db, $artifacts] = $this->createTempEnvironment();
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
             $author = $this->createAuthoredThread($app, 'AccountEvidence', 'Evidence target');
             $operator = $this->linkSigningIdentity($app, $scenario === 'different' ? 'OtherAccount' : 'accountevidence');
             $this->seedApprovedIdentity($root, $operator['identity_id']);
             if ($scenario !== 'unapproved') $this->seedApprovedIdentity($root, $author['identity_id']);
+            if (in_array($scenario, ['empty', 'missing'], true)) {
+                foreach ([$author, $operator] as $identity) {
+                    $path = CanonicalPathResolver::identity(substr($identity['identity_id'], 8));
+                    file_put_contents($root . '/' . $path, preg_replace('/^Username:.*\n/m', $scenario === 'empty' ? "Username: \n" : '', file_get_contents($root . '/' . $path)));
+                }
+                $this->runCommand($root, 'git add records/identity');
+                $this->runCommand($root, 'git commit -m "Empty legacy canonical usernames"');
+            }
             $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $author['thread_id']);
             assertSame('ok', $prepared['status']);
             if ($scenario === 'revoked') {
@@ -2572,6 +2580,72 @@ NODE;
             assertSame(true, $retry['already_retracted']);
             assertSame($before, $this->latestCommitSha($root));
         }
+    }
+
+    public function testSameAccountQuoteAndReplyNoticesShareAcceptedAttribution(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->linkSigningIdentity($app, 'quote-account');
+        $operator = $this->linkSigningIdentity($app, 'QUOTE-ACCOUNT');
+        $this->seedApprovedIdentity($root, $author['identity_id']);
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $finalize = function (array $prepared, array $key, string $endpoint) use ($app): array {
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+                'record_path' => $prepared['record_path'], 'author_identity_id' => $key['identity_id'],
+                'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            try { return json_decode($this->renderMethod($app, 'POST', $endpoint), true, 512, JSON_THROW_ON_ERROR); }
+            finally { $_POST = []; }
+        };
+        $previousSite = getenv('FORUM_SITE_ID');
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            $quote = json_decode($this->renderMethod($app, 'POST', '/api/prepare_quote?board_tags=general&body=Account%20quote&author_identity_id=' . $author['identity_id']), true);
+            assertSame('ok', $finalize($quote, $author, '/api/create_prepared_post')['status']);
+            $replyId = $this->createAuthoredReply($app, $author, $quote['post_id'], 'Account reply');
+            foreach ([$replyId, $quote['post_id']] as $postId) {
+                $prepared = $this->prepareRetractionRequest($app, $operator['identity_id'], $postId);
+                assertSame('complete', $finalize($prepared, $operator, '/api/create_prepared_retraction')['retraction_status']);
+            }
+            $page = $this->renderMethod($app, 'GET', '/threads/' . $quote['post_id']);
+            assertStringContains('quote-card-body meta', $page);
+            assertSame(2, substr_count($page, 'This post was retracted by its author.'));
+            assertSame(false, str_contains($page, 'retracted by an operator'));
+        } finally { putenv($previousSite === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $previousSite); }
+        $paned = $this->renderMethod($app, 'GET', '/forte?selected=' . $quote['post_id']);
+        assertSame(2, substr_count($paned, 'This post was retracted by its author.'));
+        assertSame(false, str_contains($paned, 'retracted by an operator'));
+        $pdo = new PDO('sqlite:' . $db);
+        foreach ([\ForumRewrite\ReadModel\AuthoredContentRepository::visibleThreads($pdo, [$author['identity_id']]),
+            \ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts($pdo, [$author['identity_id']])] as $rows) {
+            assertSame(true, count($rows) > 0);
+            foreach ($rows as $row) {
+                assertSame('operator', $row['retraction_class']);
+                assertSame('author', $row['retraction_attribution']);
+            }
+        }
+    }
+
+    public function testApprovedOrdinarySameAccountKeyCannotRetractAnotherKeyPost(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'ordinary-account', 'Ordinary account target');
+        $other = $this->linkSigningIdentity($app, 'ORDINARY-ACCOUNT');
+        $service = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        foreach ([$author, $other] as $identity) {
+            $pdo = new PDO('sqlite:' . $db);
+            $query = $pdo->prepare('SELECT bootstrap_post_id, bootstrap_thread_id FROM profiles WHERE identity_id = ?');
+            $query->execute([$identity['identity_id']]);
+            $target = $identity + $query->fetch(PDO::FETCH_ASSOC);
+            unset($query, $pdo);
+            $this->approveIdentity($service, $target);
+        }
+        $denied = $this->prepareRetractionRequest($app, $other['identity_id'], $author['thread_id']);
+        assertSame('error', $denied['status']);
+        assertStringContains('Only the post author', $denied['error']);
+        assertStringContains('Ordinary account target', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
     }
 
     public function testRetractionAttributionRequiresOneBoundLocalAcceptanceEvent(): void

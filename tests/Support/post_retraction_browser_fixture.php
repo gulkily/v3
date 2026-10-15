@@ -14,15 +14,16 @@ $repository = new \ForumRewrite\Canonical\CanonicalRecordRepository($root . '/re
 $writer = new \ForumRewrite\Write\LocalWriteService($root . '/repository', $root . '/read.sqlite3', $root . '/static', $repository);
 $identities = [];
 foreach ($keys as $role => $key) $identities[$role] = $writer->linkIdentity(['public_key' => $key['publicKey']])['identity_id'];
-$actor = $identities['operator'];
-$path = \ForumRewrite\Canonical\CanonicalPathResolver::approvalSeed(substr($actor, 8));
-file_put_contents($root . '/repository/' . $path, "Approved-Identity-ID: {$actor}\nSeed-Reason: browser fixture\n\n");
-exec('git -C ' . escapeshellarg($root . '/repository') . ' add ' . escapeshellarg($path), $out, $code);
-if ($code !== 0) throw new RuntimeException('Cannot stage fixture seed');
-exec('git -C ' . escapeshellarg($root . '/repository') . ' commit -qm "Approve browser operator"', $out, $code);
-if ($code !== 0) throw new RuntimeException('Cannot commit fixture seed');
+foreach ($identities as $actor) {
+    $path = \ForumRewrite\Canonical\CanonicalPathResolver::approvalSeed(substr($actor, 8));
+    file_put_contents($root . '/repository/' . $path, "Approved-Identity-ID: {$actor}\nSeed-Reason: browser fixture\n\n");
+    exec('git -C ' . escapeshellarg($root . '/repository') . ' add ' . escapeshellarg($path), $out, $code);
+    if ($code !== 0) throw new RuntimeException('Cannot stage fixture seed');
+}
+exec('git -C ' . escapeshellarg($root . '/repository') . ' commit -qm "Approve browser identities"', $out, $code);
+if ($code !== 0) throw new RuntimeException('Cannot commit fixture seeds');
 $posts = [];
-foreach (['author', 'operator', 'partial'] as $scenario) {
+foreach (array_merge(array_keys($identities), ['partial']) as $scenario) {
     $posts[$scenario] = $writer->prepareThread(['board_tags' => 'general', 'subject' => 'Retraction browser ' . $scenario,
         'body' => 'Browser prose ' . $scenario, 'author_identity_id' => $identities['author']]);
 }

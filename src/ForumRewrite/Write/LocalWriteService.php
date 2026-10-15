@@ -705,7 +705,20 @@ class LocalWriteService
                 if ($actor && $author && (int) $actor['is_approved'] === 1 && (int) $author['is_approved'] === 1
                     && $actor['username_token'] !== '' && $actor['username_token'] !== null
                     && $actor['username_token'] === $author['username_token']) {
-                    $username = $actor['username_token'];
+                    // Empty legacy bootstrap names are displayed as "guest" in profiles;
+                    // that fallback is not evidence of a shared canonical account name.
+                    $names = [];
+                    foreach ([$record->signerIdentityId(), $record->authorIdentityId] as $identityId) {
+                        $identityPath = CanonicalPathResolver::identity(substr($identityId, 8));
+                        $bootstrap = (new \ForumRewrite\Canonical\GenericTextRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $identityPath));
+                        $names[] = $bootstrap->headers['Username'] ?? '';
+                    }
+                    [$actorName, $authorName] = $names;
+                    if (trim($actorName) !== '' && trim($authorName) !== ''
+                        && strtolower($actorName) === $actor['username_token']
+                        && strtolower($authorName) === $author['username_token']) {
+                        $username = $actor['username_token'];
+                    }
                 }
             }
         } catch (\Throwable) {

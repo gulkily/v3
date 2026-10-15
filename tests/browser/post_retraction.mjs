@@ -11,7 +11,7 @@ import { chromium } from 'playwright-core';
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
 const keys = {};
-for (const role of ['author', 'operator']) keys[role] = await openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: `retraction-${role}` }], format: 'armored' });
+for (const role of ['author', 'operator', 'account']) keys[role] = await openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: role === 'account' ? 'RETRACTION-AUTHOR' : `retraction-${role}` }], format: 'armored' });
 const root = await mkdtemp(join(tmpdir(), 'post-retraction-browser-'));
 const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', FORUM_SECRETS_PATH: join(root, 'absent.php'), SIGNED_REACTION_TEST_ROOT: root, VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') };
 const seed = spawnSync('php', [join(project, 'tests/Support/post_retraction_browser_fixture.php'), root], { input: JSON.stringify(keys), encoding: 'utf8', env });
@@ -33,8 +33,9 @@ try {
     const result = await response.json(); assert.equal(result.status, 'ok', JSON.stringify(result));
   }
   await setup.close();
-  for (const scenario of ['author', 'operator', 'partial']) {
-    const role = scenario === 'author' ? 'author' : 'operator';
+  for (const scenario of ['author', 'operator', 'account', 'partial']) {
+    const role = scenario === 'partial' ? 'account' : scenario;
+    const notice = role === 'operator' ? 'retracted by an operator' : 'retracted by its author';
     const context = await browser.newContext(scenario === 'operator' ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, serviceWorkers: 'block' } : { serviceWorkers: 'block' });
     const fingerprint = (await openpgp.readKey({ armoredKey: keys[role].publicKey })).getFingerprint().toUpperCase();
     await context.addCookies([{ name: 'identity_hint', value: identities[role], url: base }]);
@@ -91,7 +92,10 @@ try {
     assert.equal(source.headers()['x-forum-signature-status'], 'verified');
     const record = await readFile(join(root, 'repository', recordPath), 'utf8');
     assert.match(record, new RegExp(`Author-Identity-ID: ${identities.author}`));
-    if (role === 'operator') assert.match(record, new RegExp(`Actor-Identity-ID: ${identities.operator}`));
+    if (role !== 'author') {
+      assert.match(record, new RegExp(`Actor-Identity-ID: ${identities[role]}`));
+      assert.match(record, /Retraction-Class: operator/);
+    }
     if (scenario === 'partial') {
       await control.getByRole('button', { name: 'Retry retraction', exact: true }).waitFor({ state: 'visible' });
       assert.equal(await control.locator('details.post-more-actions').getAttribute('open'), null);
@@ -100,11 +104,25 @@ try {
       await page.unroute('**/api/create_prepared_retraction');
       const before = spawnSync('git', ['-C', join(root, 'repository'), 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout;
       await control.getByRole('button', { name: 'Retry retraction', exact: true }).click();
-      await page.waitForFunction(() => document.body.textContent.includes('retracted by an operator'));
+      await page.waitForFunction(notice => document.body.textContent.includes(notice), notice);
       const after = spawnSync('git', ['-C', join(root, 'repository'), 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout;
       assert.equal(after, before);
     } else {
-      await page.waitForFunction(role => document.body.textContent.includes(role === 'operator' ? 'retracted by an operator' : 'retracted by its author'), role);
+      await page.waitForFunction(notice => document.body.textContent.includes(notice), notice);
+    }
+    if (scenario === 'account') {
+      const rebuild = spawnSync(join(project, 'v3'), ['rebuild', join(root, 'repository'), join(root, 'read.sqlite3')],
+        { env: { ...env, FORUM_STATIC_HTML_ROOT: join(root, 'static') }, encoding: 'utf8' });
+      assert.equal(rebuild.status, 0, rebuild.stdout + rebuild.stderr);
+      await page.reload();
+      await page.waitForFunction(notice => document.body.textContent.includes(notice), notice);
+    }
+    const acceptedCommit = spawnSync('git', ['-C', join(root, 'repository'), 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+    assert.equal(acceptedCommit.status, 0, acceptedCommit.stderr);
+    for (const path of ['/source/current/' + post.record_path, '/source/blob/' + acceptedCommit.stdout.trim() + '/' + post.record_path]) {
+      const blocked = await context.request.get(base + path);
+      assert.equal(blocked.status(), 410);
+      assert.match(await blocked.text(), new RegExp(notice));
     }
     console.log(`PASS real browser ${scenario} retraction, signing and attribution`);
     await context.close();

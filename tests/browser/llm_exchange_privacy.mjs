@@ -82,7 +82,7 @@ try {
 
     await page.goto(base + '/posts/' + post.post_id);
     const control = page.locator('[data-role="retraction-control"]').first();
-    await control.locator('summary').click();
+    await control.locator('.post-more-actions > summary').click();
     await control.getByRole('button', { name: 'Retract post', exact: true }).click();
     assert.equal(confirmations, 1);
     const completed = page.waitForResponse(response => response.url().endsWith('/api/create_prepared_retraction'));
