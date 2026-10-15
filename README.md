@@ -90,6 +90,8 @@ internet message boards, unrelated to this codebase's implementation —
 
 ### Project Notes and Supporting Documents
 
+- [Planning notes and proposals](docs/plans/backlog/README.md) — general work notes, QDB notes, messaging and docs proposals, and reported friction
+
 - [BLESSING.md](BLESSING.md)
 - [sfenc.md](docs/specs/sfenc.md) — Starfield Encoding Specification (SFENC), a self-contained text-encoding spec
 - [zenmemes_rules.txt](docs/product/zenmemes_rules.txt) — the site's tone-setting posting rules (not currently rendered anywhere in-app)

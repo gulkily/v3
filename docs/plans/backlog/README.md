@@ -8,6 +8,17 @@ When an item is selected, move its planning work through the feature
 development process and place a multi-artifact feature in its own directory
 under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 
+## Project notes and proposals
+
+These notes retain their original content and completion markers; relocation
+does not imply that every item remains open or has been approved.
+
+- [General work notes](todo.txt)
+- [QDB work notes](qdb_todo.txt)
+- [Private messaging usability proposal](improve_messaging.txt)
+- [Docs index rewrite proposal](docs_page_changes_revised.txt)
+- [Reported navigation and reply friction](related_feature_requests.txt)
+
 ## Agent and automation
 
 - [Agent Reply Return Notification](agent_reply_return_notification_step1_solution_assessment.md)

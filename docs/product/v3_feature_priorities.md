@@ -98,7 +98,7 @@ Do this after the recipient-key contract is settled. Private messaging is partia
 
 ## 7 Everyday mobile use and writing
 
-**Current behavior.** There are multiple presentations, mobile work, media embeds, Unicode/emoji flags, and a local Outbox. The offline runbook explicitly identifies missing draft editing, export, and navigation to a fresh offline compose page. Unicode and emoji authoring are disabled by default. Project notes also report slow navigation and reply submission; those reports need current measurement. [Offline runbook](../runbooks/offline_reading.md), [feature registry](../../src/ForumRewrite/Support/FeatureFlags/FeatureFlagRegistry.php), and [reported friction](../../related_feature_requests.txt)
+**Current behavior.** There are multiple presentations, mobile work, media embeds, Unicode/emoji flags, and a local Outbox. The offline runbook explicitly identifies missing draft editing, export, and navigation to a fresh offline compose page. Unicode and emoji authoring are disabled by default. Project notes also report slow navigation and reply submission; those reports need current measurement. [Offline runbook](../runbooks/offline_reading.md), [feature registry](../../src/ForumRewrite/Support/FeatureFlags/FeatureFlagRegistry.php), and [reported friction](../plans/backlog/related_feature_requests.txt)
 
 **First increments.** Make saved drafts editable and recoverable after browser restarts. Choose intentional Unicode and emoji defaults for each pilot. Observe joining, reading, replying, and recovering a draft on a phone and with keyboard or screen-reader navigation; fix the concrete failures. Instrument page delivery and accepted-post latency before promising speed improvements.
 

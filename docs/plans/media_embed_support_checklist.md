@@ -104,7 +104,7 @@ For each selected provider, copy and complete this sequence in its implementatio
 
 ## General URL cleanup
 
-This is a separate backlog item in [todo.txt](../../todo.txt), broader than embed detection.
+This is a separate backlog item in [todo.txt](backlog/todo.txt), broader than embed detection.
 
 - [ ] Scope tracking-parameter cleanup for arbitrary providers while preserving meaningful parameters.
 - [ ] Scope redirect resolution, including destination validation and bounded network work.

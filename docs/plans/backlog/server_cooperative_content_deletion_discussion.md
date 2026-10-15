@@ -6,7 +6,7 @@ Discussion date: 2026-10-10. Status: exploration notes, not an approved implemen
 
 The immediate goal is to let users retract their own posts with the server's
 help. The user clarified that this was the intent behind "explore
-server-cooperative content deletion" in [todo.txt](../../../todo.txt).
+server-cooperative content deletion" in [todo.txt](todo.txt).
 
 Propagating and honoring deletion requests across cooperating instances may be
 useful in the future, but is outside the initial scope. Local deletion should
