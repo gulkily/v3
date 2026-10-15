@@ -1,6 +1,7 @@
 # Extended Offline Parity Roadmap
 
-**Status:** Product direction and backlog. Each selected slice requires its
+**Status:** Partially delivered; reconciled against implementation on 2026-10-15.
+Product direction and backlog. Each selected slice requires its
 own Feature Development Process (FDP) record before implementation.
 
 ## Goal
@@ -28,6 +29,17 @@ they can leave the online-only boundary.
 - [x] Snapshot time, reader revision, offline health diagnostics, and a
   confirmed refresh/recheck flow.
 - [x] Public-only cache boundary and approved-members-only exclusion.
+- [x] Base defaults: all visible pinned threads plus up to 200 recent non-pinned
+  threads, capped at 100 MiB; compact update defaults: 20 recent non-pinned
+  threads and 8 MiB. Both retain whole selected threads.
+- [x] Approved public keys plus content-associated unapproved public keys;
+  no private keys or private account data in the public snapshot.
+- [x] Independent atomic publication, initial rebuild bootstrap, missing-snapshot
+  request repair, and event-driven publication via the single task-queue worker.
+- [x] Revision-gated automatic reader refresh, forced manual refresh, and reader
+  asset caching even when the optional snapshot is unavailable.
+- [x] Profile-owned offline cache identity, cleanup, diagnostics, and PWA runtime.
+- [x] Saved-post permalinks and original-target links on eligible Outbox items.
 - [x] Tools → Outbox: compact expandable local Likes, reply drafts, and thread
   drafts with visible outcomes and foreground automatic delivery of queued
   work after reconnect; drafts remain local.
@@ -72,7 +84,8 @@ recover without developer tools.
 unsupported routes say so plainly instead of failing ambiguously.
 
 - [x] Board, saved threads, and Tags navigation.
-- [ ] Saved-content links among posts, thread references, and public metadata.
+- [ ] Broader saved-content links among posts, thread references, and public
+  metadata (saved-post permalinks and Outbox target links are delivered).
 - [ ] Selected public profile summaries, if the visibility/removal policy is
   approved.
 - [ ] Saved-content search and feeds with scope and freshness labels.
@@ -86,9 +99,10 @@ unsupported routes say so plainly instead of failing ambiguously.
 submitted.
 
 - [x] Thread and reply drafts stored locally from an already-open compose page.
-- [ ] Restore, edit, delete, export, and discard drafts after restart.
+- [x] Durable local drafts and individual discard/remove from the Outbox.
+- [ ] Restore into compose, edit, and export drafts after restart.
 - [ ] Per-thread draft association and safe recovery when a parent is absent.
-- [ ] Visible distinction between a local draft, a queued action, and an
+- [x] Visible distinction between a local draft, a queued action, and an
   accepted server record.
 
 ### 3. Shared Outbox and queued low-risk actions
@@ -155,7 +169,11 @@ reconnection and follow its result from the Outbox.
 **Outcome:** Offline use scales without turning a browser cache into an
 unbounded mirror of the site.
 
-- [ ] Incremental snapshot/content-delta updates.
+- [x] Bounded compact updates published before the base and imported with
+  repeatable upserts into the saved database; failed optional updates do not
+  replace the cached base.
+- [ ] General incremental/content-delta synchronization, including removal and
+  revocation reconciliation. Compact upserts do not complete this work.
 - [ ] Storage budgets, quota warnings, eviction rules, and download controls.
 - [ ] Multi-device expectations, conflict history, and observability.
 - [ ] Attachment policy and offline media lifecycle.
@@ -175,12 +193,17 @@ unbounded mirror of the site.
 
 Prioritize the smallest item that removes a common source of uncertainty:
 
-1. Finish clear-storage, completion feedback, and browser QA.
+1. Verify the current snapshot lifecycle in a real browser, including a new
+   publication triggering refresh (still unobserved in the asset-refresh record).
+   Then finish accurate completion/retained-copy feedback and confirmed clearing
+   on Tools → Offline Reading, protecting or warning about pending Outbox work.
 2. Add explicit unavailable-route treatment and saved-content coverage clarity.
-3. Implement drafts and their privacy lifecycle.
-4. Design the shared Outbox before allowing any queued action.
-5. Queue reactions, then threads/replies, only after identity, idempotency,
-   and reconciliation guarantees are proven.
+3. Finish draft restore/edit/export and their shared-device privacy lifecycle.
+4. Harden the existing Outbox's idempotency and target/authorization
+   reconciliation before adding action types; the shared Outbox, signed Likes,
+   and initial reply/thread delivery already exist.
+5. Consider broader synchronization only when those guarantees are proven.
 
-This ordering pursues broad offline usefulness first, while ensuring that
-participation parity never outruns trustworthiness.
+See the [main roadmap](offline_support_roadmap.md#completed-foundation) for
+implementation evidence links and the recommended next slice. The compact
+update bundle is delivered; general delta synchronization remains future work.

@@ -1,6 +1,7 @@
 # Offline Support Roadmap
 
-**Status:** Backlog. This records product direction and sequencing; each
+**Status:** Partially delivered; reconciled against implementation on 2026-10-15.
+This records product direction and sequencing; each
 selected slice must still enter the Feature Development Process (FDP) before
 implementation.
 
@@ -17,9 +18,25 @@ silently lose, duplicate, expose, or misrepresent a user's work.
 The following is merged and considered the baseline for future work:
 
 - A public-only SQLite snapshot is built for each static release.
-- It includes every visible pinned thread plus up to 50 recent non-pinned
+- It includes every visible pinned thread plus up to 200 recent non-pinned
   threads, all visible posts in those threads, and no private or operational
-  tables; the snapshot remains capped at 25 MiB.
+  tables; the base snapshot defaults to a 100 MiB cap.
+- A separate compact update (20 recent non-pinned threads, 8 MiB cap) is
+  published before the base by the queued publisher. The reader imports thread,
+  post, and public-key rows into its saved database using repeatable upserts.
+  This is a bounded update bundle, not deletion-aware delta synchronization.
+- Snapshots include every approved public key and content-associated
+  unapproved public keys; private keys and private account data are excluded.
+  Downloaded public records and keys cannot be remotely revoked.
+- Independent atomic publication, rebuild-time first-snapshot bootstrap, and
+  missing-snapshot repair on eligible anonymous GET/HEAD requests are delivered.
+  Normal writes and queued rebuilds enqueue publication; one per-minute task
+  worker processes it. Direct database changes require explicit enqueueing.
+- Load-time refresh compares shell revisions (including the embedded snapshot
+  revision) and skips unchanged downloads; manual refresh forces a recheck.
+  A missing snapshot does not block caching the reader shell and assets.
+- Cache names, cleanup, registration diagnostics, and PWA runtime delivery are
+  profile-specific; activation cleans only the active profile cache family.
 - Normal public Board and saved-thread URLs work from that snapshot when the
   network fails. Online navigation remains network-first.
 - Board controls supported by the snapshot are available offline: All/Liked
@@ -29,7 +46,8 @@ The following is merged and considered the baseline for future work:
 - Offline Board and thread cards follow normal title, hidden-post, heat, and
   theme presentation rules. A thin `offline mode` bar is the persistent
   offline-state indicator and carries compact archive-time and reader-revision
-  indicators.
+  indicators. Saved posts have normal permalinks, and eligible Outbox items
+  link back to their original thread/post targets.
 - Tools → Offline Reading reports saved archive metadata, cached-versus-live
   reader revision, and a confirmed refresh/recheck action.
 - Tools → Outbox is available offline as a separate local-work shell. It keeps
@@ -42,7 +60,14 @@ The following is merged and considered the baseline for future work:
 See [Offline Reading Release 1](../offline_reading_release1/) and
 [Offline Normal Navigation](../offline_normal_navigation/) for the completed
 FDP records and [the operator runbook](../../runbooks/offline_reading.md) for
-current bounds and recovery instructions. The companion [Extended Offline
+recovery instructions (its older 50-thread/25-MiB bounds need reconciliation
+with the current builder defaults above). See also the completed
+[Bundle Expansion](../offline_snapshot_bundle_expansion/),
+[Snapshot Initialization](../offline_snapshot_initialization/),
+[Freshness Automation](../offline_snapshot_freshness_automation/),
+[Reader Asset Refresh](../offline_reader_asset_refresh/), and
+[Browser/Offline Identity](../multi_site_refactor_p2_browser_offline_identity/)
+records. The companion [Extended Offline
 Parity Roadmap](offline_support_extended_roadmap.md) maps the long-term
 maximum-safe-parity goal to specific capabilities and decision gates.
 
@@ -84,9 +109,9 @@ developer tools.
 5. [ ] A browser QA matrix covering first install, refresh, failed refresh,
    worker upgrade, clear, offline restart, and reconnection.
 
-**Dependencies / decisions:** Decide where the optional details and controls
-belong (settings, an unlinked diagnostics page, or another deliberately
-minimal surface), and whether refresh is automatic-only or user-triggered.
+**Established decisions:** Tools → Offline Reading is the details/control
+surface. Automatic revision-gated refresh and explicit forced refresh are
+delivered; use that surface for the remaining lifecycle controls.
 
 ### 2. Broader read-only navigation
 
@@ -99,7 +124,8 @@ without turning the browser cache into a copy of the site.
 
 1. [x] Snapshot-backed tag index and tag-thread views, with a bounded tag index
    derived only from the saved threads.
-2. [ ] Links between saved posts, threads, and permitted public metadata.
+2. [ ] Broader links between saved posts, threads, and permitted public metadata
+   (saved-post permalinks and Outbox target links are delivered).
 3. [ ] Carefully selected public profile summaries, only if their data boundary
    and deletion/revocation behavior are acceptable.
 4. [ ] Explicit unavailable pages for search, feeds, tools, and routes not in the
@@ -181,7 +207,9 @@ cycle.
 
 **Status:** Future strategy, not scheduled work.
 
-Potential capabilities include incremental snapshots, content-delta sync,
+A bounded compact-update import is already delivered; it does not establish
+deletion/revocation reconciliation or a general delta protocol. Remaining
+potential capabilities include incremental snapshots, content-delta sync,
 storage budgets, multi-device behavior, attachment policy, conflict history,
 and observability. Do not start this work until queued-write behavior has
 proved reliable and the product requires more than bounded reading.
@@ -197,14 +225,23 @@ proved reliable and the product requires more than bounded reading.
 
 ## Suggested ordering
 
-1. Snapshot lifecycle and reader confidence.
-2. One bounded read-only navigation expansion, if usage demonstrates a need.
-3. Saved drafts.
-4. Queued reactions.
-5. Queued replies and threads.
-6. Incremental/offline-first synchronization only if justified.
+1. Finish snapshot lifecycle confidence on Tools → Offline Reading: first
+   validate install/refresh/retained-copy behavior in a real browser, then plan
+   accurate completion feedback and confirmed clearing of saved reading data.
+   Clearing must explicitly preserve or warn about device-local Outbox work.
+2. Add unavailable-route treatment and saved-content coverage clarity; broader
+   read navigation should follow demonstrated need.
+3. Finish draft restore/edit/export and shared-device retention controls.
+4. Harden the delivered queue's server idempotency and target/authorization
+   reconciliation before broadening action types.
+5. Consider general delta synchronization only if justified; the compact update
+   bundle is already part of the baseline.
 
-The first three are separable; do not make queued writes a prerequisite for a
-better reading experience. Queued reactions and queued posts, however, share
-security, idempotency, and reconciliation foundations and should be planned
-together before either is built.
+**Recommended next slice:** Snapshot lifecycle confidence. Begin with browser
+verification of install, unchanged loads, a new publication, forced refresh,
+failed refresh retaining the prior copy, offline restart, and reconnect. The
+asset-refresh record still leaves a publish-triggered browser refresh unobserved.
+Use that evidence to scope lifecycle feedback and a safe clear-reading-data
+control through Railspike before application implementation. Outbox design,
+Like queuing, and initial signed post delivery are already delivered and should
+not be scheduled again as new foundations.
