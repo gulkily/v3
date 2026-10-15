@@ -145,6 +145,7 @@ final class PostRecordParser
             $eventLocation,
             $eventLink,
             $eventTime,
+            AgentResponseMetadata::decode($record->headers['Agent-Response'] ?? null, $parentId),
         );
     }
 

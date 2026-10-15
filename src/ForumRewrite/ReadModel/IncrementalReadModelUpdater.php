@@ -108,10 +108,10 @@ class IncrementalReadModelUpdater
                 $stmt = $pdo->prepare(
                     'INSERT INTO posts (
                         post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                        thread_type, author_identity_id, author_profile_slug, author_label, sequence_number
+                        thread_type, agent_response_json, author_identity_id, author_profile_slug, author_label, sequence_number
                      ) VALUES (
                         :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                        :thread_type, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                        :thread_type, :agent_response_json, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
                      )'
                 );
                 $stmt->execute([
@@ -123,6 +123,7 @@ class IncrementalReadModelUpdater
                     'body' => $record->body,
                     'board_tags_json' => $boardTagsJson,
                     'thread_type' => $record->threadType,
+                    'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
                     'author_identity_id' => $record->authorIdentityId,
                     'author_profile_slug' => $author['profile_slug'],
                     'author_label' => $author['label'],
@@ -950,10 +951,10 @@ class IncrementalReadModelUpdater
         $stmt = $pdo->prepare(
             'INSERT INTO posts (
                 post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                thread_type, author_identity_id, author_profile_slug, author_label, sequence_number
+                thread_type, agent_response_json, author_identity_id, author_profile_slug, author_label, sequence_number
              ) VALUES (
                 :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                :thread_type, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                :thread_type, :agent_response_json, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
              )'
         );
         $stmt->execute([
@@ -965,6 +966,7 @@ class IncrementalReadModelUpdater
             'body' => $record->body,
             'board_tags_json' => $boardTagsJson,
             'thread_type' => $record->threadType,
+                    'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
             'author_identity_id' => $record->authorIdentityId,
             'author_profile_slug' => $author['profile_slug'],
             'author_label' => $author['label'],

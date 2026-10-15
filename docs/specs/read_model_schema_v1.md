@@ -57,6 +57,7 @@ One row per canonical post record (both thread roots and replies).
 | `body` | TEXT | |
 | `board_tags_json` | TEXT | JSON array |
 | `thread_type` | TEXT NULL | |
+| `agent_response_json` | TEXT NULL | Optional canonical response kind, source/version, and expansion parent/version; introduced in schema 18. |
 | `author_identity_id` | TEXT NULL | |
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |
@@ -276,3 +277,12 @@ Metadata also includes `post_reaction_invalid_count`, parallel to
 `thread_label_invalid_count`. A missing signer key makes a supplied signature
 invalid, never unsigned. Raw source bytes are unchanged; current-source responses
 expose `X-Forum-Signature-Status`, and activity source metadata shows the status.
+
+### Agent response provenance
+
+Optional `Agent-Response` JSON on canonical reply records identifies
+`scripture_oriented_analysis` or `scripture_expansion`, its source post/version,
+and (for expansion) the initial reply/version. `posts.agent_response_json`
+replays this metadata on rebuild. Expansion records use a deterministic ID
+based on their initial reply; publication retries reconcile that canonical file
+rather than creating another reply. Older records remain valid without metadata.
