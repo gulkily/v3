@@ -34,6 +34,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\ApprovalPolicy;
+use ForumRewrite\Security\ApprovalAcceptance;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
@@ -1599,12 +1600,9 @@ class LocalWriteService
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
             $phaseStartedAt = hrtime(true);
-            $this->writeFile($recordPath, $contents);
+            $commitResult = $this->commitApprovalAcceptance($recordPath, $contents, null, $context, 'direct',
+                'Approve user ' . $targetIdentityId . ' by ' . $approverIdentityId);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
-            $commitResult = $this->commitCanonicalWrite(
-                [$recordPath],
-                'Approve user ' . $targetIdentityId . ' by ' . $approverIdentityId
-            );
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
             $timings = array_merge($timings, $this->synchronizeApprovalDerivedState($record, $commitSha));
@@ -1702,6 +1700,8 @@ class LocalWriteService
             $timings = [];
             $totalStartedAt = hrtime(true);
             $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $recovered = $this->recoverAcceptedApproval($input);
+            if ($recovered !== null) return $recovered;
             $prepared = $this->loadPreparedPost($prepareToken);
 
             if (($prepared['kind'] ?? '') !== 'approval') {
@@ -1758,14 +1758,9 @@ class LocalWriteService
             }
 
             $phaseStartedAt = hrtime(true);
-            $this->writeFile($recordPath, $canonicalRecord);
-            $this->writeFile($recordPath . '.asc', $signature);
+            $commitResult = $this->commitApprovalAcceptance($recordPath, $canonicalRecord, $signature, $context, 'direct',
+                'Approve user ' . $targetIdentityId . ' by ' . $authorIdentityId);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
-
-            $commitResult = $this->commitCanonicalWrite(
-                [$recordPath, $recordPath . '.asc'],
-                'Approve user ' . $targetIdentityId . ' by ' . $authorIdentityId
-            );
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
             $timings = array_merge($timings, $this->synchronizeApprovalDerivedState($record, $commitSha));
@@ -1930,9 +1925,14 @@ class LocalWriteService
                 $context = $this->approvalContext((string) $entry['issued']->post->authorIdentityId, $authorIdentityId, (string) $record->post->threadId, (string) $record->post->parentId);
             }
             if ($this->postTargetExists($postId)) throw new RuntimeException('Prepared post target already exists.');
-            $this->writeFile($recordPath, $canonicalRecord);
-            $this->writeFile($recordPath . '.asc', $signature);
-            $commitResult = $this->commitCanonicalWrite([$recordPath, $recordPath . '.asc'], ucfirst($record->action) . ' invitation ' . $record->invitationId . ' by ' . $authorIdentityId);
+            $message = ucfirst($record->action) . ' invitation ' . $record->invitationId . ' by ' . $authorIdentityId;
+            if ($record->action === 'redeem') {
+                $commitResult = $this->commitApprovalAcceptance($recordPath, $canonicalRecord, $signature, $context, 'invitation', $message);
+            } else {
+                $this->writeFile($recordPath, $canonicalRecord);
+                $this->writeFile($recordPath . '.asc', $signature);
+                $commitResult = $this->commitCanonicalWrite([$recordPath, $recordPath . '.asc'], $message);
+            }
             if ($record->action === 'redeem') {
                 // A redemption derives member approval from the issuer's existing
                 // approval, so it needs the approval-aware projection update.
@@ -2741,6 +2741,75 @@ class LocalWriteService
             'label' => (string) $row['username'],
             'is_approved' => (int) $row['is_approved'],
         ];
+    }
+
+    private function recoverAcceptedApproval(array $input): ?array
+    {
+        $contents = (string) ($input['canonical_record'] ?? '');
+        if ($contents === '' || !isset($input['post_id'], $input['record_path'], $input['author_identity_id'], $input['detached_signature'])) return null;
+        $post = (new PostRecordParser())->parse($contents);
+        $path = CanonicalPathResolver::datedPost($post->postId, $post->createdAt);
+        if ($input['record_path'] !== $path || $input['post_id'] !== $post->postId || $input['author_identity_id'] !== $post->authorIdentityId
+            || !is_file($this->repositoryRoot . '/' . $path)) return null;
+        if (file_get_contents($this->repositoryRoot . '/' . $path) !== $contents
+            || !is_file($this->repositoryRoot . '/' . $path . '.asc')
+            || file_get_contents($this->repositoryRoot . '/' . $path . '.asc') !== $input['detached_signature']) return null;
+        $receipt = ApprovalAcceptance::read($this->repositoryRoot, $path);
+        if ($receipt === null || $receipt['kind'] !== 'direct') return null;
+        foreach ([$path, $path . '.asc', ApprovalAcceptance::path($post->postId)] as $relative) {
+            $bytes = (string) file_get_contents($this->repositoryRoot . '/' . $relative);
+            if ($this->runGitCommand(['show', 'HEAD:' . $relative], 'Unable to verify accepted approval') !== rtrim($bytes, "\n")) return null;
+        }
+        $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to inspect accepted approval'));
+        try {
+            if (!$this->canIncrementallyUpdateReadModel()) $this->refreshDerivedStateAfterCommit($head);
+        } catch (\Throwable $error) {
+            throw new RuntimeException('Approval already committed at ' . $head . ' but refresh failed. Retry refresh; do not approve again.', 0, $error);
+        }
+        return ['status' => 'ok', 'recovered' => true, 'post_id' => $post->postId, 'thread_id' => $post->threadId,
+            'profile_slug' => $receipt['context']['target_profile_slug'], 'record_path' => $path,
+            'signature_path' => $path . '.asc', 'commit_sha' => $head];
+    }
+
+    /** Commit the grant, signature, and receipt together; discard incomplete writes on failure. */
+    private function commitApprovalAcceptance(string $path, string $contents, ?string $signature, array $context, string $kind, string $message): array
+    {
+        $post = (new PostRecordParser())->parse($contents);
+        $receiptPath = ApprovalAcceptance::path($post->postId);
+        $files = [$path => $contents, $receiptPath => ApprovalAcceptance::encode($contents, $context, $this->canonicalTimestampNow(), $kind)];
+        if ($signature !== null) $files[$path . '.asc'] = $signature;
+        foreach ($files as $relative => $bytes) {
+            if (file_exists($this->repositoryRoot . '/' . $relative) || is_link($this->repositoryRoot . '/' . $relative)) {
+                throw new RuntimeException('Approval acceptance target already exists.');
+            }
+        }
+        $before = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to inspect acceptance base'));
+        $written = [];
+        try {
+            foreach ($files as $relative => $bytes) {
+                $written[] = $relative;
+                $this->writeFile($relative, $bytes);
+            }
+            ApprovalAcceptance::read($this->repositoryRoot, $path);
+            return $this->commitCanonicalWrite(array_keys($files), $message);
+        } catch (\Throwable $error) {
+            $after = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to inspect acceptance outcome'));
+            if ($after !== $before) {
+                // Never remove a committed grant because subsequent reporting failed.
+                foreach ($files as $relative => $bytes) {
+                    if ($this->runGitCommand(['show', 'HEAD:' . $relative], 'Unable to verify committed acceptance') !== rtrim($bytes, "\n")) throw $error;
+                }
+                return ['commit_sha' => $after, 'timings' => []];
+            }
+            if ($written !== []) {
+                $this->runGitCommand(['reset', '-q', 'HEAD', '--', ...$written], 'Unable to unstage incomplete acceptance');
+                foreach ($written as $relative) {
+                    $file = $this->repositoryRoot . '/' . $relative;
+                    if (is_file($file) && !unlink($file)) throw new RuntimeException('Unable to remove incomplete acceptance.', 0, $error);
+                }
+            }
+            throw $error;
+        }
     }
 
     /**

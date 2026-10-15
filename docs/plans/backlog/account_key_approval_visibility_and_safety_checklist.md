@@ -1,6 +1,6 @@
 # Account key approval visibility and safety checklist
 
-Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stages 1–2 enforcement and approval review are complete, and stages 3–6 remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
+Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stages 1–3 enforcement, approval review, and acceptance evidence are complete, and stages 4–6 remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
 
 Reduce easy account impersonation while preserving open registration, member sponsorship, and convenient device setup. Prioritize the cross-account approval restriction, clear approval wording, and visible account-key history. Notifications and device pairing can follow as separately scoped features.
 
@@ -30,20 +30,20 @@ Meaningful authorization prompts should identify the consequential details the u
 
 - [ ] Show each approved key on the account page, with its approver and approval time where known.
 - [ ] Distinguish first-key sponsorship, an additional key authorized by the same account, and an additional key authorized by somebody else. Identify operator overrides explicitly.
-- [ ] Record that classification when a new approval is accepted, along with the relevant key count and actor authority, so future reviews need not infer them from current state.
+- [x] Record that classification when a new approval is accepted, along with the relevant key count and actor authority, so future reviews need not infer them from current state.
 - [ ] Preserve “unknown” for historical facts that cannot be established. The current audit's review candidates must not become confirmed violations merely by appearing in the UI.
 - [ ] Add account-key grants to an operator security feed with links to the affected account and approval evidence.
 - [ ] Consider a community-visible event for additions to existing accounts: “Alice approved an additional key for Bob. Bob now has 3 approved keys.” Give ordinary new-member sponsorship a less prominent presentation.
 - [ ] Keep IP addresses and device details out of public events, and respect the site's membership/access boundary when exposing history.
 - [ ] Include invitation-derived grants in the same history and classification rules.
 
-Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, but these are not durable acceptance evidence. Account-wide history and the operator security feed remain pending.
+Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, and Stage 3 persists these facts in grant-bound acceptance receipts. Account-wide history and the operator security feed remain pending.
 
 ## Priority 3 Make approval policy changes visible
 
 - [ ] Surface who enabled or disabled cross-account approvals and when, using the existing signed feature-flag change history where possible.
 - [ ] Let an operator review policy changes alongside account-key grants so a brief enable, approve, disable sequence is easy to notice.
-- [x] Decide whether new approval events should reference the effective policy or policy-change record: approved Step 2 requires effective policy in durable acceptance evidence. Implementing that evidence remains Stage 3 work.
+- [x] Decide whether new approval events should reference the effective policy or policy-change record: approved Step 2 requires effective policy in durable acceptance evidence. Stage 3 implements that evidence.
 - [x] Explain that disabling the flag restricts future acceptance and does not revoke keys already approved while it was enabled.
 
 The registered flag description explains prospective behavior. Existing signed feature-flag activity supplies actor/time/source evidence; the focused operator view joining policy changes with grants remains Stage 5 work. The policy visibility item above remains open for that complete experience.

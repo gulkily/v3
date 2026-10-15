@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Status: Implementation in progress. Stages 1–2 are implemented; stages 3–6 remain. This is not a release completion report.
+Status: Implementation in progress. Stages 1–3 are implemented; stages 4–6 remain. This is not a release completion report.
 
 Planning commit: `febc1e03` on `feature/account-key-approval-safety`.
 
@@ -25,3 +25,12 @@ Planning commit: `febc1e03` on `feature/account-key-approval-safety`.
 - Changes: Prepared approvals include a signed context digest and retain the complete context in server-owned preparation metadata. Finalization compares live context under the existing write lock and rejects changed accounts, counts, policy, or authority, requiring refresh/review/retry. Existing canonical-byte and signature checks prevent target substitution; expired preparations remain rejected.
 - Verification: `php tests/run.php ApprovalPolicyTest BrowserSigningNormalizationTest` passed 87 tests. The final policy rerun passed six tests, including changed-count and changed-policy review invalidation, all three labels, target substitution, and expiry. Five focused WriteApiSmokeTest tests passed for profile controls, preparation, signed finalization, and invitation acceptance. `node tests/browser/approval_review.mjs` passed desktop/mobile confirmation, cancellation without signing, retry, and missing-review rejection. Browser review uses isolated transport/signing doubles; real signed acceptance is covered by the PHP smoke tests. `git diff --check` passed.
 - Notes: Debug mode was explicitly enabled on resumption. No production changes. Durable acceptance evidence and history remain stages 3–6; the signed review digest alone is not acceptance evidence.
+
+## Stage 3 - Durable acceptance evidence and stable invitation replay
+
+- Changes: Added repository-owned ApprovalAcceptance receipts bound to exact grant bytes, acceptance time, account/key, authorizer, classification, count, authority, and effective policy. Direct/manual and invitation grants commit the receipt with the grant/signature without changing signed bytes. Receipts validate identities, time, grant binding, and signed review context where present; absent legacy evidence remains unknown.
+- Changes: Failed acceptance writes unstage/remove incomplete grant files; a committed outcome is preserved if reporting fails. Exact signed direct retries recover committed success without duplicate grants. Existing projection-failure messages retain the committed-write distinction.
+- Changes: Full and incremental projections share InvitationApprovalReplay. Receipts supply acceptance time rather than preparation time; legacy creation dates are replay evidence only, not claimed acceptance dates. Expiry is compared with historical event time instead of today's clock; later revocation cannot remove a receipted grant. Both projections validate available direct receipts.
+- Changes: ArchiveRecordCatalog recognizes and validates receipts for trusted repository restores; remote content imports explicitly exclude this authority family.
+- Verification: Final targeted run passed 36 tests across ApprovalAcceptanceTest, ApprovalPolicyTest, InvitationIssuanceTest, RepositoryArchiveImportCommandTest, ContentImportPlannerTest, RepositoryArchiveValidationTest, and six exact WriteApiSmokeTest methods. Coverage includes delayed/pre-expiry versus post-expiry acceptance, unknown legacy receipts, tampered bytes/context, an injected Git commit failure with clean retry, duplicate signed retry, signed invitation restore from tar.gz followed by rebuild, full/incremental parity, and projection-failure handling. An initial parity failure exposed an invalid posts.source_path query; reusing the canonical path resolver fixed it and the final suite passed. `git diff --check` passed.
+- Notes: No database migration or production changes. Receipts are repository-owned evidence, not a new member-signed authority primitive; repository restore remains trusted administration. Account/operator presentation and release checks remain stages 4–6.
