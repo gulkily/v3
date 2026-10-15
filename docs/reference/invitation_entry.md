@@ -36,6 +36,76 @@ site gate; it does not bypass independent resource restrictions. A deleted targe
 shows the normal Not Found page; use site navigation to continue. The approved
 membership remains available.
 
+## Choosing a username, step by step
+
+The **Account → Choose username** button changes the forum name attached to an
+existing browser key. It can be used again later; member approval is not required
+to change a name, but ownership of the key must be proven by its signature.
+
+1. **Check for an existing keypair.** If this browser has no saved public/private
+   keypair, Account displays “Set up this browser first.” The rename action does
+   not generate a replacement key.
+2. **Ask for a name.** A browser prompt is prefilled with the locally saved name,
+   or `guest`. Cancel stops the action without sending a name-change request.
+   Confirming disables the button until the operation finishes.
+3. **Prepare the existing identity.** The shared identity helper ensures the
+   saved key is ready for signing and publishes its public identity if needed.
+4. **Normalize the input.** The browser trims whitespace, lowercases the name,
+   replaces runs of characters outside `a–z`, `0–9`, `.`, `_`, and `-` with a
+   hyphen, and removes leading/trailing hyphens. An empty result becomes `guest`.
+   For example, `Alice Smith` becomes `alice-smith`. The server requires the
+   normalized name to contain 1–80 characters from that same character set;
+   overly long names are rejected rather than truncated. Names need not be unique.
+5. **Prepare an unsigned record.** The browser sends the identity ID and normalized
+   name to `POST /api/prepare_profile_name`. The server checks that the identity
+   exists and prepares a record with a unique ID, UTC timestamp, `set-name`
+   operation, author identity ID, and username. It returns the exact record, its
+   intended path, and a preparation token that expires after ten minutes.
+   Preparation alone does not change the displayed name.
+6. **Sign in the browser.** The existing private key signs those exact record
+   bytes. The private key stays in the browser; only the record and detached
+   signature are submitted with the preparation token, path, and identity ID to
+   `POST /api/finalize_profile_name`.
+7. **Verify before accepting.** Under the repository write lock, the server checks
+   preparation type/expiry, the record hash, identity/path binding, record format,
+   and the signature against the identity's public key. It rejects a prepared
+   change whose timestamp is no newer than the latest verified name change,
+   preventing stale requests from overwriting a newer saved name.
+8. **Persist the signed change.** The server writes
+   `records/profile-names/profile-name-<32 hex>.txt` and its `.txt.asc` signature
+   companion, then commits both to the canonical repository. It preserves the
+   original key, fingerprint, identity bootstrap record, approval, and content
+   ownership. The key's embedded OpenPGP user ID remains its original name.
+9. **Refresh derived presentation.** The server rebuilds the read model and
+   invalidates generated presentation. The latest verified update, ordered by
+   `(Created-At, Record-ID)`, supplies the effective profile name, username route,
+   and author/activity labels. Invalid or unsigned name updates are ignored on
+   replay. Historical signed content bytes remain unchanged. Existing duplicate
+   username routing rules still apply.
+10. **Refresh this browser.** After server success, the browser confirms that its
+    current identity still matches, saves the returned username locally, refreshes
+    Account, and dispatches `forum:identity-changed` for listening UI components.
+    Account displays “Username saved. Your key and approval are unchanged.”
+    Authenticated Account renders also reconcile the local name with server state.
+
+### Naming errors and recovery
+
+Errors appear in Account's existing key-status area, and the button is re-enabled.
+A rejected signature, invalid name, expired preparation, or stale request does not
+save a new name record. Retry to prepare a fresh request after addressing the
+reported problem. If the browser identity changed during the operation, reload
+Account to inspect the name for the current identity.
+
+A lost response or derived-state failure can occur **after** the canonical change
+has committed. An error therefore does not always mean the server saved nothing.
+Reload Account to check the authoritative name before retrying; do not replace or
+regenerate the key. A read-model failure may require operator recovery/rebuild.
+
+Implementation references: [Account action and normalization](../../public/assets/browser_signing.js),
+[prepared naming writes](../../src/ForumRewrite/Write/LocalWriteService.php),
+[record validation](../../src/ForumRewrite/Canonical/ProfileNameRecordParser.php),
+and [verified replay](../../src/ForumRewrite/ReadModel/ProfileNames.php).
+
 ## Verification and rollback
 
 Run `node tests/browser/invite_zero_click.mjs` with Playwright Core and Chrome
