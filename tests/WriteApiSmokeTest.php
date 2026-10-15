@@ -2485,6 +2485,24 @@ NODE;
         });
     }
 
+    public function testExpansionOfReplyDisappearsWhenThreadRootIsHidden(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $rootPost, $ignoredInitial, $root, $db, $artifacts, $directory): void {
+            $response = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $rootPost . '&parent_id=' . $rootPost . '&body=How%20can%20we%20care%20for%20neighbors%3F');
+            $source = $this->extractValue($response, 'post_id');
+            $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . $source . '&response_mode=scripture_oriented_analysis');
+            $initial = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($source))['agent_post_id'];
+            $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+            $expansion = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial))['agent_post_id'];
+            $pdo->exec('UPDATE posts SET is_hidden = 1 WHERE post_id = ' . $pdo->quote($rootPost));
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . $initial), true)['status']);
+            (new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder())->build($db, $directory . '/hidden-thread.sqlite3');
+            $copy = new PDO('sqlite:' . $directory . '/hidden-thread.sqlite3');
+            $stmt = $copy->prepare('SELECT COUNT(*) FROM unavailable_expansions WHERE post_id = ?');
+            $stmt->execute([$expansion]); assertSame(1, (int) $stmt->fetchColumn());
+        });
+    }
+
     public function testScriptureExpansionCacheAndOfflineVisibility(): void
     {
         $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory): void {
@@ -2495,6 +2513,10 @@ NODE;
             assertSame('generated', $done['generation_status']);
             assertSame(false, is_file($artifacts . '/posts/' . $initial . '.html'));
             $_COOKIE = [];
+            $author = $pdo->query('SELECT author_identity_id FROM posts WHERE post_id = ' . $pdo->quote($initial))->fetchColumn();
+            $listed = \ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts($pdo, [$author]);
+            assertSame(false, in_array($done['agent_post_id'], array_column($listed, 'post_id'), true));
+            assertStringNotContains($done['agent_post_id'], $this->renderMethod($app, 'GET', '/threads/' . $source . '?format=rss'));
             $public = $this->renderMethod($app, 'GET', '/posts/' . $initial);
             assertStringContains('Further scripture reflection', $public);
             assertStringNotContains('data-action="expand-scripture"', $public);

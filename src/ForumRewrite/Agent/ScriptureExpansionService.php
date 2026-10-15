@@ -80,6 +80,7 @@ final class ScriptureExpansionService
         }
         [$initial, , $meta] = $this->sources($replyId);
         $context = ($this->contextForPost)($initial);
+        $context['analysis_hash'] = 'task:' . hash('sha256', json_encode($meta, JSON_THROW_ON_ERROR));
         // Canonical identity is stable across rebuilds and all requesters.
         if (is_file($this->repositoryRoot . '/' . CanonicalPathResolver::post(Metadata::expansionId($replyId)))) {
             return $this->status($replyId);

@@ -13,6 +13,9 @@ assert.equal(setup.status, 0, setup.stdout + setup.stderr);
   try {
     for (const surface of ['thread', 'post']) for (const width of [1280, 375]) {
       const page = await browser.newPage({viewport:{width,height:800}, serviceWorkers:'block'});
+      if (surface === 'post' && width === 375) {
+        await page.addInitScript(() => Object.defineProperty(window, 'sessionStorage', {get() { throw new Error('Storage blocked'); }}));
+      }
       let requests = 0;
       const malicious = 'Further context.\n<script>window.expansionInjected=true</script>';
       await page.route('**/*', route => {
