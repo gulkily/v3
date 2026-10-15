@@ -66,3 +66,6 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 - [Messaging usability proposal](improve_messaging.txt)
 - [Documentation index rewrite proposal](docs_page_changes_revised.txt)
 - [Reported interaction friction](related_feature_requests.txt)
+
+- [Feature Flags redesign implementation brief](feature-flags-redesign-spec.md)
+- [Feature Flags redesign interactive mockup](feature-flags-redesign.html)
