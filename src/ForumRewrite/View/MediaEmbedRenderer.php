@@ -9,6 +9,7 @@ final class MediaEmbedRenderer
     private const PROVIDER_LABELS = [
         'youtube' => ['icon' => '▶', 'label' => 'YouTube'],
         'instagram' => ['icon' => '📷', 'label' => 'Instagram'],
+        'bandcamp' => ['icon' => '♫', 'label' => 'Bandcamp'],
         'soundcloud' => ['icon' => '♫', 'label' => 'SoundCloud'],
         'spotify' => ['icon' => '♫', 'label' => 'Spotify'],
         'tiktok' => ['icon' => '▶', 'label' => 'TikTok'],
@@ -79,6 +80,14 @@ final class MediaEmbedRenderer
             return $this->renderInstagramCard($match);
         }
 
+        if ($inlinePlayerEnabled && $match['provider'] === 'bandcamp') {
+            return $this->renderPlayerExpando(
+                $match, '', '♫ Listen on Bandcamp', 'Bandcamp ' . $match['contentKind'] . ' player',
+                ' media-embed-card--bandcamp',
+                '/internal/media-embeds/bandcamp-player?url=' . rawurlencode($match['embedId']),
+            );
+        }
+
         if ($inlinePlayerEnabled && $match['provider'] === 'soundcloud') {
             return $this->renderPlayerExpando(
                 $match,
@@ -134,17 +143,19 @@ final class MediaEmbedRenderer
         );
     }
 
-    private function renderPlayerExpando(array $match, string $embedSrc, string $summary, string $title, string $extraClass = ''): string
+    private function renderPlayerExpando(array $match, string $embedSrc, string $summary, string $title, string $extraClass = '', string $resolveSrc = ''): string
     {
         $provider = self::PROVIDER_LABELS[$match['provider']]['label'];
         return '<span class="media-embed-card__source"><a class="media-embed-card__link" href="' . $this->escape($match['displayUrl']) . '">Open on ' . $this->escape($provider) . '</a></span>'
             . '<details class="media-embed-card media-embed-card--inline-player' . $extraClass . '" data-media-embed-card data-provider="' . $this->escape($match['provider']) . '">'
             . '<summary>' . $this->escape($summary) . '</summary>'
             . '<iframe class="media-embed-card__iframe" data-media-embed-iframe data-embed-src="' . $this->escape($embedSrc) . '"'
+            . ($resolveSrc !== '' ? ' hidden data-resolve-src="' . $this->escape($resolveSrc) . '"' : '')
             . ' title="' . $this->escape($title) . '" src=""'
             . ' sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"'
             . ' allow="autoplay; encrypted-media; fullscreen; picture-in-picture"'
             . ' referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allowfullscreen></iframe>'
+            . ($resolveSrc !== '' ? '<span data-media-embed-status role="status"></span>' : '')
             . '</details>';
     }
 

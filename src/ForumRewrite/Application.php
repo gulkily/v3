@@ -148,6 +148,11 @@ final class Application
             return;
         }
 
+        if ($path === '/internal/media-embeds/bandcamp-player') {
+            (new \ForumRewrite\Http\BandcampPlayerController($this->routeServices(), new \ForumRewrite\View\BandcampPlayerResolver($this->projectRoot)))->resolve($method, $query);
+            return;
+        }
+
         if ($path === '/internal/media-embeds/warm-preview') {
             $this->mediaEmbedPreviewController()->warmPreview($method, $query);
             return;

@@ -8,6 +8,22 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MusicMediaEmbedTest
 {
+    public function testBandcampAlbumsUseDeferredDiscoveryAndNormalTitles(): void
+    {
+        $url = 'https://lyndseyscott.bandcamp.com/album/well-held?tag=music&si=tracking';
+        $r = new MediaEmbedRenderer();
+        $html = $r->render($url, true, true);
+        assertSame('bandcamp', (new MediaEmbedDetector())->classify($url)['provider']);
+        assertSame(true, str_contains($html, 'data-resolve-src="/internal/media-embeds/bandcamp-player?url='));
+        assertSame(true, str_contains($html, 'data-embed-src=""'));
+        assertSame(true, str_contains($html, 'hidden data-resolve-src'));
+        assertSame(true, strpos($html, 'Open on Bandcamp') < strpos($html, '<details'));
+        assertSame(true, str_contains($html, '?tag=music'));
+        assertSame(false, str_contains($r->render($url, true, false), 'data-resolve-src'));
+        assertSame(false, str_contains($r->render($url, false, true), '<details'));
+        assertSame(null, \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url));
+    }
+
     public function testSoundcloudSetsRetainCollectionContext(): void
     {
         $url = 'https://soundcloud.com/forss/sets/soulhack/?utm_source=x';

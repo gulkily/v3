@@ -95,6 +95,11 @@ final class MediaEmbedDetector
             return ['provider' => 'tiktok', 'embedId' => $matches[1]];
         }
 
+        $release = BandcampReleaseUrl::parse($url);
+        if ($release !== null && $release['kind'] === 'album') {
+            return ['provider' => 'bandcamp', 'embedId' => $release['url'], 'contentKind' => $release['kind']];
+        }
+
         if (in_array($host, ['soundcloud.com', 'www.soundcloud.com'], true)
             && !$this->hasPrivateMusicParameters($parts)
             && preg_match('#^/([A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)/(?:(sets)/)?([A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)/?$#D', $path, $m) === 1

@@ -23,3 +23,9 @@ Implementation in progress; production flags remain unchanged.
 - Changes: one shared release-URL policy; metadata parser accepting only matching Bandcamp player IDs; HTTPS fetch pins a validated public IPv4 address while verifying the artist TLS hostname, rejects redirects/non-HTML/oversized responses, and applies a three-second fetch deadline. Separate disposable per-release cache uses 24-hour successes, one-hour failures, and nonblocking locks.
 - Verification: resolver/music suites — 7 passed, covering URL boundaries, destination addresses, malformed/foreign/wrong-kind metadata, status/challenge/size failures, cache expiry/backoff/corruption and lock deduplication. Native production fetcher returned album `1043068150` and track `3419983385` for the supplied pages.
 - Notes: no canonical or read-model schema changes. System DNS resolution uses the host resolver; an over-deadline result is rejected before connecting. This prerequisite is not a releasable Bandcamp UI by itself.
+
+## Stage 4 - Bandcamp albums
+
+- Changes: album cards use the canonical renderer; expansion invokes a same-origin, both-flags-gated resolution endpoint, then loads the reconstructed player. Accessible pending/failure status and persistent source links survive lookup errors. No network work during HTML rendering or title writes.
+- Verification: controller/resolver/music/script suites — 12 passed. Isolated live album thread/reply resolved the supplied album, loaded its track list, and played audio: native media element reported `paused=false`, `currentTime=3.24944`, no media error. Method/flag/invalid-input tests verify rejected requests do not fetch or create the read model.
+- Notes: Bandcamp uses its visible artwork Play control in this layout; its separate `#play` element is hidden. Client validates returned player destinations and avoids loading a player closed during discovery.
