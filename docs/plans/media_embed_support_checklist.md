@@ -3,7 +3,7 @@
 Use this checklist to verify existing embeds, close URL coverage gaps, and add
 providers. Checked implementation items describe repository support, not live
 deployment status. Unchecked expansion items are candidates to scope; no delivery
-dates are committed. Coverage and local verification updated October 14, 2026. Production flag settings still need an operator check.
+dates are committed. Coverage and local verification updated October 15, 2026. Production flag settings still need an operator check.
 
 ## Current support
 
@@ -13,9 +13,11 @@ dates are committed. Coverage and local verification updated October 14, 2026. P
 | Instagram | `instagram.com/p/SHORTCODE/`, `instagram.com/reel/SHORTCODE/` | Link card or cached thumbnail and title preview |
 | Spotify | `open.spotify.com/track/ID`, `/album/ID`, `/playlist/ID` | Link card or expandable player; provider may offer previews |
 | TikTok | `tiktok.com/@USER/video/ID` | Link card or expandable portrait player |
+| SoundCloud | `soundcloud.com/USER/TRACK`, `/USER/sets/PLAYLIST` | Link card or expandable track/collection player |
+| Bandcamp | `ARTIST.bandcamp.com/track/SLUG`, `/album/SLUG` | Link card or expandable player after cached ID discovery |
 
 Both HTTP and HTTPS are recognized. YouTube, Instagram, and TikTok accept optional
-`www.`; Spotify uses exactly `open.spotify.com` and short YouTube links use exactly
+`www.`; SoundCloud also accepts `www.`. Spotify uses exactly `open.spotify.com` and short YouTube links use exactly
 `youtu.be`. YouTube IDs must be 11 characters, Spotify IDs 22 alphanumeric
 characters, and TikTok IDs 19 digits. Paths must match the listed content forms
 completely; URL credentials and explicit ports are rejected. Instagram previews
@@ -23,22 +25,50 @@ link to the original post; they do not play Instagram video inline.
 
 Redirecting share links, localized Spotify paths such as `/intl-en/track/ID`,
 YouTube live/mobile/embed paths, and playlist-only YouTube links remain unsupported.
-Player URLs do not carry start times or playlist context. Source links preserve
+YouTube player URLs do not carry start times or playlist context. Source links preserve
 meaningful parameters and fragments while removing known tracking parameters.
 
 - [x] Detect the URL shapes above in post bodies and render provider cards.
 - [x] Strip known tracking parameters from card links.
-- [x] Load YouTube, Spotify, and TikTok players only when the reader expands them; keep source links visible outside collapsed players.
+- [x] Load YouTube, Spotify, TikTok, SoundCloud, and Bandcamp players only when the reader expands them; keep source links visible outside collapsed players.
 - [x] Use a sandboxed `youtube-nocookie.com` player with responsive 16:9 sizing.
 - [x] Fetch and cache Instagram title and thumbnail metadata, with a plain-card fallback.
-- [x] Fetch titles for untitled threads containing exactly one YouTube/Shorts or Instagram URL, preserving existing subjects. Spotify/TikTok retain ordinary body-derived titles.
+- [x] Fetch titles for untitled threads containing exactly one YouTube/Shorts or Instagram URL, preserving existing subjects. Spotify/TikTok/SoundCloud/Bandcamp retain ordinary body-derived titles.
 - [x] Gate cards behind `FORUM_MEDIA_EMBEDS_ENABLED` and players/previews behind
       `FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED`; both default off, and the second requires the first.
-- [x] Pass the focused embed/title/presentation suites: 112 tests passed, 0 failed on October 14, 2026; browser and full-suite results are recorded in the [implementation summary](top_five_media_embeds/top_five_media_embeds_step4_implementation_summary.md).
+- [x] Pass the expanded focused embed/title/presentation suites: 98 tests passed, 0 failed on October 15, 2026; current browser and full-suite results are recorded in the [music implementation summary](music_media_embeds/music_media_embeds_step4_implementation_summary.md). Earlier coverage remains in the [top-five summary](top_five_media_embeds/top_five_media_embeds_step4_implementation_summary.md).
 
 Implementation: [detector](../../src/ForumRewrite/View/MediaEmbedDetector.php),
 [renderer](../../src/ForumRewrite/View/MediaEmbedRenderer.php), and
 [preview controller](../../src/ForumRewrite/Http/MediaEmbedPreviewController.php).
+
+## Music provider boundaries
+
+SoundCloud accepts complete public track and set paths; user/slug segments use
+ASCII letters, digits, underscores, and hyphens, with alphanumeric ends. Reserved
+service routes and profile tabs are excluded. Bandcamp accepts a single artist
+subdomain with `/track/` or `/album/`; slugs use lowercase ASCII letters/digits
+separated by single hyphens. Custom domains, service subdomains, encoded path
+segments, profiles, redirecting shares, extra segments, and recognized private/tokenized
+URLs are excluded. The exact conservative rules and examples are recorded in the
+[acceptance matrix](music_media_embeds/music_media_embeds_feasibility_notes.md#exact-initial-url-boundary).
+
+Source links preserve meaningful public parameters/fragments; music player and
+discovery targets use only canonical HTTPS content paths. Source timestamps do
+not affect music playback. SoundCloud uses public permalinks without server
+metadata lookup. Bandcamp discovers matching numeric IDs from `og:video` metadata
+only on expansion; it never renders fetched HTML. Successful lookups cache for 24
+hours and failures for one hour under `state/cache/bandcamp_players/`. Concurrent
+lookups are deduplicated. Fetching validates/pins a public IPv4 destination,
+verifies TLS, disables redirects, caps responses at 1 MiB, and applies a three-second
+fetch deadline; system DNS uses the host resolver. Challenge pages, timeouts, and
+unavailable content retain source access with an unavailable-player message when
+discovery fails. Opening a player does not guarantee full playback or availability.
+
+Both existing embed flags govern these providers; no new deployment flag or
+credentials are required. No lookup occurs during post rendering or with players
+disabled. Implementation and local acceptance evidence are recorded in the
+[music implementation summary](music_media_embeds/music_media_embeds_step4_implementation_summary.md).
 
 ## Verification and rollout
 
@@ -53,6 +83,11 @@ Implementation: [detector](../../src/ForumRewrite/View/MediaEmbedDetector.php),
 - [x] Check desktop and approximately 360px mobile width across shipped themes for overflow and player sizing.
 - [x] Check keyboard expansion and visible focus for player controls across all themes; inspect mobile and desktop screenshots.
 - [x] Record the instance, date, browser, outcomes, and unresolved issues when completing these checks.
+
+October 15 music acceptance confirmed SoundCloud track/set playback progress and
+Bandcamp album/track audio progress through real thread pages, including cold
+Bandcamp discovery. Controlled checks cover pending/failed lookups, late responses
+after closing a player, rejected foreign player destinations, and repeat expansion.
 
 Local checks used headless Chrome 145 on Linux and all 16 theme modes at 360px
 and 1280px. Live players, Instagram previews, and Shorts title backfill passed
@@ -76,15 +111,16 @@ committed roadmap items. Decide scope before implementing each group.
 ## Add providers from the existing backlog
 
 The [provider backlog](mitrapclub_theme_and_features_checklist.md) prioritizes the
-first group for the club's music content. Spotify and direct TikTok videos are
-implemented; the remaining providers and redirecting share links are unscheduled.
+first group for the club's music content. SoundCloud, Bandcamp, Spotify, and direct
+TikTok videos are implemented within the boundaries above; the remaining providers
+and redirecting share links are unscheduled.
 
 | Complete | Priority | Provider | Content to scope |
 | --- | --- | --- | --- |
-| [ ] | Higher | SoundCloud | Tracks and playlists |
+| [x] | Higher | SoundCloud | Direct public tracks and sets implemented |
 | [x] | Higher | TikTok | Direct video links implemented; shared redirect links deferred |
 | [x] | Higher | Spotify | Direct tracks, albums, and playlists implemented |
-| [ ] | Higher | Bandcamp | Tracks and albums |
+| [x] | Higher | Bandcamp | Direct artist-subdomain tracks and albums implemented |
 | [ ] | Lower | X/Twitter | Individual posts |
 | [ ] | Lower | Facebook | Posts and videos |
 | [ ] | Lower | Vimeo | Videos |
@@ -115,7 +151,7 @@ This is a separate backlog item in [todo.txt](../../todo.txt), broader than embe
 Run from the repository root after changing embed behavior:
 
 ```bash
-php tests/run.php MediaEmbedDetectorTest MediaEmbedRendererTest MediaEmbedPreviewCacheStoreTest MediaEmbedPreviewControllerTest MediaEmbedInlinePlayerScriptTest TemplateRendererMediaEmbedsScriptTest MediaEmbedBeaconTemplatesTest YoutubeOembedTitleFetcherTest InstagramPagePreviewFetcherTest ThreadTitleTest
+php tests/run.php MusicMediaEmbedTest BandcampPlayerResolverTest BandcampPlayerControllerTest MediaEmbedDetectorTest MediaEmbedRendererTest MediaEmbedPreviewCacheStoreTest MediaEmbedPreviewControllerTest MediaEmbedInlinePlayerScriptTest TemplateRendererMediaEmbedsScriptTest MediaEmbedBeaconTemplatesTest YoutubeOembedTitleFetcherTest InstagramPagePreviewFetcherTest ThreadTitleTest
 ```
 
 For browser checks, install the declared dependency with `npm install --ignore-scripts --package-lock=false`, then run:
@@ -126,7 +162,7 @@ node tests/browser/media_embed_browser.mjs --live
 ```
 
 The default run uses controlled unavailable player documents; `--live` additionally
-checks real playback, Instagram previews, and Shorts title backfill. Tests use an
+checks real playback (including SoundCloud and Bandcamp), cold Bandcamp discovery, Instagram previews, and Shorts title backfill. Tests use an
 isolated temporary repository and remove it afterward. Set `CHROMIUM_PATH` if
 Chrome is not installed at `/opt/google/chrome/chrome`. Use a distinct
 `FORUM_TEST_HISTORY_DB_PATH` when running PHP suites concurrently.
@@ -155,11 +191,11 @@ The examples below are URL shapes, not an exhaustive acceptance specification;
 | 3 | Spotify songs, albums, and playlists | `open.spotify.com/track/ID`, `/album/ID`, `/playlist/ID` | Supported: link card or click-to-load player |
 | 4 | TikTok clips | `tiktok.com/@USER/video/ID` | Supported for direct video links; share redirects deferred |
 | 5 | YouTube Shorts | `youtube.com/shorts/ID` | Supported: portrait click-to-load player |
-| 6 | SoundCloud tracks and sets | `soundcloud.com/USER/SLUG`, `soundcloud.com/USER/sets/SLUG` | Unsupported |
+| 6 | SoundCloud tracks and sets | `soundcloud.com/USER/SLUG`, `soundcloud.com/USER/sets/SLUG` | Supported: link card or click-to-load player |
 | 7 | Articles, lyrics, and reference pages | News articles, interviews, Genius song pages, Wikipedia articles | Unsupported; general link previews are a separate candidate |
 | 8 | Event, ticket, and venue pages | Eventbrite events, venue calendars, club event pages | Unsupported as media embeds; separate from structured event fields |
 | 9 | Artist profiles and release landing pages | YouTube channels, Instagram profiles, artist websites, Linktree pages | Unsupported; a profile is not an individual video or post |
-| 10 | Bandcamp releases | `ARTIST.bandcamp.com/album/SLUG`, `ARTIST.bandcamp.com/track/SLUG` | Unsupported |
+| 10 | Bandcamp releases | `ARTIST.bandcamp.com/album/SLUG`, `ARTIST.bandcamp.com/track/SLUG` | Supported: link card or click-to-load player after ID discovery |
 | 11 | X/Twitter posts and Reddit discussions | `x.com/USER/status/ID`, `reddit.com/r/COMMUNITY/comments/ID/...` | Unsupported; Reddit is an additional candidate, outside the existing provider backlog |
 | 12 | Other music and podcast services | Apple Music releases, podcast episode pages, Mixcloud mixes | Unsupported; additional candidates to scope only if demand appears |
 | 13 | Shared files and direct media | Google Drive or Dropbox links; direct `.jpg`, `.png`, `.mp3`, `.mp4` URLs | Unsupported as URL embeds; owned image uploads are a separate feature |
@@ -171,6 +207,8 @@ frequency estimates: Spotify supports track, album, and playlist embeds
 ([Spotify documentation](https://developer.spotify.com/documentation/embeds/tutorials/creating-an-embed));
 SoundCloud accepts track and playlist URLs
 ([SoundCloud documentation](https://developers.soundcloud.com/docs/oembed));
+Bandcamp documents its official player creation flow
+([Bandcamp documentation](https://get.bandcamp.help/en/articles/15263071-how-do-i-create-a-bandcamp-embedded-player));
 TikTok documents the individual-video URL shape
 ([TikTok documentation](https://developers.tiktok.com/doc/embed-videos/)).
 

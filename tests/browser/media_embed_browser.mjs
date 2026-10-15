@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -37,6 +38,10 @@ const urls = [
   'https://www.tiktok.com/@scout2015/video/6718335390845095173',
   'https://instagram.com/p/CachedPreview/',
   'https://instagram.com/reel/FailedPreview/',
+  'https://soundcloud.com/forss/flickermood',
+  'https://soundcloud.com/justinhasanhickman/sets/forss-512437271',
+  'https://lyndseyscott.bandcamp.com/album/well-held',
+  'https://lyndseyscott.bandcamp.com/track/plz-plz-universal-soul',
 ];
 try {
   for (let i = 0; i < 100; i++) {
@@ -68,7 +73,7 @@ try {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(base + '/threads/' + mixed.thread_id);
-  assert.equal(await page.locator('details[data-media-embed-card]').count(), 12);
+  assert.equal(await page.locator('details[data-media-embed-card]').count(), 20);
   assert.equal(await page.locator('.media-embed-card--preview').count(), 2);
   assert.equal(playerRequests.length, 0, 'collapsed players must not navigate');
   assert(await page.locator('[data-provider="instagram"]:not(.media-embed-card--preview)').first().isVisible());
@@ -78,8 +83,9 @@ try {
     await page.keyboard.press('Enter');
     await details.locator('iframe').waitFor({ state: 'visible' });
   }
+  await page.waitForFunction(() => [...document.querySelectorAll('iframe[data-media-embed-iframe]')].every(i => i.getAttribute('src')));
   await page.waitForTimeout(200);
-  assert.equal(playerRequests.length, 12);
+  assert.equal(playerRequests.length, 20);
   const requestsBeforeReopen = playerRequests.length;
   const firstSummary = page.locator('details[data-media-embed-card] summary').first();
   await firstSummary.click();
@@ -98,11 +104,49 @@ try {
     assert.equal(await page.locator('[data-media-embed-warm-beacon]').count(), 0);
     assert.notEqual(await page.getByRole('heading', { level: 1 }).innerText(), 'Untitled');
   }
+  // A late lookup must not load a closed player or duplicate pending work.
+  await page.goto(base + '/threads/' + mixed.thread_id);
+  let releaseLookup, signalLookup;
+  const lookupGate = new Promise(resolve => { releaseLookup = resolve; });
+  const lookupStarted = new Promise(resolve => { signalLookup = resolve; });
+  let lookups = 0;
+  const resolvePattern = '**/internal/media-embeds/bandcamp-player?*';
+  await page.route(resolvePattern, async route => {
+    lookups++; signalLookup(); await lookupGate;
+    await route.fulfill({ json: { status: 'ready', embedSrc: 'https://bandcamp.com/EmbeddedPlayer/album=1043068150/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=true/artwork=small/transparent=true/' } });
+  });
+  const albumDetails = page.locator('details[data-provider="bandcamp"]').first();
+  await albumDetails.locator('summary').click(); await lookupStarted;
+  await albumDetails.locator('summary').click();
+  await albumDetails.locator('summary').click();
+  await albumDetails.locator('summary').click();
+  assert.equal(lookups, 1);
+  releaseLookup();
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('data-embed-src'));
+  assert.equal(await albumDetails.locator('iframe').getAttribute('src'), '');
+  await albumDetails.locator('summary').click();
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src'));
+  assert((await albumDetails.locator('iframe').getAttribute('src')).startsWith('https://bandcamp.com/EmbeddedPlayer/'));
+  assert.equal(lookups, 1);
+  await page.unroute(resolvePattern);
+  // Never accept a foreign player destination, even from a successful response.
+  await page.goto(base + '/threads/' + mixed.thread_id);
+  await page.route(resolvePattern, route => route.fulfill({ json: { status: 'ready', embedSrc: 'https://evil.test/player' } }));
+  await page.locator('details[data-provider="bandcamp"] summary').first().click();
+  await page.locator('[data-media-embed-status]').filter({ hasText: 'Player unavailable' }).waitFor();
+  assert.equal(await page.locator('details[data-provider="bandcamp"] iframe').first().getAttribute('src'), '');
+  await page.unroute(resolvePattern);
+  const failed = await post('/api/create_thread', { subject: 'Unavailable Bandcamp', body: 'https://artist.bandcamp.com/album/unavailable' });
+  await page.goto(base + '/threads/' + failed.thread_id);
+  await page.locator('details[data-media-embed-card] summary').click();
+  await page.locator('[data-media-embed-status]').filter({ hasText: 'Player unavailable' }).waitFor();
+  assert(await page.locator('.media-embed-card__source a').isVisible());
+  assert.equal(await page.locator('iframe').getAttribute('src'), '');
   await page.goto(base + '/threads/' + unsupported.thread_id);
   assert.equal(await page.locator('[data-media-embed-card], [data-media-embed-warm-beacon]').count(), 0);
   await setFlags({ players: false });
   await page.goto(base + '/threads/' + mixed.thread_id);
-  assert.equal(await page.locator('[data-media-embed-card]').count(), 16);
+  assert.equal(await page.locator('[data-media-embed-card]').count(), 24);
   assert.equal(await page.locator('iframe[data-media-embed-iframe], .media-embed-card__thumbnail').count(), 0);
   await setFlags({ cards: false, players: true });
   await page.goto(base + '/threads/' + mixed.thread_id);
@@ -114,19 +158,19 @@ try {
   assert(await page.locator('[data-provider="spotify"]').count() >= 4);
   await page.goto(base + '/forte?view=all&selected=' + mixed.thread_id);
   const forte = page.locator(`[data-paned-board-content-post-id="${mixed.thread_id}"]`);
-  assert.equal(await forte.locator('details[data-media-embed-card]').count(), 12);
+  assert.equal(await forte.locator('details[data-media-embed-card]').count(), 20);
   await forte.locator('summary').first().click();
   await page.waitForFunction(id => document.querySelector(`[data-paned-board-content-post-id="${id}"] iframe`)?.getAttribute('src'), mixed.thread_id);
   assert(await forte.locator('iframe').first().getAttribute('src'));
   await page.goto(base + '/compose/reply?thread_id=' + mixed.thread_id + '&parent_id=' + mixed.post_id);
-  assert(await page.locator('[data-media-embed-card]').count() >= 8, 'reply context should use shared embeds');
+  assert(await page.locator('[data-media-embed-card]').count() >= 12, 'reply context should use shared embeds');
   await setFlags({ site: 'qdb' });
   const quote = await post('/api/create_quote', { body: urls.join('\n') });
   await post('/api/create_thread', { subject: 'Media news', board_tags: 'news', body: urls.join('\n') });
   await page.goto(base + '/latest');
-  assert.equal(await page.locator(`[data-post-id="${quote.post_id}"] [data-media-embed-card]`).count(), 8);
+  assert.equal(await page.locator(`[data-post-id="${quote.post_id}"] [data-media-embed-card]`).count(), 12);
   await page.goto(base + '/');
-  assert.equal(await page.locator('.qdb-news-item [data-media-embed-card]').count(), 8);
+  assert.equal(await page.locator('.qdb-news-item [data-media-embed-card]').count(), 12);
   for (const theme of themes) {
     await setFlags({ site: ['chouse', 'qdb', 'mitrapclub'].includes(theme) ? theme : 'mitrapclub' });
     await context.addCookies([{ name: 'theme-hint', value: theme, url: base }]);
@@ -139,11 +183,14 @@ try {
       await page.waitForFunction(expected => document.documentElement.dataset.resolvedTheme === expected
         && [...document.querySelectorAll('link[data-theme-name]')].some(link => link.dataset.themeName === expected && link.sheet), theme === 'auto' ? 'light' : theme);
       assert.equal(await page.locator('html').getAttribute('data-resolved-theme'), theme === 'auto' ? 'light' : theme);
-      const control = page.locator('details[data-media-embed-card] summary').first();
-      await control.focus();
-      const outline = await control.evaluate(el => ({ style: getComputedStyle(el).outlineStyle, width: getComputedStyle(el).outlineWidth }));
-      assert(outline.style !== 'none' && parseFloat(outline.width) > 0, `${theme}: invisible keyboard focus`);
+      for (const provider of ['youtube', 'soundcloud', 'bandcamp']) {
+        const control = page.locator(`details[data-provider="${provider}"] summary`).first();
+        await control.focus();
+        const outline = await control.evaluate(el => ({ style: getComputedStyle(el).outlineStyle, width: getComputedStyle(el).outlineWidth }));
+        assert(outline.style !== 'none' && parseFloat(outline.width) > 0, `${theme} ${provider}: invisible keyboard focus`);
+      }
       await page.locator('details[data-media-embed-card]').evaluateAll(ds => ds.forEach(d => { d.open = true; }));
+      await page.waitForFunction(() => [...document.querySelectorAll('iframe[data-media-embed-iframe]')].every(i => i.getAttribute('src')));
       for (const iframe of await page.locator('iframe[data-media-embed-iframe]').all()) {
         const box = await iframe.boundingBox();
         assert(box.x >= -1 && box.x + box.width <= width + 1, `${theme} ${width}: ${JSON.stringify(box)}`);
@@ -189,6 +236,52 @@ try {
       liveResults.push({ kind, playback: 'confirmed', width: (await details.locator('iframe').boundingBox()).width });
       livePage.off('request', record);
     }
+    for (const [offset, kind] of ['soundcloud-track', 'soundcloud-set', 'bandcamp-album', 'bandcamp-track'].entries()) {
+      const index = offset + 6;
+      if (kind.startsWith('bandcamp')) {
+        await rm(join(root, 'state/cache/bandcamp_players', createHash('sha256').update(urls[offset + 8]).digest('hex') + '.json'), { force: true });
+      }
+      await livePage.goto(base + '/threads/' + mixed.thread_id);
+      const details = livePage.locator('details[data-media-embed-card]').nth(index);
+      assert.equal(await details.locator('iframe').getAttribute('src'), '');
+      await details.locator('summary').focus();
+      await livePage.keyboard.press('Enter');
+      await livePage.waitForFunction(index => document.querySelectorAll('iframe[data-media-embed-iframe]')[index]?.getAttribute('src'), index);
+      const target = await details.locator('iframe').getAttribute('src');
+      let frame;
+      for (let i = 0; i < 150; i++) {
+        frame = livePage.frames().find(f => f.url() === target);
+        if (frame) break;
+        await livePage.waitForTimeout(100);
+      }
+      assert(frame, kind + ' did not load');
+      if (kind.startsWith('bandcamp')) {
+        await frame.locator('#big_play_button').click({ timeout: 20000 });
+        await frame.waitForFunction(() => [...document.querySelectorAll('audio')].some(a => !a.paused && a.currentTime > 1), null, { timeout: 20000 });
+        assert((await frame.locator('body').innerText()).includes(kind === 'bandcamp-track' ? 'PLZ PLZ Universal Soul' : 'Well Held'));
+      } else {
+        await frame.locator('button[title="Play"]').first().click({ timeout: 20000 });
+        await frame.locator('button[title="Pause"]').first().waitFor({ timeout: 20000 });
+        await livePage.addScriptTag({ url: 'https://w.soundcloud.com/player/api.js' });
+        const position = await details.locator('iframe').evaluate(iframe => new Promise((resolve, reject) => {
+          const widget = SC.Widget(iframe);
+          const timer = setTimeout(() => reject(new Error('SoundCloud playback did not advance')), 20000);
+          const poll = () => widget.getPosition(position => {
+            if (position > 1000) { clearTimeout(timer); resolve(position); }
+            else setTimeout(poll, 250);
+          });
+          poll();
+        }));
+        assert(position > 1000);
+      }
+      const src = await details.locator('iframe').getAttribute('src');
+      await details.locator('summary').click();
+      assert(await livePage.locator('.media-embed-card__source a').nth(index).isVisible());
+      await details.locator('summary').click();
+      assert.equal(await details.locator('iframe').getAttribute('src'), src);
+      await details.screenshot({ path: join(tmpdir(), `media-embed-${kind}-360.png`) });
+      liveResults.push({ kind, playback: 'confirmed', width: (await details.locator('iframe').boundingBox()).width });
+    }
     for (const url of ['https://www.instagram.com/p/DXufGLmgRB3/', 'https://www.instagram.com/reel/DFSwVgSuunz/']) {
       const thread = await post('/api/create_thread', { subject: 'Live Instagram preview', body: url });
       const first = await liveContext.request.get(base + '/threads/' + thread.thread_id);
@@ -213,7 +306,7 @@ try {
     liveResults.push({ kind: 'shorts-title', backfill: 'confirmed' });
     await liveContext.close();
   }
-  console.log(JSON.stringify({ result: 'passed', themes: themes.length, widths: [360, 1280], sharedViews: ['board', 'thread/root/reply', 'Forte', 'reply context', 'QDB quote/news'], providers: ['youtube', 'instagram', 'spotify', 'tiktok'], liveResults }));
+  console.log(JSON.stringify({ result: 'passed', themes: themes.length, widths: [360, 1280], sharedViews: ['board', 'thread/root/reply', 'Forte', 'reply context', 'QDB quote/news'], providers: ['youtube', 'instagram', 'spotify', 'tiktok', 'soundcloud', 'bandcamp'], liveResults }));
 } catch (error) {
   console.error(serverLog.slice(-4000));
   throw error;
