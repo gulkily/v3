@@ -51,3 +51,5 @@ Debug mode: disabled
 - Normal retraction-to-inspection outcome, direct URL denial, both roles, historical uncertainty, unaffected records, result limits, live state, late/errors, cache bypass prevention, restart, and preserved raw rows/audit evidence verified.
 - No core read-model schema migration. New provenance lives in existing recording context and new cached-analysis metadata; existing exchange rows are not rewritten. Preserve the guarded reader on rollback and trusted canonical retraction history on restore.
 - Plans/index are organized, debug mode remains disabled, and references describe retention boundaries and conservative historical exclusions. External deployment and previously downloaded/browser-held copies are outside scope.
+
+- Final retention check: integration now compares every diagnostic column before/after suppression and confirms the signed retraction evidence still exists; passed 1/1.

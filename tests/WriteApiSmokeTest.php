@@ -2655,6 +2655,7 @@ NODE;
                     ['payload' => ['messages' => [['role' => 'user', 'content' => $index === 2 ? 'Unrelated prompt' : 'Exchange private prose']]]],
                     ['body' => 'Exchange response prose'], 'completed', 1, ['message' => 'Exchange error prose']);
             }
+            $rawRows = $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
             $_COOKIE = ['identity_hint' => 'guest'];
             assertStringContains('Exchange private prose', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]));
             $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
@@ -2682,6 +2683,8 @@ NODE;
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '"', $rootPost);
 
             assertSame(3, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
+            assertSame($rawRows, $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC));
+            assertTrue(is_file($root . '/' . $prepared['record_path'] . '.asc'));
         } finally {
             $_POST = []; $_COOKIE = $cookies;
             putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
