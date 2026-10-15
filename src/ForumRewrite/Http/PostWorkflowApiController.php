@@ -62,6 +62,34 @@ final class PostWorkflowApiController
     /**
      * @param array<string, mixed> $query
      */
+    public function scriptureExpansion(string $method, array $query, bool $request): void
+    {
+        $headers = $this->routeServices->noStoreHeaders();
+        if ($method !== ($request ? 'POST' : 'GET')) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headers);
+            return;
+        }
+        $input = $request ? $this->routeServices->requestData($query) : $query;
+        $id = trim((string) ($input['post_id'] ?? ''));
+        $post = $id === '' ? null : ($this->fetchPost)($id);
+        $viewer = ($this->resolveViewerProfileFromIdentityHint)();
+        if ($post === null) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $headers);
+            return;
+        }
+        if ($request && (int) ($viewer['is_approved'] ?? 0) !== 1) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headers);
+            return;
+        }
+        try {
+            $service = $this->postWorkflowService()->scriptureExpansionService();
+            $result = $request ? $service->requestExpansion($id, $viewer) : $service->status($id);
+            $this->routeServices->sendJson($result, 200, $headers);
+        } catch (\InvalidArgumentException) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Expansion is unavailable for this response or its current source.'], 409, $headers);
+        }
+    }
+
     public function scorePost(string $method, array $query): void
     {
         $this->routeServices->sendJson([

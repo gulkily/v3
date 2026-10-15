@@ -228,7 +228,11 @@ final class AgentReplyFulfillmentService
                 'board_tags' => 'general',
                 'body' => (string) ($stored['response_text'] ?? ''),
                 'author_identity_id' => (string) $identity['identity_id'],
-            ]);
+            ], ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE ? [
+                'type' => \ForumRewrite\Canonical\AgentResponseMetadata::SCRIPTURE,
+                'source_post_id' => (string) $post['post_id'],
+                'source_hash' => \ForumRewrite\Canonical\AgentResponseMetadata::postHash($post),
+            ] : null);
             $posted = $this->generationStore->markPosted(
                 (string) $context['post_id'],
                 (string) $context['content_hash'],

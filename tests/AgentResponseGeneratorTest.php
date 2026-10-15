@@ -36,6 +36,19 @@ final class AgentResponseGeneratorTest
         ], $provider->options['exchange_context']);
     }
 
+    public function testExpansionUsesDedicatedPromptAndBothSourceTexts(): void
+    {
+        $provider = new FakeTextChatProvider('Further scripture reflection: Context.');
+        (new AgentResponseGenerator($provider, true, true))->generate([
+            'type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE,
+            'original_post' => 'Original concern.', 'initial_answer' => 'Existing reflection.',
+        ]);
+        assertStringContains('Original concern.', $provider->messages[1]['content']);
+        assertStringContains('Existing reflection.', $provider->messages[1]['content']);
+        assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_expansion.txt')), $provider->messages[1]['content']);
+        assertSame(false, AgentResponseTask::isSelectableType(AgentResponseTask::SCRIPTURE_EXPANSION_TYPE));
+    }
+
     public function testCompletionBudgetIsBoundedAndPassedToProvider(): void
     {
         foreach ([1, 8192, 32768] as $limit) {

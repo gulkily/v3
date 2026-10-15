@@ -107,7 +107,11 @@ final class AgentResponseGenerator
             . "\n\n"
             . $this->forumContentSection('Target post', (string) ($task['target_body'] ?? ''))
             . "\n\n"
-            . $this->forumContentSection('Parent preview', (string) ($task['parent_body_preview'] ?? ''));
+            . $this->forumContentSection('Parent preview', (string) ($task['parent_body_preview'] ?? ''))
+            . ($type === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE
+                ? "\n\n" . $this->forumContentSection('Original post', (string) ($task['original_post'] ?? ''))
+                    . "\n\n" . $this->forumContentSection('Initial scripture answer', (string) ($task['initial_answer'] ?? ''))
+                : '');
     }
 
     private function forumContentSection(string $label, string $content): string
@@ -129,6 +133,7 @@ final class AgentResponseGenerator
             AgentResponseTask::EXPLAIN_SIMPLY_TYPE => 'agent_response_explain_simply.txt',
             AgentResponseTask::CONSTRUCTIVE_COUNTERPOINT_TYPE => 'agent_response_constructive_counterpoint.txt',
             AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE => 'agent_response_scripture_oriented_analysis.txt',
+            AgentResponseTask::SCRIPTURE_EXPANSION_TYPE => 'agent_response_scripture_expansion.txt',
             default => 'agent_response_default_text_reply.txt',
         });
     }

@@ -14,6 +14,7 @@ final class AgentResponseTask
     public const EXPLAIN_JOKE_OR_REFERENCE_TYPE = 'explain_joke_or_reference';
     public const SUMMARY_AND_KEY_TAKEAWAYS_TYPE = 'summary_and_key_takeaways';
     public const EXPLAIN_SIMPLY_TYPE = 'explain_simply';
+    public const SCRIPTURE_EXPANSION_TYPE = 'scripture_expansion';
     public const SCRIPTURE_ORIENTED_ANALYSIS_TYPE = 'scripture_oriented_analysis';
     public const CONSTRUCTIVE_COUNTERPOINT_TYPE = 'constructive_counterpoint';
 
@@ -91,7 +92,8 @@ final class AgentResponseTask
 
     public static function isSupportedType(string $type): bool
     {
-        return $type === self::DEFAULT_TYPE
+        return $type === self::SCRIPTURE_EXPANSION_TYPE
+            || $type === self::DEFAULT_TYPE
             || $type === self::LEGACY_FACTS_ANALYSIS_TYPE
             || self::isSelectableType($type);
     }

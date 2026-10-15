@@ -2185,6 +2185,118 @@ NODE;
         }
     }
 
+    private function withScriptureExpansionFixture(callable $check): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $directory = dirname($db) . '/expansion-fixture-' . bin2hex(random_bytes(6));
+        mkdir($directory, 0700);
+        $overrides = ['FORUM_SECRETS_PATH' => $directory . '/absent.php', 'LLM_PROVIDER' => 'stub',
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => $directory . '/queue.sqlite3',
+            'FAST_SCORING_DATABASE_PATH' => $directory . '/scores.sqlite3',
+            'LLM_EXCHANGE_DATABASE_PATH' => $directory . '/exchanges.sqlite3', 'FORUM_PUBLIC_ARTIFACT_ROOT' => $artifacts];
+        $previous = [];
+        foreach ($overrides as $key => $value) { $previous[$key] = getenv($key); putenv($key . '=' . $value); }
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $source = $this->createAnalyzedThread($app, $db);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($source) . '&response_mode=scripture_oriented_analysis');
+            $pdo = new PDO('sqlite:' . $db);
+            $store = new SqliteAgentReplyGenerationStore($pdo);
+            $first = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($source));
+            assertSame('generated', $first['generation_status']);
+            $check($app, $pdo, $store, $source, $first['agent_post_id'], $root, $db, $artifacts, $directory);
+        } finally {
+            foreach ($previous as $key => $value) { putenv($value === false ? $key : $key . '=' . $value); }
+            $_COOKIE = [];
+        }
+    }
+
+    public function testScriptureExpansionRequestPublicationAndRebuild(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts): void {
+            $api = '/api/expand_agent_reply?post_id=' . rawurlencode($initial);
+            $_COOKIE = [];
+            assertSame('forbidden', json_decode($this->renderMethod($app, 'POST', $api), true)['error']);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertSame('requested', json_decode($this->renderMethod($app, 'POST', $api), true)['generation_status']);
+            assertSame('requested', json_decode($this->renderMethod($app, 'POST', $api), true)['generation_status']);
+            $claimed = $store->claimRequestedForPost($initial);
+            assertSame(null, $store->claimRequestedForPost($initial));
+            $done = $app->fulfillAgentReplyRequest($claimed);
+            assertSame('generated', $done['generation_status']);
+            $status = json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . rawurlencode($initial)), true);
+            assertSame('generated', $status['generation_status']);
+            assertSame('Stub agent response.', trim($status['expansion_body']));
+            assertSame($done['agent_post_id'], json_decode($this->renderMethod($app, 'POST', $api), true)['agent_post_id']);
+            assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $done['agent_post_id']), true)['status']);
+            // Replaying a claim after canonical publication makes no replacement.
+            assertSame($done['agent_post_id'], $app->fulfillAgentReplyRequest($claimed)['agent_post_id']);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $new = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            assertSame('generated', json_decode($this->renderMethod($new, 'GET', '/api/agent_expansion_status?post_id=' . $initial), true)['generation_status']);
+        });
+    }
+
+    public function testScriptureExpansionFailureRetryAndSourceRace(): void
+    {
+        foreach (['exhaustion', 'changed', 'revoked'] as $case) {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory) use ($case): void {
+                $api = '/api/expand_agent_reply?post_id=' . $initial;
+                $this->renderMethod($app, 'POST', $api);
+                $claimed = $store->claimRequestedForPost($initial);
+                $workflow = (new ReflectionMethod($app, 'postWorkflowService'))->invoke($app);
+                $provider = new class($pdo, $source, $claimed, $case) implements \ForumRewrite\Llm\TextChatProvider {
+                    public function __construct(private PDO $pdo, private string $source, private array $row, private string $case) {}
+                    public function completeTextChat(array $messages, array $options = []): array {
+                        if ($this->case === 'exhaustion') { throw new \ForumRewrite\Llm\CompletionLimitException(); }
+                        if ($this->case === 'changed') {
+                            $stmt = $this->pdo->prepare('UPDATE posts SET body = body || ? WHERE post_id = ?');
+                            $stmt->execute([' edited', $this->source]);
+                        } else {
+                            $stmt = $this->pdo->prepare('UPDATE profiles SET is_approved = 0 WHERE identity_id = ?');
+                            $stmt->execute([$this->row['request_context']['agent_reply_request']['requested_by_identity_id']]);
+                        }
+                        return ['response_text' => 'Additional reflection.'];
+                    }
+                };
+                $fetch = static function (string $id) use ($pdo): ?array {
+                    $stmt = $pdo->prepare('SELECT * FROM posts WHERE post_id = ? AND is_hidden = 0');
+                    $stmt->execute([$id]); return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                };
+                $service = new \ForumRewrite\Agent\ScriptureExpansionService($pdo, $root, $directory . '/queue.sqlite3', $fetch,
+                    fn (array $post): array => $workflow->postAnalysisContext($post, false),
+                    fn () => new \ForumRewrite\Agent\AgentResponseGenerator($provider, true, true),
+                    new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root)),
+                    (new ReflectionMethod($workflow, 'agentIdentityService'))->invoke($workflow), true);
+                $result = $service->fulfill($claimed);
+                assertSame($case === 'exhaustion' ? 'failed' : 'not_recommended', $result['generation_status']);
+                assertSame(false, is_file($root . '/records/posts/' . \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($initial) . '.txt'));
+                if ($case === 'exhaustion') {
+                    assertSame('completion_limit_exhausted', $result['failure_code']);
+                    $app->retryAgentReplyRequest($initial, $claimed['target_content_hash']);
+                    assertSame('generated', $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial))['generation_status']);
+                }
+            });
+        }
+    }
+
+    public function testScriptureExpansionRejectsChangedAndHiddenSources(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
+            $api = '/api/expand_agent_reply?post_id=' . rawurlencode($initial);
+            $this->renderMethod($app, 'POST', $api);
+            $claimed = $store->claimRequestedForPost($initial);
+            $stmt = $pdo->prepare('UPDATE posts SET body = body || ? WHERE post_id = ?');
+            $stmt->execute([' changed', $source]);
+            assertSame('not_recommended', $app->fulfillAgentReplyRequest($claimed)['generation_status']);
+            assertSame('error', json_decode($this->renderMethod($app, 'POST', $api), true)['status']);
+            $stmt = $pdo->prepare('UPDATE posts SET is_hidden = 1 WHERE post_id = ?');
+            $stmt->execute([$source]);
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . $initial), true)['status']);
+        });
+    }
+
     public function testExpansionProvenanceSurvivesRebuildAndPublicationReplay(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

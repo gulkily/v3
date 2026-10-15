@@ -361,6 +361,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/expand_agent_reply' || $path === '/api/agent_expansion_status') {
+            $this->postWorkflowApiController()->scriptureExpansion($method, $query, $path === '/api/expand_agent_reply');
+            return;
+        }
+
         if ($path === '/api/generate_agent_reply') {
             $this->postWorkflowApiController()->generateAgentReply($method, $query);
             return;
@@ -1406,7 +1411,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
-                    posts.author_identity_id, posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    posts.author_identity_id, posts.author_profile_slug, posts.agent_response_json, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
@@ -1838,7 +1843,7 @@ final class Application
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
-            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
+            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
