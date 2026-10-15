@@ -1017,6 +1017,7 @@ PHP;
         assertStringContains('border-left: 0', $css);
         assertStringContains('border-right: 0', $css);
         assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $word97Css);
+        assertStringContains(':root[data-theme="word97"] button[disabled]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option)', $word97Css);
     }
 
     public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
