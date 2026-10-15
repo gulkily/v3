@@ -54,3 +54,18 @@ No supported findings.
 ### Uncertain assessments
 
 - Source: `docs/railspike/docs/workflow/step3_development_plan_do.md`, one-page limit and six fields per stage. Seven stages require 42 mandatory fields plus contract/risks; even compressed, ordinary rendering exceeds one page. Consider a per-stage word limit rather than a fixed rendered-page limit; required coverage was retained.
+
+## 2026-10-15T19:29:59Z — Step 4
+
+### Necessary/useful instructions
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Seven separate stage commits each include the summary, and the planning-only commit precedes implementation. This made prerequisites and verification independently reviewable; retain the protocol.
+- Source: `docs/railspike/docs/workflow/step4_implementation_after.md`, Completion Contract verification. Real-browser public/private journeys caught the need to cover pending keys, interrupted responses, storage denial, and unavailable resources beyond isolated endpoints. Retain normal-entry and recovery verification.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, stage sizing. Signed naming and real-browser acceptance required more than fifty lines each, while remaining bounded stages well under two hours. Prefer elapsed/behavioral boundaries over approximate line-count guidance for security and acceptance coverage.
