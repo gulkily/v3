@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Account key page redesign](account_key_page_redesign/)
 - [Bookmarklets page redesign](bookmarklets_page_redesign/)
 - [Compose thread declutter](compose_thread_declutter/)
 - [Top five media embeds](top_five_media_embeds/)
