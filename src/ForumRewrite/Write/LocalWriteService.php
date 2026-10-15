@@ -1661,12 +1661,14 @@ class LocalWriteService
                 . "Thread-ID: {$threadId}\n"
                 . "Parent-ID: {$parentId}\n"
                 . "Author-Identity-ID: {$approverIdentityId}\n"
-                . "\nApprove-Identity-ID: {$targetIdentityId}\n";
+                . "\nApprove-Identity-ID: {$targetIdentityId}\n"
+                . "Approval-Context-SHA256: " . hash('sha256', json_encode($context, JSON_THROW_ON_ERROR)) . "\n";
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
             $prepared = $this->storePreparedPost($recordPath, $contents, [
                 'kind' => 'approval',
+                'approval_context' => $context,
                 'post_id' => $postId,
                 'thread_id' => $threadId,
                 'parent_id' => $parentId,
@@ -1683,6 +1685,7 @@ class LocalWriteService
                 'thread_id' => $threadId,
                 'record_path' => $recordPath,
                 'canonical_record' => $contents,
+                'approval_review' => ApprovalPolicy::review($context),
                 'timings' => $timings,
             ]);
         });
@@ -1724,6 +1727,9 @@ class LocalWriteService
             $targetProfileSlug = $this->requireAsciiToken((string) ($prepared['target_profile_slug'] ?? ''), 'target_profile_slug');
 
             $context = $this->approvalContext($authorIdentityId, $targetIdentityId, $threadId, (string) $prepared['parent_id']);
+            if (($prepared['approval_context'] ?? null) !== $context) {
+                throw new RuntimeException('Approval context changed. Refresh and review the account and key again before signing.');
+            }
             if ($this->postTargetExists($postId)) {
                 throw new RuntimeException('Prepared post target already exists.');
             }

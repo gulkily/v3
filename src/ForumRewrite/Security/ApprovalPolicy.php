@@ -76,6 +76,20 @@ final class ApprovalPolicy
         ];
     }
 
+    public static function review(array $context): array
+    {
+        $username = (string) $context['target_username'];
+        $label = match ($context['classification']) {
+            'new_account' => 'Approve new member ' . $username,
+            'own_account_key' => 'Add this key to my account',
+            default => 'Grant this key access as ' . $username,
+        };
+        $consequence = $context['classification'] === 'cross_account_key'
+            ? $username . ' already has ' . $context['existing_key_count'] . ' approved keys. This key will be able to act as ' . $username . '.'
+            : 'This key will be able to act as ' . $username . '.';
+        return ['label' => $label, 'consequence' => $consequence, 'target_identity_id' => $context['target_identity_id']];
+    }
+
     public static function assertAllowed(array $context): void
     {
         if (!$context['allowed']) {

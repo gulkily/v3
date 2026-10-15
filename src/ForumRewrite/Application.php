@@ -1055,6 +1055,18 @@ final class Application
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+        $approvalReview = null;
+        if ($canApprove) {
+            try {
+                $approvalReview = \ForumRewrite\Security\ApprovalPolicy::review(
+                    (new \ForumRewrite\Security\ApprovalPolicy($this->pdo(), $this->repositoryRoot))->evaluate(
+                        (string) $viewerProfile['identity_id'], (string) $profile['identity_id']
+                    )
+                );
+            } catch (RuntimeException) {
+                // Preparation remains authoritative and explains unavailable approval paths.
+            }
+        }
         $canPrivateMessage = $this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)
             && $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
@@ -1081,6 +1093,7 @@ final class Application
                 'viewerProfile' => $viewerProfile,
                 'isOwnProfile' => $isOwnProfile,
                 'canApprove' => $canApprove,
+                'approvalReview' => $approvalReview,
                 'canPrivateMessage' => $canPrivateMessage,
             ],
             $pageTitleLabel . ' - Profile',

@@ -1,6 +1,6 @@
 # Account key approval visibility and safety checklist
 
-Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stage 1 enforcement is complete, and stages 2–6 remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
+Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stages 1–2 enforcement and approval review are complete, and stages 3–6 remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
 
 Reduce easy account impersonation while preserving open registration, member sponsorship, and convenient device setup. Prioritize the cross-account approval restriction, clear approval wording, and visible account-key history. Notifications and device pairing can follow as separately scoped features.
 
@@ -10,7 +10,7 @@ The [combined Step 1 assessment](../account_key_approval_safety/account_key_appr
 
 - [x] Implement the default-enabled restriction flag, including invitation enforcement and acceptance-time checks. Release handoff remains pending in the combined cycle.
 - [x] Preserve member sponsorship of new usernames, approval of additional keys for the approver's own username, and root-approved operator authority when the restriction is active.
-- [ ] Use action-specific approval wording instead of a generic approval button.
+- [x] Use action-specific approval wording instead of a generic approval button.
 
 | Situation | Suggested wording |
 | --- | --- |
@@ -18,11 +18,11 @@ The [combined Step 1 assessment](../account_key_approval_safety/account_key_appr
 | Additional key for the approver's username | Add this key to my account |
 | Additional key for a different existing username | Grant this key access as Bob |
 
-- [ ] For an additional key to another existing account, show the current approved-key count and the consequence before signing: “Bob already has 2 approved keys. This key will be able to act as Bob.”
-- [ ] Bind the displayed account and target key to the signed action, and recheck authorization when accepting it.
+- [x] For an additional key to another existing account, show the current approved-key count and the consequence before signing: “Bob already has 2 approved keys. This key will be able to act as Bob.”
+- [x] Bind the displayed account and target key to the signed action, and recheck authorization when accepting it.
 - [x] Give denied requests an explanation of which approval path is available, without allowing the interface to bypass server enforcement.
 
-Stage 1 binds the target key to the signed record and rechecks live authorization under the write lock. The displayed consequence, key-count warning, and renewed review after context changes remain Stage 2 work; the UI still uses “Approve user.”
+Stage 1 binds the target key to the signed record and rechecks live authorization under the write lock. Stage 2 adds the displayed consequence, key-count warning, exact key confirmation, signed review-context digest, and renewed review after context changes.
 
 Meaningful authorization prompts should identify the consequential details the user is authorizing. This follows [OWASP transaction authorization guidance](https://cheatsheetseries.owasp.org/cheatsheets/Transaction_Authorization_Cheat_Sheet.html).
 
