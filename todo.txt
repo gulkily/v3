@@ -85,15 +85,11 @@ identify targets for "ephemeral testing"
 make it easier to copy the bookmarklets as a one-liner js
 	this is what i need to add/bind bookmarklets in qutebrowser
 
-xadd another analysis type: scripture-oriented analysis
-
 continue with docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md;
 
 when we import another instance, we end up with a lot of unapproved accounts
     this is because root approvals are gone
         we need to figure out a way to make this process smoother
-
-xadd provisions for calling remove-record from web ui
 
 unify thread-label and post-reaction record formats
 	use one canonical format with explicit thread/post target scope
@@ -116,3 +112,14 @@ x		support mobile devices with large area touch targets
 x		allow drag-and-drop and paste from clipboard
 x	do not display the form to users who cannot upload images
 x	collapse the image selector one small thing that doesn't double the size of the compose form.
+
+compose form improvements
+	the ... button should be in the corner (bottom right)
+	"choose an image" module should look like the other modules
+	"body" module should also look like the other modules
+
+in word97 theme, disabled buttons don't look disabled
+	the text should be a more gray color
+
+make a dark version of chicago/word97
+

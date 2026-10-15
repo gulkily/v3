@@ -3,40 +3,42 @@
 Debug mode: enabled
 
 ## Completion Contract
-- Documentation-only internal maintenance for developers/maintainers: all seven root documents remain discoverable from README navigation, with filenames and substantive contents preserved.
-- Allowed scope: the seven moves below; `README.md`; relocation/discovery repairs in host `docs/{architecture,examples,research,specs,runbooks,product,reference}/`; affected links/indexes in `docs/plans/`; this feature's planning artifacts. Preserve essential root files, runtime structure, vendored workflows, and local/generated data. No unrelated organization, consolidation, or deletion.
-- Evidence: seven source-to-destination comparisons, working changed links, classified remaining old-path mentions, and a scope-limited diff. Correct misplaced files and links before handoff; runtime/UI/deployment/migration checks are inapplicable because executable files and behavior remain unchanged.
-- Step 4 prerequisite: create a feature branch; organize this feature's approved plans/log into `docs/plans/repository_directory_cleanup/`, repair navigation and index it; commit only approved planning/organization work before implementation. Each stage then records verification in the summary and commits before proceeding.
+
+- Approval adjustment: user approved Step 3 with `todo.txt` retained at the root; leave its content and incoming links unchanged.
+
+- Documentation-only internal maintenance for GitHub visitors/contributors: eight content-preserving moves, six fewer tracked root files, discoverable destinations, and repaired affected live links.
+- Allowed scope: the moves below; mechanical reference repairs in host `docs/` and `README.md`; directly related discovery/index additions; this feature's artifacts/log and required `docs/plans/README.md` entry. Exclude vendored Railspike/FDP, unrelated plan organization, substantive rewrites, application/runtime, tests, CI, deployment, generated files, configuration, and ignored directories.
+- Evidence: move/content comparisons, affected-link resolution, tracked-reference classification, root-count and changed-path checks. Runtime/browser/deployment/migration checks are not applicable; no runtime behavior or deployment outcome is claimed. SFENC becomes eligible for the existing Markdown viewer without catalog/policy changes.
+- Recovery: correct scoped links or reverse the affected move without losing content. Completion requires evidence in the Step 4 summary and committed stages; scope expansion returns to Step 2/3.
 
 ## Key Risks
-- **High risk:** relocation loses content or navigation. Current inventory found seven free destinations and active links listed below; recheck before moves, compare contents against baseline, and repair links within each stage. Any conflict blocks its move.
-- Scope expansion through path dependencies: tracked-file search found documentation links and illustrative strings, with no runtime dependency found. Recheck all seven names before implementation; classify historical mentions rather than blindly replacing them. Any required executable change blocks work pending renewed Step 2/3 approval.
 
-## Move inventory
-All paths are relative to the repository root; existing categories supply the homes.
+- **High risk: broken discovery.** Five live Markdown links identified before drafting; repair them with their moves and check destination-relative references. Preserve historical quotations, completed-plan records, and parser examples.
+- **Exposure/content loss:** reviewed SFENC as a public format specification; the existing viewer admits `docs/*.md` paths, excludes `.txt`/HTML, and requires real files beneath `docs/`. Preserve its policy; compare content and recheck destination absence before moving. No collisions found; the similarly named backlog proposal remains separate.
 
-| Root source | Destination directory | Purpose |
-| --- | --- | --- |
-| `sfenc.md` | `docs/specs/` | Encoding specification |
-| `zenmemes_rules.txt` | `docs/product/` | Site copy |
-| `docs_page_changes_revised.txt` | `docs/plans/backlog/` | Docs-page proposal |
-| `improve_messaging.txt` | `docs/plans/backlog/` | Messaging proposal |
-| `qdb_todo.txt` | `docs/plans/backlog/` | QDB work notes |
-| `related_feature_requests.txt` | `docs/plans/backlog/` | Reported friction |
-| `todo.txt` | `docs/plans/backlog/` | General work notes |
+## Move Map
+
+| Source | Destination directory (filename preserved) |
+|---|---|
+| `qdb_todo.txt`, `improve_messaging.txt`, `docs_page_changes_revised.txt`, `related_feature_requests.txt` | `docs/plans/backlog/` |
+| `sfenc.md` | `docs/specs/` |
+| `zenmemes_rules.txt` | `docs/product/` |
+| `docs/feature-flags-redesign-spec.md`, `docs/feature-flags-redesign.html` | `docs/plans/backlog/` |
 
 ## Stage 1
-- Goal: Relocate specification/product copy with working discovery (≤1 hour).
-- Dependencies: Planning commit; fresh destination/reference checks.
-- Expected changes: First two moves; repair README and `docs/reference/key_backups.md` links; adjust README's root-notes heading to reflect the destinations while retaining `BLESSING.md`.
-- Verification approach: Compare both documents byte-for-byte to baseline except necessary relative-link repairs; resolve changed link targets and inspect README navigation; check whitespace and allowed-file diff.
-- Risks or open questions: Broken references or overwritten contents; detect through destination checks and baseline comparisons, and correct before committing.
-- Canonical components/API contracts touched: README and key-backup documentation; no UI/API changes.
+
+- Goal: Finish root cleanup with usable discovery (≤1 hour).
+- Dependencies: Approved Step 3; feature branch; organize this feature's Steps 1–3/log into `docs/plans/repository_directory_cleanup/`, repair navigation/index, and commit approved planning content before implementation; create summary afterward.
+- Expected changes: Move six root files per map; repair links in `README.md`, `docs/reference/key_backups.md`, `docs/product/v3_feature_priorities.md`, and the private-messaging master checklist under `docs/plans/`. Link four relocated notes from the backlog README and link that index from the root README.
+- Verification approach: Compare each moved file with its original bytes; permit only necessary reference repairs. Resolve five affected live links plus new discovery links; inspect moved-file references and classify repository-root paths versus relative links; confirm root count drops by six and excluded files stay unchanged.
+- Risks or open questions: Broken links/content loss; validate targets and compare content before commit; reverse individual moves if necessary. Pre-existing stale references are recorded, not rewritten as part of this cleanup.
+- Canonical components/API contracts touched: Root README, existing backlog index, SFENC specification location; no application component/API changes.
 
 ## Stage 2
-- Goal: Relocate five planning notes with working discovery (≤1 hour).
-- Dependencies: Stage 1 verified, summarized, and committed.
-- Expected changes: Remaining moves; link all five in `docs/plans/backlog/README.md` and ensure README reaches that index. Repair `docs/product/v3_feature_priorities.md`, `docs/plans/media_embed_support_checklist.md`, `docs/plans/private_messaging_usability_master_checklist.md`, and `docs/plans/backlog/server_cooperative_content_deletion_discussion.md` links.
-- Verification approach: Compare five contents to baseline; validate all seven README-to-document routes and moved-document links; classify residual old paths, preserving historical prose and parser examples. Verify seven root absences, seven destination files, allowed scope, and whitespace; summarize and commit.
-- Risks or open questions: Root-relative prose inside notes could be mistaken for document-relative links; preserve repository-path examples, repairing only navigable links whose resolution changes. Newly discovered active links require review within the approved scope.
-- Canonical components/API contracts touched: Existing README/backlog index and listed documentation references; no new component or runtime contract.
+
+- Goal: Finish selective second-level cleanup and handoff (≤30 minutes).
+- Dependencies: Stage 1 verification, summary update, and stage commit complete.
+- Expected changes: Move the feature-flags pair together per map; add backlog index links distinguishing the implementation brief/mockup from `feature_flag_redesign_spec.md`; preserve the same-folder mockup reference.
+- Verification approach: Compare pair bytes; resolve brief/mockup and new index links; confirm all eight destinations, absence of old sources, preserved substantive content, allowed change scope, and completed Step 4 plan navigation. Record evidence and commit with summary.
+- Risks or open questions: Similar proposal names can confuse discovery; use distinct link labels and retain both. The mockup is self-contained; recheck for relative assets before moving.
+- Canonical components/API contracts touched: Existing backlog index and documentation mockup pair; viewer/catalog remain unchanged.

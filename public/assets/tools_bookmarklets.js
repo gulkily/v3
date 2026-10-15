@@ -126,6 +126,15 @@
     return "javascript:" + encodeURIComponent(bookmarkletScript(baseOrigin, kind, mode));
   }
 
+  // The copied form is plain, unencoded JavaScript on one physical line so it
+  // also works pasted into qutebrowser's `:jseval` (where "javascript:" parses
+  // as a label). Only newline-plus-indentation between tokens is collapsed;
+  // the generated source has no line comments, and string content uses \n
+  // escapes rather than literal line breaks.
+  function bookmarkletCopySource(baseOrigin, kind, mode) {
+    return "javascript:" + bookmarkletScript(baseOrigin, kind, mode).replace(/\s*[\r\n]+\s*/g, " ");
+  }
+
   async function copySource(source) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try {
@@ -162,6 +171,7 @@
       var item = link.closest(".tool-launcher-item");
       var button = item.querySelector("[data-bookmarklet-copy]");
       var feedback = item.querySelector("[data-bookmarklet-feedback]");
+      var copyText = bookmarkletCopySource(baseOrigin, kind, mode);
       var feedbackTimer;
       button.disabled = false;
       button.addEventListener("click", async function () {
@@ -169,7 +179,7 @@
         feedback.textContent = "";
         button.disabled = true;
         try {
-          await copySource(link.getAttribute("href"));
+          await copySource(copyText);
           feedback.textContent = "Copied";
         } catch (error) {
           feedback.textContent = "Copy failed. Try again.";

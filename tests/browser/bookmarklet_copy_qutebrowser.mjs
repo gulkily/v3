@@ -38,8 +38,9 @@ try {
     await wait(()=>page.evaluate(`document.querySelectorAll('[data-bookmarklet-feedback]')[${i}].textContent==='Copied'`),'copy success');
     const clipboard=spawnSync('/usr/bin/python3',['-c','from PyQt5.QtWidgets import QApplication; app=QApplication([]); print(app.clipboard().text(), end="")'],{encoding:'utf8',timeout:10000});
     assert.equal(clipboard.status,0,clipboard.stderr);
-    assert.equal(clipboard.stdout,entries[i].href);
-    command(':bind ,b jseval --url '+clipboard.stdout);
+    assert.equal(clipboard.stdout,'javascript:'+decodeURIComponent(entries[i].href.slice('javascript:'.length)).replace(/\s*[\r\n]+\s*/g,' '));
+    // Plain jseval takes raw JavaScript; the copied text must work without --url.
+    command(':bind ,b jseval '+clipboard.stdout);
     command(':open '+base+'/test-source');
     await wait(()=>page.evaluate('!!document.querySelector("#selection")'),'source');
     if(entries[i].kind!=='tweet')await page.evaluate('var r=document.createRange();r.selectNodeContents(document.querySelector("#selection"));getSelection().removeAllRanges();getSelection().addRange(r)');

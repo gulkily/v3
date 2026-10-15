@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Bookmarklets page redesign](bookmarklets_page_redesign/)
 - [Repository directory cleanup](repository_directory_cleanup/)
 
 - [Compose thread declutter](compose_thread_declutter/)
@@ -163,6 +164,8 @@ checklists, and proposals remain at the top level or in the collections below.
 - [YouTube embed layout](youtube_embed_layout/)
 
 ## Other collections
+
+- [Earlier directory-cleanup planning records](archive/repository_directory_cleanup_first_run/) — retained from the duplicate local workflow; the current plan is [Repository directory cleanup](repository_directory_cleanup/).
 
 - [Backlog](backlog/) contains early-stage and uncommitted proposals, grouped by topic.
 - [Archive](archive/) contains completed planning cycles retained for historical reference.

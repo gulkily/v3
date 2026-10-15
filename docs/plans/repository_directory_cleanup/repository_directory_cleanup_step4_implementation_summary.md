@@ -2,17 +2,19 @@
 
 Debug mode: enabled
 
-## Delivery
-- Branch: `chore/repository-directory-cleanup`.
-- Planning commit: `6af9d3ad`; approved plans and existing log organized before implementation.
-- Scope: documentation-only internal maintenance; runtime, UI, deployment, migration, and release checks are not applicable because executable files and behavior are unchanged.
+## Approved scope
 
-## Stage 1 - Specification and product copy
-- Changes: Moved `sfenc.md` to `docs/specs/` and `zenmemes_rules.txt` to `docs/product/`; repaired README and key-backup links and updated the README section heading.
-- Verification: Python baseline comparisons against planning commit `6af9d3ad` confirm byte-identical contents for both documents; changed local links and all four plan-navigation bars resolve. `git diff --check` and exact changed-file scope checks pass.
-- Notes: Destinations were absent before moving; all seven approved sources were present. No conflicts or application dependencies found in the reference inventory.
+- User retained `todo.txt` at the root when approving Step 3: eight moves total, six from the root.
+- Documentation-only; runtime, UI, deployment, migration, and release checks are not applicable because application code and configuration do not change.
 
-## Stage 2 - Planning notes and discovery
-- Changes: Moved the five approved `.txt` notes unchanged into `docs/plans/backlog/`; indexed all five and linked the index from README. Repaired links in product priorities, media-embed and messaging checklists, and the server-cooperative deletion discussion.
-- Verification: `python3 /tmp/verify_repository_directory_cleanup.py` passed seven byte-for-byte comparisons against planning commit `6af9d3ad`, seven README discovery routes, 35 local-link checks, remaining navigable links to relocated names, and exact allowed-file scope. `git diff --check` passed. The verification script is a temporary local check, not a repository deliverable.
-- Notes: Residual old-path mentions were reviewed with `git grep`: historical plans, summaries, debug logs, quoted requests, and plain filename references remain intact. Parser/spec examples retain their illustrative `todo.txt` strings. Repository-root path examples inside moved notes and SFENC remain repository-root examples. No navigable relative links within the moved documents required repair. No runtime, test, CI, deployment, or generated files changed; runtime checks remain inapplicable.
+## Stage 1 - Root documentation cleanup
+
+- Changes: Moved six root documents into backlog, product, and specs categories; repaired five live links; added backlog discovery in the root README and four note links in the backlog index. Removed the obsolete “repo root” label from the README heading.
+- Verification: `python3 /tmp/verify-repository-cleanup.py` passed six byte-identical moves, unchanged root `todo.txt`, six fewer root files, 161 resolving local Markdown links across edited documents and plan navigation, and approved-file-scope checks. `git diff --check` passed.
+- Notes: Repository-root code paths in proposal prose remain repository-root references. Existing historical bare filenames, quoted requests, parser examples, and already-stale plan references were preserved. No runtime/API/catalog changes; runtime, UI, deployment, migration, and release checks are not applicable.
+
+## Stage 2 - Feature-flags documentation grouping
+
+- Changes: Moved the implementation brief and self-contained HTML mockup together into `docs/plans/backlog/`; added distinct backlog links while retaining the separate existing `feature_flag_redesign_spec.md` proposal.
+- Verification: `python3 /tmp/verify-repository-cleanup.py` passed all eight byte-identical moves, unchanged `todo.txt`, six fewer root files, 163 resolving local Markdown links, and approved scope. Confirmed the brief's same-directory mockup reference resolves and the HTML has no external relative assets. `git diff --check` passed.
+- Notes: All eight old source paths are absent and all approved destinations exist. Application code, tests, configuration, viewer/catalog, and ignored directories remain unchanged. Runtime, UI, deployment, migration, and release checks are not applicable to these document moves.

@@ -3,36 +3,47 @@
 Debug mode: enabled
 
 ## Problem
-Loose specifications, product copy, and planning notes obscure the root's essential project files. Maintainers need predictable homes for this material and working navigation after relocation.
+
+Loose notes and reference documents obscure the project's structure on GitHub. Readers need a tidy root and predictable documentation locations without losing content or breaking references.
 
 ## User stories
-- As a developer, I want a focused project root so that I can identify startup, configuration, and contribution entry points quickly.
-- As a maintainer, I want notes and specifications grouped by purpose so that I can find them without losing content or references.
+
+- As a visitor, I want a focused repository root so that I can identify the project and its entry points quickly.
+- As a contributor, I want related documents grouped and linked so that I can find existing guidance and proposals.
 
 ## Core requirements
-- Relocate all seven loose root documents: `docs_page_changes_revised.txt`, `improve_messaging.txt`, `qdb_todo.txt`, `related_feature_requests.txt`, `sfenc.md`, `todo.txt`, and `zenmemes_rules.txt`; preserve filenames and substantive contents.
-- Reuse existing documentation categories; limit second-level changes to placing these documents and making their destinations discoverable. No unrelated directory reorganization.
-- Repair active repository links to moved files and relative links inside them; preserve historical requests, approved plans, and illustrative path strings as history/examples rather than rewriting their meaning.
-- Retain essential root files, application entry points, package configuration, and the debug marker; preserve application structure, vendored workflows, and local/generated data.
+
+- Relocate the six root candidates (excluding `todo.txt` per the approval) from Step 1 into existing purpose-based documentation categories, preserving filenames and substantive content.
+- Group the loose `docs/feature-flags-redesign-spec.md` and `docs/feature-flags-redesign.html` together under an appropriate documentation category; preserve their relationship.
+- Repair affected document links, relative references, and root README discovery links; distinguish live references from historical examples.
+- Preserve root metadata and application entry points, documented commands, and existing runtime behavior; delete no project material.
 
 ## Delivery scope
-**Work type: documentation-only internal maintenance.** Allowed scope: the seven source documents above and their destinations under `docs/specs/`, `docs/product/`, or `docs/plans/`; `README.md`; affected host-project documentation under `docs/architecture/`, `docs/examples/`, `docs/research/`, `docs/specs/`, `docs/runbooks/`, `docs/product/`, and `docs/reference/`; documentation indexes and this feature's Railspike artifacts under `docs/plans/`. Reference edits are limited to relocation and discovery. Audience: developers and maintainers. Application/runtime, tests, CI, deployment, generated artifacts, vendored workflows, content consolidation, and content deletion are outside scope. Step 3 must fix exact destinations before implementation; any required non-documentation change requires renewed scope approval.
+
+**Work type: documentation-only internal maintenance.** Allowed moves: `qdb_todo.txt`, `improve_messaging.txt`, `docs_page_changes_revised.txt`, `related_feature_requests.txt`, `sfenc.md`, `zenmemes_rules.txt`, and the two feature-flags documents above. Destinations are limited to `docs/plans/backlog/`, `docs/product/`, and `docs/specs/`; Step 3 must specify the exact mapping. The static HTML mockup is a documentation artifact, not a served application asset.
+
+Allowed edits: `README.md`, affected host-project documentation under `docs/` for mechanical reference repairs, this feature's planning artifacts/debug log, and `docs/plans/README.md` for required plan organization. Any index additions must directly support this cleanup. Vendored `docs/railspike/` and `docs/fdp/`, unrelated plan organization, and substantive document rewrites are excluded. Application/runtime, tests, CI, deployment, generated artifacts, configuration, and ignored local directories may not be changed.
 
 ## Completion boundary
-Starting at the README, a maintainer can discover and open every relocated document. Completion requires content-preserving moves, repaired active references, and scope/link verification; incorrect placement is corrected by reverting or revising the affected move and its links before handoff.
+
+Finish when a GitHub visitor can navigate from the root README to relocated material, all eight moves preserve content apart from necessary reference repairs, and affected live document links resolve. Correct errors through scoped reference fixes or reverse the affected move; any required application change returns to Step 2/3 for approval. Handoff requires scope, content, and link verification plus the Railspike implementation summary and required commits.
 
 ## Risks
-- **Broken navigation:** readers lose access. Early evidence identifies README links, the key-backup reference, and a product-priorities citation; require a complete reference inventory in Step 3 before moves.
-- **Misclassification or data loss:** useful notes become hard to find or disappear. Preserve complete contents and filenames; Step 3 must give each document one justified destination without inferring obsolescence.
-- **Scope expansion:** second-level cleanup becomes a broad refactor. Bound it to the seven documents and supporting navigation; stop for renewed approval if runtime dependencies or unrelated moves emerge.
+
+- **Broken references:** readers lose access; search tracked references before Step 3, distinguish literal examples, and include all live-link repairs in the approved plan.
+- **Behavior or exposure changes:** moving Markdown beneath `docs/` can make it readable through the existing document viewer; review moved material and the viewer's path policy before Step 3, and resolve unsuitable destinations before approval.
+- **Misclassification or collisions:** documents become harder to find or overwrite material; inspect destination contents before Step 3 and use explicit mappings with no overwrites.
 
 ## Shared component inventory
-Reuse the root README, existing documentation categories, `docs/reference/key_backups.md`, and `docs/product/v3_feature_priorities.md` as canonical discovery/reference surfaces. No UI/API data-rendering surface is affected, and no new application component is needed.
+
+Reuse the root README and existing documentation categories/indexes for discovery. The in-app `PlatformDocsCatalog` and document viewer already serve documentation; preserve their catalog, policy, and runtime implementation. No new UI or API is needed.
 
 ## Simple user flow
-1. Open the project root and README.
-2. Follow documentation navigation to the appropriate category and document.
-3. Follow its references successfully while using existing project commands unchanged.
+
+1. Open the GitHub repository and read the focused root listing.
+2. Follow README links or browse the existing documentation categories.
+3. Open the relocated document and follow its repaired references.
 
 ## Success criteria
-Seven loose documents leave the root; all seven remain discoverable with substantive content preserved; zero broken active links caused by the moves; zero changes outside the allowed scope. No application behavior or command-path changes.
+
+Eight approved files relocated; six fewer tracked root files; no remaining loose feature-flags pair in `docs/`; no lost substantive content, destination collisions, or broken affected live links; changes confined to the allowed documentation scope.

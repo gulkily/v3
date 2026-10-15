@@ -8,17 +8,6 @@ When an item is selected, move its planning work through the feature
 development process and place a multi-artifact feature in its own directory
 under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 
-## Project notes and proposals
-
-These notes retain their original content and completion markers; relocation
-does not imply that every item remains open or has been approved.
-
-- [General work notes](todo.txt)
-- [QDB work notes](qdb_todo.txt)
-- [Private messaging usability proposal](improve_messaging.txt)
-- [Docs index rewrite proposal](docs_page_changes_revised.txt)
-- [Reported navigation and reply friction](related_feature_requests.txt)
-
 ## Agent and automation
 
 - [Agent Reply Return Notification](agent_reply_return_notification_step1_solution_assessment.md)
@@ -70,3 +59,13 @@ does not imply that every item remains open or has been approved.
 - [Usenet Forte Agent Interface](usenet_forte_agent_interface_step1_solution_assessment.md)
 - [`v3` Start Port Shorthand](v3_start_port_shorthand_step1_solution_assessment.md)
 - [`v3` Terminal Operator UI](v3_terminal_operator_ui_step1_solution_assessment.md)
+
+## Project notes and proposals
+
+- [QDB work notes](qdb_todo.txt)
+- [Messaging usability proposal](improve_messaging.txt)
+- [Documentation index rewrite proposal](docs_page_changes_revised.txt)
+- [Reported interaction friction](related_feature_requests.txt)
+
+- [Feature Flags redesign implementation brief](feature-flags-redesign-spec.md)
+- [Feature Flags redesign interactive mockup](feature-flags-redesign.html)

@@ -88,11 +88,10 @@ An academic paper (plus slides) on Byzantine fault-tolerant governance for
 internet message boards, unrelated to this codebase's implementation —
 [`docs/research/`](docs/research/) for the full set.
 
-### Project Notes and Supporting Documents
-
-- [Planning notes and proposals](docs/plans/backlog/README.md) — general work notes, QDB notes, messaging and docs proposals, and reported friction
+### Project Notes
 
 - [BLESSING.md](BLESSING.md)
+- [Planning backlog](docs/plans/backlog/README.md) — project notes and proposed improvements
 - [sfenc.md](docs/specs/sfenc.md) — Starfield Encoding Specification (SFENC), a self-contained text-encoding spec
 - [zenmemes_rules.txt](docs/product/zenmemes_rules.txt) — the site's tone-setting posting rules (not currently rendered anywhere in-app)
 
