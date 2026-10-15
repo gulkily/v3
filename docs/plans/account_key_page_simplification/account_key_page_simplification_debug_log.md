@@ -102,3 +102,24 @@ Debug mode: enabled, inherited from Step 2. The user approved Step 2 before this
 ### Uncertain assessments
 
 - **Source:** ≤1 page limit. **Observation:** Six stages exceed a printed page. **Suggestion:** Clarify.
+
+## 2026-10-15T05:00:00Z — Step 4: Implementation
+
+Debug mode: enabled, inherited from Step 3. The user approved Step 3 before implementation.
+
+### Necessary/useful instructions
+
+- **Source:** `step4_implementation_do.md`, Stage Boundary Protocol. **Observed contribution:** Per-stage verification caught two existing copy assertions (guest publication, saved browser identity) the moment they were affected in Stage 5. **Suggestion:** Retain.
+- **Source:** Step 3 Key Risks tied to early-validation stages. **Observed contribution:** The stale-fingerprint risk was checked in a browser in Stage 2 before later stages built on it. **Suggestion:** Retain.
+
+### Redundant/unnecessary instructions
+
+- **Source:** Final Verification Checklist items 1–3 versus the per-stage protocol. **Observed overhead:** Commit counts and summary updates re-verified after per-stage enforcement. **Suggestion:** Consolidate into one final `git log` check.
+
+### Inapplicable instructions
+
+- **Source:** Checklist item 5 (deployment, migration, external systems). **Reason:** UI-only change. **Suggestion:** Retain, recorded as not applicable.
+
+### Uncertain assessments
+
+- **Source:** Branch rule "create the Step 4 feature branch". **Observation:** The branch already existed from the Step 1 commit and stacks on an unmerged prior cycle; the workflow does not say how to handle that. **Suggestion:** Clarify.

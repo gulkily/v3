@@ -57,3 +57,22 @@ Branch: `account-key-page-simplification` (stacked on the unmerged `account-key-
   - `FORMAT=text node tests/browser/key_backup_ui.mjs`: passed.
 - Notes:
   - Collapsed `<details>` content stays in the DOM, so status mirroring to the card works without opening it.
+
+## Stage 6 - Polish and regression pass
+- Changes:
+  - Removed the non-essential lead paragraph under the title and its style; no other defects found in review.
+- Verification:
+  - Theme matrix: all 15 theme stylesheets at 1100px and 375px with all expandos and the private-key reveal open: 30 combinations, no horizontal overflow and no text/background pair below 4.5:1 (username, fingerprint, labels, warning, where-things-live, expando summaries, status badge).
+  - Screenshot at 375px: card with state, name, fingerprint and Copy, profile link, actions, then three collapsed sibling expandos.
+  - `php tests/run.php` (full suite): 1190 run, 1190 passed, 0 failed.
+  - `FORMAT=text` and `FORMAT=png node tests/browser/key_backup_ui.mjs`: passed (reminder deep link, restore, privacy).
+  - `identity.css` changes in this cycle are `.account-key-*` only.
+- Notes:
+  - Not covered: a real-device mobile browser and a screen-reader pass; no deployment, migration, or server changes, so those checks are not applicable.
+
+## Final verification
+- All six planned stages are complete, each with a stage-scoped commit that includes its summary update.
+- The first Step 4 commit (`0dbe5bbe`) contains only the plans and debug log; the summary appears afterward.
+- Commits on this branch for this cycle: planning, six stages, plus the earlier Step 1 commit and the debug report: above the minimum of 7.
+- Contract: default view is the status card with copyable fingerprint and three collapsed sibling expandos (Back up or restore, Keys, Storage and privacy); every prior capability is reachable within one expando click; clear/undo, restore, and the `#key-backup` deep link work.
+- Not applicable: deployment, migration, and server checks (UI-only change).

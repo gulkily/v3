@@ -4,12 +4,6 @@
 .account-key-header h1 {
   margin-bottom: 0.4rem;
 }
-.account-key-lead {
-  margin: 0;
-  max-width: 38rem;
-  color: var(--ink-soft);
-  line-height: 1.5;
-}
 .account-key-simple-surface {
   gap: 0.85rem;
 }

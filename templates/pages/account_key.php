@@ -15,7 +15,6 @@ $authenticatedIdentityId = is_array($viewerProfile)
   <article class="card">
     <header class="account-key-header">
       <h1>Account Key</h1>
-      <p class="account-key-lead">Your identity here is a cryptographic key kept in this browser. Set it up once, back it up, and your posts are signed as you.</p>
     </header>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <div class="stack">
