@@ -41,3 +41,12 @@ Debug mode: enabled
   - `ThemeRegistryTest` 10/10.
 - Notes:
   - Chicago's 860px shell width already matches Word 97's, so no separate Chicago rule was needed.
+
+## Stage 4 - Word 97 specifics in dark
+- Changes:
+  - `theme-windark.css`: header ruler and nav grip, eyebrow title bar with icon and window buttons, card/post-meta title bars (navy gradient kept from Word 97), "New Thread" composer bar, theme trigger and popover, status bar with dim REC/TRK/EXT/OVR panels, `:target` permalink ring, scrollbar block (`html[data-theme]` form, arrows lightened), `scrollbar-color` fallback, pinned marker (kept yellow/black), compact-thread density rules.
+- Verification:
+  - Chrome screenshot of the board in Win Dark reviewed: title bars, ruler, composer bar, pinned marker and status bar render themed with no light panels.
+  - Custom scrollbars not verifiable in headless Chrome (known limitation in the theme guide); to be checked headed in the Stage 5 sweep if available.
+- Notes:
+  - Popover rules keep the `:not(.theme-menu__option)` guards inherited from Word 97, so representative rows are not restyled.
