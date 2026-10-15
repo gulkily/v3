@@ -31,3 +31,13 @@ Debug mode: enabled
 - Notes:
   - Stage 2 has no scoped chrome yet, so the theme currently renders base styles with dark variables.
   - Production needs `php scripts/build_static_artifacts.php` after deploy, per the theme guide.
+
+## Stage 3 - Core dark chrome
+- Changes:
+  - `theme-windark.css`: scoped rules for shell, header, cards, feedback, post-card spacing, body inset, tool-launcher buttons, links, buttons (face, active, focus, disabled), nav links, inputs/key viewers and selection, derived from the Word 97 rules with a dark color mapping (face `#2b2b2b`, bevel `#6a6a6a`/`#000000`, ink `#e6e6e6`, link `#7aa8ff`, disabled `#7a7a7a` with black emboss).
+- Verification:
+  - Headed-free Chrome (`/opt/google/chrome/chrome`, headless) against `scripts/dev_server.php`: board page in Win Dark renders themed (screenshot reviewed; contrast OK, active nav uses navy).
+  - Browser probe of a disabled button: Word 97 computed color `rgb(128,128,128)` (Stage 1 fix confirmed in a real browser), Win Dark `rgb(122,122,122)`.
+  - `ThemeRegistryTest` 10/10.
+- Notes:
+  - Chicago's 860px shell width already matches Word 97's, so no separate Chicago rule was needed.

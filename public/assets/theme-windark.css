@@ -39,3 +39,157 @@
   color: #e6e6e6;
   box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #6a6a6a;
 }
+
+:root[data-theme="windark"] .shell {
+  width: min(100%, 860px);
+}
+
+:root[data-theme="windark"] .site-header {
+  padding: 0.45rem 0.6rem 0.6rem;
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  box-shadow:
+    0 0 0 3px #2b2b2b,
+    0 0 0 4px #6a6a6a,
+    7px 7px 0 4px #000000;
+}
+
+:root[data-theme="windark"] .card,
+:root[data-theme="windark"] .feedback {
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  box-shadow:
+    0 0 0 3px #2b2b2b,
+    0 0 0 4px #6a6a6a,
+    7px 7px 0 4px #000000;
+}
+
+:root[data-theme="windark"] .card {
+  padding: 1.5rem;
+}
+
+:root[data-theme="windark"] .post-card {
+  padding-bottom: 2.25rem;
+}
+
+:root[data-theme="windark"] .post-card:has(+ .continuation) {
+  padding-bottom: 0.5rem;
+}
+
+:root[data-theme="windark"] .post-card.continuation {
+  padding-top: 0.85rem;
+}
+
+:root[data-theme="windark"] .inline-reply-composer {
+  padding: 0;
+}
+
+:root[data-theme="windark"] .stack > * + * {
+  margin-top: 1.5rem;
+}
+
+:root[data-theme="windark"] .post-card.continuation {
+  margin-top: 0;
+}
+
+:root[data-theme="windark"] .tags-section-card {
+  background: #2b2b2b;
+}
+
+:root[data-theme="windark"] .card > .body,
+:root[data-theme="windark"] .card > p:not([class]) {
+  margin: 0.9rem 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #5a5a5a;
+  background: #1b1b1b;
+}
+
+:root[data-theme="windark"] .card > p:not([class]) + p:not([class]) {
+  margin-top: 0.9rem;
+}
+
+:root[data-theme="windark"] .tool-launcher-button {
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  color: #e6e6e6;
+  font-weight: 600;
+  box-shadow:
+    inset 1px 1px 0 0 #6a6a6a,
+    inset -1px -1px 0 0 #000000;
+}
+
+:root[data-theme="windark"] .tool-launcher-button:active {
+  box-shadow:
+    inset -1px -1px 0 0 #6a6a6a,
+    inset 1px 1px 0 0 #000000;
+}
+
+:root[data-theme="windark"] a {
+  color: #7aa8ff;
+}
+
+:root[data-theme="windark"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  color: #e6e6e6;
+  box-shadow:
+    inset 1px 1px 0 0 #6a6a6a,
+    inset -1px -1px 0 0 #000000;
+}
+
+:root[data-theme="windark"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+  box-shadow:
+    inset -1px -1px 0 0 #6a6a6a,
+    inset 1px 1px 0 0 #000000;
+}
+
+:root[data-theme="windark"] .nav-link {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e6e6e6;
+  text-decoration: none;
+}
+
+:root[data-theme="windark"] .nav-link:hover {
+  border-color: #6a6a6a #000000 #000000 #6a6a6a;
+}
+
+:root[data-theme="windark"] .nav-link.is-active {
+  color: #e6e6e6;
+  background: #3c3c3c;
+  border-color: #000000 #6a6a6a #6a6a6a #000000;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+:root[data-theme="windark"] input,
+:root[data-theme="windark"] textarea,
+:root[data-theme="windark"] [data-role="public-key-viewer"],
+:root[data-theme="windark"] [data-role="private-key-viewer"] {
+  border: 1px solid #000000;
+  background: #121212;
+  box-shadow:
+    inset 1px 1px 0 0 #000000,
+    inset -1px -1px 0 0 #3c3c3c;
+}
+
+:root[data-theme="windark"] ::selection {
+  background: #000080;
+  color: #ffffff;
+}
+
+:root[data-theme="windark"] a:focus-visible {
+  outline: 1px dotted #e6e6e6;
+  outline-offset: 1px;
+}
+
+:root[data-theme="windark"] button:not(.theme-menu__option):focus-visible,
+:root[data-theme="windark"] .nav-link:focus-visible {
+  outline: 1px dotted #e6e6e6;
+  outline-offset: -4px;
+}
+
+:root[data-theme="windark"] button[disabled]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  color: #7a7a7a;
+  text-shadow: 1px 1px 0 #000000;
+}
