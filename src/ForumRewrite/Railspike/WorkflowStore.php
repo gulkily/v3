@@ -28,6 +28,25 @@ final class WorkflowStore
             \ForumRewrite\TaskQueue\SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT, $row['id'].'@'.$row['version'], 1);
     }
 
+    /** Called only while the normal queue execution lock is held, after abandoned-task recovery. */
+    public function reconcileTasks(): void
+    {
+        $this->transaction(function (): void {
+            foreach ($this->pdo->query('SELECT data FROM railspike_workflows')->fetchAll(PDO::FETCH_COLUMN) as $data) {
+                $row=json_decode($data,true,64,JSON_THROW_ON_ERROR);
+                if (!in_array($row['state'],['queued','running'],true)) continue;
+                $q=$this->pdo->prepare('SELECT status FROM internal_tasks WHERE type=? AND deduplication_key=? ORDER BY id DESC LIMIT 1');
+                $q->execute([\ForumRewrite\TaskQueue\SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT,$row['id'].'@'.$row['version']]);
+                $status=$q->fetchColumn();
+                if ($status===false && $row['state']==='queued') { $this->schedule($row); continue; }
+                if ($status===false || in_array($status,['failed','completed'],true)) {
+                    $row['state']='failed'; $row['failure']='Assessment interrupted. Check worker status, then retry.';
+                    $row['version']++; unset($row['run_token']); $this->save($row);
+                }
+            }
+        });
+    }
+
     public function instance(): string
     {
         return (string) $this->pdo->query("SELECT value FROM railspike_metadata WHERE name='instance'")->fetchColumn();

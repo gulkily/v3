@@ -48,6 +48,7 @@
     button('Refresh status', async () => {}, panel);
     const link = node('a', 'Original thread'); link.href = '/threads/' + encodeURIComponent(row.thread_id) + '#post-' + encodeURIComponent(row.post_id); panel.append(link);
     if (row.failure) panel.append(node('p', row.failure));
+    if (row.state === 'failed') button('Retry assessment', () => act('retry', row.post_id, row), panel);
     for (const revision of row.revisions) {
       const details = node('details'); details.open = revision === row.revisions[row.revisions.length - 1];
       details.append(node('summary', 'Revision ' + revision.number + ': ' + revision.kind));

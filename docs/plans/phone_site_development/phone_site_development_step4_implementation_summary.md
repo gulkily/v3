@@ -28,3 +28,8 @@ Implementation in progress. Live server acceptance is pending.
 - Changes: Approve Step 1 records the exact revision/digest and operator; approved workflow visibly stops at the Step 2 handoff. Subsequent requested changes invalidate the active approval while preserving evidence.
 - Verification: `php tests/run.php RailspikeWorkflowTest` — 5 passed, including wrong digest, replay, operator revocation, approval invalidation, and zero extra tasks on approval. JavaScript syntax and diff checks passed.
 - Notes: no Step 2, implementation, legacy-runner, or deployment dispatch is attached to approval.
+
+## Stage 6 - Crash recovery and explicit retry
+- Changes: reconcile missing/terminal queue tasks against private workflow evidence after abandoned-task recovery; signed retry; retained revision evidence independent of queue pruning; late-result rejection via run token and version.
+- Verification: `php tests/run.php RailspikeWorkflowTest TaskQueueWorkerTest TaskQueueStoreTest` — 32 passed, including expired claim, retry, repeated result delivery, history deletion, and late result. Diff checks passed.
+- Notes: initial crash fixture used a fresh claim and correctly did not trigger recovery; corrected it to an expired claim. Existing queue abandonment window is 900 seconds. Waiting questions/review never occupy a task.

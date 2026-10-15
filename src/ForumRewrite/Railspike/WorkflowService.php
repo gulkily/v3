@@ -78,6 +78,10 @@ final class WorkflowService
         $kind=$action['action']; $payload=$action['payload'] ?? [];
         $latest=$row['revisions'] === [] ? null : $row['revisions'][array_key_last($row['revisions'])];
         if (!is_array($payload)) throw new RuntimeException('Action payload must be an object.');
+        if ($kind==='retry' && $row['state']==='failed') {
+            $row['history'][]=['action'=>'retry','actor'=>$actor['identity_id'],'at'=>gmdate('c')];
+            $row['state']='queued'; unset($row['failure'],$row['failure_detail']); return $row;
+        }
         if ($kind==='approve' && $row['state']==='review' && $latest !== null && ($payload['revision'] ?? null)===$latest['number'] && ($payload['digest'] ?? '')===$latest['digest']) {
             $row['approval']=['actor'=>$actor['identity_id'],'revision'=>$latest['number'],'digest'=>$latest['digest'],'at'=>gmdate('c')];
             $row['history'][]=['action'=>'approve']+$row['approval'];

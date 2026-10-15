@@ -51,6 +51,7 @@ final class TaskQueueWorker
             'retried' => 0,
             'failed' => 0,
         ];
+        if ($this->assessRailspike instanceof \ForumRewrite\Railspike\AssessmentTask) $this->assessRailspike->reconcile();
         if ($report !== null && $summary['recovered'] > 0) {
             $report('recovered', ['count' => $summary['recovered']]);
         }

@@ -7,6 +7,8 @@ final class AssessmentTask
 {
     public function __construct(private readonly WorkflowStore $store, private readonly mixed $runner) {}
 
+    public function reconcile(): void { $this->store->reconcileTasks(); }
+
     public function __invoke(array $task): void
     {
         [$id,$version]=array_pad(explode('@',$task['deduplication_key'],2),2,'');

@@ -109,4 +109,40 @@ final class RailspikeWorkflowTest
         $this->rejects(fn () => $service->apply($text,'valid',$actor));
     }
 
+    public function testCrashRecoveryPruningAndRepeatPublication(): void
+    {
+        [$store,$service,$actor,$root,$pdo]=$this->fixture();
+        $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
+        $queue=new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo);
+        $claimed=$queue->claimNext(1)[0];
+        $pdo->exec("UPDATE internal_tasks SET claimed_at='2000-01-01T00:00:00+00:00'");
+        $row['state']='running'; $row['run_token']='dead'; $store->save($row);
+        $runner=static fn ($r) => ['kind'=>'questions','questions'=>['Which phone?'],'assessment'=>''];
+        $task=new \ForumRewrite\Railspike\AssessmentTask($store,$runner);
+        $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker($queue,static function () {},null,null,null,$task);
+        $worker->run();
+        $failed=$store->find($row['id']); assertSame('failed',$failed['state']);
+        $next=$service->apply($service->prepare(['action'=>'retry','workflow_id'=>$row['id'],'version'=>$failed['version']],$actor),'valid',$actor);
+        assertSame(1,$worker->run()['completed']);
+        $done=$store->find($row['id']); assertSame('questions',$done['state']);
+        $task(['deduplication_key'=>$row['id'].'@'.$next['version']]);
+        assertSame(1,count($store->find($row['id'])['revisions']));
+        $pdo->exec("DELETE FROM internal_tasks");
+        $store->reconcileTasks();
+        assertSame('questions',(new WorkflowStore($pdo))->find($row['id'])['state']);
+        assertSame(1,count($store->find($row['id'])['revisions']));
+    }
+    public function testLateWorkerResultCannotOverwriteANewerRun(): void
+    {
+        [$store,$service,$actor]=$this->fixture();
+        $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
+        $late=new \ForumRewrite\Railspike\AssessmentTask($store,function ($r) use ($store) {
+            $r['version']++; $r['state']='failed'; $store->save($r);
+            return ['kind'=>'questions','questions'=>['Stale?'],'assessment'=>''];
+        });
+        $late(['deduplication_key'=>$row['id'].'@1']);
+        assertSame('failed',$store->find($row['id'])['state']);
+        assertSame([],$store->find($row['id'])['revisions']);
+    }
+
 }
