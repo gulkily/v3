@@ -98,3 +98,5 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
     </details>
   </article>
 </section>
+
+<?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>

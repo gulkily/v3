@@ -1608,6 +1608,7 @@ class LocalWriteService
             $timings = array_merge($timings, $this->synchronizeApprovalDerivedState($record, $commitSha));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, $parentId, $postId);
+            $this->invalidateAccountHistory($context);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
@@ -1767,6 +1768,7 @@ class LocalWriteService
 
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, (string) $prepared['parent_id'], $postId);
+            $this->invalidateAccountHistory($context);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $this->deletePreparedPost($prepareToken);
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
@@ -1937,6 +1939,8 @@ class LocalWriteService
                 // A redemption derives member approval from the issuer's existing
                 // approval, so it needs the approval-aware projection update.
                 $this->synchronizeApprovalDerivedState($record->post, $commitResult['commit_sha']);
+                $this->invalidator()->invalidateApproval($context['target_profile_slug'], $context['target_thread_id'], $context['target_post_id'], $postId);
+                $this->invalidateAccountHistory($context);
             } else {
                 $this->synchronizePostDerivedState($record->post, $commitResult['commit_sha']);
             }
@@ -2743,6 +2747,13 @@ class LocalWriteService
         ];
     }
 
+    private function invalidateAccountHistory(array $context): void
+    {
+        $query = $this->readModelPdo()->prepare('SELECT profile_slug FROM profiles WHERE username_token = ?');
+        $query->execute([$context['target_username']]);
+        $this->invalidator()->invalidateAccountHistory($context['target_username'], $query->fetchAll(\PDO::FETCH_COLUMN));
+    }
+
     private function recoverAcceptedApproval(array $input): ?array
     {
         $contents = (string) ($input['canonical_record'] ?? '');
@@ -2766,6 +2777,7 @@ class LocalWriteService
         } catch (\Throwable $error) {
             throw new RuntimeException('Approval already committed at ' . $head . ' but refresh failed. Retry refresh; do not approve again.', 0, $error);
         }
+        $this->invalidateAccountHistory($receipt['context']);
         return ['status' => 'ok', 'recovered' => true, 'post_id' => $post->postId, 'thread_id' => $post->threadId,
             'profile_slug' => $receipt['context']['target_profile_slug'], 'record_path' => $path,
             'signature_path' => $path . '.asc', 'commit_sha' => $head];

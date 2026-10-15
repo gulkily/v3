@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Status: Implementation in progress. Stages 1–3 are implemented; stages 4–6 remain. This is not a release completion report.
+Status: Implementation in progress. Stages 1–4 are implemented; stages 5–6 remain. This is not a release completion report.
 
 Planning commit: `febc1e03` on `feature/account-key-approval-safety`.
 
@@ -34,3 +34,11 @@ Planning commit: `febc1e03` on `feature/account-key-approval-safety`.
 - Changes: ArchiveRecordCatalog recognizes and validates receipts for trusted repository restores; remote content imports explicitly exclude this authority family.
 - Verification: Final targeted run passed 36 tests across ApprovalAcceptanceTest, ApprovalPolicyTest, InvitationIssuanceTest, RepositoryArchiveImportCommandTest, ContentImportPlannerTest, RepositoryArchiveValidationTest, and six exact WriteApiSmokeTest methods. Coverage includes delayed/pre-expiry versus post-expiry acceptance, unknown legacy receipts, tampered bytes/context, an injected Git commit failure with clean retry, duplicate signed retry, signed invitation restore from tar.gz followed by rebuild, full/incremental parity, and projection-failure handling. An initial parity failure exposed an invalid posts.source_path query; reusing the canonical path resolver fixed it and the final suite passed. `git diff --check` passed.
 - Notes: No database migration or production changes. Receipts are repository-owned evidence, not a new member-signed authority primitive; repository restore remains trusted administration. Account/operator presentation and release checks remain stages 4–6.
+
+## Stage 4 - Account key history
+
+- Changes: Added shared ApprovalHistory lookups and a common history partial on classic/Forte username and profile pages. Paginated account history shows approved keys, approver, known acceptance time, first-key/own-account/cross-account classification, operator overrides, count/policy snapshots, and grant/receipt links. Missing legacy acceptance facts stay unknown; root seeds are identified without inventing acceptance times. Receipt facts retain the original account/approver usernames when current names change.
+- Changes: Profile API and CLI audit report the same acceptance evidence; compact profile/user summaries link to full history. Existing audit current-state review hints remain separately labeled and do not become confirmed violations. Source-path validation permits receipt links under existing site-access rules.
+- Changes: Approval invalidation now includes the username, every same-account profile, and Forte variants; invitation acceptance uses the same invalidation path. History pages cap key pages at 100 (default 50) and candidate grant reads at 100 per key; ordinary bootstrap replies are filtered before the cap. No new public feed or device/IP data.
+- Verification: The broad history/audit/LocalAppSmokeTest run passed 151 tests, including static publication, private membership boundaries, profile and source routes. After the final history-field change, five focused tests passed again without warnings: pagination/snapshot preservation, approved private profile, restricted anonymous account/receipt routes, static artifact rendering, and classic/Forte history/API/evidence/invalidation. A separate signed invitation/rebuild test passed and checks its history classification/time. Profile presentation/theme checks passed in an earlier 15-test run. `git diff --check` passed.
+- Notes: No database migration or production changes. The history is the current account's approved keys with available grant evidence, not a revocation log. Operator correlation remains Stage 5. A template field was added while the broad process still held an older class definition, producing transient missing-field warnings; the final fresh-process static/history rerun passed without those warnings.

@@ -45,3 +45,5 @@ $isApproved = ((int) $profile['is_approved']) === 1;
     <p class="paned-standalone-back"><a href="/forte">&larr; Back to board</a></p>
   </div>
 </div>
+
+<?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>

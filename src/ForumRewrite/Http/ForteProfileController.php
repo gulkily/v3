@@ -43,6 +43,7 @@ final class ForteProfileController
             'forte_profile.php',
             [
                 'profile' => $profile,
+                'approvalHistory' => $this->routeServices->approvalHistory()->forUsername((string) $profile['username_token']),
             ],
             $pageTitleLabel . ' - Forte Profile',
             'paned-reader-body',
@@ -51,7 +52,7 @@ final class ForteProfileController
         );
     }
 
-    public function username(string $username): ?string
+    public function username(string $username, array $query = []): ?string
     {
         $usernameToken = strtolower($username);
         $pdo = $this->routeServices->pdo();
@@ -77,6 +78,7 @@ final class ForteProfileController
             'forte_username.php',
             [
                 'usernameToken' => $usernameToken,
+                'approvalHistory' => $this->routeServices->approvalHistory()->forUsername($usernameToken, 50, max(0, (int) ($query['key_offset'] ?? 0))),
                 'approvedProfiles' => $approvedProfiles,
                 'unapprovedProfiles' => $unapprovedProfiles,
                 'approvedThreadCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, true),

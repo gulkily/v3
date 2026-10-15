@@ -1,6 +1,6 @@
 # Account key approval visibility and safety checklist
 
-Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stages 1–3 enforcement, approval review, and acceptance evidence are complete, and stages 4–6 remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
+Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stages 1–4 enforcement, approval review, acceptance evidence, and account history are complete, and stages 5–6 remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
 
 Reduce easy account impersonation while preserving open registration, member sponsorship, and convenient device setup. Prioritize the cross-account approval restriction, clear approval wording, and visible account-key history. Notifications and device pairing can follow as separately scoped features.
 
@@ -28,16 +28,16 @@ Meaningful authorization prompts should identify the consequential details the u
 
 ## Priority 2 Show account key history and exceptional approvals
 
-- [ ] Show each approved key on the account page, with its approver and approval time where known.
-- [ ] Distinguish first-key sponsorship, an additional key authorized by the same account, and an additional key authorized by somebody else. Identify operator overrides explicitly.
+- [x] Show each approved key on the account page, with its approver and approval time where known.
+- [x] Distinguish first-key sponsorship, an additional key authorized by the same account, and an additional key authorized by somebody else. Identify operator overrides explicitly.
 - [x] Record that classification when a new approval is accepted, along with the relevant key count and actor authority, so future reviews need not infer them from current state.
-- [ ] Preserve “unknown” for historical facts that cannot be established. The current audit's review candidates must not become confirmed violations merely by appearing in the UI.
+- [x] Preserve “unknown” for historical facts that cannot be established. The current audit's review candidates must not become confirmed violations merely by appearing in the UI.
 - [ ] Add account-key grants to an operator security feed with links to the affected account and approval evidence.
 - [ ] Consider a community-visible event for additions to existing accounts: “Alice approved an additional key for Bob. Bob now has 3 approved keys.” Give ordinary new-member sponsorship a less prominent presentation.
-- [ ] Keep IP addresses and device details out of public events, and respect the site's membership/access boundary when exposing history.
-- [ ] Include invitation-derived grants in the same history and classification rules.
+- [x] Keep IP addresses and device details out of public events, and respect the site's membership/access boundary when exposing history.
+- [x] Include invitation-derived grants in the same history and classification rules.
 
-Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, and Stage 3 persists these facts in grant-bound acceptance receipts. Account-wide history and the operator security feed remain pending.
+Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, and Stage 3 persists these facts in grant-bound acceptance receipts. Account-wide history is implemented in Stage 4; the operator security feed remains pending.
 
 ## Priority 3 Make approval policy changes visible
 
@@ -76,7 +76,7 @@ The goal is to make adding your own device easier than asking another member to 
 
 - [x] Choose the initial visibility scope: approved Step 2 includes account history and a root-approved operator view, with no new public feed. Community-visible events remain a follow-up consideration.
 - [ ] Choose notification channels and how existing devices recognize and acknowledge new-key notices.
-- [ ] Define the historical evidence available for older approvals and how uncertain classifications are presented.
+- [x] Define the historical evidence available for older approvals and how uncertain classifications are presented.
 - [ ] Scope a revocation response before promising users they can disable an unfamiliar key.
 - [x] Review the combined Step 1 scope and select its FDP cycle: approved Option B groups priorities 1–3; notifications, pairing, and revocation remain deferred.
 

@@ -43,3 +43,5 @@
     <p class="paned-standalone-back"><a href="/forte/user/<?= $e($usernameToken) ?>">View full profile</a></p>
   </div>
 </article>
+
+<p><a href="/forte/user/<?= $e($usernameToken) ?>#account-keys">Account key history</a></p>

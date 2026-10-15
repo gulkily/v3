@@ -837,7 +837,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->forteProfileController()->username($matches[1]);
+            $html = $this->forteProfileController()->username($matches[1], $query);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -881,7 +881,7 @@ final class Application
         }
 
         if (preg_match('#^/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->profilePageController()->username($matches[1]);
+            $html = $this->profilePageController()->username($matches[1], $query);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -1086,6 +1086,7 @@ final class Application
             'profile.php',
             [
                 'profile' => $profile,
+                'approvalHistory' => $this->routeServices()->approvalHistory()->forUsername((string) $profile['username_token']),
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
                 'notice' => $notice,

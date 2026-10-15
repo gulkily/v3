@@ -5408,6 +5408,9 @@ NODE;
 
         $this->seedArtifacts($artifactRoot, [
             '/profiles/' . $targetProfileSlug . '.html',
+            '/user/alice.html',
+            '/forte/user/alice.html',
+            '/forte/profiles/' . $targetProfileSlug . '.html',
         ]);
         $postIdsBefore = $this->listCanonicalPostIds($repositoryRoot);
         $approvalResult = $this->approveIdentity(
@@ -5434,6 +5437,20 @@ NODE;
         $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $targetBootstrapThreadId);
         $_COOKIE = [];
 
+        foreach (['/user/alice', '/forte/user/alice', '/profiles/' . $targetProfileSlug, '/forte/profiles/' . $targetProfileSlug] as $route) {
+            $historyPage = $this->renderMethod($application, 'GET', $route);
+            assertStringContains('Account key history', $historyPage);
+            assertStringContains('First-key sponsorship', $historyPage);
+            assertStringContains('root-approved operator authority', $historyPage);
+            assertStringContains('/source/current/records/approval-acceptances/', $historyPage);
+        }
+        assertStringContains('Approval-Classification: new_account', $targetProfileApi);
+        foreach (['/user/alice.html', '/forte/user/alice.html', '/forte/profiles/' . $targetProfileSlug . '.html'] as $artifact) {
+            assertSame(false, is_file($artifactRoot . $artifact));
+        }
+        $receiptPath = \ForumRewrite\Security\ApprovalAcceptance::path($approvalPostId);
+        $receiptPage = $this->renderMethod($application, 'GET', '/source/current/' . $receiptPath);
+        assertStringContains('"classification": "new_account"', $receiptPage);
         assertStringContains('Approve new member alice', $profilePage);
         assertSame(1, count($approvalPostIds));
         assertStringContains('Approved user alice', $approvalLanding);
@@ -6011,6 +6028,10 @@ NODE;
             assertSame('cross_account_key', $receipt['context']['classification']);
             assertSame(true, $receipt['context']['cross_account_allowed']);
             assertSame($issuer['identity_id'], $receipt['context']['actor_identity_id']);
+            $history = (new \ForumRewrite\ReadModel\ApprovalHistory((new ReadModelConnection($db))->open(), $root))->forUsername('forum-user');
+            $grants = array_column($history['rows'], null, 'identity_id');
+            assertSame('cross_account_key', $grants[$recipient['identity_id']]['classification']);
+            assertSame($receipt['accepted_at'], $grants[$recipient['identity_id']]['accepted_at']);
             require_once __DIR__ . '/Support/ImportTestWorkspace.php';
             $workspace = new ImportTestWorkspace();
             $restored = $workspace->repository('restored', true);

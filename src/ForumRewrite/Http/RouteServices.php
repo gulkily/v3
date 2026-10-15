@@ -85,6 +85,11 @@ final class RouteServices
         return $this->databasePath;
     }
 
+    public function approvalHistory(): \ForumRewrite\ReadModel\ApprovalHistory
+    {
+        return new \ForumRewrite\ReadModel\ApprovalHistory($this->pdo(), $this->repositoryRoot);
+    }
+
     public function featureFlags(): FeatureFlagEvaluator
     {
         return $this->featureFlags;
