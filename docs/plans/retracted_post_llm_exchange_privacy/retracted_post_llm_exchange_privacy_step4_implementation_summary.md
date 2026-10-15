@@ -14,3 +14,9 @@ Debug mode: disabled
 - Verification: five focused tests passed. Integration coverage verifies direct and context-only denial after signed author retraction, absence of request/response/error prose, unrelated detail availability, and unchanged diagnostic rows.
 - Notes: list and post-link reads are wired in Stage 3; no operator inspection bypass is introduced.
 
+## Stage 3 - Filter lists and post links before limits
+
+- Changes: UI recent()/forPost() queries share the detail visibility policy, using one fresh state snapshot per query. Rows stream with bounded PHP memory; hidden rows consume neither visible offsets nor limits. Existing Application lookup and post/root cards inherit filtering without duplicate template policies.
+- Verification: six targeted tests passed, including 205 newer hidden rows above older visible results, visible offsets, post-link suppression, list filtering, direct denial, and unchanged raw row count.
+- Notes: raw internal store reads retain their existing behavior; every application exchange UI reader uses the guarded store.
+

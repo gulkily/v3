@@ -39,4 +39,22 @@ final class SqliteLlmExchangeStoreTest
         assertSame('Response 1', $first['response']['body']);
         assertSame('post-1', $postRows[0]['related_post_id']);
     }
+    public function testGuardFiltersHiddenRowsBeforeLimitsAndVisibleOffsets(): void
+    {
+        $root = sys_get_temp_dir() . '/exchange-visible-' . bin2hex(random_bytes(6));
+        mkdir($root . '/records', 0700, true);
+        $pdo = new PDO('sqlite::memory:');
+        $recorder = new LlmExchangeRecorder($pdo);
+        $safe = [];
+        for ($i = 0; $i < 3; ++$i) $safe[] = $recorder->record(['post_id' => 'target', 'exchange_dependencies' =>
+            \ForumRewrite\Llm\ExchangeDependencies::manifest(['target'])], ['payload' => ['safe' => $i]], [], 'completed', 1);
+        for ($i = 0; $i < 205; ++$i) $recorder->record(['post_id' => 'target'], ['hidden' => 'prose'], [], 'completed', 1);
+        $pdo->exec("UPDATE llm_exchanges SET occurred_at = '2026-10-14T12:00:00Z'");
+        $store = new SqliteLlmExchangeStore($pdo, new \ForumRewrite\Llm\ExchangeVisibility($root));
+        assertSame([$safe[1], $safe[0]], array_column($store->recent(2, 1), 'id'));
+        assertSame([$safe[2], $safe[1]], array_column($store->forPost('target', 2), 'id'));
+        assertSame(null, $store->find(208));
+        assertSame(208, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
+    }
+
 }

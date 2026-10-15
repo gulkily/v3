@@ -2668,6 +2668,16 @@ NODE;
                 assertSame(false, str_contains($page, 'Exchange error prose'));
             }
             assertStringContains('Unrelated prompt', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[2]));
+            $list = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/');
+            assertSame(false, str_contains($list, '/tools/llm-exchanges/' . $ids[0] . '/'));
+            assertSame(false, str_contains($list, '/tools/llm-exchanges/' . $ids[1] . '/'));
+            assertStringContains('/tools/llm-exchanges/' . $ids[2] . '/', $list);
+            $post = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+            assertSame(false, str_contains($post, 'LLM exchanges:'));
+            $rootPost = $this->renderMethod($app, 'GET', '/posts/root-001');
+            assertSame(false, str_contains($rootPost, '/tools/llm-exchanges/' . $ids[1] . '"'));
+            assertStringContains('/tools/llm-exchanges/' . $ids[2] . '"', $rootPost);
+
             assertSame(3, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
         } finally {
             $_POST = []; $_COOKIE = $cookies;

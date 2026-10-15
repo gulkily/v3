@@ -18,6 +18,7 @@ final class SqliteLlmExchangeStore
     /** @return list<array<string, mixed>> */
     public function recent(int $limit = 50, int $offset = 0): array
     {
+        if ($this->visibility !== null) return $this->visibleRows(null, $limit, $offset);
         $stmt = $this->pdo->prepare(
             'SELECT * FROM llm_exchanges
              ORDER BY occurred_at DESC, id DESC
@@ -45,6 +46,7 @@ final class SqliteLlmExchangeStore
     /** @return list<array<string, mixed>> */
     public function forPost(string $postId, int $limit = 50): array
     {
+        if ($this->visibility !== null) return $this->visibleRows($postId, $limit);
         $stmt = $this->pdo->prepare(
             'SELECT * FROM llm_exchanges
              WHERE related_post_id = :post_id
@@ -56,6 +58,27 @@ final class SqliteLlmExchangeStore
         $stmt->execute();
 
         return array_map(fn (array $row): array => $this->hydrate($row), $stmt->fetchAll());
+    }
+
+    private function visibleRows(?string $postId, int $limit, int $offset = 0): array
+    {
+        $allows = $this->visibility->predicate();
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+        $where = $postId === null ? '' : ' WHERE related_post_id = :post_id';
+        $stmt = $this->pdo->prepare('SELECT * FROM llm_exchanges' . $where . ' ORDER BY occurred_at DESC, id DESC');
+        $stmt->execute($postId === null ? [] : ['post_id' => $postId]);
+        $rows = [];
+        // Stream with bounded PHP memory; hidden rows never consume a visible offset/limit.
+        while ($row = $stmt->fetch()) {
+            $exchange = $this->hydrate($row);
+            if (!$allows($exchange)) continue;
+            if ($offset > 0) { --$offset; continue; }
+            $rows[] = $exchange;
+            if (count($rows) === $limit) break;
+        }
+        $stmt->closeCursor();
+        return $rows;
     }
 
     /** @param array<string, mixed> $row @return array<string, mixed> */
