@@ -73,3 +73,11 @@ Branch: `account-key-page-redesign`. Planning commit: `docs: add account key pag
 - Notes:
   - Not covered: a real-device mobile browser and screen-reader pass; no deployment, migration, or server changes, so those checks are not applicable.
   - Backup tab default remains Restore, as before.
+
+## Final verification
+- All six planned stages are complete, each with a stage-scoped commit that includes its summary update.
+- The first Step 4 commit (`69725570`) contains only the approved plans, debug log, and index entry; the summary appears afterward.
+- Commit count on the branch: 8 (planning, six stages, debug report), above the minimum of 7.
+- Contract: the page opens with the status card, backup and restore are visible, technical content is grouped by intent, and clear-with-undo and restore are unchanged. Full suite 1188 passed; key backup browser test passed for text and PNG.
+- Not applicable: deployment, migration, and server checks (UI-only change).
+- Follow-up: [account key page simplification](../account_key_page_simplification/) supersedes the visible backup section and the four-group drawer, per later direction.
