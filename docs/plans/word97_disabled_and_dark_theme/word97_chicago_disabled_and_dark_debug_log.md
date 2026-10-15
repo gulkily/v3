@@ -44,3 +44,19 @@
 
 **Uncertain assessments**
 - Debug state restored three times (before/do/after); unclear whether once suffices.
+
+## 2026-10-15T21:46Z UTC — Step 4
+
+**Necessary/useful instructions**
+- RAILSPIKE.md "Directory structure and organization rule" plus step4_implementation_before.md gate: gave a concrete, ordered planning-commit procedure. Retain.
+- step4_implementation_do.md Stage Boundary Protocol (verify, summary, status, commit, log check): kept five stages auditable. Retain.
+- Commit cadence minimum `1 + stages`: easy final check (6 commits for 5 stages). Retain.
+
+**Redundant/unnecessary instructions**
+- The organization rule and the Before-file gate restate each other; the after-file checklist repeats the commit-count rule from RAILSPIKE.md. Suggest consolidate.
+
+**Inapplicable instructions**
+- Documentation-only verification clauses; deployment/migration checks (recorded as not applicable except the static rebuild note).
+
+**Uncertain assessments**
+- Feature-folder name differs from the artifact filename prefix (`word97_disabled_and_dark_theme/` vs `word97_chicago_disabled_and_dark_*`); the rule says preserve filenames but is silent on folder naming. Suggest clarify.
