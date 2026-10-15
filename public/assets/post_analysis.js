@@ -228,6 +228,10 @@
     if (!result || result.status !== "ok") {
       return false;
     }
+    if (["requested", "in_progress"].includes(result.generation_status)
+        && result.response_mode_label === "Scripture-oriented analysis") {
+      pollScriptureReply(result.post_id);
+    }
 
     if (result.generation_status === "generated" && result.agent_post_id) {
       placeAgentReplyFeedback(node, false);
@@ -656,6 +660,61 @@
     }
   }
 
+  const scripturePolls = new Set();
+
+  function pollScriptureReply(postId) {
+    if (!postId || scripturePolls.has(postId)) return;
+    const source = document.querySelector('.post-card[data-post-id="' + CSS.escape(postId) + '"]');
+    if (!source) return;
+    scripturePolls.add(postId);
+    const feedback = feedbackForPost(postId);
+    if (feedback) { feedback.setAttribute('role', 'status'); feedback.setAttribute('aria-live', 'polite'); }
+    async function update() {
+      if (!source.isConnected) { scripturePolls.delete(postId); return; }
+      if (document.hidden) { window.setTimeout(update, 2000); return; }
+      try {
+        const response = await fetch('/api/scripture_reply_status?post_id=' + encodeURIComponent(postId),
+          {credentials:'same-origin', cache:'no-store', headers:{Accept:'application/json'}});
+        if ([403, 404, 409].includes(response.status)) {
+          setFeedback(feedback, 'Scripture response is unavailable for this post.');
+          scripturePolls.delete(postId);
+          return;
+        }
+        if (!response.ok) throw new Error('Status unavailable');
+        const result = await response.json();
+        if (['generated', 'already_posted'].includes(result.generation_status) && result.agent_post_id) {
+          const selector = '.post-card[data-post-id="' + CSS.escape(result.agent_post_id) + '"]';
+          if (!document.querySelector(selector)) {
+            // Import the server's canonical escaped card; never interpret model text as markup.
+            const rendered = await fetch('/posts/' + encodeURIComponent(result.agent_post_id), {credentials:'same-origin',cache:'no-store'});
+            if (!rendered.ok) throw new Error('Reply unavailable');
+            const documentCopy = new DOMParser().parseFromString(await rendered.text(), 'text/html');
+            const card = documentCopy.querySelector(selector);
+            if (!card) throw new Error('Reply unavailable');
+            const inserted = document.importNode(card, true);
+            source.after(inserted);
+            if (window.ForumThreadReactions) window.ForumThreadReactions.bindWithin(inserted);
+            bindScriptureExpansions();
+          }
+          source.setAttribute('data-agent-reply-posted-id', result.agent_post_id);
+          source.removeAttribute('data-scripture-pending');
+          applyGenerationResult(feedback, result, null);
+          scripturePolls.delete(postId);
+          return;
+        }
+        applyGenerationResult(feedback, result, null);
+        if (!['requested', 'in_progress'].includes(result.generation_status)) {
+          scripturePolls.delete(postId);
+          return;
+        }
+      } catch (_) {
+        setFeedback(feedback, 'Could not check scripture response. Checking again shortly.');
+      }
+      window.setTimeout(update, 2000);
+    }
+    window.setTimeout(update, 500);
+  }
+
   async function requestAgentReply(button, mode) {
     const postId = button.getAttribute("data-post-id") || "";
     if (postId === "" || !markGenerationStarted(postId)) {
@@ -797,6 +856,9 @@
   }
 
   function boot() {
+    document.querySelectorAll('[data-scripture-pending="1"]').forEach(function (card) {
+      pollScriptureReply(card.getAttribute('data-post-id'));
+    });
     bindScriptureExpansions();
     bindAgentReplyRequestButtons();
     bindCodexHandoffButtons();

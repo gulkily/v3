@@ -2185,6 +2185,27 @@ NODE;
         }
     }
 
+    public function testScriptureInitialStatusReadsStoredResultsAndHonorsVisibility(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
+            $url = '/api/scripture_reply_status?post_id=' . $source;
+            $before = $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn();
+            $_COOKIE = [];
+            $first = json_decode($this->renderMethod($app, 'GET', $url), true);
+            $again = json_decode($this->renderMethod($app, 'GET', $url), true);
+            assertSame('already_posted', $first['generation_status']);
+            assertSame($initial, $first['agent_post_id']);
+            assertSame($first, $again);
+            assertSame($before, $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn());
+            assertSame('error', json_decode($this->renderMethod($app, 'POST', $url), true)['status']);
+            $pdo->exec('UPDATE posts SET is_hidden = 1 WHERE post_id = ' . $pdo->quote($initial));
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', $url), true)['status']);
+            $pdo->exec('UPDATE posts SET is_hidden = 0 WHERE post_id = ' . $pdo->quote($initial));
+            $pdo->exec('UPDATE posts SET retracted_at = "2026-01-01" WHERE post_id = ' . $pdo->quote($source));
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', $url), true)['status']);
+        });
+    }
+
     private function withScriptureExpansionFixture(callable $check): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

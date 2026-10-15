@@ -451,6 +451,7 @@ final class PostWorkflowService
             );
             if ($task['type'] === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE) { continue; }
             $generation['response_mode_label'] = AgentResponseTask::labelForType((string) ($task['type'] ?? ''));
+            $generation['response_mode'] = (string) ($task['type'] ?? '');
 
             $generations[(string) $context['post_id']] = $generation;
         }
@@ -729,6 +730,31 @@ final class PostWorkflowService
         return $this->agentReplyResponseForStoredRequest($row, $postId);
     }
 
+    /** Read durable status only: never reserve, generate, or publish from a GET. */
+    public function scriptureReplyStatus(array $post): array
+    {
+        $root = ($this->fetchPost)((string) $post['thread_id']);
+        if ($root === null || !empty($post['is_hidden']) || !empty($root['is_hidden'])
+            || ($post['retracted_at'] ?? null) !== null || ($root['retracted_at'] ?? null) !== null) {
+            throw new \InvalidArgumentException('Scripture reply unavailable.');
+        }
+        $context = $this->postAnalysisContext($post, false);
+        $row = (new SqliteAgentReplyGenerationStore($this->pdo()))->findByTarget($post['post_id'], $context['content_hash']);
+        $task = AgentResponseTask::fromStoredRequestContext($row['request_context'] ?? []);
+        if ($row === null || ($task['type'] ?? '') !== AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE) {
+            throw new \InvalidArgumentException('Scripture reply unavailable.');
+        }
+        if (!empty($row['agent_post_id'])) {
+            $reply = ($this->fetchPost)($row['agent_post_id']);
+            if ($reply === null || ($reply['parent_id'] ?? '') !== $post['post_id']
+                || ($reply['author_label'] ?? '') !== AgentIdentityService::USERNAME
+                || ($reply['retracted_at'] ?? null) !== null) {
+                throw new \InvalidArgumentException('Scripture reply unavailable.');
+            }
+        }
+        return $this->agentReplyResponseForStoredRequest($row, $post['post_id']);
+    }
+
     /**
      * @param array<string, mixed> $row
      * @return array<string, mixed>
@@ -909,10 +935,24 @@ final class PostWorkflowService
             throw new RuntimeException('Task queue directory is not writable.');
         }
 
-        (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(
+        $queued = (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(
             SqliteTaskQueueStore::AGENT_REPLY,
             AgentReplyTask::deduplicationKey($postId, $contentHash),
         );
+        $task = AgentResponseTask::fromStoredRequestContext($requestRow['request_context'] ?? []);
+        if (($queued['enqueued'] ?? false) && ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE) {
+            $this->dispatchScriptureTask((int) $queued['id']);
+        }
+    }
+
+    public function dispatchScriptureTask(int $taskId): void
+    {
+        $config = PrivateConfig::load($this->projectRoot);
+        if (!filter_var($config['SCRIPTURE_RESPONSE_IMMEDIATE_DISPATCH'] ?? false, FILTER_VALIDATE_BOOLEAN)) { return; }
+        $launcher = new \ForumRewrite\TaskQueue\ScriptureTaskLauncher($this->projectRoot, $this->repositoryRoot,
+            $this->databasePath, $this->artifactRoot ?? $this->projectRoot . '/public',
+            $this->staticHtmlRoot ?? $this->projectRoot . '/state/static_html', TaskQueueDatabaseConfig::path($this->projectRoot));
+        $launcher->launch($taskId);
     }
 
     private function agentResponseGenerator(): ?AgentResponseGenerator
