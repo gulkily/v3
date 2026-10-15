@@ -40,6 +40,7 @@ $testFiles = [
     __DIR__ . '/DevServerLogTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
+    __DIR__ . '/MusicMediaEmbedTest.php',
     __DIR__ . '/MediaEmbedDetectorTest.php',
     __DIR__ . '/MediaEmbedRendererTest.php',
     __DIR__ . '/MediaEmbedPreviewCacheStoreTest.php',

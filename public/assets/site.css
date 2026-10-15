@@ -685,3 +685,5 @@ pre {
   max-width: 100%;
   height: auto;
 }
+
+.media-embed-card--soundcloud > .media-embed-card__iframe { height: 166px; aspect-ratio: auto; }

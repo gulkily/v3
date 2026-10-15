@@ -9,6 +9,7 @@ final class MediaEmbedRenderer
     private const PROVIDER_LABELS = [
         'youtube' => ['icon' => '▶', 'label' => 'YouTube'],
         'instagram' => ['icon' => '📷', 'label' => 'Instagram'],
+        'soundcloud' => ['icon' => '♫', 'label' => 'SoundCloud'],
         'spotify' => ['icon' => '♫', 'label' => 'Spotify'],
         'tiktok' => ['icon' => '▶', 'label' => 'TikTok'],
     ];
@@ -76,6 +77,16 @@ final class MediaEmbedRenderer
 
         if ($inlinePlayerEnabled && $match['provider'] === 'instagram') {
             return $this->renderInstagramCard($match);
+        }
+
+        if ($inlinePlayerEnabled && $match['provider'] === 'soundcloud') {
+            return $this->renderPlayerExpando(
+                $match,
+                'https://w.soundcloud.com/player/?url=' . rawurlencode('https://soundcloud.com/' . $match['embedId']) . '&auto_play=false',
+                '♫ Listen on SoundCloud',
+                'SoundCloud track player',
+                ' media-embed-card--soundcloud',
+            );
         }
 
         if ($inlinePlayerEnabled && $match['provider'] === 'spotify') {
