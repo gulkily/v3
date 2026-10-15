@@ -62,3 +62,24 @@ Debug mode: enabled, inherited from Step 2. The user approved Step 2 before this
 ### Uncertain assessments
 
 - **Source:** ≤1 page limit. **Observation:** Six full stages likely exceed one printed page. **Suggestion:** Clarify whether the limit applies to Step 3.
+
+## 2026-10-15T01:00:00Z — Step 4: Implementation
+
+Debug mode: enabled, inherited from Step 3. The user approved Step 3 before implementation.
+
+### Necessary/useful instructions
+
+- **Source:** `step4_implementation_do.md`, Stage Boundary Protocol. **Observed contribution:** Per-stage verify, summary, and commit caught two stale test assertions (the backup `<summary>` click and the drawer label) at the stage that caused them. **Suggestion:** Retain.
+- **Source:** `step4_implementation_before.md`, Planning Docs Commit Gate. **Observed contribution:** Planning docs were organized and committed before code, giving a clean base. **Suggestion:** Retain.
+
+### Redundant/unnecessary instructions
+
+- **Source:** Final Verification Checklist items 1–3 versus the per-stage protocol. **Observed overhead:** Commit counts and summary updates are re-verified after being enforced at each stage. **Suggestion:** Consolidate into a single final `git log` check.
+
+### Inapplicable instructions
+
+- **Source:** Final checklist item 5 (deployment, migration, external systems). **Reason:** UI-only change with no server or storage change. **Suggestion:** Retain, recorded as not applicable in the summary.
+
+### Uncertain assessments
+
+- **Source:** Stage sizing (≤1 hour / ≤50 lines). **Observation:** Stage 4 exceeded 50 lines of template change because regrouping moves existing markup. **Suggestion:** Clarify whether moved lines count.
