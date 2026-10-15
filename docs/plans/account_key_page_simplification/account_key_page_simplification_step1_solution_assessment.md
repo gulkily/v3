@@ -18,10 +18,10 @@ Keep the current structure but return backup/restore to a collapsed expando, rem
 - **Cons:** The technical drawer still holds duplicated actions (copy/load/restore buttons beside viewer copy buttons) and a long "where things live" list, so the expanded page stays busy.
 
 ## Option B: Status card plus three sibling expandos
-Show only the status card (state, username, one primary action, clear identity). Below it, three collapsed expandos at the same level and with equal weight: Back up or restore, Keys (public and private key, link a key), and Storage and privacy (what lives in the browser, guest publication, identity hint). There is no outer "More" wrapper, so technical users reach keys and storage in one click, the same as backup. Duplicate controls are consolidated (viewer copy buttons replace separate copy-key buttons) and copy that restates the obvious is dropped.
+Show only the status card (state, username, fingerprint with a copy action, one primary action, clear identity). Below it, three collapsed expandos at the same level and with equal weight: Back up or restore, Keys (public and private key, link a key), and Storage and privacy (what lives in the browser, guest publication, identity hint). There is no outer "More" wrapper, so technical users reach keys and storage in one click, the same as backup. Duplicate controls are consolidated (viewer copy buttons replace separate copy-key buttons) and copy that restates the obvious is dropped.
 
 - **Pros:** The default page is one card; each secondary area is one click away and equally discoverable; every capability stays reachable; duplication goes away.
-- **Cons:** Touches template, CSS, and the script's button hooks; removing duplicate buttons needs care with the script's click delegation and tests; the `#key-backup` anchor must still open its expando; three headers sit below the card, so they must stay quiet.
+- **Cons:** Showing the fingerprint on the card needs a small addition to the page script (it is already stored in the browser and used for the profile link); touches template, CSS, and the script's button hooks; removing duplicate buttons needs care with the script's click delegation and tests; the `#key-backup` anchor must still open its expando; three headers sit below the card, so they must stay quiet.
 
 ## Option C: Status card only, with technical tools on a separate page
 Reduce `/account/key/` to the status card and a link to a new "Key tools" page for backup, restore, viewers, and the link form.
@@ -32,5 +32,8 @@ Reduce `/account/key/` to the status card and a link to a new "Key tools" page f
 ## Revised Direction
 Technical users are a core audience here, so keys and storage are not edge cases in the way backup and restore are. They should sit at the same level as backup and restore, not nested beneath a single "More" expando. Option B is revised accordingly: three sibling expandos under the status card.
 
+## Revised Direction (fingerprint)
+The fingerprint is one of the most frequently used items, so it belongs on the status card, visible immediately and copyable, rather than behind the profile link or an expando. This is an addition to the default view, not a reason to widen the card further; it replaces nothing else.
+
 ## Recommendation
-Choose **revised Option B**, borrowing Option A's copy trimming. It is one releasable slice: a visitor sees one card and one action, and can open backup/restore, keys, or storage in a single click, with the page behaving identically to before. Keep the `#key-backup` anchor opening its expando so existing reminder links still land correctly, and defer Option C unless the tools later need their own space.
+Choose **revised Option B**, borrowing Option A's copy trimming. It is one releasable slice: a visitor sees one card with their name and fingerprint and one action, and can open backup/restore, keys, or storage in a single click, with the page behaving identically to before. Keep the `#key-backup` anchor opening its expando so existing reminder links still land correctly, and defer Option C unless the tools later need their own space.

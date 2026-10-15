@@ -40,3 +40,65 @@ Revision of the 2026-10-15T02:00:00Z entry. Debug mode: enabled, unchanged.
 ### Uncertain assessments
 
 - **Source:** Review and revision. **Observation:** It is unclear whether a revision that edits an option in place or one that adds a new option better preserves the comparison. **Suggestion:** Clarify.
+
+## 2026-10-15T02:40:00Z — Step 1: Solution Assessment (Revision)
+
+Revision of the 2026-10-15T02:00:00Z entry, following the earlier revision. Debug mode: enabled, unchanged.
+
+### Necessary/useful instructions
+
+- **Source:** `step1_solution_assessment.md`, Review and revision. **Observed contribution:** Allowed a second revision (fingerprint on the card) without touching the Original Query. **Suggestion:** Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- **Source:** Step 1 guardrail "no implementation details". **Observation:** Noting that the fingerprint needs a small script addition borders on implementation; kept to one clause because it affects scope. **Suggestion:** Clarify.
+
+## 2026-10-15T03:00:00Z — Step 2: Feature Description
+
+Debug mode: enabled, inherited from Step 1. The user approved Step 1 before this draft.
+
+### Necessary/useful instructions
+
+- **Source:** `step2_feature_description.md`, Shared component inventory. **Observed contribution:** Led to reusing the stored fingerprint the profile link already uses instead of a new source. **Suggestion:** Retain.
+- **Source:** Risks (impact, validation, mitigation). **Observed contribution:** Surfaced stale-fingerprint and deep-link risks specific to this change. **Suggestion:** Retain.
+
+### Redundant/unnecessary instructions
+
+- **Source:** Completion boundary versus Success criteria. **Observed overhead:** Overlap on one-click reach and tests passing. **Suggestion:** Clarify whether they may be merged.
+
+### Inapplicable instructions
+
+- **Source:** Documentation-only scope fields. **Reason:** Application change. **Suggestion:** Retain, conditional.
+
+### Uncertain assessments
+
+- **Source:** "No UI mockups" guardrail. **Observation:** Describing the card's contents lists its elements; kept to names. **Suggestion:** Clarify.
+
+## 2026-10-15T03:20:00Z — Step 3: Development Plan
+
+Debug mode: enabled, inherited from Step 2. The user approved Step 2 before this draft.
+
+### Necessary/useful instructions
+
+- **Source:** `step3_development_plan_do.md`, Key Risks and stage fields. **Observed contribution:** Put the hook-contract and stale-fingerprint risks first and tied each to an early validation stage. **Suggestion:** Retain.
+- **Source:** Stage sizing. **Observed contribution:** Split the expando work into backup, keys, and storage stages. **Suggestion:** Retain.
+
+### Redundant/unnecessary instructions
+
+- **Source:** Before checklist and Do guardrails restating uncommitted-planning and stage-count rules. **Observed overhead:** Repeated across Before, Do, and RAILSPIKE.md. **Suggestion:** Consolidate.
+
+### Inapplicable instructions
+
+- **Source:** Documentation-only clauses. **Reason:** Application change. **Suggestion:** Retain, conditional.
+
+### Uncertain assessments
+
+- **Source:** ≤1 page limit. **Observation:** Six stages exceed a printed page. **Suggestion:** Clarify.
