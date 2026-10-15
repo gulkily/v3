@@ -76,3 +76,12 @@ Branch: `account-key-page-simplification` (stacked on the unmerged `account-key-
 - Commits on this branch for this cycle: planning, six stages, plus the earlier Step 1 commit and the debug report: above the minimum of 7.
 - Contract: default view is the status card with copyable fingerprint and three collapsed sibling expandos (Back up or restore, Keys, Storage and privacy); every prior capability is reachable within one expando click; clear/undo, restore, and the `#key-backup` deep link work.
 - Not applicable: deployment, migration, and server checks (UI-only change).
+
+## Follow-up - Fingerprint in site-wide form
+- Changes:
+  - `templates/pages/account_key.php`: the card now shows, and Copy yields, the fingerprint as `openpgp-<lowercase fingerprint>`, the same form as profile slugs and `/profiles/` URLs, instead of the bare hex value from Stage 2.
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest BrowserSigningNormalizationTest`: passed.
+  - Chromium run: card text, clipboard, and the profile link slug were identical (`openpgp-502cfc...1f44`); empty state unchanged after clear.
+- Notes:
+  - Stage 2's earlier note about matching the profile link's fingerprint is superseded by this.

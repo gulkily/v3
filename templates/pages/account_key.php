@@ -215,7 +215,7 @@ No browser private key saved yet.
       var fingerprint = storedFingerprint();
 
       if (fingerprintField) {
-        fingerprintField.textContent = fingerprint || 'No key yet';
+        fingerprintField.textContent = fingerprint ? 'openpgp-' + fingerprint : 'No key yet';
       }
 
       if (copyFingerprint) {
@@ -324,6 +324,7 @@ No browser private key saved yet.
         if (value === '') {
           return;
         }
+        value = 'openpgp-' + value;
 
         function done() {
           button.textContent = 'Copied';
