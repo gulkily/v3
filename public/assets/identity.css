@@ -1,5 +1,29 @@
+.account-key-header {
+  margin-bottom: 0.5rem;
+}
+.account-key-header h1 {
+  margin-bottom: 0.4rem;
+}
 .account-key-simple-surface {
   gap: 0.85rem;
+}
+.account-key-status-card {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--panel);
+}
+.account-key-status-card .account-key-simple-status {
+  margin-top: 0.25rem;
+}
+.account-key-status-card .account-key-username {
+  font-size: 1.75rem;
+  overflow-wrap: anywhere;
+}
+.account-key-status-card .account-key-primary-button:focus-visible,
+.account-key-status-card .account-key-secondary-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 .account-key-simple-state {
   display: flex;
@@ -57,6 +81,35 @@
 }
 .account-key-simple-status[data-kind="ok"] {
   color: var(--status-ok);
+}
+.account-key-where {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.account-key-where li + li {
+  margin-top: 0.35rem;
+}
+.account-key-fingerprint-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+.account-key-fingerprint-value {
+  min-width: 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.account-key-warning {
+  margin: 0;
+}
+.account-key-reveal > summary {
+  cursor: pointer;
+  font-family: var(--ui-font);
+  font-size: 0.9rem;
+}
+.account-key-reveal[open] > summary {
+  margin-bottom: 0.75rem;
 }
 .account-key-advanced {
   padding-top: 0.1rem;

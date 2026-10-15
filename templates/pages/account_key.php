@@ -13,10 +13,12 @@ $authenticatedIdentityId = is_array($viewerProfile)
 ?>
 <section class="stack" data-account-key-root data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <article class="card">
-    <h1>Account Key</h1>
+    <header class="account-key-header">
+      <h1>Account Key</h1>
+    </header>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
     <div class="stack">
-      <div class="account-key-simple-surface stack">
+      <div class="account-key-simple-surface account-key-status-card stack">
         <p class="account-key-simple-state">
           <span class="account-key-status-dot" data-role="simple-status-dot" aria-hidden="true"></span>
           <span class="account-key-status-badge" data-role="simple-status-badge">Not set up yet</span>
@@ -24,6 +26,15 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <div>
           <p class="account-key-label">Signed in as</p>
           <p class="account-key-username" data-role="username-field">guest</p>
+        </div>
+        <div class="account-key-fingerprint">
+          <p class="account-key-label">Fingerprint</p>
+          <p class="account-key-fingerprint-row">
+            <code class="account-key-fingerprint-value" data-role="fingerprint-field">No key yet</code>
+            <button type="button" class="account-key-viewer-copy" data-action="copy-fingerprint" hidden>Copy</button>
+          </p>
+        </div>
+        <div>
           <p class="meta account-key-profile-link" data-role="profile-link-wrap"<?= $viewerProfileHref === '' ? ' hidden' : '' ?>><a data-role="profile-link" href="<?= $e($viewerProfileHref !== '' ? $viewerProfileHref : '/account/key/') ?>"><?= $e($viewerProfileLabel !== '' ? $viewerProfileLabel : 'View profile') ?></a></p>
         </div>
         <div class="account-key-simple-actions">
@@ -35,7 +46,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
       <details class="account-key-advanced" id="key-backup" data-key-backup>
-        <summary>Back up or restore your key</summary>
+        <summary>Back up or restore</summary>
         <div class="stack">
           <div class="account-key-tabs" role="tablist" aria-label="Key backup and restore">
             <button type="button" role="tab" id="key-backup-tab" aria-controls="key-backup-panel" aria-selected="false" tabindex="-1" data-backup-tab="backup">Backup</button>
@@ -61,57 +72,67 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <p class="meta" data-backup-status role="status" aria-live="polite"></p>
         </div>
       </details>
-      <details class="account-key-advanced">
-        <summary>Advanced / technical details</summary>
+      <details class="account-key-advanced" id="key-keys">
+        <summary>Keys</summary>
         <div class="stack">
-          <div>
-            <p class="account-key-label">Browser key status</p>
-            <p class="meta" data-role="browser-key-status">
-              <span data-role="browser-key-status-message">Ready.</span>
-              <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
-            </p>
-          </div>
-          <fieldset class="stack">
-            <legend class="account-key-label">Automatic guest identity</legend>
-            <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
-            <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
-          </fieldset>
-          <div class="button-row account-key-advanced-actions">
-            <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
-            <button type="button" data-action="restore-private-key">Restore Private Key</button>
-            <button type="button" data-action="copy-public-key">Copy Public Key</button>
-            <button type="button" data-action="copy-private-key">Copy Private Key</button>
-            <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
-          </div>
-          <div class="stack">
-            <p class="account-key-label">Identity hint cookie</p>
-            <p class="meta"><?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
-            <p class="meta">
-              <strong>Saved browser identity:</strong>
-              <span data-role="identity-id-field">none</span>
-            </p>
-          </div>
-          <form method="post" class="stack">
-            <label>Public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
-            <button type="submit">Link identity</button>
-          </form>
           <div class="stack">
             <div class="account-key-viewer-header">
-              <label class="account-key-viewer-label" for="saved-public-key-viewer">Saved public key</label>
+              <label class="account-key-viewer-label" for="saved-public-key-viewer">Public key <span class="meta">(safe to share)</span></label>
               <button type="button" class="account-key-viewer-copy" data-copy-source="public">Copy</button>
             </div>
             <pre id="saved-public-key-viewer" data-role="public-key-viewer">
 No browser public key saved yet.
             </pre>
           </div>
-          <div class="stack">
-            <div class="account-key-viewer-header">
-              <label class="account-key-viewer-label" for="saved-private-key-viewer">Saved private key</label>
-              <button type="button" class="account-key-viewer-copy" data-copy-source="private">Copy</button>
-            </div>
-            <pre id="saved-private-key-viewer" data-role="private-key-viewer">
+          <details class="account-key-reveal">
+            <summary>Private key</summary>
+            <div class="stack">
+              <p class="account-key-warning"><strong>Never share this.</strong> Anyone with it can post as you.</p>
+              <div class="account-key-viewer-header">
+                <label class="account-key-viewer-label" for="saved-private-key-viewer">Saved private key</label>
+                <button type="button" class="account-key-viewer-copy" data-copy-source="private">Copy</button>
+              </div>
+              <pre id="saved-private-key-viewer" data-role="private-key-viewer">
 No browser private key saved yet.
-            </pre>
+              </pre>
+              <div class="button-row account-key-advanced-actions">
+                <button type="button" data-action="restore-private-key">Restore Private Key</button>
+              </div>
+            </div>
+          </details>
+          <div class="button-row account-key-advanced-actions">
+            <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
+          </div>
+          <form method="post" class="stack">
+            <label>Link a public key<textarea name="public_key" rows="6" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
+            <button type="submit">Link identity</button>
+          </form>
+          <div class="button-row" hidden>
+            <button type="button" data-action="copy-public-key">Copy Public Key</button>
+            <button type="button" data-action="copy-private-key">Copy Private Key</button>
+          </div>
+        </div>
+      </details>
+      <details class="account-key-advanced" id="key-technical">
+        <summary>Storage and privacy</summary>
+        <div class="stack">
+          <ul class="meta account-key-where">
+            <li><strong>This browser:</strong> private key, public key, username, and fingerprint (local storage). Backup passphrases never leave it.</li>
+            <li><strong>Server:</strong> your public key once published, at your first signed action or immediately if enabled below, plus your signed posts.</li>
+            <li><strong>Cookie:</strong> an identity hint, kept 30 days, so the server can show which profile this browser last used.</li>
+          </ul>
+          <p class="meta" data-role="browser-key-status">
+            <span data-role="browser-key-status-message">Ready.</span>
+            <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
+          </p>
+          <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
+          <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
+          <p class="meta">
+            <strong>Identity hint:</strong> <?= $e($identityHint !== '' ? $identityHint : 'none') ?>
+            · <strong>Saved browser identity:</strong> <span data-role="identity-id-field">none</span>
+          </p>
+          <div class="button-row account-key-advanced-actions">
+            <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
           </div>
         </div>
       </details>
@@ -190,6 +211,17 @@ No browser private key saved yet.
       var generateButton = root.querySelector('[data-action="generate-browser-key"]');
       var clearIdentityButton = root.querySelector('[data-action="clear-browser-identity"]');
       var simpleStatus = root.querySelector('#simple-status');
+      var fingerprintField = root.querySelector('[data-role="fingerprint-field"]');
+      var copyFingerprint = root.querySelector('[data-action="copy-fingerprint"]');
+      var fingerprint = storedFingerprint();
+
+      if (fingerprintField) {
+        fingerprintField.textContent = fingerprint ? 'openpgp-' + fingerprint : 'No key yet';
+      }
+
+      if (copyFingerprint) {
+        copyFingerprint.hidden = fingerprint === '';
+      }
 
       if (usernameField) {
         usernameField.textContent = username;
@@ -281,6 +313,31 @@ No browser private key saved yet.
       });
     }
 
+    function bindFingerprintCopy() {
+      var root = accountKeyRoot();
+      var button = root && root.querySelector('[data-action="copy-fingerprint"]');
+      if (!button) {
+        return;
+      }
+
+      button.addEventListener('click', function () {
+        var value = storedFingerprint();
+        if (value === '') {
+          return;
+        }
+        value = 'openpgp-' + value;
+
+        function done() {
+          button.textContent = 'Copied';
+          window.setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).then(done, function () {});
+        }
+      });
+    }
+
     function initAccountKeySimpleUi() {
       var root = accountKeyRoot();
       if (!root) {
@@ -290,6 +347,7 @@ No browser private key saved yet.
       var statusNode = root.querySelector('[data-role="browser-key-status"]');
 
       bindViewerCopyButtons();
+      bindFingerprintCopy();
       syncSimpleUI();
       mirrorAdvancedStatus();
       window.addEventListener('forum:identity-changed', syncSimpleUI);

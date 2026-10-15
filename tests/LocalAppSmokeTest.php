@@ -2012,7 +2012,7 @@ PHP;
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('data-role="compose-identity-status" hidden', $composeReply);
         assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
-        assertStringContains('Advanced / technical details', $account);
+        assertStringContains('Storage and privacy', $account);
         assertStringContains('Set up this browser', $account);
         assertStringContains('data-action="clear-browser-identity"', $account);
         assertStringContains('Clear identity', $account);
