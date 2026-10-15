@@ -27,6 +27,7 @@ $testFiles = [
     __DIR__ . '/AgentResponseGeneratorTest.php',
     __DIR__ . '/AgentResponseTaskTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',
+    __DIR__ . '/AccountKeyPageHooksTest.php',
     __DIR__ . '/AuthNavigationTest.php',
     __DIR__ . '/AnthropicStructuredChatProviderTest.php',
     __DIR__ . '/BrowserSigningNormalizationTest.php',
