@@ -340,3 +340,11 @@ and (for expansion) the initial reply/version. `posts.agent_response_json`
 replays this metadata on rebuild. Expansion records use a deterministic ID
 based on their initial reply; publication retries reconcile that canonical file
 rather than creating another reply. Older records remain valid without metadata.
+
+Offline snapshot schema 4 includes `posts.agent_response_json` and an
+`unavailable_expansions` table containing IDs only. Exports omit expansions whose
+source/initial response is unavailable or version-mismatched. Offline updates
+upgrade schema 3 metadata columns, replace complete updated threads, and remove
+unavailable expansion IDs even when their source thread is outside the update's
+recent-thread window. The reader shows stored expansion beneath its initial
+answer without generation controls; legacy snapshots remain readable.
