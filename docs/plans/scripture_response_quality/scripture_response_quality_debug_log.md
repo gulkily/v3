@@ -54,3 +54,22 @@ No supported findings for this revision.
 ### Uncertain assessments
 
 - Source: `docs/railspike/docs/workflow/step3_development_plan_after.md`, one-page check. Six stages with six required fields each plus the frozen evaluation protocol are concise but exceed a conventional printed page. Clarify whether a compact reading-length guideline or separate approved protocol is preferred for evaluation-heavy plans.
+
+
+## 2026-10-15 — Step 4, initial evaluation stopped at failed release gates
+
+### Necessary/useful instructions
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Stage 4 was verified and committed with its summary before paid evaluation began; keeping the delivery changes separate makes the unsuccessful candidate comparison reviewable.
+- Source: this feature's approved Step 3 Completion Contract and Stage 5/6 dependencies. The explicit no-qualifier/reassessment rule prevented a large speed improvement from being treated as release success despite directly verified quotation errors and incomplete interpretive coverage. Retain the joint gates and dependency.
+- Source: the frozen evaluation budget and preservation requirements. Reservation before dispatch and durable evidence allowed resumption after a pre-provider fixture rejection and later interruption without repeating a possibly charged generation or resetting the budget. Retain uncertain-charge reservations and separate failed-attempt reporting.
+
+### Redundant/unnecessary instructions
+
+No new supported findings for this implementation stage.
+
+### Uncertain assessments
+
+- Source: the feature's blind-review protocol and phase timing requirement. One diagnostic read exposed a baseline answer before anonymous review; early monotonic browser measurements lacked wall-clock endpoints needed to isolate discovery exactly. Future protocols should make anonymous output export and complete measurement fields a verified stub gate before any paid call. The report explicitly records these limitations; neither changes the objective quotation-error rejection.
+
+Step 4 is not complete: Stage 6 remains blocked by the failed initial quality gate. This is a reassessment boundary, not a completed-feature handoff.

@@ -4,7 +4,7 @@ Debug mode: enabled
 
 # Scripture Response Quality and Latency Implementation Summary
 
-Planning commit: `075f91e7`. Implementation is in progress; candidate settings are not released.
+Planning commit: `075f91e7`. Stages 1–4 are implemented. Stage 5 found no qualifying candidate; Stage 6 is blocked pending reassessment. Candidate settings are not released.
 
 ## Stage 1 - Isolated normal-flow measurement
 
@@ -30,3 +30,11 @@ Planning commit: `075f91e7`. Implementation is in progress; candidate settings a
 - Changes: Extended revised guidance and the existing scripture-only reasoning setting to expansion; newly queued expansions use the shared optional worker dispatch. Added optional private enqueue/worker/generation/publication phase markers and documented operator controls and rollback.
 - Verification: `php tests/run.php AgentResponseGeneratorTest ScriptureTaskLauncherTest` plus six expansion integration methods: 18 passed. Isolated HTTP/Chromium desktop/thread and mobile/post probes passed with revised guidance, immediate dispatch, duplicate initial/expansion requests, requester auto-open, and busy workers. Mobile pending-page reload passed; initial reply appeared in 5.09 seconds and expansion in 6.43 seconds, each including a deliberate three-second worker lock. Existing tests cover changed/hidden sources, source races, explicit retry, deterministic replay, cache and offline visibility. PHP/JS syntax and diff checks passed.
 - Notes: These are stub plumbing timings, not provider acceptance measurements. Candidate settings and timing remain opt-in; production settings were not changed. Live comparison and release gates remain outstanding.
+
+
+## Stage 5 - Initial comparison and reassessment
+
+- Changes: Added a budget-guarded provider proxy, frozen normal HTTP/browser/worker trial runner, anonymous review packets, per-answer source checks, and the [evaluation report](./evaluation/report.md). Executed all 48 scheduled generation calls without retuning candidate artifacts.
+- Verification: Forty-seven complete visible canonical replies; one interrupted provider call retained its full reservation and was never repeated. All 777 frozen source/prompt artifacts remained unchanged. Budget/proxy/resumption tests: six passed; initial and expansion runner flows passed with stubs, including canonical punctuation normalization for the NIV case. Generator/provider/configuration/launcher suites: 21 passed. JS/Python syntax and diff checks passed.
+- Results: Median visible completion A/B/C: 27.80/25.01/8.94 seconds (C: 15 completed samples). All-rubric passes: 0/16, 6/16, 5/16 respectively, with one C sample not assessable after interruption. Critical quotation errors: 1/4/1. Estimated/reserved spend: $0.05746010 across 48 generation calls and zero supporting moderation calls. Detailed source evidence, failed-attempt accounting and measurement limitations are in the report.
+- Notes: No candidate qualifies. Stage 6's provisional-winner dependency is unsatisfied, so twelve paid expansion trials, promotion and release were not performed. The approved contract requires reassessment after failed gates. Defaults, production configuration and historical replies remain unchanged; the feature is not declared complete.
