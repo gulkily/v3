@@ -48,3 +48,21 @@
 ### Uncertain assessments
 - Source: `docs/railspike/docs/workflow/step3_development_plan_do.md`, stage sizing. A file move can exceed fifty raw diff lines while taking well under an hour; the plan uses the permitted time-based criterion. Consider clarifying how unchanged-content renames count toward line-based sizing.
 - Source: `docs/railspike/docs/workflow/step3_development_plan_after.md`, phase ordering. The After file was opened during evidence gathering before the draft was written, then its checklist was applied after drafting. The required draft-before-open order was missed; retain the ordering instruction and separate phase reads from independent evidence gathering.
+
+## 2026-10-15 01:56:25 UTC — Step 4
+
+### Necessary/useful instructions
+- Source: `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate. Planning commit `6af9d3ad` contains only the approved plans, existing log, and feature-index organization; implementation and the summary appear afterward. Retain the explicit gate.
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Commits `a376eebe` and `1d021818` each include their stage changes and summary evidence, keeping moves and link repairs independently reviewable. Retain.
+- Source: `docs/railspike/RAILSPIKE.md`, Documentation-only scope. Byte comparisons, discovery/link checks, and allowed-file checks verified the actual outcome without running unrelated runtime/deployment checks. Retain proportional verification.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, presentation/API reuse rule, and `step4_implementation_after.md`, external-system/role/migration verification. This cleanup adds no UI/API surface or external/runtime behavior. The summary explains why runtime checks are inapplicable; retain these rules for applicable work.
+
+### Uncertain assessments
+- Source: `docs/railspike/docs/workflow/step4_implementation_after.md`, final log-only handoff commit. A separate commit preserves stage history and records the report, at the cost of an extra commit for a small documentation change. This workflow alone does not establish unnecessary overhead; retain pending broader evidence.
+
+Final handoff evidence: all seven relocated files are byte-identical to planning baseline `6af9d3ad`; README discovery reaches every destination; added local links, plan navigation, and remaining navigable references to relocated names resolve. Remaining plain filename mentions are historical records, quoted requests, illustrative parser/spec strings, or unchanged repository-path examples. Initial planning and both stage commits passed history checks; cumulative whitespace and allowed-file checks passed. The working tree was clean before this report. No runtime, test, CI, deployment, generated, or vendored files changed. No merge, push, or deployment was performed.
