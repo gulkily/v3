@@ -685,3 +685,12 @@ pre {
   max-width: 100%;
   height: auto;
 }
+
+.media-embed-card--soundcloud > .media-embed-card__iframe { height: 166px; aspect-ratio: auto; }
+
+.media-embed-card--soundcloud.media-embed-card--collection > .media-embed-card__iframe { height: 450px; }
+
+.media-embed-card--bandcamp > .media-embed-card__iframe { height: 472px; aspect-ratio: auto; }
+.media-embed-card__iframe[hidden] { display: none; }
+
+.media-embed-card--bandcamp.media-embed-card--track > .media-embed-card__iframe { height: 120px; }
