@@ -96,6 +96,13 @@
   margin: 0 0 0.25rem;
   font-size: 1.15rem;
 }
+.account-key-where ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.account-key-where li + li {
+  margin-top: 0.35rem;
+}
 .account-key-group {
   padding: 1rem;
   border: 1px solid var(--line);

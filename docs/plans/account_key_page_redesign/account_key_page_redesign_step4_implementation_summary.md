@@ -49,3 +49,14 @@ Branch: `account-key-page-redesign`. Planning commit: `docs: add account key pag
 - Notes:
   - The private-key viewer stays in the DOM, so script updates still land.
   - The drawer wording ("Under the hood") and whether it should default to open are reviewed in Stage 5.
+
+## Stage 5 - Transparency labels
+- Changes:
+  - `templates/pages/account_key.php`: added a "Where things live" list at the top of the technical drawer (browser local storage, server, identity-hint cookie), a hint line for the link-a-public-key form, and "(30 days)" on the cookie label.
+  - `public/assets/identity.css`: list spacing.
+- Verification:
+  - Claims checked against code: local storage keys `forum_pki_{username,public_key,private_key,fingerprint,published_fingerprint,automatic_guest_publication}` in `browser_signing.js`; `identity_hint` cookie set for 30 days in the identity hint controller and used by `Application` to resolve the displayed profile; guest publication behavior from the existing setting text.
+  - Backup passphrase claim backed by the browser test's request-privacy assertion (`key_backup_ui.mjs`, "privacy passed").
+  - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest`: 140 passed; `FORMAT=text` browser test passed.
+- Notes:
+  - Copy only; no behavior change. Drawer stays collapsed by default; the status card and backup section stay visible above it.

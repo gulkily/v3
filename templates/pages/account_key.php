@@ -69,6 +69,14 @@ $authenticatedIdentityId = is_array($viewerProfile)
       <details class="account-key-advanced" id="key-technical">
         <summary>Under the hood: keys and storage</summary>
         <div class="stack">
+          <div class="account-key-where">
+            <p class="account-key-label">Where things live</p>
+            <ul class="meta">
+              <li><strong>In this browser only:</strong> your private key, public key, username, and fingerprint, in local storage. Backup passphrases are used here and never sent to the server.</li>
+              <li><strong>On the server:</strong> your public key once it is published (at your first signed action, or immediately if you enable the setting below), and the posts you sign.</li>
+              <li><strong>In a cookie:</strong> an identity hint, kept for 30 days, that lets the server show which profile this browser last used.</li>
+            </ul>
+          </div>
           <section class="account-key-group stack" aria-labelledby="key-group-public">
             <h3 id="key-group-public">Public key</h3>
             <p class="meta">Safe to share. This is what others use to verify your posts.</p>
@@ -84,6 +92,7 @@ No browser public key saved yet.
               <button type="button" data-action="copy-public-key">Copy Public Key</button>
             </div>
             <form method="post" class="stack">
+              <p class="meta">Already have a public key? Paste it to link it to this browser's identity.</p>
               <label>Link a public key<textarea name="public_key" rows="10" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----" data-role="public-key-field"></textarea></label>
               <button type="submit">Link identity</button>
             </form>
@@ -123,7 +132,7 @@ No browser private key saved yet.
               <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
             </fieldset>
             <div>
-              <p class="account-key-label">Identity hint cookie</p>
+              <p class="account-key-label">Identity hint cookie (30 days)</p>
               <p class="meta"><?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
               <p class="meta">
                 <strong>Saved browser identity:</strong>
