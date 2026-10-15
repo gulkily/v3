@@ -18,3 +18,8 @@ Debug mode: enabled
 - Changes: Verified name updates replay deterministically into canonical profile/username and author projections, including incremental identity insertion. Sequential name writes use increasing per-identity timestamps. Name writes use the existing full rebuild and invalidate presentation. Read-model version 20 documents the new projection semantics without adding tables.
 - Verification: Signed naming smoke test passes immediate projection, version-19 normal-startup recovery, subsequent incremental identity write, repeated naming, and forged-update rejection on rebuild. Prior-version startup regression and ReadModelSchemaTest passed; diff check passed.
 - Notes: Full rebuild after a name change favors consistent authors/activity and approval retention over adding another partial update path. CLI rebuild is included in Stage 7.
+
+## Stage 4 - Browser identity and Account naming
+- Changes: Identity preparation accepts a temporary name without prompting, preserving existing keys. Account offers Choose username through signed preparation/finalization, updates local labels after successful save, and reconciles authenticated server names on render.
+- Verification: BrowserSigningNormalizationTest — 81 passed, including concurrent noninteractive temporary-key generation; JavaScript syntax check passed. Backend naming/continuity regression from Stage 3 remains passing.
+- Notes: No arrival-time prompt; Account naming uses existing browser status and signing components. Full browser rename acceptance follows in Stage 7.

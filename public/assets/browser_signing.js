@@ -2283,6 +2283,10 @@
       return;
     }
 
+    if (root.dataset && root.dataset.authenticatedIdentityId === currentAuthorIdentityId()
+      && root.dataset.authenticatedUsername) {
+      localStorage.setItem(storageKeys.username, root.dataset.authenticatedUsername);
+    }
     const publicKey = localStorage.getItem(storageKeys.publicKey) || "";
     const privateKey = localStorage.getItem(storageKeys.privateKey) || "";
     const username = localStorage.getItem(storageKeys.username) || "guest";
@@ -2635,7 +2639,7 @@
       await ensureOpenPgpApi(["generateKey", "readKey"]);
       setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
       markActionTiming(timing, "forum_username_prompt_start");
-      const username = await promptForUsername();
+      const username = config.temporaryName ? normalizeUsername(config.temporaryName) : await promptForUsername();
       markActionTiming(timing, "forum_username_prompt_returned");
       setStatus(statusNode, "Generating browser keypair...", "info");
       await generateBrowserKey(root, username, timing);
@@ -2729,6 +2733,7 @@
     const config = options || {};
     await ensureReadyIdentity(root, statusNode, {
       promptForUsername: config.promptForUsername,
+      temporaryName: config.temporaryName,
       verifyPublishedIdentity: config.verifyPublishedIdentity === true,
       timing: config.timing || null,
     });
@@ -2913,6 +2918,41 @@
           return syncIdentityHint(preferredIdentityHint());
         }).catch(function () {});
       }
+    });
+
+    const renameButton = root.querySelector('[data-action="rename-profile"]');
+    if (renameButton) renameButton.addEventListener("click", async function () {
+      if (!hasBrowserKeypair()) {
+        setStatus(statusNode, "Set up this browser first.", "error");
+        return;
+      }
+      const chosen = window.prompt("Choose your username:", localStorage.getItem(storageKeys.username) || "guest");
+      if (chosen === null) return;
+      renameButton.disabled = true;
+      try {
+        await ensureActionIdentity(root, statusNode);
+        const identity = currentAuthorIdentityId();
+        const postName = async (endpoint, values) => {
+          const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
+          const result = await response.json();
+          if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
+          return result;
+        };
+        const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
+        const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
+        const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
+          record_path: prepared.record_path, author_identity_id: identity,
+          canonical_record: prepared.canonical_record, detached_signature: signature });
+        if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
+        localStorage.setItem(storageKeys.username, result.username);
+        root.dataset.authenticatedUsername = result.username;
+        renderSavedState(root);
+        window.dispatchEvent(new Event("forum:identity-changed"));
+        setStatus(statusNode, "Username saved. Your key and approval are unchanged.", "ok");
+      } catch (error) {
+        setStatus(statusNode, error.message || "Unable to save username.", "error");
+      } finally { renameButton.disabled = false; }
     });
 
     if (generateButton) {

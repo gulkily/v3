@@ -11,7 +11,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
     ? strtolower(trim((string) ($viewerProfile['identity_id'] ?? '')))
     : '';
 ?>
-<section class="stack" data-account-key-root data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
+<section class="stack" data-account-key-root data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <article class="card">
     <h1>Account Key</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
@@ -28,6 +28,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
         </div>
         <div class="account-key-simple-actions">
           <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
+          <button type="button" class="account-key-secondary-button" data-action="rename-profile">Choose username</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
