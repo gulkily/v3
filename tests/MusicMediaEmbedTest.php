@@ -8,6 +8,18 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MusicMediaEmbedTest
 {
+    public function testSoundcloudSetsRetainCollectionContext(): void
+    {
+        $url = 'https://soundcloud.com/forss/sets/soulhack/?utm_source=x';
+        $m = (new MediaEmbedDetector())->classify($url);
+        assertSame('playlist', $m['contentKind']);
+        assertSame('forss/sets/soulhack', $m['embedId']);
+        $html = (new MediaEmbedRenderer())->render($url, true, true);
+        assertSame(true, str_contains($html, 'media-embed-card--collection'));
+        assertSame(true, str_contains($html, '%2Fforss%2Fsets%2Fsoulhack'));
+        assertSame(null, (new MediaEmbedDetector())->classify('https://soundcloud.com/forss/sets/soulhack/extra'));
+    }
+
     public function testSoundcloudTrackValidationAndRendering(): void
     {
         $d = new MediaEmbedDetector();

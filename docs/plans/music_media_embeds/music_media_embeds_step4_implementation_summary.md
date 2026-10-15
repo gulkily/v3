@@ -11,3 +11,9 @@ Implementation in progress; production flags remain unchanged.
 - Changes: strict public track detection, reserved/private URL rejection, shared deferred player with autoplay disabled, responsive track sizing, unchanged source/title behavior; registered focused music regression suite.
 - Verification: `php tests/run.php MusicMediaEmbedTest MediaEmbedDetectorTest MediaEmbedRendererTest ThreadTitleTest` — 42 passed. Isolated browser fixture created a track thread/reply: two cards, visible source, keyboard expansion, correct live artist/title and Play-to-Pause control transition.
 - Notes: live listening received the expected playing control state; final browser acceptance will check playback progress and all shared views. No server lookup added.
+
+## Stage 2 - SoundCloud sets
+
+- Changes: direct set recognition and collection sizing reuse the track player path; profile tabs and private/extra-path variants remain excluded.
+- Verification: focused music/detector/renderer/title suite — 43 passed. Isolated thread/reply live smoke for `soundcloud.com/justinhasanhickman/sets/forss-512437271`: two cards, visible source, keyboard expansion, collection track list, and Play-to-Pause transition.
+- Notes: no lookup/cache added; live provider restrictions remain subject to final acceptance.

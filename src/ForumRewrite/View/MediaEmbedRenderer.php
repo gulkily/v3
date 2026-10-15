@@ -84,8 +84,8 @@ final class MediaEmbedRenderer
                 $match,
                 'https://w.soundcloud.com/player/?url=' . rawurlencode('https://soundcloud.com/' . $match['embedId']) . '&auto_play=false',
                 '♫ Listen on SoundCloud',
-                'SoundCloud track player',
-                ' media-embed-card--soundcloud',
+                'SoundCloud ' . $match['contentKind'] . ' player',
+                ' media-embed-card--soundcloud' . ($match['contentKind'] === 'playlist' ? ' media-embed-card--collection' : ''),
             );
         }
 

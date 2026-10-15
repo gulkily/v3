@@ -687,3 +687,5 @@ pre {
 }
 
 .media-embed-card--soundcloud > .media-embed-card__iframe { height: 166px; aspect-ratio: auto; }
+
+.media-embed-card--soundcloud.media-embed-card--collection > .media-embed-card__iframe { height: 450px; }
