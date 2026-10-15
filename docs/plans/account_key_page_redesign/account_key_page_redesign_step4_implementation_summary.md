@@ -60,3 +60,16 @@ Branch: `account-key-page-redesign`. Planning commit: `docs: add account key pag
   - `php tests/run.php AccountKeyPageHooksTest LocalAppSmokeTest`: 140 passed; `FORMAT=text` browser test passed.
 - Notes:
   - Copy only; no behavior change. Drawer stays collapsed by default; the status card and backup section stay visible above it.
+
+## Stage 6 - Polish and regression pass
+- Changes:
+  - No further code changes were needed; review found no contrast, focus, or spacing defects.
+- Verification:
+  - Theme matrix: all 15 theme stylesheets at 1100px and 375px with the technical drawer open: no horizontal overflow; text/background contrast >= 4.5:1 for lead, username, status badge, where-things-live list, warning, and group headings.
+  - `git diff` of `identity.css` against the pre-feature commit adds only `.account-key-*` selectors (page-scoped).
+  - Keyboard order follows DOM order: status card actions, backup tabs and fields, then the drawer; the private key stays collapsed until its native disclosure is opened.
+  - `php tests/run.php` (full suite): 1188 run, 1188 passed, 0 failed.
+  - `FORMAT=text|png node tests/browser/key_backup_ui.mjs`: passed (Chromium launching Firefox flow as configured).
+- Notes:
+  - Not covered: a real-device mobile browser and screen-reader pass; no deployment, migration, or server changes, so those checks are not applicable.
+  - Backup tab default remains Restore, as before.
