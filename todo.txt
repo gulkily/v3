@@ -123,3 +123,15 @@ in word97 theme, disabled buttons don't look disabled
 
 make a dark version of chicago/word97
 
+
+account key page: private key restore is hard to find
+	the "Saved private key" box is a read-only display; restoring a key
+		only works through the "Restore Private Key" button (reads the
+		clipboard), which is buried in the collapsed Private key reveal
+		under Keys
+	make the private key field editable so users can paste or edit it
+		with their own copy/paste methods, and import from the field
+		(same import and validation as the clipboard button; new input
+		path for a secret, so needs Steps 1-3)
+	meanwhile, label the button "Restore from clipboard" and add a
+		one-line hint
