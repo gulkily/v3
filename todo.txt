@@ -118,10 +118,9 @@ compose form improvements
 	"choose an image" module should look like the other modules
 	"body" module should also look like the other modules
 
-in word97 theme, disabled buttons don't look disabled
-	the text should be a more gray color
-
-make a dark version of chicago/word97
+xWord 97 disabled buttons now look disabled (gray text), and a Win Dark theme
+	blends Chicago and Word 97 chrome in a dark palette.
+	See docs/plans/word97_disabled_and_dark_theme/.
 
 xInvite path repaired: opt-in source-page destination, zero-click targeted entry,
 	member access, same-key later naming, and interrupted-redemption recovery.

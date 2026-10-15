@@ -50,3 +50,16 @@ Debug mode: enabled
   - Custom scrollbars not verifiable in headless Chrome (known limitation in the theme guide); to be checked headed in the Stage 5 sweep if available.
 - Notes:
   - Popover rules keep the `:not(.theme-menu__option)` guards inherited from Word 97, so representative rows are not restyled.
+
+## Stage 5 - Icons, sweep and wrap-up
+- Changes:
+  - `theme-nav-icons.css`: added `windark` to every `:is([data-theme="word97"], [data-theme="chicago"])` list (existing selectors otherwise unchanged); matching string updates in `tests/LocalAppSmokeTest.php` and `tests/InvitationIssuanceTest.php`.
+  - `todo.txt`: the two items marked done with a pointer to this folder.
+- Verification:
+  - `php tests/run.php`: 1213 run, 1211 passed, 2 failed. `LocalAppSmokeTest::testStartAcceptsPortShorthand` also fails on the unmodified baseline (port-output assertion). `PrivateMessageHistorySyncTest::testConcurrentSyncWritesLeaveForegroundMessageStoreResponsive` failed in the full run but passes alone (13/13), so it is load-related and unrelated to themes.
+  - Browser sweep in Win Dark (headless Chrome against `scripts/dev_server.php`): board, tools, about, tags, users load 200 and render themed; nav and launcher icons appear; theme popover rows keep each theme's own colors (no leak).
+  - Word 97 disabled button computed color confirmed `rgb(128,128,128)`.
+- Notes:
+  - A few dark-ink pixel icons (Activity, Users, SQLite) have modest contrast on the dark face; left as-is for this slice.
+  - When Win Dark is the active theme its own popover row shows the page background, the same behavior Word 97 already has.
+  - Not verified: custom scrollbars (headless Chrome overlays them) and Firefox. Run `php scripts/build_static_artifacts.php` after deploy so baked routes include the new theme.

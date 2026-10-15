@@ -3016,11 +3016,11 @@ PHP;
         assertStringContains('title="Copy one-line bookmarklet"', $bookmarklets);
         assertStringContains('role="status"', $bookmarklets);
         $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
