@@ -80,4 +80,27 @@ final class AccountKeyPageHooksTest
             assertStringContains($selector, $script);
         }
     }
+
+    public function testEveryBackupScriptHookExistsOnPage(): void
+    {
+        $template = (string) file_get_contents(dirname(__DIR__) . '/templates/pages/account_key.php');
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/key_backup_ui.js');
+        preg_match_all('/\[(data-[a-z-]+)(?:="([^"]+)")?\]/', $script, $matches, PREG_SET_ORDER);
+        assertTrue($matches !== []);
+        foreach ($matches as $match) {
+            $hook = $match[2] ?? '' ? $match[1] . '="' . $match[2] . '"' : $match[1];
+            assertStringContains($hook, $template);
+        }
+    }
+
+    /**
+     * Hooks intentionally retired by this feature; empty until a stage removes one.
+     * Controls are hidden, not deleted, so the signing script keeps finding them.
+     */
+    private const RETIRED_HOOKS = [];
+
+    public function testNoHookIsRetiredWithoutBeingListed(): void
+    {
+        assertSame([], self::RETIRED_HOOKS);
+    }
 }
