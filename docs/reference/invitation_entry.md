@@ -8,8 +8,8 @@ represent the same invitation.
 
 Opening a targeted invitation automatically prepares a browser-owned key if
 needed, redeems the invitation, verifies member access, and opens the destination.
-No username prompt or Redeem click is required. A fresh key receives a random
-`reader-…` name. Existing browser keys and names are preserved. JavaScript and
+No username prompt or Redeem click is required. A fresh key receives the username
+`guest`. Existing browser keys and names are preserved. JavaScript and
 working browser key storage are required.
 
 Opening the link intentionally attempts single-use redemption, including in a

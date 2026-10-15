@@ -78,6 +78,7 @@ try {
     await recipient.page.waitForURL(base + '/threads/root-001?from=invite#reply-001');
     assert.equal(dialogs, 0);
     assert.match(await recipient.page.locator('main').innerText(), /Hello world/);
+    assert.equal(await recipient.page.evaluate(() => localStorage.getItem('forum_pki_username')), 'guest');
     const originalKey = await recipient.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'));
     await recipient.page.goto(url); // same-recipient recovery
     await recipient.page.waitForURL(base + '/threads/root-001?from=invite#reply-001');

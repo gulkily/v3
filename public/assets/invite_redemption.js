@@ -20,7 +20,7 @@
     if (typeof readiness !== "function") throw new Error("Identity setup is unavailable. Reload the page and try again.");
     feedback(status, "Preparing your browser identity…", "ok");
     const options = { verifyPublishedIdentity: false };
-    if (targeted) options.temporaryName = "reader-" + Array.from(crypto.getRandomValues(new Uint8Array(8)), byte => byte.toString(16).padStart(2, "0")).join("");
+    if (targeted) options.temporaryName = "guest";
     await readiness.call(identity, root, status, options);
     const fingerprint = String(localStorage.getItem("forum_pki_fingerprint") || "").replace(/^openpgp:/, "").toLowerCase();
     if (!/^[a-f0-9]{40}$/.test(fingerprint)) throw new Error("Unable to prepare a browser key for this invitation.");

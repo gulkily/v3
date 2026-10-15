@@ -33,7 +33,7 @@ async function run({ targeted = true, failure = '', token = 'a'.repeat(32) } = {
 (async () => {
   const auto = await run();
   assert.equal(auto.readiness.length, 1);
-  assert.match(auto.readiness[0].temporaryName, /^reader-[a-f0-9]{16}$/);
+  assert.equal(auto.readiness[0].temporaryName, "guest");
   assert.deepEqual(auto.navigations, ['/threads/a?q=1#reply']);
   assert.equal(auto.auth[0].navigate, false);
   assert.equal(auto.auth[0].force, true);

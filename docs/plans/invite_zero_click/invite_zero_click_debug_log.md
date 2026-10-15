@@ -69,3 +69,13 @@ No supported findings.
 ### Uncertain assessments
 
 - Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, stage sizing. Signed naming and real-browser acceptance required more than fifty lines each, while remaining bounded stages well under two hours. Prefer elapsed/behavioral boundaries over approximate line-count guidance for security and acceptance coverage.
+
+## 2026-10-15T19:42:32Z — Step 4 follow-up
+
+### Necessary/useful instructions
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, stage artifact and summary commit rule. Recording the explicitly requested guest-name adjustment with its focused and browser verification keeps the completed implementation reviewable. Retain this rule.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
