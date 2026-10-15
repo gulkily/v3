@@ -66,3 +66,25 @@ No supported findings.
 
 - Source: `docs/railspike/docs/workflow/step3_development_plan_do.md`, Structure, versus `docs/railspike/RAILSPIKE.md`, Key Rules. The phase file puts Completion Contract before Key Risks, whereas the overview says Step 3 begins with Key Risks. The plan follows the phase's explicit order and keeps risks near the top. Clarify the overview to match the detailed template.
 - Source: `docs/railspike/docs/workflow/step3_development_plan_do.md`, Deliverable (one page). Exact mappings and the required repeated stage fields compete with the page guideline; Markdown pagination is unspecified. The plan uses a compact grouped table and two flat stage lists. Define a word budget or permit a separate move-map appendix for maintenance plans.
+
+## 2026-10-15T01:43:33Z — Step 4: Implementation
+
+Debug mode: enabled, inherited from Step 3 and preserved in the implementation summary.
+
+### Necessary/useful instructions
+
+- Source: `docs/railspike/RAILSPIKE.md`, Plan review and Planning Artifacts. The user's approval retained `todo.txt`; Steps 2–3 were updated to reflect that explicit narrowing before the initial planning commit. The historical Step 1 assessment and earlier log entries were preserved. Retain explicit user revision support and separate planning organization.
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Both stages ran content, link, and scope checks and committed their summary updates before progressing. This supplied traceable evidence for all eight byte-identical moves and unchanged `todo.txt`. Retain the stage boundary protocol.
+- Source: `docs/railspike/docs/workflow/step4_implementation_after.md`, Final Verification Checklist. Final checks confirmed the approved document outcome, 163 resolving local links across reviewed documents/navigation, and a planning commit followed by two stage commits. Retain documentation-specific final gates.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, canonical presentation/API reuse and runtime verification. No application markup, API payload, catalog, configuration, or runtime code changed; relevant checks were document integrity, paths, and scope. The existing canonical indexes were reused. Retain these instructions with the documentation-only applicability distinction.
+
+### Uncertain assessments
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_before.md`, organization rule's stop on substantive changes. A user's scope correction supplied together with approval requires reconciling approved plans, as happened for retaining `todo.txt`. Clarify that an explicitly user-authorized narrowing can be recorded before the planning commit without requesting the same approval again.
