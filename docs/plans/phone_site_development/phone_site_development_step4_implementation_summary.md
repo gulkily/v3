@@ -8,3 +8,8 @@ Implementation in progress. Live server acceptance is pending.
 - Changes: additive private workflow/action/instance records; signed, instance-scoped expiring actions; authenticated operator enforcement; immutable request/thread snapshot; deduplicated starts and version checks.
 - Verification: `php tests/run.php RailspikeWorkflowTest` — 2 passed, covering invalid signatures, hints, non-operators, expired/foreign actions, repeats, eligibility, and stale versions. `git diff --check` passed.
 - Notes: records will share the private queue database; legacy/public read-model schema is unchanged. Later actions deliberately unavailable until their stages.
+
+## Stage 2 - Queue and bounded Codex assessment
+- Changes: allowlisted assessment task; atomic request/task insertion in the private queue database; CLI worker wiring; read-only isolated checkout runner with stdin prompts, explicit model, structured output, 90-second maximum and output cap; validated private revision persistence.
+- Verification: `php tests/run.php RailspikeWorkflowTest TaskQueueWorkerTest TaskQueueStoreTest` — 28 passed. PHP syntax checks and diff whitespace checks passed.
+- Notes: missing executable/workspace/model/home yields visible failure. Actual zenmemes credentials and sandbox support remain external acceptance requirements. No real model call was made during unit verification.

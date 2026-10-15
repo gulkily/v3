@@ -22,6 +22,12 @@ final class WorkflowStore
         $q->execute(['instance', bin2hex(random_bytes(24))]);
     }
 
+    public function schedule(array $row): void
+    {
+        (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($this->pdo))->enqueueWithinTransaction(
+            \ForumRewrite\TaskQueue\SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT, $row['id'].'@'.$row['version'], 1);
+    }
+
     public function instance(): string
     {
         return (string) $this->pdo->query("SELECT value FROM railspike_metadata WHERE name='instance'")->fetchColumn();

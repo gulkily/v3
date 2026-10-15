@@ -30,6 +30,7 @@ final class TaskQueueWorker
         ?callable $runFastScoreSweep = null,
         ?callable $publishOfflineSnapshot = null,
         ?callable $fulfillAgentReply = null,
+        private readonly mixed $assessRailspike = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
@@ -92,6 +93,7 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::REBUILD_READ_MODEL => $this->runReadModelRebuild($id),
             SqliteTaskQueueStore::FAST_SCORE_SWEEP => $this->runFastScoreSweep($id),
             SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
+            SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT => $this->runRailspike($id, $task),
             SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
         };
@@ -154,6 +156,17 @@ final class TaskQueueWorker
      * @param array<string, mixed> $task
      * @return array<string, mixed>
      */
+    private function runRailspike(int $id, array $task): array
+    {
+        try {
+            if ($this->assessRailspike === null) throw new \RuntimeException('Railspike worker is not configured.');
+            ($this->assessRailspike)($task);
+            return $this->store->markCompleted($id);
+        } catch (\Throwable $e) {
+            return $this->store->markFailed($id, 'railspike_assessment_failed', $e->getMessage(), false);
+        }
+    }
+
     private function runAgentReply(int $id, array $task): array
     {
         if ($this->fulfillAgentReply === null) {

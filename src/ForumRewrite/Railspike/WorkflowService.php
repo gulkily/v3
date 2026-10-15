@@ -60,6 +60,7 @@ final class WorkflowService
                     $row=['id'=>bin2hex(random_bytes(16)), 'post_id'=>$post['post_id'],'thread_id'=>$post['thread_id'], 'version'=>1,
                         'state'=>'queued','request'=>$post['body'],'context'=>$q->fetchAll(PDO::FETCH_ASSOC),'history'=>[], 'revisions'=>[], 'requested_by'=>$actor['identity_id'], 'created_at'=>gmdate('c')];
                     $this->store->save($row);
+                    $this->store->schedule($row);
                 }
             } else {
                 $row=$this->store->requireVersion((string)$a['workflow_id'], (int)$a['version']);

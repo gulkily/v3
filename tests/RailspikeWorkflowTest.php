@@ -54,4 +54,20 @@ final class RailspikeWorkflowTest
         assertSame(false,WorkflowService::eligible(['author_label'=>'reply-agent','board_tags_json'=>'["railspike"]'],[]));
         assertSame(false,WorkflowService::eligible(['retracted_at'=>'now','board_tags_json'=>'["railspike"]'],[]));
     }
+    public function testQueueWorkerPersistsValidatedAssessment(): void
+    {
+        [$store,$service,$actor,$root,$pdo]=$this->fixture();
+        $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
+        $queue=new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo);
+        $runner=static fn ($row) => ['kind'=>'assessment','questions'=>[],'assessment'=>"## Problem Statement\nPhone navigation\n## Option A\nToolbar\n## Option B\nMenu\n## Recommendation\nToolbar"];
+        $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker($queue,static function () {},null,null,null,new \ForumRewrite\Railspike\AssessmentTask($store,$runner));
+        assertSame(1,$worker->run()['completed']);
+        $current=$store->find($row['id']);
+        assertSame('review',$current['state']);
+        assertStringContains('Improve phone navigation',$current['revisions'][0]['artifact']);
+        assertSame(1,count($current['revisions']));
+        $this->rejects(fn () => \ForumRewrite\Railspike\CodexAssessmentRunner::validate(['kind'=>'assessment','questions'=>[],'assessment'=>'Looks fine']));
+        $this->rejects(fn () => (new \ForumRewrite\Railspike\CodexAssessmentRunner($root))->readiness());
+    }
+
 }

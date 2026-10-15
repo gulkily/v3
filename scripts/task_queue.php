@@ -180,7 +180,7 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $pdo): void {
             $startedAt = microtime(true);
             $reconciledAgentReplyTasks = $taskId === null ? reconcileAgentReplyTasks($store, $databasePath) : 0;
             $executorRun = $store->startExecutorRun();
@@ -299,6 +299,7 @@ try {
                     ))
                         ->fulfillAgentReplyRequest($request);
                 },
+                new \ForumRewrite\Railspike\AssessmentTask(new \ForumRewrite\Railspike\WorkflowStore($pdo), new \ForumRewrite\Railspike\CodexAssessmentRunner($projectRoot)),
             );
             $taskStartedAt = [];
             try {
