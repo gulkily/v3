@@ -171,3 +171,5 @@ and repair its navigation and affected references. See the
 [transition guide](../reference/railspike_workflow.md) for existing FDP cycles.
 
 - [Signed thread labels and post reactions](signed_thread_label_records/)
+
+- [Scripture response quality and latency](./scripture_response_quality/scripture_response_quality_step1_solution_assessment.md) — proportionate scripture replies and faster complete delivery.
