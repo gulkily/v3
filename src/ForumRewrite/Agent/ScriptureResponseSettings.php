@@ -15,8 +15,8 @@ final class ScriptureResponseSettings
     {
         $guidance = trim((string) ($config['SCRIPTURE_RESPONSE_GUIDANCE'] ?? 'current'));
         $effort = trim((string) ($config['SCRIPTURE_RESPONSE_REASONING_EFFORT'] ?? ''));
-        if (!in_array($guidance, ['current', 'revised'], true)) {
-            throw new InvalidArgumentException('SCRIPTURE_RESPONSE_GUIDANCE must be current or revised.');
+        if (!in_array($guidance, ['current', 'revised', 'verified'], true)) {
+            throw new InvalidArgumentException('SCRIPTURE_RESPONSE_GUIDANCE must be current, revised, or verified.');
         }
         if ($effort !== '') {
             $provider = LlmProviderConfig::fromPrivateConfig($config);
