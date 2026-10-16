@@ -404,7 +404,7 @@
   outline-offset: -4px;
 }
 
-:root[data-theme="word97"] button[disabled]:not(.theme-menu__option) {
+:root[data-theme="word97"] button[disabled]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
   color: #808080;
   text-shadow: 1px 1px 0 #ffffff;
 }
