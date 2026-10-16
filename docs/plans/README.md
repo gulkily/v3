@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Scripture response reliability](scripture_response_reliability/)
+
 - [Scripture response guidance and expansion](agent_reply_length/)
 - [Compose thread declutter](compose_thread_declutter/)
 - [Top five media embeds](top_five_media_embeds/)
