@@ -61,3 +61,18 @@ Implementation in progress; the flag ships off by default.
 - Notes:
   - Found for Stage 6: `ProfileRepository::pendingDirectoryProfiles` picks each pending member's latest activity row from the table directly, so a pending member's rename would show there even with the flag off; Forte activity links, RSS and the commit manifest are checked in Stage 6.
   - `/activity.html` is already in the feature-flag invalidation list, so a toggle refreshes the pre-built page.
+
+## Stage 6 - Remaining activity consumers
+
+- Changes:
+  - Classic RSS (`ActivityPageController::rss`) links a rename item to the member's profile instead of the broken `/posts/` fallback.
+  - Forte activity (`ForteActivityController::activityItemBoardLink`) links a rename row to the member's profile, and the detail pane no longer marks that link as a post link for the content-summary dialog.
+  - `ProfileRepository::pendingDirectoryProfiles` takes `includeProfileNameChanges` (default off); the pending-members page passes the flag, so a pending member's rename is not shown as their latest activity while the flag is off.
+  - Commit manifest and "relevant files" needed no change: they work from the record's source path and signature, so a rename lists its record and signature.
+  - SQLite viewer catalog queries are unchanged: they read the table directly, so they list rename rows whenever the database contains them, regardless of the flag. The catalog's activity queries already select every column a rename row needs.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest` — 166 passed, including new `testProfileNameActivityReachesFeedsForteAndPendingDirectoryOnlyWhileEnabled` (flag off: label absent from RSS and the Forte activity page and not the pending member's latest activity; flag on: label and profile link present, no `/posts/<` link, no post-link marker on the rename in Forte, pending latest activity is the rename).
+  - `php tests/run.php LocalAppSmokeTest` — 140 passed.
+- Notes:
+  - The new test caught a real bug in this stage's first version: binding the flag through `execute([...])` sends text, and SQLite does not equate text `'1'` with integer `1`, so the include branch never matched. It now binds with `PDO::PARAM_INT`.
+  - Limitation recorded for Stage 7 docs: the SQLite viewer is a raw view of the read model, so it shows rename rows even while the flag is off.

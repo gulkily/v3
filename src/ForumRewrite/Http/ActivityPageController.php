@@ -83,6 +83,7 @@ final class ActivityPageController
             $link = match ($item['kind']) {
                 'thread_label_add' => '/threads/' . $item['thread_id'],
                 'site_feature_flag' => '/tools/feature-flags/',
+                'profile_name_change' => '/profiles/' . rawurlencode((string) ($item['author_profile_slug'] ?? '')),
                 default => '/posts/' . $item['post_id'],
             };
             $items[] = RssFeed::item($item['label'], $link, $item['kind'], (string) $item['created_at']);

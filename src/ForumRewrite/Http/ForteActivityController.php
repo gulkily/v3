@@ -428,6 +428,14 @@ final class ForteActivityController
             return ['href' => '/tools/feature-flags/', 'label' => 'site feature flags'];
         }
 
+        if ($item['kind'] === 'profile_name_change') {
+            $profileSlug = (string) ($item['author_profile_slug'] ?? '');
+
+            return $profileSlug === ''
+                ? ['href' => '', 'label' => '']
+                : ['href' => '/profiles/' . rawurlencode($profileSlug), 'label' => (string) $item['author_label']];
+        }
+
         $threadId = (string) ($item['thread_id'] ?? '');
         $postId = $item['kind'] === 'thread_label_add' ? $threadId : (string) ($item['post_id'] ?? '');
         if ($threadId === '' || $postId === '') {

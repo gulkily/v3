@@ -211,6 +211,50 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testProfileNameActivityReachesFeedsForteAndPendingDirectoryOnlyWhileEnabled(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('pending-reader');
+        $previousFlag = getenv('FORUM_USERNAME_CHANGES_ENABLED');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'pending-renamed']);
+            $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])]);
+            $profileHref = '/profiles/openpgp-' . substr($identity, 8);
+            $label = 'Changed username from pending-reader to pending-renamed';
+            $pdo = (new ReadModelConnection($db))->open();
+
+            $latest = static fn (bool $include): ?string => array_values(array_filter(
+                ProfileRepository::pendingDirectoryProfiles($pdo, $include),
+                static fn (array $row): bool => $row['username'] === 'pending-renamed'
+            ))[0]['latest_activity_label'] ?? null;
+            assertSame(false, $latest(false) === $label);
+            assertSame($label, $latest(true));
+            assertSame(false, $latest(false) === $latest(true));
+
+            $render = fn (string $path): string => $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $path);
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=false');
+            foreach (['/activity/?view=all&format=rss', '/forte/activity/?view=all'] as $path) {
+                assertStringNotContains($label, $render($path));
+            }
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=true');
+            $rss = $render('/activity/?view=all&format=rss');
+            assertStringContains($label, $rss);
+            assertStringContains($profileHref, $rss);
+            assertStringNotContains('/posts/<', $rss);
+            $forte = $render('/forte/activity/?view=all');
+            assertStringContains($label, $forte);
+            assertStringContains('href="' . $profileHref . '"', $forte);
+            assertStringNotContains('data-post-id="pending-renamed"', $forte);
+        } finally {
+            putenv($previousFlag === false ? 'FORUM_USERNAME_CHANGES_ENABLED' : 'FORUM_USERNAME_CHANGES_ENABLED=' . $previousFlag);
+            $this->deleteTree($key['home']);
+        }
+    }
+
     public function testSignedThreadReactionPreservesBytesAndRejectsTampering(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();

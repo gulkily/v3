@@ -7,9 +7,10 @@ $itemId = (string) $item['id'];
 $forteLink = $item['forte_link'] ?? ['href' => '', 'label' => ''];
 // forte_link's label is the target post id for every real content link -
 // the one exception is site_feature_flag, whose link isn't a post at all
-// (it points at the site feature-flags tool), so it's excluded from the
-// content-summary dialog's click-interception.
-$isContentLink = (string) ($item['kind'] ?? '') !== 'site_feature_flag';
+// (it points at the site feature-flags tool), and profile_name_change links to
+// a profile, so both are excluded from the content-summary dialog's
+// click-interception.
+$isContentLink = !in_array((string) ($item['kind'] ?? ''), ['site_feature_flag', 'profile_name_change'], true);
 $commitSha = (string) ($item['source_commit_sha'] ?? '');
 // Only this item's own relevant files (its record, an identity_bootstrap's
 // paired identity record, its signature, and the signer's public key) are
