@@ -89,6 +89,51 @@ class ProviderProxyTest(unittest.TestCase):
             self.assertGreater(proxy.budget.entries[0]['cost'], 8192 * .4 / 1000000)
 
 
+class MiniProxyTest(unittest.TestCase):
+    def test_mini_rate_reservation_and_low_reasoning_are_enforced(self):
+        from scripture_reliability_evaluation import stub_transport
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            proxy = ProviderProxy(root, 'secret', model='gpt-5-mini', input_rate=.25,
+                                  output_rate=2., writing_limit=1, moderation_limit=1,
+                                  transport=stub_transport)
+            payload = {'model':'gpt-5-mini','messages':[{'content':'plain'},{'content':'concern'}],
+                       'max_completion_tokens':8192,'reasoning_effort':'low'}
+            for bad in [dict(payload, model='gpt-5-nano'), dict(payload, reasoning_effort='high'), dict(payload, max_completion_tokens=100)]:
+                with self.assertRaises(ValueError): proxy.call(bad)
+            self.assertEqual(proxy.budget.entries, [])
+            proxy.sample = 'retained-sample'
+            proxy.call(payload)
+            self.assertAlmostEqual(proxy.budget.entries[0]['cost'], .000425)
+            self.assertEqual(proxy.budget.entries[0]['sample'], 'retained-sample')
+            with self.assertRaises(RuntimeError): proxy.call(payload)
+            with self.assertRaises(RuntimeError):
+                ProviderProxy(root, 'secret', model='gpt-5-mini', writing_limit=1).call(payload)
+
+
+class ReleaseGateTest(unittest.TestCase):
+    def test_joint_gates_reject_latency_regressions_critical_errors_and_missing_samples(self):
+        from scripture_reliability_review import evaluate
+        rows, ratings, key = [], {}, {}
+        for label in ['A','B']:
+            for case in range(1,9):
+                for repeat in [1,2]:
+                    sample = f'{label}-{case}-{repeat}'
+                    key[sample] = sample
+                    row = {'sample':sample,'variant':label,'case':case,'repeat':repeat,
+                           'outcome':'complete','total_ms':14000 if label=='A' else 9000}
+                    rows.append(row)
+                    ratings[sample] = {'rubric':[True]*6,'source_pass':True,'critical_error':False,'notes':'Checked.'}
+                    if label=='A' and case<=2: ratings[sample]['rubric'][0] = False
+        self.assertTrue(evaluate(rows,ratings,key)['passed'])
+        rows[-1]['total_ms'] = 41000
+        self.assertFalse(evaluate(rows,ratings,key)['passed'])
+        rows[-1]['total_ms'] = 9000
+        ratings['B-8-2']['critical_error'] = True
+        self.assertFalse(evaluate(rows,ratings,key)['passed'])
+        with self.assertRaises(ValueError): evaluate(rows[:-1],ratings,key)
+
+
 class ResumeTest(unittest.TestCase):
     def test_interruption_keeps_reservation_and_is_not_reissued(self):
         with tempfile.TemporaryDirectory() as directory:

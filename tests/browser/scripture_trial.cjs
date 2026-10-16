@@ -57,6 +57,7 @@ const env = {...process.env, ...JSON.parse(readFileSync(join(directory,'environm
         result.total_ms = performance.now()-started;
         result.visible_at_ms = Date.now();
         result.rendered_text = await visible.innerText();
+        result.visible_body_text = await visible.locator('.body').first().innerText();
         const response = await context.request.get(base+endpoint+'?post_id='+source);
         result.status = await response.json();
         result.outcome='complete';
