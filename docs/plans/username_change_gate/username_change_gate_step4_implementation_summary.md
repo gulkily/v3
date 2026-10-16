@@ -76,3 +76,19 @@ Implementation in progress; the flag ships off by default.
 - Notes:
   - The new test caught a real bug in this stage's first version: binding the flag through `execute([...])` sends text, and SQLite does not equate text `'1'` with integer `1`, so the include branch never matched. It now binds with `PDO::PARAM_INT`.
   - Limitation recorded for Stage 7 docs: the SQLite viewer is a raw view of the read model, so it shows rename rows even while the flag is off.
+
+## Stage 7 - Docs and end-to-end verification
+
+- Changes:
+  - Docs: `invitation_entry.md` (flag, gated endpoints, both captions, activity entry), `read_model_schema_v1.md` (schema version 21 activity rows and flag visibility), `profile_read_contract_v1.md` (the stale "no username change flow" line), `authentication_modes.md`, and the README flag entry from Stage 1.
+  - `docs/research/username_change_report.md` gets a follow-up section describing the gate, activity entry, caption and the invitation-flow consequence; it is committed here so the Step 1 link to it resolves.
+  - `tests/browser/invite_zero_click.mjs` enables the flag for its existing naming steps, asserts the "Start over with a new key" caption and the rename row in Activity, and adds a flag-off pass (hidden button, original caption, refused endpoint, no rename activity).
+- Verification:
+  - Full `php tests/run.php` — 1231 run, 1231 passed, 0 failed.
+  - Real browser: `CHROMIUM_PATH=/opt/google/chrome/chrome node tests/browser/invite_zero_click.mjs` — PASS public, PASS members-only (naming, caption and activity row with the flag on), PASS flag-off checks.
+  - Rebuild of a copy of `state/local_repository` (Stage 4) produced rows for both real rename records.
+  - `git diff --check` clean.
+- Notes:
+  - Intermittent `gpg` failures ("key was created 1 second in the future", "Time conflict") appeared in unrelated signing tests during Stages 4 and 7. They reproduce on the unmodified baseline commit `93826622` in a separate worktree (2 of 3 interleaved runs failed there too, after 9 clean baseline runs earlier), so they are environmental clock instability, not caused by this change. The final full run was clean. The only test-code change for it is a one-time retry in `createSigningKey`.
+  - Not done, by scope: composite-user effects of a rename (tracked in `todo.txt`); the SQLite viewer still shows rename rows while the flag is off (raw read-model view); no production enablement.
+  - Operator consequence: with the flag off, invited guests cannot choose a name after arrival until it is enabled.

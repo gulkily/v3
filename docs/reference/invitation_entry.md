@@ -42,6 +42,16 @@ The **Account → Choose username** button changes the forum name attached to an
 existing browser key. It can be used again later; member approval is not required
 to change a name, but ownership of the key must be proven by its signature.
 
+Username changes are off by default. An operator enables them with the
+**Username changes** feature flag (`FORUM_USERNAME_CHANGES_ENABLED`) at
+`/tools/feature-flags/`. While it is off, Account hides **Choose username**,
+`/api/prepare_profile_name` and `/api/finalize_profile_name` refuse requests
+(including finalizing a change prepared before the flag was turned off), and
+rename entries are not listed in Activity. Names already saved stay in effect,
+and keys and approvals are never changed by the flag. While the flag is on, the
+button that replaces the key reads “Start over with a new key”; while it is off
+that button reads “Re-setup / change name”.
+
 1. **Check for an existing keypair.** If this browser has no saved public/private
    keypair, Account displays “Set up this browser first.” The rename action does
    not generate a replacement key.
@@ -79,7 +89,7 @@ to change a name, but ownership of the key must be proven by its signature.
 9. **Refresh derived presentation.** The server rebuilds the read model and
    invalidates generated presentation. The latest verified update, ordered by
    `(Created-At, Record-ID)`, supplies the effective profile name, username route,
-   and author/activity labels. Invalid or unsigned name updates are ignored on
+   and author/activity labels. Each verified change is also listed in Activity (kind `profile_name_change`, “Changed username from X to Y”) while the flag is on. Invalid or unsigned name updates are ignored on
    replay. Historical signed content bytes remain unchanged. Existing duplicate
    username routing rules still apply.
 10. **Refresh this browser.** After server success, the browser confirms that its
