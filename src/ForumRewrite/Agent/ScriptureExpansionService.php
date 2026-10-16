@@ -28,6 +28,7 @@ final class ScriptureExpansionService
         private readonly AgentIdentityService $identity,
         private readonly bool $requestsEnabled,
         private readonly mixed $dispatch = null,
+        private readonly bool $verificationRequired = false,
     ) {}
 
     public function sources(string $replyId): array
@@ -184,6 +185,21 @@ final class ScriptureExpansionService
                 $input['initial_answer'] = (string) $initial['body'];
                 $generation = $generator->generate($input);
                 $generation['response_intent'] = AgentResponseTask::SCRIPTURE_EXPANSION_TYPE;
+            }
+            if ($canonical === null) {
+                $validationGenerator = ($this->generator)();
+                if ($validationGenerator === null && ($this->verificationRequired || isset($generation['raw_response']['scripture_verification']))) {
+                    throw new ScriptureVerificationException('Publication validation requires the configured reply provider.');
+                }
+                $input = AgentResponseTask::generationInputForType(($this->contextForPost)($initial), AgentResponseTask::SCRIPTURE_EXPANSION_TYPE);
+                $input['original_post'] = (string) $source['body'];
+                $input['initial_answer'] = (string) $initial['body'];
+                $sourceVerify = $verify;
+                $verify = function () use ($sourceVerify, $validationGenerator, $generation, $input): void {
+                    $sourceVerify();
+                    $validationGenerator?->validatePublication($generation, $input);
+                };
+                $verify();
             }
             $context = $row['request_context'];
             $stored = $this->store()->saveComplete($context, $generation);
