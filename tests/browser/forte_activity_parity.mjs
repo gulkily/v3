@@ -20,9 +20,10 @@ try {
   for (const width of [1280, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 844 } });
     const page = await context.newPage();
-    let failDetail = true, failPage = true, slowDetail = false, pageRequests = 0;
-    let releaseSlow, slowStarted;
+    let failDetail = true, failPage = true, slowDetail = false, slowSort = false, pageRequests = 0;
+    let releaseSlow, slowStarted, releaseSort, sortStarted;
     const slowReady = new Promise(resolve => { slowStarted = resolve; });
+    const sortReady = new Promise(resolve => { sortStarted = resolve; });
     await page.route('http://activity.test/**', async route => {
       const url = new URL(route.request().url());
       const view = url.searchParams.get('view') || 'all';
@@ -41,6 +42,10 @@ try {
         const next = url.searchParams.has('cursor');
         await route.fulfill({ json: { status: 'ok', html: next ? row(2, view) + row(3, view) : row(2, view) + row(1, view), detail_html: '', has_more: !next, next_cursor: next ? null : { id: 2, sort_value: 'today' } } });
       } else {
+        if (slowSort && url.searchParams.has('sort')) {
+          slowSort = false;
+          await new Promise(resolve => { releaseSort = resolve; sortStarted(); });
+        }
         await route.fulfill({ contentType: 'text/html', body: fixture(view) });
       }
     });
@@ -86,6 +91,14 @@ try {
     await page.getByText('Ordinary evidence 1', { exact: true }).waitFor();
     assert.equal(await page.getByRole('link', { name: 'RSS', exact: true }).getAttribute('href'), '/activity/?view=all&format=rss');
     assert.equal(await page.getByText('Acceptance receipt 1', { exact: true }).count(), 0);
+    slowSort = true;
+    const sortResponse = page.waitForResponse(response => response.url().includes('/forte/activity/') && response.url().includes('sort='));
+    await page.getByRole('button', { name: 'Date', exact: true }).click();
+    await sortReady;
+    await page.locator('[data-paned-activity-view="approval"][role="option"]').click();
+    releaseSort(); await sortResponse;
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.match(page.url(), /view=approval/, 'late sorting must not restore an abandoned category');
     await context.close();
   }
   console.log('PASS Forte Activity desktop/mobile: category membership, bounded preload, detail/page retry, keyboard selection, duplicate-page merge, stale sort response, security document boundaries');

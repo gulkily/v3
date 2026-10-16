@@ -601,6 +601,8 @@
       return;
     }
     sortNavigationInFlight = true;
+    var token = preloadToken;
+    var sourceView = currentViewFromUrl();
 
     fetch(href)
       .then(function (response) {
@@ -610,6 +612,10 @@
         return response.text();
       })
       .then(function (text) {
+        if (token !== preloadToken || sourceView !== currentViewFromUrl()) {
+          sortNavigationInFlight = false;
+          return;
+        }
         var parsed = new DOMParser().parseFromString(text, "text/html");
         var newLayout = parsed.querySelector(".paned-board-layout");
         var currentLayout = document.querySelector(".paned-board-layout");
@@ -625,6 +631,10 @@
         init();
       })
       .catch(function () {
+        if (token !== preloadToken || sourceView !== currentViewFromUrl()) {
+          sortNavigationInFlight = false;
+          return;
+        }
         window.location.href = href;
       });
   }
@@ -799,6 +809,8 @@
     loadedSort = currentSortFromUrl();
     loadedDirection = currentDirectionFromUrl();
     restoreSelectionFromUrl(true);
+    var selectedFilter = filterTree.querySelector('[aria-selected="true"]');
+    if (selectedFilter) selectedFilter.scrollIntoView({ block: "nearest", inline: "nearest" });
     preloadFirstPages();
   }
 
