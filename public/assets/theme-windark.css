@@ -16,10 +16,10 @@
   --status-error: #ff9d9d;
   --status-ok: #8fe3a8;
   --status-warning: #e6c26a;
-  --active-bg: #1c3f9e;
+  --active-bg: #4a4a4a;
   --active-ink: #ffffff;
-  --active-line: #6f8fe8;
-  --active-ring: rgba(111, 143, 232, 0.3);
+  --active-line: #8a8a8a;
+  --active-ring: rgba(138, 138, 138, 0.3);
   --body-font: "Times New Roman", Times, serif;
   --ui-font: Tahoma, "MS Sans Serif", Geneva, sans-serif;
   --code-font: "Courier New", monospace;
@@ -46,22 +46,24 @@
 
 :root[data-theme="windark"] .site-header {
   padding: 0.45rem 0.6rem 0.6rem;
-  border: 1px solid #000000;
+  border: 2px solid;
+  border-color: #6a6a6a #1a1a1a #1a1a1a #6a6a6a;
   background: #2b2b2b;
   box-shadow:
-    0 0 0 3px #2b2b2b,
-    0 0 0 4px #6a6a6a,
-    7px 7px 0 4px #000000;
+    -1px -1px 0 0 #8a8a8a,
+    1px 1px 0 0 #000000,
+    6px 6px 0 0 #000000;
 }
 
 :root[data-theme="windark"] .card,
 :root[data-theme="windark"] .feedback {
-  border: 1px solid #000000;
+  border: 2px solid;
+  border-color: #6a6a6a #1a1a1a #1a1a1a #6a6a6a;
   background: #2b2b2b;
   box-shadow:
-    0 0 0 3px #2b2b2b,
-    0 0 0 4px #6a6a6a,
-    7px 7px 0 4px #000000;
+    -1px -1px 0 0 #8a8a8a,
+    1px 1px 0 0 #000000,
+    6px 6px 0 0 #000000;
 }
 
 :root[data-theme="windark"] .card {
@@ -222,7 +224,7 @@
   margin: -0.45rem -0.6rem 0.65rem;
   padding: 0.18rem 0.2rem 0.18rem 0.45rem;
   color: #ffffff;
-  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  background: linear-gradient(90deg, #00004a 0%, #0a3d6b 100%);
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -270,7 +272,7 @@
   display: block;
   margin: -1.5rem -1.5rem 1.1rem;
   padding: 0.22rem 0.55rem;
-  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  background: linear-gradient(90deg, #00004a 0%, #0a3d6b 100%);
   color: #ffffff;
   font-family: var(--ui-font);
   font-size: 0.92rem;
@@ -293,7 +295,7 @@
   content: "New Thread";
   display: block;
   padding: 0.22rem 0.55rem;
-  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  background: linear-gradient(90deg, #00004a 0%, #0a3d6b 100%);
   color: #ffffff;
   font-family: var(--ui-font);
   font-size: 0.92rem;
