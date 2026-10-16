@@ -82,11 +82,19 @@ final class AccountKeyPageHooksTest
             preg_match('/<button\b[^>]*data-action="rename-profile"[^>]*>/', $html, $button);
             assertTrue($button !== []);
             assertSame(!$enabled, str_contains($button[0], ' hidden'));
+            assertStringContains('data-username-changes-enabled="' . ($enabled ? '1' : '0') . '"', $html);
         }
         $default = (new TemplateRenderer(dirname(__DIR__) . '/templates'))
             ->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account Key', 'account');
         preg_match('/<button\b[^>]*data-action="rename-profile"[^>]*>/', $default, $button);
         assertStringContains(' hidden', $button[0]);
+    }
+
+    public function testKeyReplacementCaptionDependsOnUsernameChangesFlag(): void
+    {
+        $template = (string) file_get_contents(dirname(__DIR__) . '/templates/pages/account_key.php');
+        assertStringContains("root.dataset.usernameChangesEnabled === '1' ? 'Start over with a new key' : 'Re-setup / change name'", $template);
+        assertStringContains("'Set up this browser'", $template);
     }
 
     public function testSigningScriptStillTargetsPageHooks(): void

@@ -23,3 +23,11 @@ Implementation in progress; the flag ships off by default.
   - `php tests/run.php LocalAppSmokeTest` — 140 passed.
   - Cache risk checked: `/account/key/` is not a pre-built static artifact (not in `StaticArtifactInvalidator` or `StaticArtifactBuilder`), so a flag toggle cannot leave stale markup.
 - Notes: real-browser confirmation of the hidden button is part of Stage 7. The caption (Stage 3) still needs the user's choice; default is "Replace key (new identity)".
+
+## Stage 3 - Caption for the key-replacing button
+
+- Changes: the caption was chosen by the user: "Start over with a new key". `account_key.php` now exposes the flag on the page root (`data-username-changes-enabled`) and the ready-state caption in `syncSimpleUI` is "Start over with a new key" when enabled, "Re-setup / change name" when disabled; the not-ready caption "Set up this browser" is unchanged.
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest` — 6 passed (root attribute reflects the flag; template contains both captions and the conditional).
+  - No other source, test, or script sets this button's text; the only other references to the old caption are in the historical plan `docs/plans/account_setup_auto_publish_public_key_plan_v1.md`, left unchanged as a record.
+- Notes: caption logic is covered by a template-source assertion plus the rendered attribute; the actual displayed text in both states is confirmed in the Stage 7 real-browser check.
