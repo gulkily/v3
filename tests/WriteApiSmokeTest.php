@@ -6174,6 +6174,12 @@ NODE;
                 assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true', $page);
                 assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false', $page);
                 assertStringContains('security-target', $page);
+                assertStringContains('Account key grants and recorded approval-policy changes.', $page);
+                if (str_starts_with($path, '/forte/')) {
+                    assertStringContains('data-paned-activity-rss href="/activity/?view=security&amp;format=rss" hidden', $page);
+                    assertSame(1, substr_count($page, 'Current cross-account policy:'));
+                    assertTrue(strpos($page, 'Current cross-account policy:') < strpos($page, 'data-paned-activity-list-pane'));
+                }
             }
             $pdo = (new ReadModelConnection($db))->open();
             $query = $pdo->prepare('SELECT id FROM activity WHERE post_id = ?');
@@ -6189,6 +6195,8 @@ NODE;
             assertStringContains('data-paned-activity-view-security="1"', $securityPage['html']);
             assertStringContains('Acceptance receipt', $securityPage['detail_html']);
             assertStringContains('Affected account: security-target', $securityPage['detail_html']);
+            $securityRows = json_decode($this->renderMethod($app, 'GET', '/api/forte_activity_page?view=security&rows_only=1'), true, 512, JSON_THROW_ON_ERROR);
+            assertStringContains('new_account: security-operator approved a key for security-target', $securityRows['html']);
             $ordinary = $this->renderMethod($app, 'GET', '/api/forte_activity_detail?id=' . $id);
             assertStringNotContains('Affected account:', $ordinary);
             assertStringNotContains('Acceptance receipt', $ordinary);

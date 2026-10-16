@@ -154,6 +154,7 @@ final class ForteActivityController
             );
             $selectedItemId = (string) ($viewResult['items'][0]['id'] ?? '');
             foreach ($viewResult['items'] as $item) {
+                if ($selectedView === 'security') $item = $activityService->securityReviewItem($item);
                 foreach (array_keys($viewLabels) as $viewKey) {
                     $item['view_' . $viewKey] = $viewKey === $selectedView;
                 }
@@ -375,6 +376,7 @@ final class ForteActivityController
         $html = '';
         $detailHtml = '';
         foreach ($result['items'] as $item) {
+            if ($rowsOnly && $view === 'security') $item = $activityService->securityReviewItem($item);
             $item['forte_link'] = $this->activityItemBoardLink($item);
             foreach (['all', 'content', 'identity', 'bootstrap', 'approval', 'security'] as $flagView) {
                 $item['view_' . $flagView] = ($flagView === $view);
@@ -393,7 +395,6 @@ final class ForteActivityController
             // up hidden). Reuses the same partial the initial page render
             // uses, so this is never selected by default.
             if (!$rowsOnly) {
-                if ($view === 'security') $item = $activityService->securityReviewItem($item);
                 $detailHtml .= $this->routeServices->renderFragment('partials/paned_activity_detail_article.php', [
                     'item' => $item,
                     'isSelected' => false,

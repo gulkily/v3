@@ -12,7 +12,7 @@
 <?php endif; ?>
     </div>
 <?php if ($view === 'security'): ?>
-    <p>Current cross-account policy: <?= $approvalPolicyEnabled ? 'enabled' : 'restricted' ?>. Account key grants and recorded approval-policy changes. Restricting future cross-account approvals does not revoke previously accepted keys. Deployment-only policy changes and missing historical acceptance facts remain unknown.</p>
+<?= $partial('partials/activity_security_notice.php', ['approvalPolicyEnabled' => $approvalPolicyEnabled]) ?>
 <?php endif; ?>
   </article>
 <?php foreach ($items as $item): ?>

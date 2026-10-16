@@ -39,6 +39,15 @@ foreach ($viewCounts as $viewCount) {
   <div class="paned-board-layout">
 <?= $indent($partial('partials/paned_activity_filter_list.php', ['viewCounts' => $viewCounts, 'selectedView' => $selectedView]), 2) ?>
     <div class="paned-board-main paned-panes-stack">
+      <header class="paned-activity-context">
+        <div class="paned-activity-heading">
+          <h1>Activity</h1>
+          <a data-paned-activity-rss href="/activity/?view=<?= $e($selectedView) ?>&amp;format=rss"<?= in_array($selectedView, ['security', 'commits'], true) ? ' hidden' : '' ?>>RSS</a>
+        </div>
+<?php if ($selectedView === 'security'): ?>
+<?= $partial('partials/activity_security_notice.php', ['approvalPolicyEnabled' => $approvalPolicyEnabled]) ?>
+<?php endif; ?>
+      </header>
 <?= $indent($partial('partials/paned_activity_item_list.php', ['items' => $items, 'commitItems' => $commitItems, 'selectedView' => $selectedView, 'selectedItemId' => $selectedItemId, 'viewPagination' => $viewPagination, 'sortHeaderLinks' => $sortHeaderLinks]), 3) ?>
 <?= $indent($partial('partials/paned_activity_detail_pane.php', ['items' => $items, 'selectedItemId' => $selectedItemId]), 3) ?>
     </div>
@@ -48,7 +57,3 @@ foreach ($viewCounts as $viewCount) {
   </div>
 <?= $indent($partial('partials/paned_content_summary_dialog.php'), 1) ?>
 </div>
-
-<?php if ($selectedView === 'security'): ?>
-<p>Current cross-account policy: <?= $approvalPolicyEnabled ? 'enabled' : 'restricted' ?>. Operator security review: restricting future grants does not revoke accepted keys. Deployment-only policy changes and missing historical acceptance facts remain unknown.</p>
-<?php endif; ?>

@@ -342,6 +342,11 @@
   }
 
   function selectFilter(view) {
+    var rss = document.querySelector("[data-paned-activity-rss]");
+    if (rss) {
+      rss.hidden = view === "security" || view === "commits";
+      if (!rss.hidden) rss.href = "/activity/?view=" + encodeURIComponent(view) + "&format=rss";
+    }
     // A shared event can occupy different positions in independently fetched
     // categories. Keep each category's server order when reusing DOM rows.
     (viewRowOrder[view] || []).forEach(function (id) {

@@ -2764,6 +2764,26 @@ PHP;
         assertStringContains('Commit:', $forte);
         assertStringNotContains('<p class="meta">Source:', $classic);
         assertStringNotContains('<p class="meta">Source:', $forte);
+        assertStringContains('by ', $forte);
+        assertStringContains(' on <time', $forte);
+    }
+
+    public function testForteActivityOffersDefaultCategoriesAndEligibleRss(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $labels = ['all' => 'All Activity', 'content' => 'Visible Content', 'identity' => 'Identity', 'bootstrap' => 'Bootstraps', 'approval' => 'Approvals'];
+        foreach ($labels as $view => $label) {
+            $classic = $this->render($application, '/activity/?view=' . $view);
+            $forte = $this->render($application, '/forte/activity/?view=' . $view);
+            assertStringContains('>' . $label . '</a>', $classic);
+            assertStringContains('<span>' . $label . '</span>', $forte);
+            assertStringContains('data-paned-activity-rss href="/activity/?view=' . $view . '&amp;format=rss">RSS</a>', $forte);
+            assertStringContains('data-paned-activity-view="commits"', $forte);
+            assertStringNotContains('Current cross-account policy:', $forte);
+        }
+        $commits = $this->render($application, '/forte/activity/?view=commits');
+        assertStringContains('data-paned-activity-rss href="/activity/?view=commits&amp;format=rss" hidden', $commits);
     }
 
     public function testClassicAndForteActivityRenderSignatureKeyOutsideCommit(): void

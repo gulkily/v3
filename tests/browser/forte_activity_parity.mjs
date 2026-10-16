@@ -8,6 +8,7 @@ const detail = (id, security) => `<article data-paned-activity-content-item-id="
 function fixture(view) {
   return `<!doctype html><title>Forte Activity test</title><div class="paned-board-layout">
     <div data-paned-activity-filter-tree>${['all', 'approval', 'security'].map(key => `<div role="option" tabindex="0" data-paned-activity-view="${key}">${key}</div>`).join('')}</div>
+    <header><h1>Activity</h1><a data-paned-activity-rss href="/activity/?view=${view}&amp;format=rss">RSS</a></header>
     <div data-paned-sort-head><button data-paned-sort-column="date" data-paned-sort-href="/forte/activity/?view=${view}&sort=date&dir=asc">Date</button></div>
     <div data-paned-activity-list-body>${row(1, view)}
       <div data-paned-activity-load-more-group><button data-paned-activity-load-more data-paned-activity-view="${view}" data-paned-activity-has-more="1" data-paned-activity-cursor="next">Load more</button></div>
@@ -49,6 +50,7 @@ try {
     assert.equal(pageRequests, 1, 'warm only one page of each other ordinary category');
     await page.locator('[data-paned-activity-view="approval"][role="option"]').click();
     assert.match(page.url(), /view=approval/);
+    assert.equal(await page.getByRole('link', { name: 'RSS', exact: true }).getAttribute('href'), '/activity/?view=approval&format=rss');
     assert.deepEqual(await page.locator('.paned-list-row:visible').evaluateAll(rows => rows.map(row => row.dataset.panedActivityId)), ['2', '1']);
     const second = page.locator('[data-paned-activity-id="2"]');
     await second.click();
@@ -78,9 +80,11 @@ try {
     await page.locator('[data-paned-activity-view="security"][role="option"]').click();
     await page.waitForURL(/view=security/);
     await page.getByText('Acceptance receipt 1', { exact: true }).waitFor();
+    assert.equal(await page.locator('[data-paned-activity-rss]').isVisible(), false);
     await page.locator('[data-paned-activity-view="all"][role="option"]').click();
     await page.waitForURL(url => !url.searchParams.has('view'));
     await page.getByText('Ordinary evidence 1', { exact: true }).waitFor();
+    assert.equal(await page.getByRole('link', { name: 'RSS', exact: true }).getAttribute('href'), '/activity/?view=all&format=rss');
     assert.equal(await page.getByText('Acceptance receipt 1', { exact: true }).count(), 0);
     await context.close();
   }
