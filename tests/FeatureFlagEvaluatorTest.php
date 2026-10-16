@@ -150,6 +150,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
+            FeatureFlagRegistry::USERNAME_CHANGES_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::EVENT_SUPPORT_ENABLED,

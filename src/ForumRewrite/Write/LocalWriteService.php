@@ -1174,10 +1174,18 @@ class LocalWriteService
         });
     }
 
+    private function assertUsernameChangesEnabled(): void
+    {
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)) {
+            throw new RuntimeException('Username changes are disabled.');
+        }
+    }
+
     /** @param array<string, mixed> $input @return array<string, mixed> */
     public function prepareProfileName(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertUsernameChangesEnabled();
             $this->assertWritableRepository();
             $identity = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
             $this->publicKeyForIdentity($identity);
@@ -1199,6 +1207,7 @@ class LocalWriteService
     public function finalizePreparedProfileName(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertUsernameChangesEnabled();
             $this->assertWritableRepository();
             $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($token);

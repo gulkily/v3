@@ -33,7 +33,8 @@ final class WriteApiSmokeTest
         $key = $this->createSigningKey('temporary-reader');
         $other = $this->createSigningKey('other-reader');
         try {
-            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
             $bootstrap = $root . '/records/identity/identity-' . str_replace(':', '-', $identity) . '.txt';
             $before = file_get_contents($bootstrap);
@@ -92,6 +93,40 @@ final class WriteApiSmokeTest
             $this->deleteTree($key['home']);
             $this->deleteTree($other['home']);
         }
+    }
+
+    public function testUsernameChangesAreDisabledByDefaultAndGateBothEndpoints(): void
+    {
+        assertSame(false, (new FeatureFlagEvaluator())->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED));
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('gated-reader');
+        try {
+            $enabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $disabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false));
+            $identity = $enabled->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            try {
+                $disabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'blocked']);
+                throw new RuntimeException('Expected prepare rejection while disabled.');
+            } catch (RuntimeException $e) { assertStringContains('Username changes are disabled', $e->getMessage()); }
+            $prepared = $enabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'late-toggle']);
+            $signed = $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            try {
+                $disabled->finalizePreparedProfileName($signed);
+                throw new RuntimeException('Expected finalize rejection while disabled.');
+            } catch (RuntimeException $e) { assertStringContains('Username changes are disabled', $e->getMessage()); }
+            assertSame(false, is_file($root . '/' . $prepared['record_path']));
+            assertSame('late-toggle', $enabled->finalizePreparedProfileName($signed)['username']);
+        } finally {
+            $this->deleteTree($key['home']);
+        }
+    }
+
+    private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
+    {
+        return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);
     }
 
     public function testSignedThreadReactionPreservesBytesAndRejectsTampering(): void
