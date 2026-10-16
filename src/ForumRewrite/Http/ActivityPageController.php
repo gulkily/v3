@@ -71,6 +71,7 @@ final class ActivityPageController
             ],
             'Activity',
             'activity',
+            ['/assets/openpgp_loader.js','/assets/browser_signing.js','/assets/private_site_auth.js','/assets/railspike_workflow.js'],
         );
     }
 

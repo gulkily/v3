@@ -10,6 +10,9 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Music media embeds](music_media_embeds/)
+- [Account key page simplification](account_key_page_simplification/)
+- [Account key page redesign](account_key_page_redesign/)
 - [Bookmarklets page redesign](bookmarklets_page_redesign/)
 - [Repository directory cleanup](repository_directory_cleanup/)
 - [Fastmod graded visibility — neutral intake slice](fastmod_prepublication_hold/) · [Cross-cycle checklist and QDB voting request](fastmod_prepublication_hold/fastmod_development_checklist.md)
@@ -69,6 +72,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Immediate approval seed refresh](approval_seed_immediate_refresh/)
 - [Instance content sync](instance_content_sync/)
 - [Instance incremental sync](instance_incremental_sync/) — recorded steps: 1.
+- [Invite zero-click entry](invite_zero_click/)
 - [Invite QR code](invite_qr_code/)
 - [Live openpgp smoke test](live_openpgp_smoke_test/) — recorded steps: 1, 2, 3.
 - [Local server dependency checks](local_server_dependency_checks/)
@@ -181,3 +185,5 @@ and repair its navigation and affected references. See the
 - [Operator post retraction](./operator_record_deletion/operator_record_deletion_step1_solution_assessment.md) — extend signed retraction to operators and move the action into a shared overflow menu.
 
 - [Retracted post LLM exchange privacy](./retracted_post_llm_exchange_privacy/retracted_post_llm_exchange_privacy_step1_solution_assessment.md) — suppress recorded exchanges containing retracted content.
+
+- [Phone site development](./phone_site_development/phone_site_development_step1_solution_assessment.md) — operator phone intake through reviewed Railspike Step 1; later lifecycle tracked in the companion checklist.

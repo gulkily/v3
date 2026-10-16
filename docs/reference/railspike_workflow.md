@@ -90,3 +90,7 @@ Existing drafts are not regenerated. The `fdp_step1` storage/API field remains
 for compatibility with both PHP previews, the browser preview, and older clients;
 this terminology change requires no data migration. Runner execution and approval
 behavior are unchanged.
+
+## Phone intake deployment
+
+The operator-only phone workflow uses the instance task queue and a separate read-only Codex assessment checkout. See [deployment, Codex configuration, acceptance, and recovery](../runbooks/phone_site_development.md). It stops after revision-bound Step 1 approval; legacy localhost handoffs remain separate.

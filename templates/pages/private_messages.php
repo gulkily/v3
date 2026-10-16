@@ -5,7 +5,6 @@ $counterpartLabel = $isInbox ? 'From' : 'To';
 <section class="stack" data-private-message-mailbox data-mailbox="<?= $e($mailbox) ?>">
   <article class="card">
     <h1><?= $isInbox ? 'Inbox' : 'Sent Messages' ?></h1>
-<?= $indent($partial('partials/key_backup_reminder.php'), 4) ?>
     <p><a href="/messages/inbox"<?= $isInbox ? ' aria-current="page"' : '' ?>>Inbox</a> · <a href="/messages/sent"<?= !$isInbox ? ' aria-current="page"' : '' ?>>Sent</a></p>
   </article>
 

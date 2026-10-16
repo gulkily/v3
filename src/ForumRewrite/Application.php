@@ -129,7 +129,7 @@ final class Application
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+            || in_array($path, ['/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/api/private_messages/history_sync/')
             || str_starts_with($path, '/messages/conversation/')
@@ -145,6 +145,11 @@ final class Application
                 'Pragma: no-cache',
                 'Expires: 0',
             ]);
+            return;
+        }
+
+        if ($path === '/internal/media-embeds/bandcamp-player') {
+            (new \ForumRewrite\Http\BandcampPlayerController($this->routeServices(), new \ForumRewrite\View\BandcampPlayerResolver($this->projectRoot)))->resolve($method, $query);
             return;
         }
 
@@ -200,6 +205,11 @@ final class Application
 
         if (str_starts_with($path, '/images/')) {
             (new \ForumRewrite\Http\ImageController($this->routeServices(), $this->repositoryRoot, $this->featureFlags()))->serve($method, substr($path, strlen('/images/')));
+            return;
+        }
+
+        if ($path === '/api/railspike_workflow') {
+            (new \ForumRewrite\Http\RailspikeWorkflowController($this->routeServices(), $this->authenticatedViewerProfile(...), $this->projectRoot, $this->repositoryRoot))->handle($method, $query);
             return;
         }
 
@@ -416,6 +426,13 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name') {
+            $controller = $this->writePostAndIdentityApiController();
+            if ($path === '/api/prepare_profile_name') $controller->prepareProfileName($method, $query);
+            else $controller->finalizeProfileName($method, $query);
+            return;
+        }
+
         if ($path === '/api/approve_user') {
             $this->identityApprovalAndInvitationApiController()->approveUser($method);
             return;
@@ -438,6 +455,11 @@ final class Application
 
         if ($path === '/api/create_prepared_invitation') {
             $this->identityApprovalAndInvitationApiController()->createPreparedInvitation($method, $query);
+            return;
+        }
+
+        if ($path === '/api/inspect_invitation') {
+            $this->identityApprovalAndInvitationApiController()->inspectInvitation($method, $query);
             return;
         }
 
@@ -1774,7 +1796,8 @@ final class Application
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
-            || $path === '/api/prepare_invitation_redemption'
+            || $path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name'
+            || $path === '/api/inspect_invitation' || $path === '/api/prepare_invitation_redemption'
             || $path === '/api/create_prepared_invitation'
         ) {
             return true;
@@ -1832,7 +1855,7 @@ final class Application
             '/compose/thread', '/compose/reply',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
-            '/api', '/api/', '/api/version', '/api/list_index',
+            '/api/railspike_workflow', '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
@@ -1840,7 +1863,8 @@ final class Application
             '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
-            '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
+            '/api/prepare_profile_name', '/api/finalize_profile_name',
+            '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',

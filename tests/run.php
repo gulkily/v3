@@ -7,6 +7,7 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/RailspikeWorkflowTest.php',
     __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',
     __DIR__ . '/LegacyTimestampImportTest.php',
@@ -27,6 +28,7 @@ $testFiles = [
     __DIR__ . '/AgentResponseGeneratorTest.php',
     __DIR__ . '/AgentResponseTaskTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',
+    __DIR__ . '/AccountKeyPageHooksTest.php',
     __DIR__ . '/AuthNavigationTest.php',
     __DIR__ . '/AnthropicStructuredChatProviderTest.php',
     __DIR__ . '/BrowserSigningNormalizationTest.php',
@@ -40,6 +42,9 @@ $testFiles = [
     __DIR__ . '/DevServerLogTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
+    __DIR__ . '/BandcampPlayerControllerTest.php',
+    __DIR__ . '/BandcampPlayerResolverTest.php',
+    __DIR__ . '/MusicMediaEmbedTest.php',
     __DIR__ . '/MediaEmbedDetectorTest.php',
     __DIR__ . '/MediaEmbedRendererTest.php',
     __DIR__ . '/MediaEmbedPreviewCacheStoreTest.php',

@@ -123,9 +123,18 @@ in word97 theme, disabled buttons don't look disabled
 
 make a dark version of chicago/word97
 
-the invite path needs to be fixed:
-	- the target link feature doesn't seem to work at all
-	- if there's a target link, we need to end up at the link with zero clicks,
-		even if it's a closed resource
-		we can ask for the username later
-			at first, we can just make an approved placeholder key or something
+xInvite path repaired: opt-in source-page destination, zero-click targeted entry,
+	member access, same-key later naming, and interrupted-redemption recovery.
+	See docs/reference/invitation_entry.md and docs/plans/invite_zero_click/.
+
+account key page: private key restore is hard to find
+	the "Saved private key" box is a read-only display; restoring a key
+		only works through the "Restore Private Key" button (reads the
+		clipboard), which is buried in the collapsed Private key reveal
+		under Keys
+	make the private key field editable so users can paste or edit it
+		with their own copy/paste methods, and import from the field
+		(same import and validation as the clipboard button; new input
+		path for a secret, so needs Steps 1-3)
+	meanwhile, label the button "Restore from clipboard" and add a
+		one-line hint

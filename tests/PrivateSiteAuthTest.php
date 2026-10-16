@@ -114,6 +114,95 @@ NODE;
         assertSame('Identity verified. Entering the site...', $result['status']['textContent']);
     }
 
+    public function testInvitationCanForceFreshApprovalVerificationWithoutNavigation(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const fingerprint = '0123456789abcdef0123456789abcdef01234567';
+const fetches = [];
+let ensureArguments = null;
+let assignedUrl = '';
+let reloadCount = 0;
+const status = { hidden: true, textContent: '', dataset: {} };
+const state = { dataset: { authenticatedIdentityId: 'openpgp:' + fingerprint } };
+const storage = {
+  forum_pki_public_key: 'public-key',
+  forum_pki_private_key: 'private-key',
+  forum_pki_fingerprint: fingerprint
+};
+
+global.window = {
+  localStorage: { getItem(key) { return storage[key] || ''; } },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  __forumBrowserIdentity: {
+    async ensureReadyIdentity() { ensureArguments = Array.from(arguments); }
+  },
+  openpgp: {
+    async readKey() { return { getFingerprint() { return fingerprint; } }; },
+    async readPrivateKey() { return { getFingerprint() { return fingerprint; } }; },
+    async createMessage({ text }) { return { text }; },
+    async sign() { return 'detached-signature'; }
+  },
+  location: {
+    assign(url) { assignedUrl = url; },
+    reload() { reloadCount += 1; }
+  }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') return state;
+    if (selector === '[data-role="private-site-auth-status"]') return status;
+    return null;
+  }
+};
+global.fetch = async function(url, options) {
+  fetches.push({ url: String(url), body: options && options.body ? String(options.body) : '' });
+  if (String(url) === '/api/auth_challenge') {
+    return { ok: true, async text() { return 'challenge=abcdef012345\n'; } };
+  }
+  return {
+    ok: true,
+    async text() {
+      return 'status=ok\nidentity_id=openpgp:' + fingerprint + '\napproved=1\n';
+    }
+  };
+};
+
+vm.runInThisContext(source);
+window.PrivateSiteAuth.authenticate({ force: true, navigate: false })
+  .then((result) => {
+    process.stdout.write(JSON.stringify({
+      result,
+      fetches,
+      ensureRootWasNull: ensureArguments[0] === null,
+      verifyPublishedIdentity: ensureArguments[2].verifyPublishedIdentity,
+      assignedUrl,
+      reloadCount,
+      status
+    }));
+  })
+  .catch((error) => {
+    process.stderr.write(error.stack || String(error));
+    process.exit(1);
+  });
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('approved', $result['result']['status']);
+        assertSame(true, $result['ensureRootWasNull']);
+        assertSame(true, $result['verifyPublishedIdentity']);
+        assertSame('/api/auth_challenge', $result['fetches'][0]['url']);
+        assertSame('/api/authenticate_identity', $result['fetches'][1]['url']);
+        assertStringContains('identity_id=openpgp%3A0123456789abcdef0123456789abcdef01234567', $result['fetches'][1]['body']);
+        assertSame('', $result['assignedUrl']);
+        assertSame(0, $result['reloadCount']);
+        assertSame('Identity verified. Entering the site...', $result['status']['textContent']);
+    }
+
     public function testMatchingAuthenticatedSessionSkipsRepeatedAuthentication(): void
     {
         $script = <<<'NODE'
