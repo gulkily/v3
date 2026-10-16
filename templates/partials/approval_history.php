@@ -18,7 +18,10 @@
     <p>Approved keys before acceptance: <?= (int) $grant['existing_key_count'] ?>. Cross-account approvals at acceptance: <?= $grant['cross_account_allowed'] ? 'enabled' : 'restricted' ?>.</p>
 <?php endif; ?>
 <?php if ($grant['source_path'] !== null): ?>
-    <p><a href="/source/current/<?= $e($grant['source_path']) ?>">Approval evidence</a><?php if ($grant['receipt_path'] !== null): ?> · <a href="/source/current/<?= $e($grant['receipt_path']) ?>">Acceptance receipt</a><?php endif; ?></p>
+<?php $evidenceUrl = $grant['kind'] === 'root_seed'
+    ? '/source/current/' . $grant['source_path']
+    : '/posts/' . rawurlencode(pathinfo($grant['source_path'], PATHINFO_FILENAME)); ?>
+    <p><a href="<?= $e($evidenceUrl) ?>">Approval evidence</a><?php if ($grant['receipt_path'] !== null): ?> · <a href="/source/current/<?= $e($grant['receipt_path']) ?>">Acceptance receipt</a><?php endif; ?></p>
 <?php endif; ?>
   </article>
 <?php endforeach; ?>
