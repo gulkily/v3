@@ -12,27 +12,31 @@ final class ScriptureVerifiedReply
 {
     public function __construct(private readonly ScriptureSource $source = new ScriptureSource()) {}
 
-    public function render(array $document, bool $expansion = false): string
+    public function render(array $document, bool $expansion = false, ?string $requestedTranslation = null): string
     {
         if (array_keys($document) !== ['segments'] || !is_array($document['segments'])
             || !array_is_list($document['segments']) || $document['segments'] === []) {
-            throw new RuntimeException('Invalid verified scripture reply document.');
+            throw new ScriptureVerificationException('Invalid verified scripture reply document.');
         }
+        $available = true;
+        try { $this->source->books(); } catch (ScriptureVerificationException) { $available = false; }
+        $unsupported = $requestedTranslation !== null && $requestedTranslation !== 'KJV';
         $parts = []; $reflections = 0;
         foreach ($document['segments'] as $segment) {
-            if (!is_array($segment)) { throw new RuntimeException('Invalid scripture segment.'); }
+            if (!is_array($segment)) { throw new ScriptureVerificationException('Invalid scripture segment.'); }
             if (($segment['type'] ?? '') === 'reflection') {
                 $this->keys($segment, ['type', 'text']);
                 if (!is_string($segment['text']) || trim($segment['text']) === '') {
-                    throw new RuntimeException('Empty scripture reflection.');
+                    throw new ScriptureVerificationException('Empty scripture reflection.');
                 }
                 $this->reflection($segment['text']);
                 $parts[] = trim($segment['text']); $reflections++;
             } elseif (($segment['type'] ?? '') === 'quotation') {
+                if (!$available || $unsupported) { throw new ScriptureVerificationException('Requested quotation source is unavailable; use explicit paraphrase or retry.'); }
                 $this->keys($segment, ['type', 'book', 'chapter', 'start', 'end', 'translation'], ['excerpts']);
                 if (($segment['translation'] ?? '') !== 'KJV' || !is_string($segment['book'])
                     || !is_int($segment['chapter']) || !is_int($segment['start']) || !is_int($segment['end'])) {
-                    throw new RuntimeException('Unsupported scripture quotation or translation.');
+                    throw new ScriptureVerificationException('Unsupported scripture quotation or translation.');
                 }
                 $text = $this->source->passage($segment['book'], $segment['chapter'], $segment['start'], $segment['end']);
                 if (isset($segment['excerpts'])) {
@@ -41,9 +45,13 @@ final class ScriptureVerifiedReply
                 $text = GeneratedReplyTextNormalizer::normalize($text, true, true);
                 $range = $segment['start'] . ($segment['end'] === $segment['start'] ? '' : '-' . $segment['end']);
                 $parts[] = '"' . $text . '" (' . $segment['book'] . ' ' . $segment['chapter'] . ':' . $range . ', KJV)';
-            } else { throw new RuntimeException('Unsupported scripture segment type.'); }
+            } else { throw new ScriptureVerificationException('Unsupported scripture segment type.'); }
         }
-        if ($reflections === 0) { throw new RuntimeException('Scripture reply lacks an answer to the concern.'); }
+        if ($reflections === 0) { throw new ScriptureVerificationException('Scripture reply lacks an answer to the concern.'); }
+        $limitation = $unsupported
+            ? 'Verified text for the requested translation is unavailable. No other translation has been substituted; the discussion uses paraphrase and interpretation.'
+            : (!$available ? 'Verified KJV source text is unavailable. The discussion uses paraphrase and interpretation.' : '');
+        if ($limitation !== '') { array_unshift($parts, $limitation); }
         return ($expansion ? 'Further scripture reflection: ' : 'Scripture-oriented analysis: ')
             . implode("\n\n", $parts) . "\n\nNon-quoted text is interpretation and practical reflection.";
     }
@@ -51,24 +59,24 @@ final class ScriptureVerifiedReply
     private function keys(array $value, array $required, array $optional = []): void
     {
         if (array_diff($required, array_keys($value)) !== [] || array_diff(array_keys($value), [...$required, ...$optional]) !== []) {
-            throw new RuntimeException('Unexpected scripture segment fields.');
+            throw new ScriptureVerificationException('Unexpected scripture segment fields.');
         }
     }
 
     private function excerpts(string $source, mixed $excerpts): string
     {
         if (!is_array($excerpts) || !array_is_list($excerpts) || $excerpts === []) {
-            throw new RuntimeException('Invalid scripture excerpts.');
+            throw new ScriptureVerificationException('Invalid scripture excerpts.');
         }
         $offset = 0; $parts = [];
         foreach ($excerpts as $excerpt) {
             if (!is_string($excerpt) || trim($excerpt) !== $excerpt || $excerpt === '') {
-                throw new RuntimeException('Invalid scripture excerpt.');
+                throw new ScriptureVerificationException('Invalid scripture excerpt.');
             }
             $position = strpos($source, $excerpt, $offset);
             if ($position === false || ($position > 0 && ctype_alnum($source[$position - 1]) && ctype_alnum($excerpt[0]))
                 || (isset($source[$position + strlen($excerpt)]) && ctype_alnum($source[$position + strlen($excerpt)]) && ctype_alnum(substr($excerpt, -1)))) {
-                throw new RuntimeException('Scripture quotation does not match the verified source.');
+                throw new ScriptureVerificationException('Scripture quotation does not match the verified source.');
             }
             if ($position > $offset) { $parts[] = '...'; }
             $parts[] = $excerpt; $offset = $position + strlen($excerpt);
@@ -85,7 +93,7 @@ final class ScriptureVerifiedReply
             || preg_match('/\b(?:says?|said|saith|writes?|reads?|written|declares?|commands?)\s*[:;,]/iu', $text)
             || preg_match('/\b(?:Bible|Scripture|God|Jesus|Lord|Paul|James|John|Peter|Moses|Isaiah|Proverbs?|Psalms?)\s+(?:says?|said|saith|writes?|reads?|declares?)\b/iu', $text)
             || preg_match('/\b\d+:\d+(?:-\d+)?\s*:/u', $text)) {
-            throw new RuntimeException('Use verified quotation segments; reflection must be paraphrase or interpretation.');
+            throw new ScriptureVerificationException('Use verified quotation segments; reflection must be paraphrase or interpretation.');
         }
     }
 }

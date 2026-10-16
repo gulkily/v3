@@ -929,6 +929,20 @@ final class PostWorkflowService
             fn (array $post): array => $this->postAnalysisContext($post),
             fn (array $post, array $analysis): ?array => $this->agentReplyGateFailure($post, $analysis),
             $this->agentResponseGenerator(),
+            function (array $post, array $stored): void {
+                $latest = ($this->fetchPost)((string) $post['post_id']);
+                $root = ($this->fetchPost)((string) $post['thread_id']);
+                if (!$this->agentResponseRequestsEnabled() || $latest === null || $root === null
+                    || !empty($latest['is_hidden']) || !empty($root['is_hidden'])
+                    || ($latest['retracted_at'] ?? null) !== null || ($root['retracted_at'] ?? null) !== null
+                    || $this->postAnalysisContext($latest, false)['content_hash'] !== $stored['target_content_hash']) {
+                    throw new ScriptureVerificationException('Scripture request source or permissions changed.');
+                }
+                $requester = (string) ($stored['request_context']['agent_reply_request']['requested_by_identity_id'] ?? '');
+                $stmt = $this->pdo()->prepare('SELECT is_approved FROM profiles WHERE identity_id = ?');
+                $stmt->execute([$requester]); $approved = $stmt->fetchColumn(); $stmt->closeCursor();
+                if ((int) $approved !== 1) { throw new ScriptureVerificationException('Scripture requester is no longer approved.'); }
+            },
         );
     }
 
