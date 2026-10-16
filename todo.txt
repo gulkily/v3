@@ -138,3 +138,17 @@ account key page: private key restore is hard to find
 		path for a secret, so needs Steps 1-3)
 	meanwhile, label the button "Restore from clipboard" and add a
 		one-line hint
+
+composite identity (undefined term)
+-----------------------------------
+	"composite identity" is not defined or referenced anywhere in the repo;
+		only "composite user" is (private_messaging.md, profile_read_contract_v1.md,
+		ApprovedUserKeyResolver): approved profiles sharing a username_token
+	decide whether "composite identity" is a synonym for "composite user" or a
+		distinct concept, then define it in docs/specs/profile_read_contract_v1.md
+	document how a signed profile-name record (records/profile-names/) affects it:
+		a rename changes username_token, so the profile leaves one composite user
+		and joins another (aggregate /user/<name> page, /users/ grouping, private
+		message recipient keys, approval same-username rule); approval itself
+		follows identity_id and is unchanged
+	related: docs/plans/username_change_gate_step1_solution_assessment.md
