@@ -15,6 +15,7 @@ $itemId = (string) $item['id'];
   data-paned-activity-view-identity="<?= $item['view_identity'] ? '1' : '0' ?>"
   data-paned-activity-view-bootstrap="<?= $item['view_bootstrap'] ? '1' : '0' ?>"
   data-paned-activity-view-approval="<?= $item['view_approval'] ? '1' : '0' ?>"
+  data-paned-activity-view-security="<?= ($item['view_security'] ?? false) ? '1' : '0' ?>"
   role="option"
   aria-selected="<?= $isSelected ? 'true' : 'false' ?>"
   tabindex="<?= $isTabStop ? '0' : '-1' ?>"

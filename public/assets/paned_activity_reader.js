@@ -4,6 +4,7 @@
   var contentPane;
   var filterItems = [];
   var rows = [];
+  var viewRowOrder = Object.create(null);
   var placeholder;
   var contentItems = [];
   var activityDetailCache = Object.create(null);
@@ -150,6 +151,7 @@
 
     renderCommitDetailArticle(sha, '<p class="meta">Loading…</p>');
 
+    var token = preloadToken;
     fetch("/api/forte_commit_detail?sha=" + encodeURIComponent(sha) + (currentViewFromUrl() === "security" ? "&view=security" : ""))
       .then(function (response) {
         if (!response.ok) {
@@ -158,6 +160,7 @@
         return response.json();
       })
       .then(function (data) {
+        if (token !== preloadToken) return;
         if (data.status !== "ok") {
           throw new Error("commit detail fetch failed");
         }
@@ -173,6 +176,7 @@
         }
       })
       .catch(function () {
+        if (token !== preloadToken) return;
         var article = commitDetailArticle();
         if (article && article.getAttribute("data-paned-activity-commit-detail") === sha) {
           var body = article.querySelector(".body");
@@ -220,7 +224,9 @@
       existing.setAttribute("data-paned-activity-detail-loading", "1");
       existing.innerHTML = '<div class="body"><p class="meta">Loading…</p></div>';
       contentPane.appendChild(existing);
+      contentItems.push(existing);
     }
+    var token = preloadToken;
     fetch("/api/forte_activity_detail?id=" + encodeURIComponent(id) + (currentViewFromUrl() === "security" ? "&view=security" : ""))
       .then(function (response) {
         if (!response.ok) {
@@ -229,6 +235,7 @@
         return response.json();
       })
       .then(function (data) {
+        if (token !== preloadToken) return;
         if (data.status !== "ok") {
           throw new Error("activity detail fetch failed");
         }
@@ -238,10 +245,10 @@
         }
       })
       .catch(function () {
+        if (token !== preloadToken) return;
         var loading = activityDetailArticle(id);
         if (loading && currentSelectedItemId() === id) {
-          loading.removeAttribute("data-paned-activity-detail-loading");
-          loading.querySelector(".body").innerHTML = '<p class="meta">Failed to load activity details.</p>';
+          loading.querySelector(".body").innerHTML = '<p class="meta">Failed to load activity details.</p><button type="button" data-paned-activity-retry>Retry</button>';
         }
       });
   }
@@ -335,6 +342,13 @@
   }
 
   function selectFilter(view) {
+    // A shared event can occupy different positions in independently fetched
+    // categories. Keep each category's server order when reusing DOM rows.
+    (viewRowOrder[view] || []).forEach(function (id) {
+      var row = listBody.querySelector('[data-paned-activity-id="' + id + '"]');
+      if (row) listBody.insertBefore(row, loadMoreGroup);
+    });
+    rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
     filterItems.forEach(function (item) {
       var isSelected = item.getAttribute("data-paned-activity-view") === view;
       item.classList.toggle("paned-folder-item--selected", isSelected);
@@ -396,6 +410,14 @@
   }
 
   function applyFilterSelection(view) {
+    // Security responses and cached detail DOM belong to a separate document.
+    // Navigate across this boundary so restricted details and in-flight work
+    // can never be reused by an ordinary view (or vice versa).
+    if ((view === "security") !== (currentViewFromUrl() === "security")) {
+      window.location.assign(urlForState(view, ""));
+      return;
+    }
+    pushStateIfChanged(urlForState(view, currentSelectedItemId()));
     selectFilter(view);
     pushStateIfChanged(urlForState(view, currentSelectedItemId()));
   }
@@ -439,11 +461,13 @@
   }
 
   function mergeAppendedRows(html, view) {
+    if (!viewRowOrder[view]) viewRowOrder[view] = [];
     var template = document.createElement("template");
     template.innerHTML = html;
     var incomingNodes = Array.prototype.slice.call(template.content.children);
     incomingNodes.forEach(function (node) {
       var id = node.getAttribute("data-paned-activity-id");
+      if (viewRowOrder[view].indexOf(id) === -1) viewRowOrder[view].push(id);
       var existingRow = listBody.querySelector('[data-paned-activity-id="' + id + '"]');
       if (existingRow) {
         // Same item reached from a different view's own page window
@@ -461,73 +485,73 @@
     });
   }
 
-  function mergeAppendedDetailArticles(html) {
-    if (!contentPane || !html) {
-      return;
+  function paginationButton(view) {
+    var button = loadMoreButtons.filter(function (candidate) {
+      return candidate.getAttribute("data-paned-activity-view") === view;
+    })[0];
+    if (!button && loadMoreGroup) {
+      button = document.createElement("button");
+      button.type = "button";
+      button.className = "paned-list-load-more-button";
+      button.textContent = "Load more";
+      button.setAttribute("data-paned-activity-load-more", "");
+      button.setAttribute("data-paned-activity-view", view);
+      button.hidden = true;
+      loadMoreGroup.appendChild(button);
+      loadMoreButtons.push(button);
     }
-    var template = document.createElement("template");
-    template.innerHTML = html;
-    var incomingNodes = Array.prototype.slice.call(template.content.children);
-    incomingNodes.forEach(function (node) {
-      var id = node.getAttribute("data-paned-activity-content-item-id");
-      if (!contentPane.querySelector('[data-paned-activity-content-item-id="' + id + '"]')) {
-        contentPane.appendChild(node);
-      }
-    });
+    return button;
   }
 
-  function preloadAllRows() {
+  // Warm just the first page of the other ordinary categories. Subsequent
+  // pages stay user-driven, and operator rows never enter an ordinary page.
+  function preloadFirstPages() {
     var token = preloadToken;
+    var selectedView = currentViewFromUrl();
     var views = filterItems.map(function (item) {
       return item.getAttribute("data-paned-activity-view");
+    }).filter(function (view) {
+      return view !== selectedView && view !== "security" && selectedView !== "security";
     });
     var viewIndex = 0;
-    var cursor = "";
-    if (loadMoreGroup) {
-      loadMoreGroup.hidden = true;
-    }
 
     function nextPage() {
-      if (token !== preloadToken || viewIndex >= views.length) {
-        return;
-      }
-      var view = views[viewIndex];
+      if (token !== preloadToken || viewIndex >= views.length) return;
+      var view = views[viewIndex++];
+      var button = paginationButton(view);
+      if (button) button.disabled = true;
       fetch(
         "/api/forte_activity_page?rows_only=1&view=" + encodeURIComponent(view) +
           "&sort=" + encodeURIComponent(currentSortFromUrl()) +
-          "&dir=" + encodeURIComponent(currentDirectionFromUrl()) +
-          "&cursor=" + encodeURIComponent(cursor)
+          "&dir=" + encodeURIComponent(currentDirectionFromUrl())
       )
         .then(function (response) {
-          if (!response.ok) {
-            throw new Error("activity preload failed");
-          }
+          if (!response.ok) throw new Error("activity preload failed");
           return response.json();
         })
         .then(function (data) {
-          if (token !== preloadToken || data.status !== "ok") {
-            return;
-          }
+          if (token !== preloadToken) return;
+          if (data.status !== "ok") throw new Error("activity preload failed");
           mergeAppendedRows(data.html, view);
           rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
-          selectFilter(currentViewFromUrl());
-          if (data.has_more && data.next_cursor) {
-            cursor = JSON.stringify(data.next_cursor);
-          } else {
-            viewIndex += 1;
-            cursor = "";
+          if (button) {
+            button.setAttribute("data-paned-activity-cursor", data.next_cursor ? JSON.stringify(data.next_cursor) : "");
+            button.setAttribute("data-paned-activity-has-more", data.has_more ? "1" : "0");
           }
-          window.setTimeout(nextPage, 0);
         })
         .catch(function () {
-          if (token === preloadToken) {
-            viewIndex += 1;
-            cursor = "";
-            window.setTimeout(nextPage, 0);
+          if (token === preloadToken && button) {
+            button.setAttribute("data-paned-activity-has-more", "1");
+            button.setAttribute("data-paned-activity-cursor", "");
           }
+        })
+        .finally(function () {
+          if (token !== preloadToken) return;
+          if (button) button.disabled = false;
+          restoreSelectionFromUrl(false);
+          window.setTimeout(nextPage, 0);
         });
     }
-
     window.setTimeout(nextPage, 0);
   }
 
@@ -609,6 +633,8 @@
   // replaced.
   function init() {
     preloadToken += 1;
+    activityDetailCache = Object.create(null);
+    commitDetailCache = Object.create(null);
     filterTree = document.querySelector("[data-paned-activity-filter-tree]");
     listBody = document.querySelector("[data-paned-activity-list-body]");
     contentPane = document.querySelector("[data-paned-activity-content-pane]");
@@ -618,6 +644,10 @@
 
     filterItems = Array.prototype.slice.call(filterTree.querySelectorAll("[data-paned-activity-view]"));
     rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
+    viewRowOrder = Object.create(null);
+    viewRowOrder[currentViewFromUrl()] = rows.map(function (row) {
+      return row.getAttribute("data-paned-activity-id");
+    });
     placeholder = contentPane.querySelector("[data-paned-activity-content-placeholder]");
     contentItems = Array.prototype.slice.call(contentPane.querySelectorAll("[data-paned-activity-content-item-id]"));
     statusCount = document.querySelector("[data-paned-activity-status-count]");
@@ -626,6 +656,12 @@
       ? Array.prototype.slice.call(loadMoreGroup.querySelectorAll("[data-paned-activity-load-more]"))
       : [];
     sortHead = document.querySelector("[data-paned-sort-head]");
+
+    contentPane.addEventListener("click", function (event) {
+      if (event.target.closest && event.target.closest("[data-paned-activity-retry]")) {
+        showActivityDetail(currentSelectedItemId());
+      }
+    });
 
     if (sortHead) {
       sortHead.addEventListener("click", function (event) {
@@ -710,11 +746,12 @@
         var view = button.getAttribute("data-paned-activity-view") || "all";
         var cursor = button.getAttribute("data-paned-activity-cursor") || "";
         var originalLabel = button.textContent;
+        var token = preloadToken;
         button.disabled = true;
         button.textContent = "Loading…";
 
         fetch(
-          "/api/forte_activity_page?view=" + encodeURIComponent(view) +
+          "/api/forte_activity_page?rows_only=1&view=" + encodeURIComponent(view) +
             "&sort=" + encodeURIComponent(currentSortFromUrl()) +
             "&dir=" + encodeURIComponent(currentDirectionFromUrl()) +
             "&cursor=" + encodeURIComponent(cursor)
@@ -726,19 +763,13 @@
             return response.json();
           })
           .then(function (data) {
+            if (token !== preloadToken) return;
             if (data.status !== "ok") {
               throw new Error("activity page fetch failed");
             }
 
             mergeAppendedRows(data.html, view);
             rows = Array.prototype.slice.call(listBody.querySelectorAll(".paned-list-row"));
-
-            mergeAppendedDetailArticles(data.detail_html);
-            if (contentPane) {
-              contentItems = Array.prototype.slice.call(
-                contentPane.querySelectorAll("[data-paned-activity-content-item-id]")
-              );
-            }
 
             // The left-pane folder count is the view's fixed total (set once
             // server-side) and doesn't change as more pages load, so there
@@ -753,6 +784,7 @@
             selectFilter(currentViewFromUrl());
           })
           .catch(function () {
+            if (token !== preloadToken) return;
             button.disabled = false;
             button.textContent = originalLabel;
           });
@@ -762,7 +794,7 @@
     loadedSort = currentSortFromUrl();
     loadedDirection = currentDirectionFromUrl();
     restoreSelectionFromUrl(true);
-    preloadAllRows();
+    preloadFirstPages();
   }
 
   // Mirrors showProfileSummary() in paned_board_reader.js - same dialog
