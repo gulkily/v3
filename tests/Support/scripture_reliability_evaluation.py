@@ -114,17 +114,27 @@ def trial(root, proxy, label, case, repeat, kind='initial', initial=None):
     return row
 
 
-def run_initial(root, rehearsal=False):
-    protocol = prepare(root, rehearsal)
+def run_initial(root, rehearsal=False, resume=False):
+    protocol = json.loads((root/'protocol.json').read_text()) if resume else prepare(root, rehearsal)
     proxy, server = connect(root, protocol)
     try:
+        previous = [json.loads(line) for line in (root/'results.jsonl').read_text().splitlines()]
+        previous = {row['sample']:row for row in previous}
+        if any(not entry['settled'] for entry in proxy.budget.entries):
+            raise ValueError('Unknown charges require explicit accounting before resumption')
+        if any(row['outcome'] not in ['complete','failed'] for row in previous.values()):
+            raise ValueError('Operational failures require explicit evidence recovery before resumption')
         cases, repeats = ([1,8], [1]) if rehearsal else (range(1,9), [1,2])
         results = []
         for repeat in repeats:
             for case in cases:
                 labels = ['A','B'] if (case+repeat)%2 == 0 else ['B','A']
                 for label in labels:
-                    results.append(trial(root, proxy, label, case, repeat))
+                    sample = f'initial-{case}-{repeat}-{label}'
+                    if sample in previous:
+                        results.append(previous[sample])
+                    else:
+                        results.append(trial(root, proxy, label, case, repeat))
         if rehearsal:
             for label in ['A','B']:
                 initial = next(r for r in results if r['variant']==label and r['case']==1)
@@ -153,6 +163,7 @@ def run_expansions(root):
     if any(file_hash(root/name) != digest for name,digest in gate.get('evidence_hashes', {}).items()) or len(gate.get('evidence_hashes', {})) != 4:
         raise ValueError('Initial-gate evidence changed')
     results = [json.loads(line) for line in (root / 'results.jsonl').read_text().splitlines()]
+    results = list({row['sample']:row for row in results}.values())
     if len(results) != 32 or any(r['outcome'] != 'complete' for r in results):
         raise ValueError('Complete initial comparison required')
     proxy, server = connect(root, protocol)
@@ -173,6 +184,8 @@ if __name__ == '__main__':
     root = Path(directory).resolve()
     if mode in ['rehearse','initial']:
         run_initial(root, mode=='rehearse')
+    elif mode == 'resume':
+        run_initial(root, resume=True)
     elif mode == 'expand':
         run_expansions(root)
     else:

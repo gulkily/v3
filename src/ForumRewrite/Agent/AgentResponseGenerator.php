@@ -70,7 +70,11 @@ final class AgentResponseGenerator
         $responseText = (string) ($completion['response_text'] ?? '');
         if ($this->usesVerifiedScripture($task)) {
             ScriptureTiming::record(dirname(__DIR__, 3), (string) ($task['post_id'] ?? ''), 'verification_started');
-            $document = json_decode($responseText, true, 512, JSON_THROW_ON_ERROR);
+            try {
+                $document = json_decode($responseText, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException $error) {
+                throw new ScriptureVerificationException('Invalid scripture reply JSON.', 0, $error);
+            }
             if (!is_array($document) || !is_array($document['segments'] ?? null)) { throw new ScriptureVerificationException('Invalid scripture reply JSON.'); }
             foreach ($document['segments'] ?? [] as $index => $segment) {
                 if (is_array($segment) && ($segment['type'] ?? '') === 'reflection' && is_string($segment['text'] ?? null)) {

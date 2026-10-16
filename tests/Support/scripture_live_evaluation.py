@@ -104,6 +104,11 @@ def free_port():
         return connection.getsockname()[1]
 
 
+def same_visible_text(stored, visible):
+    # HTML innerText collapses layout whitespace; retain words and punctuation.
+    return ' '.join(stored.split()) == ' '.join(visible.split())
+
+
 def run_trial(directory, trial, path):
     path.write_text(json.dumps(trial, indent=2))
     port = free_port()
@@ -127,7 +132,7 @@ def run_trial(directory, trial, path):
                 config = json.loads((directory / 'environment.json').read_text())
                 with sqlite3.connect(config['FORUM_DATABASE_PATH']) as db:
                     row = db.execute('SELECT body FROM posts WHERE post_id = ?', (result['status']['agent_post_id'],)).fetchone()
-                if row is None or row[0].strip() != result.get('visible_body_text', '').strip():
+                if row is None or not same_visible_text(row[0], result.get('visible_body_text', '')):
                     raise ValueError('Rendered and stored final answers disagree')
                 result['final_response_text'] = row[0]
             return result

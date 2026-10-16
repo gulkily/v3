@@ -7,6 +7,14 @@ from scripture_live_evaluation import ProviderProxy, resume_results
 from unittest.mock import patch
 
 
+class VisibleTextTest(unittest.TestCase):
+    def test_browser_layout_whitespace_preserves_content_but_word_changes_fail(self):
+        from scripture_live_evaluation import same_visible_text
+        self.assertTrue(same_visible_text('First.\n\n Second paragraph.', 'First.\n\nSecond paragraph.'))
+        self.assertFalse(same_visible_text('Do not leave.', 'Do leave.'))
+        self.assertFalse(same_visible_text('First.', 'First!'))
+
+
 class FinalReviewTest(unittest.TestCase):
     def test_review_uses_published_answer_and_fails_on_missing_final_text(self):
         from scripture_trial_review import export
