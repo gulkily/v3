@@ -4,10 +4,13 @@ set -euo pipefail
 railspike_usage() {
   cat <<'USAGE'
 Usage:
-  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/railspike.git]
+  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.0-beta.1]
   ./v3 fdp sync ...  (deprecated alias)
 
-Updates docs/railspike from master using Git subtree, creating update commits.
+Updates docs/railspike to an explicit release tag using Git subtree, creating update commits.
+Without --ref the pinned tag v0.2.0-beta.1 (9774132d) is used, so a plain sync never moves
+the installed version. Branches such as main are not accepted; pass a newer tag deliberately.
+The target must descend from the installed revision recorded in RAILSPIKE_SOURCE.md.
 Requires a clean migrated repository with subtree history. FDP stays frozen.
 An explicit --remote-url selects and records a different source after success.
 See docs/reference/railspike_workflow.md for review and recovery guidance.
@@ -15,14 +18,18 @@ USAGE
 }
 
 railspike_sync() {
-  local repository_root canonical source explicit=0 argument top existing marker split revision operation
+  local repository_root canonical source ref pinned_ref pinned_commit installed record explicit=0 argument top existing marker split revision operation
   repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-  canonical='https://github.com/gulkily/railspike.git'
+  canonical='https://github.com/rlspk/railspike.git'
+  pinned_ref='v0.2.0-beta.1'
+  pinned_commit='9774132db592c3bc9026163f50384f52376bac1c'
+  ref="${pinned_ref}"
   source="${canonical}"
   for argument in "$@"; do
     case "${argument}" in
       --repository-root=*) repository_root="${argument#--repository-root=}" ;;
       --remote-url=*) source="${argument#--remote-url=}"; explicit=1 ;;
+      --ref=*) ref="${argument#--ref=}" ;;
       -h|--help) railspike_usage; return 0 ;;
       *) echo "Unknown Railspike sync option: ${argument}" >&2; railspike_usage >&2; return 1 ;;
     esac
@@ -32,6 +39,9 @@ railspike_sync() {
   fi
   if [[ -z "${source}" || "${source}" == -* ]]; then
     echo 'Railspike remote URL must be nonempty and cannot start with a dash.' >&2; return 1
+  fi
+  if [[ ! "${ref}" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ || "${ref}" == */ || "${ref}" == *..* ]]; then
+    echo 'Railspike ref must be a release tag name such as v0.2.0-beta.1.' >&2; return 1
   fi
   repository_root="$(cd "${repository_root}" && pwd -P)"
   if ! top="$(git -C "${repository_root}" rev-parse --show-toplevel 2>/dev/null)" || [[ "${repository_root}" != "${top}" ]]; then
@@ -63,12 +73,24 @@ railspike_sync() {
     echo "Railspike remote URL is not the canonical source: ${existing}" >&2
     echo "Expected: ${canonical}. Use --remote-url deliberately to select a source." >&2; return 1
   fi
-  if ! git -C "${repository_root}" fetch --no-tags "${source}" master; then
-    echo 'Railspike fetch failed. Check source/connectivity and retry; working files and remote configuration were not changed.' >&2; return 1
+  if ! git -C "${repository_root}" fetch --no-tags "${source}" "refs/tags/${ref}"; then
+    echo "Railspike fetch of tag ${ref} failed. Check the tag name, source and connectivity; working files and remote configuration were not changed. Branches are not accepted." >&2; return 1
   fi
-  revision="$(git -C "${repository_root}" rev-parse FETCH_HEAD)"
-  if ! git -C "${repository_root}" cat-file -e "${split}^{commit}" 2>/dev/null ||
-     ! git -C "${repository_root}" merge-base --is-ancestor "${split}" "${revision}"; then
+  revision="$(git -C "${repository_root}" rev-parse 'FETCH_HEAD^{commit}')"
+  if [[ "${ref}" == "${pinned_ref}" && "${source}" == "${canonical}" && "${revision}" != "${pinned_commit}" ]]; then
+    echo "Tag ${pinned_ref} no longer resolves to ${pinned_commit}; refusing. No merge was attempted." >&2; return 1
+  fi
+  record="${repository_root}/docs/railspike/RAILSPIKE_SOURCE.md"
+  installed="${split}"
+  if [[ -f "${record}" ]]; then
+    installed="$(sed -n 's/^- Commit: \([0-9a-f]\{40\}\)$/\1/p' "${record}" | head -n 1)"
+    : "${installed:=${split}}"
+  fi
+  if [[ "${installed}" == "${revision}" ]]; then
+    echo "Railspike is already at ${ref} (${revision}); nothing to do."; return 0
+  fi
+  if ! git -C "${repository_root}" cat-file -e "${installed}^{commit}" 2>/dev/null ||
+     ! git -C "${repository_root}" merge-base --is-ancestor "${installed}" "${revision}"; then
     echo 'Upstream does not contain the recorded Railspike revision. Restore source/history before retrying; no merge was attempted.' >&2; return 1
   fi
   if ! git -C "${repository_root}" cat-file -e "${revision}:RAILSPIKE.md" 2>/dev/null; then
@@ -77,12 +99,18 @@ railspike_sync() {
   if ! git -C "${repository_root}" subtree merge --prefix=docs/railspike "${revision}" --squash; then
     echo 'Railspike merge failed. Inspect git status in the target; resolve and commit, or use git merge --abort if a merge is in progress. Preserve local work; see docs/reference/railspike_workflow.md.' >&2; return 1
   fi
+  if [[ -f "${record}" ]]; then
+    sed -i -e "s|^- Source: .*|- Source: ${source}|" -e "s|^- Ref: .*|- Ref: tag ${ref}|" \
+      -e "s|^- Commit: .*|- Commit: ${revision}|" "${record}"
+    git -C "${repository_root}" add docs/railspike/RAILSPIKE_SOURCE.md
+    git -C "${repository_root}" commit --quiet -m "Record Railspike ${ref} (${revision}) in RAILSPIKE_SOURCE.md"
+  fi
   if [[ -n "${existing}" ]]; then
     git -C "${repository_root}" remote set-url railspike "${source}"
   else
     git -C "${repository_root}" remote add railspike "${source}"
   fi
-  echo "Railspike revision: ${split} -> ${revision}. Review the update commits; FDP was not changed."
+  echo "Railspike ${ref}: ${installed} -> ${revision}. Review the update commits; FDP was not changed."
 }
 
 railspike_sync "$@"
