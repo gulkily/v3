@@ -57,7 +57,7 @@ def setup(destination):
     destination.mkdir(mode=0o700)  # Refuse to reuse/overwrite an existing trial.
     app = destination / 'app'
     app.mkdir()
-    for name in ('src', 'scripts', 'templates', 'prompts', 'public'):
+    for name in ('src', 'scripts', 'templates', 'prompts', 'public', 'resources'):
         shutil.copytree(PROJECT / name, app / name)
     shutil.copy2(PROJECT / 'autoload.php', app / 'autoload.php')
     shutil.copytree(PROJECT / 'tests/fixtures/parity_minimal_v1', destination / 'repository')

@@ -767,9 +767,14 @@ updates upgrade older metadata columns and remove unavailable expansion content.
 
 These settings are opt-in until comparative evaluation passes:
 
-- `SCRIPTURE_RESPONSE_GUIDANCE=current|revised` selects the original prompt pair
+- `SCRIPTURE_RESPONSE_GUIDANCE=current|revised|verified` selects the original prompt pair
   or `prompts/agent_response_scripture_oriented_analysis_revised.txt` and
   `prompts/agent_response_scripture_expansion_revised.txt`. Default: `current`.
+  `verified` uses the source-owned quotation contract for initial replies and
+  Expand. See [verified scripture operations](../specs/scripture_response_reliability.md).
+- `SCRIPTURE_SOURCE_PATH` optionally overrides the local KJV JSON path; the pinned
+  digest is always required. Missing/corrupt source permits explicit paraphrase
+  only, or terminal failure; it never triggers a network download.
 - `SCRIPTURE_RESPONSE_REASONING_EFFORT` defaults to blank (provider default).
   Explicit `minimal|low|medium|high` currently supports direct OpenAI GPT-5,
   GPT-5 mini, and GPT-5 nano, including their 2025-08-07 snapshots. Unsupported
@@ -799,3 +804,7 @@ To roll back candidate behavior, restore `current`, clear explicit reasoning,
 and disable immediate dispatch. Existing canonical replies and queued requests
 remain intact. Correct failed settings and use explicit targeted retry; changing
 configuration does not rewrite old replies or silently regenerate failures.
+
+For verified-mode rollback, disable `agent_response_requests_enabled` before
+changing generation settings; follow the verified scripture operations guide.
+Do not silently downgrade pending verified requests to unverified generation.

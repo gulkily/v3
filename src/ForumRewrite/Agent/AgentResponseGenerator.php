@@ -69,6 +69,7 @@ final class AgentResponseGenerator
         $document = null;
         $responseText = (string) ($completion['response_text'] ?? '');
         if ($this->usesVerifiedScripture($task)) {
+            ScriptureTiming::record(dirname(__DIR__, 3), (string) ($task['post_id'] ?? ''), 'verification_started');
             $document = json_decode($responseText, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($document) || !is_array($document['segments'] ?? null)) { throw new ScriptureVerificationException('Invalid scripture reply JSON.'); }
             foreach ($document['segments'] ?? [] as $index => $segment) {
@@ -92,6 +93,7 @@ final class AgentResponseGenerator
             $raw['scripture_verification'] = ['document' => $document, 'source_digest' => ScriptureSource::DIGEST];
             $expected = $this->verifiedRenderer()->render($document, ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, $this->requestedTranslation($task));
             if ($text !== $expected) { throw new ScriptureVerificationException('Normalization changed verified scripture text.'); }
+            ScriptureTiming::record(dirname(__DIR__, 3), (string) ($task['post_id'] ?? ''), 'verification_finished');
         }
 
         return [
@@ -174,7 +176,8 @@ final class AgentResponseGenerator
         }
         // Arbitrary translation names explicitly marked as such are unsupported.
         if (preg_match('/(?:use|using|in|from)\s+(?:the\s+)?([A-Za-z][A-Za-z0-9 -]{1,35}?)\s+(?:translation|version)\b/i', $text, $m)) {
-            return strtoupper(trim($m[1]));
+            $name = strtoupper(trim($m[1]));
+            return in_array($name, ['KING JAMES', 'AUTHORIZED', 'KJV'], true) ? 'KJV' : $name;
         }
         return null;
     }

@@ -19,15 +19,17 @@ from scripture_evaluation import Budget, CASES, PROJECT, environment, setup
 
 
 class ProviderProxy:
-    def __init__(self, root, key):
+    def __init__(self, root, key, model='gpt-5-nano', input_rate=.05, output_rate=.40, writing_limit=60, moderation_limit=120, transport=None):
         self.root, self.key = root, key
-        self.budget = Budget(root / 'ledger.json')
+        self.model, self.input_rate, self.output_rate = model, input_rate, output_rate
+        self.transport = transport
+        self.budget = Budget(root / 'ledger.json', generation_limit=writing_limit, moderation_limit=moderation_limit)
         self.lock = threading.Lock()
         self.sample = None
 
     def call(self, payload):
         # Enforce fixed model, completion allowance, no tools or alternate billing.
-        if payload.get('model') != 'gpt-5-nano' or set(payload) - {
+        if payload.get('model') != self.model or set(payload) - {
                 'model', 'messages', 'response_format', 'max_completion_tokens', 'reasoning_effort'}:
             raise ValueError('Unapproved provider payload')
         maximum = payload.get('max_completion_tokens', 0)
@@ -35,12 +37,16 @@ class ProviderProxy:
             raise ValueError('Unapproved completion allowance')
         raw = json.dumps(payload).encode()
         kind = 'moderation' if 'response_format' in payload else 'generation'
+        if self.model == 'gpt-5-mini' and kind == 'generation' and (payload.get('reasoning_effort') != 'low' or maximum != 8192):
+            raise ValueError('Unapproved mini generation settings')
         # UTF-8 bytes plus ample message overhead bounds the input tokens. Charge
         # all input uncached and all output, including reasoning, at standard rates.
-        reserved = ((len(raw) + 10000) * .05 + maximum * .40) / 1000000
+        reserved = ((len(raw) + 10000) * self.input_rate + maximum * self.output_rate) / 1000000
         with self.lock:
             index = self.budget.reserve(kind, reserved)
             sample = self.sample
+            self.budget.entries[index].update(sample=sample, dispatched_at_ms=time.time()*1000)
+            self.budget.save()
         started = time.perf_counter()
         status = 200
         try:
@@ -48,7 +54,7 @@ class ProviderProxy:
                               headers={'Authorization': 'Bearer ' + self.key,
                                        'Content-Type': 'application/json'})
             try:
-                with urlopen(request, timeout=65) as response:
+                with (self.transport(request) if self.transport else urlopen(request, timeout=65)) as response:
                     body = response.read()
             except HTTPError as error:
                 status, body = error.code, error.read()
@@ -56,7 +62,7 @@ class ProviderProxy:
             usage = decoded.get('usage')
             with self.lock:
                 if usage is not None:
-                    cost = (usage['prompt_tokens'] * .05 + usage['completion_tokens'] * .40) / 1000000
+                    cost = (usage['prompt_tokens'] * self.input_rate + usage['completion_tokens'] * self.output_rate) / 1000000
                     self.budget.settle(index, cost)
                 record = {'sample': sample, 'kind': kind, 'index': index, 'status': status,
                           'provider_ms': (time.perf_counter()-started)*1000,
@@ -115,7 +121,16 @@ def run_trial(directory, trial, path):
             subprocess.run(['node', str(PROJECT / 'tests/browser/scripture_trial.cjs'),
                             str(directory), f'http://127.0.0.1:{port}', str(path)],
                            check=True, env=environment(directory), timeout=240)
-            return json.loads(Path(str(path) + '.result.json').read_text())
+            result = json.loads(Path(str(path) + '.result.json').read_text())
+            if result.get('outcome') == 'complete':
+                import sqlite3
+                config = json.loads((directory / 'environment.json').read_text())
+                with sqlite3.connect(config['FORUM_DATABASE_PATH']) as db:
+                    row = db.execute('SELECT body FROM posts WHERE post_id = ?', (result['status']['agent_post_id'],)).fetchone()
+                if row is None or row[0].strip() != result.get('visible_body_text', '').strip():
+                    raise ValueError('Rendered and stored final answers disagree')
+                result['final_response_text'] = row[0]
+            return result
         finally:
             server.terminate()
             server.wait()

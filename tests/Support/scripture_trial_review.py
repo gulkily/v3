@@ -28,6 +28,8 @@ def export(root, require_final=False):
         body = row.get('final_response_text', '') if require_final else (matching[0]['response'].get('choices', [{}])[0].get('message', {}).get('content', '') if matching else '')
         destination.write_text(json.dumps({'id': anonymous, 'case': row['case'],
                                          'question': row['question'], 'outcome': row['outcome'],
+                                         'kind': row.get('kind', 'initial'),
+                                         'initial_answer': row.get('initial_answer'),
                                          'answer': body}, indent=2))
     key_path.write_text(json.dumps(key, indent=2))
     packets = sorted(review.glob('*.json'))
