@@ -14,3 +14,12 @@ Implementation in progress; the flag ships off by default.
   - `php tests/run.php FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest` — 19 passed after adding the flag to the registry listing expectation.
   - Existing rename test now enables the flag explicitly.
 - Notes: the UI button and activity are still ungated and unchanged until Stages 2–6. The caption choice is still needed before Stage 3. A full-suite run is planned for Stage 7.
+
+## Stage 2 - Hide "Choose username" when the flag is off
+
+- Changes: `TemplateRenderer` exposes `usernameChangesEnabled` to every template; `account_key.php` keeps the "Choose username" button in the markup but adds `hidden` unless the flag is on (hidden, not deleted, matching the page-hook convention in `AccountKeyPageHooksTest`; the endpoint gate from Stage 1 still protects it).
+- Verification:
+  - `php tests/run.php AccountKeyPageHooksTest BrowserSigningNormalizationTest` — 86 passed, including the new `testChooseUsernameButtonIsHiddenUnlessUsernameChangesAreEnabled` (flag off, on, and unconfigured default).
+  - `php tests/run.php LocalAppSmokeTest` — 140 passed.
+  - Cache risk checked: `/account/key/` is not a pre-built static artifact (not in `StaticArtifactInvalidator` or `StaticArtifactBuilder`), so a flag toggle cannot leave stale markup.
+- Notes: real-browser confirmation of the hidden button is part of Stage 7. The caption (Stage 3) still needs the user's choice; default is "Replace key (new identity)".

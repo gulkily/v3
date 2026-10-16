@@ -39,7 +39,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
         </div>
         <div class="account-key-simple-actions">
           <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
-          <button type="button" class="account-key-secondary-button" data-action="rename-profile">Choose username</button>
+          <button type="button" class="account-key-secondary-button" data-action="rename-profile"<?= ($usernameChangesEnabled ?? false) ? '' : ' hidden' ?>>Choose username</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
