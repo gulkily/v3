@@ -4,7 +4,7 @@ Debug mode: enabled
 
 # Scripture Response Reliability — Implementation Summary
 
-Status: implementation in progress; candidate not activated; no paid trials yet.
+Status: Stages 1–6 completed; Stage 7 blocked by failed initial release gates. Candidate not activated. The releasable feature contract is not achieved.
 
 ## Stage 1 - Pinned source and protocol
 
@@ -35,3 +35,15 @@ Status: implementation in progress; candidate not activated; no paid trials yet.
 - Changes: Added two-candidate reliability runner, shared mini-aware budget proxy (48 writing/96 moderation/$5), conservative current-rate reservations, durable dispatch accounting, candidate/source hashes, matching automatic dispatch/polling, final stored-versus-rendered answer checks, anonymous final-answer/context packets, and executable joint initial gates with evidence hashes. Added verification phase timing and operator installation/recovery/rollback notes. Existing predecessor runner remains available with its original defaults.
 - Verification: Focused PHP/API suite: 191 passed; final generator check after translation-alias adjustment: 11 passed. Python evaluation/proxy/review/gate tests: 9 passed. Final recovery rehearsal at `state/private/scripture-reliability-recovery-rehearsal-20261016/` completed six stub initial/expansion trials (including unsupported NIV) and one deliberately failed malformed-output trial through real HTTP, detached workers, publication and browser discovery. Stored and rendered final answers agreed; both variants captured queue/generation/publication markers and B also captured verification markers. No external provider calls in rehearsals. `git diff --check` passed.
 - Notes: Official mini price checked 2026-10-16: $0.25/M uncached input and $2/M output; ignore caching for conservative accounting. Official model page marks the selected model deprecated; retain any provider rejection without substitution. Style can reveal candidate identity despite hidden labels/timing; record this limitation in the final review. No candidate activation or paid trial before this stage commit.
+
+## Stage 6 - Initial comparison and failed release gates
+
+- Changes: Ran all 32 frozen initial trials, saved anonymous final-answer/source/context ratings before label reveal, and published the [evaluation report](./evaluation/report.md) and per-answer result hashes. Corrected browser layout-whitespace comparison and added controlled resumption without regenerating the original sample; original measurement-error evidence remains retained. New test distinguishes harmless whitespace collapse from changed words/punctuation.
+- Verification: 808 frozen files unchanged; 32 writing calls, zero supporting moderation calls, $0.069561 conservative cost, no unsettled charges or replacement calls. Python evaluation tests: 10 passed. A: 16/16 completed, 1/16 quality passes. B: 10/16 completed, 7/16 quality passes, 6/8 everyday passes, zero published critical quotation errors. Completed-sample medians 13.22 s versus 9.25 s; incomplete B delivery blocks full latency acceptance. All eleven published B quotation blocks passed source checking. `git diff --check` passed.
+- Notes: A post-trial isolation correction preserves generic JSON failure classification outside scripture; 12 focused generator tests passed, without prompt/model/source changes or new paid calls. Six B failures exposed an overly broad prose quotation prohibition, one published answer confused departure with pickup time, and pastoral cases overgeneralized deadline planning. Preserve failed/interrupted/operational evidence; one baseline sample's partial pre-review exposure and style-based blinding limitations are disclosed. No candidate tuning, production trial posts, activation, deployment, or model substitution.
+
+## Stage 7 - Blocked by initial gates; not executed
+
+- Changes: No paid expansion comparison or promotion; existing expansion implementation remains opt-in and stub-verified only.
+- Verification: Saved initial gates are false. The expansion runner rejects failed gates; no dependent paid expansion calls were made.
+- Notes: Return for reassessment with fresh selection cases and any separately approved new budget. This is a failed release experiment, not completed delivery. No schema migration or remote deployment was in scope.

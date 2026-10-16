@@ -53,6 +53,7 @@ def file_hash(path):
 
 def save_gates(root):
     rows = [json.loads(s) for s in (root/'results.jsonl').read_text().splitlines()]
+    rows = list({row['sample']:row for row in rows}.values())
     ratings = json.loads((root/'ratings.json').read_text())
     key = json.loads((root/'blind-key.json').read_text())
     gates = evaluate(rows, ratings, key)

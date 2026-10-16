@@ -1,6 +1,6 @@
 # Verified scripture replies and expansions
 
-Status: opt-in candidate, awaiting the approved quality/latency comparison.
+Status: opt-in candidate; the [initial comparison failed release gates](../plans/scripture_response_reliability/evaluation/report.md). Do not activate as an accepted feature.
 No production activation is implied by installation or a model change.
 
 Deploy `resources/scripture/` with the application. Its README records the source,

@@ -48,3 +48,18 @@
 ### Inapplicable instructions
 
 - Source: `docs/railspike/docs/workflow/step3_development_plan_do.md`, planned database/function signatures when relevant. No database changes or signature decisions are needed for this behavioral plan; retain conditional applicability rather than inventing signatures.
+
+## 2026-10-16T20:37:34+00:00 — Step 4 release-gate handoff (incomplete feature)
+
+### Necessary/useful instructions
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Planning and completed stages each have isolated commits and summary evidence, preserving a reproducible candidate at `0976fddb` before paid trials. Retain stage-scoped commits and verification.
+- Source: `docs/railspike/RAILSPIKE.md`, releasable vertical slice and scope control. Normal request, publication, Expand and explicit recovery were exercised before paid selection; failed initial gates block dependent expansion trials and promotion. Retain the distinction between verified components and a successful releasable feature.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_after.md`, all-stages/minimum-commit checklist. An approved stop-on-failed-gates contract can legitimately prevent the last stage. Clarify that the correct handoff records incomplete delivery and the blocked dependent stage, rather than creating a nominal completion commit or claiming the feature finished. This workflow stops after Stage 6; Stage 7 was not executed.

@@ -13,7 +13,7 @@ final class AgentReplyFailure
 {
     public static function code(Throwable $error): string
     {
-        if ($error instanceof ScriptureVerificationException || $error instanceof \JsonException) {
+        if ($error instanceof ScriptureVerificationException) {
             return 'scripture_verification_failed';
         }
         if ($error instanceof CompletionLimitException) {

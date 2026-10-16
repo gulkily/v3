@@ -11,6 +11,20 @@ use ForumRewrite\Llm\StubTextChatProvider;
 
 final class AgentResponseGeneratorTest
 {
+    public function testMalformedJsonFailureClassificationRemainsScopedToScripture(): void
+    {
+        assertSame('analysis_suggestion_error', \ForumRewrite\Agent\AgentReplyFailure::code(new JsonException('Unrelated JSON failure.')));
+        try {
+            (new AgentResponseGenerator(new FakeTextChatProvider('invalid JSON'), true, true, 8192,
+                ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified']))->generate([
+                    'type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'Concern.',
+                ]);
+            throw new LogicException('Malformed scripture JSON accepted');
+        } catch (\ForumRewrite\Agent\ScriptureVerificationException $expected) {
+            assertSame('scripture_verification_failed', \ForumRewrite\Agent\AgentReplyFailure::code($expected));
+        }
+    }
+
     public function testVerifiedTranslationAndSourceLimitationsAndDraftRevalidation(): void
     {
         $document = ['segments' => [['type' => 'reflection', 'text' => 'In paraphrase, thoughtful planning helps us act responsibly.']]];
