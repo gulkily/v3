@@ -441,7 +441,7 @@ pre {
   margin: 0.5rem 0 0;
 }
 
-:root:not([data-theme="chicago"]) .nav-link.is-active {
+:root:not([data-theme="chicago"], [data-theme="word97"], [data-theme="windark"]) .nav-link.is-active {
   color: var(--active-ink);
   background: var(--active-bg);
   border-color: var(--active-line);
