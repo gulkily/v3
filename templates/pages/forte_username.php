@@ -9,6 +9,7 @@
  * @var array<int, array<string, mixed>> $approvedPosts
  */
 ?>
+<section class="stack">
 <div class="paned-window paned-standalone-window">
   <div class="paned-dialog-titlebar">
     <span>User: <?= $e($usernameToken) ?></span>
@@ -60,3 +61,4 @@
 </div>
 
 <?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>
+</section>

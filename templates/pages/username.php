@@ -79,6 +79,5 @@
     </ul>
   </article>
 <?php endif; ?>
-</section>
-
 <?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>
+</section>

@@ -11,6 +11,7 @@ if ($headingLabel === '') {
 }
 $isApproved = ((int) $profile['is_approved']) === 1;
 ?>
+<section class="stack">
 <div class="paned-window paned-standalone-window">
   <div class="paned-dialog-titlebar">
     <span>Profile: <?= $e($headingLabel) ?></span>
@@ -47,3 +48,4 @@ $isApproved = ((int) $profile['is_approved']) === 1;
 </div>
 
 <?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>
+</section>

@@ -48,7 +48,7 @@ final class ForteProfileController
             $pageTitleLabel . ' - Forte Profile',
             'paned-reader-body',
             [],
-            ['/assets/forte.css'],
+            ['/assets/forte.css', '/assets/identity.css'],
         );
     }
 
@@ -89,7 +89,7 @@ final class ForteProfileController
             'User ' . $usernameToken . ' - Forte',
             'paned-reader-body',
             [],
-            ['/assets/forte.css'],
+            ['/assets/forte.css', '/assets/identity.css'],
         );
     }
 }
