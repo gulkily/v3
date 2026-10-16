@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Forte Activity parity](forte_activity_parity/)
 - [Bookmarklets page redesign](bookmarklets_page_redesign/)
 - [Repository directory cleanup](repository_directory_cleanup/)
 - [Fastmod graded visibility — neutral intake slice](fastmod_prepublication_hold/) · [Cross-cycle checklist and QDB voting request](fastmod_prepublication_hold/fastmod_development_checklist.md)
