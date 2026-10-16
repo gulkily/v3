@@ -2220,6 +2220,33 @@ NODE;
         }
     }
 
+    public function testVerifiedScriptureExpansionNormalRenderingAndRecovery(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE'); putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory): void {
+                $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+                $claimed = $store->claimRequestedForPost($initial);
+                $store->saveComplete($claimed['request_context'], ['response_text' => 'Unverified old expansion.']);
+                $failed = $app->fulfillAgentReplyRequest($claimed);
+                assertSame('failed', $failed['generation_status']);
+                assertSame('scripture_verification_failed', $failed['failure_code']);
+                $app->retryAgentReplyRequest($initial, $claimed['target_content_hash']);
+                $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial));
+                assertSame('generated', $done['generation_status']);
+                $body = (string) $pdo->query('SELECT body FROM posts WHERE post_id = ' . $pdo->quote($done['agent_post_id']))->fetchColumn();
+                assertStringContains('Further scripture reflection:', $body);
+                assertStringContains('Proverbs 21:5, KJV', $body);
+                $page = $this->renderMethod($app, 'GET', '/threads/' . $source);
+                assertStringContains('data-expansion-body', $page);
+                assertStringContains('Proverbs 21:5', $page);
+                (new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder())->build($db, $directory . '/verified.sqlite3');
+                $copy = new PDO('sqlite:' . $directory . '/verified.sqlite3');
+                assertSame($body, $copy->query('SELECT body FROM posts WHERE post_id = ' . $copy->quote($done['agent_post_id']))->fetchColumn());
+            });
+        } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
+    }
+
     public function testVerifiedScriptureStoredDraftFailureAndExplicitRetry(): void
     {
         $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE'); putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');

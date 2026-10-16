@@ -833,7 +833,7 @@ final class PostWorkflowService
             function (int $taskId, string $replyId): void {
                 ScriptureTiming::record($this->projectRoot, $replyId, 'enqueued');
                 $this->dispatchScriptureTask($taskId);
-            });
+            }, (PrivateConfig::load($this->projectRoot)['SCRIPTURE_RESPONSE_GUIDANCE'] ?? '') === 'verified');
     }
 
     public function retryAgentReplyRequest(string $postId, string $contentHash): array
