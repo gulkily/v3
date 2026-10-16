@@ -6,7 +6,7 @@ import sys
 import uuid
 
 
-def export(root):
+def export(root, require_final=False):
     attempts = [json.loads(line) for line in (root / 'results.jsonl').read_text().splitlines()]
     results = list({row['sample']: row for row in attempts}.values())
     exchanges = [json.loads(line) for line in (root / 'exchanges.jsonl').read_text().splitlines()]
@@ -23,7 +23,9 @@ def export(root):
         if destination.exists() and json.loads(destination.read_text())['outcome'] == 'complete':
             continue
         matching = [x for x in exchanges if x['sample'] == sample and x['kind'] == 'generation']
-        body = matching[0]['response'].get('choices', [{}])[0].get('message', {}).get('content', '') if matching else ''
+        if require_final and row['outcome'] == 'complete' and not row.get('final_response_text'):
+            raise ValueError('Final published answer required for review')
+        body = row.get('final_response_text', '') if require_final else (matching[0]['response'].get('choices', [{}])[0].get('message', {}).get('content', '') if matching else '')
         destination.write_text(json.dumps({'id': anonymous, 'case': row['case'],
                                          'question': row['question'], 'outcome': row['outcome'],
                                          'answer': body}, indent=2))

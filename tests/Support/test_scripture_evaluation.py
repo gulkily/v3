@@ -7,6 +7,27 @@ from scripture_live_evaluation import ProviderProxy, resume_results
 from unittest.mock import patch
 
 
+class FinalReviewTest(unittest.TestCase):
+    def test_review_uses_published_answer_and_fails_on_missing_final_text(self):
+        from scripture_trial_review import export
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            row = {'sample': 'one', 'case': 1, 'question': 'Concern', 'outcome': 'complete',
+                   'final_response_text': 'Verified published answer.'}
+            (root / 'results.jsonl').write_text(json.dumps(row) + '\n')
+            (root / 'exchanges.jsonl').write_text(json.dumps({'sample':'one', 'kind':'generation',
+                'response':{'choices':[{'message':{'content':'Unverified raw answer.'}}]}}) + '\n')
+            export(root, require_final=True)
+            packet, = (root / 'blind').glob('*.json')
+            self.assertEqual(json.loads(packet.read_text())['answer'], 'Verified published answer.')
+            self.assertNotIn('variant', json.loads(packet.read_text()))
+            packet.unlink()
+            del row['final_response_text']
+            (root / 'results.jsonl').write_text(json.dumps(row) + '\n')
+            with self.assertRaises(ValueError):
+                export(root, require_final=True)
+
+
 class BudgetTest(unittest.TestCase):
     def test_failed_calls_and_restarts_cannot_reset_budget(self):
         with tempfile.TemporaryDirectory() as directory:
