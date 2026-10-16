@@ -71,7 +71,7 @@ final class WriteApiSmokeTest
             $pdo->exec("UPDATE metadata SET value = '19' WHERE key = 'schema_version'");
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
             assertStringContains('chosen-name', $this->renderMethod($app, 'GET', '/profiles/openpgp-' . substr($identity, 8)));
-            assertSame('20', $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
             $writer->linkIdentity(['public_key' => $other['public_key']]);
             assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
             $again = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'final-name']);
@@ -127,6 +127,42 @@ final class WriteApiSmokeTest
     private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
     {
         return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);
+    }
+
+    public function testVerifiedProfileNamesWriteOneOrderedActivityRowEach(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('activity-reader');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $paths = [];
+            foreach (['first-name', 'second-name', 'forged-name'] as $name) {
+                $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => $name]);
+                $signature = $this->signCanonicalRecord($key['home'], $prepared['canonical_record']);
+                $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity, 'detached_signature' => $signature]);
+                $paths[$name] = $prepared['record_path'];
+            }
+            file_put_contents($root . '/' . $paths['forged-name'] . '.asc', 'forged');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+
+            $pdo = (new ReadModelConnection($db))->open();
+            $rows = $pdo->query("SELECT kind, record_family, action_key, post_id, thread_id, label, board_tags_json, author_identity_id, source_path FROM activity WHERE record_family = 'profile_name' ORDER BY created_at, action_key")->fetchAll(PDO::FETCH_ASSOC);
+            assertSame(2, count($rows));
+            assertSame('profile_name_change', $rows[0]['kind']);
+            assertSame($paths['first-name'], $rows[0]['action_key']);
+            assertSame($paths['first-name'], $rows[0]['source_path']);
+            assertSame('Changed username from activity-reader to first-name', $rows[0]['label']);
+            assertSame('Changed username from first-name to second-name', $rows[1]['label']);
+            assertSame(null, $rows[0]['post_id']);
+            assertSame(null, $rows[0]['thread_id']);
+            assertSame($identity, $rows[0]['author_identity_id']);
+            assertSame('["identity","profile-name"]', $rows[0]['board_tags_json']);
+            assertSame('second-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+        } finally {
+            $this->deleteTree($key['home']);
+        }
     }
 
     public function testSignedThreadReactionPreservesBytesAndRejectsTampering(): void
@@ -6702,11 +6738,20 @@ NODE;
         $home = sys_get_temp_dir() . '/forum-rewrite-approval-gpg-' . bin2hex(random_bytes(6));
         mkdir($home, 0700, true);
         $homedir = escapeshellarg($home);
-        $this->runCommand(
-            $home,
-            'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir '
-            . $homedir . ' --quick-generate-key ' . escapeshellarg($username) . ' ed25519 sign 0'
-        );
+        $generate = 'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir '
+            . $homedir . ' --quick-generate-key ' . escapeshellarg($username) . ' ed25519 sign 0';
+        try {
+            $this->runCommand($home, $generate);
+        } catch (RuntimeException $e) {
+            // gpg occasionally rejects a key stamped one second ahead of its own clock; a second attempt succeeds.
+            if (!str_contains($e->getMessage(), 'Time conflict')) {
+                throw $e;
+            }
+            sleep(1);
+            $this->deleteTree($home);
+            mkdir($home, 0700, true);
+            $this->runCommand($home, $generate);
+        }
 
         return [
             'home' => $home,
