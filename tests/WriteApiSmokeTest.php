@@ -2420,6 +2420,66 @@ NODE;
         }
     }
 
+    public function testVerifiedScriptureUnavailableSourceAndRequestedTranslationRecoverNormally(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE'); putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        $oldPath = getenv('SCRIPTURE_SOURCE_PATH');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source) use ($oldPath): void {
+                foreach (['source', 'translation', 'revoked'] as $case) {
+                    $body = $case === 'translation' ? 'Use NIV. Help me choose a stopping point.' : 'Help me choose a stopping point.';
+                    $created = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $source . '&parent_id=' . $source . '&body=' . rawurlencode($body));
+                    $target = $this->extractValue($created, 'post_id');
+                    $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . $target . '&response_mode=scripture_oriented_analysis');
+                    $claimed = $store->claimRequestedForPost($target);
+                    if ($case === 'source') { putenv('SCRIPTURE_SOURCE_PATH=' . __FILE__ . '.missing'); }
+                    if ($case === 'revoked') {
+                        $pdo->exec('UPDATE profiles SET is_approved = 0 WHERE identity_id = ' . $pdo->quote($claimed['request_context']['agent_reply_request']['requested_by_identity_id']));
+                    }
+                    $result = $app->fulfillAgentReplyRequest($claimed);
+                    if ($case === 'revoked') {
+                        assertSame('failed', $result['generation_status']);
+                        assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($target))->fetchColumn());
+                    } else {
+                        assertSame('generated', $result['generation_status']);
+                        $published = (string) $pdo->query('SELECT body FROM posts WHERE post_id = ' . $pdo->quote($result['agent_post_id']))->fetchColumn();
+                        assertStringContains('unavailable', $published);
+                        assertStringNotContains('Proverbs 21:5, KJV', $published);
+                    }
+                    putenv($oldPath === false ? 'SCRIPTURE_SOURCE_PATH' : 'SCRIPTURE_SOURCE_PATH=' . $oldPath);
+                }
+            });
+        } finally {
+            putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous);
+            putenv($oldPath === false ? 'SCRIPTURE_SOURCE_PATH' : 'SCRIPTURE_SOURCE_PATH=' . $oldPath);
+        }
+    }
+
+    public function testVerifiedScriptureStoredDraftFailureAndExplicitRetry(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE'); putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source): void {
+                $created = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $source . '&parent_id=' . $source . '&body=How+should+I+choose+a+stopping+point%3F');
+                $target = $this->extractValue($created, 'post_id');
+                $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . $target . '&response_mode=scripture_oriented_analysis');
+                $claimed = $store->claimRequestedForPost($target);
+                $store->saveComplete($claimed['request_context'], ['response_text' => 'An old unverified quotation.', 'raw_response' => []]);
+                $failed = $app->fulfillAgentReplyRequest($claimed);
+                assertSame('failed', $failed['generation_status']);
+                assertSame('scripture_verification_failed', $failed['failure_code']);
+                $again = $app->fulfillAgentReplyRequest($claimed);
+                assertSame('failed', $again['generation_status']);
+                assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($target))->fetchColumn());
+                $app->retryAgentReplyRequest($target, $claimed['target_content_hash']);
+                $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($target));
+                assertSame('generated', $done['generation_status']);
+                assertSame('already_posted', $app->fulfillAgentReplyRequest($claimed)['generation_status']);
+                assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($target))->fetchColumn());
+            });
+        } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
+    }
+
     public function testVerifiedScriptureInitialPublishesThroughNormalRequest(): void
     {
         $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE');

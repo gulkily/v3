@@ -13,6 +13,9 @@ final class AgentReplyFailure
 {
     public static function code(Throwable $error): string
     {
+        if ($error instanceof ScriptureVerificationException || $error instanceof \JsonException) {
+            return 'scripture_verification_failed';
+        }
         if ($error instanceof CompletionLimitException) {
             return 'completion_limit_exhausted';
         }
@@ -29,6 +32,7 @@ final class AgentReplyFailure
     public static function message(string $code): string
     {
         return match ($code) {
+            'scripture_verification_failed' => 'Scripture source verification failed. No partial reply was published. An operator can inspect the source or output and retry.',
             'completion_limit_exhausted' => 'Completion limit reached. Ask an operator to adjust the allowance and retry.',
             'provider_configuration_error' => 'Provider configuration needs correction before an operator retries.',
             default => 'Reply generation failed. An operator can inspect the failure and retry.',

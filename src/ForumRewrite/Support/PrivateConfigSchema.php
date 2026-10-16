@@ -18,6 +18,7 @@ final class PrivateConfigSchema
             'LLM_MODEL' => self::definition('', 'string', template: true),
             'LLM_TIMEOUT_SECONDS' => self::definition(60, 'integer', template: true),
             'AGENT_REPLY_MAX_COMPLETION_TOKENS' => self::definition(8192, 'integer', template: true),
+            'SCRIPTURE_SOURCE_PATH' => self::definition('', 'string', template: true),
             'SCRIPTURE_RESPONSE_GUIDANCE' => self::definition('current', 'string', template: true),
             'SCRIPTURE_RESPONSE_REASONING_EFFORT' => self::definition('', 'string', template: true),
             'SCRIPTURE_RESPONSE_IMMEDIATE_DISPATCH' => self::definition(false, 'boolean', template: true),

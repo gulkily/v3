@@ -20,18 +20,18 @@ final class ScriptureSource
     {
         $book = $book === 'Psalm' ? 'Psalms' : $book;
         $text = $this->load()['books'][$book][(string) $chapter] ?? null;
-        if (!is_array($text)) { throw new RuntimeException('Scripture source passage is unavailable.'); }
+        if (!is_array($text)) { throw new ScriptureVerificationException('Scripture source passage is unavailable.'); }
         return $text;
     }
 
     public function passage(string $book, int $chapter, int $start, int $end): string
     {
-        if ($start < 1 || $end < $start) { throw new RuntimeException('Invalid scripture verse range.'); }
+        if ($start < 1 || $end < $start) { throw new ScriptureVerificationException('Invalid scripture verse range.'); }
         $verses = $this->chapter($book, $chapter);
-        if ($end > count($verses)) { throw new RuntimeException('Scripture source passage is unavailable.'); }
+        if ($end > count($verses)) { throw new ScriptureVerificationException('Scripture source passage is unavailable.'); }
         $parts = [];
         for ($v = $start; $v <= $end; $v++) {
-            if (!isset($verses[$v])) { throw new RuntimeException('Scripture source passage is unavailable.'); }
+            if (!isset($verses[$v])) { throw new ScriptureVerificationException('Scripture source passage is unavailable.'); }
             $parts[] = $verses[$v];
         }
         return implode(' ', $parts);
@@ -42,7 +42,7 @@ final class ScriptureSource
         if ($this->corpus !== null) { return $this->corpus; }
         $raw = @file_get_contents($this->path ?? dirname(__DIR__, 3) . '/resources/scripture/kjv.json');
         if ($raw === false || hash('sha256', $raw) !== self::DIGEST) {
-            throw new RuntimeException('Verified KJV source is missing or its digest does not match.');
+            throw new ScriptureVerificationException('Verified KJV source is missing or its digest does not match.');
         }
         $this->corpus = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
         return $this->corpus;

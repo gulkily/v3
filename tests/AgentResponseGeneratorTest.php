@@ -11,6 +11,29 @@ use ForumRewrite\Llm\StubTextChatProvider;
 
 final class AgentResponseGeneratorTest
 {
+    public function testVerifiedTranslationAndSourceLimitationsAndDraftRevalidation(): void
+    {
+        $document = ['segments' => [['type' => 'reflection', 'text' => 'In paraphrase, thoughtful planning helps us act responsibly.']]];
+        $provider = new FakeTextChatProvider(json_encode($document));
+        $config = ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified'];
+        $task = ['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'Use NIV. Help me plan.'];
+        $generator = new AgentResponseGenerator($provider, true, true, 8192, $config);
+        $result = $generator->generate($task);
+        assertStringContains('No other translation has been substituted', $result['response_text']);
+        assertStringContains('Requested translation cannot', $provider->messages[1]['content']);
+        $generator->validatePublication($result, $task);
+        foreach ([array_merge($result, ['response_text' => 'Changed.']), ['response_text' => 'Old unverified draft.']] as $bad) {
+            try { $generator->validatePublication($bad, $task); throw new LogicException('Accepted invalid draft'); }
+            catch (\ForumRewrite\Agent\ScriptureVerificationException $expected) {}
+        }
+        $missing = new AgentResponseGenerator($provider, true, true, 8192, $config + ['SCRIPTURE_SOURCE_PATH' => __FILE__ . '.missing']);
+        $task['target_body'] = 'How should I plan?';
+        $fallback = $missing->generate($task);
+        assertStringContains('Verified KJV source text is unavailable', $fallback['response_text']);
+        $missing->validatePublication($fallback, $task);
+        assertSame('scripture_verification_failed', \ForumRewrite\Agent\AgentReplyFailure::code(new \ForumRewrite\Agent\ScriptureVerificationException()));
+    }
+
     public function testScriptureCandidatesAreScopedAndDoNotReduceCompletionAllowance(): void
     {
         $provider = new FakeTextChatProvider('Reply.');

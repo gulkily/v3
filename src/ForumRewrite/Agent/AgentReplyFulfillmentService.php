@@ -32,6 +32,7 @@ final class AgentReplyFulfillmentService
         private readonly mixed $contextForPost,
         private readonly mixed $gateFailureForPost,
         private readonly ?AgentResponseGenerator $taskGenerator = null,
+        private readonly mixed $beforeScripturePublication = null,
     ) {
     }
 
@@ -224,6 +225,15 @@ final class AgentReplyFulfillmentService
             if (($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE) {
                 ScriptureTiming::record(dirname(__DIR__, 3), $postId, 'publication_started');
             }
+            $verify = null;
+            if (($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE) {
+                $input = AgentResponseTask::generationInputForType($context, (string) $task['type']);
+                $verify = function () use ($stored, $input, $post): void {
+                    $this->taskGenerator?->validatePublication($stored, $input);
+                    if ($this->beforeScripturePublication !== null) { ($this->beforeScripturePublication)($post, $stored); }
+                };
+                $verify();
+            }
             $identity = $this->identityService->ensureReplyAgentIdentity();
             $writeResult = $this->writer->createReply([
                 'thread_id' => (string) $post['thread_id'],
@@ -235,7 +245,7 @@ final class AgentReplyFulfillmentService
                 'type' => \ForumRewrite\Canonical\AgentResponseMetadata::SCRIPTURE,
                 'source_post_id' => (string) $post['post_id'],
                 'source_hash' => \ForumRewrite\Canonical\AgentResponseMetadata::postHash($post),
-            ] : null);
+            ] : null, $verify);
             $posted = $this->generationStore->markPosted(
                 (string) $context['post_id'],
                 (string) $context['content_hash'],
@@ -253,7 +263,7 @@ final class AgentReplyFulfillmentService
                 (string) $context['post_id'],
                 (string) $context['content_hash'],
                 (string) $generationContext['analysis_hash'],
-                'posting_error',
+                $throwable instanceof ScriptureVerificationException ? 'scripture_verification_failed' : 'posting_error',
                 $throwable->getMessage(),
                 $this->failureDiagnostics($throwable)
             );
