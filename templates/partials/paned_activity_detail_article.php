@@ -37,7 +37,7 @@ $hasRelevantFiles = $relevantFiles !== [];
 <?php endif; ?>
 <?php if ($hasRelevantFiles): ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [
-        'signature_status' => in_array($item['record_family'] ?? '', ['thread_label', 'post_reaction'], true) ? ($item['source_signature_status'] ?? '') : '',
+        'signature_status' => in_array($item['record_family'] ?? '', ['thread_label', 'post_reaction', 'profile_name'], true) ? ($item['source_signature_status'] ?? '') : '',
         'files' => $relevantFiles,
         'commit_sha' => $commitSha,
         'commit_href' => $item['source_commit_href'] ?? '',

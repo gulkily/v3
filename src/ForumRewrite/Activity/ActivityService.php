@@ -55,6 +55,7 @@ final class ActivityService
         private readonly \Closure $pdoFactory,
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
+        private readonly bool $showProfileNameChanges = false,
     ) {
     }
 
@@ -180,7 +181,7 @@ final class ActivityService
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE activity.id = :id'
+             WHERE activity.id = :id' . $this->profileNameVisibilitySql()
         );
         $stmt->bindValue('id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -284,7 +285,25 @@ final class ActivityService
     private function activityViewSql(string $view): array
     {
         $quotedHiddenTag = '%"' . ThreadRowSupport::HIDDEN_BOOTSTRAP_TAG . '"%';
+        [$viewWhere, $viewParameters] = $this->activityViewClause($view, $quotedHiddenTag);
 
+        return [$viewWhere . $this->profileNameVisibilitySql(), $viewParameters];
+    }
+
+    /**
+     * Username changes are indexed whenever signed records exist; they are
+     * listed only while the username-change flag is on.
+     */
+    private function profileNameVisibilitySql(): string
+    {
+        return $this->showProfileNameChanges ? '' : " AND activity.record_family != 'profile_name'";
+    }
+
+    /**
+     * @return array{0:string,1:array<string, string>}
+     */
+    private function activityViewClause(string $view, string $quotedHiddenTag): array
+    {
         return match ($view) {
             'identity' => ['AND activity.board_tags_json LIKE :identity_tag', ['identity_tag' => $quotedHiddenTag]],
             'bootstrap' => [

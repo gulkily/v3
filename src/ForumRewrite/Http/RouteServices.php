@@ -17,6 +17,7 @@ use ForumRewrite\Scoring\FastScoringConfig;
 use ForumRewrite\Scoring\FastScoringRubricRevision;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
@@ -99,7 +100,12 @@ final class RouteServices
      */
     public function activityService(): ActivityService
     {
-        return $this->activityService ??= new ActivityService($this->pdo(...), $this->repositoryRoot, $this->databasePath);
+        return $this->activityService ??= new ActivityService(
+            $this->pdo(...),
+            $this->repositoryRoot,
+            $this->databasePath,
+            $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
+        );
     }
 
     public function writer(): LocalWriteService

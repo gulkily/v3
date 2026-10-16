@@ -12,6 +12,9 @@
 <?php if ($item['kind'] === 'site_feature_flag'): ?>
 <?php $href = '/tools/feature-flags/'; ?>
 <?php $linkLabel = 'site feature flags'; ?>
+<?php elseif ($item['kind'] === 'profile_name_change'): ?>
+<?php $href = '/profiles/' . rawurlencode((string) ($item['author_profile_slug'] ?? '')); ?>
+<?php $linkLabel = $item['author_label']; ?>
 <?php elseif ($item['kind'] === 'thread_label_add'): ?>
 <?php $href = '/threads/' . $item['thread_id']; ?>
 <?php $linkLabel = $item['thread_id']; ?>
@@ -38,7 +41,7 @@
 ]), 2) ?>
 <?php endif; ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [
-        'signature_status' => in_array($item['record_family'] ?? '', ['thread_label', 'post_reaction'], true) ? ($item['source_signature_status'] ?? '') : '',
+        'signature_status' => in_array($item['record_family'] ?? '', ['thread_label', 'post_reaction', 'profile_name'], true) ? ($item['source_signature_status'] ?? '') : '',
     'files' => $item['source_commit_files'] ?? [],
     'commit_sha' => $item['source_commit_sha'] ?? '',
     'commit_href' => $item['source_commit_href'] ?? '',

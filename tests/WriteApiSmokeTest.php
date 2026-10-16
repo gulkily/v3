@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
@@ -161,6 +162,51 @@ final class WriteApiSmokeTest
             assertSame('["identity","profile-name"]', $rows[0]['board_tags_json']);
             assertSame('second-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
         } finally {
+            $this->deleteTree($key['home']);
+        }
+    }
+
+    public function testProfileNameActivityIsListedOnlyWhileUsernameChangesAreEnabled(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('visible-reader');
+        $previousFlag = getenv('FORUM_USERNAME_CHANGES_ENABLED');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'shown-name']);
+            $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])]);
+
+            $service = static fn (bool $show): ActivityService => new ActivityService(
+                static fn (): PDO => (new ReadModelConnection($db))->open(), $root, $db, $show);
+            $ids = static fn (ActivityService $svc, string $view): array => array_column(
+                array_filter($svc->fetchActivity($view, 'date', 'desc')['items'], static fn (array $i): bool => $i['record_family'] === 'profile_name'),
+                'id');
+
+            foreach (['all', 'identity'] as $view) {
+                assertSame(1, count($ids($service(true), $view)));
+                assertSame([], $ids($service(false), $view));
+            }
+            assertSame([], $ids($service(true), 'content'));
+            assertSame(
+                $service(false)->countActivityViewTotal('all') + 1,
+                $service(true)->countActivityViewTotal('all')
+            );
+            $id = (int) $ids($service(true), 'all')[0];
+            assertSame('Changed username from visible-reader to shown-name', $service(true)->fetchActivityDetail($id)['label']);
+            assertSame(null, $service(false)->fetchActivityDetail($id));
+
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=false');
+            assertStringNotContains('Changed username from', $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/activity/?view=all'));
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=true');
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/activity/?view=all');
+            assertStringContains('Changed username from visible-reader to shown-name', $page);
+            assertStringContains('href="/profiles/openpgp-' . substr($identity, 8) . '"', $page);
+            assertStringNotContains('href="/posts/"', $page);
+        } finally {
+            putenv($previousFlag === false ? 'FORUM_USERNAME_CHANGES_ENABLED' : 'FORUM_USERNAME_CHANGES_ENABLED=' . $previousFlag);
             $this->deleteTree($key['home']);
         }
     }

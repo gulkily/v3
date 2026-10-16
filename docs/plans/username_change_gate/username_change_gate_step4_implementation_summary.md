@@ -47,3 +47,17 @@ Implementation in progress; the flag ships off by default.
   - Incremental updates only delete activity rows by post or thread ID, so rename rows (neither) are untouched by them; name writes already trigger a full rebuild.
   - Limitation: an identity first added by an incremental update that already has name records (possible only via import) gets its rename rows at the next full rebuild.
   - The two local identities now share the username "new", so they form one composite user.
+
+## Stage 5 - Rename rows in the shared activity query and main page
+
+- Changes:
+  - `ActivityService` takes a `showProfileNameChanges` flag (default off); one shared clause in `activityViewSql` excludes `profile_name` rows from list pages, view counts and cursors when it is off, and `fetchActivityDetail` returns nothing for a hidden row. `RouteServices` passes the username-change flag.
+  - Classic `activity.php` links a rename row to the member's profile (the generic branch would have built `/posts/` with no post id) and shows its signature status; the paned detail article shows the same signature status.
+  - Rename rows appear in the `all` and `identity` views (they carry the `identity` tag, like approvals) and not in `content`, `bootstrap` or `approval`.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest` — 165 passed, including new `testProfileNameActivityIsListedOnlyWhileUsernameChangesAreEnabled` (row visible in `all`/`identity` and counted only when on; absent from `content`; detail 404-equivalent when off; classic page with the environment flag off then on shows the label, a profile link and no `/posts/` link).
+  - `php tests/run.php LocalAppSmokeTest` — 140 passed. One earlier run alongside `ForteActivityReadModelRecoveryTest` had two server-start port tests time out at about 3s; the same suite passed with and without these changes when re-run alone. Treated as an intermittent start-up timing flake unrelated to this change.
+  - `php tests/run.php ForteActivityReadModelRecoveryTest` — passed.
+- Notes:
+  - Found for Stage 6: `ProfileRepository::pendingDirectoryProfiles` picks each pending member's latest activity row from the table directly, so a pending member's rename would show there even with the flag off; Forte activity links, RSS and the commit manifest are checked in Stage 6.
+  - `/activity.html` is already in the feature-flag invalidation list, so a toggle refreshes the pre-built page.
