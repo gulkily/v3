@@ -62,3 +62,26 @@ Debug mode: enabled, inherited from Step 2 and recorded in Step 3.
 ### Uncertain assessments
 
 - The one-page limit is not realistic for a seven-stage plan with full stage fields; the plan runs longer than one page.
+
+## 2026-10-16T14:13:21Z — Step 4
+
+Debug mode: enabled, inherited from Step 3 and recorded in the Step 4 summary.
+
+### Necessary/useful instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol: running verification and committing per stage localized the two real defects (SQLite text-versus-integer binding in Stage 6; the key-generation test flake in Stage 4) to single commits. Retain.
+- `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate: separating the plans commit kept the research report and `todo.txt` out of it until their stage. Retain.
+- `docs/railspike/RAILSPIKE.md`, organization rule: moving the plans into one folder and fixing the report link was mechanical and prevented a dangling relative link. Retain.
+
+### Redundant/unnecessary instructions
+
+- The Step 4 before/do/after files and RAILSPIKE.md each restate the commit-cadence and no-amend rules. Consolidate into one location with references.
+
+### Inapplicable instructions
+
+- Documentation-only verification variants and deployment/migration dependency checks (no deployment in scope; the flag ships off).
+
+### Uncertain assessments
+
+- "Log-only handoff commit" versus finalizing the Step 4 summary: the summary was finalized in the last stage commit, so the handoff commit touches only this log; unclear whether a final summary note belongs in the handoff commit.
+- The planned eight-stage ceiling and "about one hour per stage" were met in count, but Stage 5 and Stage 6 each took longer than a one-hour estimate because of the number of activity consumers.
