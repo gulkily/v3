@@ -6056,6 +6056,78 @@ NODE;
         }
     }
 
+    public function testSignedAccountKeyFlowsPreserveReviewAndRecoverCommittedRefreshFailure(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('approval-owner');
+        $previous = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_POST = ['public_key' => $key['public_key']];
+            $response = $this->renderMethod($app, 'POST', '/api/link_identity'); $_POST = [];
+            $owner = ['identity_id' => $this->extractValue($response, 'identity_id'), 'profile_slug' => $this->extractValue($response, 'profile_slug'),
+                'bootstrap_thread_id' => $this->extractValue($response, 'bootstrap_thread_id'), 'bootstrap_post_id' => $this->extractValue($response, 'bootstrap_post_id')];
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $this->approveIdentity($writer, $owner);
+            $bob = $this->linkGeneratedIdentity($app, 'existing-bob');
+            $this->approveIdentity($writer, $bob);
+            $new = $this->linkGeneratedIdentity($app, 'new-member');
+            $own = $this->linkGeneratedIdentity($app, 'approval-owner');
+            $cross = $this->linkGeneratedIdentity($app, 'existing-bob');
+            $prepare = fn (array $target) => $writer->prepareApproval(['approver_identity_id' => $owner['identity_id'],
+                'target_identity_id' => $target['identity_id'], 'target_profile_slug' => $target['profile_slug'],
+                'thread_id' => $target['bootstrap_thread_id'], 'parent_id' => $target['bootstrap_post_id']]);
+            $sign = fn (array $prepared) => $prepared + ['author_identity_id' => $owner['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            $sponsor = $prepare($new);
+            assertSame('Approve new member new-member', $sponsor['approval_review']['label']);
+            assertSame('ok', $writer->finalizePreparedApproval($sign($sponsor))['status']);
+            $addition = $prepare($own);
+            assertSame('Add this key to my account', $addition['approval_review']['label']);
+            assertSame('ok', $writer->finalizePreparedApproval($sign($addition))['status']);
+            try { $prepare($cross); throw new RuntimeException('Expected cross-account denial.'); }
+            catch (RuntimeException $error) { assertStringContains('same username or a root-approved operator', $error->getMessage()); }
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            $grant = $prepare($cross);
+            assertSame('Grant this key access as existing-bob', $grant['approval_review']['label']);
+            assertStringContains('already has 1 approved keys', $grant['approval_review']['consequence']);
+            $signed = $sign($grant);
+            $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root)) extends LocalWriteService {
+                protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+                {
+                    return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                        public function applyApprovalWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array { throw new RuntimeException('test incremental failure'); }
+                    };
+                }
+                protected function rebuildReadModel(): array { throw new RuntimeException('test rebuild failure'); }
+            };
+            try { $failing->finalizePreparedApproval($signed); throw new RuntimeException('Expected committed refresh failure.'); }
+            catch (RuntimeException $error) { assertStringContains('Canonical write committed at', $error->getMessage()); }
+            $this->assertReadModelMarkedStale($db);
+            $this->seedArtifacts($artifacts, ['/activity.html', '/users.html', '/user/existing-bob.html']);
+            $before = $this->countCanonicalPostFiles($root);
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            $recovered = $writer->finalizePreparedApproval($signed);
+            assertSame(true, $recovered['recovered']);
+            assertSame($before, $this->countCanonicalPostFiles($root));
+            foreach (['/activity.html', '/users.html', '/user/existing-bob.html'] as $artifact) assertSame(false, is_file($artifacts . $artifact));
+            $this->assertReadModelHealthy($db);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $history = new \ForumRewrite\ReadModel\ApprovalHistory((new ReadModelConnection($db))->open(), $root);
+            $ownKeys = array_column($history->forUsername('approval-owner')['rows'], null, 'identity_id');
+            assertSame('own_account_key', $ownKeys[$own['identity_id']]['classification']);
+            $bobKeys = array_column($history->forUsername('existing-bob')['rows'], null, 'identity_id');
+            assertSame('cross_account_key', $bobKeys[$cross['identity_id']]['classification']);
+            assertSame(true, $bobKeys[$cross['identity_id']]['cross_account_allowed']);
+        } finally {
+            $_POST = []; $_COOKIE = [];
+            putenv($previous === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previous);
+            $this->deleteTree($key['home']);
+        }
+    }
+
     public function testOperatorSecurityReviewRequiresAuthenticatedRootAndCorrelatesPolicyChanges(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

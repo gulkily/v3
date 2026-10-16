@@ -1929,7 +1929,7 @@ class LocalWriteService
             if ($this->postTargetExists($postId)) throw new RuntimeException('Prepared post target already exists.');
             $message = ucfirst($record->action) . ' invitation ' . $record->invitationId . ' by ' . $authorIdentityId;
             if ($record->action === 'redeem') {
-                $commitResult = $this->commitApprovalAcceptance($recordPath, $canonicalRecord, $signature, $context, 'invitation', $message);
+                $commitResult = $this->commitApprovalAcceptance($recordPath, $canonicalRecord, $signature, $context, 'invitation', $message, $entry['issued']->expiresAt);
             } else {
                 $this->writeFile($recordPath, $canonicalRecord);
                 $this->writeFile($recordPath . '.asc', $signature);
@@ -2777,18 +2777,26 @@ class LocalWriteService
         } catch (\Throwable $error) {
             throw new RuntimeException('Approval already committed at ' . $head . ' but refresh failed. Retry refresh; do not approve again.', 0, $error);
         }
-        $this->invalidateAccountHistory($receipt['context']);
+        $context = $receipt['context'];
+        try {
+            $this->invalidator()->invalidateApproval($context['target_profile_slug'], $context['target_thread_id'], $context['target_post_id'], $post->postId);
+            $this->invalidateAccountHistory($context);
+        } catch (\Throwable $error) {
+            throw new RuntimeException('Approval already committed at ' . $head . ' but cached-view refresh failed. Retry refresh; do not approve again.', 0, $error);
+        }
         return ['status' => 'ok', 'recovered' => true, 'post_id' => $post->postId, 'thread_id' => $post->threadId,
             'profile_slug' => $receipt['context']['target_profile_slug'], 'record_path' => $path,
             'signature_path' => $path . '.asc', 'commit_sha' => $head];
     }
 
     /** Commit the grant, signature, and receipt together; discard incomplete writes on failure. */
-    private function commitApprovalAcceptance(string $path, string $contents, ?string $signature, array $context, string $kind, string $message): array
+    private function commitApprovalAcceptance(string $path, string $contents, ?string $signature, array $context, string $kind, string $message, ?string $expiresAt = null): array
     {
         $post = (new PostRecordParser())->parse($contents);
         $receiptPath = ApprovalAcceptance::path($post->postId);
-        $files = [$path => $contents, $receiptPath => ApprovalAcceptance::encode($contents, $context, $this->canonicalTimestampNow(), $kind)];
+        $acceptedAt = $this->canonicalTimestampNow();
+        if ($expiresAt !== null && strtotime($expiresAt) <= strtotime($acceptedAt)) throw new RuntimeException('Invitation has expired.');
+        $files = [$path => $contents, $receiptPath => ApprovalAcceptance::encode($contents, $context, $acceptedAt, $kind)];
         if ($signature !== null) $files[$path . '.asc'] = $signature;
         foreach ($files as $relative => $bytes) {
             if (file_exists($this->repositoryRoot . '/' . $relative) || is_link($this->repositoryRoot . '/' . $relative)) {
