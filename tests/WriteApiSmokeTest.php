@@ -27,6 +27,73 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testSignedProfileNamePreservesIdentityAndRejectsForgery(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('temporary-reader');
+        $other = $this->createSigningKey('other-reader');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $bootstrap = $root . '/records/identity/identity-' . str_replace(':', '-', $identity) . '.txt';
+            $before = file_get_contents($bootstrap);
+            $concurrent = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'stale-name']);
+            $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'chosen-name']);
+            $signed = $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($other['home'], $prepared['canonical_record'])];
+            try {
+                $writer->finalizePreparedProfileName($signed);
+                throw new RuntimeException('Expected signature rejection.');
+            } catch (RuntimeException $e) {
+                assertStringContains('signature verification failed', $e->getMessage());
+            }
+            $signed['detached_signature'] = $this->signCanonicalRecord($key['home'], $prepared['canonical_record']);
+            $tampered = $signed;
+            $tampered['canonical_record'] = str_replace('chosen-name', 'forged-name', $signed['canonical_record']);
+            try {
+                $writer->finalizePreparedProfileName($tampered);
+                throw new RuntimeException('Expected mismatch rejection.');
+            } catch (RuntimeException $e) {
+                assertStringContains('mismatch', $e->getMessage());
+            }
+            assertSame('chosen-name', $writer->finalizePreparedProfileName($signed)['username']);
+            try {
+                $writer->finalizePreparedProfileName($concurrent + ['author_identity_id' => $identity,
+                    'detached_signature' => $this->signCanonicalRecord($key['home'], $concurrent['canonical_record'])]);
+                throw new RuntimeException('Expected stale-name rejection.');
+            } catch (RuntimeException $e) { assertStringContains('newer username', $e->getMessage()); }
+
+            assertSame($before, file_get_contents($bootstrap));
+            $pdo = (new ReadModelConnection($db))->open();
+            assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+            $pdo->exec("UPDATE profiles SET username = 'temporary-reader', username_token = 'temporary-reader'");
+            $pdo->exec("UPDATE metadata SET value = '19' WHERE key = 'schema_version'");
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            assertStringContains('chosen-name', $this->renderMethod($app, 'GET', '/profiles/openpgp-' . substr($identity, 8)));
+            assertSame('20', $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            $writer->linkIdentity(['public_key' => $other['public_key']]);
+            assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+            $again = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'final-name']);
+            $writer->finalizePreparedProfileName($again + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $again['canonical_record'])]);
+            assertSame('final-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+            file_put_contents($root . '/' . $again['record_path'] . '.asc', 'forged');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+
+            assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
+            try {
+                $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => "invalid\nheader"]);
+                throw new RuntimeException('Expected name rejection.');
+            } catch (RuntimeException $e) {
+                assertStringContains('Invalid profile name', $e->getMessage());
+            }
+        } finally {
+            $this->deleteTree($key['home']);
+            $this->deleteTree($other['home']);
+        }
+    }
+
     public function testSignedThreadReactionPreservesBytesAndRejectsTampering(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();
@@ -5859,12 +5926,23 @@ NODE;
             $issue = $writer->prepareInvitation([
                 'issuer_identity_id' => $issuer['identity_id'], 'thread_id' => $issuer['thread_id'],
                 'parent_id' => $issuer['parent_id'], 'verification_hash' => 'sha256:' . hash('sha256', $token),
-                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600),
+                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600), 'destination' => '/threads/root-001?q=1#reply-001',
             ]);
             $writer->finalizePreparedInvitation($issue + [
                 'author_identity_id' => $issuer['identity_id'],
                 'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $issue['canonical_record']),
             ]);
+            $countBeforeInspection = $this->countCanonicalPostFiles($root);
+            assertSame(['status' => 'ok', 'targeted' => true, 'state' => 'available'], $writer->inspectInvitation($token));
+            assertSame($countBeforeInspection, $this->countCanonicalPostFiles($root));
+            $approvedAttempt = $writer->prepareInvitationRedemption([
+                'recipient_identity_id' => $issuer['identity_id'], 'thread_id' => $issuer['thread_id'],
+                'parent_id' => $issuer['parent_id'], 'invite_token' => $token,
+            ]);
+            $approvedResult = $writer->finalizePreparedInvitation($approvedAttempt + ['author_identity_id' => $issuer['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $approvedAttempt['canonical_record'])]);
+            assertSame(true, $approvedResult['already_approved']);
+            assertSame('available', $writer->inspectInvitation($token)['state']);
             $redeem = $writer->prepareInvitationRedemption([
                 'recipient_identity_id' => $recipient['identity_id'], 'thread_id' => $recipient['thread_id'],
                 'parent_id' => $recipient['parent_id'], 'invite_token' => $token,
@@ -5884,6 +5962,28 @@ NODE;
             assertSame($before, $this->countCanonicalPostFiles($root));
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
             assertSame('ok', $writer->finalizePreparedInvitation($signed)['status']);
+            assertSame('used', $writer->inspectInvitation($token)['state']);
+            $afterSuccess = $this->countCanonicalPostFiles($root);
+            $retry = $writer->prepareInvitationRedemption([
+                'recipient_identity_id' => $recipient['identity_id'], 'thread_id' => $recipient['thread_id'],
+                'parent_id' => $recipient['parent_id'], 'invite_token' => $token,
+            ]);
+            $recovery = $retry + ['author_identity_id' => $recipient['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($issuerKey['home'], $retry['canonical_record'])];
+            try {
+                $writer->finalizePreparedInvitation($recovery);
+                throw new RuntimeException('Expected forged recovery rejection.');
+            } catch (RuntimeException $e) { assertStringContains('signature verification failed', $e->getMessage()); }
+            $recovery['detached_signature'] = $this->signCanonicalRecord($recipientKey['home'], $retry['canonical_record']);
+            $result = $writer->finalizePreparedInvitation($recovery);
+            assertSame(true, $result['recovered']);
+            assertSame('/threads/root-001?q=1#reply-001', $result['destination']);
+            assertSame($afterSuccess, $this->countCanonicalPostFiles($root));
+            try {
+                $writer->prepareInvitationRedemption(['recipient_identity_id' => $issuer['identity_id'], 'invite_token' => $token]);
+                throw new RuntimeException('Expected foreign-recipient rejection.');
+            } catch (RuntimeException $e) { assertStringContains('another identity', $e->getMessage()); }
+
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $recipient['identity_id']);

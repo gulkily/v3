@@ -1174,6 +1174,64 @@ class LocalWriteService
         });
     }
 
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function prepareProfileName(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $identity = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $this->publicKeyForIdentity($identity);
+            $name = strtolower(trim((string) ($input['username'] ?? '')));
+            if (preg_match('/^[a-z0-9._-]{1,80}$/D', $name) !== 1) throw new RuntimeException('Invalid profile name.');
+            $id = 'profile-name-' . bin2hex(random_bytes(16));
+            $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
+            $createdAt = gmdate('Y-m-d\TH:i:s\Z', max(time(), $latest === null ? 0 : strtotime($latest['Created-At']) + 1));
+            $contents = "Record-ID: {$id}\nCreated-At: " . $createdAt
+                . "\nOperation: set-name\nAuthor-Identity-ID: {$identity}\nUsername: {$name}\n\n";
+            (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
+            return $this->storePreparedPost('records/profile-names/' . $id . '.txt', $contents, [
+                'kind' => 'profile-name', 'author_identity_id' => $identity, 'username' => $name,
+            ]) + ['status' => 'ok', 'canonical_record' => $contents, 'record_path' => 'records/profile-names/' . $id . '.txt'];
+        });
+    }
+
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function finalizePreparedProfileName(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($token);
+            $contents = (string) ($input['canonical_record'] ?? '');
+            if (($prepared['kind'] ?? '') !== 'profile-name' || strtotime($prepared['expires_at']) < time()
+                || hash('sha256', $contents) !== $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared profile name mismatch or expiry.');
+            }
+            $identity = $this->requirePreparedMatch($input, $prepared, 'author_identity_id');
+            $path = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $record = (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
+            if ($record['Author-Identity-ID'] !== $identity || $path !== 'records/profile-names/' . $record['Record-ID'] . '.txt') {
+                throw new RuntimeException('Prepared profile name metadata mismatch.');
+            }
+            [$key, $fingerprint] = $this->publicKeyForIdentity($identity);
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            if (!$this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint)['ok']) {
+                throw new RuntimeException('Profile name signature verification failed.');
+            }
+            $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
+            if ($latest !== null && $record['Created-At'] <= $latest['Created-At']) {
+                throw new RuntimeException('A newer username was saved. Retry to prepare a fresh name change.');
+            }
+            $this->writeFile($path, $contents);
+            $this->writeFile($path . '.asc', $signature);
+            $commit = $this->commitCanonicalWrite([$path, $path . '.asc'], 'Set profile name for ' . $identity);
+            $this->refreshDerivedStateAfterCommit($commit['commit_sha']);
+            $this->invalidator()->invalidateAllGeneratedPresentation();
+            $this->deletePreparedPost($token);
+            return ['status' => 'ok', 'identity_id' => $identity, 'username' => $record['Username'], 'commit_sha' => $commit['commit_sha']];
+        });
+    }
+
     /**
      * @param array<string, mixed> $input
      * @return array<string, mixed>
@@ -1835,9 +1893,6 @@ class LocalWriteService
             if ((string) $prepared['invitation_action'] !== 'redeem' && !$this->isApprovedIdentity($authorIdentityId)) {
                 throw new RuntimeException('Only approved users can issue invitations.');
             }
-            if ($this->postTargetExists($postId)) {
-                throw new RuntimeException('Prepared post target already exists.');
-            }
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
             [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
             $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
@@ -1852,13 +1907,23 @@ class LocalWriteService
             }
             if ($record->action === 'redeem') {
                 $entry = $this->invitationLedger()->find($record->invitationId);
-                if ($entry === null || $entry['revoked'] !== null || $entry['redeemed'] !== null
-                    || !hash_equals($entry['issued']->verificationHash, $record->verificationHash)
-                    || strtotime((string) $entry['issued']->expiresAt) <= time()) {
-                    throw new RuntimeException('Invitation is invalid, expired, revoked, or already used.');
+                if ($entry === null || $entry['revoked'] !== null
+                    || !hash_equals($entry['issued']->verificationHash, $record->verificationHash)) {
+                    throw new RuntimeException('Invitation is invalid or revoked.');
+                }
+                if ($entry['redeemed'] !== null) {
+                    if ($entry['redeemed']->post->authorIdentityId !== $authorIdentityId || !$this->isApprovedIdentity($authorIdentityId)) {
+                        throw new RuntimeException('Invitation is used by another identity or member access is unavailable.');
+                    }
+                    return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'recovered' => true];
+                }
+                if (strtotime($entry['issued']->expiresAt) <= time()) throw new RuntimeException('Invitation has expired.');
+                if ($this->isApprovedIdentity($authorIdentityId)) {
+                    return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'already_approved' => true];
                 }
                 $context = $this->approvalContext((string) $entry['issued']->post->authorIdentityId, $authorIdentityId, (string) $record->post->threadId, (string) $record->post->parentId);
             }
+            if ($this->postTargetExists($postId)) throw new RuntimeException('Prepared post target already exists.');
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
             $commitResult = $this->commitCanonicalWrite([$recordPath, $recordPath . '.asc'], ucfirst($record->action) . ' invitation ' . $record->invitationId . ' by ' . $authorIdentityId);
@@ -1872,10 +1937,29 @@ class LocalWriteService
             $this->deletePreparedPost($prepareToken);
 
             return [
-                'status' => 'ok', 'post_id' => $postId, 'invitation_id' => $record->invitationId,
+                'status' => 'ok', 'destination' => $prepared['destination'] ?? '', 'post_id' => $postId, 'invitation_id' => $record->invitationId,
                 'verification_hash' => $record->verificationHash, 'commit_sha' => $commitResult['commit_sha'],
             ];
         });
+    }
+
+    /** Read-only bearer inspection; does not authenticate a recipient or consume an invite. */
+    public function inspectInvitation(string $token): array
+    {
+        $entry = $this->invitationForToken($token);
+        if ($entry['revoked'] !== null || ($entry['redeemed'] === null && strtotime($entry['issued']->expiresAt) <= time())) {
+            throw new RuntimeException('Invitation is expired or revoked.');
+        }
+        return ['status' => 'ok', 'targeted' => $entry['issued']->destination !== null,
+            'state' => $entry['redeemed'] === null ? 'available' : 'used'];
+    }
+
+    private function invitationForToken(string $token): array
+    {
+        if (!InvitationToken::isValidBearer($token)) throw new RuntimeException('Invitation token is invalid.');
+        $entry = $this->invitationLedger()->findByVerificationHash('sha256:' . hash('sha256', $token));
+        if ($entry === null) throw new RuntimeException('Invitation not found.');
+        return $entry;
     }
 
     /** @param array<string, mixed> $input @return array<string, mixed> */
@@ -1884,22 +1968,19 @@ class LocalWriteService
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $recipientIdentityId = $this->requireOpenPgpIdentityId((string) ($input['recipient_identity_id'] ?? ''), 'recipient_identity_id');
-            if ($this->isApprovedIdentity($recipientIdentityId)) {
-                throw new RuntimeException('Approved identities cannot redeem invitations.');
-            }
-            $token = trim((string) ($input['invite_token'] ?? ''));
-            if (!InvitationToken::isValidBearer($token)) {
-                throw new RuntimeException('Invitation token is invalid.');
-            }
-            $entry = $this->invitationLedger()->findByVerificationHash('sha256:' . hash('sha256', $token));
-            if ($entry === null || $entry['revoked'] !== null || $entry['redeemed'] !== null || strtotime((string) $entry['issued']->expiresAt) <= time()) {
-                throw new RuntimeException('Invitation is invalid, expired, revoked, or already used.');
+            $entry = $this->invitationForToken(trim((string) ($input['invite_token'] ?? '')));
+            $sameRecipient = $entry['redeemed'] !== null && $entry['redeemed']->post->authorIdentityId === $recipientIdentityId;
+            if ($entry['revoked'] !== null || ($entry['redeemed'] !== null && !$sameRecipient)
+                || (!$sameRecipient && strtotime($entry['issued']->expiresAt) <= time())) {
+                throw new RuntimeException('Invitation is expired, revoked, or used by another identity.');
             }
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $postId = $this->generateRecordId('reply');
             $createdAt = $this->canonicalTimestampNow();
+            if (!$sameRecipient && !$this->isApprovedIdentity($recipientIdentityId)) {
             $context = $this->approvalContext((string) $entry['issued']->post->authorIdentityId, $recipientIdentityId, $threadId, $parentId);
+            }
             $body = "Invitation-ID: {$entry['issued']->invitationId}\n"
                 . "Invitation-Action: redeem\n"
                 . "Verification-Hash: {$entry['issued']->verificationHash}\n\n";
@@ -3632,8 +3713,7 @@ class LocalWriteService
         if ($value === '') {
             return null;
         }
-        if (strlen($value) > 500 || !str_starts_with($value, '/') || str_starts_with($value, '//')
-            || str_contains($value, "\n") || str_contains($value, "\r") || str_contains($value, '#')) {
+        if (!\ForumRewrite\Support\InternalDestination::isValid($value)) {
             throw new RuntimeException('destination must be an internal absolute path.');
         }
 

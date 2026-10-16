@@ -95,7 +95,33 @@ final class MediaEmbedDetector
             return ['provider' => 'tiktok', 'embedId' => $matches[1]];
         }
 
+        $release = BandcampReleaseUrl::parse($url);
+        if ($release !== null) {
+            return ['provider' => 'bandcamp', 'embedId' => $release['url'], 'contentKind' => $release['kind']];
+        }
+
+        if (in_array($host, ['soundcloud.com', 'www.soundcloud.com'], true)
+            && !$this->hasPrivateMusicParameters($parts)
+            && preg_match('#^/([A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)/(?:(sets)/)?([A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?)/?$#D', $path, $m) === 1
+            && !in_array(strtolower($m[1]), ['discover', 'search', 'stream', 'you', 'charts', 'stations', 'sets', 'tracks', 'playlists', 'tags', 'people', 'pages', 'jobs', 'terms-of-use', 'settings', 'upload', 'messages', 'notifications', 'connect', 'oauth', 'oembed'], true)
+            && ($m[2] !== '' || !in_array(strtolower($m[3]), ['sets', 'tracks', 'albums', 'reposts', 'likes', 'followers', 'following', 'popular-tracks'], true))) {
+            return ['provider' => 'soundcloud', 'embedId' => $m[1] . '/' . ($m[2] !== '' ? 'sets/' : '') . $m[3], 'contentKind' => $m[2] !== '' ? 'playlist' : 'track'];
+        }
+
         return null;
+    }
+
+    private function hasPrivateMusicParameters(array $parts): bool
+    {
+        foreach (['query', 'fragment'] as $part) {
+            foreach (explode('&', $parts[$part] ?? '') as $pair) {
+                $key = strtolower(urldecode(explode('=', $pair, 2)[0]));
+                if (in_array($key, ['secret_token', 'secret-token', 'token', 'access_token', 'private'], true)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private function stripTrackingParams(string $url): string

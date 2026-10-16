@@ -147,7 +147,7 @@
     }
 
     var identityId = "openpgp:" + fingerprint;
-    if (authenticatedIdentityId() === identityId) {
+    if (!(options && options.force === true) && authenticatedIdentityId() === identityId) {
       setStatus("", "ok");
       if (requestedReturnDestination(options) !== "") {
         navigateAfterApproval(options);
@@ -220,11 +220,12 @@
 
     if (/^approved=1$/m.test(authenticationResult)) {
       setStatus("Identity verified. Entering the site...", "ok");
-      navigateAfterApproval(options);
+      if (!(options && options.navigate === false)) navigateAfterApproval(options);
       return { status: "approved", identityId: identityId };
     }
 
     var returnTo = requestedReturnDestination(options);
+    if (options && options.navigate === false) return { status: "pending", identityId: identityId };
     if (!isApprovedMembersOnly()) {
       setStatus("Identity verified.", "ok");
       if (returnTo !== "") {
@@ -273,6 +274,7 @@
 
   window.PrivateSiteAuth = { authenticate: authenticate };
   document.addEventListener("DOMContentLoaded", function () {
+    if (window.location && /^#invite=/.test(window.location.hash || "")) return;
     var state = document.querySelector("[data-private-site-auth-state]");
     if (!state) {
       return;

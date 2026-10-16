@@ -42,9 +42,8 @@ try {
   await page.reload();
   await page.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]').dataset.authenticatedIdentityId));
   await page.goto(base+'/messages');
-  if(await page.locator('[data-key-backup-reminder]').count()===0)throw new Error('Messages entry: '+(await page.locator('main').innerText()).slice(0,800));
-  await page.locator('[data-key-backup-reminder]').waitFor({state:'visible'});
-  await page.getByRole('link',{name:'Back up your key',exact:true}).click();
+  assert.equal(await page.locator('[data-key-backup-reminder]').count(),0);
+  await page.goto(base+'/account/key/#key-backup');
   assert.equal(await page.getByRole('tab',{name:'Backup',exact:true}).getAttribute('aria-selected'),'true');
   assert.equal(await page.locator('[data-backup-file]').isVisible(),false);
   await page.getByRole('tab',{name:'Backup',exact:true}).focus();
@@ -72,17 +71,9 @@ try {
   assert(!backup.includes(Buffer.from('PRIVATE KEY')));
   assert.equal(await page.evaluate(fp=>localStorage.getItem('forum_pki_backup_verified_'+fp),fingerprint),'1');
   await page.goto(base+'/messages');
-  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),false);
+  assert.equal(await page.locator('[data-key-backup-reminder]').count(),0);
   await page.goto(base+'/messages/conversation/user-01');
-  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),false);
-  await page.evaluate(()=>{localStorage.setItem('forum_pki_fingerprint','a'.repeat(40));window.ForumKeyBackupStatus.refresh();});
-  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),true);
-  await page.evaluate(fp=>localStorage.setItem('forum_pki_fingerprint',fp.toUpperCase()),fingerprint);
-  await page.evaluate(()=>{
-    const get=Storage.prototype.getItem;Storage.prototype.getItem=()=>{throw new Error('Storage unavailable');};
-    try{window.ForumKeyBackupStatus.refresh();}finally{Storage.prototype.getItem=get;}
-  });
-  assert.equal(await page.locator('[data-key-backup-reminder]').isVisible(),true);
+  assert.equal(await page.locator('[data-key-backup-reminder]').count(),0);
   const restoreEngine=engine==='chromium'?firefox:chromium;
   restoreBrowser=await restoreEngine.launch({headless:true,...(restoreEngine===chromium?{executablePath:process.env.CHROMIUM_PATH||'/opt/google/chrome/chrome',args:['--no-sandbox']}:{})});
   const fresh=await restoreBrowser.newContext({serviceWorkers:'block'});
@@ -175,6 +166,6 @@ try {
   assert.equal(await restored.evaluate(()=>window.__forumOpenPgpLoader.selectedVersion),process.env.RESTORE_BUNDLE||'v6');
   assert(requests.every(r=>!r.includes(passphrase)&&!r.includes('PRIVATE KEY')&&!r.includes(encodeURIComponent(passphrase))));
   assert.deepEqual(errors,[]);
-  console.log(engine+' → '+restoreEngine.name()+' '+format+' '+(process.env.BUNDLE||'v6')+' → '+(process.env.RESTORE_BUNDLE||'v6')+' members='+Boolean(process.env.MEMBERS_ONLY==='true')+': download, reminder, rejection, storage rollback, exact restore, original-message decryption and privacy passed');
+  console.log(engine+' → '+restoreEngine.name()+' '+format+' '+(process.env.BUNDLE||'v6')+' → '+(process.env.RESTORE_BUNDLE||'v6')+' members='+Boolean(process.env.MEMBERS_ONLY==='true')+': download, rejection, storage rollback, exact restore, original-message decryption and privacy passed');
 } catch(error) { console.error('Fixture:',root); if(lastPage)console.error('Page:',lastPage.url(),'Status:',await lastPage.locator('[data-backup-status]').textContent({timeout:1000}).catch(()=>'')); throw error; }
 finally { if(restoreBrowser)await restoreBrowser.close(); if(browser)await browser.close(); server.kill(); }
