@@ -2185,6 +2185,25 @@ NODE;
         }
     }
 
+    public function testVerifiedScriptureInitialPublishesThroughNormalRequest(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE');
+        putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
+                $body = (string) $pdo->query('SELECT body FROM posts WHERE post_id = ' . $pdo->quote($initial))->fetchColumn();
+                assertStringContains('The thoughts of the diligent tend only to plenteousness;', $body);
+                assertStringContains('Proverbs 21:5, KJV', $body);
+                assertStringNotContains('"segments"', $body);
+                $row = $store->findByTarget($source, (string) $pdo->query('SELECT target_content_hash FROM post_generated_responses WHERE target_post_id = ' . $pdo->quote($source))->fetchColumn());
+                assertSame(\ForumRewrite\Agent\ScriptureSource::DIGEST, $row['raw_response']['scripture_verification']['source_digest']);
+                $status = json_decode($this->renderMethod($app, 'GET', '/api/scripture_reply_status?post_id=' . $source), true);
+                assertSame($initial, $status['agent_post_id']);
+                assertStringContains('Proverbs 21:5', $this->renderMethod($app, 'GET', '/threads/' . $source));
+            });
+        } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
+    }
+
     public function testScriptureInitialStatusReadsStoredResultsAndHonorsVisibility(): void
     {
         $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {

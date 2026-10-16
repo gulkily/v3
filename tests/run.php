@@ -39,6 +39,7 @@ $testFiles = [
     __DIR__ . '/DetachedTaskQueueLauncherTest.php',
     __DIR__ . '/ScriptureTaskLauncherTest.php',
     __DIR__ . '/ScriptureSourceTest.php',
+    __DIR__ . '/ScriptureVerifiedReplyTest.php',
     __DIR__ . '/DevServerLogTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
