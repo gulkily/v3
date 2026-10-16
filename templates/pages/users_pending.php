@@ -56,7 +56,7 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
           </td>
           <td class="pending-approvals-action-cell" data-label="Approve">
             <button type="button" class="pending-approvals-action-button" data-action="approve-user" data-profile-slug="<?= $e($profile['profile_slug']) ?>">
-              Review account key approval
+              Approve
             </button>
           </td>
         </tr>

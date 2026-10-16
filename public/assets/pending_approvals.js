@@ -9,13 +9,13 @@
     node.hidden = false;
   }
 
-  async function approveUser(profileSlug) {
+  async function approveUser(profileSlug, options = {}) {
     const signing = window.ForumBrowserSigning || null;
     if (!signing || typeof signing.submitSignedApproval !== "function") {
       throw new Error("Browser signing is unavailable. Refresh this page and try again.");
     }
 
-    const result = await signing.submitSignedApproval(profileSlug);
+    const result = await signing.submitSignedApproval(profileSlug, options);
     if (!result || !result.ok) {
       throw new Error(result && result.error ? result.error : "Unable to approve user.");
     }
@@ -48,7 +48,7 @@
       setFeedback(feedback, "Preparing and signing approval...", "ok");
 
       try {
-        await approveUser(profileSlug);
+        await approveUser(profileSlug, { confirm: false });
 
         const row = button.closest("tr");
         const username = row ? row.getAttribute("data-username") || profileSlug : profileSlug;

@@ -1211,7 +1211,7 @@
     return finalized;
   }
 
-  async function submitSignedApproval(profileSlug) {
+  async function submitSignedApproval(profileSlug, options = {}) {
     await ensureActionIdentity(null, null);
     const authorIdentityId = currentAuthorIdentityId();
     if (!authorIdentityId) {
@@ -1243,7 +1243,7 @@
     if (!review || !review.label || !review.consequence || !review.target_identity_id) {
       return { ok: false, error: "Approval review is unavailable. Refresh and try again." };
     }
-    if (!window.confirm(review.label + "?\n\n" + review.consequence + "\n\nAccount key: " + review.target_identity_id)) {
+    if (options.confirm !== false && !window.confirm(review.label + "?\n\n" + review.consequence + "\n\nAccount key: " + review.target_identity_id)) {
       return { ok: false, error: "Approval cancelled. No key was approved." };
     }
 
