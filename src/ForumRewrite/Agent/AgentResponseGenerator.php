@@ -57,6 +57,7 @@ final class AgentResponseGenerator
                 'exchange_dependencies' => $task['exchange_dependencies'] ?? \ForumRewrite\Llm\ExchangeDependencies::manifest([], false),
             ],
         ];
+        if ($settings?->writerModel !== null) { $options['scripture_writer_model'] = $settings->writerModel; }
         if ($settings?->reasoningEffort !== null) {
             $options['reasoning_effort'] = $settings->reasoningEffort;
         }

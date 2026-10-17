@@ -52,16 +52,19 @@ final class AgentResponseGeneratorTest
     {
         $provider = new FakeTextChatProvider('Reply.');
         $config = ['LLM_PROVIDER' => 'openai', 'LLM_MODEL' => 'gpt-5-nano',
-            'SCRIPTURE_RESPONSE_GUIDANCE' => 'revised', 'SCRIPTURE_RESPONSE_REASONING_EFFORT' => 'low'];
+            'SCRIPTURE_RESPONSE_GUIDANCE' => 'revised', 'SCRIPTURE_RESPONSE_REASONING_EFFORT' => 'low', 'SCRIPTURE_RESPONSE_MODEL' => 'gpt-5.6-sol'];
         $generator = new AgentResponseGenerator($provider, true, true, 8192, $config);
         $generator->generate(['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'A concern.']);
+        assertSame('gpt-5.6-sol', $provider->options['scripture_writer_model']);
         assertSame('low', $provider->options['reasoning_effort']);
         assertSame(8192, $provider->options['max_completion_tokens']);
         assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_oriented_analysis_revised.txt')), $provider->messages[1]['content']);
         $generator->generate(['type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, 'original_post' => 'Concern.', 'initial_answer' => 'Initial.']);
+        assertSame('gpt-5.6-sol', $provider->options['scripture_writer_model']);
         assertSame('low', $provider->options['reasoning_effort']);
         assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_expansion_revised.txt')), $provider->messages[1]['content']);
         $generator->generate(['type' => AgentResponseTask::LOGIC_ANALYSIS_TYPE]);
+        assertSame(false, isset($provider->options['scripture_writer_model']));
         assertSame(false, isset($provider->options['reasoning_effort']));
         assertSame(false, str_contains($provider->messages[1]['content'], 'Examples illustrate judgment'));
         // An unsupported scripture configuration must not break unrelated tasks.

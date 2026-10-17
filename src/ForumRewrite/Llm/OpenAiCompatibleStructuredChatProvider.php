@@ -45,11 +45,12 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
     public function completeTextChat(array $messages, array $options = []): array
     {
         $startedAt = hrtime(true);
-        $response = $this->postJson('/v1/chat/completions', $this->textPayloadFor($messages, $options), $this->exchangeContext($options));
+        $payload = $this->textPayloadFor($messages, $options);
+        $response = $this->postJson('/v1/chat/completions', $payload, $this->exchangeContext($options) + ['writer_model' => $payload['model']]);
 
         return [
             'provider' => $this->providerName,
-            'provider_model' => (string) ($response['model'] ?? $this->model),
+            'provider_model' => (string) ($response['model'] ?? $payload['model']),
             'provider_request_id' => isset($response['id']) ? (string) $response['id'] : null,
             'response_text' => TextChatCompletionDecoder::decodeOpenAiCompatiblePayload($response),
             'raw_response' => $response,
@@ -88,15 +89,22 @@ final class OpenAiCompatibleStructuredChatProvider implements StructuredChatProv
      */
     private function textPayloadFor(array $messages, array $options): array
     {
+        $model = $this->model;
+        if (isset($options['scripture_writer_model'])) {
+            if ($this->providerName !== 'openai' || !in_array($options['scripture_writer_model'], ['gpt-5-mini', 'gpt-5.6-sol'], true)) {
+                throw new \InvalidArgumentException('Unsupported scripture writer model.');
+            }
+            $model = $options['scripture_writer_model'];
+        }
         $payload = [
-            'model' => $this->model,
+            'model' => $model,
             'messages' => $messages,
             'max_completion_tokens' => max(1, (int) ($options['max_completion_tokens'] ?? 800)),
         ];
         if (isset($options['reasoning_effort'])) {
             if ($this->providerName !== 'openai'
-                || preg_match('/^gpt-5(?:-nano|-mini)?(?:-2025-08-07)?$/D', $this->model) !== 1
-                || !in_array($options['reasoning_effort'], ['minimal', 'low', 'medium', 'high'], true)) {
+                || preg_match('/^(?:gpt-5(?:-nano|-mini)?(?:-2025-08-07)?|gpt-5\.6-sol)$/D', $model) !== 1
+                || !in_array($options['reasoning_effort'], ($model === 'gpt-5.6-sol' ? ['low'] : ['minimal', 'low', 'medium', 'high']), true)) {
                 throw new \InvalidArgumentException('Unsupported explicit reasoning effort for this provider/model.');
             }
             $payload['reasoning_effort'] = $options['reasoning_effort'];
