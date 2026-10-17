@@ -4,7 +4,7 @@ This release lets an existing approved operator start a genuine Railspike Step 1
 
 ## Runtime layout and prerequisites
 
-Use the existing [production deployment](production_deploy.md) and [task-queue recovery](operator_recovery.md) procedures. The server needs PHP 8.1+, PDO SQLite, Git, GnuPG for browser-action verification, cron, `proc_open`, outbound model-service access, and a Codex binary with working Linux read-only sandbox support. No model runs in an HTTP request.
+Use the existing [production deployment](production_deploy.md) and [task-queue recovery](operator_recovery.md) procedures. The server needs PHP 8.1+, PDO SQLite, Git, GnuPG for browser-action verification, cron, `proc_open`, outbound model-service access, and a Codex binary. Read-only mode requires working Linux sandbox support; an explicit unsandboxed exception is described below. No model runs in an HTTP request.
 
 Example paths (adapt to the instance):
 
@@ -17,7 +17,7 @@ Example paths (adapt to the instance):
 | Separate assessment Git checkout | `/srv/zenmemes-assessment` |
 | Private Codex credentials/output home | `/var/lib/zenmemes-worker/codex` |
 
-Run the normal queue worker under the existing trusted queue service identity, separate from public request handling where hosting permits. Give it only the permissions required by the existing maintenance jobs. Its Codex subprocess uses an isolated read-only assessment checkout. Never grant the assessment worker production deployment keys or root privileges. A separate checkout is not itself a sandbox: verify the Codex sandbox actually works on this host. Do not bypass it to accommodate a restricted shared host.
+Run the normal queue worker under the existing trusted queue service identity, separate from public request handling where hosting permits. Give it only the permissions required by the existing maintenance jobs. Its Codex subprocess uses an isolated read-only assessment checkout. Avoid giving the assessment worker production deployment keys or root privileges. A separate checkout is not itself a sandbox: verify the Codex sandbox actually works on this host when using read-only mode.
 
 The web process needs read/write access to the private SQLite database and its directory for journal/sidecar files; the queue worker must use the **same file**. Keep that directory outside the document root, canonical content repository, published artifacts, and public read model. Restrict ownership/group permissions to these service identities (for example directory `0770`, files `0660` with a shared private group and restrictive umask). Back up this private database separately; a content archive/read-model rebuild cannot reconstruct approvals.
 
@@ -61,9 +61,12 @@ FORUM_RAILSPIKE_WORKSPACE=/srv/zenmemes-assessment
 FORUM_RAILSPIKE_CODEX_HOME=/var/lib/zenmemes-worker/codex
 FORUM_RAILSPIKE_MODEL=<explicit model available to the worker's account/project>
 FORUM_RAILSPIKE_TIMEOUT_SECONDS=90
+FORUM_RAILSPIKE_SANDBOX_MODE=read-only
 ```
 
-Set the same `FORUM_TASK_QUEUE_DATABASE_PATH` in Apache/PHP configuration. The web process does not need Codex credentials. Existing maintenance/provider variables still apply to the shared queue. The adapter starts Codex with a restricted environment, ignores user configuration, fixes read-only sandboxing and `approval_policy="never"`, and chooses the configured model explicitly. Saved CLI authentication still uses the configured `CODEX_HOME`.
+Set the same `FORUM_TASK_QUEUE_DATABASE_PATH` in Apache/PHP configuration. The web process does not need Codex credentials. Existing maintenance/provider variables still apply to the shared queue. The adapter starts Codex with a restricted environment, ignores user configuration, defaults to read-only sandboxing and fixes `approval_policy="never"`, and chooses the configured model explicitly. Saved CLI authentication still uses the configured `CODEX_HOME`.
+
+For an operator who explicitly accepts unsandboxed execution on a restricted host, set `FORUM_RAILSPIKE_SANDBOX_MODE=unsandboxed` in the worker environment. This passes `--dangerously-bypass-approvals-and-sandbox`; it grants model-run commands the worker account’s filesystem and network access, including accessible production files and credentials. The separate checkout and assessment-only prompt do not enforce isolation. Only `read-only` (the default) and `unsandboxed` are accepted; invalid values fail before launch. Restore `read-only` to reverse the setting. Re-run live acceptance after changing modes and record the selected mode with the acceptance evidence.
 
 The 90-second maximum is enforced even if a larger timeout is configured; the minimum is five seconds. Input is capped at 256 KiB, captured progress at 1 MiB, and final structured output at 128 KiB. The first 100 chronological thread posts form the initial snapshot. Oversized context or invalid output fails visibly instead of being silently truncated. Temporary schema/results are private and removed after normal completion; after a killed worker, an operator may remove orphan `assessment-*` directories when no job uses them.
 

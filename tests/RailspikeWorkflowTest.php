@@ -154,19 +154,28 @@ final class RailspikeWorkflowTest
 #!/usr/bin/php
 <?php
 $prompt=stream_get_contents(STDIN);
-if (!in_array('read-only',$argv,true) || !in_array('--ignore-user-config',$argv,true) || !in_array('approval_policy="never"',$argv,true)) exit(9);
+if (!in_array('--ignore-user-config',$argv,true) || !in_array('approval_policy="never"',$argv,true)) exit(9);
+$unsafe=in_array('--dangerously-bypass-approvals-and-sandbox',$argv,true);
+if (str_contains($prompt,'request-unsandboxed')) {
+    if (!$unsafe || in_array('--sandbox',$argv,true)) exit(9);
+} elseif ($unsafe || !in_array('--sandbox',$argv,true) || !in_array('read-only',$argv,true)) exit(9);
 $out=$argv[array_search('-o',$argv,true)+1];
 if (str_contains($prompt,'request-slow')) sleep(8);
 if (str_contains($prompt,'request-invalid')) { file_put_contents($out,'{}'); exit(0); }
 file_put_contents($out,json_encode(['kind'=>'questions','questions'=>['Which phone?'],'assessment'=>'']));
 STUB);
         chmod($binary,0700);
-        $vars=['FORUM_RAILSPIKE_WORKSPACE'=>$root.'/workspace','FORUM_RAILSPIKE_CODEX_HOME'=>$root.'/home','FORUM_CODEX_EXECUTABLE'=>$binary,'FORUM_RAILSPIKE_MODEL'=>'fixture-model','FORUM_RAILSPIKE_TIMEOUT_SECONDS'=>'5'];
+        $vars=['FORUM_RAILSPIKE_WORKSPACE'=>$root.'/workspace','FORUM_RAILSPIKE_CODEX_HOME'=>$root.'/home','FORUM_CODEX_EXECUTABLE'=>$binary,'FORUM_RAILSPIKE_MODEL'=>'fixture-model','FORUM_RAILSPIKE_TIMEOUT_SECONDS'=>'5','FORUM_RAILSPIKE_SANDBOX_MODE'=>''];
         $old=[]; foreach ($vars as $k=>$v) { $old[$k]=getenv($k); putenv($k.'='.$v); }
         try {
             $runner=new \ForumRewrite\Railspike\CodexAssessmentRunner(dirname(__DIR__));
             $row=['request'=>'request-valid','context'=>[],'history'=>[]];
             assertSame('questions',$runner($row)['kind']);
+            putenv('FORUM_RAILSPIKE_SANDBOX_MODE=unsandboxed');
+            assertSame('questions',$runner(array_merge($row,['request'=>'request-unsandboxed']))['kind']);
+            putenv('FORUM_RAILSPIKE_SANDBOX_MODE=invalid');
+            $this->rejects(fn () => $runner->readiness());
+            putenv('FORUM_RAILSPIKE_SANDBOX_MODE=read-only');
             $this->rejects(fn () => $runner(array_merge($row,['request'=>'request-invalid'])));
             $started=microtime(true);
             $this->rejects(fn () => $runner(array_merge($row,['request'=>'request-slow'])));
