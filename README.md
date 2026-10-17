@@ -40,6 +40,8 @@ that stays accurate even as implementation details move around:
 - [Site Feature Flags Record](docs/specs/site_feature_flags_record_v1.md)
 - [Feature Flag Change Record](docs/specs/feature_flag_change_record_v1.md)
 - [User Approval Seed Record](docs/specs/user_approval_seed_record_v1.md)
+- [Approval Acceptance Receipts](docs/specs/approval_acceptance_record_v1.md)
+- [Account Key Approval Safety Runbook](docs/runbooks/account_key_approval_safety.md)
 - [Agent Reply One-Step Analyze/Publish Contract](docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md)
 - [Asset Fingerprinting and CSS Splitting](docs/specs/asset_fingerprinting_and_css_split_v1.md)
 - [Read-Model SQLite Schema Reference](docs/specs/read_model_schema_v1.md)
@@ -327,6 +329,8 @@ Registered site feature flags are visible at `/tools/feature-flags/`. A root-app
 
 `FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED` is off by default. Enable it from that Feature Flags page (or set it to `true` in the deployment environment) to prepare a browser-local `guest` keypair for new visitors before their first signed action. The private key stays in the browser. Automatic preparation defers public-key publication by default; Account Key offers a per-browser immediate-publication preference. Later authentication or identity-readiness flows can also publish the saved key. Disabling the flag stops future automatic preparation but does not remove a keypair already saved in a browser. Preparing a keypair does not grant membership approval.
 
+`FORUM_USERNAME_CHANGES_ENABLED` is off by default. While it is off, Account hides **Choose username** and `/api/prepare_profile_name` and `/api/finalize_profile_name` refuse requests. Turning it on lets a member sign a name change with their existing key; keys, identity IDs and approvals are unchanged. Turning it off again stops new changes without removing saved names or records.
+
 To restrict member content to authenticated approved identities, enable `FORUM_APPROVED_MEMBERS_ONLY=true` in its feature-flags record or deployment environment (default: `false`). Entry/recovery exceptions include Lobby, Account Key, documentation GETs, identity/authentication and invitation-redemption endpoints, and the session-bound own profile. Public assets and the version endpoint remain available. Other protected content, feeds, APIs, and downloads require member access; each action can impose additional permissions. Authentication publishes a saved browser identity when needed before verifying its challenge signature. The flag is independent of `FORUM_SITE_ID` and theme selection. See [Authentication Modes and Access](docs/reference/authentication_modes.md) for the access matrix, exact exceptions, and recovery paths.
 
 Local site profiles share the instance's repository and read-model database. The site selector changes presentation but not approval-command state:
@@ -462,6 +466,8 @@ curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/recor
 # low-level/manual fallback:
 curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc" "http://127.0.0.1:8000/api/link_identity?bootstrap_post_id=root-001"
 ```
+
+Account-key approval uses explicit account/key review, durable acceptance receipts, and classic/Forte account history. `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` defaults to enabled; disabling it restricts future member cross-account grants while preserving sponsorship, own-account additions, operator authority, and previously accepted keys. Authenticated root-approved operators can correlate grants and signed policy changes at `/activity/?view=security`. See the [rollout and recovery runbook](docs/runbooks/account_key_approval_safety.md).
 
 Approval helper examples:
 

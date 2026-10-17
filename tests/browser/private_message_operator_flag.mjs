@@ -44,7 +44,12 @@ async function checkOverride(context, root, project, value) {
 
 export async function checkOperatorMessagingFlag(operator, member, base, root, project) {
   const page = await operator.newPage();
-  await page.goto(base + '/tools/feature-flags/');
+  await page.goto(base + '/tools/');
+  await page.locator('a[href="/tools/feature-flags/"]').first().click();
+  await page.waitForURL('**/tools/feature-flags/');
+  const search = page.getByRole('searchbox', { name: 'Search flags' });
+  await search.fill(key);
+  await page.locator('[data-flag-filter="enabled"]').click();
   const row = page.locator(`[data-flag-key="${key}"]`);
   assert.equal(await row.getByRole('switch').getAttribute('aria-checked'), 'true');
   const denied = await member.request.post(base + '/api/prepare_feature_flag_change', { data: { key, value: 'false' } });
@@ -65,6 +70,11 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
   assert.match(navigation.headers()['cache-control'], /no-store/);
   assert.equal((await navigation.json()).messaging_enabled, true, 'Navigation resolves the authenticated session');
   await toggle(false);
+  assert.equal(await row.isVisible(), false, 'Signed toggle leaves the enabled results');
+  assert.equal(await search.evaluate(node => node === document.activeElement), true);
+  assert.equal(await page.locator('[data-flag-filter="enabled"] [data-flag-filter-count]').innerText(), '0');
+  await page.locator('[data-flag-filter="all"]').click();
+  await search.fill('');
   await page.waitForFunction(() => !document.querySelector('[data-private-message-unread]'));
   // Finish admitted work and let this stale settings page observe the disabled response.
   await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
@@ -103,11 +113,17 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
   assert.equal((await member.request.get(base + '/api/private_messages/conversations')).status(), 200);
   await toggle(false);
   await page.reload(); // Exercise a settings page that has never loaded messaging assets.
+  await search.fill(key);
+  await page.locator('[data-flag-filter="overridden"]').click();
   assert.equal(await page.locator('script[src*="private_message"]').count(), 0);
   await page.evaluate(() => { window.navigationSentinel = 'retained'; });
   let syncRequests = 0;
   page.on('request', request => { if (request.url().includes('/api/private_messages/history_sync/')) syncRequests++; });
   await toggle(true, true); // Signed reset restores the enabled default.
+  assert.equal(await row.isVisible(), false, 'Signed reset leaves the overridden results');
+  assert.equal(await search.evaluate(node => node === document.activeElement), true);
+  await page.locator('[data-flag-filter="all"]').click();
+  await search.fill('');
   await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
   await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
   assert(syncRequests > 0, 'Initially disabled page resumes history sync');

@@ -11,7 +11,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
     ? strtolower(trim((string) ($viewerProfile['identity_id'] ?? '')))
     : '';
 ?>
-<section class="stack" data-account-key-root data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
+<section class="stack" data-account-key-root data-username-changes-enabled="<?= ($usernameChangesEnabled ?? false) ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <article class="card">
     <header class="account-key-header">
       <h1>Account Key</h1>
@@ -39,7 +39,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
         </div>
         <div class="account-key-simple-actions">
           <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
-          <button type="button" class="account-key-secondary-button" data-action="rename-profile">Choose username</button>
+          <button type="button" class="account-key-secondary-button" data-action="rename-profile"<?= ($usernameChangesEnabled ?? false) ? '' : ' hidden' ?>>Choose username</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
         <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
@@ -236,7 +236,9 @@ No browser private key saved yet.
       }
 
       if (generateButton) {
-        generateButton.textContent = ready ? 'Re-setup / change name' : 'Set up this browser';
+        generateButton.textContent = !ready
+          ? 'Set up this browser'
+          : (root.dataset.usernameChangesEnabled === '1' ? 'Start over with a new key' : 'Re-setup / change name');
       }
 
       if (clearIdentityButton) {

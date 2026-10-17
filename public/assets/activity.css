@@ -1,3 +1,27 @@
+.paned-activity-context {
+  flex: 0 0 auto;
+  margin: 0.5rem 0.5rem 0;
+  overflow-wrap: anywhere;
+}
+
+.paned-activity-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.paned-activity-heading h1 {
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+}
+
+.paned-activity-context .activity-security-notice {
+  margin: 0.35rem 0 0;
+  color: var(--paned-ink-soft);
+}
+
 .activity-commit-manifest {
   margin-top: 0.8rem;
   padding-top: 0.7rem;

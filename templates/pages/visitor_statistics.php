@@ -60,7 +60,7 @@
       <thead><tr><th><?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?></th><th>Eligible</th><th>Anonymous</th><th>Authenticated</th><th>Estimated clients</th><th>Authenticated users</th></tr></thead>
       <tbody>
 <?php foreach ($buckets as $bucket): ?>
-        <tr><th scope="row"><?= $e($bucket['bucket_start']) ?></th><td><?= $e(number_format($bucket['visits'])) ?></td><td><?= $e(number_format($bucket['anonymous_visits'])) ?></td><td><?= $e(number_format($bucket['authenticated_visits'])) ?></td><td><?= $e(number_format($bucket['clients'])) ?></td><td><?= $e(number_format($bucket['authenticated_users'])) ?></td></tr>
+        <tr><th scope="row"><?= $e($periodKey === '24h' ? $bucket['bucket_start'] : substr($bucket['bucket_start'], 0, 10)) ?></th><td><?= $e(number_format($bucket['visits'])) ?></td><td><?= $e(number_format($bucket['anonymous_visits'])) ?></td><td><?= $e(number_format($bucket['authenticated_visits'])) ?></td><td><?= $e(number_format($bucket['clients'])) ?></td><td><?= $e(number_format($bucket['authenticated_users'])) ?></td></tr>
 <?php endforeach; ?>
       </tbody>
     </table>

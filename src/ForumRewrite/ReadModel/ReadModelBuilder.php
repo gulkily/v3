@@ -33,6 +33,8 @@ final class ReadModelBuilder
     private array $threadLabelActivityEvents = [];
     /** @var array<int, array{created_at:string,post_id:string,thread_id:string,author_identity_id:?string,tags:list<string>,board_tags_json:string,source_path:string,source_commit_sha:?string}> */
     private array $postReactionActivityEvents = [];
+    /** @var list<array<string, string|null>> */
+    private array $profileNameActivityEvents = [];
     /** @var array<string, ?string> */
     private array $sourceCommitShaByPath = [];
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
@@ -65,6 +67,7 @@ final class ReadModelBuilder
         $this->invalidThreadSubjectRecordCount = 0;
         $this->threadLabelActivityEvents = [];
         $this->postReactionActivityEvents = [];
+        $this->profileNameActivityEvents = [];
         $this->sourceCommitShaByPath = [];
         $pdo->beginTransaction();
         try {
@@ -640,7 +643,7 @@ final class ReadModelBuilder
         );
 
         $paths = $this->findRelativePaths('records/identity');
-        $names = ProfileNames::latest($this->repositoryRoot);
+        $nameHistory = ProfileNames::history($this->repositoryRoot);
         $profiles = [];
         $claimedUsernameTokens = [];
         foreach ($this->progressItems('parsing_identity_records', $paths) as $index => $relativePath) {
@@ -651,7 +654,21 @@ final class ReadModelBuilder
             }
 
             $publicKey = $this->canonicalRepository->loadPublicKey($publicKeyPath);
-            $username = $names[$identity->identityId]['Username'] ?? ($identity->username !== '' ? $identity->username : 'guest');
+            $bootstrapUsername = $identity->username !== '' ? $identity->username : 'guest';
+            $previousUsername = $bootstrapUsername;
+            foreach ($nameHistory[$identity->identityId] ?? [] as $nameRecord) {
+                $namePath = 'records/profile-names/' . $nameRecord['Record-ID'] . '.txt';
+                $this->profileNameActivityEvents[] = [
+                    'created_at' => $nameRecord['Created-At'],
+                    'identity_id' => $identity->identityId,
+                    'previous_username' => $previousUsername,
+                    'username' => $nameRecord['Username'],
+                    'source_path' => $namePath,
+                    'source_commit_sha' => $this->sourceCommitShaForPath($namePath),
+                ];
+                $previousUsername = $nameRecord['Username'];
+            }
+            $username = $previousUsername;
             $usernameToken = strtolower($username);
             $fallbackLabel = $username . '-' . substr(strtolower($identity->signerFingerprint), 0, 8);
             $profile = [
@@ -787,8 +804,10 @@ final class ReadModelBuilder
                 default => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
             };
             $label = $this->activityLabelForPost($post);
+            $receipt = in_array($kind, ['approval', 'invitation'], true)
+                ? \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $post['source_path']) : null;
             $stmt->execute([
-                'created_at' => $post['created_at'],
+                'created_at' => $receipt['accepted_at'] ?? $post['created_at'],
                 'kind' => $kind,
                 'record_family' => $recordFamily,
                 'action_key' => $post['source_path'],
@@ -844,6 +863,27 @@ final class ReadModelBuilder
                 'label' => 'Tags added: ' . implode(', ', $event['tags']),
                 'board_tags_json' => $event['board_tags_json'],
                 'author_identity_id' => $event['author_identity_id'],
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $event['source_path'],
+                'source_commit_sha' => $event['source_commit_sha'],
+            ]);
+        }
+
+        foreach ($this->progressItems('writing_profile_name_activity', $this->profileNameActivityEvents) as $event) {
+            $author = $this->resolveActivityAuthor($pdo, $event['identity_id']);
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'profile_name_change',
+                'record_family' => 'profile_name',
+                'action_key' => $event['source_path'],
+                'post_id' => null,
+                'thread_id' => null,
+                'label' => 'Changed username from ' . $event['previous_username'] . ' to ' . $event['username'],
+                'board_tags_json' => '["identity","profile-name"]',
+                'author_identity_id' => $event['identity_id'],
                 'author_profile_slug' => $author['author_profile_slug'],
                 'author_username_token' => $author['author_username_token'],
                 'author_label' => $author['author_label'],
@@ -1372,6 +1412,9 @@ final class ReadModelBuilder
             $changed = false;
             foreach ($this->progressItems('checking_approval_posts', $posts) as $post) {
                 $targetIdentityId = $this->extractApprovalTargetIdentityId($post);
+                if ($targetIdentityId !== null && isset($post['source_path'])) {
+                    \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $post['source_path']);
+                }
                 if ($targetIdentityId === null || !isset($profiles[$targetIdentityId]) || isset($approved[$targetIdentityId])) {
                     continue;
                 }
@@ -1434,40 +1477,7 @@ final class ReadModelBuilder
      */
     private function invitationApprovalCandidates(array $posts): array
     {
-        $posts = $this->measure('sort_invitation_posts', fn (): array => \ForumRewrite\Invitation\InvitationReplayOrder::sortPosts($posts));
-        $issued = [];
-        $candidates = [];
-        foreach ($this->progressItems('replaying_invitation_posts', $posts) as $post) {
-            $tags = json_decode($post['board_tags_json'], true);
-            if (!is_array($tags) || !in_array('invitation', $tags, true)) {
-                continue;
-            }
-            if (preg_match('/^Invitation-ID: (invite-[a-z0-9]{16,64})$/m', $post['body'], $id) !== 1
-                || preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action) !== 1
-                || preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $post['body'], $hash) !== 1) {
-                continue;
-            }
-            $key = $id[1];
-            if ($action[1] === 'issue' && $post['author_identity_id'] !== null
-                && preg_match('/^Expires-At: (.+)$/m', $post['body'], $expires) === 1) {
-                $issued[$key] = ['hash' => $hash[1], 'issuer' => $post['author_identity_id'], 'expires' => $expires[1], 'revoked' => false, 'redeemed' => false];
-                continue;
-            }
-            if (!isset($issued[$key]) || !hash_equals($issued[$key]['hash'], $hash[1])) {
-                continue;
-            }
-            if ($action[1] === 'revoke' && $post['author_identity_id'] === $issued[$key]['issuer']) {
-                $issued[$key]['revoked'] = true;
-                continue;
-            }
-            if ($action[1] === 'redeem' && !$issued[$key]['revoked'] && !$issued[$key]['redeemed']
-                && strtotime($issued[$key]['expires']) > time() && $post['author_identity_id'] !== null) {
-                $issued[$key]['redeemed'] = true;
-                $candidates[] = ['target_identity_id' => $post['author_identity_id'], 'approver_identity_id' => $issued[$key]['issuer'], 'thread_id' => $post['thread_id'], 'parent_id' => $post['parent_id']];
-            }
-        }
-
-        return $candidates;
+        return \ForumRewrite\Invitation\InvitationApprovalReplay::candidates($this->repositoryRoot, $posts);
     }
 
     private function loadApprovalSeedIdentityIds(): array

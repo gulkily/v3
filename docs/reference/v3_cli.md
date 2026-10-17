@@ -36,21 +36,24 @@ and the bootstrap flow.
 ## Synchronize Railspike workflow documentation
 
 ```bash
-./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/gulkily/railspike.git]
+./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.0-beta.1]
 ./v3 fdp sync ... # deprecated alias; updates Railspike, never FDP
 ```
 
-Updates the vendored `docs/railspike/` subtree from `master`, creating Git
-update commits. The target defaults to this checkout; `--repository-root`
+Updates the vendored `docs/railspike/` subtree to an explicit release tag
+(`--ref`, default the pinned `v0.2.0-beta.1`), creating Git update commits. Branch
+names such as `main` are refused, so a plain sync never moves the installed
+version. The tag must descend from the commit in `docs/railspike/RAILSPIKE_SOURCE.md`,
+which the command updates and commits after a successful merge. The target defaults to this checkout; `--repository-root`
 selects another already-migrated repository root. A clean working tree and
 complete subtree import history are required. Unmigrated targets receive
 migration guidance without modification.
 
-The default source is `https://github.com/gulkily/railspike.git`. An existing
+The default source is `https://github.com/rlspk/railspike.git`. An existing
 `railspike` remote must match it; `--remote-url` explicitly chooses another
 source or fork. The selected source is recorded as the `railspike` remote only
 after a successful merge (including a no-op). It must retain the recorded
-upstream revision in its `master` history. No `fdp` remote is changed.
+upstream revision in its tag history. No `fdp` remote is changed.
 
 Review upstream before updating; the command does not pause for diff approval.
 For conflicts, resolve and commit or use `git merge --abort` in the target.

@@ -7,6 +7,7 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/RailspikeWorkflowTest.php',
     __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',
     __DIR__ . '/LegacyTimestampImportTest.php',
@@ -19,6 +20,9 @@ $testFiles = [
     __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
+    __DIR__ . '/ApprovalAcceptanceTest.php',
+    __DIR__ . '/ApprovalHistoryTest.php',
+    __DIR__ . '/RootApprovalPageTest.php',
     __DIR__ . '/ApprovalSeedCommandTest.php',
     __DIR__ . '/ApprovedUserKeyResolverTest.php',
     __DIR__ . '/AgentIdentityServiceTest.php',

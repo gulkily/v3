@@ -7,7 +7,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 ## Provenance
 
-- Source: [gulkily/railspike](https://github.com/gulkily/railspike), branch `master`.
+- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.2.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
 - The full upstream tree, including its license, is preserved without local edits.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
@@ -21,24 +21,30 @@ Follow its approval gates, debug-mode state, and organization rules. After Step 
 approval and branching, new cycles move into their feature folder before the
 planning commit, with navigation and the planning index updated.
 
-The [FDP reference](../fdp/FEATURE_DEVELOPMENT_PROCESS.md) is frozen for cycles
-already started under FDP, including this migration. Their approvals, data,
-and historical documents remain valid. Finish those cycles under their approved
-process unless the user explicitly replans and approves a transition. Do not
-bulk-move or rewrite old plans. Legacy FDP links remain readable and identify
-the transition; they do not govern new work.
+The legacy `docs/fdp/` tree has been removed after the Railspike migration.
+Historical plans retain their original FDP wording, approvals, and paths; those
+paths refer to the former tree rather than current documentation. To inspect the
+frozen workflow for an existing cycle, use Git history, for example:
+
+```bash
+git show 213cdea966f43f851c3d11208890b599012fd239:docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md
+```
+
+Existing cycles keep their approved process unless explicitly replanned and
+approved. Do not bulk-move or rewrite old plans.
 
 ## Update commands
 
 ```bash
-./v3 railspike sync
+./v3 railspike sync                      # pinned v0.2.0-beta.1: no-op when installed
+./v3 railspike sync --ref=<newer-tag>    # deliberate upgrade
 ./v3 railspike sync --repository-root=/path/to/another/migrated/repository
 ```
 
 `./v3 fdp sync` is a deprecated alias with the same options. It updates Railspike,
-never the frozen FDP reference. See the [CLI reference](v3_cli.md#synchronize-railspike-workflow-documentation).
+never the retired FDP workflow. See the [CLI reference](v3_cli.md#synchronize-railspike-workflow-documentation).
 The command requires a clean repository root, validates the subtree metadata,
-and fetches `master`. It rejects an unexpected `railspike` remote unless you
+and fetches the explicit release tag (never a branch). It refuses a target that does not descend from the commit recorded in `docs/railspike/RAILSPIKE_SOURCE.md` (e.g. `main`, which is currently older than the beta). It rejects an unexpected `railspike` remote unless you
 explicitly select a source with `--remote-url`. That selection is recorded only
 after success; forks must retain the recorded upstream history. No-op updates
 create no new commits. Failed validation does not modify files or configuration.
@@ -57,14 +63,15 @@ it does not publish or deploy anything.
 
 ```bash
 git status --short
-git fetch https://github.com/gulkily/railspike.git master
-git diff HEAD:docs/railspike FETCH_HEAD
-git subtree pull --prefix=docs/railspike https://github.com/gulkily/railspike.git master --squash
+git fetch --no-tags https://github.com/rlspk/railspike.git refs/tags/<tag>
+git diff HEAD:docs/railspike FETCH_HEAD   # review; target must descend from the recorded commit
+git subtree pull --prefix=docs/railspike https://github.com/rlspk/railspike.git <tag> --squash
+# then update Ref/Commit in docs/railspike/RAILSPIKE_SOURCE.md
 ```
 
 Do not run the pull until existing work is committed or otherwise preserved.
 Check the resulting diff, instruction links, and ordinary-clone availability.
-Keep the frozen `docs/fdp/` tree unchanged.
+The retired `docs/fdp/` tree does not need to be restored for updates.
 
 ## Recovery and older target repositories
 
@@ -90,3 +97,7 @@ Existing drafts are not regenerated. The `fdp_step1` storage/API field remains
 for compatibility with both PHP previews, the browser preview, and older clients;
 this terminology change requires no data migration. Runner execution and approval
 behavior are unchanged.
+
+## Phone intake deployment
+
+The operator-only phone workflow uses the instance task queue and a separate read-only Codex assessment checkout. See [deployment, Codex configuration, acceptance, and recovery](../runbooks/phone_site_development.md). It stops after revision-bound Step 1 approval; legacy localhost handoffs remain separate.

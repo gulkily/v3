@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\View\TemplateRenderer;
+
 final class AccountKeyPageHooksTest
 {
     /** Hooks that browser_signing.js, the page script, and browser tests rely on. */
@@ -65,6 +69,32 @@ final class AccountKeyPageHooksTest
         foreach (self::HOOKS as $hook) {
             assertStringContains($hook, $template);
         }
+    }
+
+    public function testChooseUsernameButtonIsHiddenUnlessUsernameChangesAreEnabled(): void
+    {
+        foreach ([false, true] as $enabled) {
+            $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates', 'test', new FeatureFlagEvaluator(
+                new FeatureFlagRegistry(),
+                [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]
+            ));
+            $html = $renderer->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account Key', 'account');
+            preg_match('/<button\b[^>]*data-action="rename-profile"[^>]*>/', $html, $button);
+            assertTrue($button !== []);
+            assertSame(!$enabled, str_contains($button[0], ' hidden'));
+            assertStringContains('data-username-changes-enabled="' . ($enabled ? '1' : '0') . '"', $html);
+        }
+        $default = (new TemplateRenderer(dirname(__DIR__) . '/templates'))
+            ->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account Key', 'account');
+        preg_match('/<button\b[^>]*data-action="rename-profile"[^>]*>/', $default, $button);
+        assertStringContains(' hidden', $button[0]);
+    }
+
+    public function testKeyReplacementCaptionDependsOnUsernameChangesFlag(): void
+    {
+        $template = (string) file_get_contents(dirname(__DIR__) . '/templates/pages/account_key.php');
+        assertStringContains("root.dataset.usernameChangesEnabled === '1' ? 'Start over with a new key' : 'Re-setup / change name'", $template);
+        assertStringContains("'Set up this browser'", $template);
     }
 
     public function testSigningScriptStillTargetsPageHooks(): void

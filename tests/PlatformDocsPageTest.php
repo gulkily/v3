@@ -59,13 +59,13 @@ final class PlatformDocsPageTest
     public function testCataloguedAndUncataloguedDocumentsRenderWithSourcePaths(): void
     {
         $catalogued = $this->render('/docs/examples/extension_improvement_cookbook.md');
-        $uncatalogued = $this->render('/docs/fdp/README.md');
+        $uncatalogued = $this->render('/docs/railspike/README.md');
         $architecture = $this->render('/docs/architecture/public_architecture_and_trust.md');
 
         assertTrue(str_contains($catalogued, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
         assertTrue(str_contains($catalogued, '<h1>Extension and Improvement Cookbook</h1>'));
-        assertTrue(str_contains($uncatalogued, 'Repository source: <code>docs/fdp/README.md</code>'));
-        assertTrue(str_contains($uncatalogued, '<h1>Feature Development Process (FDP)</h1>'));
+        assertTrue(str_contains($uncatalogued, 'Repository source: <code>docs/railspike/README.md</code>'));
+        assertTrue(str_contains($uncatalogued, '<h1>Railspike</h1>'));
         assertTrue(str_contains($architecture, 'Repository source: <code>docs/architecture/public_architecture_and_trust.md</code>'));
         assertTrue(str_contains($architecture, '<h1>Public Architecture and Trust Model</h1>'));
         assertTrue(str_contains($architecture, 'The public record lives in Git'));
@@ -78,8 +78,8 @@ final class PlatformDocsPageTest
         $legacy = $this->render('/docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md');
         assertStringContains('<h1>Railspike</h1>', $workflow);
         assertStringContains('Git subtree', $guide);
-        assertStringContains('Legacy FDP reference', $legacy);
-        assertStringContains('../railspike/RAILSPIKE.md', $legacy);
+        assertStringContains('tree has been removed', strip_tags($guide));
+        assertStringContains('<h1>Not Found</h1>', $legacy);
     }
 
     public function testInvalidDocumentationPathsAreNotRendered(): void

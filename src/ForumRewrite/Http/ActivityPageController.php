@@ -35,6 +35,8 @@ final class ActivityPageController
             'activity.php',
             [
                 'view' => $view,
+                'approvalPolicyEnabled' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL),
+                'canSecurityReview' => $this->routeServices->securityReviewAllowed(),
                 'viewOptions' => [
                     [
                         'label' => 'All Activity',
@@ -71,6 +73,7 @@ final class ActivityPageController
             ],
             'Activity',
             'activity',
+            ['/assets/openpgp_loader.js','/assets/browser_signing.js','/assets/private_site_auth.js','/assets/railspike_workflow.js'],
         );
     }
 
@@ -83,6 +86,7 @@ final class ActivityPageController
             $link = match ($item['kind']) {
                 'thread_label_add' => '/threads/' . $item['thread_id'],
                 'site_feature_flag' => '/tools/feature-flags/',
+                'profile_name_change' => '/profiles/' . rawurlencode((string) ($item['author_profile_slug'] ?? '')),
                 default => '/posts/' . $item['post_id'],
             };
             $items[] = RssFeed::item($item['label'], $link, $item['kind'], (string) $item['created_at']);

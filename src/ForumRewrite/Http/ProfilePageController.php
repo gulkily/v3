@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ProfileRepository;
 
@@ -47,7 +48,7 @@ final class ProfilePageController
         return ($this->renderProfilePage)($profile, $self, $this->profileNoticeFromQuery($profile, $query));
     }
 
-    public function username(string $username): ?string
+    public function username(string $username, array $query = []): ?string
     {
         $usernameToken = strtolower($username);
         $pdo = $this->routeServices->pdo();
@@ -84,6 +85,7 @@ final class ProfilePageController
             'username.php',
             [
                 'usernameToken' => $usernameToken,
+                'approvalHistory' => $this->routeServices->approvalHistory()->forUsername($usernameToken, 50, max(0, (int) ($query['key_offset'] ?? 0))),
                 'approvedProfiles' => $approvedProfiles,
                 'unapprovedProfiles' => $unapprovedProfiles,
                 'approverUsernames' => self::aggregateApproverUsernames($approvedProfiles, $ownIdentityIds),
@@ -183,7 +185,10 @@ final class ProfilePageController
         return $this->routeServices->renderPageTemplate(
             'users_pending.php',
             [
-                'profiles' => ProfileRepository::pendingDirectoryProfiles($this->routeServices->pdo()),
+                'profiles' => ProfileRepository::pendingDirectoryProfiles(
+                    $this->routeServices->pdo(),
+                    $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
+                ),
             ],
             'Users Awaiting Approval',
             'profiles',
@@ -208,8 +213,7 @@ final class ProfilePageController
         }
 
         return 'Approved user ' . $this->escape((string) $profile['username']) . '. '
-            . '<a href="/posts/' . $this->escape($postId) . '">Open approval post</a>. '
-            . 'Commit ' . $this->escape($commitSha);
+            . '<a href="/posts/' . $this->escape($postId) . '">Open approval post</a>.';
     }
 
     private function escape(string $value): string

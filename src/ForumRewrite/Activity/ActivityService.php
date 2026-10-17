@@ -55,6 +55,8 @@ final class ActivityService
         private readonly \Closure $pdoFactory,
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
+        private readonly bool $showProfileNameChanges = false,
+        private readonly ?\Closure $authorizeSecurity = null,
     ) {
     }
 
@@ -160,6 +162,7 @@ final class ActivityService
             };
         }));
 
+        if ($view === 'security') $items = array_map($this->securityReviewItem(...), $items);
         return ['items' => $items, 'has_more' => $hasMore];
     }
 
@@ -180,7 +183,7 @@ final class ActivityService
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE activity.id = :id'
+             WHERE activity.id = :id' . $this->profileNameVisibilitySql()
         );
         $stmt->bindValue('id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -226,8 +229,35 @@ final class ActivityService
             'author_username_token' => $post['author_username_token'],
             'author_is_approved' => (int) $post['author_is_approved'],
         ];
+        if (array_key_exists('security_review', $post)) $item['security_review'] = $post['security_review'];
+        if (isset($post['security_account'])) $item['security_account'] = $post['security_account'];
         $item['relevant_files'] = $this->activityItemRelevantFiles($item);
 
+        return $item;
+    }
+
+    public function securityReviewItem(array $item): array
+    {
+        if (!($this->authorizeSecurity !== null && ($this->authorizeSecurity)())) throw new RuntimeException('Authenticated root-approved operator access required.');
+        $receipt = str_starts_with((string) $item['source_path'], 'records/posts/')
+            ? \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $item['source_path']) : null;
+        $item['security_review'] = $receipt;
+        $target = $receipt['context']['target_identity_id'] ?? null;
+        if ($target === null && $item['post_id'] !== null) {
+            $query = $this->pdo()->prepare('SELECT body, author_identity_id FROM posts WHERE post_id = ?');
+            $query->execute([$item['post_id']]);
+            $post = $query->fetch(\PDO::FETCH_ASSOC);
+            if ($post && preg_match('/^Approve-Identity-ID: (openpgp:[a-f0-9]{40})$/m', $post['body'], $match)) $target = $match[1];
+            elseif ($post && $item['kind'] === 'invitation') $target = $post['author_identity_id'];
+        }
+        if ($target !== null) {
+            $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->pdo(), $target);
+            $item['security_account'] = $profile['username_token'] ?? null;
+        }
+        if ($receipt !== null) {
+            $context = $receipt['context'];
+            $item['label'] = $context['classification'] . ': ' . $context['actor_username'] . ' approved a key for ' . $context['target_username'];
+        }
         return $item;
     }
 
@@ -283,9 +313,31 @@ final class ActivityService
      */
     private function activityViewSql(string $view): array
     {
+        if ($view === 'security' && !($this->authorizeSecurity !== null && ($this->authorizeSecurity)())) {
+            throw new RuntimeException('Authenticated root-approved operator access required.');
+        }
         $quotedHiddenTag = '%"' . ThreadRowSupport::HIDDEN_BOOTSTRAP_TAG . '"%';
+        [$viewWhere, $viewParameters] = $this->activityViewClause($view, $quotedHiddenTag);
 
+        return [$viewWhere . $this->profileNameVisibilitySql(), $viewParameters];
+    }
+
+    /**
+     * Username changes are indexed whenever signed records exist; they are
+     * listed only while the username-change flag is on.
+     */
+    private function profileNameVisibilitySql(): string
+    {
+        return $this->showProfileNameChanges ? '' : " AND activity.record_family != 'profile_name'";
+    }
+
+    /**
+     * @return array{0:string,1:array<string, string>}
+     */
+    private function activityViewClause(string $view, string $quotedHiddenTag): array
+    {
         return match ($view) {
+            'security' => ["AND (activity.kind = 'approval' OR (activity.kind = 'invitation' AND activity.label LIKE 'Invitation redeem:%') OR (activity.kind = 'site_feature_flag' AND activity.label LIKE :policy_flag))", ['policy_flag' => '%FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=%']],
             'identity' => ['AND activity.board_tags_json LIKE :identity_tag', ['identity_tag' => $quotedHiddenTag]],
             'bootstrap' => [
                 'AND activity.board_tags_json LIKE :identity_tag AND activity.board_tags_json LIKE :internal_tag',
@@ -361,7 +413,7 @@ final class ActivityService
 
     public function normalizeActivityView(string $view): string
     {
-        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'commits'], true) ? $view : 'all';
+        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'security', 'commits'], true) ? $view : 'all';
     }
 
     private function hasBoardTag(string $boardTagsJson, string $tag): bool
@@ -884,6 +936,7 @@ final class ActivityService
             str_starts_with($path, 'records/post-reactions/') => 'post reaction record',
             str_starts_with($path, 'records/post-retractions/') => 'post retraction record',
             str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
+            str_starts_with($path, 'records/profile-names/') => 'profile name record',
             str_starts_with($path, 'records/identity/') => 'identity record',
             str_starts_with($path, 'records/approval-seeds/') => 'approval seed record',
             str_starts_with($path, 'records/public-keys/') => 'public key',
@@ -976,6 +1029,9 @@ final class ActivityService
             }
             if (str_starts_with($recordPath, 'records/post-retractions/')) {
                 return (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))->signerIdentityId();
+            }
+            if (str_starts_with($recordPath, 'records/profile-names/')) {
+                return (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))['Author-Identity-ID'];
             }
             if (str_starts_with($recordPath, 'records/feature-flag-changes/')) {
                 return $repository->loadFeatureFlagChange($recordPath)->operatorIdentityId;

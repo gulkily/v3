@@ -30,7 +30,7 @@ final class PlatformDocsCatalogTest
 
     public function testSafeUncataloguedDocumentResolves(): void
     {
-        $path = 'docs/fdp/README.md';
+        $path = 'docs/railspike/README.md';
 
         assertTrue(!in_array($path, array_column(PlatformDocsCatalog::entries(), 'path'), true));
         assertSame(realpath($this->projectRoot . '/' . $path), PlatformDocsCatalog::resolvePath($this->projectRoot, $path));

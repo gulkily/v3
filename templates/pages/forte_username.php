@@ -9,6 +9,7 @@
  * @var array<int, array<string, mixed>> $approvedPosts
  */
 ?>
+<section class="stack">
 <div class="paned-window paned-standalone-window">
   <div class="paned-dialog-titlebar">
     <span>User: <?= $e($usernameToken) ?></span>
@@ -42,7 +43,7 @@
     <h2 id="approved-profiles">Approved Profiles</h2>
     <ul>
 <?php foreach ($approvedProfiles as $profile): ?>
-      <li><a href="/forte/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($profile['profile_slug']) ?></a></li>
+      <li><a href="/forte/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($profile['profile_slug']) ?>" aria-label="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a></li>
 <?php endforeach; ?>
     </ul>
 <?php endif; ?>
@@ -51,10 +52,13 @@
     <h2>Unapproved Profiles</h2>
     <ul>
 <?php foreach ($unapprovedProfiles as $profile): ?>
-      <li><a href="/forte/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($profile['profile_slug']) ?></a></li>
+      <li><a href="/forte/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($profile['profile_slug']) ?>" aria-label="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a></li>
 <?php endforeach; ?>
     </ul>
 <?php endif; ?>
     <p class="paned-standalone-back"><a href="/forte">&larr; Back to board</a></p>
   </div>
 </div>
+
+<?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>
+</section>

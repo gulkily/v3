@@ -1,17 +1,28 @@
+<section data-railspike-activity hidden aria-label="Private site development activity"></section>
 <section class="stack">
   <article class="card">
     <h1>Activity</h1>
     <div class="nav">
 <?php foreach ($viewOptions as $option): ?>
+<?php if ($view === 'security' && $option['label'] === 'RSS') continue; ?>
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
       <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
+<?php if ($canSecurityReview): ?>
+      <a href="/activity/?view=security">Operator security review</a>
+<?php endif; ?>
     </div>
+<?php if ($view === 'security'): ?>
+<?= $partial('partials/activity_security_notice.php', ['approvalPolicyEnabled' => $approvalPolicyEnabled]) ?>
+<?php endif; ?>
   </article>
 <?php foreach ($items as $item): ?>
 <?php if ($item['kind'] === 'site_feature_flag'): ?>
 <?php $href = '/tools/feature-flags/'; ?>
 <?php $linkLabel = 'site feature flags'; ?>
+<?php elseif ($item['kind'] === 'profile_name_change'): ?>
+<?php $href = '/profiles/' . rawurlencode((string) ($item['author_profile_slug'] ?? '')); ?>
+<?php $linkLabel = $item['author_label']; ?>
 <?php elseif ($item['kind'] === 'thread_label_add'): ?>
 <?php $href = '/threads/' . $item['thread_id']; ?>
 <?php $linkLabel = $item['thread_id']; ?>
@@ -23,6 +34,9 @@
     <p class="meta"><?= $e($item['kind']) ?></p>
     <p><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a></p>
     <p><?= $e($item['label']) ?></p>
+<?php if ($view === 'security'): ?>
+<?= $partial('partials/approval_security_review.php', ['item' => $item]) ?>
+<?php endif; ?>
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
     <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
 <?php endif; ?>
@@ -38,7 +52,7 @@
 ]), 2) ?>
 <?php endif; ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [
-        'signature_status' => in_array($item['record_family'] ?? '', ['thread_label', 'post_reaction'], true) ? ($item['source_signature_status'] ?? '') : '',
+        'signature_status' => in_array($item['record_family'] ?? '', ['thread_label', 'post_reaction', 'profile_name'], true) ? ($item['source_signature_status'] ?? '') : '',
     'files' => $item['source_commit_files'] ?? [],
     'commit_sha' => $item['source_commit_sha'] ?? '',
     'commit_href' => $item['source_commit_href'] ?? '',

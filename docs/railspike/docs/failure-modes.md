@@ -26,6 +26,12 @@ Railspike is intentionally strict at the points where AI-assisted work most ofte
 
 **Recovery:** Do not begin the next stage. Run the applicable check, update the current stage section, inspect `git status --short`, and create the missing stage-scoped commit. If later work is already mixed in, separate it into reviewable commits before continuing; record any limitation honestly.
 
+## Passing tests did not establish the user's recovery
+
+**Signal:** A request named a known user or environment, but the handoff reports tests on a different supported platform, or a user still cannot recover.
+
+**Recovery:** Do not treat the pass as completion. Return to Step 2 and state that user's ordinary entry point and recovery condition. Replay each reported failure as acceptance evidence in Step 3, and report the result in Step 4 as passed, failed, blocked, pending, or inapplicable. Manual guidance can be the accepted outcome when automatic support is out of scope.
+
 ## A risk blocks a dependent stage
 
 **Signal:** A Step 2 or Step 3 risk has no accepted mitigation or its early validation fails.
@@ -56,6 +62,6 @@ Then confirm that the first Step 4 commit contains approved plans and only the [
 
 For a new workflow without an explicit mode request, check for `.railspike_debug_on` only at the established consuming-project root (the host root for vendored/submodule installs). Presence enables the default; absence leaves it disabled. Ignore contents, even “false” or unreadable content when presence is confirmed. Ask if the root or file presence is uncertain, or the path is a directory; do not assume absence or search ancestors. Creating/removing the marker affects future workflows only. Do not use it to resolve uncertain resumed state, and do not alter it for a workflow-specific override.
 
-If saving fails, briefly report the failure without claiming the log was saved or dumping unsaved diagnostics into chat; resolve it before presenting diagnostics as logged. Preserve existing entries and append labeled corrections identifying the superseded entry; skip unchanged reports and link to the existing log without claiming a new entry. Keep full findings and required groups in the log, with inapplicable or uncertain findings separate from redundant instructions. Restore routine enabled handoffs to one short debug link line, without findings or collection narration; present findings in chat only when explicitly requested. Disabled mode preserves the log without new diagnostics or debug links. Ordinary task updates, blockers, approvals, and instruction reprints remain available.
+If saving fails, briefly report the failure without claiming the log was saved or dumping unsaved diagnostics into chat; resolve it before presenting diagnostics as logged. Preserve existing entries and append labeled corrections identifying the superseded entry; skip unchanged reports and link to the existing log without claiming a new entry. Keep full findings and required groups in the log, with inapplicable or uncertain findings separate from redundant instructions. Restore routine enabled handoffs to one short debug link line, without findings or collection narration; present findings in chat only when explicitly requested. Disabled mode preserves the log without new diagnostics or debug links. Preserve ordinary task updates, blockers, approvals, and the [instruction summary contract](../RAILSPIKE.md#instruction-summaries), including explicit requests to show instructions.
 
 Include saved additions only in the authorized planning/stage commit or final log-only handoff commit; never amend completed commits or use the allowance for unrelated files.

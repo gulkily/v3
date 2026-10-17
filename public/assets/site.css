@@ -700,3 +700,6 @@ pre {
 .media-embed-card__iframe[hidden] { display: none; }
 
 .media-embed-card--bandcamp.media-embed-card--track > .media-embed-card__iframe { height: 120px; }
+.account-key-history {
+  overflow-wrap: anywhere;
+}
