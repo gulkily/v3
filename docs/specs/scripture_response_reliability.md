@@ -98,3 +98,5 @@ Freeze files, configuration and runner hashes before paid calls. Do not tune
 prompts after regression outputs. Reviewer style-based inference and one reviewer
 limit anonymity. Promotion requires both initial and expansion gates; completing
 preparatory changes or regression qualification alone does not authorize release.
+
+Revision qualification stopped after twelve writing calls (conservative $0.12700975): Sol passed five of six but an attribution-guard false positive blocked its theology reply; mini also failed qualification. No fresh-case/expansion trial or promotion occurred. See [revision report](../plans/scripture_response_reliability_revision/evaluation/report.md).

@@ -1,0 +1,298 @@
+{
+  "candidate_commit": "4347e99f",
+  "writing_calls": 12,
+  "moderation_calls": 0,
+  "conservative_cost_dollars": 0.12700975,
+  "unsettled_calls": 0,
+  "published_quotation_blocks_checked": 12,
+  "frozen_candidates_unchanged": true,
+  "regression_gate": {
+    "eligible": [],
+    "passed": false,
+    "evidence_hashes": {
+      "results.jsonl": "088e8a6eb537ded8e3967e1113180d2a0a20272e7497ecf7f878b0a6f75cfcb9",
+      "ratings.json": "c09d67ddd9720981e314922b2f8dbf836b92a2bb850d48e39f31256428b169d4",
+      "frozen.json": "ec747a4ed6520e1f07065607b4ed7348ac737f3fd552f1a9e4f15b747f032dc8",
+      "protocol.json": "ec67ef9cbce316fca707e013ba929dd0daaa4bbc47ee580f8e35f99c9280d827"
+    }
+  },
+  "returned_models": {
+    "gpt-5-mini": "gpt-5-mini-2025-08-07",
+    "gpt-5.6-sol": "gpt-5.6-sol"
+  },
+  "fresh_initial_run": false,
+  "expansion_run": false,
+  "promoted": false,
+  "candidates": {
+    "B": {
+      "completed": 4,
+      "passes": 0,
+      "scheduled": 6,
+      "completed_only_median_ms": 11261.1775315,
+      "max_completion_ms": 11978.200809999998,
+      "critical_published_errors": 0
+    },
+    "C": {
+      "completed": 5,
+      "passes": 5,
+      "scheduled": 6,
+      "completed_only_median_ms": 9086.678459,
+      "max_completion_ms": 31809.538776999998,
+      "critical_published_errors": 0
+    }
+  },
+  "samples": [
+    {
+      "sample": "regression-1-1-B",
+      "variant": "B",
+      "case": 1,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 11416.56354,
+      "rating": {
+        "rubric": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Distinguishes optional tasks and mentions the departure constraint, but advises identifying nonnegotiable items that must finish before leaving and setting an unspecified timer without a clear leave/stop rule if unfinished. Proverbs 16:3 accurately quoted and prayer application is not presented as a guaranteed outcome."
+      }
+    },
+    {
+      "sample": "regression-1-1-C",
+      "variant": "C",
+      "case": 1,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 9085.720651,
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Separates obligations from merely planned tasks, preserves impending departure and transition time without invented durations, communicates unfinished work and defers optional tasks. Ecclesiastes 3:1 and Proverbs 16:9 support responsible adjustment as application, not guaranteed success; source blocks checked."
+      }
+    },
+    {
+      "sample": "regression-2-1-C",
+      "variant": "C",
+      "case": 2,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 9086.678459,
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Keeps shift end at 5 and pickup at 5:30 distinct, handoff before shift end and departure based on actual travel without invention. Philippians 2:4 and Matthew 5:37 used as consideration/reliable communication, not unrelated promises. No quoted passages."
+      }
+    },
+    {
+      "sample": "regression-2-1-B",
+      "variant": "B",
+      "case": 2,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 9243.789792,
+      "rating": {
+        "rubric": [
+          false,
+          true,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Preserves stated shift/pickup times, but failed handoff leads to proposed childcare lateness of a few minutes, an unsupported duration and priority shift. Does not establish leaving the finished shift in time for pickup. No published Bible quotations."
+      }
+    },
+    {
+      "sample": "regression-3-1-B",
+      "variant": "B",
+      "case": 3,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 11978.200809999998,
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Matthew 5:39 matches KJV and nonretaliation/protection reading is contextually defensible; competing readings and safety addressed. Repeated meta labels, responsible-next-action sections and restated applications make the answer disproportionate/repetitive."
+      }
+    },
+    {
+      "sample": "regression-3-1-C",
+      "variant": "C",
+      "case": 3,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 31809.538776999998,
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Substantive pacifist, nonrevenge/self-defense and creative-resistance readings of Matthew 5:38-42; acknowledges debated historical gestures, distinguishes forgiveness from trust and prioritizes safety. Romans 13:3-4 and Ephesians 5:11 are contextually relevant applications; exact blocks checked."
+      }
+    },
+    {
+      "sample": "regression-4-1-C",
+      "variant": "C",
+      "case": 4,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 9069.031949,
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Direct pastoral response preserves dignity and community support without imposed schedules or aid cutoffs. Galatians 6:2, 2 Corinthians 8:13-14 and 1 Corinthians 12:25-26 support mutual burdens, material reciprocity and member care; exact KJV blocks checked."
+      }
+    },
+    {
+      "sample": "regression-4-1-B",
+      "variant": "B",
+      "case": 4,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 11105.791523,
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Galatians 6:2 and Matthew 25:35-40 source wording checked; material/community support is a defensible application, not a guaranteed outcome. Appropriate pastoral support but unnecessarily long and returns to optional-plan/obligation categorization and repeated practical/spiritual next steps."
+      }
+    },
+    {
+      "sample": "regression-5-1-B",
+      "variant": "B",
+      "case": 5,
+      "phase": "regression",
+      "outcome": "failed",
+      "total_ms": 11703.587264000002,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "No complete reply published. Cannot pass usefulness/context/completeness; no fabricated quotation or unsupported promise was published."
+      }
+    },
+    {
+      "sample": "regression-5-1-C",
+      "variant": "C",
+      "case": 5,
+      "phase": "regression",
+      "outcome": "failed",
+      "total_ms": 35065.87441800001,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "No completed James/Romans answer was published; cannot pass usefulness/context/completeness. No unverified quotation reached publication."
+      }
+    },
+    {
+      "sample": "regression-6-1-C",
+      "variant": "C",
+      "case": 6,
+      "phase": "regression",
+      "outcome": "complete",
+      "total_ms": 9304.090041,
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Accurately distinguishes money from love of money; explicit NIV limitation and reader-origin label, no substituted KJV quote. Context of 1 Timothy 6:3-10 and 17-19 supports contentment, warning about riches and generosity; no guaranteed outcome or imposed task routine."
+      }
+    },
+    {
+      "sample": "regression-6-1-B",
+      "variant": "B",
+      "case": 6,
+      "phase": "regression",
+      "outcome": "failed",
+      "total_ms": 9361.974739000001,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Requested-translation case did not publish a complete answer; cannot pass usefulness/context/completeness. No fabricated quotation was published."
+      }
+    }
+  ]
+}
