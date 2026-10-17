@@ -205,6 +205,10 @@ final class WriteApiSmokeTest
             assertStringContains('Changed username from visible-reader to shown-name', $page);
             assertStringContains('href="/profiles/openpgp-' . substr($identity, 8) . '"', $page);
             assertStringNotContains('href="/posts/"', $page);
+            assertStringContains('profile name record', $page);
+            assertStringContains('detached signature', $page);
+            assertStringContains('Signer:' . "\n" . '                  ' . $identity, $page);
+            assertStringContains('href="/source/current/records/public-keys/openpgp-', $page);
         } finally {
             putenv($previousFlag === false ? 'FORUM_USERNAME_CHANGES_ENABLED' : 'FORUM_USERNAME_CHANGES_ENABLED=' . $previousFlag);
             $this->deleteTree($key['home']);

@@ -903,6 +903,7 @@ final class ActivityService
             str_starts_with($path, 'records/post-reactions/') => 'post reaction record',
             str_starts_with($path, 'records/post-retractions/') => 'post retraction record',
             str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
+            str_starts_with($path, 'records/profile-names/') => 'profile name record',
             str_starts_with($path, 'records/identity/') => 'identity record',
             str_starts_with($path, 'records/approval-seeds/') => 'approval seed record',
             str_starts_with($path, 'records/public-keys/') => 'public key',
@@ -995,6 +996,9 @@ final class ActivityService
             }
             if (str_starts_with($recordPath, 'records/post-retractions/')) {
                 return (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))->signerIdentityId();
+            }
+            if (str_starts_with($recordPath, 'records/profile-names/')) {
+                return (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse((string) file_get_contents($this->repositoryRoot . '/' . $recordPath))['Author-Identity-ID'];
             }
             if (str_starts_with($recordPath, 'records/feature-flag-changes/')) {
                 return $repository->loadFeatureFlagChange($recordPath)->operatorIdentityId;
