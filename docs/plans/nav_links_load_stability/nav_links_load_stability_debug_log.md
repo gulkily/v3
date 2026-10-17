@@ -41,3 +41,18 @@
 
 ### Uncertain assessments
 - Stage 1 is read-only diagnosis; it fits "atomic stage" sizing but yields no code commit content beyond the summary note.
+
+## 2026-10-16 (UTC) — Step 4
+
+### Necessary/useful instructions
+- Stage Boundary Protocol (`step4_implementation_do.md`) kept verification and summary updates in lockstep with commits.
+- Planning Docs Commit Gate surfaced the need to organize plans before code.
+
+### Redundant/unnecessary instructions
+- No supported findings
+
+### Inapplicable instructions
+- `step4_implementation_after.md` item 5 (deployment/migration checks) did not apply to this CSS/JS/template change.
+
+### Uncertain assessments
+- Mid-Step-4 scope change (diagnosis contradicted Step 2) required revising approved Steps 2–3; the rules covered it but a short "revision during Step 4" procedure would help.
