@@ -40,3 +40,14 @@ Debug mode: enabled
   - `git diff --check` passed.
 - Notes:
   - Contrast/aesthetics of the outline per theme were checked structurally (differs from resting, visible), not by eye; worth a visual look.
+
+## Stage 3 - Final verification
+- Changes:
+  - `tests/browser/private_message_unread_ui.mjs`: added assertions that the caption stays `Messages` and ARIA (`aria-describedby` → hidden status text) reports `N unread conversation(s)` once ready.
+- Verification:
+  - `node tests/browser/private_message_list_browser.mjs`, `private_message_live_navigation.mjs`, `nav_unread_outline.mjs` all passed.
+  - `php tests/run.php`: exit 0, 1225 passes (run after Stage 2; Stage 3 changed only a browser test). `git diff --check` passed.
+  - Deployment/external checks: not applicable (local CSS/JS/template change, no schema, no external systems).
+- Notes:
+  - Guest/disabled messaging paths covered by existing availability and live-navigation tests.
+  - The originally reported "buttons appear late" symptom was not reproducible from code (Stage 1); the fixed jank is the width shift. Not visually reviewed by eye per theme.
