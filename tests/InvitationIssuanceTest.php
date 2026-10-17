@@ -133,7 +133,7 @@ NODE);
         $scope = ':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"])';
 
         $navSelectors = [
-            '[href="/lobby/"]', '[href^="/profiles/"]', '[href^="/messages/"]', '[href="/tags/"]',
+            '[href="/lobby/"]', '[href^="/profiles/"]', '[href^="/messages"]', '[href="/tags/"]',
             '[href="/latest"]', '[href="/top"]', '[href="/leetness"]', '[href="/random"]',
             '[href="/add"]', '[href="/search"]',
         ];
