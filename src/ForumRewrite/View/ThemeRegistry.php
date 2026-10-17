@@ -27,6 +27,7 @@ final class ThemeRegistry
             ['name' => 'thermal', 'label' => 'Thermal', 'mode' => 'dark'],
             ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
+            ['name' => 'windark', 'label' => 'Midnight', 'mode' => 'dark'],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],

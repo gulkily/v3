@@ -1017,6 +1017,7 @@ PHP;
         assertStringContains('border-left: 0', $css);
         assertStringContains('border-right: 0', $css);
         assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $word97Css);
+        assertStringContains(':root[data-theme="word97"] button[disabled]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option)', $word97Css);
     }
 
     public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
@@ -1932,13 +1933,14 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","windark"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
         assertStringContains('data-theme-option="whitehot"', $board);
         assertStringContains('data-theme-option="word97"', $board);
+        assertStringContains('data-theme-option="windark"', $board);
         assertStringNotContains('data-theme-option="qdb"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
@@ -3014,11 +3016,11 @@ PHP;
         assertStringContains('title="Copy one-line bookmarklet"', $bookmarklets);
         assertStringContains('role="status"', $bookmarklets);
         $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
