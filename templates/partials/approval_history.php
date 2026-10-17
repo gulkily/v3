@@ -7,7 +7,7 @@
     <h3 class="account-key-history-heading"><a href="/profiles/<?= $e($grant['profile_slug']) ?>"><?= $e($grant['profile_slug']) ?></a></h3>
     <p class="account-key-history-metadata">Approved by <strong><?= $e($grant['approver_label']) ?></strong> · Accepted: <?= $e($grant['accepted_at'] ?? 'unknown') ?><?php if ($grant['source_path'] !== null): ?>
 <?php $evidenceUrl = $grant['kind'] === 'root_seed'
-    ? '/source/current/' . $grant['source_path']
+    ? '/approvals/root/' . rawurlencode(pathinfo($grant['source_path'], PATHINFO_FILENAME))
     : '/posts/' . rawurlencode(pathinfo($grant['source_path'], PATHINFO_FILENAME)); ?>
       · <a href="<?= $e($evidenceUrl) ?>">Approval evidence</a><?php if ($grant['receipt_path'] !== null): ?> · <a href="/source/current/<?= $e($grant['receipt_path']) ?>">Acceptance receipt</a><?php endif; ?>
 <?php endif; ?></p>

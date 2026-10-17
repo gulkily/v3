@@ -1,3 +1,8 @@
+.root-approval-key {
+  font-weight: 700;
+  word-break: break-all;
+}
+
 .account-key-history-note {
   padding: 0.7em 0.9em;
   border: 1px solid var(--line);
