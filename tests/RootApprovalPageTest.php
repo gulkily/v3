@@ -32,6 +32,7 @@ final class RootApprovalPageTest
             assertStringContains('initial approved fixture user', $html);
             assertStringContains('Seed this identity as approved', $html);
             assertStringContains('Authorizer: not recorded. Acceptance time: not recorded.', $html);
+            assertStringContains('Repository history is unavailable for this seed.', $html);
             assertStringContains('href="/profiles/' . self::KEY . '"', $html);
             assertStringContains('href="/user/' . $profile['username_token'] . '#account-keys"', $html);
             assertStringContains('href="/source/current/' . self::SOURCE . '"', $html);
@@ -121,6 +122,60 @@ final class RootApprovalPageTest
             $_SESSION = ['authenticated_identity_id' => $target['identity_id']];
             assertStringContains('initial approved fixture user', $this->render($root, $db, self::URL));
             assertSame(200, http_response_code());
+        });
+    }
+
+    public function testRepositoryEvidenceBindsCurrentBytesWithoutInventingAcceptanceFacts(): void
+    {
+        $this->fixture(function ($workspace, $root, $db): void {
+            $workspace->git($root);
+            [, $sha] = $workspace->command(['git', '-C', $root, 'rev-parse', 'HEAD']);
+            $sha = trim($sha);
+            $html = $this->render($root, $db, self::URL);
+            assertStringContains('href="/source/blob/' . $sha . '/' . self::SOURCE . '"', $html);
+            assertStringContains('href="/source/commits/' . $sha . '"', $html);
+            assertStringContains('Repository commit dates describe file history.', $html);
+            assertStringContains('Authorizer: not recorded. Acceptance time: not recorded.', $html);
+            assertStringContains('initial approved fixture user', $this->render($root, $db, '/source/blob/' . $sha . '/' . self::SOURCE));
+            assertStringContains(self::SOURCE, $this->render($root, $db, '/source/commits/' . $sha));
+            $workspace->put($root . '/' . self::SOURCE, "Approved-Identity-ID: " . self::ID . "\nSeed-Reason: changed current reason\n\n");
+            $html = $this->render($root, $db, self::URL);
+            assertStringContains('changed current reason', $html);
+            assertStringContains('current seed differs from the latest repository version', $html);
+            assertStringNotContains('href="/source/blob/' . $sha, $html);
+            assertStringContains('href="/source/commits/' . $sha . '"', $html);
+            foreach ([['add', self::SOURCE], ['commit', '-qm', 'Update root seed reason']] as $args) {
+                [$code, $output] = $workspace->command(['git', '-C', $root, ...$args]);
+                assertSame(0, $code, $output);
+            }
+            [, $updated] = $workspace->command(['git', '-C', $root, 'rev-parse', 'HEAD']);
+            $html = $this->render($root, $db, self::URL);
+            assertStringContains('href="/source/blob/' . trim($updated) . '/' . self::SOURCE . '"', $html);
+            assertStringContains('href="/source/commits/' . $sha . '"', $html);
+            assertStringContains('Update root seed reason', $html);
+            assertStringNotContains('current seed differs', $html);
+        });
+    }
+
+    public function testSeedHistoryIsBoundedAndExcludesOtherFiles(): void
+    {
+        $this->fixture(function ($workspace, $root, $db): void {
+            $workspace->git($root);
+            for ($index = 0; $index < 11; $index++) {
+                $workspace->put($root . '/' . self::SOURCE, "Approved-Identity-ID: " . self::ID . "\nSeed-Reason: revision {$index}\n\n");
+                foreach ([['add', self::SOURCE], ['commit', '-qm', 'Seed revision ' . $index]] as $args) {
+                    [$code, $output] = $workspace->command(['git', '-C', $root, ...$args]);
+                    assertSame(0, $code, $output);
+                }
+            }
+            $workspace->put($root . '/unrelated.txt', "Unrelated\n");
+            $workspace->command(['git', '-C', $root, 'add', 'unrelated.txt']);
+            $workspace->command(['git', '-C', $root, 'commit', '-qm', 'Unrelated history event']);
+            $html = $this->render($root, $db, self::URL);
+            assertSame(10, substr_count($html, '<li><a href="/source/commits/'));
+            assertStringNotContains('Unrelated history event', $html);
+            assertStringNotContains('Seed revision 0', $html);
+            assertStringContains('Seed revision 10', $html);
         });
     }
 

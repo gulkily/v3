@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Status: Implementation in progress on `feature/root-approval-pages`. Planning commit: `974f320a`.
+Status: Both stages complete and locally verified on `feature/root-approval-pages`. Planning commit: `974f320a`. No push or production deployment performed.
 
 ## Stage 1 - Readable seed evidence and history entry points
 
@@ -10,3 +10,11 @@ Status: Implementation in progress on `feature/root-approval-pages`. Planning co
 - Changes: Registered the route with the existing application membership boundary. Missing, malformed, path-mismatched, unreadable, or out-of-repository seed records return a safe 404. Profile lookup is optional; seed validity does not depend on a current profile. Theme asset wiring supplies wrapping key labels through existing identity styles.
 - Verification: `php tests/run.php RootApprovalPageTest ApprovalHistoryTest` passed 6/6. Coverage includes all four history links, direct page/source access, malformed routes/seeds, mismatched identity, outside symlink, escaped reason/body, renamed/missing profile, private-site anonymous/forged-hint/pending-member denial, ordinary approved-member access, and unchanged ordinary post evidence. PHP syntax and `git diff --check` passed.
 - Notes: No canonical/authority/schema changes. Repository provenance and final desktop/phone checks remain Stage 2. Stage 1 supports repositories without Git through current raw-source evidence.
+
+## Stage 2 - Repository evidence and final verification
+
+- Changes: Added up to ten recent commits affecting only the seed path, with existing source/commit URL helpers and source metadata presentation. A commit is associated with the displayed current seed only when its blob exactly matches the current bytes. Differing or unverifiable versions are explained; raw current source stays available when Git/history is absent. Commit dates are explicitly file history, while authorizer and acceptance time remain unrecorded. No signatures or approval posts are synthesized.
+- Verification: `php tests/run.php RootApprovalPageTest ApprovalHistoryTest ApprovalPolicyTest CanonicalRecordParsersTest PrivateSiteAuthTest ProfileThemePresentationTest` passed 73/73. New evidence cases follow raw/blob/commit routes, verify matching and changed current bytes, updated committed records, bounded seed-only history, and no-Git fallback. Existing seed parsing, approval policy, account history, authentication, and theme checks passed.
+- Verification: `ROOT_APPROVAL_SCREENSHOT_DIR=/tmp/root-approval-review node tests/browser/account_key_approval.mjs` passed the existing signing/authentication/Forte/rebuild/static rehearsal plus the new reusable root-page checks. Root-page coverage follows all four classic/Forte account/profile history entry points, checks accessible key names, follows source/commit links, and verifies spacing and no overflow at 1280px and 390px in Light, Dark, Console, Chicago, and Word 97. Reviewed generated theme screenshots; source paths and keys wrap within cards. The isolated repositories/sessions are removed by the test harness. A read-only live check also followed `/user/ilyag` to a rendered root page with HTTP 200.
+- Verification: PHP/Node syntax, `git diff --check`, local plan navigation, planning-commit scope, and stage-summary cadence checked. Stage 1 commit: `aed1ae09`; Stage 2 is the commit containing this section.
+- Notes: No migration, canonical record changes, authority/workflow changes, Activity indexing, external services, production rollout, or remote publication were needed. Git history is optional and uses the same Git-directory availability as existing source routes. Current profile/account links describe current data and are omitted when no profile exists.

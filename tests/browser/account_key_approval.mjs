@@ -7,6 +7,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
+import { checkRootApprovalPages } from './root_approval_checks.mjs';
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(await readFile(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
 const pgp = globalThis.openpgp;
@@ -74,6 +75,8 @@ try {
   await page.goto(base + '/user/browser-member');
   assert.match(await page.locator('.account-key-history').innerText(), /operator override/);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await checkRootApprovalPages({ page, context, base, rootKey: 'openpgp-' + fingerprint, username: 'browser-inviter' });
+  await page.goto(base + '/user/browser-member');
   const review = await context.request.get(base + '/activity/?view=security');
   assert.equal(review.status(), 200);
   assert.match(review.headers()['cache-control'], /no-store/);
