@@ -11,6 +11,21 @@ use ForumRewrite\Llm\StubTextChatProvider;
 
 final class AgentResponseGeneratorTest
 {
+    public function testSavedSolReplyWithContextualAttributionGeneratesAndRevalidatesLocally(): void
+    {
+        $fixture = json_decode(file_get_contents(__DIR__ . '/fixtures/scripture_reliability/sol_contextual_attribution.json'), true, 512, JSON_THROW_ON_ERROR);
+        $provider = new FakeTextChatProvider(json_encode($fixture['document'], JSON_THROW_ON_ERROR));
+        $generator = new AgentResponseGenerator($provider, false, false, 8192, ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified']);
+        $task = ['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => $fixture['question']];
+        $reply = $generator->generate($task);
+        assertStringContains('James writes to Christian communities', $reply['response_text']);
+        $generator->validatePublication($reply, $task);
+        $task = ['type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, 'original_post' => $fixture['question'], 'initial_answer' => 'Earlier interpretation.'];
+        $expanded = $generator->generate($task);
+        assertStringContains('Further scripture reflection:', $expanded['response_text']);
+        $generator->validatePublication($expanded, $task);
+    }
+
     public function testMalformedJsonFailureClassificationRemainsScopedToScripture(): void
     {
         assertSame('analysis_suggestion_error', \ForumRewrite\Agent\AgentReplyFailure::code(new JsonException('Unrelated JSON failure.')));

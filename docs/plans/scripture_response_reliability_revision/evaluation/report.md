@@ -68,3 +68,13 @@ candidate keys and timing. Earlier progress logs exposed sample metadata, but
 not the reviewed answer-to-model mapping. One reviewer, recognizable model style,
 and application labels limit blinding. These six known cases are qualification
 checks, not independent held-out evidence of general model superiority.
+
+## Subsequent local correction
+
+After the user requested continuation, the audience-description false positive was
+corrected and the exact saved Sol document was replayed through generation and
+persisted publication validation, including Expand, using a fake provider. All
+22 focused tests passed, including direct-speech, quoted-text and source guards.
+No API calls were made. The original failed qualification above remains historical
+evidence for its frozen candidate; this local correction does not retroactively
+change its result, authorize more paid calls, or establish release readiness.

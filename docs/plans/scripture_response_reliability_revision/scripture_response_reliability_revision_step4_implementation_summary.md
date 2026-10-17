@@ -40,3 +40,10 @@ Approval: user authorized the original Step 3 plan and linked protocol. Budget r
 
 - Fresh-case trials, provisional winner selection, paid expansions and promotion remain unperformed because Stage 5 produced no eligible candidate. The unchanged release contract is unmet. The authorized evaluation has stopped; unused allowance is not spent or renewed. Deployment remains outside scope.
 - Final handoff: Stage-scoped commits cover all five executed stages plus the planning commit. Local source/generator/provider, delivery/browser and harness verification is recorded above. Historical replies remain unchanged; the candidate remains inactive. Further parser work can start from saved evidence with local tests, but no release claim or additional paid run is authorized by this failed gate.
+
+## Follow-up - Contextual attribution correction (local only)
+
+- Authorization: User requested continuation after the proposed $0 parser correction; no paid requalification authorized.
+- Changes: Human biblical authors may be described as writing to an audience. Direct-speech verbs and colon-introduced speech (including after the audience clause), quoted reflection, and source/reference guards remain enforced. The exception does not apply to Bible/Scripture/God attribution. Archived the exact saved Sol James/Romans document as a replay fixture; prompts and model settings are unchanged.
+- Verification: Both new regressions failed against the previous validator. `php tests/run.php ScriptureVerifiedReplyTest AgentResponseGeneratorTest ScriptureSourceTest` then passed 22/22. The unchanged saved document passed normal generation and persisted publication validation for both initial and Expand paths using a fake provider; adversarial quotation/attribution, source and translation checks passed. `git diff --check` passed. Original trial fixture/config/runner hashes still match; ledger remains 12 settled calls and $0.12700975.
+- Notes: Additional API spend $0. This is local parser evidence, not a revised quality rating or new live qualification. Historical trial failures and gate evidence are preserved; verified mode remains inactive and Stages 6–7 remain unrun.
