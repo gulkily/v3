@@ -92,9 +92,9 @@ final class ProfileRepository
     /**
      * @return array<int, array<string, mixed>>
      */
-    public static function pendingDirectoryProfiles(PDO $pdo): array
+    public static function pendingDirectoryProfiles(PDO $pdo, bool $includeProfileNameChanges = false): array
     {
-        $stmt = $pdo->query(
+        $stmt = $pdo->prepare(
             'SELECT profiles.profile_slug, profiles.username, profiles.username_token, profiles.fallback_label,
                     profiles.post_count, profiles.thread_count, profiles.bootstrap_post_id, profiles.bootstrap_thread_id,
                     latest_activity.label AS latest_activity_label,
@@ -104,8 +104,9 @@ final class ProfileRepository
              LEFT JOIN activity AS latest_activity ON latest_activity.id = (
                  SELECT candidate.id
                  FROM activity AS candidate
-                 WHERE candidate.author_identity_id = profiles.identity_id
-                    OR candidate.post_id = profiles.bootstrap_post_id
+                 WHERE (candidate.author_identity_id = profiles.identity_id
+                        OR candidate.post_id = profiles.bootstrap_post_id)
+                   AND (:include_profile_name_changes = 1 OR candidate.record_family != \'profile_name\')
                  ORDER BY candidate.created_at DESC, candidate.action_key DESC, candidate.id DESC
                  LIMIT 1
              )
@@ -117,6 +118,9 @@ final class ProfileRepository
                       profiles.username_token ASC,
                       profiles.profile_slug ASC'
         );
+
+        $stmt->bindValue('include_profile_name_changes', $includeProfileNameChanges ? 1 : 0, PDO::PARAM_INT);
+        $stmt->execute();
 
         return $stmt->fetchAll();
     }

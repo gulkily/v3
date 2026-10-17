@@ -54,7 +54,7 @@ Every resolved profile read must be able to surface at least:
 - Username capture happens once during browser key generation/bootstrap.
 - If browser `prompt()` is unavailable, dismissed, blank, or unusable, the bootstrap flow falls back to `guest`.
 - The chosen bootstrap username becomes the initial visible username for the identity.
-- V1 has no separate username-change or profile-update flow after bootstrap.
+- A later username change is available only while the `FORUM_USERNAME_CHANGES_ENABLED` flag is on (default off): a signed, same-key `set-name` record under `records/profile-names/` supplies the visible username without changing the identity, keys or approvals (see [invitation entry](../reference/invitation_entry.md#choosing-a-username-step-by-step)). Other post-bootstrap profile editing is not part of V1.
 
 ## Public Profile Resolution
 

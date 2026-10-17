@@ -13,6 +13,7 @@ final class SqliteTaskQueueStore
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const AGENT_REPLY = 'agent_reply';
+    public const RAILSPIKE_ASSESSMENT = 'railspike_assessment';
     public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
     public const READ_MODEL_SCHEMA_RECOVERY_REASON = 'read_model_schema';
     public const TERMINAL_TASK_HISTORY_LIMIT = 100;
@@ -710,8 +711,11 @@ final class SqliteTaskQueueStore
     /**
      * @return array<string, mixed>
      */
-    private function enqueueWithinTransaction(string $type, string $deduplicationKey, int $maxAttempts): array
+    public function enqueueWithinTransaction(string $type, string $deduplicationKey, int $maxAttempts): array
     {
+        $this->assertAllowedType($type);
+        if (trim($deduplicationKey) === '') throw new InvalidArgumentException('Task key required.');
+        $maxAttempts = max(1, $maxAttempts);
         $existing = $this->findOutstanding($type, $deduplicationKey);
         if ($existing !== null) {
             $existing['enqueued'] = false;
@@ -821,7 +825,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY], true)) {
+        if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::RAILSPIKE_ASSESSMENT], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

@@ -24,6 +24,7 @@ final class FeatureFlagRegistry
     public const APPROVED_MEMBERS_ONLY = 'FORUM_APPROVED_MEMBERS_ONLY';
     public const ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL = 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL';
     public const AUTOMATIC_GUEST_KEYPAIR_ENABLED = 'FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED';
+    public const USERNAME_CHANGES_ENABLED = 'FORUM_USERNAME_CHANGES_ENABLED';
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
 
@@ -75,6 +76,15 @@ final class FeatureFlagRegistry
                 'Prepare a browser-local guest keypair for new visitors before their first signed action. Each browser controls whether its public key is published immediately or on first use.',
                 false,
                 self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
+                siteMutable: true,
+                group: 'ACCESS',
+            ),
+            new FeatureFlagDefinition(
+                self::USERNAME_CHANGES_ENABLED,
+                'Username changes',
+                'Let members change the username on their existing key from Account, and list each change in the activity report. Disabling stops new changes and hides their activity; saved names, keys and approvals are unchanged.',
+                false,
+                self::USERNAME_CHANGES_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
             ),

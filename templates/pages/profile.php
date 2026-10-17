@@ -57,7 +57,10 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
     <p><strong>Username route:</strong> <a href="/user/<?= $e($profile['username_token']) ?>">/user/<?= $e($profile['username_token']) ?></a></p>
 <?php if ($canApprove): ?>
     <form method="post" action="/profiles/<?= $e($profile['profile_slug']) ?>/approve" data-signed-approval-form data-profile-slug="<?= $e($profile['profile_slug']) ?>">
-      <button type="submit">Approve user</button>
+      <button type="submit"><?= $e($approvalReview['label'] ?? 'Review account key approval') ?></button>
+<?php if ($approvalReview !== null): ?>
+      <p><?= $e($approvalReview['consequence']) ?></p>
+<?php endif; ?>
     </form>
     <p class="meta" data-role="signed-approval-feedback" hidden></p>
 <?php endif; ?>
@@ -94,4 +97,5 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
       </div>
     </details>
   </article>
+<?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>
 </section>

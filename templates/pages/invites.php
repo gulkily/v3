@@ -1,6 +1,7 @@
 <section class="stack" data-invitation-page>
   <article class="card">
     <h1>Generate invite</h1>
+    <p>An invitation sponsors one account key. Anyone holding its link may redeem it before it expires. For an existing username, the new key can act as that account; the current approval policy is checked when it is accepted. Share the link only with the intended recipient.</p>
     <form data-invitation-issue-form>
       <label class="invitation-destination-toggle">
         <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination" aria-controls="invite-destination-fields" aria-expanded="false">

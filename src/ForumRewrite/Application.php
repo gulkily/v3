@@ -128,8 +128,10 @@ final class Application
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
-        if ($this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+        $securityReviewRequest = ($query['view'] ?? '') === 'security'
+            && in_array($path, ['/activity', '/activity/', '/forte/activity', '/forte/activity/', '/api/forte_activity_page', '/api/forte_activity_detail', '/api/forte_commit_detail'], true);
+        if ($securityReviewRequest || $this->approvedMembersOnlyEnabled()
+            || in_array($path, ['/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/api/private_messages/history_sync/')
             || str_starts_with($path, '/messages/conversation/')
@@ -159,6 +161,20 @@ final class Application
         }
 
         $this->ensureReadModel();
+
+        if ($securityReviewRequest) {
+            if (!$this->routeServices()->securityReviewAllowed()) {
+                $this->sendText("Authenticated root-approved operator access required.\n", 403, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            if (($query['format'] ?? '') === 'rss') {
+                $this->sendText("Operator security review is available as an authenticated page, not an RSS feed.\n", 406, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            foreach ($this->routeServices()->noStoreHeaders() as $header) header($header);
+        }
+
+
         $this->observeVisitorPageRequest($method, $path);
 
         // Gate the whole namespace before any messaging controller opens private storage.
@@ -205,6 +221,11 @@ final class Application
 
         if (str_starts_with($path, '/images/')) {
             (new \ForumRewrite\Http\ImageController($this->routeServices(), $this->repositoryRoot, $this->featureFlags()))->serve($method, substr($path, strlen('/images/')));
+            return;
+        }
+
+        if ($path === '/api/railspike_workflow') {
+            (new \ForumRewrite\Http\RailspikeWorkflowController($this->routeServices(), $this->authenticatedViewerProfile(...), $this->projectRoot, $this->repositoryRoot))->handle($method, $query);
             return;
         }
 
@@ -630,7 +651,12 @@ final class Application
                 return;
             }
 
-            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all')), 200);
+            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all')), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
+            return;
+        }
+
+        if (preg_match('#^/approvals/root/([^/]+)/?$#', $path, $matches) === 1) {
+            (new \ForumRewrite\Http\RootApprovalPageController($this->routeServices(), $this->repositoryRoot))->show($matches[1]);
             return;
         }
 
@@ -826,7 +852,7 @@ final class Application
                 (string) ($query['selected'] ?? ''),
                 (string) ($query['sort'] ?? ''),
                 (string) ($query['dir'] ?? ''),
-            ), 200);
+            ), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
             return;
         }
 
@@ -842,7 +868,7 @@ final class Application
         }
 
         if (preg_match('#^/forte/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->forteProfileController()->username($matches[1]);
+            $html = $this->forteProfileController()->username($matches[1], $query);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -886,7 +912,7 @@ final class Application
         }
 
         if (preg_match('#^/user/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = $this->profilePageController()->username($matches[1]);
+            $html = $this->profilePageController()->username($matches[1], $query);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -1060,6 +1086,18 @@ final class Application
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
+        $approvalReview = null;
+        if ($canApprove) {
+            try {
+                $approvalReview = \ForumRewrite\Security\ApprovalPolicy::review(
+                    (new \ForumRewrite\Security\ApprovalPolicy($this->pdo(), $this->repositoryRoot))->evaluate(
+                        (string) $viewerProfile['identity_id'], (string) $profile['identity_id']
+                    )
+                );
+            } catch (RuntimeException) {
+                // Preparation remains authoritative and explains unavailable approval paths.
+            }
+        }
         $canPrivateMessage = $this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)
             && $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
@@ -1079,6 +1117,7 @@ final class Application
             'profile.php',
             [
                 'profile' => $profile,
+                'approvalHistory' => $this->routeServices()->approvalHistory()->forKey($profile),
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
                 'notice' => $notice,
@@ -1086,6 +1125,7 @@ final class Application
                 'viewerProfile' => $viewerProfile,
                 'isOwnProfile' => $isOwnProfile,
                 'canApprove' => $canApprove,
+                'approvalReview' => $approvalReview,
                 'canPrivateMessage' => $canPrivateMessage,
             ],
             $pageTitleLabel . ' - Profile',
@@ -1850,7 +1890,7 @@ final class Application
             '/compose/thread', '/compose/reply',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
-            '/api', '/api/', '/api/version', '/api/list_index',
+            '/api/railspike_workflow', '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
@@ -1868,7 +1908,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }

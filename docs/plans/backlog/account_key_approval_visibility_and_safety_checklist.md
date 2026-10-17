@@ -1,6 +1,6 @@
 # Account key approval visibility and safety checklist
 
-Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stage 1 enforcement is complete, and stages 2–6 remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
+Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stages 1–5 enforcement, approval review, acceptance evidence, account history, and operator review are complete; Stage 6 release verification and documentation remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
 
 Reduce easy account impersonation while preserving open registration, member sponsorship, and convenient device setup. Prioritize the cross-account approval restriction, clear approval wording, and visible account-key history. Notifications and device pairing can follow as separately scoped features.
 
@@ -10,7 +10,7 @@ The [combined Step 1 assessment](../account_key_approval_safety/account_key_appr
 
 - [x] Implement the default-enabled restriction flag, including invitation enforcement and acceptance-time checks. Release handoff remains pending in the combined cycle.
 - [x] Preserve member sponsorship of new usernames, approval of additional keys for the approver's own username, and root-approved operator authority when the restriction is active.
-- [ ] Use action-specific approval wording instead of a generic approval button.
+- [x] Use action-specific approval wording instead of a generic approval button.
 
 | Situation | Suggested wording |
 | --- | --- |
@@ -18,35 +18,35 @@ The [combined Step 1 assessment](../account_key_approval_safety/account_key_appr
 | Additional key for the approver's username | Add this key to my account |
 | Additional key for a different existing username | Grant this key access as Bob |
 
-- [ ] For an additional key to another existing account, show the current approved-key count and the consequence before signing: “Bob already has 2 approved keys. This key will be able to act as Bob.”
-- [ ] Bind the displayed account and target key to the signed action, and recheck authorization when accepting it.
+- [x] For an additional key to another existing account, show the current approved-key count and the consequence before signing: “Bob already has 2 approved keys. This key will be able to act as Bob.”
+- [x] Bind the displayed account and target key to the signed action, and recheck authorization when accepting it.
 - [x] Give denied requests an explanation of which approval path is available, without allowing the interface to bypass server enforcement.
 
-Stage 1 binds the target key to the signed record and rechecks live authorization under the write lock. The displayed consequence, key-count warning, and renewed review after context changes remain Stage 2 work; the UI still uses “Approve user.”
+Stage 1 binds the target key to the signed record and rechecks live authorization under the write lock. Stage 2 adds the displayed consequence, key-count warning, exact key confirmation, signed review-context digest, and renewed review after context changes.
 
 Meaningful authorization prompts should identify the consequential details the user is authorizing. This follows [OWASP transaction authorization guidance](https://cheatsheetseries.owasp.org/cheatsheets/Transaction_Authorization_Cheat_Sheet.html).
 
 ## Priority 2 Show account key history and exceptional approvals
 
-- [ ] Show each approved key on the account page, with its approver and approval time where known.
-- [ ] Distinguish first-key sponsorship, an additional key authorized by the same account, and an additional key authorized by somebody else. Identify operator overrides explicitly.
-- [ ] Record that classification when a new approval is accepted, along with the relevant key count and actor authority, so future reviews need not infer them from current state.
-- [ ] Preserve “unknown” for historical facts that cannot be established. The current audit's review candidates must not become confirmed violations merely by appearing in the UI.
-- [ ] Add account-key grants to an operator security feed with links to the affected account and approval evidence.
+- [x] Show each approved key on the account page, with its approver and approval time where known.
+- [x] Distinguish first-key sponsorship, an additional key authorized by the same account, and an additional key authorized by somebody else. Identify operator overrides explicitly.
+- [x] Record that classification when a new approval is accepted, along with the relevant key count and actor authority, so future reviews need not infer them from current state.
+- [x] Preserve “unknown” for historical facts that cannot be established. The current audit's review candidates must not become confirmed violations merely by appearing in the UI.
+- [x] Add account-key grants to an operator security feed with links to the affected account and approval evidence.
 - [ ] Consider a community-visible event for additions to existing accounts: “Alice approved an additional key for Bob. Bob now has 3 approved keys.” Give ordinary new-member sponsorship a less prominent presentation.
-- [ ] Keep IP addresses and device details out of public events, and respect the site's membership/access boundary when exposing history.
-- [ ] Include invitation-derived grants in the same history and classification rules.
+- [x] Keep IP addresses and device details out of public events, and respect the site's membership/access boundary when exposing history.
+- [x] Include invitation-derived grants in the same history and classification rules.
 
-Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, but these are not durable acceptance evidence. Account-wide history and the operator security feed remain pending.
+Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, and Stage 3 persists these facts in grant-bound acceptance receipts. Account-wide history is implemented in Stage 4; Stage 5 supplies the authenticated operator security view.
 
 ## Priority 3 Make approval policy changes visible
 
-- [ ] Surface who enabled or disabled cross-account approvals and when, using the existing signed feature-flag change history where possible.
-- [ ] Let an operator review policy changes alongside account-key grants so a brief enable, approve, disable sequence is easy to notice.
-- [x] Decide whether new approval events should reference the effective policy or policy-change record: approved Step 2 requires effective policy in durable acceptance evidence. Implementing that evidence remains Stage 3 work.
+- [x] Surface who enabled or disabled cross-account approvals and when, using the existing signed feature-flag change history where possible.
+- [x] Let an operator review policy changes alongside account-key grants so a brief enable, approve, disable sequence is easy to notice.
+- [x] Decide whether new approval events should reference the effective policy or policy-change record: approved Step 2 requires effective policy in durable acceptance evidence. Stage 3 implements that evidence.
 - [x] Explain that disabling the flag restricts future acceptance and does not revoke keys already approved while it was enabled.
 
-The registered flag description explains prospective behavior. Existing signed feature-flag activity supplies actor/time/source evidence; the focused operator view joining policy changes with grants remains Stage 5 work. The policy visibility item above remains open for that complete experience.
+The registered flag description explains prospective behavior. Existing signed feature-flag activity supplies actor/time/source evidence; Stage 5 adds the authenticated operator view joining policy changes with grants, including signed actor/time/source evidence and explicit uncertainty for unrecorded deployment changes.
 
 Historical policy context is useful audit evidence. It is not required to re-evaluate or remove previously accepted grants under the prospective restriction model.
 
@@ -76,7 +76,7 @@ The goal is to make adding your own device easier than asking another member to 
 
 - [x] Choose the initial visibility scope: approved Step 2 includes account history and a root-approved operator view, with no new public feed. Community-visible events remain a follow-up consideration.
 - [ ] Choose notification channels and how existing devices recognize and acknowledge new-key notices.
-- [ ] Define the historical evidence available for older approvals and how uncertain classifications are presented.
+- [x] Define the historical evidence available for older approvals and how uncertain classifications are presented.
 - [ ] Scope a revocation response before promising users they can disable an unfamiliar key.
 - [x] Review the combined Step 1 scope and select its FDP cycle: approved Option B groups priorities 1–3; notifications, pairing, and revocation remain deferred.
 

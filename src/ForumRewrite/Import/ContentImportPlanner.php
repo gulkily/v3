@@ -173,7 +173,7 @@ final class ContentImportPlanner
             }
             return [...$parent, 'key' => $parent['key'] === null ? null : 'signature:' . $parent['key'] . ':' . substr($path, -4), 'record' => $record];
         }
-        if (preg_match('#^records/(instance|approval-seeds|feature-flag-changes|private-messages|invitations)/#', $path)) {
+        if (preg_match('#^records/(instance|approval-seeds|approval-acceptances|feature-flag-changes|private-messages|invitations)/#', $path)) {
             return [...$entry, 'state' => 'excluded', 'reason' => 'Instance authority, settings, or private data'];
         }
         if (!ArchiveRecordCatalog::isRecordPath($path)) {

@@ -44,7 +44,7 @@ final class ApprovalAudit
         $profiles = [];
         $usernameCounts = [];
         foreach ($pdo->query('SELECT identity_id, profile_slug, username, username_token,
-                is_approved, approved_by_identity_id FROM profiles
+                is_approved, approved_by_identity_id, approved_by_label, bootstrap_thread_id, bootstrap_post_id FROM profiles
                 ORDER BY username_token, identity_id')->fetchAll(PDO::FETCH_ASSOC) as $profile) {
             $profiles[$profile['identity_id']] = $profile;
             if ((int) $profile['is_approved'] === 1) {
@@ -89,8 +89,13 @@ final class ApprovalAudit
                 $category = 'cross_username_single_key';
                 $reason = 'Non-operator cross-username approval; this is the only currently approved key for the username.';
             }
+            $acceptance = (new \ForumRewrite\ReadModel\ApprovalHistory($pdo, $repositoryRoot))->forProfile($target);
             $counts[$category]++;
             $rows[] = [
+                'acceptance_classification' => $acceptance['classification'],
+                'accepted_at' => $acceptance['accepted_at'],
+                'acceptance_receipt' => $acceptance['receipt_path'],
+                'acceptance' => $acceptance,
                 'category' => $category,
                 'review_candidate' => in_array($category, ['cross_username_multiple_keys', 'unknown'], true),
                 'username' => $target['username'],
@@ -106,7 +111,7 @@ final class ApprovalAudit
 
         return [
             'scope' => 'Currently approved keys and their read-model attributed approver, including invitation-derived grants. Not every historical approval event.',
-            'limitations' => 'Review candidates are not proven violations. First-key status, operator status, and the setting at acceptance time are not reconstructed. Signatures are not reverified. Only current attribution is reported, not all possible approval paths.',
+            'limitations' => 'Review candidates are not proven violations. First-key status, operator status, and the setting at acceptance time are unknown without an acceptance receipt. Current-state categories remain review hints; recorded acceptance facts are reported separately. Signatures are not reverified. Only current attribution is reported, not all possible approval paths.',
             'repository_root' => $repositoryRoot,
             'read_model_metadata' => $metadata,
             'warnings' => $warnings,
