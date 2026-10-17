@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Root approval evidence pages](root_approval_pages/)
 - [Forte Activity parity](forte_activity_parity/)
 - [Bookmarklets page redesign](bookmarklets_page_redesign/)
 - [Repository directory cleanup](repository_directory_cleanup/)
