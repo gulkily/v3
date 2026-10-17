@@ -2,52 +2,50 @@
 
 Debug mode: enabled
 
-# Step 2: Feature Description — Stable Messages/Invite Nav Buttons
+# Step 2: Feature Description — Stable Messages/Invite Nav Buttons (Revised)
 
-## Direction (from Step 1 approval)
-Pre-render the Messages/Invite nav buttons so they are present on first paint (Options B/C), plus a client-side fallback that reconciles the nav when the client or another tab changed (e.g. signed in/out, identity switched).
+## Revised direction
+Stage 1 found no script that inserts the nav buttons after load. The observed jank is the Messages button starting with a `…` placeholder (wider) and shrinking to `Messages`, which shifts Invite. Revised scope: drop the visible count/placeholder text, signal new messages with an outline highlight plus ARIA, and never change the button's size or caption. This supersedes the earlier pre-render/cross-tab fallback scope; a richer unread presentation is deferred to a later brainstorm.
 
 ## Problem
-Signed-in, approved viewers see the Messages and Invite nav buttons pop in after the page loads, which feels janky. The cause is not yet confirmed; confirming which pages/paths omit them is the first validation task.
+The Messages nav button changes width after load because its unread-count text arrives late, moving the Invite button.
 
 ## User Stories
-- As a signed-in approved member, I want Messages and Invite in the nav on first paint so that the page doesn't shift or flicker.
-- As a member who signs in or out in another tab, I want this tab's nav to correct itself so that it never shows buttons I can't use or hides ones I can.
-- As a guest or unapproved visitor, I want no Messages/Invite buttons so that I'm not shown actions I can't use.
+- As a signed-in member, I want the Messages button to keep its size from first paint so that the nav doesn't jump.
+- As a member with new messages, I want the Messages button outlined so that I notice them without any layout change.
+- As a screen-reader user, I want the unread state announced through ARIA so that I get the same information.
 
 ## Core Requirements
-- Messages and Invite are in the initial nav markup for viewers who are eligible, on every page that shows the main nav.
-- Pre-rendering must never show them to ineligible viewers, including on cached/shared pages.
-- A client fallback reconciles the nav with the server's answer after load and on identity change from another tab, adding or removing only what differs (no full re-render, no shift when already correct).
-- Existing behavior is preserved: unread count, messaging-disabled hiding, qdb/members-only nav variants, Invite click handling.
+- Messages caption is always exactly `Messages`; no visible `…`, count, or `?`.
+- Outline highlight (no change to size, padding, or border box) when unread > 0; removed when 0 or unavailable.
+- ARIA conveys loading/unread/unavailable state (accessible name or description updated; no visible text).
+- Unread polling, data attributes, messaging-disabled hiding, and Invite behavior are unchanged.
 
 ## Delivery Scope
 - Work type: application change (no schema changes).
-- Completion boundary: eligible viewer loads any page → nav is complete on first paint; changing identity in another tab → nav corrects without reload; ineligible viewer never sees the buttons. Releasable once verified in a browser across guest, approved, and cross-tab cases.
+- Completion boundary: eligible viewer loads any page → Messages and Invite do not move at any point; unread state shows as outline + ARIA; releasable once verified in a browser and browser tests updated.
 
 ## Risks
-- **Cached/static pages leak or omit viewer items** — impact: wrong buttons shown or still late. Validate first by identifying which pages are served without viewer context. Mitigation: hidden-by-default pre-rendered items revealed only on confirmed eligibility, or viewer-specific responses where already per-viewer.
-- **Client and server state disagree** — impact: flicker or stale buttons. Validate with cross-tab sign-in/out test. Mitigation: server answer is authoritative; reconcile only on difference.
-- **Messaging scripts depend on the link being present** — impact: unread polling fails to start/stop. Validate by checking start/stop paths against pre-rendered links. Mitigation: reuse the existing start/stop hooks instead of new ones.
+- Outline clashes with theme button styling (Word 97/Chicago/Win-dark bevels) — impact: invisible or ugly highlight. Validate per theme early. Mitigation: use an outline-style highlight that doesn't affect layout, tuned per theme only where needed.
+- Scripts assume the count/status elements exist — impact: runtime errors in unread polling and the flag-toggle error path. Validate with existing browser tests. Mitigation: update scripts to set state via attributes/ARIA only.
+- Existing tests assert the visible `…`/`?` text — impact: failing tests. Mitigation: update to assert attributes/ARIA.
 
 ## Shared Component Inventory (extend, don't fork)
-- `templates/partials/nav.php` and `TemplateRenderer::navItems()` — canonical nav markup; extend.
-- `GET /api/feature_flags/navigation` — existing server answer for nav/messaging eligibility; reuse as the reconcile source.
-- `public/assets/feature_flags.js` — existing nav patch logic; extract/reuse for the fallback rather than duplicating.
-- `private_message_availability.js`, `private_message_unread.js`, `private_message_history_sync.js` — messaging start/stop; reuse unchanged.
-- `invite_navigation.js` — Invite click handling; unchanged.
-- `theme-nav-icons.css` / `site.css` — nav styling; ensure hidden/revealed states keep icon parity.
+- `templates/partials/nav.php` — canonical Messages markup; extend.
+- `private_message_unread.js` — owns unread state; extend to drive outline/ARIA state.
+- `feature_flags.js` — error path touching the count element; adapt.
+- `site.css`, `theme-nav-icons.css` — nav link styling; add highlight state.
+- Browser tests: `private_message_unread_ui`, `private_message_live_navigation`, `private_message_seen_*`.
 
 ## Simple User Flow
-1. Eligible viewer opens any page.
-2. Nav arrives with Messages and Invite already in place.
-3. After load, the client checks eligibility; if unchanged, nothing visibly happens.
-4. If identity changed elsewhere, the nav adds/removes the buttons to match.
+1. Page loads; Messages and Invite render at final size.
+2. Unread check completes.
+3. If unread > 0, Messages gets an outline and updated ARIA; nothing moves.
 
 ## Success Criteria
-- No Messages/Invite insertion or layout shift after first paint for eligible viewers on a normal load (verified in a browser, all themes with nav icons).
-- Guests/unapproved viewers never see the buttons, including on cached pages.
-- Cross-tab sign-in/out updates the nav within a few seconds without reload.
-- Existing messaging and invite tests still pass.
+- Zero layout shift of nav items before/after unread check (measured bounding boxes).
+- Outline appears only when unread > 0, in every theme.
+- ARIA state reflects loading/unread/unavailable.
+- Existing messaging tests pass after updates.
 
-**Approval:** Reply `Approved Step 2` to proceed to Step 3.
+**Approval:** Reply `Approved Step 2` to confirm the revision.
