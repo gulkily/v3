@@ -4093,6 +4093,7 @@ NODE;
             assertStringContains('records/instance/feature-flags.txt', $committedFiles);
             assertStringContains($prepared['record_path'], $committedFiles);
             assertStringContains($prepared['record_path'] . '.asc', $committedFiles);
+            assertStringContains(\ForumRewrite\Security\ApprovalAcceptance::path($prepared['post_id']), $committedFiles);
             $activity = $this->renderMethod($application, 'GET', '/activity/');
             assertStringContains($identityId, $activity);
             assertStringContains($prepared['record_path'], $activity);
@@ -5407,6 +5408,9 @@ NODE;
 
         $this->seedArtifacts($artifactRoot, [
             '/profiles/' . $targetProfileSlug . '.html',
+            '/user/alice.html',
+            '/forte/user/alice.html',
+            '/forte/profiles/' . $targetProfileSlug . '.html',
         ]);
         $postIdsBefore = $this->listCanonicalPostIds($repositoryRoot);
         $approvalResult = $this->approveIdentity(
@@ -5433,7 +5437,22 @@ NODE;
         $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $targetBootstrapThreadId);
         $_COOKIE = [];
 
-        assertStringContains('Approve user', $profilePage);
+        foreach (['/user/alice', '/forte/user/alice', '/profiles/' . $targetProfileSlug, '/forte/profiles/' . $targetProfileSlug] as $route) {
+            $historyPage = $this->renderMethod($application, 'GET', $route);
+            assertStringContains(str_contains($route, '/profiles/') ? 'Key approval' : 'Account key history', $historyPage);
+            assertStringContains('New account', $historyPage);
+            assertStringContains('Authority: root-approved operator', $historyPage);
+            assertStringContains('Accepted: <time', $historyPage);
+            assertStringContains('/source/current/records/approval-acceptances/', $historyPage);
+        }
+        assertStringContains('Approval-Classification: new_account', $targetProfileApi);
+        foreach (['/user/alice.html', '/forte/user/alice.html', '/forte/profiles/' . $targetProfileSlug . '.html'] as $artifact) {
+            assertSame(false, is_file($artifactRoot . $artifact));
+        }
+        $receiptPath = \ForumRewrite\Security\ApprovalAcceptance::path($approvalPostId);
+        $receiptPage = $this->renderMethod($application, 'GET', '/source/current/' . $receiptPath);
+        assertStringContains('"classification": "new_account"', $receiptPage);
+        assertStringContains('Approve new member alice', $profilePage);
         assertSame(1, count($approvalPostIds));
         assertStringContains('Approved user alice', $approvalLanding);
         assertStringContains('/posts/' . $approvalPostId, $approvalLanding);
@@ -5443,8 +5462,8 @@ NODE;
         assertStringContains('Approved by:</strong>', $targetProfile);
         assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $targetProfile);
         assertStringContains('>guest</a>', $targetProfile);
-        assertStringNotContains('Approve user', $approvalLanding);
-        assertStringNotContains('Approve user', $targetProfile);
+        assertStringNotContains('data-signed-approval-form', $approvalLanding);
+        assertStringNotContains('data-signed-approval-form', $targetProfile);
         assertStringNotContains($approvalPostId, $board);
         assertStringContains($approvalPostId, $activity);
         assertStringContains('approval', $activity);
@@ -5490,8 +5509,8 @@ NODE;
         $byProfileSlug = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
         $_COOKIE = [];
 
-        assertStringContains('Approve user', $byIdentityId);
-        assertStringContains('Approve user', $byProfileSlug);
+        assertStringContains('Approve new member alice', $byIdentityId);
+        assertStringContains('Approve new member alice', $byProfileSlug);
         assertStringContains('data-signed-approval-form', $byIdentityId);
         assertStringContains('/assets/browser_signing.', $byIdentityId);
         assertStringContains('/assets/pending_approvals.', $byIdentityId);
@@ -5857,7 +5876,24 @@ NODE;
                 'canonical_record' => $prepared['canonical_record'],
                 'detached_signature' => $signature,
             ];
+            $hook = $repositoryRoot . '/.git/hooks/pre-commit';
+            file_put_contents($hook, "#!/bin/sh\nexit 1\n");
+            chmod($hook, 0700);
+            $failedCommit = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_approval'), true, 512, JSON_THROW_ON_ERROR);
+            unlink($hook);
+            assertSame('error', $failedCommit['status']);
+            assertSame(false, is_file($repositoryRoot . '/' . $prepared['record_path']));
+            assertSame(false, is_file($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
+            assertSame([], glob($repositoryRoot . '/records/approval-acceptances/*.json') ?: []);
+            $retryPayload = $_POST;
             $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_approval'), true, 512, JSON_THROW_ON_ERROR);
+            $_POST = $retryPayload;
+            $recovered = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_approval'), true, 512, JSON_THROW_ON_ERROR);
+            assertSame(true, $recovered['recovered']);
+            assertSame($postCountBefore + 1, $this->countCanonicalPostFiles($repositoryRoot));
+            $receipt = \ForumRewrite\Security\ApprovalAcceptance::read($repositoryRoot, $prepared['record_path']);
+            assertSame('direct', $receipt['kind']);
+            assertSame($target['identity_id'], $receipt['context']['target_identity_id']);
             $_POST = [];
             $targetProfile = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($target['profile_slug']));
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($prepared['post_id']));
@@ -5988,11 +6024,192 @@ NODE;
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $recipient['identity_id']);
             assertSame(1, (int) $profile['is_approved']);
+            $receipt = \ForumRewrite\Security\ApprovalAcceptance::read($root, $redeem['record_path']);
+            assertSame('invitation', $receipt['kind']);
+            assertSame('cross_account_key', $receipt['context']['classification']);
+            assertSame(true, $receipt['context']['cross_account_allowed']);
+            assertSame($issuer['identity_id'], $receipt['context']['actor_identity_id']);
+            $history = (new \ForumRewrite\ReadModel\ApprovalHistory((new ReadModelConnection($db))->open(), $root))->forUsername('forum-user');
+            $grants = array_column($history['rows'], null, 'identity_id');
+            assertSame('cross_account_key', $grants[$recipient['identity_id']]['classification']);
+            assertSame($receipt['accepted_at'], $grants[$recipient['identity_id']]['accepted_at']);
+            require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+            $workspace = new ImportTestWorkspace();
+            $restored = $workspace->repository('restored', true);
+            $workspace->git($restored);
+            $archive = $workspace->root . '/accepted.tar.gz';
+            [$code, $output] = $workspace->command(['tar', '-czf', $archive, '-C', $root, 'records']);
+            assertSame(0, $code, $output);
+            $restoreDb = $workspace->root . '/restored.sqlite3';
+            [$code, $output] = $workspace->command(['php', __DIR__ . '/../scripts/import_repository_archive.php', $archive, $restored, $restoreDb]);
+            assertSame(0, $code, $output);
+            assertSame($receipt, \ForumRewrite\Security\ApprovalAcceptance::read($restored, $redeem['record_path']));
+            $restoredProfile = ProfileRepository::byIdentityId((new ReadModelConnection($restoreDb))->open(), $recipient['identity_id']);
+            assertSame(1, (int) $restoredProfile['is_approved']);
+            (new ReadModelBuilder($restored, $restoreDb, new CanonicalRecordRepository($restored)))->rebuild();
+            assertSame($receipt, \ForumRewrite\Security\ApprovalAcceptance::read($restored, $redeem['record_path']));
+
         } finally {
             $_POST = [];
             putenv($previous === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previous);
             $this->deleteTree($issuerKey['home']);
             $this->deleteTree($recipientKey['home']);
+        }
+    }
+
+    public function testSignedAccountKeyFlowsPreserveReviewAndRecoverCommittedRefreshFailure(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('approval-owner');
+        $previous = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_POST = ['public_key' => $key['public_key']];
+            $response = $this->renderMethod($app, 'POST', '/api/link_identity'); $_POST = [];
+            $owner = ['identity_id' => $this->extractValue($response, 'identity_id'), 'profile_slug' => $this->extractValue($response, 'profile_slug'),
+                'bootstrap_thread_id' => $this->extractValue($response, 'bootstrap_thread_id'), 'bootstrap_post_id' => $this->extractValue($response, 'bootstrap_post_id')];
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $this->approveIdentity($writer, $owner);
+            $bob = $this->linkGeneratedIdentity($app, 'existing-bob');
+            $this->approveIdentity($writer, $bob);
+            $new = $this->linkGeneratedIdentity($app, 'new-member');
+            $own = $this->linkGeneratedIdentity($app, 'approval-owner');
+            $cross = $this->linkGeneratedIdentity($app, 'existing-bob');
+            $prepare = fn (array $target) => $writer->prepareApproval(['approver_identity_id' => $owner['identity_id'],
+                'target_identity_id' => $target['identity_id'], 'target_profile_slug' => $target['profile_slug'],
+                'thread_id' => $target['bootstrap_thread_id'], 'parent_id' => $target['bootstrap_post_id']]);
+            $sign = fn (array $prepared) => $prepared + ['author_identity_id' => $owner['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            $sponsor = $prepare($new);
+            assertSame('Approve new member new-member', $sponsor['approval_review']['label']);
+            assertSame('ok', $writer->finalizePreparedApproval($sign($sponsor))['status']);
+            $addition = $prepare($own);
+            assertSame('Add this key to my account', $addition['approval_review']['label']);
+            assertSame('ok', $writer->finalizePreparedApproval($sign($addition))['status']);
+            try { $prepare($cross); throw new RuntimeException('Expected cross-account denial.'); }
+            catch (RuntimeException $error) { assertStringContains('same username or a root-approved operator', $error->getMessage()); }
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            $grant = $prepare($cross);
+            assertSame('Grant this key access as existing-bob', $grant['approval_review']['label']);
+            assertStringContains('already has 1 approved keys', $grant['approval_review']['consequence']);
+            $signed = $sign($grant);
+            $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root)) extends LocalWriteService {
+                protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+                {
+                    return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                        public function applyApprovalWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array { throw new RuntimeException('test incremental failure'); }
+                    };
+                }
+                protected function rebuildReadModel(): array { throw new RuntimeException('test rebuild failure'); }
+            };
+            try { $failing->finalizePreparedApproval($signed); throw new RuntimeException('Expected committed refresh failure.'); }
+            catch (RuntimeException $error) { assertStringContains('Canonical write committed at', $error->getMessage()); }
+            $this->assertReadModelMarkedStale($db);
+            $this->seedArtifacts($artifacts, ['/activity.html', '/users.html', '/user/existing-bob.html']);
+            $before = $this->countCanonicalPostFiles($root);
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            $recovered = $writer->finalizePreparedApproval($signed);
+            assertSame(true, $recovered['recovered']);
+            assertSame($before, $this->countCanonicalPostFiles($root));
+            foreach (['/activity.html', '/users.html', '/user/existing-bob.html'] as $artifact) assertSame(false, is_file($artifacts . $artifact));
+            $this->assertReadModelHealthy($db);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $history = new \ForumRewrite\ReadModel\ApprovalHistory((new ReadModelConnection($db))->open(), $root);
+            $ownKeys = array_column($history->forUsername('approval-owner')['rows'], null, 'identity_id');
+            assertSame('own_account_key', $ownKeys[$own['identity_id']]['classification']);
+            $bobKeys = array_column($history->forUsername('existing-bob')['rows'], null, 'identity_id');
+            assertSame('cross_account_key', $bobKeys[$cross['identity_id']]['classification']);
+            assertSame(true, $bobKeys[$cross['identity_id']]['cross_account_allowed']);
+        } finally {
+            $_POST = []; $_COOKIE = [];
+            putenv($previous === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previous);
+            $this->deleteTree($key['home']);
+        }
+    }
+
+    public function testOperatorSecurityReviewRequiresAuthenticatedRootAndCorrelatesPolicyChanges(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('security-operator');
+        $previousSession = $_SESSION ?? [];
+        $previousFlag = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_POST = ['public_key' => $key['public_key']];
+            $response = $this->renderMethod($app, 'POST', '/api/link_identity');
+            $_POST = [];
+            $operator = $this->extractValue($response, 'identity_id');
+            $this->seedApprovedIdentity($root, $operator);
+            $target = $this->linkGeneratedIdentity($app, 'security-target');
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $change = function (bool $value) use ($writer, $operator, $key): void {
+                $prepared = $writer->prepareFeatureFlagChange(['key' => 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL', 'value' => $value ? 'true' : 'false'], $operator);
+                if (($prepared['wrote_record'] ?? '') === 'no') return;
+                $writer->finalizePreparedFeatureFlagChange($prepared + ['detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])], $operator);
+            };
+            $change(false);
+            $change(true);
+            $grant = $this->approveIdentity($writer, $target, $operator);
+            $change(false);
+            if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+            $paths = ['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/api/forte_activity_detail?view=security&id=1', '/api/forte_commit_detail?view=security&sha=' . $grant['commit_sha'], '/activity/?view=security&format=rss'];
+            foreach ([null, $target['identity_id']] as $viewer) {
+                $_SESSION = $viewer === null ? [] : ['authenticated_identity_id' => $viewer];
+                $_COOKIE = ['identity_hint' => $operator];
+                foreach ($paths as $path) {
+                    $denied = $this->renderMethod($app, 'GET', $path);
+                    assertSame(403, http_response_code());
+                    assertStringContains('Authenticated root-approved operator access required', $denied);
+                    assertStringNotContains('Acceptance receipt', $denied);
+                }
+            }
+            $_SESSION = ['authenticated_identity_id' => $operator];
+            $_COOKIE = [];
+            foreach (['/activity/?view=security', '/forte/activity/?view=security'] as $path) {
+                $page = $this->renderMethod($app, 'GET', $path);
+                assertSame(200, http_response_code());
+                assertStringContains('Operator security review', $page);
+                assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true', $page);
+                assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false', $page);
+                assertStringContains('security-target', $page);
+                assertStringContains('Account key grants and recorded approval-policy changes.', $page);
+                if (str_starts_with($path, '/forte/')) {
+                    assertStringContains('data-paned-activity-rss href="/activity/?view=security&amp;format=rss" hidden', $page);
+                    assertSame(1, substr_count($page, 'Current cross-account policy:'));
+                    assertTrue(strpos($page, 'Current cross-account policy:') < strpos($page, 'data-paned-activity-list-pane'));
+                }
+            }
+            $pdo = (new ReadModelConnection($db))->open();
+            $query = $pdo->prepare('SELECT id FROM activity WHERE post_id = ?');
+            $query->execute([$grant['post_id']]);
+            $id = (int) $query->fetchColumn();
+            $query->closeCursor();
+            $detail = $this->renderMethod($app, 'GET', '/api/forte_activity_detail?view=security&id=' . $id);
+            assertStringContains('Acceptance receipt', $detail);
+            assertStringContains('Affected account: security-target', $detail);
+            $pagination = $this->renderMethod($app, 'GET', '/api/forte_activity_page?view=security');
+            $securityPage = json_decode($pagination, true, 512, JSON_THROW_ON_ERROR);
+            assertSame('ok', $securityPage['status']);
+            assertStringContains('data-paned-activity-view-security="1"', $securityPage['html']);
+            assertStringContains('Acceptance receipt', $securityPage['detail_html']);
+            assertStringContains('Affected account: security-target', $securityPage['detail_html']);
+            $securityRows = json_decode($this->renderMethod($app, 'GET', '/api/forte_activity_page?view=security&rows_only=1'), true, 512, JSON_THROW_ON_ERROR);
+            assertStringContains('new_account: security-operator approved a key for security-target', $securityRows['html']);
+            $ordinary = $this->renderMethod($app, 'GET', '/api/forte_activity_detail?id=' . $id);
+            assertStringNotContains('Affected account:', $ordinary);
+            assertStringNotContains('Acceptance receipt', $ordinary);
+            $this->renderMethod($app, 'GET', '/activity/?view=security&format=rss');
+            assertSame(406, http_response_code());
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertStringContains('security-target', $this->renderMethod($app, 'GET', '/activity/?view=security'));
+        } finally {
+            $_POST = []; $_COOKIE = []; $_SESSION = $previousSession;
+            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+            putenv($previousFlag === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previousFlag);
+            $this->deleteTree($key['home']);
         }
     }
 

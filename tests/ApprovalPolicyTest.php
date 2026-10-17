@@ -24,6 +24,7 @@ final class ApprovalPolicyTest
             assertSame(true, $policy->evaluate($this->id(1), $this->id(6))['allowed']); // operator
             assertSame(false, $policy->evaluate($this->id(2), $this->id(6))['actor_is_operator']);
             assertSame(1, $policy->evaluate($this->id(2), $this->id(6))['existing_key_count']);
+            assertSame('Add this key to my account', ApprovalPolicy::review($policy->evaluate($this->id(2), $this->id(5)))['label']);
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
             assertSame(true, $policy->evaluate($this->id(2), $this->id(6))['allowed']);
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
@@ -104,7 +105,26 @@ final class ApprovalPolicyTest
                 'target_profile_slug' => 'key-' . $n, 'thread_id' => 'boot-' . $n, 'parent_id' => 'boot-' . $n,
             ]);
             $cross = $prepare(6);
+            assertSame('Grant this key access as bob', $cross['approval_review']['label']);
+            assertStringContains('Approval-Context-SHA256:', $cross['canonical_record']);
+            $pdo->exec("UPDATE profiles SET username_token = 'bob', is_approved = 1 WHERE identity_id = '" . $this->id(4) . "'");
+            $this->rejects(fn () => $writer->finalizePreparedApproval($cross + ['author_identity_id' => $this->id(2)]), 'Approval context changed');
+            $pdo->exec("UPDATE profiles SET username_token = 'new', is_approved = 0 WHERE identity_id = '" . $this->id(4) . "'");
             $first = $prepare(4);
+            assertSame('Approve new member new', $first['approval_review']['label']);
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
+            $this->rejects(fn () => $writer->finalizePreparedApproval($first + ['author_identity_id' => $this->id(2)]), 'Approval context changed');
+            putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
+            $fresh = $prepare(4);
+            $this->rejects(fn () => $writer->finalizePreparedApproval(array_merge($fresh, ['author_identity_id' => $this->id(2), 'canonical_record' => str_replace($this->id(4), $this->id(6), $fresh['canonical_record'])])), 'canonical record mismatch');
+
+            $expired = $prepare(4);
+            $preparedPath = $root . '/prepared-posts/' . $expired['prepare_token'] . '.json';
+            $metadata = json_decode(file_get_contents($preparedPath), true, 512, JSON_THROW_ON_ERROR);
+            $metadata['expires_at'] = '2000-01-01T00:00:00Z';
+            file_put_contents($preparedPath, json_encode($metadata, JSON_THROW_ON_ERROR));
+            $this->rejects(fn () => $writer->finalizePreparedApproval($expired), 'expired');
+
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
             $this->rejects(fn () => $writer->finalizePreparedApproval($cross + ['author_identity_id' => $this->id(2)]), 'same username or a root-approved operator');
             $pdo->exec("UPDATE profiles SET username_token = 'new', is_approved = 1 WHERE identity_id = '" . $this->id(6) . "'");

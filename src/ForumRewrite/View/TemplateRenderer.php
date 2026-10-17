@@ -28,6 +28,8 @@ final class TemplateRenderer
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
         'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
         'profile.php' => ['/assets/identity.css'],
+        'root_approval.php' => ['/assets/identity.css'],
+        'username.php' => ['/assets/identity.css'],
         'private_message_list.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
@@ -471,6 +473,7 @@ final class TemplateRenderer
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);
+        $shortenProfileSlug = static fn (string $slug): string => strlen($slug) > 17 ? substr($slug, 0, 17) . '...' : $slug;
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);

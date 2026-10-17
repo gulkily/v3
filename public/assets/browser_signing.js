@@ -994,6 +994,7 @@
       recordPath: data.record_path || "",
       canonicalRecord: data.canonical_record || "",
       canonicalSha256: data.canonical_sha256 || "",
+      approvalReview: data.approval_review || null,
       signaturePath: data.signature_path || "",
       commitSha: data.commit_sha || "",
       serverTiming: serverTiming || {},
@@ -1210,7 +1211,7 @@
     return finalized;
   }
 
-  async function submitSignedApproval(profileSlug) {
+  async function submitSignedApproval(profileSlug, options = {}) {
     await ensureActionIdentity(null, null);
     const authorIdentityId = currentAuthorIdentityId();
     if (!authorIdentityId) {
@@ -1236,6 +1237,14 @@
     const mismatch = preparedPostIdentityMismatch({ author_identity_id: authorIdentityId }, prepared);
     if (mismatch) {
       return mismatch;
+    }
+
+    const review = prepared.approvalReview;
+    if (!review || !review.label || !review.consequence || !review.target_identity_id) {
+      return { ok: false, error: "Approval review is unavailable. Refresh and try again." };
+    }
+    if (options.confirm !== false && !window.confirm(review.label + "?\n\n" + review.consequence + "\n\nAccount key: " + review.target_identity_id)) {
+      return { ok: false, error: "Approval cancelled. No key was approved." };
     }
 
     const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);

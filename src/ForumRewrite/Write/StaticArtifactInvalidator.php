@@ -110,6 +110,20 @@ final class StaticArtifactInvalidator
      * Retire generated presentation only; PHP serves the current model immediately.
      * Always repeat on retries, even if the database already contains the approval.
      */
+    public function invalidateAccountHistory(string $username, array $profileSlugs): void
+    {
+        $paths = ['/user/' . $username . '.html', '/user/' . $username . '/index.html',
+            '/forte/user/' . $username . '.html', '/forte/user/' . $username . '/index.html',
+            '/forte/activity.html', '/forte/activity/index.html'];
+        foreach ($profileSlugs as $slug) {
+            foreach (['/profiles/', '/forte/profiles/'] as $prefix) {
+                $paths[] = $prefix . $slug . '.html';
+                $paths[] = $prefix . $slug . '/index.html';
+            }
+        }
+        $this->deletePaths($paths);
+    }
+
     public function invalidateApprovalSeed(): void
     {
         $this->invalidateAllGeneratedPresentation();

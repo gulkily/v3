@@ -787,8 +787,10 @@ final class ReadModelBuilder
                 default => $post['post_id'] === $post['thread_id'] ? 'thread' : 'reply',
             };
             $label = $this->activityLabelForPost($post);
+            $receipt = in_array($kind, ['approval', 'invitation'], true)
+                ? \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $post['source_path']) : null;
             $stmt->execute([
-                'created_at' => $post['created_at'],
+                'created_at' => $receipt['accepted_at'] ?? $post['created_at'],
                 'kind' => $kind,
                 'record_family' => $recordFamily,
                 'action_key' => $post['source_path'],
@@ -1372,6 +1374,9 @@ final class ReadModelBuilder
             $changed = false;
             foreach ($this->progressItems('checking_approval_posts', $posts) as $post) {
                 $targetIdentityId = $this->extractApprovalTargetIdentityId($post);
+                if ($targetIdentityId !== null && isset($post['source_path'])) {
+                    \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $post['source_path']);
+                }
                 if ($targetIdentityId === null || !isset($profiles[$targetIdentityId]) || isset($approved[$targetIdentityId])) {
                     continue;
                 }
@@ -1434,40 +1439,7 @@ final class ReadModelBuilder
      */
     private function invitationApprovalCandidates(array $posts): array
     {
-        $posts = $this->measure('sort_invitation_posts', fn (): array => \ForumRewrite\Invitation\InvitationReplayOrder::sortPosts($posts));
-        $issued = [];
-        $candidates = [];
-        foreach ($this->progressItems('replaying_invitation_posts', $posts) as $post) {
-            $tags = json_decode($post['board_tags_json'], true);
-            if (!is_array($tags) || !in_array('invitation', $tags, true)) {
-                continue;
-            }
-            if (preg_match('/^Invitation-ID: (invite-[a-z0-9]{16,64})$/m', $post['body'], $id) !== 1
-                || preg_match('/^Invitation-Action: (issue|revoke|redeem)$/m', $post['body'], $action) !== 1
-                || preg_match('/^Verification-Hash: (sha256:[a-f0-9]{64})$/m', $post['body'], $hash) !== 1) {
-                continue;
-            }
-            $key = $id[1];
-            if ($action[1] === 'issue' && $post['author_identity_id'] !== null
-                && preg_match('/^Expires-At: (.+)$/m', $post['body'], $expires) === 1) {
-                $issued[$key] = ['hash' => $hash[1], 'issuer' => $post['author_identity_id'], 'expires' => $expires[1], 'revoked' => false, 'redeemed' => false];
-                continue;
-            }
-            if (!isset($issued[$key]) || !hash_equals($issued[$key]['hash'], $hash[1])) {
-                continue;
-            }
-            if ($action[1] === 'revoke' && $post['author_identity_id'] === $issued[$key]['issuer']) {
-                $issued[$key]['revoked'] = true;
-                continue;
-            }
-            if ($action[1] === 'redeem' && !$issued[$key]['revoked'] && !$issued[$key]['redeemed']
-                && strtotime($issued[$key]['expires']) > time() && $post['author_identity_id'] !== null) {
-                $issued[$key]['redeemed'] = true;
-                $candidates[] = ['target_identity_id' => $post['author_identity_id'], 'approver_identity_id' => $issued[$key]['issuer'], 'thread_id' => $post['thread_id'], 'parent_id' => $post['parent_id']];
-            }
-        }
-
-        return $candidates;
+        return \ForumRewrite\Invitation\InvitationApprovalReplay::candidates($this->repositoryRoot, $posts);
     }
 
     private function loadApprovalSeedIdentityIds(): array

@@ -4,6 +4,60 @@
 .account-key-header h1 {
   margin-bottom: 0.4rem;
 }
+.root-approval-key {
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.account-key-history-note {
+  padding: 0.7em 0.9em;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+}
+.account-key-history .meta {
+  color: color-mix(in srgb, var(--ink-soft) 85%, var(--ink) 15%);
+}
+.account-key-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.account-key-history-entry {
+  padding-block: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.account-key-history-entry + .account-key-history-entry {
+  border-top: 1px solid var(--line);
+}
+.account-key-history-single .account-key-history-entry {
+  padding-block: 0.25rem;
+}
+.account-key-history-footer {
+  margin: 0.5rem 0 0;
+}
+.account-key-history-entry > p,
+.account-key-history-heading {
+  margin: 0;
+}
+.account-key-history-heading a {
+  word-break: break-all;
+}
+.account-key-history-entry > * + * {
+  margin-top: 0.35rem;
+}
+.account-key-history-entry details p {
+  margin: 0.35rem 0;
+}
+.account-key-history-entry summary {
+  cursor: pointer;
+}
+.account-key-history-heading {
+  font-size: 1em;
+  font-weight: 700;
+  line-height: inherit;
+}
+
 .account-key-simple-surface {
   gap: 0.85rem;
 }

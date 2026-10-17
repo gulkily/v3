@@ -86,6 +86,7 @@ final class ForteActivityController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'activity not found'], 404);
             return;
         }
+        if (($query['view'] ?? '') === 'security') $item = $this->routeServices->activityService()->securityReviewItem($item);
         $item['forte_link'] = $this->activityItemBoardLink($item);
 
         $this->routeServices->sendJson([
@@ -127,6 +128,8 @@ final class ForteActivityController
             'approval' => 'Approvals',
         ];
 
+        if ($this->routeServices->securityReviewAllowed()) $viewLabels['security'] = 'Operator security review';
+
         ['column' => $sortColumn, 'direction' => $sortDirection] = $activityService->resolveActivitySort($requestedSort, $requestedDirection);
 
         $commitsAvailable = ($this->commitsCapabilityAvailable)();
@@ -151,6 +154,7 @@ final class ForteActivityController
             );
             $selectedItemId = (string) ($viewResult['items'][0]['id'] ?? '');
             foreach ($viewResult['items'] as $item) {
+                if ($selectedView === 'security') $item = $activityService->securityReviewItem($item);
                 foreach (array_keys($viewLabels) as $viewKey) {
                     $item['view_' . $viewKey] = $viewKey === $selectedView;
                 }
@@ -180,6 +184,7 @@ final class ForteActivityController
                     foreach (array_keys($viewLabels) as $viewKey) {
                         $detail['view_' . $viewKey] = $viewKey === $selectedView;
                     }
+                    if ($selectedView === 'security') $detail = $activityService->securityReviewItem($detail);
                     $detail['forte_link'] = $this->activityItemBoardLink($detail);
                     $items = array_map(
                         static fn (array $item): array => (string) $item['id'] === $selectedItemId ? $detail : $item,
@@ -252,6 +257,7 @@ final class ForteActivityController
                 'commitItems' => $commitItems,
                 'viewCounts' => $viewCounts,
                 'selectedView' => $selectedView,
+                'approvalPolicyEnabled' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL),
                 'selectedItemId' => $selectedItemId,
                 'viewPagination' => $viewPagination,
                 'sortHeaderLinks' => $sortHeaderLinks,
@@ -370,8 +376,9 @@ final class ForteActivityController
         $html = '';
         $detailHtml = '';
         foreach ($result['items'] as $item) {
+            if ($rowsOnly && $view === 'security') $item = $activityService->securityReviewItem($item);
             $item['forte_link'] = $this->activityItemBoardLink($item);
-            foreach (['all', 'content', 'identity', 'bootstrap', 'approval'] as $flagView) {
+            foreach (['all', 'content', 'identity', 'bootstrap', 'approval', 'security'] as $flagView) {
                 $item['view_' . $flagView] = ($flagView === $view);
             }
 

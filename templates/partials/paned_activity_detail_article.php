@@ -23,7 +23,7 @@ $hasRelevantFiles = $relevantFiles !== [];
   <div class="paned-content-head">
     <div class="paned-content-subject"><?= $e((string) $item['kind']) ?></div>
     <div class="paned-content-meta">
-      <span><?= $timestamp((string) ($item['created_at'] ?? '')) ?></span>
+      <span><?= $forteContentMeta($item, 'created_at', '') ?></span>
     </div>
   </div>
   <div class="post-card paned-post-card">
@@ -34,6 +34,9 @@ $hasRelevantFiles = $relevantFiles !== [];
 <?php endif; ?>
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
       <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
+<?php endif; ?>
+<?php if (array_key_exists('security_review', $item)): ?>
+<?= $partial('partials/approval_security_review.php', ['item' => $item]) ?>
 <?php endif; ?>
 <?php if ($hasRelevantFiles): ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [

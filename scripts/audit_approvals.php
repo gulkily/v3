@@ -93,7 +93,7 @@ try {
     if (isset($options['summary'])) {
         exit(0);
     }
-    $columns = ['category', 'username_token', 'identity_id', 'approved_key_count', 'approver_username', 'approver_identity_id', 'profile_slug', 'reason'];
+    $columns = ['category', 'username_token', 'identity_id', 'approved_key_count', 'approver_username', 'approver_identity_id', 'profile_slug', 'acceptance_classification', 'accepted_at', 'acceptance_receipt', 'reason'];
     fwrite(STDOUT, "\n" . implode("\t", $columns) . "\n");
     foreach ($report['rows'] as $row) {
         fwrite(STDOUT, implode("\t", array_map(static fn (string $key): string => $clean($row[$key]), $columns)) . "\n");

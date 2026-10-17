@@ -12,7 +12,7 @@
       <p data-role="profile-summary-approved-by-row" hidden><strong>Approved by:</strong> <span data-role="profile-summary-approved-by"></span></p>
       <p><strong>Threads:</strong> <span data-role="profile-summary-threads"></span></p>
       <p><strong>Posts:</strong> <span data-role="profile-summary-posts"></span></p>
-      <p class="paned-standalone-back"><a data-role="profile-summary-full-link" href="#">View full profile</a></p>
+      <p class="paned-standalone-back"><a data-role="profile-summary-full-link" href="#">View full profile and account key history</a></p>
     </div>
     <p data-role="profile-summary-error" hidden>Unable to load profile.</p>
   </div>
