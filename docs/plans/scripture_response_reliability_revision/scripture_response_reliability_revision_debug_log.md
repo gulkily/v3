@@ -79,3 +79,18 @@
 ### Uncertain assessments
 
 - Source: `RAILSPIKE.md`, exact Approved Step 3 phrase. The user said go ahead with original plan after discussing its cost, clearly authorizing the original plan under the higher-priority session instruction. No additional confirmation was requested. Consider accepting unambiguous natural-language approval while retaining scope and budget evidence.
+
+## 2026-10-17T02:09:07+00:00 — Step 4 local follow-up handoff
+
+### Necessary/useful instructions
+
+- Source: `step4_implementation_do.md`, stage verification and summary/commit cadence. The local correction retains a reproducible saved-document regression, adversarial oracles, and a separate follow-up summary without altering frozen trial outcomes. Retain stage-scoped evidence and history.
+- Source: `RAILSPIKE.md`, scope boundaries. User continuation authorized the previously proposed local parser repair; preserving the inactive candidate and failed paid gates prevented a parser replay from being presented as release qualification. Retain explicit distinction between local correctness and live acceptance.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Source: `step4_implementation_after.md`, release/deployment verification. This follow-up is a local correction only; the paid qualification remains failed and deployment is outside scope. Keep those checks conditional on release scope.

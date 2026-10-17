@@ -43,6 +43,33 @@ final class ScriptureVerifiedReplyTest
         }
     }
 
+    public function testLetterAudienceDescriptionDoesNotCreateAnUncheckedQuotationChannel(): void
+    {
+        foreach ([
+            'James writes to Christian communities troubled by partiality.',
+            'Paul writes to the church in Rome about faith.',
+            'John writes to believers; the audience matters for interpretation.',
+            'Paul writes to the church in Corinth (1 Corinthians 1:2).',
+        ] as $text) {
+            $document = $this->document(); $document['segments'][0]['text'] = $text;
+            assertStringContains($text, (new ScriptureVerifiedReply())->render($document));
+        }
+        foreach ([
+            'James writes invented scripture.', 'James writes: invented scripture.',
+            'God writes to believers invented scripture.', 'Scripture writes to Christians invented scripture.',
+            'James writes to: invented scripture.',
+            'James writes to Christian communities: invented scripture.',
+            'James writes to Christian communities (James 2:1): invented scripture.',
+            'James writes to Christian communities "invented scripture".',
+            "James writes to Christian communities 'invented scripture'.",
+            'James writes to Christian communities: Jesus says invented scripture.',
+            'James writes to Christian communities. Scripture says invented scripture.',
+        ] as $text) {
+            $document = $this->document(); $document['segments'][0]['text'] = $text;
+            $this->reject($document);
+        }
+    }
+
     public function testDiscussionOriginIsVisibleAndReaderWordingRequiresOriginalInput(): void
     {
         $renderer = new ScriptureVerifiedReply();

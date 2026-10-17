@@ -116,9 +116,13 @@ final class ScriptureVerifiedReply
     {
         // Prose cannot create a second, unchecked quotation channel. Apostrophes
         // inside words remain valid; quotations, markup and direct-speech claims do not.
+        // Writing to an audience describes letter context, not quoted speech.
+        // Keep colon-introduced speech blocked, including after an audience clause.
         if (preg_match('/["\x{201C}\x{201D}\x{2018}\x{00AB}\x{00BB}\x{2039}\x{203A}\x{FF02}\x{301D}\x{301E}\x{300A}\x{300B}<>`\p{Cf}]|(?<![\p{L}])[\x{27}\x{2019}]|^\s*>/um', $text)
             || preg_match('/\b(?:says?|said|saith|writes?|reads?|written|declares?|commands?)\s*[:;,]/iu', $text)
-            || preg_match('/\b(?:Bible|Scripture|God|Jesus|Lord|Paul|James|John|Peter|Moses|Isaiah|Proverbs?|Psalms?)\s+(?:says?|said|saith|writes?|declares?)\b/iu', $text)
+            || preg_match('/\b(?:Bible|Scripture|God|Jesus|Lord|Proverbs?|Psalms?)\s+(?:says?|said|saith|writes?|declares?)\b/iu', $text)
+            || preg_match('/\b(?:Paul|James|John|Peter|Moses|Isaiah)\s+(?:says?|said|saith|writes?(?!\s+to\s+\p{L})|declares?)\b/iu', $text)
+            || preg_match('/\bwrites?\s+to\s+[^.!?\n]*:(?!\d)/iu', $text)
             || preg_match('/\b\d+:\d+(?:-\d+)?\s*:/u', $text)) {
             throw new ScriptureVerificationException('Use verified quotation segments; reflection must be paraphrase or interpretation.');
         }
