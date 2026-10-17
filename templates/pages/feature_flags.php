@@ -68,8 +68,8 @@ foreach ($flags as $flag) {
 <?php if ($isReadOnlyForViewer): ?>
               <span class="feature-flag-info-icon" tabindex="0" title="Read-only &mdash; requires a root-approved identity to change." aria-label="Read-only, requires a root-approved identity to change.">&#9432;</span>
 <?php endif; ?>
-<?php if (!$flag->isDefault() && $canEditFlag): ?>
-              <form method="post" action="/tools/feature-flags/" class="inline-form feature-flag-reset-form" data-feature-flag-form>
+<?php if ($canEditFlag): ?>
+              <form method="post" action="/tools/feature-flags/" class="inline-form feature-flag-reset-form" data-feature-flag-form<?= $flag->isDefault() ? ' hidden' : '' ?>>
                 <input type="hidden" name="key" value="<?= $e($definition->key) ?>">
                 <input type="hidden" name="value" value="<?= $definition->defaultValue ? 'true' : 'false' ?>">
                 <button type="submit" class="link-button">Reset to default</button>

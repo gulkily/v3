@@ -1,4 +1,5 @@
 (function () {
+  var refreshFilters = function () {};
   function bindFilters() {
     var toolbar = document.querySelector('[data-feature-flags-toolbar]');
     if (!toolbar) return;
@@ -256,6 +257,11 @@
       }
       var fields = Object.fromEntries(new FormData(form).entries());
       var focused = form.contains(document.activeElement) ? document.activeElement : null;
+      function abandonFocus(event) {
+        if (event.target !== focused) focused = null;
+      }
+      document.addEventListener('focusin', abandonFocus);
+      document.addEventListener('pointerdown', abandonFocus);
       setPending(form, true);
 
       Promise.resolve().then(function () {
@@ -283,16 +289,20 @@
         if (status) {
           status.textContent = "Saved.";
         }
+        refreshFilters();
         if (fields.key === 'FORUM_PRIVATE_MESSAGES_ENABLED') return refreshNavigation(result, status);
       }).catch(function (error) {
         if (status) {
           status.textContent = error.message;
         }
       }).finally(function () {
+        document.removeEventListener('focusin', abandonFocus);
+        document.removeEventListener('pointerdown', abandonFocus);
         pendingRows.delete(row);
         setPending(form, false);
         if (focused && document.activeElement === document.body) {
-          var target = focused.closest('[hidden]') ? row.querySelector('.switch') : focused;
+          var target = row.hidden ? document.querySelector('#feature-flags-search')
+            : focused.closest('[hidden]') ? row.querySelector('.switch') : focused;
           if (target) target.focus({ preventScroll: true });
         }
       });
@@ -300,7 +310,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    bindFilters();
+    refreshFilters = bindFilters() || refreshFilters;
     document.querySelectorAll("[data-feature-flag-form]").forEach(bindForm);
   });
 })();

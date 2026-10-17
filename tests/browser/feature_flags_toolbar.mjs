@@ -86,6 +86,73 @@ try {
       await page.waitForFunction(() => document.querySelector('[data-feature-flags-toolbar]').style.top === '0px');
     }
   }
+  // Exercise the existing signed-save lifecycle with controlled success, failure,
+  // and delayed responses; real signatures are covered by the operator harness.
+  await page.addInitScript(() => {
+    window.ForumBrowserSigning = { ensureActionIdentity: async () => {}, signCanonicalRecord: async () => 'fixture-signature' };
+  });
+  let failSave = false, holdSave = false, releaseSave;
+  let pendingValue, prepared = 0, finalized = 0;
+  await page.route('**/api/prepare_feature_flag_change', route => {
+    prepared++;
+    pendingValue = new URLSearchParams(route.request().postData()).get('value');
+    return route.fulfill({ status: failSave ? 403 : 200, json: failSave
+      ? { status: 'error', error: 'Rejected fixture save' }
+      : { status: 'ok', wrote_record: 'yes', canonical_record: 'fixture', prepare_token: 'token', record_id: 'id', record_path: 'path' } });
+  });
+  await page.route('**/api/finalize_feature_flag_change', async route => {
+    finalized++;
+    assert.equal(new URLSearchParams(route.request().postData()).get('detached_signature'), 'fixture-signature');
+    if (holdSave) await new Promise(resolve => { releaseSave = resolve; });
+    return route.fulfill({ json: { status: 'ok', effective_value: pendingValue, source: 'site' } });
+  });
+  await page.reload();
+  const alpha = page.locator('[data-flag-key="TEST_ALPHA"]');
+  const beta = page.locator('[data-flag-key="TEST_BETA"]');
+  const settled = () => page.waitForFunction(() => !document.querySelector('[data-flag-key="TEST_BETA"] .switch').disabled);
+  await beta.getByRole('switch').click(); await settled();
+  assert.deepEqual(await counts(), ['4', '2', '2', '2']);
+  assert.equal(await beta.locator('.feature-flag-reset-form').isVisible(), true, 'New override exposes reset without reload');
+  await chip('overridden').click();
+  await beta.getByRole('button', { name: 'Reset to default' }).click(); await settled();
+  assert.deepEqual(await visible(), ['TEST_ALPHA']);
+  assert.deepEqual(await counts(), ['4', '3', '1', '2']);
+  assert.equal(await search.evaluate(node => node === document.activeElement), true, 'Disappearing reset row recovers focus');
+  await chip('enabled').click();
+  await alpha.getByRole('switch').click();
+  await page.waitForFunction(() => !document.querySelector('[data-flag-key="TEST_ALPHA"] .switch').disabled);
+  assert.deepEqual(await visible(), ['TEST_BETA', 'TEST_DELTA']);
+  assert.deepEqual(await counts(), ['4', '2', '0', '2']);
+  assert.equal(await search.evaluate(node => node === document.activeElement), true, 'Disappearing toggled row recovers focus');
+  failSave = true;
+  await beta.getByRole('switch').click(); await settled();
+  assert.equal(await beta.getByRole('switch').getAttribute('aria-checked'), 'true');
+  assert.match(await beta.locator('[data-role="feature-flag-status"]').innerText(), /Rejected fixture save/);
+  assert.deepEqual(await counts(), ['4', '2', '0', '2']);
+  assert.equal(await beta.getByRole('switch').evaluate(node => node === document.activeElement), true);
+  failSave = false; holdSave = true;
+  await beta.getByRole('switch').click();
+  for (let attempt = 0; attempt < 1000 && !releaseSave; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
+  assert(releaseSave, 'Delayed save reached finalization');
+  await search.fill('beta');
+  releaseSave(); await settled();
+  assert.deepEqual(await visible(), []);
+  assert.deepEqual(await counts(), ['1', '0', '1', '0']);
+  assert.equal(await search.evaluate(node => node === document.activeElement), true, 'Pending saves do not steal focus');
+  await search.fill(''); await chip('all').click();
+  releaseSave = null;
+  await alpha.getByRole('switch').click();
+  for (let attempt = 0; attempt < 1000 && !releaseSave; attempt++) await new Promise(resolve => setTimeout(resolve, 10));
+  assert(releaseSave);
+  await page.locator('#other-input').focus();
+  await page.locator('h1').click();
+  assert.equal(await page.evaluate(() => document.activeElement === document.body), true);
+  releaseSave();
+  await page.waitForFunction(() => !document.querySelector('[data-flag-key="TEST_ALPHA"] .switch').disabled);
+  assert.equal(await page.evaluate(() => document.activeElement === document.body), true, 'Moving focus away and then to the body relinquishes recovery');
+  assert.equal(prepared, 6); assert.equal(finalized, 5);
+  console.log('PASS confirmed toggle/reset refresh, newly overridden reset, failure preservation, disappearing-row focus, and delayed-save focus');
+
   const readonly = await setup(await browser.newContext(), 'readonly');
   assert.equal(await readonly.getByRole('switch').filter({ visible: true }).count(), 4);
   assert.equal(await readonly.locator('[role="switch"]:disabled').count(), 4);
@@ -95,7 +162,7 @@ try {
   assert.equal(await nojs.locator('[data-feature-flags-toolbar]').isVisible(), false);
   assert.equal(await nojs.locator('[data-feature-flags-empty]').isVisible(), false);
   assert.equal(await nojs.locator('[data-feature-flag-row]:visible').count(), 4);
-  assert.equal(await nojs.locator('form[method="post"][action="/tools/feature-flags/"]').count(), 3);
+  assert.equal(await nojs.locator('form[method="post"][action="/tools/feature-flags/"]:visible').count(), 3);
   console.log('PASS toolbar search/status/counts/empty recovery, keyboard, read-only/no-JS, light/dark/console at 375/1150px and sticky banner');
 } finally {
   await browser.close();
