@@ -4,8 +4,8 @@
   color-scheme: dark;
   --page-bg: #063a3a;
   --body-background: linear-gradient(180deg, #063a3a 0%, #042b2b 100%);
-  --ink: #e6e6e6;
-  --ink-soft: #b4b4b4;
+  --ink: #c8c8c8;
+  --ink-soft: #9a9a9a;
   --line: #5a5a5a;
   --panel: #2b2b2b;
   --input-bg: #121212;
@@ -36,7 +36,7 @@
 
 .theme-menu__option[data-theme-option="windark"] {
   background: #2b2b2b;
-  color: #e6e6e6;
+  color: #c8c8c8;
   box-shadow: inset -1px -1px 0 #000000, inset 1px 1px 0 #6a6a6a;
 }
 
@@ -47,10 +47,10 @@
 :root[data-theme="windark"] .site-header {
   padding: 0.45rem 0.6rem 0.6rem;
   border: 2px solid;
-  border-color: #6a6a6a #1a1a1a #1a1a1a #6a6a6a;
+  border-color: #4e4e4e #1a1a1a #1a1a1a #4e4e4e;
   background: #2b2b2b;
   box-shadow:
-    -1px -1px 0 0 #8a8a8a,
+    -1px -1px 0 0 #686868,
     1px 1px 0 0 #000000,
     6px 6px 0 0 #000000;
 }
@@ -58,10 +58,10 @@
 :root[data-theme="windark"] .card,
 :root[data-theme="windark"] .feedback {
   border: 2px solid;
-  border-color: #6a6a6a #1a1a1a #1a1a1a #6a6a6a;
+  border-color: #4e4e4e #1a1a1a #1a1a1a #4e4e4e;
   background: #2b2b2b;
   box-shadow:
-    -1px -1px 0 0 #8a8a8a,
+    -1px -1px 0 0 #686868,
     1px 1px 0 0 #000000,
     6px 6px 0 0 #000000;
 }
@@ -113,7 +113,7 @@
 :root[data-theme="windark"] .tool-launcher-button {
   border: 1px solid #000000;
   background: #2b2b2b;
-  color: #e6e6e6;
+  color: #c8c8c8;
   font-weight: 600;
   box-shadow:
     inset 1px 1px 0 0 #6a6a6a,
@@ -133,7 +133,7 @@
 :root[data-theme="windark"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
   border: 1px solid #000000;
   background: #2b2b2b;
-  color: #e6e6e6;
+  color: #c8c8c8;
   box-shadow:
     inset 1px 1px 0 0 #6a6a6a,
     inset -1px -1px 0 0 #000000;
@@ -148,7 +148,7 @@
 :root[data-theme="windark"] .nav-link {
   border: 1px solid transparent;
   background: transparent;
-  color: #e6e6e6;
+  color: #c8c8c8;
   text-decoration: none;
 }
 
@@ -157,7 +157,7 @@
 }
 
 :root[data-theme="windark"] .nav-link.is-active {
-  color: #e6e6e6;
+  color: #c8c8c8;
   background: #3c3c3c;
   border-color: #000000 #6a6a6a #6a6a6a #000000;
   box-shadow: none;
@@ -181,13 +181,13 @@
 }
 
 :root[data-theme="windark"] a:focus-visible {
-  outline: 1px dotted #e6e6e6;
+  outline: 1px dotted #c8c8c8;
   outline-offset: 1px;
 }
 
 :root[data-theme="windark"] button:not(.theme-menu__option):focus-visible,
 :root[data-theme="windark"] .nav-link:focus-visible {
-  outline: 1px dotted #e6e6e6;
+  outline: 1px dotted #c8c8c8;
   outline-offset: -4px;
 }
 
@@ -246,7 +246,7 @@
   margin-left: auto;
   padding: 0.06rem 0.3rem;
   border: 1px solid #000000;
-  color: #e6e6e6;
+  color: #c8c8c8;
   background: #2b2b2b;
   font-size: 0.62rem;
   font-weight: 400;
@@ -310,7 +310,7 @@
   right: 0.32rem;
   padding: 0.05rem 0.3rem;
   border: 1px solid #000000;
-  color: #e6e6e6;
+  color: #c8c8c8;
   background: #2b2b2b;
   font-family: var(--ui-font);
   font-size: 0.62rem;
@@ -343,7 +343,7 @@
   border-radius: 0;
   color: transparent;
   background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23e6e6e6'/><rect x='5' y='7' width='5' height='1' fill='%23e6e6e6'/><rect x='6' y='8' width='3' height='1' fill='%23e6e6e6'/><rect x='7' y='9' width='1' height='1' fill='%23e6e6e6'/></svg>")
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23c8c8c8'/><rect x='5' y='7' width='5' height='1' fill='%23c8c8c8'/><rect x='6' y='8' width='3' height='1' fill='%23c8c8c8'/><rect x='7' y='9' width='1' height='1' fill='%23c8c8c8'/></svg>")
     center no-repeat #2b2b2b;
   box-shadow:
     inset 1px 1px 0 0 #6a6a6a,
@@ -358,7 +358,7 @@
 :root[data-theme="windark"] .theme-menu__trigger[aria-expanded="true"] {
   color: transparent;
   background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23e6e6e6'/><rect x='5' y='7' width='5' height='1' fill='%23e6e6e6'/><rect x='6' y='8' width='3' height='1' fill='%23e6e6e6'/><rect x='7' y='9' width='1' height='1' fill='%23e6e6e6'/></svg>")
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23c8c8c8'/><rect x='5' y='7' width='5' height='1' fill='%23c8c8c8'/><rect x='6' y='8' width='3' height='1' fill='%23c8c8c8'/><rect x='7' y='9' width='1' height='1' fill='%23c8c8c8'/></svg>")
     center no-repeat #2b2b2b;
   box-shadow:
     inset -1px -1px 0 0 #6a6a6a,
@@ -390,7 +390,7 @@
   overflow: hidden;
   border-top: 1px solid #6a6a6a;
   background: #2b2b2b;
-  color: #e6e6e6;
+  color: #c8c8c8;
   font-family: var(--ui-font);
   font-size: 0.72rem;
   line-height: 1.35;
@@ -468,22 +468,22 @@ html[data-theme="windark"] ::-webkit-scrollbar-button:horizontal:end:decrement {
 
 html[data-theme="windark"]::-webkit-scrollbar-button:vertical:decrement,
 html[data-theme="windark"] ::-webkit-scrollbar-button:vertical:decrement {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='7' y='6' width='1' height='1' fill='%23e6e6e6'/><rect x='6' y='7' width='3' height='1' fill='%23e6e6e6'/><rect x='5' y='8' width='5' height='1' fill='%23e6e6e6'/><rect x='4' y='9' width='7' height='1' fill='%23e6e6e6'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='7' y='6' width='1' height='1' fill='%23c8c8c8'/><rect x='6' y='7' width='3' height='1' fill='%23c8c8c8'/><rect x='5' y='8' width='5' height='1' fill='%23c8c8c8'/><rect x='4' y='9' width='7' height='1' fill='%23c8c8c8'/></svg>");
 }
 
 html[data-theme="windark"]::-webkit-scrollbar-button:vertical:increment,
 html[data-theme="windark"] ::-webkit-scrollbar-button:vertical:increment {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23e6e6e6'/><rect x='5' y='7' width='5' height='1' fill='%23e6e6e6'/><rect x='6' y='8' width='3' height='1' fill='%23e6e6e6'/><rect x='7' y='9' width='1' height='1' fill='%23e6e6e6'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='6' width='7' height='1' fill='%23c8c8c8'/><rect x='5' y='7' width='5' height='1' fill='%23c8c8c8'/><rect x='6' y='8' width='3' height='1' fill='%23c8c8c8'/><rect x='7' y='9' width='1' height='1' fill='%23c8c8c8'/></svg>");
 }
 
 html[data-theme="windark"]::-webkit-scrollbar-button:horizontal:decrement,
 html[data-theme="windark"] ::-webkit-scrollbar-button:horizontal:decrement {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='6' y='7' width='1' height='1' fill='%23e6e6e6'/><rect x='7' y='6' width='1' height='3' fill='%23e6e6e6'/><rect x='8' y='5' width='1' height='5' fill='%23e6e6e6'/><rect x='9' y='4' width='1' height='7' fill='%23e6e6e6'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='6' y='7' width='1' height='1' fill='%23c8c8c8'/><rect x='7' y='6' width='1' height='3' fill='%23c8c8c8'/><rect x='8' y='5' width='1' height='5' fill='%23c8c8c8'/><rect x='9' y='4' width='1' height='7' fill='%23c8c8c8'/></svg>");
 }
 
 html[data-theme="windark"]::-webkit-scrollbar-button:horizontal:increment,
 html[data-theme="windark"] ::-webkit-scrollbar-button:horizontal:increment {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='6' y='4' width='1' height='7' fill='%23e6e6e6'/><rect x='7' y='5' width='1' height='5' fill='%23e6e6e6'/><rect x='8' y='6' width='1' height='3' fill='%23e6e6e6'/><rect x='9' y='7' width='1' height='1' fill='%23e6e6e6'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='6' y='4' width='1' height='7' fill='%23c8c8c8'/><rect x='7' y='5' width='1' height='5' fill='%23c8c8c8'/><rect x='8' y='6' width='1' height='3' fill='%23c8c8c8'/><rect x='9' y='7' width='1' height='1' fill='%23c8c8c8'/></svg>");
 }
 
 html[data-theme="windark"]::-webkit-scrollbar-corner,
