@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Feature flags search and status toolbar](feature_flags_toolbar/)
 - [Music media embeds](music_media_embeds/)
 - [Word 97 disabled buttons and dark Win9x theme](word97_disabled_and_dark_theme/)
 - [Account key page simplification](account_key_page_simplification/)
