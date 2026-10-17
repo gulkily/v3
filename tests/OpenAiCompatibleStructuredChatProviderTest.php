@@ -26,6 +26,29 @@ final class OpenAiCompatibleStructuredChatProviderTest
         }
     }
 
+    public function testScriptureWriterOverrideLeavesSharedAndModerationModelsIntact(): void
+    {
+        $provider = new OpenAiCompatibleStructuredChatProvider('openai', 'test-key', 'https://api.openai.com', 'gpt-5-mini');
+        $method = new ReflectionMethod($provider, 'textPayloadFor');
+        $options = ['scripture_writer_model' => 'gpt-5.6-sol', 'reasoning_effort' => 'low', 'max_completion_tokens' => 8192];
+        $payload = $method->invoke($provider, [], $options);
+        assertSame('gpt-5.6-sol', $payload['model']);
+        assertSame('low', $payload['reasoning_effort']);
+        assertSame(false, isset($payload['scripture_writer_model']));
+        assertSame('gpt-5-mini', $method->invoke($provider, [], [])['model']);
+        assertSame('gpt-5-mini', (new ReflectionMethod($provider, 'payloadFor'))->invoke($provider, 'Score', [], [], $options)['model']);
+        foreach (['minimal', 'high'] as $effort) {
+            try {
+                $method->invoke($provider, [], array_replace($options, ['reasoning_effort' => $effort]));
+                throw new RuntimeException('Untested Sol effort accepted');
+            } catch (InvalidArgumentException) {}
+        }
+        try {
+            $method->invoke($provider, [], ['scripture_writer_model' => 'gpt-unapproved']);
+            throw new RuntimeException('Unknown writer accepted');
+        } catch (InvalidArgumentException) {}
+    }
+
     public function testProviderBuildsJsonSchemaChatCompletionPayload(): void
     {
         $provider = new OpenAiCompatibleStructuredChatProvider('openrouter', 'test-key', 'https://openrouter.ai/api', 'openai/gpt-5-nano');

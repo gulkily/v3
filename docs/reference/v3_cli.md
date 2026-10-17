@@ -805,3 +805,5 @@ configuration does not rewrite old replies or silently regenerate failures.
 For verified-mode rollback, disable `agent_response_requests_enabled` before
 changing generation settings; follow the verified scripture operations guide.
 Do not silently downgrade pending verified requests to unverified generation.
+
+Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inherits `LLM_MODEL`). OpenAI scripture requests and Expand may select `gpt-5-mini` or `gpt-5.6-sol`; other response modes and structured moderation retain the shared model. Sol explicit reasoning is currently restricted to the evaluated `low` setting. This prepares isolated comparison; it does not activate verified guidance or establish release acceptance.

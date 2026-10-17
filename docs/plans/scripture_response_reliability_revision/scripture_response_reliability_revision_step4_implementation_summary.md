@@ -11,3 +11,9 @@ Approval: user authorized the original Step 3 plan and linked protocol. Budget r
 - Changes: Added explicitly labeled discussion terms and reader wording, exact original-input checks, injection/attribution guards, and a source-specific verification footer. Narrowed concern guidance and removed the example passage bias. Archived the six previous rejected documents for local replay under the new contract.
 - Verification: `php tests/run.php ScriptureVerifiedReplyTest ScriptureSourceTest` — 7 passed; source/excerpt and adversarial guards retained. Replay adapts legacy quoted discussion to explicit segments; it does not claim old documents already conformed.
 - Notes: Reader input binding in normal generation/publication is Stage 3. No paid calls or activation.
+
+## Stage 2 - Scripture-only writer routing
+
+- Changes: Added optional `SCRIPTURE_RESPONSE_MODEL`; scripture and Expand pass a narrowly validated writer override to the text provider. Shared writer and structured moderation payloads remain unchanged. Sol allows explicit low reasoning only. CLI documents inactive routing.
+- Verification: `php tests/run.php AgentResponseGeneratorTest OpenAiCompatibleStructuredChatProviderTest` — 18 passed, including override isolation, unsupported settings and completion exhaustion. `git diff --check` passed. Official Sol model page rechecked for Chat Completions and low effort support.
+- Notes: No shared private configuration changes or paid requests.

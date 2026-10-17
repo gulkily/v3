@@ -56,6 +56,7 @@ final class AgentResponseGenerator
                 'content_hash' => (string) ($task['content_hash'] ?? ''),
             ],
         ];
+        if ($settings?->writerModel !== null) { $options['scripture_writer_model'] = $settings->writerModel; }
         if ($settings?->reasoningEffort !== null) {
             $options['reasoning_effort'] = $settings->reasoningEffort;
         }
