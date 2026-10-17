@@ -48,6 +48,29 @@ final class AgentResponseGeneratorTest
         assertSame('scripture_verification_failed', \ForumRewrite\Agent\AgentReplyFailure::code(new \ForumRewrite\Agent\ScriptureVerificationException()));
     }
 
+    public function testReaderDiscussionBindsToOriginalInputAtGenerationAndPublication(): void
+    {
+        $doc = ['segments' => [
+            ['type' => 'reflection', 'text' => 'The familiar saying is not an exact Bible verse.'],
+            ['type' => 'discussion', 'origin' => 'reader', 'text' => 'Cleanliness is next to godliness'],
+        ]];
+        $provider = new FakeTextChatProvider(json_encode($doc));
+        $generator = new AgentResponseGenerator($provider, false, false, 8192, ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified']);
+        $task = ['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'Use NIV. Is Cleanliness is next to godliness in the Bible?'];
+        $reply = $generator->generate($task);
+        assertStringContains('Reader wording (not a verified Bible quotation)', $reply['response_text']);
+        $generator->validatePublication($reply, $task);
+        try {
+            $generator->validatePublication($reply, array_replace($task, ['target_body' => 'Different post.']));
+            throw new LogicException('Reader origin survived changed original input');
+        } catch (\ForumRewrite\Agent\ScriptureVerificationException) {}
+        $expand = ['type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, 'original_post' => 'A different concern.', 'initial_answer' => $reply['response_text']];
+        try {
+            $generator->generate($expand);
+            throw new LogicException('Agent history was accepted as reader origin');
+        } catch (\ForumRewrite\Agent\ScriptureVerificationException) {}
+    }
+
     public function testScriptureCandidatesAreScopedAndDoNotReduceCompletionAllowance(): void
     {
         $provider = new FakeTextChatProvider('Reply.');

@@ -77,11 +77,11 @@ final class AgentResponseGenerator
             }
             if (!is_array($document) || !is_array($document['segments'] ?? null)) { throw new ScriptureVerificationException('Invalid scripture reply JSON.'); }
             foreach ($document['segments'] ?? [] as $index => $segment) {
-                if (is_array($segment) && ($segment['type'] ?? '') === 'reflection' && is_string($segment['text'] ?? null)) {
+                if (is_array($segment) && in_array($segment['type'] ?? '', ['reflection', 'discussion'], true) && is_string($segment['text'] ?? null)) {
                     $document['segments'][$index]['text'] = GeneratedReplyTextNormalizer::normalize($segment['text'], $this->unicodeAuthoredTextEnabled, $this->emojiAuthoredTextEnabled);
                 }
             }
-            $responseText = $this->verifiedRenderer()->render($document, ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, $this->requestedTranslation($task));
+            $responseText = $this->verifiedRenderer()->render($document, ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, $this->requestedTranslation($task), $this->readerText($task));
         }
         $text = GeneratedReplyTextNormalizer::normalize(
             $responseText,
@@ -95,7 +95,7 @@ final class AgentResponseGenerator
         $raw = is_array($completion['raw_response'] ?? null) ? $completion['raw_response'] : [];
         if ($document !== null) {
             $raw['scripture_verification'] = ['document' => $document, 'source_digest' => ScriptureSource::DIGEST];
-            $expected = $this->verifiedRenderer()->render($document, ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, $this->requestedTranslation($task));
+            $expected = $this->verifiedRenderer()->render($document, ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, $this->requestedTranslation($task), $this->readerText($task));
             if ($text !== $expected) { throw new ScriptureVerificationException('Normalization changed verified scripture text.'); }
             ScriptureTiming::record(dirname(__DIR__, 3), (string) ($task['post_id'] ?? ''), 'verification_finished');
         }
@@ -172,6 +172,15 @@ final class AgentResponseGenerator
         return new ScriptureVerifiedReply(new ScriptureSource($path === '' ? null : $path));
     }
 
+    private function readerText(array $task): string
+    {
+        return GeneratedReplyTextNormalizer::normalize(
+            (string) ($task['original_post'] ?? $task['target_body'] ?? ''),
+            $this->unicodeAuthoredTextEnabled,
+            $this->emojiAuthoredTextEnabled,
+        );
+    }
+
     private function requestedTranslation(array $task): ?string
     {
         $text = (string) ($task['original_post'] ?? $task['target_body'] ?? '');
@@ -208,7 +217,7 @@ final class AgentResponseGenerator
             || !is_array($verification['document'] ?? null)) {
             throw new ScriptureVerificationException('Unpublished scripture draft lacks current verification; explicitly retry.');
         }
-        $text = $this->verifiedRenderer()->render($verification['document'], ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, $this->requestedTranslation($task));
+        $text = $this->verifiedRenderer()->render($verification['document'], ($task['type'] ?? '') === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, $this->requestedTranslation($task), $this->readerText($task));
         if ($text !== ($generation['response_text'] ?? '')) {
             throw new ScriptureVerificationException('Stored scripture text differs from its verified document or source state.');
         }
