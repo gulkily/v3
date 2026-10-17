@@ -51,3 +51,26 @@ Debug mode: enabled, inherited from approved Step 2. Implementation has not star
 ### Uncertain assessments
 
 - Source: `step3_development_plan_do.md`, stage sizing. Existing source URL helpers are reusable, but seed-specific provenance availability still needs implementation-time validation. Stage 2 explicitly bounds this to available repository evidence, avoiding a general history browser or invented acceptance facts.
+
+## 2026-10-17 00:41:15 UTC — Step 4 completed handoff
+
+Debug mode: enabled, inherited from the approved plans and implementation summary. Planning commit `974f320a`; stage commits `aed1ae09` and `0afb71e0`. Final gate checks confirmed the planning-only commit, both stage summaries, and the completed local contract.
+
+### Necessary/useful instructions
+
+- Source: `step4_implementation_do.md`, shared component/contract rule. The implementation reused canonical seed/path validation, membership routing, profile lookup, themed cards, source URL helpers, and source metadata. This kept the new page independent of any invented post/authority format. Retain the reuse check.
+- Source: `step4_implementation_do.md`, Stage Boundary Protocol. Stage 1's six passing focused checks established page entry/access/error behavior before provenance was added; Stage 2's byte-binding/history tests and browser checks then completed the slice. Retain sequential verification and summary commits.
+- Source: `step4_implementation_after.md`, Contract verification. Exercising all four history entry points and following raw/blob/commit destinations verified a usable navigation flow. Desktop/phone checks covered five themes and current key/source wrapping. Retain normal-flow and evidence-link checks.
+
+### Redundant/unnecessary instructions
+
+- Source: `RAILSPIKE.md`, Step 4 commit cadence, and Step 4 Do's repeated execution/boundary instructions. The same per-stage verification/summary/commit rule appears several times. Consolidate the normative requirement and reference it from the phase checklist without changing the approval boundary.
+
+### Inapplicable instructions
+
+- Source: Step 4 documentation-only rules. This approved application change includes runtime routes, templates, and tests, so documentation-only restrictions/exemptions did not apply.
+- Source: `step4_implementation_after.md`, external dependencies/deployment checks. No schema migration or external services were introduced; production deployment is outside scope. Local fixture and live read-only navigation checks were applicable and completed.
+
+### Uncertain assessments
+
+- Source: `step3_development_plan_do.md`, approximately 50 lines or one hour per stage. Test coverage accounts for much of each stage's line count, while implementation remained a compact two-stage slice. Clarify whether the line heuristic includes regression fixtures; preserve the outcome-based stage boundary.
