@@ -22,7 +22,7 @@ The candidate verifies published scripture but rejects legitimate discussion and
 
 ## Evidence
 
-The [comparison](./scripture_response_reliability/evaluation/report.md) tested `gpt-5-mini`, not a full-size writer: 7/16 quality passes, six unpublished failures, an altered pickup deadline, and pastoral replies overusing task planning. All eleven published quotation blocks matched source text. Missing completions prevented release despite faster completed samples.
+The [comparison](../scripture_response_reliability/evaluation/report.md) tested `gpt-5-mini`, not a full-size writer: 7/16 quality passes, six unpublished failures, an altered pickup deadline, and pastoral replies overusing task planning. All eleven published quotation blocks matched source text. Missing completions prevented release despite faster completed samples.
 
 ## Option A — Repair quotation handling alone
 

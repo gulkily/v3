@@ -29,3 +29,14 @@ Approval: user authorized the original Step 3 plan and linked protocol. Budget r
 - Changes: Added a separate revision runner/protocol preserving predecessor evidence. Control files come from `51b4fca9`; repaired arms share code and differ only in scripture writer. One durable ledger enforces 76/152/$10; runner/config hashes, returned IDs, phase gates, anonymous final-answer packets and fail-stop behavior are recorded. Sol input accounting adds a conservative cache-write margin.
 - Verification: Stub HTTP/worker/browser rehearsal at `state/private/scripture-revision-rehearsal-20261017` completed 9/9 initial, NIV-limitation and Expand flows across all arms. `PYTHONPATH=tests/Support python3 -m unittest test_scripture_evaluation test_scripture_revision_evaluation` — 14 passed, covering budgets, failures, model isolation, source review, missing qualification and release gates. `git diff --check` passed.
 - Notes: Official pricing rechecked; key availability is checked in memory before dispatch. No paid calls yet. Deployment is outside scope. Rehearsal is operational evidence, not answer-quality evidence.
+
+## Stage 5 - Known-regression qualification
+
+- Changes: Executed the twelve frozen regression calls and saved anonymous rubric/source/context ratings before key reveal. Added [report](./evaluation/report.md) and [portable results](./evaluation/results.json). Repaired the predecessor-report link after plan organization.
+- Verification: Mini completed 4/6 and passed 0/6; Sol completed/passed 5/6. All 12 published quotation blocks independently matched the source and nearby context was reviewed. Frozen files/config/runner hashes passed; all 12 writing calls settled, zero moderation calls, conservative total $0.12700975. The initial runner refused the failed qualification with no ledger change. Local saved-document replay diagnosed Sol's remaining false rejection of James writes to Christian communities.
+- Notes: Neither writer qualified. No tuning, model substitution, retries or extra paid calls. No shared configuration, production state or activation changes. Completed-only latency is diagnostic and cannot satisfy release gates.
+
+## Stages 6–7 - Not run: prerequisite failed
+
+- Fresh-case trials, provisional winner selection, paid expansions and promotion remain unperformed because Stage 5 produced no eligible candidate. The unchanged release contract is unmet. The authorized evaluation has stopped; unused allowance is not spent or renewed. Deployment remains outside scope.
+- Final handoff: Stage-scoped commits cover all five executed stages plus the planning commit. Local source/generator/provider, delivery/browser and harness verification is recorded above. Historical replies remain unchanged; the candidate remains inactive. Further parser work can start from saved evidence with local tests, but no release claim or additional paid run is authorized by this failed gate.

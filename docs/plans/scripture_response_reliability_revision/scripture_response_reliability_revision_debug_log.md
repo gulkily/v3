@@ -59,3 +59,23 @@
 ### Uncertain assessments
 
 - Source: `docs/railspike/docs/workflow/step3_development_plan_after.md`, one-page limit. The stage overview links a separately reviewable Step 3 protocol for frozen cases, comparison/gate details and budget, avoiding a long combined document. Both files are explicitly included in the requested Step 3 approval scope. Physical page count remains layout-dependent; clarify a word budget and supporting-protocol convention.
+
+## 2026-10-17T01:56:38+00:00 — Step 4 gated handoff (Stages 1–5 executed)
+
+### Necessary/useful instructions
+
+- Source: `step4_implementation_before.md`, planning commit and organization gate. Dedicated branch and planning commit preserved the approved three-arm comparison and budget separately from implementation. Retain; one moved predecessor-report link was corrected at handoff.
+- Source: `step4_implementation_do.md`, stage verification and commit cadence. Five stage commits distinguish contract, routing, publication, harness and paid evidence; the failure is attributable to a remaining application guard rather than assumed model inability. Retain stage-scoped evidence.
+- Source: `RAILSPIKE.md`, scope/approval boundaries, and the approved Step 3 dependency contract. Failed regression qualification stopped before costly fresh trials and expansions, retaining the unchanged release criteria and avoiding post-result tuning. Retain explicit gate-dependent execution.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Source: `step4_implementation_after.md`, confirmation that all planned stages completed and minimum 1 + stage count. Conditional Stages 6–7 were ineligible after failed Stage 5; no completion or promotion is claimed. Clarify that an evaluation stop should record all executed stage commits and explicitly unrun dependents rather than create empty implementation commits.
+
+### Uncertain assessments
+
+- Source: `RAILSPIKE.md`, exact Approved Step 3 phrase. The user said go ahead with original plan after discussing its cost, clearly authorizing the original plan under the higher-priority session instruction. No additional confirmation was requested. Consider accepting unambiguous natural-language approval while retaining scope and budget evidence.
