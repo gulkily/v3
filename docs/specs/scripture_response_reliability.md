@@ -68,3 +68,33 @@ is authorized. If the endpoint rejects it, retain the failure and reassess.
 Frozen artifacts must not change during trials. A failed gate or exhausted budget
 blocks promotion and dependent paid expansions. An experiment report is evidence,
 not successful feature completion.
+
+## Revision evaluation (inactive)
+
+The revision uses `tests/Support/scripture_revision_evaluation.py` and the frozen
+`tests/fixtures/scripture_reliability/revision_protocol.json`. It preserves the
+previous evaluation and control at `51b4fca9`. `regress NEW_PRIVATE_DIR` creates
+isolated A/current-mini, B/repaired-mini and C/repaired-Sol fixtures; it does not
+copy production forum state or credentials. Credentials stay in process memory.
+One durable ledger enforces 76 writing calls, 152 supporting moderation calls and
+$10 across all phases. Sol input accounting conservatively adds a 25% margin to
+the published uncached rate; cache discounts are ignored. Large-input pricing is
+excluded by a byte bound. Failed/unknown attempts retain reservations, and model
+rejection or unexpected returned IDs halt further dispatch.
+
+`rehearse NEW_PRIVATE_DIR` uses stub transport. After paid regressions, review
+randomized `blind/` packets and save explicit six-item rubric/source/context
+ratings in `ratings.json` before inspecting `blind-key.json`. `qualify DIR` saves
+candidate eligibility; `initial DIR` requires unchanged passing qualification
+and runs only eligible arms against A. `initial-gates DIR` applies unchanged
+release gates to each candidate and selects by quality, latency, then cost.
+`expand DIR` requires unchanged passing initial evidence; `expansion-gates DIR`
+requires all six winner expansions and complete matched control timing. A gate
+failure leaves verified guidance inactive. No automatic retries, quality
+replacements, paid judges or extra smoke calls are permitted. Spare operational
+calls require documented recovery; the runner refuses to repeat attempt paths.
+
+Freeze files, configuration and runner hashes before paid calls. Do not tune
+prompts after regression outputs. Reviewer style-based inference and one reviewer
+limit anonymity. Promotion requires both initial and expansion gates; completing
+preparatory changes or regression qualification alone does not authorize release.
