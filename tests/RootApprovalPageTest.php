@@ -134,6 +134,9 @@ final class RootApprovalPageTest
             $html = $this->render($root, $db, self::URL);
             assertStringContains('href="/source/blob/' . $sha . '/' . self::SOURCE . '"', $html);
             assertStringContains('href="/source/commits/' . $sha . '"', $html);
+            $profile = $this->render($root, $db, '/profiles/' . self::KEY);
+            assertStringContains('Committed: <time', $profile);
+            assertStringNotContains('Accepted:', $profile);
             assertStringContains('Repository commit dates describe file history.', $html);
             assertStringContains('Authorizer: not recorded. Acceptance time: not recorded.', $html);
             assertStringContains('initial approved fixture user', $this->render($root, $db, '/source/blob/' . $sha . '/' . self::SOURCE));

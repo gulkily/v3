@@ -368,7 +368,7 @@ final class LocalAppSmokeTest
             $authStatus = $this->render($application, '/api/auth_status');
 
             assertStringContains('This is your profile.', $profile);
-            assertStringContains('Account key history', $profile);
+            assertStringContains('Key approval', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);

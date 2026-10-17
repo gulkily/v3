@@ -2,7 +2,7 @@
   <article class="card">
     <h1>Root approval</h1>
     <p>This seed records root approval for the key below.</p>
-    <p class="root-approval-key"><?php if ($profile !== null): ?><a href="/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($keySlug) ?></a><?php else: ?><?= $e($keySlug) ?><?php endif; ?></p>
+    <p class="root-approval-key"><?php if ($profile !== null): ?><a href="/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($keySlug) ?>" aria-label="<?= $e($keySlug) ?>"><?= $e($shortenProfileSlug($keySlug)) ?></a><?php else: ?><span title="<?= $e($keySlug) ?>"><?= $e($shortenProfileSlug($keySlug)) ?></span><?php endif; ?></p>
 <?php if ($profile !== null): ?>
     <p>Current account: <a href="/user/<?= $e($profile['username_token']) ?>#account-keys"><?= $e($profile['username']) ?></a></p>
 <?php endif; ?>

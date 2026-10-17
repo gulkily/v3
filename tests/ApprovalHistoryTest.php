@@ -50,5 +50,19 @@ final class ApprovalHistoryTest
         $pdo->exec("UPDATE profiles SET username_token='renamed' WHERE identity_id='" . $target . "'");
         assertSame('new_account', $history->forUsername('renamed')['rows'][0]['classification']);
         assertSame(true, $history->forUsername('renamed')['rows'][0]['cross_account_allowed']);
+        $profile = $pdo->query("SELECT * FROM profiles WHERE identity_id='" . $target . "'")->fetch(PDO::FETCH_ASSOC);
+        $keyPage = $history->forKey($profile);
+        assertSame(1, $keyPage['total']);
+        assertSame([$target], array_column($keyPage['rows'], 'identity_id'));
+        assertSame(null, $keyPage['next_offset']);
+        assertSame('2026-01-01T00:05:00Z', $keyPage['rows'][0]['accepted_at']);
+        assertSame('2026-01-01T00:00:00Z', $keyPage['rows'][0]['recorded_at']);
+        unlink($root . '/' . ApprovalAcceptance::path('grant'));
+        $legacy = $history->forKey($profile)['rows'][0];
+        assertSame(null, $legacy['accepted_at']);
+        assertSame('2026-01-01T00:00:00Z', $legacy['recorded_at']);
+        assertSame('record', $legacy['recorded_at_kind']);
+        $profile['is_approved'] = 0;
+        assertSame([], $history->forKey($profile)['rows']);
     }
 }

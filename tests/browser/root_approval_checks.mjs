@@ -6,6 +6,16 @@ export async function checkRootApprovalPages({ page, context, base, rootKey, use
   const rawPath = '/source/current/records/approval-seeds/' + rootKey + '.txt';
   for (const history of ['/user/' + username, '/profiles/' + rootKey, '/forte/user/' + username, '/forte/profiles/' + rootKey]) {
     await page.goto(base + history);
+    const profilePage = history.includes('/profiles/');
+    assert.equal(await page.locator('#account-keys .account-key-history-entry').count(), profilePage ? 1 : 2);
+    assert.equal(await page.locator('#account-keys time').count(), profilePage ? 1 : 2);
+    if (profilePage) {
+      await page.getByRole('heading', { name: 'Key approval', exact: true }).waitFor();
+      assert.match(await page.locator('#account-keys').innerText(), /Committed:/);
+      assert.equal(await page.getByRole('link', { name: 'All account keys', exact: true }).count(), 1);
+    } else {
+      assert.equal(await page.locator('#account-keys details[open]').count(), 0);
+    }
     await page.locator(`a[href="${evidencePath}"]`).click();
     await page.getByRole('heading', { name: 'Root approval', exact: true }).waitFor();
     assert.equal(new URL(page.url()).pathname, evidencePath);

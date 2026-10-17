@@ -1107,7 +1107,7 @@ final class Application
             'profile.php',
             [
                 'profile' => $profile,
-                'approvalHistory' => $this->routeServices()->approvalHistory()->forUsername((string) $profile['username_token']),
+                'approvalHistory' => $this->routeServices()->approvalHistory()->forKey($profile),
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
                 'notice' => $notice,

@@ -43,7 +43,7 @@ final class ForteProfileController
             'forte_profile.php',
             [
                 'profile' => $profile,
-                'approvalHistory' => $this->routeServices->approvalHistory()->forUsername((string) $profile['username_token']),
+                'approvalHistory' => $this->routeServices->approvalHistory()->forKey($profile),
             ],
             $pageTitleLabel . ' - Forte Profile',
             'paned-reader-body',

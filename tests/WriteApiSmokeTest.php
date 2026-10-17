@@ -5439,9 +5439,10 @@ NODE;
 
         foreach (['/user/alice', '/forte/user/alice', '/profiles/' . $targetProfileSlug, '/forte/profiles/' . $targetProfileSlug] as $route) {
             $historyPage = $this->renderMethod($application, 'GET', $route);
-            assertStringContains('Account key history', $historyPage);
-            assertStringContains('First-key sponsorship', $historyPage);
-            assertStringContains('root-approved operator authority', $historyPage);
+            assertStringContains(str_contains($route, '/profiles/') ? 'Key approval' : 'Account key history', $historyPage);
+            assertStringContains('New account', $historyPage);
+            assertStringContains('Authority: root-approved operator', $historyPage);
+            assertStringContains('Accepted: <time', $historyPage);
             assertStringContains('/source/current/records/approval-acceptances/', $historyPage);
         }
         assertStringContains('Approval-Classification: new_account', $targetProfileApi);

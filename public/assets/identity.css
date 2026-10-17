@@ -24,6 +24,12 @@
 .account-key-history-entry + .account-key-history-entry {
   border-top: 1px solid var(--line);
 }
+.account-key-history-single .account-key-history-entry {
+  padding-block: 0.25rem;
+}
+.account-key-history-footer {
+  margin: 0.5rem 0 0;
+}
 .account-key-history-entry > p,
 .account-key-history-heading {
   margin: 0;
@@ -33,6 +39,12 @@
 }
 .account-key-history-entry > * + * {
   margin-top: 0.35rem;
+}
+.account-key-history-entry details p {
+  margin: 0.35rem 0;
+}
+.account-key-history-entry summary {
+  cursor: pointer;
 }
 .account-key-history-heading {
   font-size: 1em;

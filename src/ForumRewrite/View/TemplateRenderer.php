@@ -473,6 +473,7 @@ final class TemplateRenderer
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);
+        $shortenProfileSlug = static fn (string $slug): string => strlen($slug) > 17 ? substr($slug, 0, 17) . '...' : $slug;
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);

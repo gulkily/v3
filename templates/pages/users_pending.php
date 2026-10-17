@@ -1,12 +1,3 @@
-<?php
-$shortenProfileSlug = static function (string $slug): string {
-    if (strlen($slug) <= 17) {
-        return $slug;
-    }
-
-    return substr($slug, 0, 17) . '...';
-};
-?>
 <section class="stack" data-pending-approvals-root>
   <article class="card">
     <h1>Users Awaiting Approval</h1>
