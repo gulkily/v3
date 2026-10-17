@@ -12,7 +12,7 @@ final class ScriptureVerifiedReply
 {
     public function __construct(private readonly ScriptureSource $source = new ScriptureSource()) {}
 
-    public function render(array $document, bool $expansion = false, ?string $requestedTranslation = null): string
+    public function render(array $document, bool $expansion = false, ?string $requestedTranslation = null, string $readerText = ''): string
     {
         if (array_keys($document) !== ['segments'] || !is_array($document['segments'])
             || !array_is_list($document['segments']) || $document['segments'] === []) {
@@ -31,6 +31,33 @@ final class ScriptureVerifiedReply
                 }
                 $this->reflection($segment['text']);
                 $parts[] = trim($segment['text']); $reflections++;
+            } elseif (($segment['type'] ?? '') === 'discussion') {
+                $this->keys($segment, ['type', 'origin', 'text']);
+                $text = $segment['text'];
+                if (!is_string($text) || trim($text) === '') {
+                    throw new ScriptureVerificationException('Empty discussion wording.');
+                }
+                // The application, not a writer-supplied label, establishes origin.
+                if ($segment['origin'] === 'reader') {
+                    if ($readerText === '' || !str_contains($readerText, $text)) {
+                        throw new ScriptureVerificationException('Discussion wording is not in the original reader post.');
+                    }
+                    $label = 'Reader wording (not a verified Bible quotation)';
+                } elseif ($segment['origin'] === 'term') {
+                    // Short lexical labels only, never sentences, references or attribution.
+                    if (preg_match('/^[\p{L}]+(?:[ \-][\p{L}]+){0,7}$/uD', $text) !== 1
+                        || preg_match('/\b(?:Bible|Scripture|God|Jesus|Lord|Paul|James|John|Peter|Moses|Isaiah|Proverbs?|Psalms?|says?|said|saith|writes?|declares?|KJV|NIV)\b/iu', $text)) {
+                        throw new ScriptureVerificationException('Discussion term contains a reference or scriptural attribution.');
+                    }
+                    $label = 'Discussion term (interpretation, not a verified Bible quotation)';
+                } else {
+                    throw new ScriptureVerificationException('Unsupported discussion origin.');
+                }
+                // Reject rendering/quotation injection even for actual reader text.
+                if (preg_match('/[<>`\p{Cf}]|^\s*>/um', $text)) {
+                    throw new ScriptureVerificationException('Unsafe discussion wording; paraphrase it instead.');
+                }
+                $parts[] = $label . ': ' . $text;
             } elseif (($segment['type'] ?? '') === 'quotation') {
                 if (!$available || $unsupported) { throw new ScriptureVerificationException('Requested quotation source is unavailable; use explicit paraphrase or retry.'); }
                 $this->keys($segment, ['type', 'book', 'chapter', 'start', 'end', 'translation'], ['excerpts']);
@@ -53,7 +80,7 @@ final class ScriptureVerifiedReply
             : (!$available ? 'Verified KJV source text is unavailable. The discussion uses paraphrase and interpretation.' : '');
         if ($limitation !== '') { array_unshift($parts, $limitation); }
         return ($expansion ? 'Further scripture reflection: ' : 'Scripture-oriented analysis: ')
-            . implode("\n\n", $parts) . "\n\nNon-quoted text is interpretation and practical reflection.";
+            . implode("\n\n", $parts) . "\n\nOnly source-labeled KJV quotations are verified Bible text. Other wording is interpretation, practical reflection, or explicitly labeled reader wording.";
     }
 
     private function keys(array $value, array $required, array $optional = []): void
@@ -89,9 +116,9 @@ final class ScriptureVerifiedReply
     {
         // Prose cannot create a second, unchecked quotation channel. Apostrophes
         // inside words remain valid; quotations, markup and direct-speech claims do not.
-        if (preg_match('/["\x{201C}\x{201D}\x{2018}\x{00AB}\x{00BB}\x{2039}\x{203A}\x{FF02}\x{301D}\x{301E}\x{300A}\x{300B}\p{Pi}\p{Pf}<>`\p{Cf}]|(?<![\p{L}])\x{27}|^\s*>/um', $text)
+        if (preg_match('/["\x{201C}\x{201D}\x{2018}\x{00AB}\x{00BB}\x{2039}\x{203A}\x{FF02}\x{301D}\x{301E}\x{300A}\x{300B}<>`\p{Cf}]|(?<![\p{L}])[\x{27}\x{2019}]|^\s*>/um', $text)
             || preg_match('/\b(?:says?|said|saith|writes?|reads?|written|declares?|commands?)\s*[:;,]/iu', $text)
-            || preg_match('/\b(?:Bible|Scripture|God|Jesus|Lord|Paul|James|John|Peter|Moses|Isaiah|Proverbs?|Psalms?)\s+(?:says?|said|saith|writes?|reads?|declares?)\b/iu', $text)
+            || preg_match('/\b(?:Bible|Scripture|God|Jesus|Lord|Paul|James|John|Peter|Moses|Isaiah|Proverbs?|Psalms?)\s+(?:says?|said|saith|writes?|declares?)\b/iu', $text)
             || preg_match('/\b\d+:\d+(?:-\d+)?\s*:/u', $text)) {
             throw new ScriptureVerificationException('Use verified quotation segments; reflection must be paraphrase or interpretation.');
         }
