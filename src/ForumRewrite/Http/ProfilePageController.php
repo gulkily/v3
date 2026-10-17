@@ -213,8 +213,7 @@ final class ProfilePageController
         }
 
         return 'Approved user ' . $this->escape((string) $profile['username']) . '. '
-            . '<a href="/posts/' . $this->escape($postId) . '">Open approval post</a>. '
-            . 'Commit ' . $this->escape($commitSha);
+            . '<a href="/posts/' . $this->escape($postId) . '">Open approval post</a>.';
     }
 
     private function escape(string $value): string
