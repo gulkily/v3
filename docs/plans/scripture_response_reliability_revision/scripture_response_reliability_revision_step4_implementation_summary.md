@@ -23,3 +23,9 @@ Approval: user authorized the original Step 3 plan and linked protocol. Budget r
 - Changes: Bind discussion reader wording to the normalized original post for initial generation, Expand, and persisted-draft publication. Normalize discussion text through the existing text policy.
 - Verification: `php tests/run.php AgentResponseGeneratorTest WriteApiSmokeTest` — 177 passed, including source/translation limitations, stored-draft retry, permissions, duplicate protection, source races and offline results. `node tests/browser/scripture_expansion.cjs` passed all four thread/post desktop/mobile cases and offline snapshot checks. `git diff --check` passed.
 - Notes: Earlier agent history cannot establish reader origin. No schema, shared configuration or history changes; no paid calls.
+
+## Stage 4 - Frozen three-arm evaluation
+
+- Changes: Added a separate revision runner/protocol preserving predecessor evidence. Control files come from `51b4fca9`; repaired arms share code and differ only in scripture writer. One durable ledger enforces 76/152/$10; runner/config hashes, returned IDs, phase gates, anonymous final-answer packets and fail-stop behavior are recorded. Sol input accounting adds a conservative cache-write margin.
+- Verification: Stub HTTP/worker/browser rehearsal at `state/private/scripture-revision-rehearsal-20261017` completed 9/9 initial, NIV-limitation and Expand flows across all arms. `PYTHONPATH=tests/Support python3 -m unittest test_scripture_evaluation test_scripture_revision_evaluation` — 14 passed, covering budgets, failures, model isolation, source review, missing qualification and release gates. `git diff --check` passed.
+- Notes: Official pricing rechecked; key availability is checked in memory before dispatch. No paid calls yet. Deployment is outside scope. Rehearsal is operational evidence, not answer-quality evidence.
