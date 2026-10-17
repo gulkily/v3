@@ -45,9 +45,9 @@ final class PlatformDocsStaticTest
             $document = $this->render($controller, '/docs/examples/extension_improvement_cookbook.md');
             $invalid = $this->render($controller, '/docs/%2e%2e/README.md');
             $workflow = $this->render($controller, '/docs/railspike/RAILSPIKE.md');
-            $legacy = $this->render($controller, '/docs/fdp/README.md');
+            $readme = $this->render($controller, '/docs/railspike/README.md');
             assertStringContains('<h1>Railspike</h1>', $workflow);
-            assertStringContains('Legacy FDP reference', $legacy);
+            assertStringContains('<h1>Railspike</h1>', $readme);
 
             assertTrue(str_contains($index, 'route-source: static-html'));
             assertTrue(str_contains($index, 'Platform Docs'));
