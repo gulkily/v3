@@ -86,6 +86,11 @@ final class RouteServices
         return $this->databasePath;
     }
 
+    public function approvalHistory(): \ForumRewrite\ReadModel\ApprovalHistory
+    {
+        return new \ForumRewrite\ReadModel\ApprovalHistory($this->pdo(), $this->repositoryRoot);
+    }
+
     public function featureFlags(): FeatureFlagEvaluator
     {
         return $this->featureFlags;
@@ -98,6 +103,14 @@ final class RouteServices
      * calls one page render makes into it - see
      * docs/plans/activity_subsystem_extraction_plan_v1.md.
      */
+    public function securityReviewAllowed(): bool
+    {
+        $id = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        if ($id === '' || !\ForumRewrite\Security\ApprovalPolicy::isOperator($this->repositoryRoot, $id)) return false;
+        $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->pdo(), $id);
+        return $profile !== null && (int) $profile['is_approved'] === 1;
+    }
+
     public function activityService(): ActivityService
     {
         return $this->activityService ??= new ActivityService(
@@ -105,6 +118,7 @@ final class RouteServices
             $this->repositoryRoot,
             $this->databasePath,
             $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
+            $this->securityReviewAllowed(...),
         );
     }
 
@@ -502,7 +516,9 @@ final class RouteServices
             'ETag: ' . $etag,
         ], $headers);
 
-        if ($statusCode === 200 && HtmlResponseCache::requestMatches($etag)) {
+        $noStore = false;
+        foreach ($headers as $value) { if (str_contains(strtolower($value), 'no-store')) $noStore = true; }
+        if ($statusCode === 200 && !$noStore && HtmlResponseCache::requestMatches($etag)) {
             http_response_code(304);
             foreach ($headers as $headerValue) {
                 header($headerValue);

@@ -12,8 +12,11 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Username change gate](username_change_gate/)
 - [Music media embeds](music_media_embeds/)
+- [Word 97 disabled buttons and dark Win9x theme](word97_disabled_and_dark_theme/)
 - [Account key page simplification](account_key_page_simplification/)
 - [Account key page redesign](account_key_page_redesign/)
+- [Root approval evidence pages](root_approval_pages/)
+- [Forte Activity parity](forte_activity_parity/)
 - [Bookmarklets page redesign](bookmarklets_page_redesign/)
 - [Repository directory cleanup](repository_directory_cleanup/)
 - [Fastmod graded visibility — neutral intake slice](fastmod_prepublication_hold/) · [Cross-cycle checklist and QDB voting request](fastmod_prepublication_hold/fastmod_development_checklist.md)
@@ -186,3 +189,5 @@ and repair its navigation and affected references. See the
 - [Operator post retraction](./operator_record_deletion/operator_record_deletion_step1_solution_assessment.md) — extend signed retraction to operators and move the action into a shared overflow menu.
 
 - [Retracted post LLM exchange privacy](./retracted_post_llm_exchange_privacy/retracted_post_llm_exchange_privacy_step1_solution_assessment.md) — suppress recorded exchanges containing retracted content.
+
+- [Phone site development](./phone_site_development/phone_site_development_step1_solution_assessment.md) — operator phone intake through reviewed Railspike Step 1; later lifecycle tracked in the companion checklist.

@@ -211,6 +211,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       data-post-id="<?= $e($post['post_id']) ?>"
     >Request agent response</button>
 <?php endif; ?>
+<?= $partial('partials/railspike_workflow.php') ?>
 <?php if ($showCodexHandoffButton && !$isRetracted): ?>
     <button
       type="button"

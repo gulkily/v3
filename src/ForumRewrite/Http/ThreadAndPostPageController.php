@@ -163,6 +163,8 @@ final class ThreadAndPostPageController
                 '/assets/thread_reactions.js',
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
+                '/assets/private_site_auth.js',
+                '/assets/railspike_workflow.js',
             ]),
         );
     }
@@ -250,6 +252,8 @@ final class ThreadAndPostPageController
                 '/assets/thread_reactions.js',
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
+                '/assets/private_site_auth.js',
+                '/assets/railspike_workflow.js',
             ]),
         );
     }

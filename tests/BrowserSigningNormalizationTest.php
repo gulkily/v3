@@ -220,6 +220,7 @@ const state = {
   fetches: []
 };
 global.window = {
+  confirm(){ return true; },
   openpgp: {
     async readKey(){ return { getFingerprint(){ return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'; } }; },
     async readPrivateKey(){ return { getFingerprint(){ return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'; } }; },
@@ -244,6 +245,7 @@ global.fetch = async function(url, options) {
   const payload = url === '/api/prepare_approval'
     ? {
       status: 'ok',
+      approval_review: { label: 'Grant this key access as Bob', consequence: 'Bob already has 2 approved keys. This key will be able to act as Bob.', target_identity_id: 'openpgp:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' },
       prepare_token: 'approval-token',
       post_id: 'reply-approval',
       thread_id: 'thread-target',

@@ -40,6 +40,8 @@ that stays accurate even as implementation details move around:
 - [Site Feature Flags Record](docs/specs/site_feature_flags_record_v1.md)
 - [Feature Flag Change Record](docs/specs/feature_flag_change_record_v1.md)
 - [User Approval Seed Record](docs/specs/user_approval_seed_record_v1.md)
+- [Approval Acceptance Receipts](docs/specs/approval_acceptance_record_v1.md)
+- [Account Key Approval Safety Runbook](docs/runbooks/account_key_approval_safety.md)
 - [Agent Reply One-Step Analyze/Publish Contract](docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md)
 - [Asset Fingerprinting and CSS Splitting](docs/specs/asset_fingerprinting_and_css_split_v1.md)
 - [Read-Model SQLite Schema Reference](docs/specs/read_model_schema_v1.md)
@@ -464,6 +466,8 @@ curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/recor
 # low-level/manual fallback:
 curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc" "http://127.0.0.1:8000/api/link_identity?bootstrap_post_id=root-001"
 ```
+
+Account-key approval uses explicit account/key review, durable acceptance receipts, and classic/Forte account history. `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` defaults to enabled; disabling it restricts future member cross-account grants while preserving sponsorship, own-account additions, operator authority, and previously accepted keys. Authenticated root-approved operators can correlate grants and signed policy changes at `/activity/?view=security`. See the [rollout and recovery runbook](docs/runbooks/account_key_approval_safety.md).
 
 Approval helper examples:
 

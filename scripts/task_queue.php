@@ -121,6 +121,9 @@ try {
         $counts = $store->counts();
         $heartbeat = $store->executorHeartbeatStatus();
         fwrite(STDOUT, "Task queue status\n");
+        foreach ((new \ForumRewrite\Railspike\WorkflowStore($pdo))->recent() as $workflow) {
+            fwrite(STDOUT, sprintf("Railspike workflow=%s post=%s state=%s version=%d\n", $workflow['id'], $workflow['post_id'], $workflow['state'], $workflow['version']));
+        }
         fwrite(STDOUT, "Queue database: {$queuePath}\n");
         fwrite(STDOUT, sprintf(
             "Queued: %d, running: %d, completed: %d, failed: %d\n",
@@ -180,7 +183,7 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $pdo): void {
             $startedAt = microtime(true);
             $reconciledAgentReplyTasks = $taskId === null ? reconcileAgentReplyTasks($store, $databasePath) : 0;
             $executorRun = $store->startExecutorRun();
@@ -299,6 +302,7 @@ try {
                     ))
                         ->fulfillAgentReplyRequest($request);
                 },
+                new \ForumRewrite\Railspike\AssessmentTask(new \ForumRewrite\Railspike\WorkflowStore($pdo), new \ForumRewrite\Railspike\CodexAssessmentRunner($projectRoot)),
             );
             $taskStartedAt = [];
             try {

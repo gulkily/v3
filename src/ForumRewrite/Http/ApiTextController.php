@@ -45,7 +45,7 @@ final class ApiTextController
     public function index(): void
     {
         $this->routeServices->sendText(
-            "GET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/auth_status\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nGET /api/private_messages/inbox\nGET /api/private_messages/sent\nGET /api/private_messages/conversation?username_token=<username>\nGET /api/private_messages/conversations?cursor=<optional-opaque-cursor>\nGET /api/private_messages/recipient_keys?username_token=<username>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/private_messages\nPOST /api/analyze_post\nPOST /api/score_post\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n"
+            "GET /api/railspike_workflow?thread_id=<id> (authenticated operators only)\nGET /api/railspike_workflow?activity=1 (private summaries)\nPOST /api/railspike_workflow (prepare signed action, then submit signed_text/signature; same-origin JSON, X-Requested-With: ForumRailspike)\nGET /api/\nGET /api/version\nGET /api/auth_challenge\nGET /api/auth_status\nGET /api/list_index\nGET /api/get_thread?thread_id=<id>\nGET /api/get_post?post_id=<id>\nGET /api/get_profile?profile_slug=<slug>\nGET /api/get_username_claim_cta\nGET /api/codex_handoff?handoff_id=<id>\nGET /api/private_messages/inbox\nGET /api/private_messages/sent\nGET /api/private_messages/conversation?username_token=<username>\nGET /api/private_messages/conversations?cursor=<optional-opaque-cursor>\nGET /api/private_messages/recipient_keys?username_token=<username>\nPOST /api/set_identity_hint\nPOST /api/clear_identity\nPOST /api/authenticate_identity\nPOST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/private_messages\nPOST /api/analyze_post\nPOST /api/score_post\nPOST /api/codex_handoff\nPOST /api/codex_handoff_approval\nPOST /api/apply_thread_tag\nPOST /api/apply_post_tag\n"
             . "GET /api/private_messages/history_sync/work\nGET /api/private_messages/history_sync/transfers?message_id=<id>&after=<optional-transfer-id>\nPOST /api/private_messages/history_sync/transfers\nPOST /api/private_messages/history_sync/acknowledge\n"
             . "POST /api/generate_agent_reply\n"
             . "GET /api/private_messages/unread?counterparts[]=<optional-username>\nPOST /api/private_messages/read\n"
@@ -135,8 +135,12 @@ final class ApiTextController
             && \ForumRewrite\Images\ImageUploadValidator::available() ? 'yes' : 'no';
         $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
 
+        $history = $this->routeServices->approvalHistory()->forProfile($profile);
+        $historyText = 'Approval-Classification: ' . $history['classification'] . "\nAccepted-At: " . ($history['accepted_at'] ?? 'unknown')
+            . "\nApproval-Evidence: " . ($history['source_path'] ?? 'unknown') . "\nAcceptance-Receipt: " . ($history['receipt_path'] ?? 'unknown')
+            . "\nAccount-Key-History: /user/" . rawurlencode((string) $profile['username_token']) . "#account-keys\n";
         $this->routeServices->sendText(
-            "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nImage-Upload-Allowed: {$imageUpload}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n",
+            "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nImage-Upload-Allowed: {$imageUpload}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n" . $historyText,
             200,
             ['Cache-Control: no-store']
         );

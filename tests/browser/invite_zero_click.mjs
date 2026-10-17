@@ -80,6 +80,22 @@ try {
     assert.match(await recipient.page.locator('main').innerText(), /Hello world/);
     assert.equal(await recipient.page.evaluate(() => localStorage.getItem('forum_pki_username')), 'guest');
     const originalKey = await recipient.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'));
+    // Operator correlation is authenticated and never stored as public/feed output.
+    for (const path of ['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security']) {
+      const review = await inviter.context.request.get(base + path);
+      assert.equal(review.status(), 200, await review.text());
+      assert.match(review.headers()['cache-control'], /no-store/);
+      assert.equal((await recipient.context.request.get(base + path)).status(), 403);
+    }
+    const reviewPage = await inviter.context.request.get(base + '/activity/?view=security');
+    assert.match(await reviewPage.text(), /Acceptance receipt/);
+    assert.equal((await inviter.context.request.get(base + '/activity/?view=security&format=rss')).status(), 406);
+    const anonymousReview = await contextWithIdentity(base);
+    await anonymousReview.context.addCookies([{ name: 'identity_hint', value: 'openpgp:' + fingerprint, url: base }]);
+    const deniedReview = await anonymousReview.context.request.get(base + '/activity/?view=security');
+    assert.equal(deniedReview.status(), 403);
+    assert.match(deniedReview.headers()['cache-control'], /no-store/);
+
     await recipient.page.goto(url); // same-recipient recovery
     await recipient.page.waitForURL(base + '/threads/root-001?from=invite#reply-001');
     assert.equal(await recipient.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint')), originalKey);

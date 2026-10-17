@@ -966,3 +966,7 @@ body.paned-reader-body {
   --paned-highlight-edge: #b89d00;
   --paned-link: #8db4ff;
 }
+
+.account-key-history {
+  overflow-wrap: anywhere;
+}

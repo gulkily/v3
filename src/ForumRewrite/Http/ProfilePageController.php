@@ -48,7 +48,7 @@ final class ProfilePageController
         return ($this->renderProfilePage)($profile, $self, $this->profileNoticeFromQuery($profile, $query));
     }
 
-    public function username(string $username): ?string
+    public function username(string $username, array $query = []): ?string
     {
         $usernameToken = strtolower($username);
         $pdo = $this->routeServices->pdo();
@@ -85,6 +85,7 @@ final class ProfilePageController
             'username.php',
             [
                 'usernameToken' => $usernameToken,
+                'approvalHistory' => $this->routeServices->approvalHistory()->forUsername($usernameToken, 50, max(0, (int) ($query['key_offset'] ?? 0))),
                 'approvedProfiles' => $approvedProfiles,
                 'unapprovedProfiles' => $unapprovedProfiles,
                 'approverUsernames' => self::aggregateApproverUsernames($approvedProfiles, $ownIdentityIds),

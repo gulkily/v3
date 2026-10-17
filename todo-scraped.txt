@@ -1,0 +1,137 @@
+feature requests from imported zenmemes.com content
+	reviewed authored content from 2026-09-24 19:20:43 UTC through 2026-10-15 19:20:43 UTC
+	175 recent records reviewed (including replies and internal records); 168 were added by the latest import
+	compared against todo.txt; referenced checklists/roadmaps consulted for partial overlap
+	requests below are missing from that list; existing implementation status is not generally audited
+	x marks an item explicitly reported fixed in the source conversation
+
+separate login from registration in the interface
+	use different buttons for logging into an existing username and creating a username
+		even if the underlying mechanism is similar
+	see https://zenmemes.com/threads/thread-20260930070516-677c22f6
+
+brainstorm non-text media beyond the existing image feature
+	consider text records referencing media files by hash
+		image support already exists; clarify what other media and workflows are wanted
+	see https://zenmemes.com/threads/thread-20260930070537-ab9f86bb
+	and https://zenmemes.com/posts/reply-20260930070624-1e2f92ce
+
+study interface references shared on the site
+	Gathio was explicitly noted as a good UI to study
+		see https://zenmemes.com/posts/reply-20260928231954-ae10de0a
+		context: https://zenmemes.com/threads/thread-20260928231946-1a56df0e
+	the Haskell Community interface was also noted as a cool interface
+		see https://zenmemes.com/threads/thread-20260926190500-d4467a6e
+	these are design references, not requests to copy every feature of those sites
+
+make the navigation collapsible but pinnable
+	use a hamburger menu by default to save space, especially on mobile
+	let the user pin the navigation open so it remains available
+	see https://zenmemes.com/threads/thread-20261002144238-e5e8fc17
+
+automatically retain browsed content for offline reading
+	append content encountered during ordinary browsing to the local offline database
+		reduce dependence on a freshly downloaded snapshot
+	this specific browse-to-cache behavior is not in todo.txt's offline entry
+	see https://zenmemes.com/threads/thread-20261002144438-b69e49cf
+
+provide partial updates to the offline content database
+	avoid redownloading the whole offline database for each refresh
+	mentioned as future content-delta sync in docs/plans/backlog/offline_support_roadmap.md,
+		but not explicit in todo.txt; make this concrete request visible here
+	see https://zenmemes.com/threads/thread-20261002144438-b69e49cf
+
+remove the username-request modal
+	avoid interrupting the user's current flow
+	make the replacement accessible to programmatic browsers
+	broader than todo.txt's invitation-specific request to defer username collection
+	see https://zenmemes.com/threads/thread-20261003161526-f2cd6e70
+
+reduce unnecessary software choices
+	prefer useful defaults instead of making the user choose something unnecessarily
+		source is a broad design request; clarify which interactions it applies to
+	see https://zenmemes.com/threads/thread-20261004023147-7b4ead58
+	and https://zenmemes.com/posts/reply-20261004023204-79094d4a
+
+verify releases externally and catch regressions in previous functionality
+	requests for external verification were followed by a report that a bug broke
+		previous functionality without being detected
+	separate from simply cleaning up already-failing tests
+	see https://zenmemes.com/threads/thread-20260930185028-e5ae91bd
+	and https://zenmemes.com/threads/thread-20261001005834-04eb956a
+	and https://zenmemes.com/threads/thread-20261001051446-8e4826e6
+
+xfix the unexpected actions menu / request-agent-response menu behavior
+x	the request-agent-response menu should close when clicked again
+x	source follow-up explicitly says "This one is fixed."
+	see https://zenmemes.com/posts/reply-20261008094112-98eecafd
+	fixed report: https://zenmemes.com/posts/reply-20261008192454-064bab3b
+
+after posting a reply, return to the bottom of the thread
+	do not redirect to the new item's standalone permalink page
+	see https://zenmemes.com/posts/reply-20261008094138-b1609bd1
+
+keep the post button accessible when the mobile keyboard is open
+	consider a small post button at the top right
+	see https://zenmemes.com/posts/reply-20261008094211-ee4c69f7
+	an unthreaded follow-up says "Seems like this is already the case";
+		its target is unclear, so verify before treating this request as resolved
+		see https://zenmemes.com/posts/reply-20261008192642-4730f9e2
+
+remove redundant posting-identity copy
+	"Posting as your browser identity" was called out as redundant
+	see https://zenmemes.com/posts/reply-20261008192706-f5c2eb4e
+
+add an expanded post-list view
+	show a reasonably long excerpt of each post
+	see https://zenmemes.com/threads/thread-20261008203343-938289d2
+
+add a lightweight last-seen marker
+	show what has been posted since the user's last visit
+	start with one timestamp rather than mandatory per-item read tracking
+		consider keeping any richer read status locally
+	see https://zenmemes.com/threads/thread-20261009025659-678c42e1
+
+show a user's approval tree on their profile
+	show the approval ancestry, beyond the account-key attribution/history already
+		covered by docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md
+	see https://zenmemes.com/threads/thread-20261009080527-dc52a36e
+
+provide a special page for the root user
+	clarify the intended contents; the source does not specify them
+	see https://zenmemes.com/posts/reply-20261009080608-453e17ad
+
+fix authentication challenge expiry/missing errors on iPhone Firefox
+	reported on /account/key over HTTP
+		the failure also prevents access to the messages page
+	see https://zenmemes.com/threads/thread-20261010220140-ddf3deea
+	and https://zenmemes.com/posts/reply-20261010220200-d815c58b
+
+add a web interface for upgrading the deployed release
+	provide tagged releases that are easy to select and upgrade to
+	separate from todo.txt's request for more readable version numbers
+	see https://zenmemes.com/threads/thread-20261011190839-d454923d
+
+provide an export-safe subset of instance content
+	identify content safe to export and use to seed other instances/the wider world
+	separate from merely importing or synchronizing another instance
+	see https://zenmemes.com/threads/thread-20261011222551-41cf21ba
+
+provide a single toggle for all AI features
+	for groups or people who do not want AI features
+	clarify whether this is instance-level, user-level, or both
+	see https://zenmemes.com/threads/thread-20261013203624-dc0a5e78
+
+fix selected navigation button styling in the Word 97 theme
+	selected buttons should remain gray and pressed down
+		not become dark blue and flat after clicking or navigating
+	separate from todo.txt's disabled-button text-color issue
+	see https://zenmemes.com/threads/thread-20261014112321-7211adde
+	and https://zenmemes.com/posts/reply-20261014112339-48978dfe
+
+finish the web-based site-development workflow for use from a phone
+	identify the missing pieces and the end-to-end workflow
+	let a user submit a site enhancement request and hand it off to Railspike Step 1
+	see https://zenmemes.com/threads/thread-20261015034434-3bf73ef7
+	and https://zenmemes.com/posts/reply-20261015034618-3a1bc284
+	and https://zenmemes.com/posts/reply-20261015034710-032917cf

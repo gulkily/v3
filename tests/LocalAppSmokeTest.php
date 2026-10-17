@@ -368,6 +368,7 @@ final class LocalAppSmokeTest
             $authStatus = $this->render($application, '/api/auth_status');
 
             assertStringContains('This is your profile.', $profile);
+            assertStringContains('Key approval', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);
@@ -766,6 +767,12 @@ PHP;
             assertStringContains('data-auth-return-to="/threads/root-001"', $threadResume);
             $boardResume = $this->render($application, '/?view=recent');
             assertStringContains('data-auth-return-to="/?view=recent"', $boardResume);
+            foreach (['/user/guest', '/forte/user/guest', '/source/current/records/approval-acceptances/example.json'] as $route) {
+                $restricted = $this->render($application, $route);
+                assertStringNotContains('Account key history', $restricted);
+                assertStringNotContains('actor_identity_id', $restricted);
+                assertTrue(str_contains($restricted, 'Reconnecting') || str_contains($restricted, 'pending approval'));
+            }
             $profileResume = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity');
             assertStringContains('data-auth-return-to="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity"', $profileResume);
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
@@ -1017,6 +1024,7 @@ PHP;
         assertStringContains('border-left: 0', $css);
         assertStringContains('border-right: 0', $css);
         assertStringContains(':root[data-theme="word97"][data-thread-density="compact"]', $word97Css);
+        assertStringContains(':root[data-theme="word97"] button[disabled]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option)', $word97Css);
     }
 
     public function testAssetFingerprintCopySkipsAlreadyFingerprintedSourceFiles(): void
@@ -1932,13 +1940,14 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","windark"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
         assertStringContains('data-theme-option="whitehot"', $board);
         assertStringContains('data-theme-option="word97"', $board);
+        assertStringContains('data-theme-option="windark"', $board);
         assertStringNotContains('data-theme-option="qdb"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
@@ -2757,6 +2766,26 @@ PHP;
         assertStringContains('Commit:', $forte);
         assertStringNotContains('<p class="meta">Source:', $classic);
         assertStringNotContains('<p class="meta">Source:', $forte);
+        assertStringContains('by ', $forte);
+        assertStringContains(' on <time', $forte);
+    }
+
+    public function testForteActivityOffersDefaultCategoriesAndEligibleRss(): void
+    {
+        [, $repositoryRoot, $databasePath, $artifactRoot] = $this->createGitBackedEnvironmentWithArtifacts();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $labels = ['all' => 'All Activity', 'content' => 'Visible Content', 'identity' => 'Identity', 'bootstrap' => 'Bootstraps', 'approval' => 'Approvals'];
+        foreach ($labels as $view => $label) {
+            $classic = $this->render($application, '/activity/?view=' . $view);
+            $forte = $this->render($application, '/forte/activity/?view=' . $view);
+            assertStringContains('>' . $label . '</a>', $classic);
+            assertStringContains('<span>' . $label . '</span>', $forte);
+            assertStringContains('data-paned-activity-rss href="/activity/?view=' . $view . '&amp;format=rss">RSS</a>', $forte);
+            assertStringContains('data-paned-activity-view="commits"', $forte);
+            assertStringNotContains('Current cross-account policy:', $forte);
+        }
+        $commits = $this->render($application, '/forte/activity/?view=commits');
+        assertStringContains('data-paned-activity-rss href="/activity/?view=commits&amp;format=rss" hidden', $commits);
     }
 
     public function testClassicAndForteActivityRenderSignatureKeyOutsideCommit(): void
@@ -3014,11 +3043,11 @@ PHP;
         assertStringContains('title="Copy one-line bookmarklet"', $bookmarklets);
         assertStringContains('role="status"', $bookmarklets);
         $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }

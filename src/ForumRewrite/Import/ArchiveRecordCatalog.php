@@ -19,6 +19,7 @@ final class ArchiveRecordCatalog
         return $relativePath === 'records/instance/public.txt'
             || $relativePath === 'records/instance/feature-flags.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/approval-acceptances/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/post-timestamps/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/thread-subjects/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
@@ -52,6 +53,7 @@ final class ArchiveRecordCatalog
         $name = pathinfo($path, PATHINFO_FILENAME);
         return match ($family) {
             'posts' => 'post:' . $name,
+            'approval-acceptances' => 'approval-acceptance:' . $name,
             'post-timestamps' => 'post-timestamp:' . $name,
             'identity' => 'identity:openpgp:' . strtolower(substr($name, strlen('identity-openpgp-'))),
             'public-keys' => 'public-key:openpgp:' . strtolower(substr($name, strlen('openpgp-'))),
@@ -80,6 +82,15 @@ final class ArchiveRecordCatalog
         $repository = new CanonicalRecordRepository($repositoryRoot);
 
         try {
+            if (str_starts_with($relativePath, 'records/approval-acceptances/')) {
+                $id = basename($relativePath, '.json');
+                $post = $repository->loadPost(\ForumRewrite\Canonical\CanonicalPathResolver::post($id));
+                $postPath = is_file($repositoryRoot . '/records/posts/' . $id . '.txt')
+                    ? 'records/posts/' . $id . '.txt'
+                    : \ForumRewrite\Canonical\CanonicalPathResolver::datedPost($id, $post->createdAt);
+                $receipt = \ForumRewrite\Security\ApprovalAcceptance::read($repositoryRoot, $postPath);
+                return $receipt === null ? null : 'approval-acceptance:' . $receipt['post_id'];
+            }
             if (str_starts_with($relativePath, 'records/post-timestamps/')) {
                 return 'post-timestamp:' . LegacyPostTimestamp::read($repositoryRoot . '/' . $relativePath)['post_id'];
             }
