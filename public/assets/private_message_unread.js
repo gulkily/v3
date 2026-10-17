@@ -8,7 +8,6 @@
   function sameIdentity() { return originalIdentity === identity(); }
   function rows() { return Array.from(document.querySelectorAll('[data-conversation-row]')); }
   function unavailable(message) {
-    nav.querySelector('[data-role="unread-count"]').textContent = '?';
     nav.querySelector('#private-message-unread-status').textContent = message;
     nav.title = message;
     nav.dataset.unreadState = 'unavailable';
@@ -53,7 +52,6 @@
       }
       if (current !== generation) return;
       const description = combined.unread_count + ' unread conversation' + (combined.unread_count === 1 ? '' : 's');
-      nav.querySelector('[data-role="unread-count"]').textContent = combined.unread_count ? '(' + combined.unread_count + ')' : '';
       nav.querySelector('#private-message-unread-status').textContent = description;
       nav.title = description;
       nav.dataset.unreadState = 'ready';

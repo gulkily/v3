@@ -15,3 +15,16 @@ Debug mode: enabled
 - Notes:
   - **Step 2 assumption not confirmed:** there is no client-side post-load insertion in the code. Plausible explanations, each unverified: (a) navigating between cookie-less static pages and dynamic pages makes the items appear/disappear between page loads; (b) a viewer with an `identity_hint` but no live session gets no items until a session is established; (c) site.css loads non-blocking (`media="print"` swap) so nav styling/icons for these links arrive after first paint.
   - Needs the user's observation (which pages, signed-in how, which theme) or a browser repro before Stage 2 so the fix targets the real cause.
+
+## Stage 1 (revised plan) - Remove visible unread text, keep state in attributes/ARIA
+- Changes:
+  - `templates/partials/nav.php`: dropped the visible `…` count span; Messages caption is now exactly `Messages`. The hidden status span (`aria-describedby`) stays.
+  - `private_message_unread.js`, `feature_flags.js`: stop writing visible count text (`?`, `(N)`); state still set via `data-unread-state`, `data-unread-count`, `title`, and the hidden status text.
+  - Browser tests updated to assert the caption stays `Messages` and the status description is populated, instead of `…`/`?`.
+- Verification:
+  - `node tests/browser/private_message_live_navigation.mjs` passed.
+  - `node tests/browser/private_message_list_browser.mjs` passed (includes unread UI checks).
+  - `php tests/run.php` exit 0, 1225 passes, no FAIL lines.
+- Notes:
+  - Outline highlight is Stage 2; until then there is no visible unread signal.
+  - Plan revision commit `5931a5da` precedes this stage; the earlier Stage 1 diagnosis (commit `7dc7856f`) is retained as history.
