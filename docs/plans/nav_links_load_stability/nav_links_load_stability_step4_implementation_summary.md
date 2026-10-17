@@ -28,3 +28,15 @@ Debug mode: enabled
 - Notes:
   - Outline highlight is Stage 2; until then there is no visible unread signal.
   - Plan revision commit `5931a5da` precedes this stage; the earlier Stage 1 diagnosis (commit `7dc7856f`) is retained as history.
+
+## Stage 2 - Outline highlight for unread Messages
+- Changes:
+  - `public/assets/site.css`: layout-neutral `outline` on `.nav-link[data-unread-count]` when the count is not `0`.
+  - `public/assets/theme-sticker.css`: override (double outline) because sticker already uses a 2px outline as its resting nav style, which would hide the highlight.
+  - New `tests/browser/nav_unread_outline.mjs`: for every theme sheet, asserts Messages/Invite boxes are identical across no-count, `0`, and `3`, that unread outline differs from the resting style and is visible, and that zero adds nothing.
+- Verification:
+  - `node tests/browser/nav_unread_outline.mjs`: passed in 16 themes.
+  - `php tests/run.php`: exit 0, 1225 passes. A first run failed 3 tests because the selector included the string `data-private-message-unread` in shared CSS (guarded by release-isolation/nav tests); rekeyed on `data-unread-count` and reran clean.
+  - `git diff --check` passed.
+- Notes:
+  - Contrast/aesthetics of the outline per theme were checked structurally (differs from resting, visible), not by eye; worth a visual look.
