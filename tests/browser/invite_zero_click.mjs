@@ -18,12 +18,12 @@ assert.equal(fixture.status, 0, fixture.stderr);
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', args: ['--no-sandbox'] });
 let server, logs = '', lastPage;
 const contexts = [];
-async function start(privateSite) {
+async function start(privateSite, usernameChanges = true) {
   if (server) { const stopped = once(server, 'exit'); server.kill(); await stopped; }
   const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening');
   const port = socket.address().port; await new Promise(resolve => socket.close(resolve));
   server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/invite_browser_router.php')], {
-    env: { ...process.env, INVITE_TEST_ROOT: root, FORUM_SECRETS_PATH: join(root, 'unused.php'), FORUM_APPROVED_MEMBERS_ONLY: String(privateSite),
+    env: { ...process.env, INVITE_TEST_ROOT: root, FORUM_SECRETS_PATH: join(root, 'unused.php'), FORUM_APPROVED_MEMBERS_ONLY: String(privateSite), FORUM_USERNAME_CHANGES_ENABLED: String(usernameChanges),
       PRIVATE_MESSAGE_DATABASE_PATH: join(root, 'private/messages.sqlite3'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') }, stdio: ['ignore', 'ignore', 'pipe'] });
   server.stderr.on('data', data => { logs += data; });
   const base = `http://127.0.0.1:${port}`;
@@ -90,6 +90,8 @@ try {
     assert.equal((await (await inviter.context.request.post(base + '/api/inspect_invitation', { form: { invite_token: token } })).json()).state, 'available');
     // Choose a name only after arrival, preserving key and approved session.
     await recipient.page.goto(base + '/account/key/');
+    await recipient.page.locator('[data-action=rename-profile]').waitFor({ state: 'visible' });
+    assert.equal(await recipient.page.locator('[data-action=generate-browser-key]').innerText(), 'Start over with a new key');
     recipient.page.removeAllListeners('dialog');
     recipient.page.once('dialog', dialog => dialog.accept(privateSite ? 'named-private-reader' : 'named-public-reader'));
     await recipient.page.locator('[data-action=rename-profile]').click();
@@ -101,6 +103,8 @@ try {
     assert.equal(rebuild.status, 0, rebuild.stderr);
     await recipient.page.goto(base + '/threads/root-001');
     assert.match(await recipient.page.locator('main').innerText(), /Hello world/);
+    await recipient.page.goto(base + '/activity/?view=all');
+    assert.match(await recipient.page.locator('main').innerText(), /Changed username from guest to named-(private|public)-reader/);
     // Lost final response: server commits, browser sees failure, reload resumes without a second redemption.
     const lostUrl = await issue();
     const lost = await contextWithIdentity(base);
@@ -184,6 +188,18 @@ try {
     assert.match(await foreign.page.locator('[data-role=invitation-redemption-feedback]').innerText(), /another identity/);
     console.log(`PASS ${privateSite ? 'members-only' : 'public'}: source opt-in, QR, fresh/approved/recovery, same-key naming/rebuild, pending, lost-response/storage/missing recovery, manual, invalid/expired/revoked/foreign`);
   }
+  // Username changes are off by default: hidden button, original caption, refused endpoint, no rename activity.
+  const offBase = await start(false, false);
+  const off = await contextWithIdentity(offBase, { keys, fingerprint });
+  await off.page.goto(offBase + '/account/key/');
+  await off.page.waitForFunction(() => document.querySelector('[data-action=generate-browser-key]').textContent === 'Re-setup / change name');
+  assert.equal(await off.page.locator('[data-action=rename-profile]').isVisible(), false);
+  const refused = await off.page.evaluate(async fingerprintValue => (await fetch('/api/prepare_profile_name', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ author_identity_id: 'openpgp:' + fingerprintValue.toLowerCase(), username: 'blocked-name' }) })).json(), fingerprint);
+  assert.match(refused.error, /Username changes are disabled/);
+  await off.page.goto(offBase + '/activity/?view=all');
+  assert.doesNotMatch(await off.page.locator('main').innerText(), /Changed username from/);
+  console.log('PASS username changes disabled: hidden button, original caption, refused endpoint, no rename activity');
 } catch (error) {
   console.error('Root:', root, 'Page:', lastPage?.url());
   if (lastPage) console.error((await lastPage.locator('body').innerText()).slice(0, 2400));

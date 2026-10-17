@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
@@ -33,7 +34,8 @@ final class WriteApiSmokeTest
         $key = $this->createSigningKey('temporary-reader');
         $other = $this->createSigningKey('other-reader');
         try {
-            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
             $bootstrap = $root . '/records/identity/identity-' . str_replace(':', '-', $identity) . '.txt';
             $before = file_get_contents($bootstrap);
@@ -70,7 +72,7 @@ final class WriteApiSmokeTest
             $pdo->exec("UPDATE metadata SET value = '19' WHERE key = 'schema_version'");
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
             assertStringContains('chosen-name', $this->renderMethod($app, 'GET', '/profiles/openpgp-' . substr($identity, 8)));
-            assertSame('20', $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
             $writer->linkIdentity(['public_key' => $other['public_key']]);
             assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
             $again = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'final-name']);
@@ -91,6 +93,169 @@ final class WriteApiSmokeTest
         } finally {
             $this->deleteTree($key['home']);
             $this->deleteTree($other['home']);
+        }
+    }
+
+    public function testUsernameChangesAreDisabledByDefaultAndGateBothEndpoints(): void
+    {
+        assertSame(false, (new FeatureFlagEvaluator())->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED));
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('gated-reader');
+        try {
+            $enabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $disabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false));
+            $identity = $enabled->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            try {
+                $disabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'blocked']);
+                throw new RuntimeException('Expected prepare rejection while disabled.');
+            } catch (RuntimeException $e) { assertStringContains('Username changes are disabled', $e->getMessage()); }
+            $prepared = $enabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'late-toggle']);
+            $signed = $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            try {
+                $disabled->finalizePreparedProfileName($signed);
+                throw new RuntimeException('Expected finalize rejection while disabled.');
+            } catch (RuntimeException $e) { assertStringContains('Username changes are disabled', $e->getMessage()); }
+            assertSame(false, is_file($root . '/' . $prepared['record_path']));
+            assertSame('late-toggle', $enabled->finalizePreparedProfileName($signed)['username']);
+        } finally {
+            $this->deleteTree($key['home']);
+        }
+    }
+
+    private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
+    {
+        return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);
+    }
+
+    public function testVerifiedProfileNamesWriteOneOrderedActivityRowEach(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('activity-reader');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $paths = [];
+            foreach (['first-name', 'second-name', 'forged-name'] as $name) {
+                $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => $name]);
+                $signature = $this->signCanonicalRecord($key['home'], $prepared['canonical_record']);
+                $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity, 'detached_signature' => $signature]);
+                $paths[$name] = $prepared['record_path'];
+            }
+            file_put_contents($root . '/' . $paths['forged-name'] . '.asc', 'forged');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+
+            $pdo = (new ReadModelConnection($db))->open();
+            $rows = $pdo->query("SELECT kind, record_family, action_key, post_id, thread_id, label, board_tags_json, author_identity_id, source_path FROM activity WHERE record_family = 'profile_name' ORDER BY created_at, action_key")->fetchAll(PDO::FETCH_ASSOC);
+            assertSame(2, count($rows));
+            assertSame('profile_name_change', $rows[0]['kind']);
+            assertSame($paths['first-name'], $rows[0]['action_key']);
+            assertSame($paths['first-name'], $rows[0]['source_path']);
+            assertSame('Changed username from activity-reader to first-name', $rows[0]['label']);
+            assertSame('Changed username from first-name to second-name', $rows[1]['label']);
+            assertSame(null, $rows[0]['post_id']);
+            assertSame(null, $rows[0]['thread_id']);
+            assertSame($identity, $rows[0]['author_identity_id']);
+            assertSame('["identity","profile-name"]', $rows[0]['board_tags_json']);
+            assertSame('second-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+        } finally {
+            $this->deleteTree($key['home']);
+        }
+    }
+
+    public function testProfileNameActivityIsListedOnlyWhileUsernameChangesAreEnabled(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('visible-reader');
+        $previousFlag = getenv('FORUM_USERNAME_CHANGES_ENABLED');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'shown-name']);
+            $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])]);
+
+            $service = static fn (bool $show): ActivityService => new ActivityService(
+                static fn (): PDO => (new ReadModelConnection($db))->open(), $root, $db, $show);
+            $ids = static fn (ActivityService $svc, string $view): array => array_column(
+                array_filter($svc->fetchActivity($view, 'date', 'desc')['items'], static fn (array $i): bool => $i['record_family'] === 'profile_name'),
+                'id');
+
+            foreach (['all', 'identity'] as $view) {
+                assertSame(1, count($ids($service(true), $view)));
+                assertSame([], $ids($service(false), $view));
+            }
+            assertSame([], $ids($service(true), 'content'));
+            assertSame(
+                $service(false)->countActivityViewTotal('all') + 1,
+                $service(true)->countActivityViewTotal('all')
+            );
+            $id = (int) $ids($service(true), 'all')[0];
+            assertSame('Changed username from visible-reader to shown-name', $service(true)->fetchActivityDetail($id)['label']);
+            assertSame(null, $service(false)->fetchActivityDetail($id));
+
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=false');
+            assertStringNotContains('Changed username from', $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/activity/?view=all'));
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=true');
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/activity/?view=all');
+            assertStringContains('Changed username from visible-reader to shown-name', $page);
+            assertStringContains('href="/profiles/openpgp-' . substr($identity, 8) . '"', $page);
+            assertStringNotContains('href="/posts/"', $page);
+            assertStringContains('profile name record', $page);
+            assertStringContains('detached signature', $page);
+            assertStringContains('Signer:' . "\n" . '                  ' . $identity, $page);
+            assertStringContains('href="/source/current/records/public-keys/openpgp-', $page);
+        } finally {
+            putenv($previousFlag === false ? 'FORUM_USERNAME_CHANGES_ENABLED' : 'FORUM_USERNAME_CHANGES_ENABLED=' . $previousFlag);
+            $this->deleteTree($key['home']);
+        }
+    }
+
+    public function testProfileNameActivityReachesFeedsForteAndPendingDirectoryOnlyWhileEnabled(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('pending-reader');
+        $previousFlag = getenv('FORUM_USERNAME_CHANGES_ENABLED');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'pending-renamed']);
+            $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])]);
+            $profileHref = '/profiles/openpgp-' . substr($identity, 8);
+            $label = 'Changed username from pending-reader to pending-renamed';
+            $pdo = (new ReadModelConnection($db))->open();
+
+            $latest = static fn (bool $include): ?string => array_values(array_filter(
+                ProfileRepository::pendingDirectoryProfiles($pdo, $include),
+                static fn (array $row): bool => $row['username'] === 'pending-renamed'
+            ))[0]['latest_activity_label'] ?? null;
+            assertSame(false, $latest(false) === $label);
+            assertSame($label, $latest(true));
+            assertSame(false, $latest(false) === $latest(true));
+
+            $render = fn (string $path): string => $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $path);
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=false');
+            foreach (['/activity/?view=all&format=rss', '/forte/activity/?view=all'] as $path) {
+                assertStringNotContains($label, $render($path));
+            }
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=true');
+            $rss = $render('/activity/?view=all&format=rss');
+            assertStringContains($label, $rss);
+            assertStringContains($profileHref, $rss);
+            assertStringNotContains('/posts/<', $rss);
+            $forte = $render('/forte/activity/?view=all');
+            assertStringContains($label, $forte);
+            assertStringContains('href="' . $profileHref . '"', $forte);
+            assertStringNotContains('data-post-id="pending-renamed"', $forte);
+        } finally {
+            putenv($previousFlag === false ? 'FORUM_USERNAME_CHANGES_ENABLED' : 'FORUM_USERNAME_CHANGES_ENABLED=' . $previousFlag);
+            $this->deleteTree($key['home']);
         }
     }
 
@@ -6667,11 +6832,20 @@ NODE;
         $home = sys_get_temp_dir() . '/forum-rewrite-approval-gpg-' . bin2hex(random_bytes(6));
         mkdir($home, 0700, true);
         $homedir = escapeshellarg($home);
-        $this->runCommand(
-            $home,
-            'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir '
-            . $homedir . ' --quick-generate-key ' . escapeshellarg($username) . ' ed25519 sign 0'
-        );
+        $generate = 'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir '
+            . $homedir . ' --quick-generate-key ' . escapeshellarg($username) . ' ed25519 sign 0';
+        try {
+            $this->runCommand($home, $generate);
+        } catch (RuntimeException $e) {
+            // gpg occasionally rejects a key stamped one second ahead of its own clock; a second attempt succeeds.
+            if (!str_contains($e->getMessage(), 'Time conflict')) {
+                throw $e;
+            }
+            sleep(1);
+            $this->deleteTree($home);
+            mkdir($home, 0700, true);
+            $this->runCommand($home, $generate);
+        }
 
         return [
             'home' => $home,

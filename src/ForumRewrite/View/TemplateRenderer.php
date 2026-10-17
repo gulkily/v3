@@ -459,6 +459,7 @@ final class TemplateRenderer
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
             'imageContentEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
+            'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);

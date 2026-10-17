@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ProfileRepository;
 
@@ -183,7 +184,10 @@ final class ProfilePageController
         return $this->routeServices->renderPageTemplate(
             'users_pending.php',
             [
-                'profiles' => ProfileRepository::pendingDirectoryProfiles($this->routeServices->pdo()),
+                'profiles' => ProfileRepository::pendingDirectoryProfiles(
+                    $this->routeServices->pdo(),
+                    $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
+                ),
             ],
             'Users Awaiting Approval',
             'profiles',

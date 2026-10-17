@@ -311,7 +311,7 @@ Later approval changes and rebuilds preserve the accepted decision. Retain the
 canonical repository's local Git history in backups and deployment transfers;
 a records-only copy cannot establish local operator acceptance or attribution.
 
-## Profile name projections (schema version 20)
+## Profile name projections (schema versions 20–21)
 
 Signed immutable `records/profile-names/profile-name-<32 hex>.txt` updates
 override bootstrap usernames without changing keys, profile slugs or approvals.
@@ -320,4 +320,14 @@ The greatest `(Created-At, Record-ID)` determines the current name; writes use
 strictly increasing timestamps per identity. Existing profile, username-route,
 author and activity fields carry the effective name; no new tables are required.
 Name writes rebuild the derived model and invalidate generated presentation.
+
+Schema version 21 adds one `activity` row per verified name update: kind
+`profile_name_change`, `record_family` `profile_name`, label
+`Changed username from <previous> to <new>` (the previous name is the prior
+verified update, or the bootstrap username), tags `["identity","profile-name"]`,
+no post or thread, the record as `source_path` and its commit as
+`source_commit_sha`. Rows are always indexed; Activity lists, counts, details,
+feeds and the pending-users latest-activity column show them only while the
+`FORUM_USERNAME_CHANGES_ENABLED` flag is on. They appear in the `all` and
+`identity` views.
 Unsigned/malformed updates are ignored. Existing duplicate-name route policy remains.

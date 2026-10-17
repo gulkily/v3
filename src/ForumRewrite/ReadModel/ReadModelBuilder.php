@@ -33,6 +33,8 @@ final class ReadModelBuilder
     private array $threadLabelActivityEvents = [];
     /** @var array<int, array{created_at:string,post_id:string,thread_id:string,author_identity_id:?string,tags:list<string>,board_tags_json:string,source_path:string,source_commit_sha:?string}> */
     private array $postReactionActivityEvents = [];
+    /** @var list<array<string, string|null>> */
+    private array $profileNameActivityEvents = [];
     /** @var array<string, ?string> */
     private array $sourceCommitShaByPath = [];
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
@@ -65,6 +67,7 @@ final class ReadModelBuilder
         $this->invalidThreadSubjectRecordCount = 0;
         $this->threadLabelActivityEvents = [];
         $this->postReactionActivityEvents = [];
+        $this->profileNameActivityEvents = [];
         $this->sourceCommitShaByPath = [];
         $pdo->beginTransaction();
         try {
@@ -640,7 +643,7 @@ final class ReadModelBuilder
         );
 
         $paths = $this->findRelativePaths('records/identity');
-        $names = ProfileNames::latest($this->repositoryRoot);
+        $nameHistory = ProfileNames::history($this->repositoryRoot);
         $profiles = [];
         $claimedUsernameTokens = [];
         foreach ($this->progressItems('parsing_identity_records', $paths) as $index => $relativePath) {
@@ -651,7 +654,21 @@ final class ReadModelBuilder
             }
 
             $publicKey = $this->canonicalRepository->loadPublicKey($publicKeyPath);
-            $username = $names[$identity->identityId]['Username'] ?? ($identity->username !== '' ? $identity->username : 'guest');
+            $bootstrapUsername = $identity->username !== '' ? $identity->username : 'guest';
+            $previousUsername = $bootstrapUsername;
+            foreach ($nameHistory[$identity->identityId] ?? [] as $nameRecord) {
+                $namePath = 'records/profile-names/' . $nameRecord['Record-ID'] . '.txt';
+                $this->profileNameActivityEvents[] = [
+                    'created_at' => $nameRecord['Created-At'],
+                    'identity_id' => $identity->identityId,
+                    'previous_username' => $previousUsername,
+                    'username' => $nameRecord['Username'],
+                    'source_path' => $namePath,
+                    'source_commit_sha' => $this->sourceCommitShaForPath($namePath),
+                ];
+                $previousUsername = $nameRecord['Username'];
+            }
+            $username = $previousUsername;
             $usernameToken = strtolower($username);
             $fallbackLabel = $username . '-' . substr(strtolower($identity->signerFingerprint), 0, 8);
             $profile = [
@@ -844,6 +861,27 @@ final class ReadModelBuilder
                 'label' => 'Tags added: ' . implode(', ', $event['tags']),
                 'board_tags_json' => $event['board_tags_json'],
                 'author_identity_id' => $event['author_identity_id'],
+                'author_profile_slug' => $author['author_profile_slug'],
+                'author_username_token' => $author['author_username_token'],
+                'author_label' => $author['author_label'],
+                'author_is_approved' => $author['author_is_approved'],
+                'source_path' => $event['source_path'],
+                'source_commit_sha' => $event['source_commit_sha'],
+            ]);
+        }
+
+        foreach ($this->progressItems('writing_profile_name_activity', $this->profileNameActivityEvents) as $event) {
+            $author = $this->resolveActivityAuthor($pdo, $event['identity_id']);
+            $stmt->execute([
+                'created_at' => $event['created_at'],
+                'kind' => 'profile_name_change',
+                'record_family' => 'profile_name',
+                'action_key' => $event['source_path'],
+                'post_id' => null,
+                'thread_id' => null,
+                'label' => 'Changed username from ' . $event['previous_username'] . ' to ' . $event['username'],
+                'board_tags_json' => '["identity","profile-name"]',
+                'author_identity_id' => $event['identity_id'],
                 'author_profile_slug' => $author['author_profile_slug'],
                 'author_username_token' => $author['author_username_token'],
                 'author_label' => $author['author_label'],
