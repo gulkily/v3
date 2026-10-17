@@ -17,3 +17,9 @@ Approval: user authorized the original Step 3 plan and linked protocol. Budget r
 - Changes: Added optional `SCRIPTURE_RESPONSE_MODEL`; scripture and Expand pass a narrowly validated writer override to the text provider. Shared writer and structured moderation payloads remain unchanged. Sol allows explicit low reasoning only. CLI documents inactive routing.
 - Verification: `php tests/run.php AgentResponseGeneratorTest OpenAiCompatibleStructuredChatProviderTest` — 18 passed, including override isolation, unsupported settings and completion exhaustion. `git diff --check` passed. Official Sol model page rechecked for Chat Completions and low effort support.
 - Notes: No shared private configuration changes or paid requests.
+
+## Stage 3 - Original-input publication and recovery
+
+- Changes: Bind discussion reader wording to the normalized original post for initial generation, Expand, and persisted-draft publication. Normalize discussion text through the existing text policy.
+- Verification: `php tests/run.php AgentResponseGeneratorTest WriteApiSmokeTest` — 177 passed, including source/translation limitations, stored-draft retry, permissions, duplicate protection, source races and offline results. `node tests/browser/scripture_expansion.cjs` passed all four thread/post desktop/mobile cases and offline snapshot checks. `git diff --check` passed.
+- Notes: Earlier agent history cannot establish reader origin. No schema, shared configuration or history changes; no paid calls.
