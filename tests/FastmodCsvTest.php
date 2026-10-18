@@ -10,6 +10,22 @@ use ForumRewrite\Llm\TextChatProvider;
 
 final class FastmodCsvTest
 {
+    public function testScorerRejectsEmptyRubricSetBeforeCallingProvider(): void
+    {
+        $provider = new class implements TextChatProvider {
+            public function completeTextChat(array $messages, array $options = []): array
+            {
+                throw new LogicException('Provider must not be called.');
+            }
+        };
+        try {
+            new FastPostScorer($provider, 'prompt', []);
+            throw new LogicException('Empty rubric set accepted.');
+        } catch (InvalidArgumentException) {
+            assertSame(true, true);
+        }
+    }
+
     public function testOneCallReturnsIdentifiedScoresAndNoSyntheticModerationValue(): void
     {
         $provider = new class implements TextChatProvider {

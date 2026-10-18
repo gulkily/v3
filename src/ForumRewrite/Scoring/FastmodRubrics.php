@@ -28,7 +28,9 @@ final class FastmodRubrics
      */
     public function compose(array $enabledIds): array
     {
-        if ($enabledIds === [] || count(array_unique($enabledIds)) !== count($enabledIds)) {
+        if (!array_is_list($enabledIds) || $enabledIds === []
+            || array_filter($enabledIds, static fn ($id) => !is_string($id)) !== []
+            || count(array_unique($enabledIds)) !== count($enabledIds)) {
             throw new \InvalidArgumentException('Select at least one distinct Fastmod rubric.');
         }
         $catalog = $this->catalog();

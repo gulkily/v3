@@ -52,6 +52,7 @@ final class SqliteFastScoreStore implements FastScoreStore
         }
         if (isset($result['scores']) && ($result['status'] ?? '') === 'scored') {
             FastScoreResult::scoredSet($result['scores'], (string) ($result['source'] ?? 'llm'));
+            $result['probability'] = $result['scores']['moderation'] ?? null;
         }
         $existing = $this->find($postId, $contentHash, $rubricRevision);
         $row = [
@@ -626,7 +627,7 @@ final class SqliteFastScoreStore implements FastScoreStore
         $stmt->bindValue(':limit', max(1, min(200, $limit)), PDO::PARAM_INT);
         $stmt->execute();
         return array_map(static function (array $row): array {
-            $row['legacy'] = $row['scores_json'] === null;
+            $row['legacy'] = $row['scores_json'] === null && ($row['score_status'] ?? '') === 'scored';
             $row['scores'] = $row['scores_json'] === null
                 ? ($row['probability'] === null ? [] : ['moderation' => (float) $row['probability']])
                 : json_decode($row['scores_json'], true, 512, JSON_THROW_ON_ERROR);
@@ -776,8 +777,9 @@ final class SqliteFastScoreStore implements FastScoreStore
     private function hydrate(array $row): array
     {
         $signals = json_decode((string) $row['signals_json'], true);
-        $legacy = ($row['scores_json'] ?? null) === null;
-        $scores = $legacy ? ($row['probability'] === null ? [] : ['moderation' => (float) $row['probability']])
+        $hasScoreSet = ($row['scores_json'] ?? null) !== null;
+        $legacy = !$hasScoreSet && $row['status'] === 'scored';
+        $scores = !$hasScoreSet ? ($row['probability'] === null ? [] : ['moderation' => (float) $row['probability']])
             : json_decode((string) $row['scores_json'], true, 512, JSON_THROW_ON_ERROR);
         return ['scores' => $scores, 'legacy' => $legacy, 'post_id' => (string) $row['post_id'], 'content_hash' => (string) $row['content_hash'], 'rubric_revision' => (string) $row['rubric_revision'], 'status' => (string) $row['status'], 'probability' => $row['probability'] === null ? null : (float) $row['probability'], 'source' => (string) $row['source'], 'signals' => is_array($signals) ? $signals : [], 'failure_code' => $row['failure_code'] === null ? null : (string) $row['failure_code'], 'failure_message' => $row['failure_message'] === null ? null : (string) $row['failure_message'], 'created_at' => (string) $row['created_at'], 'updated_at' => (string) $row['updated_at']];
     }

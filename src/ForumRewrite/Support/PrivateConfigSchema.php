@@ -34,7 +34,7 @@ final class PrivateConfigSchema
             'FAST_SCORING_LLM_MODEL' => self::definition('', 'string', template: true),
             'FAST_SCORING_LLM_TIMEOUT_SECONDS' => self::definition(null, 'integer'),
             'FAST_SCORING_LLM_EXTRA_HEADERS' => self::definition(null, 'map'),
-            'FAST_SCORING_PROMPT_PATH' => self::definition('prompts/fast_post_scoring_system.txt', 'path', template: true),
+            'FAST_SCORING_PROMPT_PATH' => self::definition('prompts/fastmod_introduction.txt', 'path', template: true),
             'FAST_SCORING_DATABASE_PATH' => self::definition('', 'path', template: true),
             'FAST_SCORING_INPUT_USD_PER_MILLION' => self::definition(null, 'number'),
             'FAST_SCORING_OUTPUT_USD_PER_MILLION' => self::definition(null, 'number'),

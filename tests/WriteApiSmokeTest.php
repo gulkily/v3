@@ -53,6 +53,13 @@ final class WriteApiSmokeTest
             $tampered = $input;
             $tampered['canonical_record'] .= 'tampered';
             assertThrowsRuntime(fn () => $writer->changeFastmodRubrics($tampered, $identity, $appRoot, true), 'Prepared Fastmod change is invalid or expired.');
+            $unsigned = $input;
+            $unsigned['detached_signature'] = '';
+            $rejected = false;
+            try { $writer->changeFastmodRubrics($unsigned, $identity, $appRoot, true); }
+            catch (RuntimeException) { $rejected = true; }
+            assertSame(true, $rejected);
+            assertSame(false, is_file($appRoot . '/state/private/fastmod_rubrics.json'));
             $result = $writer->changeFastmodRubrics($input, $identity, $appRoot, true);
             assertSame(['meta'], $result['rubrics']);
             assertSame('["meta"]' . "\n", file_get_contents($appRoot . '/state/private/fastmod_rubrics.json'));

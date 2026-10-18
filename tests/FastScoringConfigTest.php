@@ -8,6 +8,12 @@ use ForumRewrite\Scoring\FastScoringConfig;
 
 final class FastScoringConfigTest
 {
+    public function testLegacyGeneratedPromptPathUsesCsvIntroduction(): void
+    {
+        $config = FastScoringConfig::fromPrivateConfig(['FAST_SCORING_PROMPT_PATH' => 'prompts/fast_post_scoring_system.txt']);
+        assertSame('prompts/fastmod_introduction.txt', $config->promptPath);
+    }
+
     public function testDefaultsToDisabledAndUsesGeneralLlmValuesAsFallback(): void
     {
         $config = FastScoringConfig::fromPrivateConfig([

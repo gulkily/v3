@@ -183,10 +183,6 @@ final class RouteServices
         );
     }
 
-    /**
-     * @param \Closure(string): (array<string, mixed>|null) $fetchPost
-     * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
-     */
     public function fastmodSettingsView(): array
     {
         $config = FastScoringConfig::fromPrivateConfig(PrivateConfig::load($this->projectRoot));
@@ -199,6 +195,10 @@ final class RouteServices
         return $this->writer()->changeFastmodRubrics($input, $operator, $this->projectRoot, $finalize);
     }
 
+    /**
+     * @param \Closure(string): (array<string, mixed>|null) $fetchPost
+     * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
+     */
     public function fastScoreWorkflowService(
         \Closure $fetchPost,
         \Closure $llmExchangeRecorderFactory,

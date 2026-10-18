@@ -21,7 +21,7 @@ final class FastmodRubricsTest
 
     public function testEmptyUnknownAndDuplicateSelectionsFail(): void
     {
-        foreach ([[], ['missing'], ['meta', 'meta']] as $ids) {
+        foreach ([[], ['missing'], ['meta', 'meta'], [['nested']]] as $ids) {
             try {
                 (new FastmodRubrics(dirname(__DIR__)))->compose($ids);
                 throw new RuntimeException('Invalid selection accepted.');

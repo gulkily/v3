@@ -24,7 +24,7 @@ final class FastScoreResult
 
     /**
      * @param list<string> $signals
-     * @return array{status:string, probability:?float, source:string, signals:list<string>}
+     * @return array{status:string, probability:?float, source:string, signals:list<string>, scores?:array<string,float>, rubric_revision?:?string, legacy?:bool}
      */
     public static function scored(float $probability, string $source, array $signals = []): array
     {
@@ -33,7 +33,7 @@ final class FastScoreResult
 
     /**
      * @param list<string> $signals
-     * @return array{status:string, probability:?float, source:string, signals:list<string>}
+     * @return array{status:string, probability:?float, source:string, signals:list<string>, scores?:array<string,float>, rubric_revision?:?string, legacy?:bool}
      */
     public static function notScored(string $status, array $signals = [], ?string $failureCode = null): array
     {
@@ -47,7 +47,7 @@ final class FastScoreResult
 
     /**
      * @param list<string> $signals
-     * @return array{status:string, probability:?float, source:string, signals:list<string>}
+     * @return array{status:string, probability:?float, source:string, signals:list<string>, scores?:array<string,float>, rubric_revision?:?string, legacy?:bool}
      */
     public static function excluded(array $signals): array
     {
@@ -56,7 +56,7 @@ final class FastScoreResult
 
     /**
      * @param list<string> $signals
-     * @return array{status:string, probability:?float, source:string, signals:list<string>}
+     * @return array{status:string, probability:?float, source:string, signals:list<string>, scores?:array<string,float>, rubric_revision?:?string, legacy?:bool}
      */
     private static function result(string $status, ?float $probability, string $source, array $signals): array
     {

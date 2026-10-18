@@ -70,9 +70,4 @@ final class FastScoreWorkflowFactory
             $exchangeRecorder,
         );
     }
-
-    private static function promptPath(string $projectRoot, string $path): string
-    {
-        return str_starts_with($path, '/') ? $path : rtrim($projectRoot, '/') . '/' . $path;
-    }
 }

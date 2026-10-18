@@ -15,6 +15,11 @@ final class FastPostScorer implements FastScoreProvider
         private readonly array $rubricIds = ['moderation'],
         private readonly ?string $rubricRevision = null,
     ) {
+        if ($rubricIds === [] || !array_is_list($rubricIds)
+            || array_filter($rubricIds, static fn ($id) => !is_string($id) || !preg_match('/^[a-z][a-z0-9_]*$/D', $id)) !== []
+            || count(array_unique($rubricIds)) !== count($rubricIds)) {
+            throw new \InvalidArgumentException('Fastmod requires distinct rubric identities.');
+        }
     }
 
     public function rubricRevision(): ?string
@@ -24,7 +29,7 @@ final class FastPostScorer implements FastScoreProvider
 
     /**
      * @param array<string, mixed> $context
-     * @return array{status:string, probability:?float, source:string, signals:list<string>}
+     * @return array{status:string, probability:?float, source:string, signals:list<string>, scores?:array<string,float>, rubric_revision?:?string, legacy?:bool}
      */
     public function score(array $context): array
     {

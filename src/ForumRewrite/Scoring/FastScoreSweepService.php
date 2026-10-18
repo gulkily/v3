@@ -122,7 +122,7 @@ final class FastScoreSweepService
                 if (isset($work['backfill_batch_id'])) {
                     $backfillExcluded++;
                 }
-            } elseif (str_ends_with((string) $result['status'], '_error')) {
+            } elseif (!in_array($result['status'], ['disabled', 'excluded'], true)) {
                 $summary['failed']++;
             }
             $this->report($progress, 'completed', $summary, $work, [

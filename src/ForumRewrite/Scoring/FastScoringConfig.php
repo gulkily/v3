@@ -35,10 +35,17 @@ final class FastScoringConfig
                 $fallback->postAnalysisPromptPath,
                 $fallback->extraHeaders,
             ),
-            self::stringValue($config['FAST_SCORING_PROMPT_PATH'] ?? 'prompts/fastmod_introduction.txt'),
+            self::introductionPath($config['FAST_SCORING_PROMPT_PATH'] ?? 'prompts/fastmod_introduction.txt'),
             self::booleanValue($config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'] ?? false),
             self::rubricIds($config['FAST_SCORING_RUBRICS'] ?? ['moderation', 'meta']),
         );
+    }
+
+    private static function introductionPath(mixed $value): string
+    {
+        $path = self::stringValue($value);
+        // Generated configurations previously selected the monolithic JSON rubric.
+        return $path === 'prompts/fast_post_scoring_system.txt' ? 'prompts/fastmod_introduction.txt' : $path;
     }
 
     private static function rubricIds(mixed $value): array
