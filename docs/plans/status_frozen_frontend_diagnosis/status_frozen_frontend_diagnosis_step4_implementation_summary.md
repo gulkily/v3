@@ -39,6 +39,17 @@ Branch: `feature/status-frozen-frontend-diagnosis`. Planning commit: d2f51687.
   - The read-only fallback from the plan was not needed; the probe changed no data in the fixture test. A real writer may wait a few milliseconds if the probe's brief reserved lock lands first; to be confirmed in Stage 6.
   - Rebuild-aware wording belongs to Stage 4 (it combines this with the rebuild task state).
 
+## Stage 4 - Indicator logic
+- Changes:
+  - New `src/ForumRewrite/Support/HealthIndicators.php`: `fromStatus(array $status)` returns rows (level OK/WARN/FAIL, label, detail, fix) for Frontend, Read model, Stale marker, Shared lock, Read-model DB, Queue DB, Rebuild task, Task executor, Task queue, Failed tasks; `fixes()` collects every non-OK fix.
+  - Executor and backlog warn only when tasks are queued and the executor is not fresh/running (idle executor with empty queue is OK). Locked-database and shared-lock fixes say whether a rebuild is running ("wait") or not ("a process may be stuck").
+  - Frontend row omitted when not checked; missing read-model DB is left to the Read model row; missing queue DB is OK ("not created yet").
+  - New `tests/HealthIndicatorsTest.php` (registered): healthy, pasted case, idle executor, fresh executor with backlog, frontend verdicts, rebuild-aware lock text, shared lock/stale marker/failed tasks, unavailable read model.
+- Verification:
+  - `php tests/run.php HealthIndicatorsTest`: passed (8 run, 8 passed).
+- Notes:
+  - Not wired into output yet (Stage 5).
+
 ## Enhancement Requests
 - Request: Next action lists every failing indicator; aligned plain-word rows. / Disposition: in scope (Stages 4-5). / Approval: approved. / Outcome: pending.
 - Request: Detect database locks. / Disposition: in scope (Stage 3). / Approval: approved. / Outcome: pending.
