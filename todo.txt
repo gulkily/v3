@@ -155,3 +155,11 @@ example: wsl@Lenovo:~/agent/v3-codex-2$ ./v3 import
 
 we need a repository browser
 	this way we can generate a visible div for any response to a meta request
+
+Explain feature for page help
+	add an on-page "Explain" control to reveal contextual explanations
+		keep ordinary task flows concise, with details available on demand
+	edit existing explanations for conciseness and clarity before exposing them
+		cover policy, account/key behavior, storage, and relevant edge cases
+	use docs/plans/ui_copy_audit_checklist.md as the cleanup inventory
+	keep essential warnings and recovery actions visible when needed
