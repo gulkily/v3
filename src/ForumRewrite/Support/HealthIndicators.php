@@ -34,8 +34,8 @@ final class HealthIndicators
 
         $indicators[] = match ($readModel['status']) {
             'ready' => self::row(self::OK, 'Read model', 'ready, schema ' . $readModel['schema_version'] . '/' . $readModel['expected_schema_version']),
-            'unavailable' => self::row(self::FAIL, 'Read model', 'unavailable', 'Read model: run ./v3 task-queue enqueue-rebuild or the manual rebuild in the recovery runbook.'),
-            default => self::row(self::WARN, 'Read model', 'stale', 'Read model: run ./v3 task-queue enqueue-rebuild or the manual rebuild in the recovery runbook.'),
+            'unavailable' => self::row(self::FAIL, 'Read model', 'unavailable', 'Read model: Run ./v3 task-queue enqueue-rebuild or the manual rebuild command in the recovery runbook.'),
+            default => self::row(self::WARN, 'Read model', 'stale', 'Read model: Run ./v3 task-queue enqueue-rebuild or the manual rebuild command in the recovery runbook.'),
         };
 
         $indicators[] = $readModel['stale_marker'] === 'present'
@@ -66,9 +66,9 @@ final class HealthIndicators
         }
 
         $indicators[] = match ($queue['rebuild_task_status']) {
-            'running' => self::row(self::WARN, 'Rebuild task', 'running', 'Rebuild task: wait for the rebuild, then rerun ./v3 status.'),
-            'queued' => self::row(self::WARN, 'Rebuild task', 'queued', 'Rebuild task: ensure the task worker runs, then rerun ./v3 status.'),
-            'failed' => self::row(self::FAIL, 'Rebuild task', 'failed', 'Rebuild task: inspect ./v3 task-queue status and recover the failed rebuild.'),
+            'running' => self::row(self::WARN, 'Rebuild task', 'running', 'Rebuild task: A queued-worker rebuild is running; wait, then rerun ./v3 status.'),
+            'queued' => self::row(self::WARN, 'Rebuild task', 'queued', 'Rebuild task: A rebuild is queued; ensure the task worker runs, then rerun ./v3 status.'),
+            'failed' => self::row(self::FAIL, 'Rebuild task', 'failed', 'Rebuild task: Inspect ./v3 task-queue status and recover the failed rebuild.'),
             'unavailable' => self::row(self::FAIL, 'Rebuild task', 'unavailable', 'Rebuild task: task queue database cannot be read; see ./v3 task-queue status.'),
             default => self::row(self::OK, 'Rebuild task', 'none pending'),
         };

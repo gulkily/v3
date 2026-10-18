@@ -50,6 +50,18 @@ Branch: `feature/status-frozen-frontend-diagnosis`. Planning commit: d2f51687.
 - Notes:
   - Not wired into output yet (Stage 5).
 
+## Stage 5 - Output
+- Changes:
+  - `scripts/status.php`: prints an aligned `Health summary` (plain `OK`/`WARN`/`FAIL`, no brackets; level column 6 wide, label column padded to the longest label) before the unchanged existing lines; Next action lists every non-OK fix, one per line, and keeps today's single-line message when all OK.
+  - Fix text reuses the existing sentences ("Run ./v3 task-queue enqueue-rebuild...", "A rebuild is queued...", "A queued-worker rebuild is running...") so existing assertions pass unchanged.
+  - `tests/StatusCommandTest.php`: added `testStatusPrintsAlignedHealthSummaryAndEveryFix` (alignment, no brackets, FAIL frontend via `--url`, multi-line fixes, existing lines intact).
+- Verification:
+  - `php tests/run.php StatusCommandTest HealthIndicatorsTest`: passed. Initially two existing StatusCommandTest assertions failed on reworded Next action text; fixed by reusing the original wording (assertions unchanged).
+  - `php tests/run.php TerminalOperatorUiCommandTest TerminalOperatorUiDashboardTest OperatorStatusCollectorTest HealthIndicatorsTest DatabaseLockProbeTest FrontendProbeTest`: passed (27 run, 27 passed).
+  - Manual `./v3 status` on this machine (server running, 958 queued, no executor): OK for Frontend (HTTP 200), WARN for Task executor and Task queue, two Next action lines.
+- Notes:
+  - Full suite not run; focused runs only.
+
 ## Enhancement Requests
 - Request: Next action lists every failing indicator; aligned plain-word rows. / Disposition: in scope (Stages 4-5). / Approval: approved. / Outcome: pending.
 - Request: Detect database locks. / Disposition: in scope (Stage 3). / Approval: approved. / Outcome: pending.

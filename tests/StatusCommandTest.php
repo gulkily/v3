@@ -131,6 +131,47 @@ final class StatusCommandTest
         assertStringNotContains('Stack trace:', $errorMessage);
     }
 
+    public function testStatusPrintsAlignedHealthSummaryAndEveryFix(): void
+    {
+        $directory = $this->directory();
+        $databasePath = $directory . '/read-model.sqlite3';
+        $queuePath = $directory . '/queue.sqlite3';
+        try {
+            $repositoryRoot = __DIR__ . '/fixtures/parity_minimal_v1';
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+            $store->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
+
+            [$exitCode, $stdout, $stderr] = $this->runCommand(
+                dirname(__DIR__),
+                $this->statusCommandLine($databasePath, $queuePath) . ' --url=http://127.0.0.1:1',
+            );
+
+            assertSame(0, $exitCode);
+            assertSame('', $stderr);
+            assertStringContains("\nHealth summary\n", $stdout);
+            assertStringNotContains('[FAIL]', $stdout);
+            $rows = array_values(array_filter(
+                explode("\n", $stdout),
+                static fn (string $line): bool => preg_match('/^(OK|WARN|FAIL) /', $line) === 1,
+            ));
+            assertSame(true, count($rows) >= 8);
+            foreach ($rows as $row) {
+                // Level column is 6 wide and the longest label ("Read-model DB") pads detail to column 21.
+                assertSame(true, in_array(trim(substr($row, 0, 6)), ['OK', 'WARN', 'FAIL'], true));
+                assertSame('  ', substr($row, 19, 2));
+                assertSame(true, $row[21] !== ' ');
+            }
+            assertStringContains('FAIL  Frontend', $stdout);
+            assertStringContains("Next action:\n  Frontend:", $stdout);
+            assertStringContains('Task executor: start the task worker', $stdout);
+            assertStringContains('Repository: ', $stdout);
+            assertStringContains('Details: ./v3 task-queue status; ./v3 fast-score status', $stdout);
+        } finally {
+            $this->clean($directory);
+        }
+    }
+
     public function testStatusValidatesUrlOption(): void
     {
         [$helpCode, $helpOutput] = $this->runCommand(dirname(__DIR__), './v3 status --help');
