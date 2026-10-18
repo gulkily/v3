@@ -95,3 +95,25 @@ No supported findings.
 ### Uncertain assessments
 
 - `step3_development_plan_after.md`, <=1-page requirement conflicts in practice with six atomic stages each carrying six mandatory fields plus completion contract, risks, and operational boundaries. Suggest an executive overview plus bounded stage detail, or a word budget that scales with stage count. This plan preserves required reviewable content over a literal printed-page limit.
+
+## 2026-10-18 — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Completion Contract: the normal-flow boundary led to an actual Chromium check of signed operator selection, publication enqueue, production scoring/sweep, result rendering, malformed output, and explicit retry. Retain this requirement; unit-only verification would have missed the browser signing and persisted-settings wiring.
+- `RAILSPIKE.md`, stage commit cadence: the planning commit and six stage commits (plus a Stage 4 assertion correction) leave reviewable boundaries for templates, scoring/storage, worker wiring, dialog, presentation, and verification. Retain cadence; explicitly handle failed verification before stage advancement.
+- `step4_implementation_after.md`, verification and dependency limits: reporting the full-suite concurrency failure and passing isolated rerun, and distinguishing deterministic provider integration from live-model accuracy, makes the handoff assessable. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only execution rules do not apply to this application change.
+- Core read-model schema-version/rebuild requirements did not apply: migration is confined to the separate private Fastmod store. Prior private-store migration and restart preservation were verified instead.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: the Stage 4 shell batch continued to commit after two failed test assertions because the shell did not gate later commands on success. Corrected both assertions in an additional Stage 4 commit and verified them before beginning Stage 5; no commits were amended. Suggest requiring verification results be inspected in a separate tool response before executing the stage commit, rather than combining tests and commit in one shell batch. This is an execution mistake, not a reason to weaken the gate.
+- Retain the earlier Step 1 suggestion: inspect the existing evaluation/provider contracts, ask about scoring versus downstream use, and consider one shared call with modular rubric snippets before choosing comparison axes. This implementation reused an existing text provider interface; early inspection would have made the intended design more apparent.
