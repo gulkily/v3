@@ -78,7 +78,7 @@ final class WriteApiSmokeTest
             $_COOKIE = ['identity_hint' => $identity];
             $authorized = $this->renderMethod($application, 'GET', '/tools/fastmod/');
             assertStringContains('data-fastmod-dialog', $authorized);
-            assertStringContains('fastmod.js', $authorized);
+            assertStringContains('/assets/fastmod.', $authorized);
         } finally {
             $_COOKIE = $cookies;
             $_POST = $post;
