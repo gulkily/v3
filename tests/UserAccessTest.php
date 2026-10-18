@@ -29,6 +29,33 @@ final class UserAccessTest
         });
     }
 
+    public function testPendingQueuePermissionsAndExactKeyReview(): void
+    {
+        $this->fixture(function ($workspace, $root, $db): void {
+            $workspace->git($root);
+            $writer = new \ForumRewrite\Write\LocalWriteService($root, $db, $workspace->root . '/artifacts', new CanonicalRecordRepository($root));
+            $target = $writer->linkIdentity(['public_key' => file_get_contents(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc')]);
+            $pdo = new PDO('sqlite:' . $db);
+            $actor = $pdo->query('SELECT identity_id FROM profiles WHERE is_approved = 1 LIMIT 1')->fetchColumn();
+            foreach ([[], ['authenticated_identity_id' => $target['identity_id']]] as $session) {
+                $_SESSION = $session;
+                assertStringContains('Only approved users', $this->render($root, $db, '/tools/user-access/pending/'));
+                assertSame(403, http_response_code());
+            }
+            $_SESSION = ['authenticated_identity_id' => $actor];
+            assertStringContains('/tools/user-access/profiles/' . $target['profile_slug'], $this->render($root, $db, '/tools/user-access/pending/'));
+            assertSame(200, http_response_code());
+            $html = $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug']);
+            assertStringContains('data-profile-slug="' . $target['profile_slug'] . '"', $html);
+            assertStringContains('data-approval-return="tools"', $html);
+            assertStringContains($target['identity_id'], $html);
+            assertStringNotContains('Approval complete.', $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug'] . '?approval=success'));
+            $writer->approveUser(['approver_identity_id' => $actor, 'target_identity_id' => $target['identity_id'], 'target_profile_slug' => $target['profile_slug'], 'thread_id' => $target['bootstrap_thread_id'], 'parent_id' => $target['bootstrap_post_id']]);
+            assertStringContains('Approval complete.', $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug'] . '?approval=success'));
+            assertStringNotContains('data-signed-approval-form', $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug']));
+        });
+    }
+
     private function fixture(callable $test): void
     {
         $workspace = new ImportTestWorkspace();

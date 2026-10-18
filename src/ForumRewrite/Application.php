@@ -675,12 +675,21 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/user-access/pending/' || $path === '/tools/user-access/pending') {
+            $this->userAccessController()->pending($method);
+            return;
+        }
+        if ($method === 'GET' && preg_match('#^/tools/user-access/profiles/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = $this->userAccessController()->profile($matches[1], $query);
+            $this->sendHtml($html ?? $this->renderMessagePage('Not Found', 'Not Found', 'Account key not found.', 'tools'), $html === null ? 404 : 200, $this->routeServices()->noStoreHeaders());
+            return;
+        }
         if ($method === 'GET' && ($path === '/tools/user-access/' || $path === '/tools/user-access')) {
-            $this->sendHtml((new \ForumRewrite\Http\UserAccessController($this->routeServices()))->index(), 200, $this->routeServices()->noStoreHeaders());
+            $this->sendHtml($this->userAccessController()->index(), 200, $this->routeServices()->noStoreHeaders());
             return;
         }
         if ($method === 'GET' && preg_match('#^/tools/user-access/accounts/([^/]+)/?$#', $path, $matches) === 1) {
-            $html = (new \ForumRewrite\Http\UserAccessController($this->routeServices()))->account($matches[1], $query);
+            $html = $this->userAccessController()->account($matches[1], $query);
             $this->sendHtml($html ?? $this->renderMessagePage('Not Found', 'Not Found', 'Account not found.', 'tools'), $html === null ? 404 : 200, $this->routeServices()->noStoreHeaders());
             return;
         }
@@ -1087,7 +1096,7 @@ final class Application
     /**
      * @param array<string, mixed> $profile
      */
-    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null): string
+    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false): string
     {
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $isOwnProfile = $viewerProfile !== null
@@ -1124,8 +1133,10 @@ final class Application
         }
 
         return $this->renderPageTemplate(
-            'profile.php',
+            $accessManagement ? 'user_access_profile.php' : 'profile.php',
             [
+                'accessManagement' => $accessManagement,
+                'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
                 'approvalHistory' => $this->routeServices()->approvalHistory()->forKey($profile),
                 'self' => $self,
@@ -1139,12 +1150,21 @@ final class Application
                 'canPrivateMessage' => $canPrivateMessage,
             ],
             $pageTitleLabel . ' - Profile',
-            'profiles',
+            $accessManagement ? 'tools' : 'profiles',
             $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
                     : []),
+        );
+    }
+
+    private function userAccessController(): \ForumRewrite\Http\UserAccessController
+    {
+        return new \ForumRewrite\Http\UserAccessController(
+            $this->routeServices(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            fn (array $profile, array $query): string => $this->renderProfilePage($profile, false, ($query['approval'] ?? '') === 'success' && (int) $profile['is_approved'] === 1 ? 'Approval complete.' : null, null, true),
         );
     }
 
@@ -1893,7 +1913,7 @@ final class Application
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
             '/users', '/users/', '/users/pending', '/users/pending/',
-            '/tools/user-access', '/tools/user-access/',
+            '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
@@ -1919,7 +1939,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/accounts/[^/]+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }
