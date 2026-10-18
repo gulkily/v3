@@ -17,6 +17,11 @@ final class FastPostScorer implements FastScoreProvider
     ) {
     }
 
+    public function rubricRevision(): ?string
+    {
+        return $this->rubricRevision;
+    }
+
     /**
      * @param array<string, mixed> $context
      * @return array{status:string, probability:?float, source:string, signals:list<string>}

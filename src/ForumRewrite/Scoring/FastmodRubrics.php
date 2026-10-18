@@ -6,7 +6,7 @@ namespace ForumRewrite\Scoring;
 
 final class FastmodRubrics
 {
-    public function __construct(private readonly string $projectRoot) {}
+    public function __construct(private readonly string $projectRoot, private readonly string $introductionPath = 'prompts/fastmod_introduction.txt') {}
 
     /** @return array<string, string> */
     public function catalog(): array
@@ -38,7 +38,7 @@ final class FastmodRubrics
             }
         }
         sort($enabledIds, SORT_STRING);
-        $parts = [$this->read($this->projectRoot . '/prompts/fastmod_introduction.txt')];
+        $parts = [$this->read(str_starts_with($this->introductionPath, '/') ? $this->introductionPath : $this->projectRoot . '/' . $this->introductionPath)];
         foreach ($enabledIds as $id) {
             $parts[] = $id . ': ' . $this->read($catalog[$id]);
         }

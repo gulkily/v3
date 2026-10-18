@@ -59,7 +59,10 @@ final class FastScoreSweepService
             }
             $post = $this->post($postId);
             try {
-                if ($post === null) {
+                $executionRevision = $this->workflow->rubricRevision() ?? $this->rubricRevision;
+                if ((string) $work['rubric_revision'] !== $executionRevision) {
+                    $result = FastScoreResult::excluded(['rubric_changed_before_score']);
+                } elseif ($post === null) {
                     $result = FastScoreResult::excluded(['post_unavailable']);
                 } else {
                     $context = $this->contextFactory->forPost($post);

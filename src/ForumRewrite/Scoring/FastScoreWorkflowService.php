@@ -14,6 +14,11 @@ final class FastScoreWorkflowService
     ) {
     }
 
+    public function rubricRevision(): ?string
+    {
+        return $this->scorer instanceof FastPostScorer ? $this->scorer->rubricRevision() : null;
+    }
+
     /**
      * @param array<string, mixed> $post
      * @return array{status:string, probability:?float, source:string, signals:list<string>}

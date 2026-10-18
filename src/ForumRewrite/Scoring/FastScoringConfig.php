@@ -35,7 +35,7 @@ final class FastScoringConfig
                 $fallback->postAnalysisPromptPath,
                 $fallback->extraHeaders,
             ),
-            self::stringValue($config['FAST_SCORING_PROMPT_PATH'] ?? 'prompts/fast_post_scoring_system.txt'),
+            self::stringValue($config['FAST_SCORING_PROMPT_PATH'] ?? 'prompts/fastmod_introduction.txt'),
             self::booleanValue($config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'] ?? false),
             self::rubricIds($config['FAST_SCORING_RUBRICS'] ?? ['moderation', 'meta']),
         );
