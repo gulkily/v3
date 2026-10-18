@@ -93,8 +93,6 @@ unify thread-label and post-reaction record formats
 	account for imports, activity, signature companions, and duplicate detection
 	separate follow-up to signed_thread_label_records
 
-continue testing installation on system without dependencies installed
-
 image uploading
 	remove the limitations on image size and type, and allow for more flexible image handling
 x		accept larger sources and JPEG/PNG/WebP/GIF/BMP through client preparation
@@ -146,3 +144,15 @@ composite identity (undefined term)
 		message recipient keys, approval same-username rule); approval itself
 		follows identity_id and is unchanged
 	related: docs/plans/username_change_gate_step1_solution_assessment.md
+
+we need to get rid of all or almost all commands that have a dash
+
+https://zenmemes.com/user/ilyag#account-keys
+things like this should have a score of some kind that makes it easy to spot traits
+
+every page that has data listing should have a query to reproduce that listing in the database viewer with the locally saved data and immediately run the query and make it easy to edit and modify the query
+the database interface should open in a popup dialog that is as instant as possible and retain state and preserve background page state easy to return to.
+we should update existing viewable queries, such as in /tools/codebase/ to this new mode.
+
+we need to split the users page that is membership directory from the users page that is operator/moderator cosole
+	perhaps link from one to the other
