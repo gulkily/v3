@@ -73,3 +73,24 @@ No supported findings.
 ### Uncertain assessments
 
 - Required per-stage fields still exceed a typical printed page; a stage-based length allowance would clarify the concise-plan target.
+
+## 2026-10-18T23:26:31Z — Step 4 completed
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate: branch and organization-only commit `fc11d6ee` preceded source edits; plan navigation and feature index were preserved. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol: four stage commits (`45b9bedc`, `3e15e4d3`, `0dde33b6`, `7fd59cd1`) each include their implementation-summary update and verification. Retain.
+- `step4_implementation_after.md`, final verification: distinguished the 31-test focused pass and real signed browser journeys from the 309-test smoke run; its three stale UI assertions now pass on rerun, while the unrelated missing-post_id feature-flag failure was reproduced on main ed71ae0f and recorded. Retain.
+- `RAILSPIKE.md`, Enhancement Requests: revised approval boundary kept Forte presentation and pending detail API intact; shared-history links explicitly stay within Forte. No pending scope requests remain. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only restrictions do not apply to this approved application change. Production deployment, external services, and migration are outside the approved completion contract.
+
+### Uncertain assessments
+
+- The stage-size target was satisfied as short sequential stages but no per-stage wall-clock ledger was kept; exact duration is not asserted.
