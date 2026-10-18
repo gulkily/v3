@@ -24,6 +24,7 @@ try {
         $projectRoot,
         isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null,
     );
+    $frontendUrl = (string) ($options['url'] ?? 'http://127.0.0.1:8000');
     $executionLock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock');
     if ($executionLock->isLocked()) {
         fwrite(STDOUT, "Waiting for shared lock before collecting status...\n");
@@ -37,6 +38,7 @@ try {
         $executionLock,
         new ReadModelStaleMarker($databasePath),
         static fn (): PDO => (new ReadModelConnection($databasePath))->open(),
+        $frontendUrl,
     ))->collect();
 
     printStatus($status, $repositoryRoot, $databasePath, $queuePath);

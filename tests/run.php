@@ -85,6 +85,7 @@ $testFiles = [
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/OperatorStatusCollectorTest.php',
+    __DIR__ . '/FrontendProbeTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',
     __DIR__ . '/PlatformDocsPageTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',
