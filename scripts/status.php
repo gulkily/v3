@@ -59,7 +59,7 @@ function parseStatusOptions(array $arguments): array
             continue;
         }
 
-        foreach (['repository-root', 'database-path', 'queue-database-path'] as $key) {
+        foreach (['repository-root', 'database-path', 'queue-database-path', 'url'] as $key) {
             $prefix = '--' . $key . '=';
             if (str_starts_with($argument, $prefix)) {
                 $value = substr($argument, strlen($prefix));
@@ -74,6 +74,13 @@ function parseStatusOptions(array $arguments): array
         throw new InvalidArgumentException(str_starts_with($argument, '--')
             ? 'Unknown option: ' . $argument
             : 'Unknown argument: ' . $argument);
+    }
+
+    if (isset($options['url'])) {
+        $parts = parse_url((string) $options['url']);
+        if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['http', 'https'], true) || ($parts['host'] ?? '') === '') {
+            throw new InvalidArgumentException('Option --url must be an http(s) URL such as http://127.0.0.1:8000');
+        }
     }
 
     return $options;
@@ -140,7 +147,7 @@ function printStatusUsage($stream): void
 {
     fwrite($stream, <<<'TEXT'
 Usage:
-  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
 
 TEXT);
 }

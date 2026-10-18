@@ -131,6 +131,21 @@ final class StatusCommandTest
         assertStringNotContains('Stack trace:', $errorMessage);
     }
 
+    public function testStatusValidatesUrlOption(): void
+    {
+        [$helpCode, $helpOutput] = $this->runCommand(dirname(__DIR__), './v3 status --help');
+        [$badCode, $badOutput, $badError] = $this->runCommand(dirname(__DIR__), './v3 status --url=not-a-url');
+        [$emptyCode, , $emptyError] = $this->runCommand(dirname(__DIR__), './v3 status --url=');
+
+        assertSame(0, $helpCode);
+        assertStringContains('[--url=http://127.0.0.1:8000]', $helpOutput);
+        assertSame(1, $badCode);
+        assertSame('', $badOutput);
+        assertStringContains('Option --url must be an http(s) URL', $badError);
+        assertSame(1, $emptyCode);
+        assertStringContains('Option requires a value: --url', $emptyError);
+    }
+
     private function directory(): string
     {
         $directory = sys_get_temp_dir() . '/forum-status-command-' . bin2hex(random_bytes(6));
