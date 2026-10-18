@@ -1979,7 +1979,7 @@ PHP);
             assertStringNotContains('data-agent-reply-work=', $createdThreadPage);
             assertStringContains('data-role="agent-reply-feedback"', $createdThreadPage);
             assertStringContains('Automated reply agent', $agentProfile);
-            assertStringContains('Account type:</strong> automated reply agent', $agentProfile);
+            assertStringContains('Automated reply agent', $agentProfile);
             assertStringContains('reply-agent', $users);
             assertStringContains('Automated reply agent', $users);
             assertStringContains('Author: reply-agent', $activity);
@@ -2572,10 +2572,10 @@ NODE;
         assertTrue(strlen($commitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
         assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
-        assertStringContains('Visible username:</strong> forum-user', $profile);
+        assertStringContains('<h1>forum-user</h1>', $profile);
         assertStringContains('User forum-user', $usernameRoute);
-        assertStringContains('Approved Profiles', $usernameRoute);
-        assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $usernameRoute);
+        assertStringNotContains('Approved Profiles', $usernameRoute);
+        assertStringContains('/tools/user-access/accounts/forum-user', $usernameRoute);
         assertFalse(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertFalse(is_file($artifactRoot . '/threads/root-001.html'));
         assertFalse(is_file($artifactRoot . '/posts/root-001.html'));
@@ -4550,7 +4550,7 @@ NODE;
         $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
 
         $this->assertUsedIncrementalUpdate($result);
-        assertStringContains('Visible username:</strong> forum-user', $profilePage);
+        assertStringContains('<h1>forum-user</h1>', $profilePage);
         assertStringContains('forum-user', $threadPage);
     }
 
@@ -5348,7 +5348,7 @@ NODE;
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
-        assertStringContains('Visible username:</strong> forum-user', $profilePage);
+        assertStringContains('<h1>forum-user</h1>', $profilePage);
         $this->assertReadModelHealthy($databasePath);
     }
 
@@ -5534,7 +5534,7 @@ NODE;
         assertStringContains('status=ready', $status);
         assertStringContains('User forum-user', $usernameRoute);
         assertStringContains('No approved profiles currently use this username.', $usernameRoute);
-        assertStringContains('Unapproved Profiles', $usernameRoute);
+        assertStringNotContains('Unapproved Profiles', $usernameRoute);
     }
 
     public function testUsernameRouteShowsUnapprovedProfilesWhenNoApprovedMatchesExist(): void
@@ -5554,8 +5554,8 @@ NODE;
 
         assertStringContains('User forum-user', $usernameRoute);
         assertStringContains('No approved profiles currently use this username.', $usernameRoute);
-        assertStringContains('Unapproved Profiles', $usernameRoute);
-        assertStringContains('/profiles/openpgp-', $usernameRoute);
+        assertStringNotContains('Unapproved Profiles', $usernameRoute);
+        assertStringContains('/tools/user-access/accounts/forum-user', $usernameRoute);
     }
 
     public function testApprovedUserCanApproveAnotherUserAndApprovalStaysOutOfFeeds(): void
@@ -5569,7 +5569,7 @@ NODE;
         $targetBootstrapPostId = $target['bootstrap_post_id'];
 
         $_COOKIE = ['identity_hint' => 'guest'];
-        $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
+        $profilePage = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $targetProfileSlug);
 
         $this->seedArtifacts($artifactRoot, [
             '/profiles/' . $targetProfileSlug . '.html',
@@ -5593,7 +5593,7 @@ NODE;
             '/profiles/' . rawurlencode($targetProfileSlug) . '?approval=success&post_id=' . rawurlencode($approvalPostId)
                 . '&commit=' . rawurlencode($approvalResult['commit_sha'])
         );
-        $targetProfile = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
+        $targetProfile = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $targetProfileSlug);
         $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
         $board = $this->renderMethod($application, 'GET', '/');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
@@ -5602,7 +5602,7 @@ NODE;
         $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $targetBootstrapThreadId);
         $_COOKIE = [];
 
-        foreach (['/user/alice', '/forte/user/alice', '/profiles/' . $targetProfileSlug, '/forte/profiles/' . $targetProfileSlug] as $route) {
+        foreach (['/tools/user-access/accounts/alice', '/forte/user/alice', '/tools/user-access/profiles/' . $targetProfileSlug, '/forte/profiles/' . $targetProfileSlug] as $route) {
             $historyPage = $this->renderMethod($application, 'GET', $route);
             assertStringContains(str_contains($route, '/profiles/') ? 'Key approval' : 'Account key history', $historyPage);
             assertStringContains('New account', $historyPage);
@@ -5668,10 +5668,10 @@ NODE;
         $target = $this->linkGeneratedIdentity($application, 'alice');
 
         $_COOKIE = ['identity_hint' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
-        $byIdentityId = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+        $byIdentityId = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $target['profile_slug']);
 
         $_COOKIE = ['identity_hint' => 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
-        $byProfileSlug = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+        $byProfileSlug = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $target['profile_slug']);
         $_COOKIE = [];
 
         assertStringContains('Approve new member alice', $byIdentityId);
@@ -5697,10 +5697,10 @@ NODE;
             $approvedTarget
         );
         $approvedUsers = $this->renderMethod($application, 'GET', '/users/');
-        $pendingUsers = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsers = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
 
         $_COOKIE = ['identity_hint' => 'bob'];
-        $pendingUsersForbidden = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsersForbidden = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringNotContains('/users/pending/', $approvedUsersWithoutPending);
@@ -5709,7 +5709,7 @@ NODE;
         assertStringContains('/user/alice', $approvedUsers);
         assertStringNotContains('Profile:', $approvedUsers);
         assertStringNotContains('Username route:', $approvedUsers);
-        assertStringContains('/users/pending/', $approvedUsers);
+        assertStringNotContains('/users/pending/', $approvedUsers);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('bob', $pendingUsers);
         assertStringNotContains('alice', $pendingUsers);
@@ -5739,7 +5739,7 @@ NODE;
         assertStringNotContains('Threads', $pendingUsers);
         assertStringNotContains('Posts', $pendingUsers);
         assertStringNotContains('Bootstrap thread', $pendingUsers);
-        assertStringContains('Only approved users can view the pending approval directory.', $pendingUsersForbidden);
+        assertStringContains('Only approved users can view pending approvals.', $pendingUsersForbidden);
     }
 
     public function testPendingDirectoryRendersLaterActivityWithReadingFriendlyTimestampAndFallback(): void
@@ -5757,7 +5757,7 @@ NODE;
         ]);
 
         $_COOKIE = ['identity_hint' => 'guest'];
-        $pendingUsers = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsers = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringContains('Later pending activity', $pendingUsers);
@@ -5775,7 +5775,7 @@ NODE;
         ]);
 
         $_COOKIE = ['identity_hint' => 'guest'];
-        $fallback = $this->renderMethod($application, 'GET', '/users/pending/');
+        $fallback = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringContains('No recorded activity', $fallback);
@@ -5934,7 +5934,7 @@ NODE;
             'POST',
             '/api/approve_user?profile_slug=' . rawurlencode($target['profile_slug'])
         );
-        $pendingUsersAfter = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsersAfter = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringContains('error=Approval requires a browser signature.', $response);

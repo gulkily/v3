@@ -1106,7 +1106,7 @@ final class Application
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
         $approvalReview = null;
-        if ($canApprove) {
+        if ($accessManagement && $canApprove) {
             try {
                 $approvalReview = \ForumRewrite\Security\ApprovalPolicy::review(
                     (new \ForumRewrite\Security\ApprovalPolicy($this->pdo(), $this->repositoryRoot))->evaluate(

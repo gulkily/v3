@@ -4,7 +4,7 @@ import { join } from 'node:path';
 export async function checkRootApprovalPages({ page, context, base, rootKey, username }) {
   const evidencePath = '/approvals/root/' + rootKey;
   const rawPath = '/source/current/records/approval-seeds/' + rootKey + '.txt';
-  for (const history of ['/user/' + username, '/profiles/' + rootKey, '/forte/user/' + username, '/forte/profiles/' + rootKey]) {
+  for (const history of ['/tools/user-access/accounts/' + username, '/tools/user-access/profiles/' + rootKey, '/forte/user/' + username, '/forte/profiles/' + rootKey]) {
     await page.goto(base + history);
     const profilePage = history.includes('/profiles/');
     assert.equal(await page.locator('#account-keys .account-key-history-entry').count(), profilePage ? 1 : 2);

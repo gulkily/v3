@@ -34,7 +34,13 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
   <article class="card">
     <p><strong>Approved:</strong> <?= (int) $profile['is_approved'] === 1 ? 'yes' : 'no' ?></p>
 <?php if ((int) $profile['is_approved'] === 1 && (string) ($profile['approved_by_label'] ?? '') !== ''): ?>
-    <p><strong>Approved by:</strong> <?= $e($profile['approved_by_label']) ?></p>
+    <p><strong>Approved by:</strong>
+<?php if ((string) ($profile['approved_by_profile_slug'] ?? '') !== ''): ?>
+      <a href="/profiles/<?= $e($profile['approved_by_profile_slug']) ?>"><?= $e($profile['approved_by_label']) ?></a>
+<?php else: ?>
+      <?= $e($profile['approved_by_label']) ?>
+<?php endif; ?>
+    </p>
 <?php endif; ?>
     <p><strong>Threads:</strong> <?= (int) $profile['thread_count'] ?></p>
     <p><strong>Posts:</strong> <?= (int) $profile['post_count'] ?></p>

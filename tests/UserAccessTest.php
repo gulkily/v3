@@ -42,6 +42,10 @@ final class UserAccessTest
                 assertStringContains('Only approved users', $this->render($root, $db, '/tools/user-access/pending/'));
                 assertSame(403, http_response_code());
             }
+            $pendingProfile = \ForumRewrite\ReadModel\ProfileRepository::bySlug($pdo, $target['profile_slug']);
+            $detail = json_decode($this->render($root, $db, '/api/forte_user_detail?username_token=' . rawurlencode($pendingProfile['username_token'])), true, 512, JSON_THROW_ON_ERROR);
+            assertSame('ok', $detail['status']);
+            assertStringContains('Pending approval', $detail['html']);
             $_SESSION = ['authenticated_identity_id' => $actor];
             assertStringContains('/tools/user-access/profiles/' . $target['profile_slug'], $this->render($root, $db, '/tools/user-access/pending/'));
             assertSame(200, http_response_code());
@@ -77,6 +81,51 @@ final class UserAccessTest
             assertStringContains('Not Approved', $this->render($root, $db, '/forte/users/'));
             assertStringContains('Approved Profiles', $this->render($root, $db, '/forte/user/' . $name));
             assertStringContains('Public key', $this->render($root, $db, '/forte/profiles/' . $user['profile_slug']));
+        });
+    }
+
+    public function testHistoryPaginationAndForteLinksStayInTheirJourneys(): void
+    {
+        $this->fixture(function ($workspace, $root, $db): void {
+            $pdo = new PDO('sqlite:' . $db);
+            $profile = $pdo->query('SELECT * FROM profiles LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+            $copy = $pdo->prepare('INSERT INTO profiles (identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id, bootstrap_thread_id, public_key, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)');
+            for ($i = 0; $i < 52; $i++) $copy->execute(['openpgp:' . str_pad(dechex($i + 100), 40, '0', STR_PAD_LEFT), 'history-key-' . $i, $profile['username'], $profile['username_token'], 'history', 'history-' . $i, 'history-' . $i, 'history-' . $i, '']);
+            $name = $profile['username_token'];
+            $first = $this->render($root, $db, '/tools/user-access/accounts/' . $name);
+            assertStringContains('/tools/user-access/accounts/' . $name . '?key_offset=50#account-keys', $first);
+            assertSame(50, substr_count($first, 'class="account-key-history-entry"'));
+            $last = $this->render($root, $db, '/tools/user-access/accounts/' . $name . '?key_offset=50');
+            assertSame(3, substr_count($last, 'class="account-key-history-entry"'));
+            assertStringContains('?key_offset=0#account-keys', $last);
+            assertStringNotContains('More keys', $last);
+            $forte = $this->render($root, $db, '/forte/user/' . $name);
+            assertStringContains('/forte/user/' . $name . '?key_offset=50#account-keys', $forte);
+            assertStringContains('/forte/profiles/', $forte);
+        });
+    }
+
+    public function testHostServesRegeneratedMemberPagesAndNeverCachesAccessViews(): void
+    {
+        $this->fixture(function ($workspace, $root, $db): void {
+            $public = $workspace->root . '/public';
+            $static = $workspace->root . '/static';
+            (new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $db, $public))->buildFromReadModel();
+            $pdo = new PDO('sqlite:' . $db);
+            $user = $pdo->query('SELECT * FROM profiles WHERE is_approved = 1 LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+            assertStringNotContains('/users/pending/', file_get_contents($public . '/users.html'));
+            $profile = file_get_contents($public . '/profiles/' . $user['profile_slug'] . '.html');
+            assertStringNotContains('Public key', $profile);
+            assertStringContains('/tools/user-access/profiles/', $profile);
+            foreach (['/tools/user-access/index.html', '/tools/user-access/pending/index.html', '/users/pending/index.html'] as $path) $workspace->put($public . $path, 'STALE ACCESS');
+            $host = new \ForumRewrite\Host\FrontController(dirname(__DIR__), $root, $db, $static, $public);
+            foreach (['/tools/user-access/', '/tools/user-access/pending/', '/users/pending/', '/users/'] as $url) {
+                ob_start();
+                try { $host->handle('GET', $url, []); $html = (string) ob_get_contents(); }
+                finally { ob_end_clean(); }
+                assertStringNotContains('STALE ACCESS', $html);
+                assertSame(str_contains($url, 'pending') ? 403 : 200, http_response_code());
+            }
         });
     }
 

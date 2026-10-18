@@ -9,8 +9,15 @@ use ForumRewrite\Tools\ToolsPageSupport;
 
 final class UserAccessController
 {
-    public function __construct(private readonly RouteServices $services, private readonly \Closure $viewer, private readonly \Closure $renderProfile)
-    {
+    /**
+     * @param \Closure(): (?array) $viewer
+     * @param \Closure(array, array): string $renderProfile
+     */
+    public function __construct(
+        private readonly RouteServices $services,
+        private readonly \Closure $viewer,
+        private readonly \Closure $renderProfile,
+    ) {
     }
 
     public function index(): string
