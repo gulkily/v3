@@ -187,6 +187,18 @@ final class RouteServices
      * @param \Closure(string): (array<string, mixed>|null) $fetchPost
      * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
      */
+    public function fastmodSettingsView(): array
+    {
+        $config = FastScoringConfig::fromPrivateConfig(PrivateConfig::load($this->projectRoot));
+        return ['rubrics' => array_keys((new \ForumRewrite\Scoring\FastmodRubrics($this->projectRoot))->catalog()),
+            'enabledRubrics' => (new \ForumRewrite\Scoring\FastmodSelection($this->projectRoot))->enabled($config)];
+    }
+
+    public function changeFastmodRubrics(array $input, string $operator, bool $finalize): array
+    {
+        return $this->writer()->changeFastmodRubrics($input, $operator, $this->projectRoot, $finalize);
+    }
+
     public function fastScoreWorkflowService(
         \Closure $fetchPost,
         \Closure $llmExchangeRecorderFactory,

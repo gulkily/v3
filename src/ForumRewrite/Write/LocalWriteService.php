@@ -2113,6 +2113,56 @@ class LocalWriteService
         });
     }
 
+    /** Signed private settings action; no canonical content or read-model write. */
+    public function changeFastmodRubrics(array $input, string $operatorIdentityId, string $projectRoot, bool $finalize): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId, $projectRoot, $finalize): array {
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
+                throw new RuntimeException('Fastmod settings require an approved operator identity.');
+            }
+            $config = \ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig(
+                \ForumRewrite\Support\PrivateConfig::load($projectRoot));
+            $settings = new \ForumRewrite\Scoring\FastmodSelection($projectRoot);
+            if (!$finalize) {
+                $ids = $input['rubrics'] ?? null;
+                if (!is_array($ids) || !array_is_list($ids)) {
+                    throw new RuntimeException('Select at least one Fastmod rubric.');
+                }
+                $composition = (new \ForumRewrite\Scoring\FastmodRubrics($projectRoot, $config->promptPath))->compose($ids);
+                $record = json_encode(['action' => 'fastmod-rubrics', 'operator' => $operatorIdentityId,
+                    'rubrics' => $composition['ids'], 'revision' => $composition['revision'],
+                    'nonce' => bin2hex(random_bytes(16))], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+                $prepared = $this->storePreparedPost('private/fastmod-rubrics', $record, [
+                    'kind' => 'fastmod-rubrics', 'operator_identity_id' => $operatorIdentityId]);
+                return $prepared + ['status' => 'ok', 'canonical_record' => $record];
+            }
+            $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($token);
+            $record = (string) ($input['canonical_record'] ?? '');
+            if (($prepared['kind'] ?? '') !== 'fastmod-rubrics'
+                || ($prepared['operator_identity_id'] ?? '') !== $operatorIdentityId
+                || strtotime((string) ($prepared['expires_at'] ?? '')) < time()
+                || $record === '' || !hash_equals((string) ($prepared['canonical_sha256'] ?? ''), hash('sha256', $record))) {
+                throw new RuntimeException('Prepared Fastmod change is invalid or expired.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $fingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $record, $signature, $fingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed.');
+            }
+            $action = json_decode($record, true, 512, JSON_THROW_ON_ERROR);
+            $composition = (new \ForumRewrite\Scoring\FastmodRubrics($projectRoot, $config->promptPath))->compose($action['rubrics']);
+            if ($composition['revision'] !== $action['revision']) {
+                throw new RuntimeException('Rubric templates changed; reopen the dialog and try again.');
+            }
+            $settings->save($action['rubrics'], $config);
+            $this->deletePreparedPost($token);
+            return ['status' => 'ok', 'rubrics' => $composition['ids'], 'revision' => $composition['revision']];
+        });
+    }
+
     /**
      * @param array<string, mixed> $input
      * @return array<string, mixed>

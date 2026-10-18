@@ -28,6 +28,66 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testFastmodDialogAndSignedSelectionPersistWithoutContentWrites(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('fastmod-operator');
+        $cookies = $_COOKIE;
+        $post = $_POST;
+        $appRoot = sys_get_temp_dir() . '/fastmod-app-' . bin2hex(random_bytes(6));
+        mkdir($appRoot . '/prompts/fastmod', 0777, true);
+        copy(dirname(__DIR__) . '/prompts/fastmod_introduction.txt', $appRoot . '/prompts/fastmod_introduction.txt');
+        foreach (['meta', 'moderation'] as $id) {
+            copy(dirname(__DIR__) . '/prompts/fastmod/' . $id . '.txt', $appRoot . '/prompts/fastmod/' . $id . '.txt');
+        }
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $this->seedApprovedIdentity($root, $identity);
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            $head = $this->latestCommitSha($root);
+            $prepared = $writer->changeFastmodRubrics(['rubrics' => ['meta']], $identity, $appRoot, false);
+            assertSame(false, is_file($appRoot . '/state/private/fastmod_rubrics.json'));
+            $input = ['prepare_token' => $prepared['prepare_token'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            $tampered = $input;
+            $tampered['canonical_record'] .= 'tampered';
+            assertThrowsRuntime(fn () => $writer->changeFastmodRubrics($tampered, $identity, $appRoot, true), 'Prepared Fastmod change is invalid or expired.');
+            $result = $writer->changeFastmodRubrics($input, $identity, $appRoot, true);
+            assertSame(['meta'], $result['rubrics']);
+            assertSame('["meta"]' . "\n", file_get_contents($appRoot . '/state/private/fastmod_rubrics.json'));
+            assertSame($head, $this->latestCommitSha($root));
+            assertThrowsRuntime(fn () => $writer->changeFastmodRubrics($input, $identity, $appRoot, true), 'Prepared post not found.');
+            $selection = new \ForumRewrite\Scoring\FastmodSelection($appRoot);
+            $config = \ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig([]);
+            assertSame(['meta'], $selection->composition($config)['ids']);
+            try {
+                $selection->save([], $config);
+                throw new LogicException('Empty selection saved');
+            } catch (InvalidArgumentException) {
+                assertSame(['meta'], $selection->enabled($config));
+            }
+            $_COOKIE = [];
+            $application = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $anonymous = $this->renderMethod($application, 'GET', '/tools/fastmod/');
+            assertStringNotContains('data-fastmod-dialog', $anonymous);
+            assertStringContains('root-approved identity', $anonymous);
+            $_POST = ['rubrics' => ['meta']];
+            $denied = json_decode($this->renderMethod($application, 'POST', '/api/prepare_fastmod_rubrics'), true);
+            assertSame('error', $denied['status']);
+            $_COOKIE = ['identity_hint' => $identity];
+            $authorized = $this->renderMethod($application, 'GET', '/tools/fastmod/');
+            assertStringContains('data-fastmod-dialog', $authorized);
+            assertStringContains('fastmod.js', $authorized);
+        } finally {
+            $_COOKIE = $cookies;
+            $_POST = $post;
+            $this->deleteTree($key['home']);
+            $this->deleteTree($appRoot);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testSignedProfileNamePreservesIdentityAndRejectsForgery(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

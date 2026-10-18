@@ -432,6 +432,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_fastmod_rubrics' || $path === '/api/finalize_fastmod_rubrics') {
+            $this->toolsPageController()->fastmodChangeApi($method, $query, $path === '/api/finalize_fastmod_rubrics');
+            return;
+        }
+
         if ($path === '/api/set_feature_flag') {
             $this->toolsPageController()->submitFeatureFlagApi($method, $query);
             return;
@@ -722,6 +727,11 @@ final class Application
 
         if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
             $this->visitorStatisticsController()->render($query);
+            return;
+        }
+
+        if ($path === '/tools/fastmod/' || $path === '/tools/fastmod') {
+            $this->sendHtml($this->toolsPageController()->fastmod(), 200);
             return;
         }
 
@@ -1896,6 +1906,7 @@ final class Application
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
@@ -1910,7 +1921,7 @@ final class Application
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
+            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {

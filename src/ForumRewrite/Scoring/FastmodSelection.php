@@ -33,6 +33,31 @@ final class FastmodSelection
         return $ids;
     }
 
+    public function save(array $ids, FastScoringConfig $config): array
+    {
+        $composition = (new FastmodRubrics($this->projectRoot, $config->promptPath))->compose($ids);
+        $directory = dirname($this->path());
+        if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+            throw new \RuntimeException('Cannot create private Fastmod settings directory.');
+        }
+        $temporary = tempnam($directory, '.fastmod-');
+        if ($temporary === false) {
+            throw new \RuntimeException('Cannot save Fastmod settings.');
+        }
+        try {
+            chmod($temporary, 0600);
+            if (file_put_contents($temporary, json_encode($composition['ids'], JSON_THROW_ON_ERROR) . "\n") === false
+                || !rename($temporary, $this->path())) {
+                throw new \RuntimeException('Cannot save Fastmod settings.');
+            }
+        } finally {
+            if (is_file($temporary)) {
+                unlink($temporary);
+            }
+        }
+        return $composition;
+    }
+
     public function composition(FastScoringConfig $config): array
     {
         return (new FastmodRubrics($this->projectRoot, $config->promptPath))->compose($this->enabled($config));
