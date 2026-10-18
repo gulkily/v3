@@ -146,3 +146,12 @@ composite identity (undefined term)
 		message recipient keys, approval same-username rule); approval itself
 		follows identity_id and is unchanged
 	related: docs/plans/username_change_gate_step1_solution_assessment.md
+
+for common assumed commands, we should have assistance:
+example: wsl@Lenovo:~/agent/v3-codex-2$ ./v3 import
+         Unknown command: import
+         Run ./v3 with no arguments to see available commands.
+
+
+we need a repository browser
+	this way we can generate a visible div for any response to a meta request
