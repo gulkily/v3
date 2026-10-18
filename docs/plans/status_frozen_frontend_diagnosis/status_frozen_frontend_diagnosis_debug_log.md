@@ -52,3 +52,17 @@
 
 **Uncertain assessments**
 - None.
+
+## 2026-10-18T23:30:22Z — Step 4
+**Necessary/useful instructions**
+- Stage Boundary Protocol (verify, update summary, commit per stage): kept each stage reviewable and recoverable. Retain.
+- Step 4 After checklist (report baseline failures, focused vs full runs): kept the final report honest. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings
+
+**Inapplicable instructions**
+- Documentation-only verification clauses.
+
+**Uncertain assessments**
+- The Stage 3 plan's "read-only fallback" for the lock probe was not needed; unclear whether it should stay in the template for such risks.

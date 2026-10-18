@@ -78,6 +78,11 @@ Branch: `feature/status-frozen-frontend-diagnosis`. Planning commit: d2f51687.
   - Probe did not alter data: only rolled-back `BEGIN IMMEDIATE`; the live databases were only probed, copies were used for lock tests.
   - Full test suite not run; focused runs only.
 
+## Final Verification
+- Full suite `php tests/run.php`: 1273 run, 1271 passed, 2 failed. Both failures are long-standing baseline failures (failing since 2026-10-16, before this work) and unrelated to status: `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` and `WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence`.
+- Commits: planning d2f51687 plus six stage commits (cddfd620, 8be1d200, e45754f8, 56d68c94, e4f1570a, 1b5cb8aa); count 7 >= 1 + 6.
+- Deployment/release/external checks: inapplicable (local CLI change). Not verified: the operator's `v3-codex-3` machine and a real in-progress rebuild process.
+
 ## Enhancement Requests
-- Request: Next action lists every failing indicator; aligned plain-word rows. / Disposition: in scope (Stages 4-5). / Approval: approved. / Outcome: pending.
-- Request: Detect database locks. / Disposition: in scope (Stage 3). / Approval: approved. / Outcome: pending.
+- Request: Next action lists every failing indicator; aligned plain-word rows. / Disposition: in scope (Stages 4-5). / Approval: approved. / Outcome: implemented in Stages 4-5 (commits 56d68c94, e4f1570a).
+- Request: Detect database locks. / Disposition: in scope (Stage 3). / Approval: approved. / Outcome: implemented in Stages 3-4 (commits e45754f8, 56d68c94); lock-holder identity and lock age deferred.
