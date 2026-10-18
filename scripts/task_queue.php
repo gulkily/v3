@@ -551,6 +551,8 @@ function emitFastmodProgress(bool $quiet, string $event, array $progress): void
     }
 
     $probability = $progress['probability'] === null ? 'none' : sprintf('%.6f', (float) $progress['probability']);
+    emitTaskQueue($quiet, '  Fastmod scores=' . json_encode($progress['scores'] ?? [], JSON_THROW_ON_ERROR)
+        . ' signals=' . json_encode($progress['signals'] ?? [], JSON_THROW_ON_ERROR) . "\n");
     $failure = isset($progress['failure_code']) ? ' failure=' . (string) $progress['failure_code'] : '';
     emitTaskQueue($quiet, sprintf(
         "  Fastmod progress: examined=%d/%d post=%s status=%s probability=%s source=%s provider_calls=%d/%d%s%s\n",

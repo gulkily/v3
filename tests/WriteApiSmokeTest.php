@@ -990,7 +990,20 @@ final class WriteApiSmokeTest
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
 
-            assertStringContains('Fastmod: 0.42', $postPage);
+            assertStringContains('Fastmod (legacy) (earlier rubric revision)', $postPage);
+            assertStringContains('Moderation: 0.42', $postPage);
+            $store = new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
+            $store->save($postId, (string) $context['content_hash'], 'new-revision',
+                \ForumRewrite\Scoring\FastScoreResult::scoredSet(['meta' => 0.91, 'custom' => 0.12], 'llm'));
+            $multi = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            assertStringContains('Meta: 0.91', $multi);
+            assertStringContains('Custom: 0.12', $multi);
+            assertStringNotContains('Moderation: 0.91', $multi);
+            $store->save($postId, (string) $context['content_hash'], 'failed-revision',
+                \ForumRewrite\Scoring\FastScoreResult::notScored('invalid_response', [], 'invalid_response'));
+            $failed = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            assertStringContains('invalid response', $failed);
+            assertStringNotContains('Meta: 0.00', $failed);
             assertStringNotContains('Fastmod:', $threadPage);
         } finally {
             $previousScorePath === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $previousScorePath);

@@ -130,6 +130,8 @@ final class FastScoreSweepService
                 'provider_call_limit' => $providerCallLimit,
                 'status' => (string) $result['status'],
                 'probability' => $result['probability'],
+                'scores' => $result['scores'] ?? [],
+                'signals' => $result['signals'] ?? [],
                 'source' => (string) $result['source'],
                 'failure_code' => $result['failure_code'] ?? null,
             ]);

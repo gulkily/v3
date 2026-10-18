@@ -37,6 +37,14 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $row === false ? null : $this->hydrate($row);
     }
 
+    public function latestForPostContent(string $postId, string $contentHash): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM post_fast_scores WHERE post_id = :post AND content_hash = :hash ORDER BY updated_at DESC, rowid DESC LIMIT 1');
+        $stmt->execute(['post' => $postId, 'hash' => $contentHash]);
+        $row = $stmt->fetch();
+        return $row === false ? null : $this->hydrate($row);
+    }
+
     public function save(string $postId, string $contentHash, string $rubricRevision, array $result): array
     {
         if (isset($result['rubric_revision']) && $result['rubric_revision'] !== $rubricRevision) {
@@ -606,7 +614,7 @@ final class SqliteFastScoreStore implements FastScoreStore
     public function recentWork(int $limit = 25): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT work.*, score.status AS score_status, score.probability AS probability, score.source AS source
+            'SELECT work.*, score.status AS score_status, score.probability AS probability, score.source AS source, score.scores_json AS scores_json, score.signals_json AS signals_json
              FROM fast_score_work AS work
              LEFT JOIN post_fast_scores AS score
                ON score.post_id = work.post_id
@@ -617,7 +625,14 @@ final class SqliteFastScoreStore implements FastScoreStore
         );
         $stmt->bindValue(':limit', max(1, min(200, $limit)), PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll();
+        return array_map(static function (array $row): array {
+            $row['legacy'] = $row['scores_json'] === null;
+            $row['scores'] = $row['scores_json'] === null
+                ? ($row['probability'] === null ? [] : ['moderation' => (float) $row['probability']])
+                : json_decode($row['scores_json'], true, 512, JSON_THROW_ON_ERROR);
+            $row['signals'] = json_decode((string) ($row['signals_json'] ?? '[]'), true);
+            return $row;
+        }, $stmt->fetchAll());
     }
 
     public function retryWork(string $postId, string $contentHash, string $rubricRevision): array

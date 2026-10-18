@@ -265,10 +265,19 @@ final class RouteServices
 
         try {
             $context = (new FastScoreContextFactory(static fn (string $_): ?array => null))->forPost($post);
-            return (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->latestScoredForPostContent(
+            $result = (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->latestForPostContent(
                 $postId,
                 (string) $context['content_hash'],
             );
+            if ($result !== null) {
+                try {
+                    $config = FastScoringConfig::fromPrivateConfig(PrivateConfig::load($this->projectRoot));
+                    $result['stale'] = $result['rubric_revision'] !== FastScoringRubricRevision::fromConfig($config, $this->projectRoot);
+                } catch (\Throwable) {
+                    $result['stale'] = true;
+                }
+            }
+            return $result;
         } catch (\Throwable) {
             return null;
         }

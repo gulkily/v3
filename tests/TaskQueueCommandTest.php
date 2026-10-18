@@ -294,7 +294,7 @@ final class TaskQueueCommandTest
                 return $post === false ? null : $post;
             };
             $context = (new FastScoreContextFactory($fetchPost))->forPost($fetchPost('post-1'));
-            (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork('post-1', (string) $context['content_hash'], 'rubric-a');
+            (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork('post-1', (string) $context['content_hash'], \ForumRewrite\Scoring\FastScoringRubricRevision::fromConfig(\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig([]), dirname(__DIR__)));
             (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(\ForumRewrite\TaskQueue\SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
             [$code, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3 task-queue run --verbose --score-limit=3 --work-limit=7 --queue-database-path=' . escapeshellarg($queuePath) . ' --database-path=' . escapeshellarg($readPath) . ' --repository-root=' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'));
         } finally {
