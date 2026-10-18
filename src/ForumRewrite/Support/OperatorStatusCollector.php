@@ -30,7 +30,8 @@ final class OperatorStatusCollector
      * @return array{
      *   read_model:array{status:string,freshness_status:string,database_exists:bool,metadata_readable:bool,schema_version:string,expected_schema_version:string,schema_fingerprint:string,expected_schema_fingerprint:string,repository_root:string,repository_head:string,current_repository_head:string,rebuilt_at:string,rebuild_reason:string,lock_status:string,stale_marker:string,stale_reason:string,stale_commit_sha:string,commits_capability:string},
      *   task_queue:array{status:string,queued:int,running:int,completed:int,failed:int,rebuild_task_status:string,executor_status:string,executor_last_completed_at:string,automatic_recovery_status:string,automatic_recovery_launch_status:string},
-     *   frontend:array{status:string,detail:string,latency_ms:?int,url:string}
+     *   frontend:array{status:string,detail:string,latency_ms:?int,url:string},
+     *   database_access:array{read_model:array{status:string,detail:string},task_queue:array{status:string,detail:string}}
      * }
      */
     public function collect(): array
@@ -89,6 +90,10 @@ final class OperatorStatusCollector
             ],
             'task_queue' => $this->taskQueueStatus(),
             'frontend' => $this->frontendStatus(),
+            'database_access' => [
+                'read_model' => (new DatabaseLockProbe())->probe($this->databasePath),
+                'task_queue' => (new DatabaseLockProbe())->probe($this->queuePath),
+            ],
         ];
     }
 

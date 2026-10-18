@@ -28,6 +28,17 @@ Branch: `feature/status-frozen-frontend-diagnosis`. Planning commit: d2f51687.
 - Notes:
   - Output is not rendered yet (Stage 5). Single-threaded dev server behind a stuck request shows as `timed_out`, matching the plan.
 
+## Stage 3 - Database lock probe
+- Changes:
+  - New `src/ForumRewrite/Support/DatabaseLockProbe.php`: `probe(string $path, float $busyTimeoutSeconds = 1.0)` returns `accessible`, `locked` (reads blocked, or write lock held with reads working), `missing` or `unavailable`. Never creates the file; the `BEGIN IMMEDIATE` write attempt is rolled back immediately.
+  - `OperatorStatusCollector` adds `database_access` for the read-model and task-queue databases.
+  - New `tests/DatabaseLockProbeTest.php` (registered): missing file not created, accessible with unchanged file hash, write-lock holder, exclusive-lock holder, garbage file; bounded run time. Collector test asserts the new keys.
+- Verification:
+  - `php tests/run.php DatabaseLockProbeTest OperatorStatusCollectorTest StatusCommandTest`: passed (17 run, 17 passed).
+- Notes:
+  - The read-only fallback from the plan was not needed; the probe changed no data in the fixture test. A real writer may wait a few milliseconds if the probe's brief reserved lock lands first; to be confirmed in Stage 6.
+  - Rebuild-aware wording belongs to Stage 4 (it combines this with the rebuild task state).
+
 ## Enhancement Requests
 - Request: Next action lists every failing indicator; aligned plain-word rows. / Disposition: in scope (Stages 4-5). / Approval: approved. / Outcome: pending.
 - Request: Detect database locks. / Disposition: in scope (Stage 3). / Approval: approved. / Outcome: pending.
