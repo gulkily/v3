@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
-use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ProfileRepository;
 
@@ -61,10 +60,6 @@ final class ProfilePageController
             $profiles,
             static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
         ));
-        $unapprovedProfiles = array_values(array_filter(
-            $profiles,
-            static fn (array $profile): bool => ((int) $profile['is_approved']) !== 1
-        ));
         $approvedIdentityIds = array_values(array_map(
             static fn (array $profile): string => (string) $profile['identity_id'],
             $approvedProfiles
@@ -85,9 +80,8 @@ final class ProfilePageController
             'username.php',
             [
                 'usernameToken' => $usernameToken,
-                'approvalHistory' => $this->routeServices->approvalHistory()->forUsername($usernameToken, 50, max(0, (int) ($query['key_offset'] ?? 0))),
+                'historyOffset' => max(0, (int) ($query['key_offset'] ?? 0)),
                 'approvedProfiles' => $approvedProfiles,
-                'unapprovedProfiles' => $unapprovedProfiles,
                 'approverUsernames' => self::aggregateApproverUsernames($approvedProfiles, $ownIdentityIds),
                 'approvedThreadCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, true),
                 'approvedPostCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, false),
@@ -133,67 +127,23 @@ final class ProfilePageController
 
     public function directory(): string
     {
-        $viewerProfile = ($this->resolveViewerProfile)();
-
-        return $this->routeServices->renderPageTemplate(
-            'users.php',
-            [
-                'users' => ProfileRepository::approvedDirectoryUsers($this->routeServices->pdo()),
-                'showPendingLink' => $viewerProfile !== null
-                    && ((int) $viewerProfile['is_approved']) === 1
-                    && ProfileRepository::hasPendingDirectoryProfiles($this->routeServices->pdo()),
-            ],
-            'Users',
-            'profiles',
-        );
+        return $this->routeServices->renderPageTemplate('users.php', [
+            'users' => ProfileRepository::approvedDirectoryUsers($this->routeServices->pdo()),
+        ], 'Users', 'profiles');
     }
 
     public function pendingDirectory(string $method): void
     {
         if ($method !== 'GET') {
-            $this->routeServices->sendHtml(
-                $this->routeServices->renderMessagePage(
-                    'Method Not Allowed',
-                    'Method Not Allowed',
-                    'Only GET is supported for the pending user directory.',
-                    'none'
-                ),
-                405
-            );
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported.', 'tools'), 405, $this->routeServices->noStoreHeaders());
             return;
         }
-
-        $viewerProfile = ($this->resolveViewerProfile)();
-        if ($viewerProfile === null || ((int) $viewerProfile['is_approved']) !== 1) {
-            $this->routeServices->sendHtml(
-                $this->routeServices->renderMessagePage(
-                    'Forbidden',
-                    'Forbidden',
-                    'Only approved users can view the pending approval directory.',
-                    'profiles'
-                ),
-                403
-            );
+        $viewer = ($this->resolveViewerProfile)();
+        if ($viewer === null || (int) $viewer['is_approved'] !== 1) {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Forbidden', 'Forbidden', 'Only approved users can view the pending approval directory.', 'tools'), 403, $this->routeServices->noStoreHeaders());
             return;
         }
-
-        $this->routeServices->sendHtml($this->renderPendingDirectory(), 200);
-    }
-
-    private function renderPendingDirectory(): string
-    {
-        return $this->routeServices->renderPageTemplate(
-            'users_pending.php',
-            [
-                'profiles' => ProfileRepository::pendingDirectoryProfiles(
-                    $this->routeServices->pdo(),
-                    $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
-                ),
-            ],
-            'Users Awaiting Approval',
-            'profiles',
-            $this->identityScripts(['/assets/pending_approvals.js']),
-        );
+        $this->routeServices->sendRedirect('/tools/user-access/pending/', 'Open pending approvals in User Access.', 303, $this->routeServices->noStoreHeaders(), 'tools');
     }
 
     /**

@@ -17,3 +17,9 @@ Standard member directory and Tools access management. Forte retains its current
 - Changes: Restricted Tools pending queue, identity-specific key review, existing shared profile access partial, and caller-specific Tools success navigation. Signing and policy APIs unchanged.
 - Verification: Passed `UserAccessTest` (2), `ApprovalPolicyTest` and `ApprovalAcceptanceTest` (8), PHP lint, and `node tests/browser/approval_review.mjs` (desktop/mobile confirmation, cancellation, retry, missing review and queue approval). Queue denies anonymous/unapproved viewers; target identity and confirmed approval history verified.
 - Notes: Stage 1 commit `45b9bedc`. Fixed an extracted-partial variable warning and reran focused checks without warnings.
+
+## Stage 3 - Standard member browsing
+
+- Changes: Standard directory and member/profile pages omit management UI; activity, messaging and concise attribution retained. Legacy pending URL redirects approved viewers to Tools and denies others; history anchors/offsets retain contextual Tools links. Legacy unsigned approval submission renders recovery in Tools.
+- Verification: Passed PHP lint and `php tests/run.php UserAccessTest RootApprovalPageTest` (10). Tests cover standard separation, legacy history offset, queue redirect/access, public evidence at replacement Tools routes, and Forte filters/profile/key information.
+- Notes: Stage 2 commit `3e15e4d3`. Existing root-evidence regressions now inspect replacement management routes. Stage 4 updates remaining smoke expectations for intentionally moved UI and runs serving/browser regressions.

@@ -31,11 +31,14 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
     'recipientLabel' => $headingLabel,
 ]), 2) ?>
 <?php endif; ?>
-<?php if ($self): ?>
   <article class="card">
-    <p class="meta">Self profile mode</p>
-    <p>This route can show account-aware bootstrap context. Current cookie hint: <?= $e($identityHint !== '' ? $identityHint : 'none') ?></p>
-  </article>
+    <p><strong>Approved:</strong> <?= (int) $profile['is_approved'] === 1 ? 'yes' : 'no' ?></p>
+<?php if ((int) $profile['is_approved'] === 1 && (string) ($profile['approved_by_label'] ?? '') !== ''): ?>
+    <p><strong>Approved by:</strong> <?= $e($profile['approved_by_label']) ?></p>
 <?php endif; ?>
-<?= $partial('partials/profile_access.php') ?>
+    <p><strong>Threads:</strong> <?= (int) $profile['thread_count'] ?></p>
+    <p><strong>Posts:</strong> <?= (int) $profile['post_count'] ?></p>
+    <p><a href="/user/<?= $e($profile['username_token']) ?>">Member activity</a></p>
+    <p id="account-keys"><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>#account-keys">User Access</a></p>
+  </article>
 </section>

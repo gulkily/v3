@@ -1138,7 +1138,7 @@ final class Application
                 'accessManagement' => $accessManagement,
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
-                'approvalHistory' => $this->routeServices()->approvalHistory()->forKey($profile),
+                'approvalHistory' => $accessManagement ? $this->routeServices()->approvalHistory()->forKey($profile) : null,
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
                 'notice' => $notice,
@@ -1151,7 +1151,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             $accessManagement ? 'tools' : 'profiles',
-            $canApprove
+            $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
@@ -2344,7 +2344,8 @@ final class Application
                 $profile,
                 false,
                 null,
-                'Approval requires a browser signature. Enable JavaScript and refresh this page before trying again.'
+                'Approval requires a browser signature. Enable JavaScript and refresh this page before trying again.',
+                true
             ),
             400
         );

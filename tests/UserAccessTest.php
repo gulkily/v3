@@ -56,6 +56,30 @@ final class UserAccessTest
         });
     }
 
+    public function testStandardSeparationLegacyLinksAndFortePreservation(): void
+    {
+        $this->fixture(function ($workspace, $root, $db): void {
+            $pdo = new PDO('sqlite:' . $db);
+            $user = $pdo->query('SELECT * FROM profiles WHERE is_approved = 1 LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+            $_SESSION = ['authenticated_identity_id' => $user['identity_id']];
+            foreach (['/users/', '/user/' . $user['username_token'], '/profiles/' . $user['profile_slug']] as $url) {
+                $html = $this->render($root, $db, $url);
+                assertSame(200, http_response_code());
+                foreach (['data-signed-approval-form', 'Account key history', 'Unapproved Profiles', 'Approved Profiles', 'Public key', 'Identity ID', '/users/pending/'] as $removed) assertStringNotContains($removed, $html);
+            }
+            $name = $user['username_token'];
+            assertStringContains('/tools/user-access/accounts/' . $name . '?key_offset=50#account-keys', $this->render($root, $db, '/user/' . $name . '?key_offset=50'));
+            assertStringContains('/tools/user-access/pending/', $this->render($root, $db, '/users/pending/'));
+            assertSame(303, http_response_code());
+            $_SESSION = [];
+            $this->render($root, $db, '/users/pending/');
+            assertSame(403, http_response_code());
+            assertStringContains('Not Approved', $this->render($root, $db, '/forte/users/'));
+            assertStringContains('Approved Profiles', $this->render($root, $db, '/forte/user/' . $name));
+            assertStringContains('Public key', $this->render($root, $db, '/forte/profiles/' . $user['profile_slug']));
+        });
+    }
+
     private function fixture(callable $test): void
     {
         $workspace = new ImportTestWorkspace();
