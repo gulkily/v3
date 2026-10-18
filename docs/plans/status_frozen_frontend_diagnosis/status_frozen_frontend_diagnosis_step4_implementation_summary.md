@@ -62,6 +62,22 @@ Branch: `feature/status-frozen-frontend-diagnosis`. Planning commit: d2f51687.
 - Notes:
   - Full suite not run; focused runs only.
 
+## Stage 6 - Acceptance replay
+- Changes:
+  - Replay found one defect: the "address assumed unless --url is given" text showed even when `--url` was passed. Removed it from the Frontend detail and moved the `--url=` hint into the Frontend fix text (`HealthIndicators.php`).
+- Verification (manual, this WSL machine, against copies of the live read-model and queue databases in the scratchpad):
+  - Server stopped (`--url=http://127.0.0.1:1`): `FAIL Frontend` (connection refused); Next action lists Frontend, Task executor, Task queue.
+  - Server hung (listener that never answers): `FAIL Frontend` "no response within 3s (server busy or hung)"; status finished in 3.0s.
+  - Server healthy (live dev server on :8000): `OK Frontend` HTTP 200.
+  - Pasted case (queued tasks, executor `not_observed`; this machine has 958 queued): `WARN Task executor` and `WARN Task queue`, read model rows OK.
+  - Read-model DB held by a writer, no rebuild: `FAIL Read-model DB`, fix "no rebuild running; a process may be stuck"; status took 1.1s (probe busy timeout).
+  - Same with a running rebuild task: `FAIL Read-model DB` fix "locked while a rebuild is running; wait", plus `WARN Rebuild task running`.
+  - `php tests/run.php StatusCommandTest HealthIndicatorsTest`: passed after the wording fix.
+- Notes:
+  - Not replayed: the operator's other machine (`v3-codex-3`) and a real in-progress rebuild process; the rebuild-running case used a claimed queue task plus a held lock.
+  - Probe did not alter data: only rolled-back `BEGIN IMMEDIATE`; the live databases were only probed, copies were used for lock tests.
+  - Full test suite not run; focused runs only.
+
 ## Enhancement Requests
 - Request: Next action lists every failing indicator; aligned plain-word rows. / Disposition: in scope (Stages 4-5). / Approval: approved. / Outcome: pending.
 - Request: Detect database locks. / Disposition: in scope (Stage 3). / Approval: approved. / Outcome: pending.
