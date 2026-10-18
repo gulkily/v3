@@ -39,6 +39,12 @@ final class SqliteFastScoreStore implements FastScoreStore
 
     public function save(string $postId, string $contentHash, string $rubricRevision, array $result): array
     {
+        if (isset($result['rubric_revision']) && $result['rubric_revision'] !== $rubricRevision) {
+            throw new \InvalidArgumentException('Fastmod result revision mismatch.');
+        }
+        if (isset($result['scores']) && ($result['status'] ?? '') === 'scored') {
+            FastScoreResult::scoredSet($result['scores'], (string) ($result['source'] ?? 'llm'));
+        }
         $existing = $this->find($postId, $contentHash, $rubricRevision);
         $row = [
             'post_id' => $postId,
@@ -47,13 +53,14 @@ final class SqliteFastScoreStore implements FastScoreStore
             'status' => (string) ($result['status'] ?? 'unknown'),
             'probability' => isset($result['probability']) && is_numeric($result['probability']) ? (float) $result['probability'] : null,
             'source' => (string) ($result['source'] ?? 'none'),
+            'scores_json' => isset($result['scores']) ? json_encode($result['scores'], JSON_THROW_ON_ERROR) : null,
             'signals_json' => json_encode(array_values(array_filter($result['signals'] ?? [], 'is_string')), JSON_THROW_ON_ERROR),
             'failure_code' => isset($result['failure_code']) ? substr((string) $result['failure_code'], 0, 100) : null,
             'failure_message' => FastScoreFailure::safeMessage(isset($result['failure_code']) ? (string) $result['failure_code'] : null, (string) ($result['status'] ?? 'unknown')),
             'created_at' => (string) ($existing['created_at'] ?? gmdate('c')),
             'updated_at' => gmdate('c'),
         ];
-        $stmt = $this->pdo->prepare('INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, probability, source, signals_json, failure_code, failure_message, created_at, updated_at) VALUES (:post_id, :content_hash, :rubric_revision, :status, :probability, :source, :signals_json, :failure_code, :failure_message, :created_at, :updated_at) ON CONFLICT(post_id, content_hash, rubric_revision) DO UPDATE SET status = excluded.status, probability = excluded.probability, source = excluded.source, signals_json = excluded.signals_json, failure_code = excluded.failure_code, failure_message = excluded.failure_message, updated_at = excluded.updated_at');
+        $stmt = $this->pdo->prepare('INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, probability, source, signals_json, scores_json, failure_code, failure_message, created_at, updated_at) VALUES (:post_id, :content_hash, :rubric_revision, :status, :probability, :source, :signals_json, :scores_json, :failure_code, :failure_message, :created_at, :updated_at) ON CONFLICT(post_id, content_hash, rubric_revision) DO UPDATE SET status = excluded.status, probability = excluded.probability, source = excluded.source, signals_json = excluded.signals_json, scores_json = excluded.scores_json, failure_code = excluded.failure_code, failure_message = excluded.failure_message, updated_at = excluded.updated_at');
         $stmt->execute($row);
         return $this->find($postId, $contentHash, $rubricRevision) ?? throw new \RuntimeException('Fastmod score was not saved.');
     }
@@ -668,6 +675,18 @@ final class SqliteFastScoreStore implements FastScoreStore
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS fast_score_schema_migrations (version TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS post_fast_scores (post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL, status TEXT NOT NULL, probability REAL NULL, source TEXT NOT NULL, signals_json TEXT NOT NULL, failure_code TEXT NULL, failure_message TEXT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (post_id, content_hash, rubric_revision))');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS post_fast_scores_current_idx ON post_fast_scores (post_id, content_hash, rubric_revision, status)');
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $columns = array_column($this->pdo->query('PRAGMA table_info(post_fast_scores)')->fetchAll(), 'name');
+            if (!in_array('scores_json', $columns, true)) {
+                $this->pdo->exec('ALTER TABLE post_fast_scores ADD COLUMN scores_json TEXT NULL');
+            }
+            $this->pdo->exec("INSERT OR IGNORE INTO fast_score_schema_migrations (version, applied_at) VALUES ('fastmod_score_sets_v1', datetime('now'))");
+            $this->pdo->exec('COMMIT');
+        } catch (\Throwable $error) {
+            $this->pdo->exec('ROLLBACK');
+            throw $error;
+        }
         if ((int) $this->pdo->query("SELECT COUNT(*) FROM fast_score_schema_migrations WHERE version = 'fast_score_work_v1'")->fetchColumn() === 0) {
             $this->pdo->exec('CREATE TABLE IF NOT EXISTS fast_score_work (post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL, state TEXT NOT NULL, attempt_count INTEGER NOT NULL DEFAULT 0, last_attempted_at TEXT NULL, next_eligible_at TEXT NULL, failure_category TEXT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (post_id, content_hash, rubric_revision))');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS fast_score_work_claimable_idx ON fast_score_work (state, next_eligible_at, created_at, post_id)');
@@ -742,6 +761,9 @@ final class SqliteFastScoreStore implements FastScoreStore
     private function hydrate(array $row): array
     {
         $signals = json_decode((string) $row['signals_json'], true);
-        return ['post_id' => (string) $row['post_id'], 'content_hash' => (string) $row['content_hash'], 'rubric_revision' => (string) $row['rubric_revision'], 'status' => (string) $row['status'], 'probability' => $row['probability'] === null ? null : (float) $row['probability'], 'source' => (string) $row['source'], 'signals' => is_array($signals) ? $signals : [], 'failure_code' => $row['failure_code'] === null ? null : (string) $row['failure_code'], 'failure_message' => $row['failure_message'] === null ? null : (string) $row['failure_message'], 'created_at' => (string) $row['created_at'], 'updated_at' => (string) $row['updated_at']];
+        $legacy = ($row['scores_json'] ?? null) === null;
+        $scores = $legacy ? ($row['probability'] === null ? [] : ['moderation' => (float) $row['probability']])
+            : json_decode((string) $row['scores_json'], true, 512, JSON_THROW_ON_ERROR);
+        return ['scores' => $scores, 'legacy' => $legacy, 'post_id' => (string) $row['post_id'], 'content_hash' => (string) $row['content_hash'], 'rubric_revision' => (string) $row['rubric_revision'], 'status' => (string) $row['status'], 'probability' => $row['probability'] === null ? null : (float) $row['probability'], 'source' => (string) $row['source'], 'signals' => is_array($signals) ? $signals : [], 'failure_code' => $row['failure_code'] === null ? null : (string) $row['failure_code'], 'failure_message' => $row['failure_message'] === null ? null : (string) $row['failure_message'], 'created_at' => (string) $row['created_at'], 'updated_at' => (string) $row['updated_at']];
     }
 }

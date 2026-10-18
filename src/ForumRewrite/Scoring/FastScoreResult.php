@@ -6,6 +6,22 @@ namespace ForumRewrite\Scoring;
 
 final class FastScoreResult
 {
+    /** @param array<string,float> $scores */
+    public static function scoredSet(array $scores, string $source): array
+    {
+        if ($scores === []) {
+            throw new \InvalidArgumentException('A scored result requires at least one rubric.');
+        }
+        foreach ($scores as $id => $value) {
+            if (!is_string($id) || (!is_float($value) && !is_int($value))
+                || !is_finite((float) $value) || $value < 0 || $value > 1) {
+                throw new \InvalidArgumentException('Invalid rubric score.');
+            }
+        }
+        return self::result('scored', $scores['moderation'] ?? null, $source, [])
+            + ['scores' => $scores, 'legacy' => false];
+    }
+
     /**
      * @param list<string> $signals
      * @return array{status:string, probability:?float, source:string, signals:list<string>}

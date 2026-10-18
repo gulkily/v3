@@ -8,6 +8,7 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/RailspikeWorkflowTest.php',
+    __DIR__ . '/FastmodCsvTest.php',
     __DIR__ . '/FastmodRubricsTest.php',
     __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',

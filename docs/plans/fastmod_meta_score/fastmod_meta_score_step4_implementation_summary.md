@@ -8,3 +8,8 @@ Implementation in progress on `feat/fastmod-meta-score`. Planning commit: `08b9b
 - Changes: Added catalog/composer with deterministic stable identities, compact moderation/support templates, shared introduction, nonempty selection validation, and effective composition hashes. Configuration accepts a rubric list; production wiring follows in Stage 3.
 - Verification: `php tests/run.php FastmodRubricsTest FastScoringConfigTest` — 6 passed; new PHP files lint clean. Tests cover omission, ordering, invalid sets, added templates, empty text, and revision changes. Compared moderation template against existing categories and exceptions.
 - Notes: Both default rubrics are enabled when unset; sorting establishes the output order independent of operator click order. No core read-model change.
+
+## Stage 2 - CSV evaluation and durable score sets
+- Changes: FastPostScorer uses the existing text completion contract, parses complete CSV atomically, and produces a named score map. Private score storage migrates to nullable score-set JSON; legacy rows remain explicitly legacy moderation-only. Compatibility probability is moderation only, never an aggregate or first score.
+- Verification: `php tests/run.php FastmodCsvTest SqliteFastScoreStoreTest FastScoreWorkflowServiceTest` — all passed. Added provider-call counting, malformed output rejection, meta-only result, prior-store migration, and restart/idempotence coverage.
+- Notes: Private-store schema only; core read-model schema unchanged. Effective prompt/factory and worker wiring follows in Stage 3.
