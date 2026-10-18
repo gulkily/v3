@@ -675,6 +675,16 @@ final class Application
             return;
         }
 
+        if ($method === 'GET' && ($path === '/tools/user-access/' || $path === '/tools/user-access')) {
+            $this->sendHtml((new \ForumRewrite\Http\UserAccessController($this->routeServices()))->index(), 200, $this->routeServices()->noStoreHeaders());
+            return;
+        }
+        if ($method === 'GET' && preg_match('#^/tools/user-access/accounts/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = (new \ForumRewrite\Http\UserAccessController($this->routeServices()))->account($matches[1], $query);
+            $this->sendHtml($html ?? $this->renderMessagePage('Not Found', 'Not Found', 'Account not found.', 'tools'), $html === null ? 404 : 200, $this->routeServices()->noStoreHeaders());
+            return;
+        }
+
         if ($path === '/users/pending/' || $path === '/users/pending') {
             $this->profilePageController()->pendingDirectory($method);
             return;
@@ -1883,6 +1893,7 @@ final class Application
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
             '/users', '/users/', '/users/pending', '/users/pending/',
+            '/tools/user-access', '/tools/user-access/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
@@ -1908,7 +1919,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/accounts/[^/]+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }

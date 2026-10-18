@@ -115,6 +115,13 @@ final class ToolsPageSupport
                 'standalone' => false,
             ],
             [
+                'key' => 'user-access',
+                'label' => 'User Access',
+                'href' => '/tools/user-access/',
+                'description' => 'Review accounts, keys, and pending approvals.',
+                'standalone' => false,
+            ],
+            [
                 'key' => 'feature-flags',
                 'label' => 'Feature Flags',
                 'href' => '/tools/feature-flags/',
