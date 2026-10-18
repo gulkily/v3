@@ -212,6 +212,12 @@ pre {
   background: var(--panel);
 }
 
+/* Unread Messages: outline only, so the button's size and caption never change. */
+.nav-link[data-unread-count]:not([data-unread-count="0"]) {
+  outline: 2px solid var(--active-line);
+  outline-offset: 2px;
+}
+
 .board-controls-nav .nav-link:disabled {
   width: auto;
   margin-top: 0;

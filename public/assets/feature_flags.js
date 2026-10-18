@@ -232,7 +232,6 @@
       if (link) {
         link.dataset.unreadState = 'unavailable';
         link.title = 'Unread status unavailable. Reload the page.';
-        link.querySelector('[data-role="unread-count"]').textContent = '?';
         link.querySelector('#private-message-unread-status').textContent = link.title;
       }
       status.textContent = 'Saved. Navigation could not refresh. ';
