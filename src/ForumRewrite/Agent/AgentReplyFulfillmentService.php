@@ -33,6 +33,7 @@ final class AgentReplyFulfillmentService
         private readonly mixed $gateFailureForPost,
         private readonly ?AgentResponseGenerator $taskGenerator = null,
         private readonly mixed $beforeScripturePublication = null,
+        private readonly ?AgentParticipantContext $participants = null,
     ) {
     }
 
@@ -177,6 +178,8 @@ final class AgentReplyFulfillmentService
 
         if ($stored === null) {
             try {
+                $requester = $existing['request_context']['agent_reply_request']['requested_by_identity_id'] ?? null;
+                $context['participants'] = $this->participants?->resolve($post, $requester) ?? [];
                 $generation = $generationForContext === null
                     ? $this->generationFromAnalysis($analysis)
                     : $generationForContext($context);
