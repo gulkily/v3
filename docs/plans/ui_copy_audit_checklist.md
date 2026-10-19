@@ -73,3 +73,10 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Platform Docs retraction entry — concise title and task-focused description under Operations; reuses the existing document list and reader.
 
 - [x] **Agent button label** — Shortened “Request agent response” to “Agent” on shared thread root and reply cards. Updated the existing rendered-page assertion; targeted write-API smoke test, PHP syntax checks, and diff checks passed.
+
+## SQLite viewer copy cleanup — October 19, 2026
+
+- [x] Removed the backup warning, initial loading prerequisite/status copy, redundant query heading, preset descriptions, and query success announcement. Reduced the introduction to read-only/local execution, shortened download links and invalid-query feedback, and kept provenance plus the saved-data caveat in one place. Empty status elements are hidden; loading, errors, refresh recovery, pagination, and effective-query details remain.
+- Verification: PHP/JavaScript syntax and diff checks passed; all six targeted SQLite smoke checks passed after updating copy assertions and one stale preset-selection assertion. Existing listing-query browser suite passed, including standalone/dialog use, pagination/sorting, storage denial, invalid queries, and load recovery. Live 390px/1280px checks covered initial/loaded/success/invalid-query states; desktop had no overflow. The loaded mobile page initially had horizontal overflow, also reproduced using the prior JavaScript (397px document at 390px viewport); resolved in the follow-up below.
+
+- [x] **SQLite mobile overflow follow-up** — Constrained the query pagination flex item to its output width so its controls wrap on narrow screens. Added standalone browser coverage at 320px, 390px, and 1280px for page/container overflow and working Previous/Next controls; the full listing-query browser suite passed. Live 320px/390px checks also verified horizontal table scrolling and expanded effective-query details without page overflow. Diff checks passed.

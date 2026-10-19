@@ -126,7 +126,7 @@
     function setStatus(message, state) {
       if (status) {
         status.textContent = message;
-        if (root.closest('[data-query-dialog]')) { status.hidden = state !== "error"; }
+        status.hidden = !message || (!!root.closest('[data-query-dialog]') && state !== "error");
         if (state) {
           status.dataset.state = state;
         } else {
@@ -138,6 +138,7 @@
     function setQueryStatus(message, state) {
       if (queryStatus) {
         queryStatus.textContent = message;
+        queryStatus.hidden = !message;
         if (state) {
           queryStatus.dataset.state = state;
         } else {
@@ -462,7 +463,7 @@
       presetQueries.forEach(function (preset, index) {
         var option = document.createElement("option");
         option.value = String(index);
-        option.textContent = preset.label + " — " + preset.description;
+        option.textContent = preset.label;
         querySelect.appendChild(option);
       });
       querySelect.addEventListener("change", function () {
@@ -501,7 +502,7 @@
       if (!isSingleSelectQuery(query)) {
         clearNode(queryResults);
         clearEffectiveQuery();
-        setQueryStatus("Only one read-only SELECT statement is allowed. No effective query was executed.", "error");
+        setQueryStatus("Only one read-only SELECT statement is allowed.", "error");
         return;
       }
       try {
@@ -543,7 +544,7 @@
             });
           }
         });
-        setQueryStatus("Query completed locally.", "ok");
+        setQueryStatus("", "ok");
       } catch (error) {
         clearNode(queryResults);
         setQueryStatus("Query failed: " + (error && error.message ? error.message : "The query could not be run."), "error");
@@ -604,7 +605,10 @@
           catch (error) { provenance += "; browser storage unavailable (in-memory only)"; }
         } else if (!cache) { provenance += "; browser storage unavailable (in-memory only)"; }
         needsRefresh = false;
-        if (sourceDetails) { sourceDetails.textContent = provenance + ". Saved data may differ from the live page. Refresh explicitly to update it."; }
+        if (sourceDetails) {
+          sourceDetails.textContent = provenance + ". Saved data may differ from the live page.";
+          sourceDetails.hidden = false;
+        }
         var previous = database;
         database = candidate;
         if (previous) { previous.close(); }
@@ -616,7 +620,7 @@
         if (queryPanel) {
           queryPanel.removeAttribute("hidden");
         }
-        setStatus((saved ? "Saved" : "Published") + " read-model loaded. " + provenance + ". Queries run locally; saved data may differ from the live page.", "ok");
+        setStatus("", "ok");
         if (loadButton) {
           loadButton.textContent = "Refresh saved database";
         }
