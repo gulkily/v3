@@ -322,30 +322,6 @@ final class OpenPgpSignatureVerifier
 
     private function cleanup(string $path): void
     {
-        if (!is_dir($path)) {
-            return;
-        }
-
-        $items = scandir($path);
-        if ($items === false) {
-            return;
-        }
-
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-
-            $child = $path . '/' . $item;
-            if (is_dir($child)) {
-                $this->cleanup($child);
-                @rmdir($child);
-                continue;
-            }
-
-            @unlink($child);
-        }
-
-        @rmdir($path);
+        GpgHomeCleaner::dispose($path);
     }
 }

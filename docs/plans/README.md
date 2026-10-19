@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)
 - [User approval meaning](user_approval_meaning/)
 
 - [Rename windark theme to midnight](rename_windark_to_midnight/)
@@ -219,3 +220,5 @@ and repair its navigation and affected references. See the
 - [Feature-flag change pages](feature_flag_change_pages/)
 
 - [Backup page redesign](backup_page_redesign/)
+
+- [GPG agent leak](gpg_agent_leak/)

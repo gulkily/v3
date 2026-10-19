@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
+use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -3475,11 +3476,12 @@ NODE;
         $pdo = new PDO('sqlite:' . $db);
         foreach ([\ForumRewrite\ReadModel\AuthoredContentRepository::visibleThreads($pdo, [$author['identity_id']]),
             \ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts($pdo, [$author['identity_id']])] as $rows) {
-            assertSame(true, count($rows) > 0);
-            foreach ($rows as $row) {
-                assertSame('operator', $row['retraction_class']);
-                assertSame('author', $row['retraction_attribution']);
-            }
+            assertSame([], $rows);
+        }
+        foreach (['threads' => 'root_post_id', 'posts' => 'post_id'] as $table => $idColumn) {
+            $row = $pdo->query("SELECT retraction_class, retraction_attribution FROM {$table} WHERE {$idColumn} = " . $pdo->quote($quote['post_id']))->fetch(PDO::FETCH_ASSOC);
+            assertSame('operator', $row['retraction_class']);
+            assertSame('author', $row['retraction_attribution']);
         }
     }
 
@@ -3875,7 +3877,7 @@ NODE;
         assertSame(false, str_contains($this->readModelFileBytes($databasePath), 'zzprosemarker'), 'Prose left in the read-model file');
     }
 
-    public function testRetractedRootShowsPlaceholderKeepsRepliesAndDropsAuthorActions(): void
+    public function testRetractedRootShowsPlaceholderOnPermalinkKeepsRepliesAndLeavesBoard(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -3910,7 +3912,8 @@ NODE;
         assertStringContains('data-action="apply-post-tag"', $thread);
 
         $board = $this->renderMethod($application, 'GET', '/threads/?view=all&sort=newest');
-        assertStringContains('Deleted post', $board);
+        assertSame(false, str_contains($board, 'Deleted post'), 'Retracted thread remains in the board listing');
+        assertSame(false, str_contains($board, rawurlencode($author['thread_id'])));
         assertSame(false, str_contains($board, 'Subject retract-render'));
 
         $post = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($author['thread_id']));
@@ -7569,7 +7572,7 @@ NODE;
             'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
         );
 
-        $this->deleteTree($home);
+        GpgHomeCleaner::dispose($home);
 
         return trim($publicKey) . "\n";
     }
@@ -7592,10 +7595,14 @@ NODE;
                 throw $e;
             }
             sleep(1);
-            $this->deleteTree($home);
+            GpgHomeCleaner::dispose($home);
             mkdir($home, 0700, true);
             $this->runCommand($home, $generate);
         }
+        // Not every test deletes its signing home; stop its agent and remove it at exit.
+        register_shutdown_function(static function () use ($home): void {
+            GpgHomeCleaner::dispose($home);
+        });
 
         return [
             'home' => $home,
@@ -7653,6 +7660,12 @@ NODE;
     private function deleteTree(string $path): void
     {
         if (!is_dir($path)) {
+            return;
+        }
+
+        if (str_starts_with(basename($path), 'forum-rewrite-approval-gpg-')) {
+            GpgHomeCleaner::dispose($path);
+
             return;
         }
 
