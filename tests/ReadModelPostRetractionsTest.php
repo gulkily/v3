@@ -6,6 +6,8 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ThreadRepository;
+use ForumRewrite\Tools\BoardListingQuery;
 
 final class ReadModelPostRetractionsTest
 {
@@ -64,6 +66,21 @@ final class ReadModelPostRetractionsTest
 
         assertSame(0, $this->markerCount($pdo));
         assertSame('2026-10-13T12:00:00Z', $pdo->query("SELECT retracted_at FROM posts WHERE post_id = 'thread-gone'")->fetchColumn());
+    }
+
+    public function testRetractedRootIsOmittedFromThreadListingsButStillResolvable(): void
+    {
+        $root = $this->fixtureWithThread();
+        $pdo = $this->rebuild($root);
+        assertTrue(in_array('thread-gone', array_column(ThreadRepository::fetchThreads($pdo), 'root_post_id'), true));
+
+        $this->writeRetraction($root, 'thread-gone', self::AUTHOR);
+        $pdo = $this->rebuild($root);
+
+        assertSame(false, in_array('thread-gone', array_column(ThreadRepository::fetchThreads($pdo), 'root_post_id'), true));
+        $listing = $pdo->query(BoardListingQuery::context('all', 'newest')['querySql'])->fetchAll(PDO::FETCH_ASSOC);
+        assertSame(false, in_array('thread-gone', array_column($listing, 'root_post_id'), true));
+        assertSame('thread-gone', ThreadRepository::byId($pdo, 'thread-gone')['root_post_id'] ?? null);
     }
 
     private function fixtureWithThread(): string
