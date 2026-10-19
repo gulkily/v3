@@ -76,6 +76,9 @@ final class ExecutionLock
     {
         $raw = getenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
         if ($raw === false || trim($raw) === '') {
+            $raw = (string) (PrivateConfig::load(dirname(__DIR__, 3))['FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS'] ?? '');
+        }
+        if (trim($raw) === '') {
             return 5;
         }
 
