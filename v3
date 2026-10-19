@@ -10,7 +10,7 @@ Usage:
   ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
   ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test
-  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
   ./v3 tui
   ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.0-beta.1]
   ./v3 fdp sync ... (deprecated alias)
