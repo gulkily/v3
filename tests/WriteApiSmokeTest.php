@@ -28,6 +28,75 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testFastmodPanelAndSignedSelectionPersistWithoutContentWrites(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('fastmod-operator');
+        $cookies = $_COOKIE;
+        $post = $_POST;
+        $appRoot = sys_get_temp_dir() . '/fastmod-app-' . bin2hex(random_bytes(6));
+        mkdir($appRoot . '/prompts/fastmod', 0777, true);
+        copy(dirname(__DIR__) . '/prompts/fastmod_introduction.txt', $appRoot . '/prompts/fastmod_introduction.txt');
+        foreach (['meta', 'moderation'] as $id) {
+            copy(dirname(__DIR__) . '/prompts/fastmod/' . $id . '.txt', $appRoot . '/prompts/fastmod/' . $id . '.txt');
+        }
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $this->seedApprovedIdentity($root, $identity);
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            $head = $this->latestCommitSha($root);
+            $prepared = $writer->changeFastmodRubrics(['rubrics' => ['meta']], $identity, $appRoot, false);
+            assertSame(false, is_file($appRoot . '/state/private/fastmod_rubrics.json'));
+            $input = ['prepare_token' => $prepared['prepare_token'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            $tampered = $input;
+            $tampered['canonical_record'] .= 'tampered';
+            assertThrowsRuntime(fn () => $writer->changeFastmodRubrics($tampered, $identity, $appRoot, true), 'Prepared Fastmod change is invalid or expired.');
+            $unsigned = $input;
+            $unsigned['detached_signature'] = '';
+            $rejected = false;
+            try { $writer->changeFastmodRubrics($unsigned, $identity, $appRoot, true); }
+            catch (RuntimeException) { $rejected = true; }
+            assertSame(true, $rejected);
+            assertSame(false, is_file($appRoot . '/state/private/fastmod_rubrics.json'));
+            $result = $writer->changeFastmodRubrics($input, $identity, $appRoot, true);
+            assertSame(['meta'], $result['rubrics']);
+            assertSame('["meta"]' . "\n", file_get_contents($appRoot . '/state/private/fastmod_rubrics.json'));
+            assertSame($head, $this->latestCommitSha($root));
+            assertThrowsRuntime(fn () => $writer->changeFastmodRubrics($input, $identity, $appRoot, true), 'Prepared post not found.');
+            $selection = new \ForumRewrite\Scoring\FastmodSelection($appRoot);
+            $config = \ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig([]);
+            assertSame(['meta'], $selection->composition($config)['ids']);
+            try {
+                $selection->save([], $config);
+                throw new LogicException('Empty selection saved');
+            } catch (InvalidArgumentException) {
+                assertSame(['meta'], $selection->enabled($config));
+            }
+            $_COOKIE = [];
+            $application = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $anonymous = $this->renderMethod($application, 'GET', '/tools/fastmod/');
+            assertStringNotContains('data-fastmod-form', $anonymous);
+            assertStringContains('fastmod-prompt-meta', $anonymous);
+            assertStringContains('root-approved identity', $anonymous);
+            $_POST = ['rubrics' => ['meta']];
+            $denied = json_decode($this->renderMethod($application, 'POST', '/api/prepare_fastmod_rubrics'), true);
+            assertSame('error', $denied['status']);
+            $_COOKIE = ['identity_hint' => $identity];
+            $authorized = $this->renderMethod($application, 'GET', '/tools/fastmod/');
+            assertStringContains('data-fastmod-form', $authorized);
+            assertStringNotContains('<dialog', $authorized);
+            assertStringContains('/assets/fastmod.', $authorized);
+        } finally {
+            $_COOKIE = $cookies;
+            $_POST = $post;
+            $this->deleteTree($key['home']);
+            $this->deleteTree($appRoot);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testSignedProfileNamePreservesIdentityAndRejectsForgery(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -930,7 +999,20 @@ final class WriteApiSmokeTest
             $postPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
 
-            assertStringContains('Fastmod: 0.42', $postPage);
+            assertStringContains('Fastmod (legacy) (earlier rubric revision)', $postPage);
+            assertStringContains('Moderation: 0.42', $postPage);
+            $store = new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
+            $store->save($postId, (string) $context['content_hash'], 'new-revision',
+                \ForumRewrite\Scoring\FastScoreResult::scoredSet(['meta' => 0.91, 'custom' => 0.12], 'llm'));
+            $multi = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            assertStringContains('Meta: 0.91', $multi);
+            assertStringContains('Custom: 0.12', $multi);
+            assertStringNotContains('Moderation: 0.91', $multi);
+            $store->save($postId, (string) $context['content_hash'], 'failed-revision',
+                \ForumRewrite\Scoring\FastScoreResult::notScored('invalid_response', [], 'invalid_response'));
+            $failed = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            assertStringContains('invalid response', $failed);
+            assertStringNotContains('Meta: 0.00', $failed);
             assertStringNotContains('Fastmod:', $threadPage);
         } finally {
             $previousScorePath === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $previousScorePath);
@@ -1979,7 +2061,7 @@ PHP);
             assertStringNotContains('data-agent-reply-work=', $createdThreadPage);
             assertStringContains('data-role="agent-reply-feedback"', $createdThreadPage);
             assertStringContains('Automated reply agent', $agentProfile);
-            assertStringContains('Account type:</strong> automated reply agent', $agentProfile);
+            assertStringContains('Automated reply agent', $agentProfile);
             assertStringContains('reply-agent', $users);
             assertStringContains('Automated reply agent', $users);
             assertStringContains('Author: reply-agent', $activity);
@@ -2420,6 +2502,349 @@ NODE;
         }
     }
 
+    public function testVerifiedScriptureUnavailableSourceAndRequestedTranslationRecoverNormally(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE'); putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        $oldPath = getenv('SCRIPTURE_SOURCE_PATH');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source) use ($oldPath): void {
+                foreach (['source', 'translation', 'revoked'] as $case) {
+                    $body = $case === 'translation' ? 'Use NIV. Help me choose a stopping point.' : 'Help me choose a stopping point.';
+                    $created = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $source . '&parent_id=' . $source . '&body=' . rawurlencode($body));
+                    $target = $this->extractValue($created, 'post_id');
+                    $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . $target . '&response_mode=scripture_oriented_analysis');
+                    $claimed = $store->claimRequestedForPost($target);
+                    if ($case === 'source') { putenv('SCRIPTURE_SOURCE_PATH=' . __FILE__ . '.missing'); }
+                    if ($case === 'revoked') {
+                        $pdo->exec('UPDATE profiles SET is_approved = 0 WHERE identity_id = ' . $pdo->quote($claimed['request_context']['agent_reply_request']['requested_by_identity_id']));
+                    }
+                    $result = $app->fulfillAgentReplyRequest($claimed);
+                    if ($case === 'revoked') {
+                        assertSame('failed', $result['generation_status']);
+                        assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($target))->fetchColumn());
+                    } else {
+                        assertSame('generated', $result['generation_status']);
+                        $published = (string) $pdo->query('SELECT body FROM posts WHERE post_id = ' . $pdo->quote($result['agent_post_id']))->fetchColumn();
+                        assertStringContains('unavailable', $published);
+                        assertStringNotContains('Proverbs 21:5, KJV', $published);
+                    }
+                    putenv($oldPath === false ? 'SCRIPTURE_SOURCE_PATH' : 'SCRIPTURE_SOURCE_PATH=' . $oldPath);
+                }
+            });
+        } finally {
+            putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous);
+            putenv($oldPath === false ? 'SCRIPTURE_SOURCE_PATH' : 'SCRIPTURE_SOURCE_PATH=' . $oldPath);
+        }
+    }
+
+    public function testVerifiedScriptureExpansionNormalRenderingAndRecovery(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE'); putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory): void {
+                $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+                $claimed = $store->claimRequestedForPost($initial);
+                $store->saveComplete($claimed['request_context'], ['response_text' => 'Unverified old expansion.']);
+                $failed = $app->fulfillAgentReplyRequest($claimed);
+                assertSame('failed', $failed['generation_status']);
+                assertSame('scripture_verification_failed', $failed['failure_code']);
+                $app->retryAgentReplyRequest($initial, $claimed['target_content_hash']);
+                $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial));
+                assertSame('generated', $done['generation_status']);
+                $body = (string) $pdo->query('SELECT body FROM posts WHERE post_id = ' . $pdo->quote($done['agent_post_id']))->fetchColumn();
+                assertStringContains('Further scripture reflection:', $body);
+                assertStringContains('Proverbs 21:5, KJV', $body);
+                $page = $this->renderMethod($app, 'GET', '/threads/' . $source);
+                assertStringContains('data-expansion-body', $page);
+                assertStringContains('Proverbs 21:5', $page);
+                (new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder())->build($db, $directory . '/verified.sqlite3');
+                $copy = new PDO('sqlite:' . $directory . '/verified.sqlite3');
+                assertSame($body, $copy->query('SELECT body FROM posts WHERE post_id = ' . $copy->quote($done['agent_post_id']))->fetchColumn());
+            });
+        } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
+    }
+
+    public function testVerifiedScriptureStoredDraftFailureAndExplicitRetry(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE'); putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source): void {
+                $created = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $source . '&parent_id=' . $source . '&body=How+should+I+choose+a+stopping+point%3F');
+                $target = $this->extractValue($created, 'post_id');
+                $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . $target . '&response_mode=scripture_oriented_analysis');
+                $claimed = $store->claimRequestedForPost($target);
+                $store->saveComplete($claimed['request_context'], ['response_text' => 'An old unverified quotation.', 'raw_response' => []]);
+                $failed = $app->fulfillAgentReplyRequest($claimed);
+                assertSame('failed', $failed['generation_status']);
+                assertSame('scripture_verification_failed', $failed['failure_code']);
+                $again = $app->fulfillAgentReplyRequest($claimed);
+                assertSame('failed', $again['generation_status']);
+                assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($target))->fetchColumn());
+                $app->retryAgentReplyRequest($target, $claimed['target_content_hash']);
+                $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($target));
+                assertSame('generated', $done['generation_status']);
+                assertSame('already_posted', $app->fulfillAgentReplyRequest($claimed)['generation_status']);
+                assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($target))->fetchColumn());
+            });
+        } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
+    }
+
+    public function testVerifiedScriptureInitialPublishesThroughNormalRequest(): void
+    {
+        $previous = getenv('SCRIPTURE_RESPONSE_GUIDANCE');
+        putenv('SCRIPTURE_RESPONSE_GUIDANCE=verified');
+        try {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
+                $body = (string) $pdo->query('SELECT body FROM posts WHERE post_id = ' . $pdo->quote($initial))->fetchColumn();
+                assertStringContains('The thoughts of the diligent tend only to plenteousness;', $body);
+                assertStringContains('Proverbs 21:5, KJV', $body);
+                assertStringNotContains('"segments"', $body);
+                $row = $store->findByTarget($source, (string) $pdo->query('SELECT target_content_hash FROM post_generated_responses WHERE target_post_id = ' . $pdo->quote($source))->fetchColumn());
+                assertSame(\ForumRewrite\Agent\ScriptureSource::DIGEST, $row['raw_response']['scripture_verification']['source_digest']);
+                $status = json_decode($this->renderMethod($app, 'GET', '/api/scripture_reply_status?post_id=' . $source), true);
+                assertSame($initial, $status['agent_post_id']);
+                assertStringContains('Proverbs 21:5', $this->renderMethod($app, 'GET', '/threads/' . $source));
+            });
+        } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
+    }
+
+    public function testScriptureInitialStatusReadsStoredResultsAndHonorsVisibility(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
+            $url = '/api/scripture_reply_status?post_id=' . $source;
+            $before = $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn();
+            $_COOKIE = [];
+            $first = json_decode($this->renderMethod($app, 'GET', $url), true);
+            $again = json_decode($this->renderMethod($app, 'GET', $url), true);
+            assertSame('already_posted', $first['generation_status']);
+            assertSame($initial, $first['agent_post_id']);
+            assertSame($first, $again);
+            assertSame($before, $pdo->query('SELECT COUNT(*) FROM post_generated_responses')->fetchColumn());
+            assertSame('error', json_decode($this->renderMethod($app, 'POST', $url), true)['status']);
+            $pdo->exec('UPDATE posts SET is_hidden = 1 WHERE post_id = ' . $pdo->quote($initial));
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', $url), true)['status']);
+            $pdo->exec('UPDATE posts SET is_hidden = 0 WHERE post_id = ' . $pdo->quote($initial));
+            $pdo->exec('UPDATE posts SET retracted_at = "2026-01-01" WHERE post_id = ' . $pdo->quote($source));
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', $url), true)['status']);
+        });
+    }
+
+    private function withScriptureExpansionFixture(callable $check): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $directory = dirname($db) . '/expansion-fixture-' . bin2hex(random_bytes(6));
+        mkdir($directory, 0700);
+        $overrides = ['FORUM_SECRETS_PATH' => $directory . '/absent.php', 'LLM_PROVIDER' => 'stub',
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => $directory . '/queue.sqlite3',
+            'FAST_SCORING_DATABASE_PATH' => $directory . '/scores.sqlite3',
+            'LLM_EXCHANGE_DATABASE_PATH' => $directory . '/exchanges.sqlite3', 'FORUM_PUBLIC_ARTIFACT_ROOT' => $artifacts];
+        $previous = [];
+        foreach ($overrides as $key => $value) { $previous[$key] = getenv($key); putenv($key . '=' . $value); }
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $source = $this->createAnalyzedThread($app, $db);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($source) . '&response_mode=scripture_oriented_analysis');
+            $pdo = new PDO('sqlite:' . $db);
+            $store = new SqliteAgentReplyGenerationStore($pdo);
+            $first = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($source));
+            assertSame('generated', $first['generation_status']);
+            $check($app, $pdo, $store, $source, $first['agent_post_id'], $root, $db, $artifacts, $directory);
+        } finally {
+            foreach ($previous as $key => $value) { putenv($value === false ? $key : $key . '=' . $value); }
+            $_COOKIE = [];
+        }
+    }
+
+    public function testScriptureExpansionRequestPublicationAndRebuild(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts): void {
+            $api = '/api/expand_agent_reply?post_id=' . rawurlencode($initial);
+            foreach (['/threads/' . $source, '/posts/' . $initial] as $path) {
+                assertStringContains('data-action="expand-scripture"', $this->renderMethod($app, 'GET', $path));
+            }
+            $_COOKIE = [];
+            assertSame('forbidden', json_decode($this->renderMethod($app, 'POST', $api), true)['error']);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertSame('requested', json_decode($this->renderMethod($app, 'POST', $api), true)['generation_status']);
+            assertSame('requested', json_decode($this->renderMethod($app, 'POST', $api), true)['generation_status']);
+            $claimed = $store->claimRequestedForPost($initial);
+            assertSame(null, $store->claimRequestedForPost($initial));
+            $done = $app->fulfillAgentReplyRequest($claimed);
+            assertSame('generated', $done['generation_status']);
+            $status = json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . rawurlencode($initial)), true);
+            assertSame('generated', $status['generation_status']);
+            assertSame('Stub agent response.', trim($status['expansion_body']));
+            foreach (['/threads/' . $source, '/posts/' . $initial] as $path) {
+                $html = $this->renderMethod($app, 'GET', $path);
+                assertStringContains('<summary>Further scripture reflection</summary>', $html);
+                assertStringNotContains('data-action="expand-scripture"', $html);
+                assertStringNotContains('id="post-' . $done['agent_post_id'] . '"', $html);
+            }
+            $_COOKIE = [];
+            assertStringContains('<summary>Further scripture reflection</summary>', $this->renderMethod($app, 'GET', '/posts/' . $initial));
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertSame($done['agent_post_id'], json_decode($this->renderMethod($app, 'POST', $api), true)['agent_post_id']);
+            assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $done['agent_post_id']), true)['status']);
+            // Replaying a claim after canonical publication makes no replacement.
+            assertSame($done['agent_post_id'], $app->fulfillAgentReplyRequest($claimed)['agent_post_id']);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $new = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            assertSame('generated', json_decode($this->renderMethod($new, 'GET', '/api/agent_expansion_status?post_id=' . $initial), true)['generation_status']);
+        });
+    }
+
+    public function testExpansionOfReplyDisappearsWhenThreadRootIsHidden(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $rootPost, $ignoredInitial, $root, $db, $artifacts, $directory): void {
+            $response = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $rootPost . '&parent_id=' . $rootPost . '&body=How%20can%20we%20care%20for%20neighbors%3F');
+            $source = $this->extractValue($response, 'post_id');
+            $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . $source . '&response_mode=scripture_oriented_analysis');
+            $initial = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($source))['agent_post_id'];
+            $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+            $expansion = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial))['agent_post_id'];
+            $pdo->exec('UPDATE posts SET is_hidden = 1 WHERE post_id = ' . $pdo->quote($rootPost));
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . $initial), true)['status']);
+            (new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder())->build($db, $directory . '/hidden-thread.sqlite3');
+            $copy = new PDO('sqlite:' . $directory . '/hidden-thread.sqlite3');
+            $stmt = $copy->prepare('SELECT COUNT(*) FROM unavailable_expansions WHERE post_id = ?');
+            $stmt->execute([$expansion]); assertSame(1, (int) $stmt->fetchColumn());
+        });
+    }
+
+    public function testScriptureExpansionCacheAndOfflineVisibility(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory): void {
+            @mkdir($artifacts . '/posts', 0700, true);
+            file_put_contents($artifacts . '/posts/' . $initial . '.html', 'old initial artifact');
+            $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+            $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial));
+            assertSame('generated', $done['generation_status']);
+            assertSame(false, is_file($artifacts . '/posts/' . $initial . '.html'));
+            $_COOKIE = [];
+            $author = $pdo->query('SELECT author_identity_id FROM posts WHERE post_id = ' . $pdo->quote($initial))->fetchColumn();
+            $listed = \ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts($pdo, [$author]);
+            assertSame(false, in_array($done['agent_post_id'], array_column($listed, 'post_id'), true));
+            assertStringNotContains($done['agent_post_id'], $this->renderMethod($app, 'GET', '/threads/' . $source . '?format=rss'));
+            $public = $this->renderMethod($app, 'GET', '/posts/' . $initial);
+            assertStringContains('Further scripture reflection', $public);
+            assertStringNotContains('data-action="expand-scripture"', $public);
+            $oldDetailFlag = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+            putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
+            try {
+                (new StaticArtifactBuilder(dirname(__DIR__), $root, $db, $artifacts))->buildFromReadModel();
+                assertStringContains('Further scripture reflection', file_get_contents($artifacts . '/posts/' . $initial . '.html'));
+                assertStringNotContains('data-action="expand-scripture"', file_get_contents($artifacts . '/threads/' . $source . '.html'));
+            } finally {
+                putenv($oldDetailFlag === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED' : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $oldDetailFlag);
+            }
+            $snapshot = new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder();
+            $snapshot->build($db, $directory . '/complete.sqlite3');
+            $copy = new PDO('sqlite:' . $directory . '/complete.sqlite3');
+            $stmt = $copy->prepare('SELECT agent_response_json FROM posts WHERE post_id = ?');
+            $stmt->execute([$done['agent_post_id']]);
+            assertSame('scripture_expansion', json_decode($stmt->fetchColumn(), true)['type']);
+            $stmt->closeCursor(); $copy = null;
+            foreach (['is_hidden = 1', "retracted_at = '2026-10-15T00:00:00Z'", "body = body || ' changed'"] as $index => $change) {
+                $pdo->exec('UPDATE posts SET ' . $change . " WHERE post_id = " . $pdo->quote($source));
+                assertStringNotContains('Further scripture reflection', $this->renderMethod($app, 'GET', '/posts/' . $initial));
+                $snapshot->build($db, $directory . '/stale-' . $index . '.sqlite3');
+                $copy = new PDO('sqlite:' . $directory . '/stale-' . $index . '.sqlite3');
+                $stmt = $copy->prepare('SELECT COUNT(*) FROM posts WHERE post_id = ?');
+                $stmt->execute([$done['agent_post_id']]);
+                assertSame(0, (int) $stmt->fetchColumn()); $stmt->closeCursor(); $copy = null;
+                if ($index < 2) { $pdo->exec('UPDATE posts SET is_hidden = 0, retracted_at = NULL WHERE post_id = ' . $pdo->quote($source)); }
+            }
+        });
+    }
+
+    public function testScriptureExpansionFailureRetryAndSourceRace(): void
+    {
+        foreach (['exhaustion', 'changed', 'revoked'] as $case) {
+            $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory) use ($case): void {
+                $api = '/api/expand_agent_reply?post_id=' . $initial;
+                $this->renderMethod($app, 'POST', $api);
+                $claimed = $store->claimRequestedForPost($initial);
+                $workflow = (new ReflectionMethod($app, 'postWorkflowService'))->invoke($app);
+                $provider = new class($pdo, $source, $claimed, $case) implements \ForumRewrite\Llm\TextChatProvider {
+                    public function __construct(private PDO $pdo, private string $source, private array $row, private string $case) {}
+                    public function completeTextChat(array $messages, array $options = []): array {
+                        if ($this->case === 'exhaustion') { throw new \ForumRewrite\Llm\CompletionLimitException(); }
+                        if ($this->case === 'changed') {
+                            $stmt = $this->pdo->prepare('UPDATE posts SET body = body || ? WHERE post_id = ?');
+                            $stmt->execute([' edited', $this->source]);
+                        } else {
+                            $stmt = $this->pdo->prepare('UPDATE profiles SET is_approved = 0 WHERE identity_id = ?');
+                            $stmt->execute([$this->row['request_context']['agent_reply_request']['requested_by_identity_id']]);
+                        }
+                        return ['response_text' => 'Additional reflection.'];
+                    }
+                };
+                $fetch = static function (string $id) use ($pdo): ?array {
+                    $stmt = $pdo->prepare('SELECT * FROM posts WHERE post_id = ? AND is_hidden = 0');
+                    $stmt->execute([$id]); return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                };
+                $service = new \ForumRewrite\Agent\ScriptureExpansionService($pdo, $root, $directory . '/queue.sqlite3', $fetch,
+                    fn (array $post): array => $workflow->postAnalysisContext($post, false),
+                    fn () => new \ForumRewrite\Agent\AgentResponseGenerator($provider, true, true),
+                    new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root)),
+                    (new ReflectionMethod($workflow, 'agentIdentityService'))->invoke($workflow), true);
+                $result = $service->fulfill($claimed);
+                assertSame($case === 'exhaustion' ? 'failed' : 'not_recommended', $result['generation_status']);
+                assertSame(false, is_file($root . '/records/posts/' . \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($initial) . '.txt'));
+                if ($case === 'exhaustion') {
+                    assertSame('completion_limit_exhausted', $result['failure_code']);
+                    $app->retryAgentReplyRequest($initial, $claimed['target_content_hash']);
+                    assertSame('generated', $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial))['generation_status']);
+                }
+            });
+        }
+    }
+
+    public function testScriptureExpansionRejectsChangedAndHiddenSources(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
+            $api = '/api/expand_agent_reply?post_id=' . rawurlencode($initial);
+            $this->renderMethod($app, 'POST', $api);
+            $claimed = $store->claimRequestedForPost($initial);
+            $stmt = $pdo->prepare('UPDATE posts SET body = body || ? WHERE post_id = ?');
+            $stmt->execute([' changed', $source]);
+            assertSame('not_recommended', $app->fulfillAgentReplyRequest($claimed)['generation_status']);
+            assertSame('error', json_decode($this->renderMethod($app, 'POST', $api), true)['status']);
+            $stmt = $pdo->prepare('UPDATE posts SET is_hidden = 1 WHERE post_id = ?');
+            $stmt->execute([$source]);
+            assertSame('error', json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . $initial), true)['status']);
+        });
+    }
+
+    public function testExpansionProvenanceSurvivesRebuildAndPublicationReplay(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $meta = ['type' => 'scripture_oriented_analysis', 'source_post_id' => 'root-001', 'source_hash' => str_repeat('a', 64)];
+        $initial = $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Scripture response.'], $meta);
+        $expansion = ['type' => 'scripture_expansion', 'source_post_id' => 'root-001', 'source_hash' => str_repeat('a', 64),
+            'expansion_of' => $initial['post_id'], 'initial_hash' => str_repeat('b', 64)];
+        $input = ['thread_id' => 'root-001', 'parent_id' => $initial['post_id'], 'body' => 'Additional context.'];
+        $first = $writer->createReply($input, $expansion);
+        $again = $writer->createReply($input, $expansion);
+        assertSame($first['post_id'], $again['post_id']);
+        assertSame(true, $again['already_posted']);
+        $record = (new CanonicalRecordRepository($root))->loadPost('records/posts/' . $first['post_id'] . '.txt');
+        assertSame($expansion, $record->agentResponse);
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        $pdo = new PDO('sqlite:' . $db);
+        $stmt = $pdo->prepare('SELECT agent_response_json FROM posts WHERE post_id = ?');
+        $stmt->execute([$first['post_id']]);
+        assertSame($expansion, json_decode($stmt->fetchColumn(), true));
+        $stmt->closeCursor();
+        $pdo = null;
+        // Recover a canonical file written before its commit/read-model refresh.
+        $this->runCommand($root, 'git reset --soft HEAD~1');
+        $writer->createReply($input, $expansion);
+        assertSame('', trim($this->runCommand($root, 'git status --porcelain')));
+    }
+
     public function testOperatorRetryRepairsHistoricalCompletionAndRunsOnlySelectedTask(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -2572,10 +2997,10 @@ NODE;
         assertTrue(strlen($commitSha) === 40);
         assertTrue(is_file($repositoryRoot . '/records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
         assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
-        assertStringContains('Visible username:</strong> forum-user', $profile);
+        assertStringContains('<h1>forum-user</h1>', $profile);
         assertStringContains('User forum-user', $usernameRoute);
-        assertStringContains('Approved Profiles', $usernameRoute);
-        assertStringContains('/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $usernameRoute);
+        assertStringNotContains('Approved Profiles', $usernameRoute);
+        assertStringContains('/tools/user-access/accounts/forum-user', $usernameRoute);
         assertFalse(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertFalse(is_file($artifactRoot . '/threads/root-001.html'));
         assertFalse(is_file($artifactRoot . '/posts/root-001.html'));
@@ -4550,7 +4975,7 @@ NODE;
         $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
 
         $this->assertUsedIncrementalUpdate($result);
-        assertStringContains('Visible username:</strong> forum-user', $profilePage);
+        assertStringContains('<h1>forum-user</h1>', $profilePage);
         assertStringContains('forum-user', $threadPage);
     }
 
@@ -5348,7 +5773,7 @@ NODE;
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
-        assertStringContains('Visible username:</strong> forum-user', $profilePage);
+        assertStringContains('<h1>forum-user</h1>', $profilePage);
         $this->assertReadModelHealthy($databasePath);
     }
 
@@ -5534,7 +5959,7 @@ NODE;
         assertStringContains('status=ready', $status);
         assertStringContains('User forum-user', $usernameRoute);
         assertStringContains('No approved profiles currently use this username.', $usernameRoute);
-        assertStringContains('Unapproved Profiles', $usernameRoute);
+        assertStringNotContains('Unapproved Profiles', $usernameRoute);
     }
 
     public function testUsernameRouteShowsUnapprovedProfilesWhenNoApprovedMatchesExist(): void
@@ -5554,8 +5979,8 @@ NODE;
 
         assertStringContains('User forum-user', $usernameRoute);
         assertStringContains('No approved profiles currently use this username.', $usernameRoute);
-        assertStringContains('Unapproved Profiles', $usernameRoute);
-        assertStringContains('/profiles/openpgp-', $usernameRoute);
+        assertStringNotContains('Unapproved Profiles', $usernameRoute);
+        assertStringContains('/tools/user-access/accounts/forum-user', $usernameRoute);
     }
 
     public function testApprovedUserCanApproveAnotherUserAndApprovalStaysOutOfFeeds(): void
@@ -5569,7 +5994,7 @@ NODE;
         $targetBootstrapPostId = $target['bootstrap_post_id'];
 
         $_COOKIE = ['identity_hint' => 'guest'];
-        $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
+        $profilePage = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $targetProfileSlug);
 
         $this->seedArtifacts($artifactRoot, [
             '/profiles/' . $targetProfileSlug . '.html',
@@ -5593,7 +6018,7 @@ NODE;
             '/profiles/' . rawurlencode($targetProfileSlug) . '?approval=success&post_id=' . rawurlencode($approvalPostId)
                 . '&commit=' . rawurlencode($approvalResult['commit_sha'])
         );
-        $targetProfile = $this->renderMethod($application, 'GET', '/profiles/' . $targetProfileSlug);
+        $targetProfile = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $targetProfileSlug);
         $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
         $board = $this->renderMethod($application, 'GET', '/');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
@@ -5602,7 +6027,7 @@ NODE;
         $bootstrapThread = $this->renderMethod($application, 'GET', '/threads/' . $targetBootstrapThreadId);
         $_COOKIE = [];
 
-        foreach (['/user/alice', '/forte/user/alice', '/profiles/' . $targetProfileSlug, '/forte/profiles/' . $targetProfileSlug] as $route) {
+        foreach (['/tools/user-access/accounts/alice', '/forte/user/alice', '/tools/user-access/profiles/' . $targetProfileSlug, '/forte/profiles/' . $targetProfileSlug] as $route) {
             $historyPage = $this->renderMethod($application, 'GET', $route);
             assertStringContains(str_contains($route, '/profiles/') ? 'Key approval' : 'Account key history', $historyPage);
             assertStringContains('New account', $historyPage);
@@ -5668,10 +6093,10 @@ NODE;
         $target = $this->linkGeneratedIdentity($application, 'alice');
 
         $_COOKIE = ['identity_hint' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
-        $byIdentityId = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+        $byIdentityId = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $target['profile_slug']);
 
         $_COOKIE = ['identity_hint' => 'openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'];
-        $byProfileSlug = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
+        $byProfileSlug = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $target['profile_slug']);
         $_COOKIE = [];
 
         assertStringContains('Approve new member alice', $byIdentityId);
@@ -5697,10 +6122,10 @@ NODE;
             $approvedTarget
         );
         $approvedUsers = $this->renderMethod($application, 'GET', '/users/');
-        $pendingUsers = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsers = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
 
         $_COOKIE = ['identity_hint' => 'bob'];
-        $pendingUsersForbidden = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsersForbidden = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringNotContains('/users/pending/', $approvedUsersWithoutPending);
@@ -5709,7 +6134,7 @@ NODE;
         assertStringContains('/user/alice', $approvedUsers);
         assertStringNotContains('Profile:', $approvedUsers);
         assertStringNotContains('Username route:', $approvedUsers);
-        assertStringContains('/users/pending/', $approvedUsers);
+        assertStringNotContains('/users/pending/', $approvedUsers);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertStringContains('bob', $pendingUsers);
         assertStringNotContains('alice', $pendingUsers);
@@ -5739,7 +6164,7 @@ NODE;
         assertStringNotContains('Threads', $pendingUsers);
         assertStringNotContains('Posts', $pendingUsers);
         assertStringNotContains('Bootstrap thread', $pendingUsers);
-        assertStringContains('Only approved users can view the pending approval directory.', $pendingUsersForbidden);
+        assertStringContains('Only approved users can view pending approvals.', $pendingUsersForbidden);
     }
 
     public function testPendingDirectoryRendersLaterActivityWithReadingFriendlyTimestampAndFallback(): void
@@ -5757,7 +6182,7 @@ NODE;
         ]);
 
         $_COOKIE = ['identity_hint' => 'guest'];
-        $pendingUsers = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsers = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringContains('Later pending activity', $pendingUsers);
@@ -5775,7 +6200,7 @@ NODE;
         ]);
 
         $_COOKIE = ['identity_hint' => 'guest'];
-        $fallback = $this->renderMethod($application, 'GET', '/users/pending/');
+        $fallback = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringContains('No recorded activity', $fallback);
@@ -5934,7 +6359,7 @@ NODE;
             'POST',
             '/api/approve_user?profile_slug=' . rawurlencode($target['profile_slug'])
         );
-        $pendingUsersAfter = $this->renderMethod($application, 'GET', '/users/pending/');
+        $pendingUsersAfter = $this->renderMethod($application, 'GET', '/tools/user-access/pending/');
         $_COOKIE = [];
 
         assertStringContains('error=Approval requires a browser signature.', $response);

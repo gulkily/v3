@@ -1,4 +1,7 @@
-<?php $keyOnly = (bool) ($approvalHistory['profile_scope'] ?? false); ?>
+<?php
+$historyAccountBase = $historyAccountBase ?? '/user/';
+$historyProfileBase = $historyProfileBase ?? '/profiles/';
+$keyOnly = (bool) ($approvalHistory['profile_scope'] ?? false); ?>
 <article id="account-keys" class="card account-key-history<?= $keyOnly ? ' account-key-history-single' : '' ?>" aria-label="<?= $keyOnly ? 'Key approval' : 'Account key history' ?>">
   <h2><?= $keyOnly ? 'Key approval' : 'Account key history' ?></h2>
 <?php if (!$keyOnly): ?>
@@ -20,7 +23,7 @@ $classification = match ($grant['classification']) {
 ?>
   <li class="account-key-history-entry">
 <?php if (!$keyOnly): ?>
-    <h3 class="account-key-history-heading"><a href="/profiles/<?= $e($grant['profile_slug']) ?>" title="<?= $e($grant['profile_slug']) ?>" aria-label="<?= $e($grant['profile_slug']) ?>"><?= $e($shortenProfileSlug($grant['profile_slug'])) ?></a></h3>
+    <h3 class="account-key-history-heading"><a href="<?= $e($historyProfileBase) ?><?= $e($grant['profile_slug']) ?>" title="<?= $e($grant['profile_slug']) ?>" aria-label="<?= $e($grant['profile_slug']) ?>"><?= $e($shortenProfileSlug($grant['profile_slug'])) ?></a></h3>
 <?php endif; ?>
     <p class="account-key-history-metadata">Approved by <strong><?= $e($grant['approver_label']) ?></strong><?php if ($when !== null): ?> · <?= $e($whenLabel) ?>: <?= $timestamp($when) ?><?php else: ?> · Date not recorded<?php endif; ?><?php if ($grant['source_path'] !== null): ?>
 <?php $evidenceUrl = $grant['kind'] === 'root_seed'
@@ -52,12 +55,12 @@ $classification = match ($grant['classification']) {
 <?php endforeach; ?>
   </ul>
 <?php if ($keyOnly): ?>
-  <p class="meta account-key-history-footer"><a href="/user/<?= $e($approvalHistory['username']) ?>#account-keys">All account keys</a></p>
+  <p class="meta account-key-history-footer"><a href="<?= $e($historyAccountBase) ?><?= $e($approvalHistory['username']) ?>#account-keys">All account keys</a></p>
 <?php endif; ?>
 <?php if ($approvalHistory['previous_offset'] !== null): ?>
-  <a href="/user/<?= $e($approvalHistory['username']) ?>?key_offset=<?= (int) $approvalHistory['previous_offset'] ?>#account-keys">Previous keys</a>
+  <a href="<?= $e($historyAccountBase) ?><?= $e($approvalHistory['username']) ?>?key_offset=<?= (int) $approvalHistory['previous_offset'] ?>#account-keys">Previous keys</a>
 <?php endif; ?>
 <?php if ($approvalHistory['next_offset'] !== null): ?>
-  <a href="/user/<?= $e($approvalHistory['username']) ?>?key_offset=<?= (int) $approvalHistory['next_offset'] ?>#account-keys">More keys</a>
+  <a href="<?= $e($historyAccountBase) ?><?= $e($approvalHistory['username']) ?>?key_offset=<?= (int) $approvalHistory['next_offset'] ?>#account-keys">More keys</a>
 <?php endif; ?>
 </article>

@@ -346,7 +346,8 @@ function renderPrivateConfigFile(array $config, array $existing, bool $includeCo
 
     if ($includeComments) {
         $contents .= "\n    // Fastmod is independent of full post analysis and disabled by default.\n"
-            . "    // Its LLM settings fall back to the corresponding LLM_* values when omitted.\n";
+            . "    // Its LLM settings fall back to the corresponding LLM_* values when omitted.\n"
+            . "    // Prompt path is the shared CSV task introduction; choose rubric templates in Tools > Fastmod.\n";
     }
     $contents .= renderConfigLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])
         . renderConfigLine('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED', $config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'])

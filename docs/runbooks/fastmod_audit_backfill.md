@@ -3,6 +3,12 @@
 Use this runbook only as a deployment operator. Historical scoring is opt-in;
 normal Fastmod publication behavior is unchanged.
 
+Before auditing, use Tools → Fastmod to confirm at least one enabled rubric.
+The audit and backfill target the current enabled set and template revision;
+changing that set creates no automatic backfill. Old pending compositions are
+excluded with `rubric_changed_before_score`; audit again to explicitly request
+current-composition work.
+
 1. Run `./v3 fast-score audit --include-existing`. Confirm it identifies the
    expected read-model path, selected model, candidate states, estimate, and
    read-only confirmation.

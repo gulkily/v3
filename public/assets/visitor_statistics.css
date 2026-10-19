@@ -91,6 +91,7 @@
 
 .visitor-statistics-table th:first-child {
   text-align: left;
+  white-space: nowrap;
 }
 
 .visitor-statistics-table tr + tr th,

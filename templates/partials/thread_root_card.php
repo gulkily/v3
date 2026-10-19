@@ -98,7 +98,7 @@ if (!$metaVisible) {
     }
 }
 ?>
-<article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $metaVisible ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $rootTimeLabel !== '' ? ' data-time="' . $e($rootTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?>>
+<article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $metaVisible ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $rootTimeLabel !== '' ? ' data-time="' . $e($rootTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
 <?php if ($isQdbQuoteRoot): ?>
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="<?= $e($quoteRootPermalinkHref) ?>">#<?= $e($quoteRootDisplayNumber) ?></a>
@@ -130,6 +130,7 @@ if (!$metaVisible) {
 <?php if ($metaVisible && !$isQdbQuoteRoot): ?>
   <p class="meta"><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>
+<?= $partial('partials/scripture_expansion.php') ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
 <?php
 $postAnalysis = ((bool) ($viewerCanSeePostAnalysis ?? false)) && !$isRetracted

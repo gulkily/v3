@@ -39,7 +39,7 @@ try {
     if (saveFails) assert.equal(await page.evaluate(() => window.stops), 0);
   }
   await page.unrouteAll();
-  const navLink = '<a href="/messages" data-private-message-unread data-viewer="alice" aria-label="Messages" aria-describedby="private-message-unread-status">Messages <span data-role="unread-count">…</span><span id="private-message-unread-status" hidden>Unread status loading</span></a>';
+  const navLink = '<a href="/messages" data-private-message-unread data-viewer="alice" aria-label="Messages" aria-describedby="private-message-unread-status">Messages<span id="private-message-unread-status" hidden>Unread status loading</span></a>';
   const assets = ['/assets/private_message_availability.js', '/assets/private_message_unread.js'];
   let releaseNavigation, holdNavigation = false, navigationHeld = false, writesInCycle = 0;
   let enabled = false, unreadFails = false, assetFails = false, unreadRequests = 0;
@@ -86,13 +86,13 @@ try {
   unreadFails = true;
   await page.getByRole('switch').click();
   await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'unavailable');
-  assert.equal(await page.locator('[data-role="unread-count"]').innerText(), '?');
+  assert.equal(await page.locator('[data-private-message-unread]').innerText(), 'Messages');
   // A fresh disabled page with a broken asset gets explicit reload recovery.
   enabled = false; assetFails = true;
   await page.goto('http://navigation.test/');
   await page.getByRole('switch').click();
   await page.getByRole('button', { name: 'Reload page' }).waitFor();
-  assert.equal(await page.locator('[data-role="unread-count"]').innerText(), '?');
+  assert.equal(await page.locator('[data-private-message-unread]').innerText(), 'Messages');
   // An identity change while navigation is delayed must not install the old viewer's link.
   enabled = false; assetFails = false; holdNavigation = true;
   await page.goto('http://navigation.test/');

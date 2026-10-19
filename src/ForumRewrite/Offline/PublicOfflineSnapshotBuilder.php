@@ -14,7 +14,9 @@ use RuntimeException;
  */
 final class PublicOfflineSnapshotBuilder
 {
-    public const SNAPSHOT_VERSION = '3';
+    public const SNAPSHOT_VERSION = '4';
+    private ?array $sourcePostColumns = null;
+
     public const DEFAULT_THREAD_LIMIT = 200;
     public const DEFAULT_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -40,6 +42,7 @@ final class PublicOfflineSnapshotBuilder
         }
 
         $temporaryPath = $targetPath . '.tmp-' . bin2hex(random_bytes(8));
+        $this->sourcePostColumns = null;
         $source = new PDO('sqlite:' . $sourcePath);
         $source->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $snapshot = new PDO('sqlite:' . $temporaryPath);
@@ -94,6 +97,7 @@ final class PublicOfflineSnapshotBuilder
                 $postCount += count($posts);
             }
 
+            $this->insertUnavailableExpansions($snapshot, $source);
             $publicKeyCount = $this->insertPublicKeys($snapshot, $source, array_keys($selectedAuthorIdentityIds));
 
             $this->writeMetadata($snapshot, [
@@ -165,10 +169,12 @@ final class PublicOfflineSnapshotBuilder
             body TEXT NOT NULL,
             board_tags_json TEXT NOT NULL,
             thread_type TEXT NULL,
+            agent_response_json TEXT NULL,
             author_label TEXT NOT NULL,
             author_profile_slug TEXT NULL,
             sequence_number INTEGER NOT NULL
         )');
+        $pdo->exec('CREATE TABLE unavailable_expansions (post_id TEXT PRIMARY KEY)');
         $pdo->exec('CREATE TABLE public_keys (
             identity_id TEXT PRIMARY KEY,
             signer_fingerprint TEXT NOT NULL,
@@ -272,9 +278,13 @@ final class PublicOfflineSnapshotBuilder
     /** @return list<array<string, mixed>> */
     private function visiblePostsForThread(PDO $source, string $threadId): array
     {
+        $this->sourcePostColumns ??= array_column($source->query('PRAGMA table_info(posts)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+        $metadata = in_array('agent_response_json', $this->sourcePostColumns, true) ? 'agent_response_json' : 'NULL AS agent_response_json';
+        $retracted = in_array('retracted_at', $this->sourcePostColumns, true) ? 'retracted_at AS source_retracted_at' : 'NULL AS source_retracted_at';
         $statement = $source->prepare(
             'SELECT post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                    thread_type, author_identity_id, author_label, author_profile_slug, sequence_number
+                    thread_type, author_identity_id, author_label, author_profile_slug, sequence_number, '
+                . $metadata . ', ' . $retracted . '
              FROM posts
              WHERE thread_id = :thread_id AND is_hidden = 0
              ORDER BY sequence_number ASC, post_id ASC'
@@ -282,10 +292,38 @@ final class PublicOfflineSnapshotBuilder
         $statement->execute(['thread_id' => $threadId]);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-        return array_values(array_filter(
-            $rows,
-            static fn (array $row): bool => !ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])
-        ));
+        $byId = array_column($rows, null, 'post_id');
+        $rows = array_values(array_filter($rows, static function (array $row) use ($byId): bool {
+            if (ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])) { return false; }
+            $meta = json_decode((string) ($row['agent_response_json'] ?? ''), true);
+            if (($meta['type'] ?? '') === 'scripture_expansion' && ($row['author_label'] ?? '') === 'reply-agent') {
+                return \ForumRewrite\Canonical\AgentResponseMetadata::validExpansion($row,
+                    $byId[$row['parent_id']] ?? null, $byId[$meta['source_post_id'] ?? ''] ?? null);
+            }
+            return true;
+        }));
+        foreach ($rows as &$row) { unset($row['source_retracted_at']); }
+        return $rows;
+    }
+
+    private function insertUnavailableExpansions(PDO $snapshot, PDO $source): void
+    {
+        $columns = array_column($source->query('PRAGMA table_info(posts)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+        if (!in_array('agent_response_json', $columns, true)) { return; }
+        $candidates = $source->query("SELECT * FROM posts WHERE agent_response_json IS NOT NULL AND author_label = 'reply-agent'")->fetchAll(PDO::FETCH_ASSOC);
+        $find = $source->prepare('SELECT * FROM posts WHERE post_id = ?');
+        $insert = $snapshot->prepare('INSERT OR IGNORE INTO unavailable_expansions (post_id) VALUES (?)');
+        foreach ($candidates as $expansion) {
+            $meta = json_decode($expansion['agent_response_json'], true);
+            if (($meta['type'] ?? '') !== 'scripture_expansion') { continue; }
+            $find->execute([$expansion['parent_id']]); $initial = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
+            $find->execute([$meta['source_post_id'] ?? '']); $original = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
+            $find->execute([$expansion['thread_id']]); $thread = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
+            if ($thread === null || !empty($thread['is_hidden']) || ($thread['retracted_at'] ?? null) !== null
+                || !\ForumRewrite\Canonical\AgentResponseMetadata::validExpansion($expansion, $initial, $original)) {
+                $insert->execute([$expansion['post_id']]);
+            }
+        }
     }
 
     /**
@@ -360,10 +398,10 @@ final class PublicOfflineSnapshotBuilder
         $statement = $snapshot->prepare(
             'INSERT INTO posts (
                 post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                thread_type, author_label, author_profile_slug, sequence_number
+                thread_type, agent_response_json, author_label, author_profile_slug, sequence_number
             ) VALUES (
                 :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                :thread_type, :author_label, :author_profile_slug, :sequence_number
+                :thread_type, :agent_response_json, :author_label, :author_profile_slug, :sequence_number
             )'
         );
         unset($post['author_identity_id']);
