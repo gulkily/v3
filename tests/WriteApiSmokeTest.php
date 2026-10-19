@@ -2182,7 +2182,7 @@ PHP);
             assertSame('generated', $fulfilled['generation_status']);
             assertSame(1, $analysisCount);
             assertSame(true, str_starts_with($stored['analysis_hash'], 'task:'));
-            assertStringContains(
+            assertStringNotContains(
                 $label . ' available.',
                 $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId))
             );
@@ -2328,8 +2328,6 @@ PHP);
         assertStringContains('__forumAgentReplyGenerationStartedPostIds', $script);
         assertStringContains('data-agent-reply-work', $script);
         assertStringContains('function agentReplyResultFromAnalysis(analysis)', $script);
-        assertStringContains('function setFeedbackLink(node, text, href, label)', $script);
-        assertStringContains('function agentReplyAnchorUrl(agentPostId)', $script);
         assertStringContains('function bindAgentReplyRequestButtons()', $script);
         assertStringContains('data-action="request-agent-reply"', $script);
         assertStringContains('work === "analyze"', $script);
@@ -2343,13 +2341,10 @@ PHP);
         assertStringContains('agentResponseModeTrigger === button', $script);
         assertStringContains('pointerdown', $script);
         assertStringContains('response_mode', $script);
-        assertStringContains('agentReplySubject(result) + " added below this post."', $script);
         assertStringContains('agentReplySubject(result) + " requested."', $script);
         assertStringContains('Requesting " + mode.label', $script);
-        assertStringContains('View agent reply.', $script);
+        assertStringNotContains('View agent reply.', $script);
         assertStringContains('result.reason === "config_disabled"', $script);
-        assertStringContains('url.searchParams.set("created_post_id", agentPostId);', $script);
-        assertStringContains('url.hash = "post-" + agentPostId;', $script);
         assertStringContains('generation_status === "in_progress"', $script);
         $analyzeBranchStart = strpos($script, 'if (work === "analyze")');
         $publishBranchStart = strpos($script, 'const result = await generateAgentReply(postId);');
@@ -2398,9 +2393,21 @@ const requested = { parent: feedback.parent, text: feedback.textContent };
 window.agentReplyFeedbackTest.applyGenerationResult(feedback, {
   status: 'ok', generation_status: 'failed', response_mode_label: 'Logic analysis'
 }, null);
+const failed = { parent: feedback.parent, text: feedback.textContent };
+const completed = [];
+for (const generation_status of ['generated', 'already_posted']) {
+  feedback.hidden = false;
+  feedback.textContent = 'Scripture-oriented analysis requested.';
+  window.agentReplyFeedbackTest.applyGenerationResult(feedback, {
+    status: 'ok', generation_status, agent_post_id: 'reply-1',
+    response_mode_label: 'Scripture-oriented analysis'
+  }, null);
+  completed.push({ hidden: feedback.hidden, text: feedback.textContent });
+}
 process.stdout.write(JSON.stringify({
   requested,
-  failed: { parent: feedback.parent, text: feedback.textContent },
+  failed,
+  completed,
   outsideCount: actions.outsideCount,
   restoredCount: actions.restoredCount
 }));
@@ -2415,8 +2422,9 @@ NODE;
         assertSame([
             'requested' => ['parent' => 'outside', 'text' => 'Logic analysis requested.'],
             'failed' => ['parent' => 'actions', 'text' => 'Logic analysis request failed.'],
+            'completed' => [['hidden' => true, 'text' => ''], ['hidden' => true, 'text' => '']],
             'outsideCount' => 1,
-            'restoredCount' => 1,
+            'restoredCount' => 3,
         ], $result);
     }
 

@@ -35,7 +35,7 @@ $codexHandoffSummaryLabel = match ($codexHandoffStatus) {
 };
 $agentReplyFeedbackText = '';
 if ($agentReplyPostedId !== '') {
-    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' available.';
+    $agentReplyFeedbackText = '';
 } elseif ($agentReplyStatus === 'requested') {
     $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' requested.';
 } elseif (in_array($agentReplyStatus, ['pending', 'complete', 'posting'], true)) {
@@ -191,7 +191,7 @@ if (!is_array($postAnalysisLabels)) {
 <?= $partial('partials/retract_post_control.php') ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
 <?php if (!$agentReplyIsUnfinished): ?>
-    <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
+    <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?></p>
 <?php endif; ?>
     <p class="meta codex-handoff-feedback" data-role="codex-handoff-feedback"<?= $codexHandoffFeedbackText === '' ? ' hidden' : '' ?>><?= $e($codexHandoffFeedbackText) ?></p>
 <?php if (is_array($codexHandoff)): ?>

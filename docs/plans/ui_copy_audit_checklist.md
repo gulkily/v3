@@ -55,3 +55,7 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 ## LLM exchange display — October 19, 2026
 
 - [x] Removed LLM exchange links from shared thread root/reply cards and stopped fetching exchange lists for thread pages. Post detail pages now render their own exchange links beside the post metadata, retaining approved-viewer, feature-flag, and retraction visibility checks. Two targeted write-API smoke tests passed, covering thread absence, root/reply detail links scoped to the selected post, anonymous/disabled UI absence, and retracted exchange privacy. PHP syntax and diff checks passed.
+
+## Agent reply availability notice — October 19, 2026
+
+- [x] Removed the completed-analysis availability notice and “View agent reply” link from shared root/reply cards and browser generation feedback. Pending and failure feedback remain. PHP/JavaScript syntax checks and three targeted write-API checks passed, covering selected-mode completion rendering and hidden browser feedback for generated/already-posted replies.
