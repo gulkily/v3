@@ -113,10 +113,6 @@ compose form improvements
 	"choose an image" module should look like the other modules
 	"body" module should also look like the other modules
 
-xWord 97 disabled buttons now look disabled (gray text), and a Win Dark theme
-	blends Chicago and Word 97 chrome in a dark palette.
-	See docs/plans/word97_disabled_and_dark_theme/.
-
 xInvite path repaired: opt-in source-page destination, zero-click targeted entry,
 	member access, same-key later naming, and interrupted-redemption recovery.
 	See docs/reference/invitation_entry.md and docs/plans/invite_zero_click/.
@@ -147,6 +143,3 @@ composite identity (undefined term)
 		follows identity_id and is unchanged
 	related: docs/plans/username_change_gate_step1_solution_assessment.md
 
-./v3 task-queue status should not output 2 pages, just the sums
-
-./v3 task-queue run should output errors/failures to a rotated log file so that we can use llm to troubleshoot it.
