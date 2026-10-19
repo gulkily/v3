@@ -23,3 +23,13 @@ Debug mode: enabled (inherited from Step 3)
   - Not yet run: missing-`gpgconf` (stripped PATH) case beyond the swallowed-failure design; covered by `@exec` plus ignored exit status.
 - Notes:
   - The recursive delete also fixes the inspector's old `glob('/*')` cleanup, which skipped dotfiles and nested dirs such as `private-keys-v1.d`, leaving temp homes behind.
+
+## Stage 3 - Inspector and verifier use the helper
+- Changes:
+  - `OpenPgpKeyInspector::cleanup` and `OpenPgpSignatureVerifier::cleanup` now delegate to `GpgHomeCleaner::dispose` (verifier's private recursive delete removed).
+  - Added `testInspectAndVerifyLeaveNoGpgAgentsBehind` to `tests/OpenPgpKeyInspectorTest.php` (agent count and temp-home count do not grow; waits up to 2s for already-stopped agents to exit).
+- Verification:
+  - Passed: `php tests/run.php OpenPgpKeyInspectorTest GpgHomeCleanerTest` (9 run, 9 passed), three consecutive runs; `gpg-agent` count 0 afterwards.
+  - Limitation: the new test also passes against the old code on this host, because GnuPG 2.2.27 here exits agents on its own once the home vanishes. It guards against regressions but does not reproduce the reported leak; Stage 5 must measure the real environment.
+- Notes:
+  - `gpgconf --kill` is asynchronous, so the test tolerates agents still exiting from earlier operations.
