@@ -1,7 +1,7 @@
 # Fastmod
 
-Fastmod provides one focused 0–1 moderation probability without running full
-post analysis. It is disabled by default and is intended for approved operators
+Fastmod records independent 0–1 rubric scores from one LLM call per evaluation,
+without running full post analysis. It is disabled by default and is intended for approved operators
 or internal workflows.
 
 ## Configuration
@@ -13,13 +13,59 @@ An absent or blank override inherits `LLM_MODEL`; generated configuration defaul
 to inheritance. Explicit overrides are preserved, so use a model identifier valid
 for the configured endpoint (for example, `gpt-5-nano` for direct OpenAI).
 
-`FAST_SCORING_PROMPT_PATH` selects the rubric prompt. Its text must define exactly what probability 0 and 1 mean. The model receives the target post text; replies additionally receive bounded parent and root context. It returns only a numeric `probability` value.
+`FAST_SCORING_PROMPT_PATH` selects the shared task introduction (default:
+`prompts/fastmod_introduction.txt`). The former generated default,
+`prompts/fast_post_scoring_system.txt`, is automatically treated as the new
+introduction path. Custom introductions must request CSV, not JSON. The model
+receives target text plus bounded parent/root context for replies.
+
+### Rubric selection
+
+Open **Tools → Fastmod** as a root-approved operator. Each rubric displays its repository prompt beside its checkbox. Enable
+one or more rubrics and save using the browser identity signature. No individual
+rubric is mandatory, but the panel and harness reject an empty selection.
+Saving settings does not enqueue work or call the model. Disabled rubric text
+is omitted from the prompt and response contract entirely.
+
+Each rubric is a compact `.txt` template under `prompts/fastmod/`, ideally a
+single bullet. The filename without `.txt` is its stable identity (lowercase
+letters, digits, underscores; first character a letter). Initial rubrics are
+`moderation` and `meta`. Meta covers catch-all application support: feature
+requests, bug reports, and help concerning the platform, instance, or interaction
+with the application and interfaces. Ordinary subject-matter questions are not
+meta. Support and hostility may overlap.
+
+Adding a template automatically adds a panel option; changing/removing templates
+requires no scoring-pipeline changes. Preserve an identity's meaning; use a new
+identity for a different signal. Before removing an enabled rubric, disable it
+and leave at least one other selected. Missing, empty, or invalid selected
+rubrics fail configuration rather than silently disappearing. A renamed rubric
+is a removed rubric plus a new one.
+
+Selection is stored privately and atomically in
+`state/private/fastmod_rubrics.json`, shared by web and worker processes; ensure
+both run against the same application root and can access this file. Without a
+saved selection, both initial rubrics are enabled; a PHP private configuration
+may set `FAST_SCORING_RUBRICS` to a nonempty array of IDs as the initial selection.
+The saved panel selection takes precedence. IDs are sorted lexically for the
+prompt and CSV order.
+
+The response is only comma-separated probabilities, for example `0.8,0.2` for
+`meta,moderation`, or `0.8` for meta alone. The harness trims surrounding/field
+whitespace and validates exact count, numeric syntax, finite values, and range.
+It rejects prose, markdown, missing/extra fields, and invalid values as a whole;
+it never fills missing scores, clamps values, or accepts partial results.
+Recorded results use rubric IDs, not CSV positions. The legacy `probability`
+field is moderation only and is null for meta-only results; it is never a blend.
 
 `FAST_SCORING_DATABASE_PATH` optionally selects private SQLite score state. It
 defaults to `state/private/fast_scores.sqlite3`, outside the published
 read-model database. Stored results are current only for the matching post
-content hash and prompt-text (rubric) revision, so an edited post or rubric is
-scored again.
+content hash and effective introduction/ordered-rubric revision. Changing
+selection or templates does not automatically score existing posts. Pending work
+from an older composition is excluded with `rubric_changed_before_score` before
+a provider call. Use the existing explicit audit/backfill workflow if re-evaluation
+is wanted; historical results keep their original rubric identity.
 
 For an audit or historical backfill using a model other than `gpt-5-nano` or
 `openai/gpt-5-nano`, set `FAST_SCORING_INPUT_USD_PER_MILLION` and
@@ -61,7 +107,7 @@ request as it happens. `--quiet` suppresses that progress output.
 `POST /api/score_post` is retired and returns `410`; it cannot bypass the
 private worker pipeline.
 
-- `scored` results have a probability in the inclusive 0–1 range.
+- `scored` results contain named rubric scores in the inclusive 0–1 range.
 - `excluded` is a deterministic, heuristic-only outcome with no probability.
 - `disabled`, `config_missing`, `provider_error`, and `invalid_response` are explicit non-score outcomes.
 
@@ -104,8 +150,37 @@ and token usage through the existing private LLM-exchange page.
 Historical backfill work is isolated from ordinary new-content sweeps. It is
 private, advisory, and retained/pruned with the same one-year Fastmod policy.
 
-Model exchanges use the existing private LLM-exchanges audit surface. A scored
-result is shown as a fractional fast-moderation score on its public
+Model exchanges use the existing private LLM-exchanges audit surface. Each recorded
+score is labeled independently on its public
 `/posts/{id}` detail page; the page reads it from the private score database
-while rendering. Scores are not added to thread cards, APIs, canonical records,
+while rendering, with legacy/earlier-revision markers where applicable. Scores are not added to thread cards, APIs, canonical records,
 or the read model, and do not make an automated moderation decision.
+
+
+## Deployment, recovery, and rollback
+
+Deploy code and prompt files together, including all selected templates. The
+private Fastmod store migrates automatically and preserves old single-score rows
+as legacy moderation-only results. The core read-model schema is unchanged.
+Custom prompt overrides need a CSV introduction; generated legacy default paths
+are translated automatically. Preserve private score and settings files across
+application releases. No automatic backfill or new scheduling trigger is added.
+
+Inspect configuration errors in the panel and `./v3 fast-score status`; correct
+missing/empty templates or permissions before retrying. For a malformed manually
+edited selection, restore a valid nonempty JSON array in the private settings
+file (or remove it to restore configured defaults). Provider and invalid CSV
+responses use existing bounded delayed retries and explicit operator retry.
+Do not interpret failures as a score of zero.
+
+Before reverting application code, stop the worker and preserve a backup of the
+private score/settings/task databases. Older binaries understand only the former
+single-score contract and must not execute new-format queued work. Restore a
+matching prior private-state backup or keep workers stopped until the compatible
+release is restored; never relabel new score maps as one legacy probability.
+
+Verification: `php tests/run.php` and `node tests/browser/fastmod.mjs`. The browser
+check uses temporary private state and a deterministic local HTTP provider to
+exercise signed selection, normal publication, worker evaluation, omission,
+multiple scores, malformed output, and explicit retry. It makes no external
+provider requests. Real-model rubric accuracy remains an operator evaluation.

@@ -32,6 +32,7 @@ final class PostRecord
         public readonly ?string $eventLocation = null,
         public readonly ?string $eventLink = null,
         public readonly ?string $eventTime = null,
+        public readonly ?array $agentResponse = null,
     ) {
     }
 

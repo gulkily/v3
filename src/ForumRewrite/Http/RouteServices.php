@@ -183,6 +183,19 @@ final class RouteServices
         );
     }
 
+    public function fastmodSettingsView(): array
+    {
+        $config = FastScoringConfig::fromPrivateConfig(PrivateConfig::load($this->projectRoot));
+        $rubrics = new \ForumRewrite\Scoring\FastmodRubrics($this->projectRoot, $config->promptPath);
+        return ['rubrics' => $rubrics->templates(), 'introduction' => $rubrics->introduction(),
+            'enabledRubrics' => (new \ForumRewrite\Scoring\FastmodSelection($this->projectRoot))->enabled($config)];
+    }
+
+    public function changeFastmodRubrics(array $input, string $operator, bool $finalize): array
+    {
+        return $this->writer()->changeFastmodRubrics($input, $operator, $this->projectRoot, $finalize);
+    }
+
     /**
      * @param \Closure(string): (array<string, mixed>|null) $fetchPost
      * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
@@ -253,10 +266,19 @@ final class RouteServices
 
         try {
             $context = (new FastScoreContextFactory(static fn (string $_): ?array => null))->forPost($post);
-            return (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->latestScoredForPostContent(
+            $result = (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->latestForPostContent(
                 $postId,
                 (string) $context['content_hash'],
             );
+            if ($result !== null) {
+                try {
+                    $config = FastScoringConfig::fromPrivateConfig(PrivateConfig::load($this->projectRoot));
+                    $result['stale'] = $result['rubric_revision'] !== FastScoringRubricRevision::fromConfig($config, $this->projectRoot);
+                } catch (\Throwable) {
+                    $result['stale'] = true;
+                }
+            }
+            return $result;
         } catch (\Throwable) {
             return null;
         }

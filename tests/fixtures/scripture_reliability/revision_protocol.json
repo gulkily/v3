@@ -1,0 +1,77 @@
+{
+  "cases": [
+    "My train leaves at 6:40 pm. Reaching the station takes 25 minutes, and I must arrive ten minutes early. I still have housework planned. When should I stop and leave?",
+    "I promised a client a draft by 2 pm. I also hoped to clear email and reorganize files today. I only have 45 minutes. How should I choose?",
+    "I agreed to bake for a church fundraiser, but ingredients would use the money for my electricity bill due tomorrow. What should I do?",
+    "My workplace meeting overruns. I need to collect a prescription before the pharmacy closes at 6; it is a 20-minute trip. How should I handle the remaining meeting actions?",
+    "I am caring for my mother and feel guilty admitting to church friends that I am exhausted. What might Scripture offer?",
+    "Explain what Christians mean by 'justification' and 'sanctification', including important Protestant, Catholic and Orthodox differences.",
+    "Explain 'judge not' in Matthew 7:1–5 in depth. How do Christians reconcile it with moral discernment? Explain differing readings.",
+    "Use NIV. Is 'Cleanliness is next to godliness' an exact Bible quotation? Explain its relationship to biblical teaching."
+  ],
+  "expansion_cases": [
+    1,
+    5,
+    7
+  ],
+  "repeats": 2,
+  "candidates": {
+    "A": {
+      "model": "gpt-5-mini",
+      "guidance": "current",
+      "reasoning": "low"
+    },
+    "B": {
+      "model": "gpt-5-mini",
+      "guidance": "verified",
+      "reasoning": "low"
+    },
+    "C": {
+      "model": "gpt-5.6-sol",
+      "guidance": "verified",
+      "reasoning": "low"
+    }
+  },
+  "max_completion_tokens": 8192,
+  "budget": {
+    "writing": 76,
+    "moderation": 152,
+    "dollars": 10
+  },
+  "planned_calls": 72,
+  "corpus_sha256": "ccb02dea3f3e2846d473e1423f2d5022609000123926aebdd46e9b7f6ae6895b",
+  "quality": {
+    "initial_passes": 15,
+    "everyday_passes": 8,
+    "everyday_improvements": 4,
+    "expansion_passes": 6,
+    "critical_errors": 0
+  },
+  "latency": {
+    "median_ms": 20000,
+    "improvement_fraction": 0.3,
+    "max_ms": 40000
+  },
+  "control_commit": "51b4fca9",
+  "regression_cases": [
+    "i have to leave soon, but i still have a lot of work to do, and also tasks i planned to do today",
+    "My volunteer shift ends at five, but cleanup remains. I have childcare pickup at five thirty. What should I do?",
+    "Does turning the other cheek mean remaining in an abusive relationship? Explain the passage and differing Christian interpretations.",
+    "After losing my job, I feel ashamed asking my church for help. What might scripture offer?",
+    "Explain James 2 and Romans 4 on faith and works in depth, including differing Christian readings.",
+    "Use NIV. Is 'Money is the root of all evil' an exact biblical quotation? What does the passage mean?"
+  ],
+  "pricing": {
+    "gpt-5-mini": {
+      "input": 0.25,
+      "output": 2
+    },
+    "gpt-5.6-sol": {
+      "input": 4,
+      "input_conservative": 5,
+      "output": 20
+    }
+  },
+  "pricing_checked": "2026-10-17",
+  "conditions": "Serial; fresh browser; persistent isolated fixture per arm; automatic dispatch/polling; low reasoning; 8192 completion tokens; fast scoring disabled equally. First returned model ID persisted; rejection or subsequent change halts."
+}

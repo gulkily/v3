@@ -216,3 +216,16 @@
     min-width: 0;
   }
 }
+
+.fastmod-rubric-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+}
+
+.fastmod-rubric-label input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+}

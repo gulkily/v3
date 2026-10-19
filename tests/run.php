@@ -8,6 +8,8 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/RailspikeWorkflowTest.php',
+    __DIR__ . '/FastmodCsvTest.php',
+    __DIR__ . '/FastmodRubricsTest.php',
     __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',
     __DIR__ . '/LegacyTimestampImportTest.php',
@@ -42,6 +44,9 @@ $testFiles = [
     __DIR__ . '/CodexHandoffStoreTest.php',
     __DIR__ . '/DedalusPostAnalyzerTest.php',
     __DIR__ . '/DetachedTaskQueueLauncherTest.php',
+    __DIR__ . '/ScriptureTaskLauncherTest.php',
+    __DIR__ . '/ScriptureSourceTest.php',
+    __DIR__ . '/ScriptureVerifiedReplyTest.php',
     __DIR__ . '/DevServerLogTest.php',
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
@@ -85,6 +90,9 @@ $testFiles = [
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/OperatorStatusCollectorTest.php',
+    __DIR__ . '/FrontendProbeTest.php',
+    __DIR__ . '/DatabaseLockProbeTest.php',
+    __DIR__ . '/HealthIndicatorsTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',
     __DIR__ . '/PlatformDocsPageTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',

@@ -150,10 +150,11 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, string>
      */
-    public function createReply(array $input): array
+    public function createReply(array $input, ?array $agentResponse = null, ?callable $beforeWrite = null): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input, $agentResponse, $beforeWrite): array {
             $this->assertWritableRepository();
+            if ($beforeWrite !== null) { $beforeWrite(); }
             $timings = [];
             $totalStartedAt = hrtime(true);
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
@@ -168,11 +169,28 @@ class LocalWriteService
 
             $this->assertReplyTarget($threadId, $parentId);
 
-            $postId = $this->generateRecordId('reply');
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
+            $postId = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
+                ? \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($parentId) : $this->generateRecordId('reply');
+            $existingPath = CanonicalPathResolver::post($postId);
+            if (is_file($this->repositoryRoot . '/' . $existingPath)) {
+                $existing = $this->canonicalRepository->loadPost($existingPath);
+                if (($existing->agentResponse['expansion_of'] ?? null) !== $parentId || $existing->authorIdentityId !== $authorIdentityId) {
+                    throw new RuntimeException('Expansion publication identity conflict.');
+                }
+                $dirty = trim($this->runGitCommand(['status', '--porcelain', '--', $existingPath], 'Unable to inspect expansion publication'));
+                $head = $dirty !== ''
+                    ? $this->commitCanonicalWrite([$existingPath], 'Recover expansion ' . $postId)['commit_sha']
+                    : trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
+                $this->refreshDerivedStateAfterCommit($head);
+                $this->invalidator()->invalidateReply($threadId, $postId);
+                $this->invalidator()->invalidateReply($threadId, $parentId);
+                return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'already_posted' => true];
+            }
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse);
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
+                ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
@@ -193,6 +211,9 @@ class LocalWriteService
             $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
+            if (($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION) {
+                $this->invalidator()->invalidateReply($threadId, $parentId);
+            }
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
@@ -503,7 +524,8 @@ class LocalWriteService
         string $threadId,
         string $parentId,
         string $body,
-        ?string $authorIdentityId
+        ?string $authorIdentityId,
+        ?array $agentResponse = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -511,6 +533,7 @@ class LocalWriteService
             . "Thread-ID: {$threadId}\n"
             . "Parent-ID: {$parentId}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . ($agentResponse !== null ? 'Agent-Response: ' . json_encode($agentResponse, JSON_THROW_ON_ERROR) . "\n" : '')
             . "\n{$body}";
     }
 
@@ -2087,6 +2110,56 @@ class LocalWriteService
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
+        });
+    }
+
+    /** Signed private settings action; no canonical content or read-model write. */
+    public function changeFastmodRubrics(array $input, string $operatorIdentityId, string $projectRoot, bool $finalize): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId, $projectRoot, $finalize): array {
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
+                throw new RuntimeException('Fastmod settings require an approved operator identity.');
+            }
+            $config = \ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig(
+                \ForumRewrite\Support\PrivateConfig::load($projectRoot));
+            $settings = new \ForumRewrite\Scoring\FastmodSelection($projectRoot);
+            if (!$finalize) {
+                $ids = $input['rubrics'] ?? null;
+                if (!is_array($ids) || !array_is_list($ids)) {
+                    throw new RuntimeException('Select at least one Fastmod rubric.');
+                }
+                $composition = (new \ForumRewrite\Scoring\FastmodRubrics($projectRoot, $config->promptPath))->compose($ids);
+                $record = json_encode(['action' => 'fastmod-rubrics', 'operator' => $operatorIdentityId,
+                    'rubrics' => $composition['ids'], 'revision' => $composition['revision'],
+                    'nonce' => bin2hex(random_bytes(16))], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+                $prepared = $this->storePreparedPost('private/fastmod-rubrics', $record, [
+                    'kind' => 'fastmod-rubrics', 'operator_identity_id' => $operatorIdentityId]);
+                return $prepared + ['status' => 'ok', 'canonical_record' => $record];
+            }
+            $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($token);
+            $record = (string) ($input['canonical_record'] ?? '');
+            if (($prepared['kind'] ?? '') !== 'fastmod-rubrics'
+                || ($prepared['operator_identity_id'] ?? '') !== $operatorIdentityId
+                || strtotime((string) ($prepared['expires_at'] ?? '')) < time()
+                || $record === '' || !hash_equals((string) ($prepared['canonical_sha256'] ?? ''), hash('sha256', $record))) {
+                throw new RuntimeException('Prepared Fastmod change is invalid or expired.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $fingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $record, $signature, $fingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed.');
+            }
+            $action = json_decode($record, true, 512, JSON_THROW_ON_ERROR);
+            $composition = (new \ForumRewrite\Scoring\FastmodRubrics($projectRoot, $config->promptPath))->compose($action['rubrics']);
+            if ($composition['revision'] !== $action['revision']) {
+                throw new RuntimeException('Rubric templates changed; reopen the dialog and try again.');
+            }
+            $settings->save($action['rubrics'], $config);
+            $this->deletePreparedPost($token);
+            return ['status' => 'ok', 'rubrics' => $composition['ids'], 'revision' => $composition['revision']];
         });
     }
 

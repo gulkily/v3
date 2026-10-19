@@ -13,6 +13,7 @@ final class FastScoringConfig
         public readonly LlmProviderConfig $provider,
         public readonly string $promptPath,
         public readonly bool $automaticEnqueue = false,
+        public readonly array $rubricIds = ['moderation', 'meta'],
     ) {
     }
 
@@ -34,9 +35,26 @@ final class FastScoringConfig
                 $fallback->postAnalysisPromptPath,
                 $fallback->extraHeaders,
             ),
-            self::stringValue($config['FAST_SCORING_PROMPT_PATH'] ?? 'prompts/fast_post_scoring_system.txt'),
+            self::introductionPath($config['FAST_SCORING_PROMPT_PATH'] ?? 'prompts/fastmod_introduction.txt'),
             self::booleanValue($config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'] ?? false),
+            self::rubricIds($config['FAST_SCORING_RUBRICS'] ?? ['moderation', 'meta']),
         );
+    }
+
+    private static function introductionPath(mixed $value): string
+    {
+        $path = self::stringValue($value);
+        // Generated configurations previously selected the monolithic JSON rubric.
+        return $path === 'prompts/fast_post_scoring_system.txt' ? 'prompts/fastmod_introduction.txt' : $path;
+    }
+
+    private static function rubricIds(mixed $value): array
+    {
+        if (!is_array($value) || !array_is_list($value) || $value === []
+            || array_filter($value, static fn ($id) => !is_string($id)) !== []) {
+            throw new \InvalidArgumentException('Fastmod requires a nonempty list of rubric identities.');
+        }
+        return $value;
     }
 
     private static function booleanValue(mixed $value): bool

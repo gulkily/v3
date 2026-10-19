@@ -42,7 +42,7 @@ foreach ($flags as $flag) {
   $canEditFlag = $flag->canChangeFromSite() && $canManageFeatureFlags;
   $isReadOnlyForViewer = $flag->canChangeFromSite() && !$canManageFeatureFlags;
 ?>
-        <div class="<?= $e($rowClass) ?>" data-feature-flag-row data-flag-key="<?= $e($definition->key) ?>" data-flag-default="<?= $definition->defaultValue ? 'true' : 'false' ?>" data-flag-locked="<?= $flag->isLocked() ? 'true' : 'false' ?>" data-flag-search="<?= $e($definition->label . ' ' . $definition->key . ' ' . $definition->description) ?>">
+        <div id="flag-<?= $e($definition->key) ?>" class="<?= $e($rowClass) ?>" data-feature-flag-row data-flag-key="<?= $e($definition->key) ?>" data-flag-default="<?= $definition->defaultValue ? 'true' : 'false' ?>" data-flag-locked="<?= $flag->isLocked() ? 'true' : 'false' ?>" data-flag-search="<?= $e($definition->label . ' ' . $definition->key . ' ' . $definition->description) ?>">
           <div class="feature-flag-info">
             <div class="feature-flag-name">
               <?= $e($definition->label) ?>
@@ -54,6 +54,9 @@ foreach ($flags as $flag) {
 <?php endif; ?>
             </div>
             <p class="feature-flag-description meta"><?= $e($definition->description) ?></p>
+<?php if (in_array($definition->key, ['FAST_SCORING_ENABLED', 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'], true)): ?>
+            <p class="meta"><a href="/tools/fastmod/">Choose Fastmod rubrics and view their prompts</a>.</p>
+<?php endif; ?>
             <div class="feature-flag-meta meta">
               <code class="feature-flag-key"><?= $e($definition->key) ?></code>
 <?php if ($flag->isLocked()): ?>

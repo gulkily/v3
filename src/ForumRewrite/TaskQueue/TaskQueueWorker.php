@@ -31,6 +31,8 @@ final class TaskQueueWorker
         ?callable $publishOfflineSnapshot = null,
         ?callable $fulfillAgentReply = null,
         private readonly mixed $assessRailspike = null,
+        /** @var (callable(int, Throwable):void)|null */
+        private readonly mixed $onTaskThrowable = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
@@ -106,6 +108,7 @@ final class TaskQueueWorker
         try {
             ($this->rebuildReadModel)($id);
         } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
             return $this->store->markFailed($id, 'read_model_rebuild_failed', $throwable->getMessage(), true);
         }
 
@@ -122,6 +125,7 @@ final class TaskQueueWorker
         try {
             $sweep = ($this->runFastScoreSweep)();
         } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
             return $this->store->markFailed($id, 'fast_score_sweep_failed', $throwable->getMessage(), true);
         }
 
@@ -147,6 +151,7 @@ final class TaskQueueWorker
         try {
             ($this->publishOfflineSnapshot)();
         } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
             return $this->store->markFailed($id, 'offline_snapshot_publication_failed', $throwable->getMessage(), true);
         }
 
@@ -164,6 +169,7 @@ final class TaskQueueWorker
             ($this->assessRailspike)($task);
             return $this->store->markCompleted($id);
         } catch (\Throwable $e) {
+            $this->reportThrowable($id, $e);
             return $this->store->markFailed($id, 'railspike_assessment_failed', $e->getMessage(), false);
         }
     }
@@ -190,9 +196,21 @@ final class TaskQueueWorker
             $this->store->recordTaskProgress($id, 'Agent reply outcome: ' . $status . ($reason === '' ? '' : ' (' . $reason . ')'));
             return array_merge($this->store->markCompleted($id), ['generation_status' => $status, 'reason' => $reason]);
         } catch (InvalidArgumentException $exception) {
+            $this->reportThrowable($id, $exception);
             return $this->store->markFailed($id, 'agent_reply_task_invalid', $exception->getMessage(), false);
         } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
             return $this->store->markFailed($id, 'agent_reply_fulfillment_failed', $throwable->getMessage(), true);
+        }
+    }
+
+    private function reportThrowable(int $id, Throwable $throwable): void
+    {
+        if (is_callable($this->onTaskThrowable)) {
+            try {
+                ($this->onTaskThrowable)($id, $throwable);
+            } catch (Throwable) {
+            }
         }
     }
 }
