@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Theme-specific selected nav styling](nav_active_theme_override/)
 - [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)
 - [User approval meaning](user_approval_meaning/)
 
@@ -216,6 +217,8 @@ and repair its navigation and affected references. See the
 - [Scripture response quality and latency](./scripture_response_quality/scripture_response_quality_step1_solution_assessment.md) — proportionate scripture replies and faster complete delivery.
 
 - [Fastmod modular scores](./fastmod_meta_score/fastmod_meta_score_step1_solution_assessment.md) — single-call rubric scoring and operator selection.
+
+- [Post retraction sweep](./post_retraction_sweep/post_retraction_sweep_step1_solution_assessment.md)
 
 - [Feature-flag change pages](feature_flag_change_pages/)
 

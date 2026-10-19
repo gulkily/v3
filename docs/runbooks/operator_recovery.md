@@ -212,3 +212,12 @@ publication without redownloading or duplicating an already-created commit.
 Preserve `.git/instance-import/pending.json` and the referenced run directory;
 resolve reported local divergence before retrying. See the
 [instance content import recovery procedure](instance_content_import.md#recovery).
+
+## Retraction sweep operations
+
+See [local cleanup coverage and recovery](../reference/retraction_sweep.md).
+Deploy web/worker changes together and keep the existing single queue cron entry.
+Preview then run immediately or enqueue a sweep; inspect status and retry failures
+without signing another retraction. Canonical/history and backup removal are outside
+this operation. Pause/drain writers and workers before rollback; preserve signed
+evidence and avoid restoring diagnostic payloads.

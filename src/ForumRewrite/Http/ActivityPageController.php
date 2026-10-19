@@ -36,7 +36,6 @@ final class ActivityPageController
             [
                 'view' => $view,
                 'approvalPolicyEnabled' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL),
-                'canSecurityReview' => $this->routeServices->securityReviewAllowed(),
                 'viewOptions' => [
                     [
                         'label' => 'All Activity',

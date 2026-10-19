@@ -1,16 +1,13 @@
 <section data-railspike-activity hidden aria-label="Private site development activity"></section>
 <section class="stack">
   <article class="card">
-    <h1>Activity</h1>
+    <h1><?= $view === 'security' ? 'Security review' : 'Activity' ?></h1>
     <div class="nav">
 <?php foreach ($viewOptions as $option): ?>
 <?php if ($view === 'security' && $option['label'] === 'RSS') continue; ?>
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
       <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
-<?php if ($canSecurityReview): ?>
-      <a href="/activity/?view=security">Operator security review</a>
-<?php endif; ?>
     </div>
 <?php if ($view === 'security'): ?>
 <?= $partial('partials/activity_security_notice.php', ['approvalPolicyEnabled' => $approvalPolicyEnabled]) ?>

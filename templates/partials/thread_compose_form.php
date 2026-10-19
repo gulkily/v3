@@ -91,6 +91,7 @@ $threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
         <button type="button" class="compose-clear-button" data-action="clean-quote-text" title="Remove timestamps and tidy nick formatting in the pasted chat">Remove timestamps</button>
 <?php endif; ?>
         <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
+        <button type="button" data-action="save-compose-outbox" disabled>Save thread to Outbox</button>
 <?php $threadComposeMenuItems = (string) ob_get_clean(); ?>
 <?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $threadComposeMenuItems]) ?>
   </div>

@@ -33,6 +33,7 @@ final class TaskQueueWorker
         private readonly mixed $assessRailspike = null,
         /** @var (callable(int, Throwable):void)|null */
         private readonly mixed $onTaskThrowable = null,
+        private readonly mixed $runRetractionSweep = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
@@ -93,6 +94,7 @@ final class TaskQueueWorker
         }
 
         return match ($task['type'] ?? null) {
+            SqliteTaskQueueStore::RETRACTION_SWEEP => $this->runRetractionSweepTask($id),
             SqliteTaskQueueStore::REBUILD_READ_MODEL => $this->runReadModelRebuild($id),
             SqliteTaskQueueStore::FAST_SCORE_SWEEP => $this->runFastScoreSweep($id),
             SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
@@ -100,6 +102,19 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
         };
+    }
+
+    private function runRetractionSweepTask(int $id): array
+    {
+        try {
+            if ($this->runRetractionSweep === null) throw new \RuntimeException('Sweep unavailable.');
+            $sweep = ($this->runRetractionSweep)();
+            $this->store->recordTaskProgress($id, json_encode($sweep, JSON_THROW_ON_ERROR));
+            if ($sweep['remaining'] ?? false) return [...$this->store->requeueClaimed($id), 'continued' => true];
+            return $this->store->markCompleted($id);
+        } catch (Throwable) {
+            return $this->store->markFailed($id, 'retraction_sweep_failed', 'Cleanup failed. Inspect retraction-sweep status and retry.', true);
+        }
     }
 
     /** @return array<string, mixed> */

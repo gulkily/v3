@@ -668,3 +668,12 @@ validate a disposable import with the target host's PHP, SQLite, zlib/OpenSSL,
 Git, and gzip tooling first. Follow the
 [import deployment check](instance_content_import.md#requirements-limits-and-deployment-check)
 for preview, coverage review, served-view verification, and repeat-run checks.
+
+## Retraction sweep operations
+
+See [local cleanup coverage and recovery](../reference/retraction_sweep.md).
+Deploy web/worker changes together and keep the existing single queue cron entry.
+Preview then run immediately or enqueue a sweep; inspect status and retry failures
+without signing another retraction. Canonical/history and backup removal are outside
+this operation. Pause/drain writers and workers before rollback; preserve signed
+evidence and avoid restoring diagnostic payloads.

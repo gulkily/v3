@@ -20,6 +20,7 @@ use RuntimeException;
 
 final class StaticArtifactBuilder
 {
+    private ?array $retractionToken = null;
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
@@ -43,6 +44,7 @@ final class StaticArtifactBuilder
 
     public function buildFromReadModel(): void
     {
+        $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         if (!is_dir($this->artifactRoot)) {
             mkdir($this->artifactRoot, 0777, true);
         }
@@ -93,6 +95,7 @@ final class StaticArtifactBuilder
      */
     public function refreshSharedPagesFromReadModel(): void
     {
+        $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         if (!is_dir($this->artifactRoot)) {
             throw new RuntimeException('Shared static refresh requires an existing release directory.');
         }
@@ -192,9 +195,9 @@ final class StaticArtifactBuilder
             throw new RuntimeException('Unable to create QDB numeric quote artifact directory.');
         }
 
-        if (!link($sourcePath, $targetPath) && !copy($sourcePath, $targetPath)) {
-            throw new RuntimeException('Unable to create QDB numeric quote artifact alias.');
-        }
+        \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $targetPath, static function () use ($sourcePath, $targetPath): void {
+            if (!link($sourcePath, $targetPath) && !copy($sourcePath, $targetPath)) throw new RuntimeException('Unable to create quote alias.');
+        });
     }
 
     private function copyOfflineRuntimeFiles(): void
@@ -236,6 +239,7 @@ final class StaticArtifactBuilder
 
     public function buildSingleRoute(string $route): bool
     {
+        $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         $normalizedRoute = $this->normalizeRoute($route);
         if ($normalizedRoute === null) {
             return false;
@@ -306,15 +310,12 @@ final class StaticArtifactBuilder
             throw new RuntimeException('Unable to create temporary artifact path in ' . $directory);
         }
 
-        if (file_put_contents($temporaryPath, $contents) === false) {
-            @unlink($temporaryPath);
-            throw new RuntimeException('Unable to write temporary artifact: ' . $temporaryPath);
-        }
-
-        if (!rename($temporaryPath, $path)) {
-            @unlink($temporaryPath);
-            throw new RuntimeException('Unable to move artifact into place: ' . $path);
-        }
+        try {
+            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, static function () use ($temporaryPath, $path, $contents): void {
+                if (file_put_contents($temporaryPath, $contents) === false) throw new RuntimeException('Unable to write temporary artifact.');
+                if (!rename($temporaryPath, $path)) throw new RuntimeException('Unable to publish artifact.');
+            });
+        } finally { if (is_file($temporaryPath)) @unlink($temporaryPath); }
     }
 
     /**
@@ -345,15 +346,12 @@ final class StaticArtifactBuilder
             throw new RuntimeException('Unable to create temporary artifact path in ' . $directory);
         }
 
-        if (file_put_contents($temporaryPath, $contents) === false) {
-            @unlink($temporaryPath);
-            throw new RuntimeException('Unable to write temporary artifact: ' . $temporaryPath);
-        }
-
-        if (!rename($temporaryPath, $path)) {
-            @unlink($temporaryPath);
-            throw new RuntimeException('Unable to move artifact into place: ' . $path);
-        }
+        try {
+            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, static function () use ($temporaryPath, $path, $contents): void {
+                if (file_put_contents($temporaryPath, $contents) === false) throw new RuntimeException('Unable to write temporary artifact.');
+                if (!rename($temporaryPath, $path)) throw new RuntimeException('Unable to publish artifact.');
+            });
+        } finally { if (is_file($temporaryPath)) @unlink($temporaryPath); }
     }
 
     /**
