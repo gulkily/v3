@@ -195,3 +195,5 @@ and repair its navigation and affected references. See the
 - [Phone site development](./phone_site_development/phone_site_development_step1_solution_assessment.md) — operator phone intake through reviewed Railspike Step 1; later lifecycle tracked in the companion checklist.
 
 - [Status frozen-frontend diagnosis](status_frozen_frontend_diagnosis/)
+
+- [Feature-flag change pages](feature_flag_change_pages/)
