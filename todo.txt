@@ -219,3 +219,5 @@ UI copy cleanup: favor deleting text over editing or moving it into help; rely o
 
 Completed UI copy audit cleanup: all remaining findings handled individually, favoring removal; verified and committed each item.
 	Commit references and verification: docs/plans/ui_copy_audit_checklist.md
+
+Done: move Fastmod to the bottom of the Tools launcher and after Feature Flags in Tools subnavigation, preserving the existing order of other tools.
