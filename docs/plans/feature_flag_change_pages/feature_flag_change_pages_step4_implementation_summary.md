@@ -39,3 +39,13 @@ Branch: `feature/feature_flag_change_pages`, based on `fix/backup-page-tools-nav
   - Full suite not run in this stage.
 - Notes:
   - Test method renamed to `testSignedChangeRendersPageAndActivityAndRssLinkToIt` since it now covers all three.
+
+## Stage 4 - Forte Activity
+- Changes:
+  - `ForteActivityController::activityItemBoardLink` delegates the `site_feature_flag` branch to `activityItemLink`; post, thread and profile branches are unchanged (they link into the Forte board, which the shared helper does not do).
+  - Corrected the comment in `paned_activity_detail_article.php` about where flag items point.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest FeatureFlagChangePageTest ActivityItemLinkTest ForteActivity ForteBoard`: passed, 147 of 147.
+  - New assertion: the Forte activity detail fragment (`/api/forte_activity_detail`) links a signed change to its change page.
+- Notes:
+  - The Forte profile_name_change branch still duplicates part of the shared mapping; left alone because it is outside this feature's scope.

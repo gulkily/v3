@@ -37,6 +37,9 @@ final class FeatureFlagChangePageTest
             assertStringContains('<a href="/tools/feature-flags/changes/feature-flag-change-test-001">site feature flags</a>', $activity);
             assertStringNotContains('<a href="/tools/feature-flags/">site feature flags</a>', $activity);
             assertStringContains('/tools/feature-flags/changes/feature-flag-change-test-001', $this->render($root, $db, '/activity/?view=all&format=rss'));
+            $activityId = (int) (new PDO('sqlite:' . $db))->query("SELECT id FROM activity WHERE source_path = '" . self::SOURCE . "'")->fetchColumn();
+            $detail = (string) json_decode($this->render($root, $db, '/api/forte_activity_detail?id=' . $activityId), true)['html'];
+            assertStringContains('href="/tools/feature-flags/changes/feature-flag-change-test-001"', $detail);
         });
     }
 
