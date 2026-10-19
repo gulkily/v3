@@ -182,5 +182,6 @@ function printStatusUsage($stream): void
 Usage:
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
 
+Frontend target: --url, FORUM_STATUS_URL (private config/environment), active development server, verified local port 8000/80.
 TEXT);
 }

@@ -119,7 +119,7 @@ final class FrontendTargetResolverTest
 
     public function testRejectsUnsafeUrls(): void
     {
-        foreach (['file:///tmp/test', 'http://user:secret@localhost', "http://localhost/\r\nX: x", 'http://localhost/#fragment'] as $url) {
+        foreach (['file:///tmp/test', 'http://localhost:0', 'http://user:secret@localhost', "http://localhost/\r\nX: x", 'http://localhost/#fragment'] as $url) {
             assertThrowsRuntime(static fn () => FrontendTargetResolver::validateUrl($url), 'Frontend target must be an http(s) URL without credentials, fragments, or whitespace.');
         }
     }

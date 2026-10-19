@@ -29,6 +29,7 @@ final class HealthIndicators
         if ($frontend['status'] !== 'not_checked') {
             $indicators[] = match ($frontend['status']) {
                 'ambiguous', 'unresolved' => self::row(self::WARN, 'Frontend', $frontend['detail'], 'Frontend: set FORUM_STATUS_URL in private config, or pass --url=http://host:port.'),
+                'redirected' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: set FORUM_STATUS_URL or --url to the direct URL for this instance.'),
                 'responding' => self::row(self::OK, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url']),
                 'timed_out' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: restart with ./v3 start and check its terminal for a stuck request (if it listens elsewhere, pass --url=).'),
                 'error' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: server is answering with errors; check the ./v3 start terminal output and --log-file.'),

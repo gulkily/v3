@@ -677,3 +677,14 @@ Preview then run immediately or enqueue a sweep; inspect status and retry failur
 without signing another retraction. Canonical/history and backup removal are outside
 this operation. Pause/drain writers and workers before rollback; preserve signed
 evidence and avoid restoring diagnostic payloads.
+
+## Frontend status target
+
+After deployment, run `./v3 status` from the application checkout with its normal
+repository/database environment. A unique verified loopback port-80 endpoint is
+detected automatically. If the site requires a virtual host or HTTPS, set
+`FORUM_STATUS_URL` in the existing private configuration to its full URL, then
+rerun plain status and confirm the URL/source and Frontend verdict. Use
+`--url=...` for a one-time override. Discovery WARN means the intended endpoint
+could not be established; a configured endpoint's outage remains FAIL.
+See [operator recovery](operator_recovery.md#primary-status-surface).

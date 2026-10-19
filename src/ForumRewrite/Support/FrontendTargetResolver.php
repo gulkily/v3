@@ -8,9 +8,13 @@ use RuntimeException;
 
 final class FrontendTargetResolver
 {
-    public function __construct(private readonly string $projectRoot, private readonly string $repositoryRoot, private readonly string $databasePath = '',
-        private readonly array $localCandidates = ['http://127.0.0.1:8000', 'http://127.0.0.1:80'])
-    {
+    /** @param list<string> $localCandidates Conventional endpoints; injectable for isolated tests. */
+    public function __construct(
+        private readonly string $projectRoot,
+        private readonly string $repositoryRoot,
+        private readonly string $databasePath = '',
+        private readonly array $localCandidates = ['http://127.0.0.1:8000', 'http://127.0.0.1:80'],
+    ) {
     }
 
     /** @return array<string,mixed> */
@@ -81,7 +85,7 @@ final class FrontendTargetResolver
     {
         $parts = parse_url($url);
         if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['http', 'https'], true)
-            || ($parts['host'] ?? '') === '' || isset($parts['user']) || isset($parts['pass'])
+            || ($parts['host'] ?? '') === '' || (isset($parts['port']) && $parts['port'] < 1) || isset($parts['user']) || isset($parts['pass'])
             || isset($parts['fragment']) || preg_match('/[\x00-\x20\x7f]/', $url)) {
             throw new RuntimeException('Frontend target must be an http(s) URL without credentials, fragments, or whitespace.');
         }

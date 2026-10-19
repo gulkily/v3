@@ -7,7 +7,7 @@ COMMAND="${1:-}"
 if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "${COMMAND}" == "-h" ]]; then
   cat <<'EOF'
 Usage:
-  ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
+  ./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
   ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]

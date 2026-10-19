@@ -82,6 +82,7 @@ final class FrontendProbeTest
         $server = new FrontendTestServer($router);
         try {
             $identity = FrontendInstance::identity($root, $root . '/repo', $root . '/db');
+            assertSame($identity, FrontendInstance::identity($root . '/.', $root . '/missing/../repo', $root . '/db'));
             assertSame('responding', (new FrontendProbe())->probe($server->url, 1, $identity)['status']);
             assertSame('unavailable', (new FrontendProbe())->probe($server->url, 1,
                 FrontendInstance::identity($root . '-other', $root . '/repo', $root . '/db'))['status']);
@@ -105,7 +106,16 @@ final class FrontendProbeTest
         $redirect = new FrontendTestServer('<?php header("Location: http://unrelated.invalid/");');
         try {
             assertSame('unavailable', (new FrontendProbe())->probe($redirect->url, 1, str_repeat('a', 64))['status']);
+            assertSame('redirected', (new FrontendProbe())->probe($redirect->url, 1)['status']);
         } finally { $redirect->close(); }
+    }
+
+    public function testSameOriginRedirectRemainsARespondingFrontend(): void
+    {
+        $server = new FrontendTestServer('<?php header("Location: /sign-in");');
+        try {
+            assertSame('responding', (new FrontendProbe())->probe($server->url, 1)['status']);
+        } finally { $server->close(); }
     }
 
     public function testHttpsUsesConfiguredHostAndVerifiesCertificate(): void

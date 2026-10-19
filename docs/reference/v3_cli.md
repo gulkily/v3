@@ -175,7 +175,7 @@ the reported post URL. `--confirm-production-write` is mandatory.
 ## Inspect operator status
 
 ```
-./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8001]
 ```
 
 Read-only, concise status for the repository, read model, shared execution
@@ -185,6 +185,31 @@ lock, and background queue. It reports a read-model rebuild task as `queued`,
 - `--repository-root=...` — canonical repository to compare with read-model metadata
 - `--database-path=...` — read-model SQLite database to inspect
 - `--queue-database-path=...` — task-queue SQLite database to inspect
+- `--url=...` — frontend URL override for this invocation
+
+Frontend selection uses `--url`, then `FORUM_STATUS_URL` from the existing
+private configuration (environment wins), then a live registered development
+server for this checkout/instance. Otherwise it checks only local ports 8000
+and 80 and requires a unique instance match. The selected URL and source appear
+in the Frontend row. Newly started `./v3 start 8001` servers register automatically;
+restart an older development server once to enable custom-port discovery.
+Linux process identity guards development registrations; other platforms can
+use a saved target. Status never edits these registrations.
+
+For production virtual hosts, HTTPS, or an unresolved/ambiguous target, add
+`'FORUM_STATUS_URL' => 'https://forum.example/'` to the existing
+`../forum-private/secrets.php` (or `FORUM_SECRETS_PATH` file), or set the same
+environment variable. Use the URL whose Host/TLS name routes to this instance.
+Rerun plain status to verify; `--url` temporarily overrides the saved value.
+Malformed targets require correction; credentials and fragments are rejected.
+A saved/selected outage stays FAIL without trying another server. Unresolved
+or ambiguous discovery is WARN and prints the configuration action.
+
+Discovery and HTTP probing share a three-second network budget. The read-only
+`/__v3/status-identity` response distinguishes the checkout, repository and
+read-model path without returning paths, cookies or cached data; it bypasses
+repository initialization. It is diagnostic identity, not authentication. The
+web Codebase State surface continues to omit frontend probing.
 
 The command remains useful when optional runtime files are missing or
 unreadable: it reports the affected state without creating a queue, lock, or

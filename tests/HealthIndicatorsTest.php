@@ -62,6 +62,7 @@ final class HealthIndicatorsTest
             'timed_out' => 'FAIL',
             'not_running' => 'FAIL',
             'error' => 'FAIL',
+            'redirected' => 'FAIL',
             'ambiguous' => 'WARN',
             'unresolved' => 'WARN',
         ];

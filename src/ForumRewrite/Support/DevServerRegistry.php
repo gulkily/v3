@@ -42,7 +42,8 @@ final class DevServerRegistry
         $identity = FrontendInstance::identity($root, $repository, $database);
         $entries = [];
         foreach (glob($root . '/state/runtime/frontend/*.json') ?: [] as $path) {
-            if (is_link($path) || filesize($path) > 4096) { continue; }
+            $size = @filesize($path);
+            if ($size === false || is_link($path) || $size > 4096) { continue; }
             $record = json_decode((string) @file_get_contents($path), true);
             if (!is_array($record) || ($record['identity'] ?? '') !== $identity
                 || !is_int($record['pid'] ?? null) || !is_string($record['process'] ?? null)

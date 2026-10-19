@@ -17,6 +17,14 @@ GET /api/read_model_status
 queue, and current queued-worker read-model rebuild. Use its printed next
 action first, then open the detailed command it identifies.
 
+For a Frontend WARN about target discovery, set `FORUM_STATUS_URL` in the existing
+private configuration to this instance's URL (for example `http://127.0.0.1:80/`
+or its HTTPS virtual-host URL), then rerun `./v3 status`. `--url=...` overrides it
+for one invocation. A saved target's connection error is FAIL; repair the target
+or server and rerun. Newly started development servers advertise their chosen
+port; restart servers launched before this feature once. See the
+[selection and timeout rules](../reference/v3_cli.md#inspect-operator-status).
+
 Important status values:
 
 - Read model: `ready`, `stale`, or `unavailable`

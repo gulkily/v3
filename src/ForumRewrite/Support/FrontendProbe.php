@@ -80,15 +80,30 @@ final class FrontendProbe
                 || !hash_equals($expectedIdentity, $identity[1]))) {
                 return $this->result('unavailable', 'instance identity could not be verified');
             }
+            if ($code >= 300 && $code < 400 && !$this->sameOriginRedirect($response, $parts)) {
+                return $this->result('redirected', 'HTTP ' . $code . ' redirects outside the configured origin');
+            }
             return ['status' => $code >= 500 ? 'error' : 'responding', 'detail' => 'HTTP ' . $code . ' in ' . $elapsed . ' ms', 'latency_ms' => $elapsed];
         }
         return $this->result('timed_out', 'no response within ' . $this->seconds($timeoutSeconds) . ' (server busy or hung)');
     }
 
+    private function sameOriginRedirect(string $response, array $origin): bool
+    {
+        if (preg_match('/\r\nLocation: ([^\r\n]*)\r\n/i', $response, $match) !== 1) { return false; }
+        $location = parse_url(trim($match[1]));
+        if (!is_array($location) || isset($location['user']) || isset($location['pass'])) { return false; }
+        $scheme = $location['scheme'] ?? $origin['scheme'];
+        $host = $location['host'] ?? $origin['host'];
+        $port = $location['port'] ?? (isset($location['host']) ? ($scheme === 'https' ? 443 : 80) : ($origin['port'] ?? ($origin['scheme'] === 'https' ? 443 : 80)));
+        return $scheme === $origin['scheme'] && strtolower($host) === strtolower($origin['host'])
+            && $port === ($origin['port'] ?? ($origin['scheme'] === 'https' ? 443 : 80));
+    }
+
     private function resolveHost(string $host, float $deadline): ?string
     {
         if (!function_exists('proc_open')) { return null; }
-        $process = @proc_open([PHP_BINARY, '-r', 'echo gethostbyname($argv[1]);', $host], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+        $process = @proc_open([PHP_BINARY, '-r', '$ip = gethostbyname($argv[1]); if ($ip === $argv[1]) { $records = dns_get_record($argv[1], DNS_AAAA); $ip = $records[0]["ipv6"] ?? ""; } echo $ip;', $host], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
         if (!is_resource($process)) { return null; }
         fclose($pipes[0]);
         stream_set_blocking($pipes[1], false);

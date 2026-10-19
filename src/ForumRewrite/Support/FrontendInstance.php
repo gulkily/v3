@@ -23,6 +23,10 @@ final class FrontendInstance
         if ($parent === $path) {
             return $path;
         }
-        return self::canonicalPath($parent) . '/' . basename($path);
+        $name = basename($path);
+        $resolvedParent = self::canonicalPath($parent);
+        if ($name === '.') { return $resolvedParent; }
+        if ($name === '..') { return dirname($resolvedParent); }
+        return rtrim($resolvedParent, '/') . '/' . $name;
     }
 }
