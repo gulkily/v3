@@ -13,7 +13,7 @@ final class FeatureFlagChangePageTest
     private const OPERATOR = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
     private const SOURCE = 'records/feature-flag-changes/feature-flag-change-test-001.txt';
 
-    public function testSignedChangeRendersReadablePageWithEvidenceLinks(): void
+    public function testSignedChangeRendersPageAndActivityAndRssLinkToIt(): void
     {
         $this->fixture(function ($workspace, $root, $db): void {
             $workspace->put($root . '/' . self::SOURCE, "Record-ID: feature-flag-change-test-001\nCreated-At: 2026-01-02T03:04:05Z\nFlag-Key: FORUM_IMAGE_CONTENT_ENABLED\nValue: true\nOperator-Identity-ID: " . self::OPERATOR . "\n\n");
@@ -33,6 +33,10 @@ final class FeatureFlagChangePageTest
             assertStringContains('href="/source/blob/' . $sha . '/' . self::SOURCE . '"', $html);
             assertStringContains('href="/source/commits/' . $sha . '"', $html);
             assertStringContains('does not re-verify the signature', $html);
+            $activity = $this->render($root, $db, '/activity/');
+            assertStringContains('<a href="/tools/feature-flags/changes/feature-flag-change-test-001">site feature flags</a>', $activity);
+            assertStringNotContains('<a href="/tools/feature-flags/">site feature flags</a>', $activity);
+            assertStringContains('/tools/feature-flags/changes/feature-flag-change-test-001', $this->render($root, $db, '/activity/?view=all&format=rss'));
         });
     }
 

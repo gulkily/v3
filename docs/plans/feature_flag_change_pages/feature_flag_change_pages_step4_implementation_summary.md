@@ -29,3 +29,13 @@ Branch: `feature/feature_flag_change_pages`, based on `fix/backup-page-tools-nav
 - Notes:
   - Correction to earlier work on `fix/backup-page-tools-nav-order`: running `php tests/LocalAppSmokeTest.php` directly only loads the class and runs nothing, so "smoke test passes" claims made that way were not real checks. The suite was rerun through `tests/run.php` above and passes, including the tab-bar ordering and empty-link assertions from that branch.
   - A record ID must start with `feature-flag-change-`; the test fixture initially used an invalid ID.
+
+## Stage 3 - Activity page and RSS
+- Changes:
+  - `ActivityPageController` attaches `link` (from `activityItemLink`) to each item; `activity.php` renders it, replacing its four-way branch. The RSS feed uses the same helper's `href`.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest FeatureFlagChangePageTest ActivityItemLinkTest ForteActivity`: passed, 147 of 147 (filters match whole classes plus the Forte activity tests).
+  - New assertions: the Activity page and RSS link a signed flag change to its change page and no longer to the generic flags page.
+  - Full suite not run in this stage.
+- Notes:
+  - Test method renamed to `testSignedChangeRendersPageAndActivityAndRssLinkToIt` since it now covers all three.
