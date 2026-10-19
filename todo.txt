@@ -195,3 +195,5 @@ Add missing User Access icon for icon themes
 	Cover both Tools launcher and Tools subnavigation in Word97, Chicago, and Windark
 	Verify the icon renders in all three themes; this omission has recurred three times
 	Standing navigation-icon reminder added to AGENTS.md; icon implementation remains pending
+
+i want to have a developer mode where i can self-approve without root approval
