@@ -730,6 +730,26 @@ behavior remains available. Backfill work retains its separate budget controls.
 
 ### Scripture responses and on-demand expansion
 
+All fresh agent replies share `prompts/agent_response_personality.txt`, including
+ordinary, selected-mode, verified scripture, and expansion replies. It asks for
+warm, direct engagement and eager discussion of Bible or Jesus topics while
+preserving each task's format and quotation rules. Deploy this prompt with the
+application code and restart long-running workers after changing it.
+
+The generation prompt includes application-resolved approval and admin status
+for the original human author and a distinct requester. Admin means the existing
+root-approved operator role; unknown identity/profile information stays unknown.
+These facts provide context only: they do not authorize actions or change access
+rules. Expansion uses the original human author's status, not the initial
+reply-agent's. Fresh retries resolve current status; completed drafts and
+published replies are not regenerated merely because status or prompts changed.
+
+Fresh legacy/automatic replies retain analysis eligibility checks but now use
+the common reply writer, adding one provider call instead of publishing the
+analysis suggestion. A writer failure uses the existing status and targeted
+retry commands above. Deploy/rollback code and prompts together; rolling back
+does not remove already published replies. No schema migration is needed.
+
 Scripture responses follow editorial guidance rather than word counts or verse
 quotas. Edit `prompts/agent_response_scripture_oriented_analysis.txt` for initial
 answers and `prompts/agent_response_scripture_expansion.txt` for further reflection.

@@ -4,24 +4,42 @@ Debug mode: enabled
 
 ## Status
 
-Step 3 approved. Planning commit: `46ead3d3`. Implementation in progress on `feat/agent-personality-context`. No production deployment. Multiple agents remains a separate follow-up.
+Step 3 approved. Planning commit: `46ead3d3`. Implementation complete on `feat/agent-personality-context`. No production deployment. Multiple agents remains a separate follow-up.
 
 ## Stage 1 - Authoritative participation context
+
 - Changes: resolve author and distinct requester through existing profile/operator policy at generation time; serialize only boolean/unknown status facts into the system prompt. No public API, authorization, SQL query, or schema changes.
 - Verification: `php tests/run.php AgentParticipantContextTest AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest::testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode` — 25/25 passed; `git diff --check` passed. Includes separate requester, independent approval/operator changes, missing identities, hostile status text, and requested publication.
 - Notes: the read model remains the existing authority for approval; unknown profiles produce unknown status. No display or navigation changes. Commit: `eae10ce1`.
 
 ## Stage 2 - Shared personality guidance
+
 - Changes: one personality prompt shared by text and verified-JSON generation, with eager Bible/Jesus engagement and task/quotation constraints retained. Six fixed review cases cover ordinary, Bible, Jesus, scripture, interpretation, and logic topics.
 - Verification: `php tests/run.php AgentResponseGeneratorTest AgentResponseTaskTest ScriptureVerifiedReplyTest` — 28/28 passed. Shared prompt presence verified for selectable modes and verified scripture; actual response quality remains Stage 5 acceptance work.
 - Notes: prompt configuration and completion limits unchanged. Review cases were saved in the same edit as the new prompt, before any model evaluation; no claim of independently frozen pre-edit evaluation.
 
 ## Stage 3 - Automatic, legacy, and recovery paths
+
 - Changes: fresh legacy/automatic replies use the common task writer after existing analysis eligibility gates. Completed drafts remain publishable without regeneration; retries resolve current status. Stage 2 commit: `00986420`.
 - Verification: generation/task/command suites plus queued publication and legacy gate checks — 26/26 passed. Automatic analysis-to-reply publication and new legacy fresh/retry/completed-draft scenarios — 2/2 passed. Repeated execution publishes once; retry observes changed approval; completed draft text is retained. `git diff --check` passed.
 - Notes: fresh legacy generation adds one writer call; no stored analysis or published replies are rewritten. Provider absence uses existing failure/recovery handling; additional coverage follows in acceptance.
 
 ## Stage 4 - Expansion participant attribution
+
 - Changes: expansion generation resolves the original human post author and the expansion requester, rather than attributing the initial agent's identity to the reader. Shared personality applies in both text and verified paths. Stage 3 commit: `d1ecd8d9`.
 - Verification: six targeted expansion/verified-scripture API lifecycle tests passed, covering publication/rebuild, participant prompt evidence, source races, requester revocation, hidden/changed sources, unavailable source/translation, stored-draft verification failure and explicit retry. Existing source-dependency recording remains unchanged; `git diff --check` passed.
 - Notes: only fresh generation receives new context; canonical and completed expansion recovery remains unchanged.
+
+## Stage 5 - Acceptance and operating guidance
+
+- Changes: bounded isolated live evaluation and replay helpers, all-round results and [review report](evaluation/report.md), deployment/recovery documentation. In-scope prompt corrections remove generic invitations, prefer contextual paraphrase in ordinary Bible replies, and explain verified reflection syntax; the source validator is unchanged. Missing legacy writer configuration now reports the actionable configuration failure. Stage 4 commit: `18bd710a`.
+- Verification: local agent suite 22/22; component/Forte suite 34/34; API/privacy run 190/191; final prompt/publication checks 24/24; actual missing-provider/correction/retry plus generator checks 17/17. Browser expansion passed thread/permalink at desktop/mobile widths and offline behavior. Isolated final applicable live samples all published (six cases plus expansion), with startup/replay/rollback checks preserving replies and their text on thread, permalink and Forte surfaces. See the report for commands and evidence limits. `git diff --check` and PHP syntax checks passed.
+- Notes: the API/privacy failure is `WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence`, independently reproduced from pre-change `46ead3d3`. No full-repository-suite pass is claimed. Small live samples establish operation and support the direction of the style change, not guaranteed future tone or exact wording. Verbosity, recaps, and repetitive expansion remain quality limitations. Ordinary replies do not gain exact-source verification.
+
+## Completion and follow-up
+
+- Passed: approved first-slice behavior, current authoritative participation context, mode/source protections, targeted tests, normal UI/API/CLI paths, retry, isolated restart and prior-code rollback.
+- Baseline failure: unrelated feature-flag approval evidence test, recorded above; not fixed in this cycle.
+- Inapplicable: schema migration and associated schema-version checks (no schema or query changes), icon/UI-copy audit (no UI changes), production deployment (outside approved scope).
+- Deferred request: distinct selectable agents require their own assessment; collaborating agents remain deferred. This cycle does not complete that part of the original feedback item.
+- Release operation: deploy code and prompts together, restart workers, use existing operator status/targeted retry for failures. No production content was posted during evaluation.

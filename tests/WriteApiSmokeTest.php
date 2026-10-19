@@ -1919,6 +1919,7 @@ PHP);
     public function testLegacyReplyWriterRetryAndCompletedDraftRecovery(): void
     {
         $previous = $this->useStubLlmProvider();
+        $previousKey = getenv('LLM_API_KEY');
         try {
             foreach (['fresh', 'retry', 'draft'] as $case) {
                 [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -1932,8 +1933,11 @@ PHP);
                 $store->requestForTarget($context, ['requested_by_identity_id' => $requester]);
                 $row = $store->claimRequestedForPost($id);
                 if ($case === 'retry') {
-                    $store->saveFailed($id, $hash, 'legacy', 'provider_configuration_error', 'Provider missing');
-                    assertSame('failed', $app->fulfillAgentReplyRequest($row)['generation_status']);
+                    putenv('LLM_PROVIDER=openai'); putenv('LLM_API_KEY=');
+                    $failed = $app->fulfillAgentReplyRequest($row);
+                    assertSame('failed', $failed['generation_status']);
+                    assertSame('provider_configuration_error', $failed['failure_code']);
+                    putenv('LLM_PROVIDER=stub');
                     $pdo->exec('UPDATE profiles SET is_approved = 0 WHERE identity_id = ' . $pdo->quote($requester));
                     $app->retryAgentReplyRequest($id, $hash);
                     $row = $store->claimRequestedForPost($id);
@@ -1952,7 +1956,11 @@ PHP);
                 assertSame('already_posted', $app->fulfillAgentReplyRequest($row)['generation_status']);
                 assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($id))->fetchColumn());
             }
-        } finally { $this->restoreLlmProviderEnv($previous); $_COOKIE = []; }
+        } finally {
+            $this->restoreLlmProviderEnv($previous);
+            putenv($previousKey === false ? 'LLM_API_KEY' : 'LLM_API_KEY=' . $previousKey);
+            $_COOKIE = [];
+        }
     }
 
     public function testTaskQueueProcessesQueuedAgentReplyOnce(): void

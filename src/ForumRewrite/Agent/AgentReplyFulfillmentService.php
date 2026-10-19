@@ -280,7 +280,7 @@ final class AgentReplyFulfillmentService
     private function generationFromTask(array $task, array $context): array
     {
         if ($this->taskGenerator === null) {
-            throw new RuntimeException('Agent response task generator is unavailable.');
+            throw new \InvalidArgumentException('Agent response task generator is unavailable.');
         }
 
         $generation = $this->taskGenerator->generate(

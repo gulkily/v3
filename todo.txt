@@ -203,3 +203,24 @@ User Access icon completed
 nojs compatibility
 	this is going to be a big one
 
+
+Agent personality and multiple agents — Step 1 drafted
+	Review docs/plans/agent_personality_and_multiple_agents/agent_personality_and_multiple_agents_step1_solution_assessment.md
+	Proposed: improve existing agent first; assess distinct selectable agents separately
+	Awaiting Approved Step 1; multiple-agent scope remains outstanding
+
+Agent personality and multiple agents — Step 2 drafted
+	Step 1 approved; existing-agent improvement is the first slice
+	Review docs/plans/agent_personality_and_multiple_agents/agent_personality_and_multiple_agents_step2_feature_description.md
+	Awaiting Approved Step 2; distinct agents remain a separate follow-up
+
+Agent personality and multiple agents — Step 3 drafted
+	Step 2 approved; five stages cover status, voice, legacy/retry, expansion, and acceptance
+	Review docs/plans/agent_personality_and_multiple_agents/agent_personality_and_multiple_agents_step3_development_plan.md
+	Awaiting Approved Step 3 before branching, planning commit, or implementation
+
+Agent personality and participation context implemented
+	Branch: feat/agent-personality-context; five Railspike stages completed
+	Summary: docs/plans/agent_personality_and_multiple_agents/agent_personality_and_multiple_agents_step4_implementation_summary.md
+	Verified live replies and recovery in isolated fixtures; no production deployment
+	Distinct selectable agents remains a separate follow-up; style still varies with model output
