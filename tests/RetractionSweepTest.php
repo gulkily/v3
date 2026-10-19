@@ -37,4 +37,38 @@ final class RetractionSweepTest
         assertSame(false, file_exists($root . '/state.json'));
         assertSame(true, $sweep->preview(1)['remaining']);
     }
+    public function testBoundedCleanupPreservesUnknownAndUnaffectedRows(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $preserved = $pdo->query('SELECT * FROM llm_exchanges WHERE id >= 3')->fetchAll(PDO::FETCH_ASSOC);
+        assertSame(true, $sweep->run(1)['remaining']);
+        assertSame(1, $sweep->state()['cursor']);
+        do { $result = $sweep->run(1); } while ($result['remaining']);
+        foreach ([1, 2] as $id) {
+            $row = $pdo->query('SELECT * FROM llm_exchanges WHERE id=' . $id)->fetch(PDO::FETCH_ASSOC);
+            assertSame('{}', $row['request_json']);
+            assertSame('{}', $row['response_json']);
+            assertSame('{}', $row['error_json']);
+            assertSame(false, str_contains($row['context_json'], 'SECRET'));
+            assertSame('retracted', $row['status']);
+        }
+        assertSame($preserved, $pdo->query('SELECT * FROM llm_exchanges WHERE id >= 3')->fetchAll(PDO::FETCH_ASSOC));
+        assertSame(0, $sweep->run()['cleaned']);
+    }
+
+    public function testCleanupZerosPayloadAndTruncatesWal(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $pdo->exec('DELETE FROM llm_exchanges WHERE id >= 3');
+        $pdo->exec('VACUUM');
+        $pdo->exec('PRAGMA journal_mode=WAL');
+        $pdo->exec("UPDATE llm_exchanges SET request_json=" . $pdo->quote(json_encode(['body' => 'UNIQUE-SWEPT-SECRET'])));
+        $sweep->run();
+        foreach ([$root . '/exchanges.sqlite3', $root . '/exchanges.sqlite3-wal'] as $path) {
+            if (is_file($path)) assertSame(false, str_contains(file_get_contents($path), 'UNIQUE-SWEPT-SECRET'));
+        }
+        file_put_contents($root . '/records/post-retractions/post-retraction-target.txt', 'bad');
+        try { $sweep->run(); throw new RuntimeException('Expected failure'); }
+        catch (RuntimeException $error) { assertSame('failed', $sweep->state()['status']); }
+    }
 }

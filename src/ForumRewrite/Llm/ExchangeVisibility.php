@@ -18,7 +18,7 @@ final class ExchangeVisibility
     {
         $retracted = ExchangeRetractionState::read($this->repositoryRoot);
         return static function (array $exchange) use ($retracted): bool {
-            if ($retracted === null) return false;
+            if ($retracted === null || ($exchange['context']['retraction_scrubbed'] ?? false) === true) return false;
             $ids = ExchangeDependencies::classify($exchange);
             if ($ids === null) return false;
             foreach ($ids as $id) if (isset($retracted[$id])) return false;

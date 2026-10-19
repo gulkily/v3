@@ -15,7 +15,7 @@ try {
         if (!preg_match('/^--(repository-root|exchange-database-path|state-path|static-html-root|database-path|limit)=(.+)$/D', $arg, $m)) throw new InvalidArgumentException('Unknown option.');
         $options[$m[1]] = $m[2];
     }
-    if (!in_array($command, ['preview', 'status'], true)) throw new InvalidArgumentException('Use preview or status.');
+    if (!in_array($command, ['preview', 'status', 'run'], true)) throw new InvalidArgumentException('Use preview, status or run.');
     $sweep = new RetractionSweep(
         $options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository'),
         $options['exchange-database-path'] ?? LlmExchangeDatabaseConfig::path($root, PrivateConfig::load($root)),
@@ -24,7 +24,7 @@ try {
     );
     $limit = $options['limit'] ?? '250';
     if (!ctype_digit($limit) || (int) $limit < 1 || (int) $limit > 10000) throw new InvalidArgumentException('Limit must be 1–10000.');
-    echo json_encode($sweep->preview((int) $limit), JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";
+    echo json_encode(match ($command) { 'run' => $sweep->run((int) $limit), 'status' => $sweep->state(), default => $sweep->preview((int) $limit) }, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";
 } catch (Throwable $error) {
     fwrite(STDERR, "Retraction sweep failed: " . $error->getMessage() . "\n");
     exit(1);
