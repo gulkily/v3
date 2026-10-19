@@ -225,3 +225,8 @@ backup page: download sizes
 	needs a small read-only size helper in InstancePageController; avoid a
 		recursive tree walk on every page view (cache or compute lazily)
 	risk: a stale or loose number misleads disk-space checks before a backup
+
+No-JavaScript basic access — plan set aside
+	Plan: docs/plans/nojs_basic_access_step3_development_plan.md
+	Steps 1 and 2 approved; Step 3 draft, implementation not started.
+	Revalidate against current code before resuming plan review.
