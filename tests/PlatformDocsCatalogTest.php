@@ -36,13 +36,15 @@ final class PlatformDocsCatalogTest
         assertSame(realpath($this->projectRoot . '/' . $path), PlatformDocsCatalog::resolvePath($this->projectRoot, $path));
     }
 
-    public function testRejectsPathsOutsideTheMarkdownDocsBoundary(): void
+    public function testRejectsPathsOutsideDocumentationBoundary(): void
     {
         foreach ([
             '',
             '/docs/reference/v3_cli.md',
             'private.md',
-            'docs/reference/v3_cli.txt',
+            'docs/reference/private.php',
+            'docs/.hidden.md',
+            'docs/a%252fsecret.md',
             'docs/../README.md',
             'docs/%2e%2e/README.md',
             'docs//reference/v3_cli.md',
@@ -106,6 +108,23 @@ final class PlatformDocsCatalogTest
         assertSame([], PlatformDocsCatalog::search($entries, ['folder' => 'Project', 'group' => 'Workflow']));
         assertSame(count($entries), count(PlatformDocsCatalog::search($entries, [])));
         assertSame('Current guidance', $entries[0]['group']);
+    }
+
+    public function testSupportingFormatsAndRootLinksShareTheBoundary(): void
+    {
+        $entries = array_column(PlatformDocsCatalog::inventory($this->projectRoot), null, 'path');
+        foreach (['docs/examples/secrets.php.example', 'docs/examples/apache_vhost.conf', 'docs/railspike/LICENSE',
+            'docs/plans/backlog/feature-flags-redesign.html', 'docs/research/sigtbd_fault_tolerant_governance_for_internet_message_boards.pdf'] as $path) {
+            assertTrue(isset($entries[$path]), $path);
+            assertTrue(PlatformDocsCatalog::resolveSource($this->projectRoot, $path) !== null);
+        }
+        assertTrue(!isset($entries['docs/railspike/.gitignore']));
+        assertSame('/docs/_project/README.md', PlatformDocsCatalog::resolveLink('../README.md', 'docs/a.md', $this->projectRoot));
+        assertSame('/docs/_project/CONTRIBUTING.md', PlatformDocsCatalog::resolveLink('CONTRIBUTING.md', 'README.md', $this->projectRoot));
+        assertSame('/docs/examples/secrets.php.example', PlatformDocsCatalog::resolveLink('../examples/secrets.php.example', 'docs/reference/a.md', $this->projectRoot));
+        assertSame('/docs/?folder=docs%2Fplans#docs-library-heading', PlatformDocsCatalog::resolveLink('plans/', 'docs/a.md', $this->projectRoot));
+        assertTrue(count(PlatformDocsCatalog::search(array_values($entries), ['folder' => 'docs/plans'])) > 100);
+        assertSame(null, PlatformDocsCatalog::resolveLink('../../etc/passwd', 'docs/a.md', $this->projectRoot));
     }
 
     public function testRejectsOversizedFilesAndSymlinkEscapes(): void

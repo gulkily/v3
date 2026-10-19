@@ -62,6 +62,27 @@ final class PlatformDocsPageTest
         assertTrue(in_array('README.md', array_column($data['entries'], 'path'), true));
     }
 
+    public function testAssetsAreInertAndMissingDocumentsOfferRecovery(): void
+    {
+        $html = $this->render('/docs/plans/backlog/feature-flags-redesign.html');
+        assertStringContains('&lt;html', strtolower($html));
+        assertStringContains('/docs/_download/docs/plans/backlog/feature-flags-redesign.html', $html);
+        assertSame(1, substr_count(strtolower($html), '<html'));
+        $example = $this->render('/docs/examples/secrets.php.example');
+        assertStringContains('replace-with-real-key', $example);
+        assertStringContains('&lt;?php', $example);
+        $pdf = $this->render('/docs/research/sigtbd_fault_tolerant_governance_for_internet_message_boards.pdf');
+        assertStringContains('Preview unavailable', $pdf);
+        assertStringContains('Download</a>', $pdf);
+        $missing = $this->render('/docs/not-present.md');
+        assertStringContains('data-docs-return', $missing);
+        assertStringContains('data-docs-document-retry', $missing);
+        $download = $this->render('/docs/_download/docs/examples/secrets.php.example');
+        assertSame(file_get_contents(dirname(__DIR__) . '/docs/examples/secrets.php.example'), $download);
+        $invalid = $this->render('/docs/_download/docs/%2e%2e/private.md');
+        assertStringContains('<h1>Not Found</h1>', $invalid);
+    }
+
     public function testPublicIndexUsesConcreteCopy(): void
     {
         $text = strtolower(html_entity_decode(strip_tags($this->render('/docs/')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

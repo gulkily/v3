@@ -584,6 +584,19 @@ final class Application
             return;
         }
 
+        if (str_starts_with($path, '/docs/_download/')) {
+            $sourcePath = \ForumRewrite\Docs\PlatformDocsCatalog::normalizePath(substr($path, strlen('/docs/_download/')));
+            $file = $sourcePath === null ? null : \ForumRewrite\Docs\PlatformDocsCatalog::resolveSource($this->projectRoot, $sourcePath);
+            if ($file === null) {
+                $this->sendHtml($this->platformDocsController()->missing(), 404);
+                return;
+            }
+            header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: no-store');
+            $this->routeServices()->sendDownload($file, 'application/octet-stream', basename($sourcePath));
+            return;
+        }
+
         if ($path === '/docs/_search.json') {
             $this->sendJson(['entries' => \ForumRewrite\Docs\PlatformDocsCatalog::inventory($this->projectRoot)], 200);
             return;
@@ -608,7 +621,7 @@ final class Application
                 return;
             }
             if ($document === null) {
-                $this->notFound();
+                $this->sendHtml($this->platformDocsController()->missing(), 404);
                 return;
             }
 

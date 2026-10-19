@@ -104,7 +104,7 @@ final class PlatformDocsCatalog
             }
             $size = filesize($resolved);
             $readable = $size !== false && $size <= self::MAX_DOCUMENT_BYTES;
-            $text = $readable ? (string) file_get_contents($resolved) : '';
+            $text = $readable && strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'pdf' ? (string) file_get_contents($resolved) : '';
             preg_match('/^#\s+(.+)$/m', $text, $heading);
             $group = str_starts_with($path, 'docs/plans/') ? 'Plans and history'
                 : (str_starts_with($path, 'docs/railspike/') ? 'Workflow' : 'Current guidance');
@@ -118,6 +118,7 @@ final class PlatformDocsCatalog
                 'href' => self::routeForPath($path),
                 'available' => $readable,
                 'text' => $text,
+                'format' => strtolower(pathinfo($path, PATHINFO_EXTENSION)),
             ];
         }
         usort($entries, static fn (array $a, array $b): int =>
@@ -131,7 +132,7 @@ final class PlatformDocsCatalog
         $value = static fn (string $key): string => is_string($query[$key] ?? null) ? $query[$key] : '';
         $terms = preg_split('/\s+/u', mb_strtolower(trim($value('q')), 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         return array_values(array_filter($inventory, static function (array $entry) use ($value, $terms): bool {
-            if (($value('folder') !== '' && $entry['folder'] !== $value('folder'))
+            if (($value('folder') !== '' && $entry['folder'] !== $value('folder') && !str_starts_with($entry['folder'], $value('folder') . '/'))
                 || ($value('category') !== '' && $entry['category'] !== $value('category'))
                 || ($value('group') !== '' && $entry['group'] !== $value('group'))) {
                 return false;
@@ -201,7 +202,7 @@ final class PlatformDocsCatalog
             return null;
         }
         if (str_starts_with($decoded, '/')) {
-            if (!str_starts_with($decoded, '/docs/')) {
+            if (!str_starts_with($decoded, '/docs/') && !in_array(ltrim($decoded, '/'), self::ROOT_DOCUMENTS, true)) {
                 return null;
             }
             $candidate = substr($decoded, 1);
@@ -217,7 +218,7 @@ final class PlatformDocsCatalog
                 continue;
             }
             if ($segment === '..') {
-                if (count($segments) <= 1) {
+                if (count($segments) === 0) {
                     return null;
                 }
                 array_pop($segments);
@@ -226,7 +227,15 @@ final class PlatformDocsCatalog
             }
         }
         $target = implode('/', $segments);
-        if (self::resolvePath($projectRoot, $target) === null) {
+        if ($target === 'docs' || str_starts_with($target, 'docs/')) {
+            $directory = realpath($projectRoot . '/' . $target);
+            $docsRoot = realpath($projectRoot . '/docs');
+            if ($directory !== false && is_dir($directory) && $docsRoot !== false
+                && ($directory === $docsRoot || str_starts_with($directory, $docsRoot . '/'))) {
+                return '/docs/?folder=' . rawurlencode($target) . '#docs-library-heading';
+            }
+        }
+        if (self::resolveSource($projectRoot, $target) === null) {
             return null;
         }
         if ($fragment !== null && self::resolveLink('#' . $fragment, null, $projectRoot) === null) {
@@ -238,21 +247,26 @@ final class PlatformDocsCatalog
 
     public static function normalizePath(string $encodedPath): ?string
     {
+        if (preg_match('~%(?:2e|2f|5c|25|0[0-9a-f]|1[0-9a-f]|7f)~i', $encodedPath) === 1) {
+            return null;
+        }
         $path = rawurldecode($encodedPath);
-        $path = str_replace('\\', '/', $path);
 
-        if ($path === '' || str_starts_with($path, '/') || str_contains($path, "\0")) {
+        if ($path === '' || str_starts_with($path, '/') || preg_match('/[\x00-\x1f\x7f\\\\]/', $path) === 1) {
             return null;
         }
 
         foreach (explode('/', $path) as $segment) {
-            if ($segment === '' || $segment === '.' || $segment === '..') {
+            if ($segment === '' || str_starts_with($segment, '.')) {
                 return null;
             }
         }
 
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         if (!in_array($path, self::ROOT_DOCUMENTS, true)
-            && (!str_starts_with($path, self::DOCUMENT_ROOT . '/') || !str_ends_with($path, '.md'))) {
+            && (!str_starts_with($path, 'docs/') || !(in_array($extension, ['md', 'txt', 'csv', 'json', 'html', 'pdf'], true)
+                || ($path === 'docs/railspike/LICENSE')
+                || (str_starts_with($path, 'docs/examples/') && in_array($extension, ['conf', 'example'], true))))) {
             return null;
         }
 

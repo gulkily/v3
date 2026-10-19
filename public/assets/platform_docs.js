@@ -11,9 +11,12 @@
   // Carry return state through related local document links, including anchors.
   if (returnLink) document.querySelectorAll('.docs-content a[href^="/docs/"]').forEach(link => {
     const url = new URL(link.href);
+    if (url.pathname === '/docs/' || url.pathname.startsWith('/docs/_download/')) return;
     url.search = params().toString();
     link.href = url.href;
   });
+  const retry = document.querySelector('[data-docs-document-retry]');
+  if (retry) retry.addEventListener('click', () => location.reload());
   const root = document.querySelector('[data-docs-library]');
   if (!root) return;
   const form = root.querySelector('form'), results = root.querySelector('[data-docs-results]');
@@ -36,7 +39,7 @@
       if (current !== generation) return;
       error.hidden = true;
       const terms = (query.get('q') || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-      const matches = entries.filter(entry => ['folder', 'category', 'group'].every(key => !query.get(key) || query.get(key) === entry[key])
+      const matches = entries.filter(entry => ['folder', 'category', 'group'].every(key => !query.get(key) || query.get(key) === entry[key] || (key === 'folder' && entry.folder.startsWith(query.get(key) + '/')))
         && terms.every(term => (entry.title + ' ' + entry.path + ' ' + entry.text).toLowerCase().includes(term)));
       const page = Math.max(1, Math.min(parseInt(query.get('page'), 10) || 1, Math.ceil(matches.length / 40) || 1));
       results.replaceChildren(); pages.replaceChildren();

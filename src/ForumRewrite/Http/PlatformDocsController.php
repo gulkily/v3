@@ -29,7 +29,15 @@ final class PlatformDocsController
         $matches = PlatformDocsCatalog::search($inventory, $query);
         $page = max(1, min((int) ($query['page'] ?? 1), max(1, (int) ceil(count($matches) / 40))));
         $library = array_slice($matches, ($page - 1) * 40, 40);
-        $folders = array_values(array_unique(array_column($inventory, 'folder')));
+        $folders = ['Project', 'docs'];
+        foreach ($inventory as $entry) {
+            $folderPath = $entry['folder'];
+            while ($folderPath !== '.' && $folderPath !== 'Project') {
+                $folders[] = $folderPath;
+                $folderPath = dirname($folderPath);
+            }
+        }
+        $folders = array_values(array_unique($folders));
         sort($folders);
         $total = count($matches);
         return $this->routeServices->renderPageTemplate(
@@ -48,14 +56,18 @@ final class PlatformDocsController
             return null;
         }
 
-        $filePath = PlatformDocsCatalog::resolvePath($this->projectRoot, $sourcePath);
-        $markdown = $filePath === null ? false : file_get_contents($filePath);
-        if ($markdown === false) {
-            if (PlatformDocsCatalog::resolveSource($this->projectRoot, $sourcePath) === null) {
-                return null;
-            }
-            $markdown = "# Document unavailable\n\nThis document exceeds the viewing limit.";
+        $filePath = PlatformDocsCatalog::resolveSource($this->projectRoot, $sourcePath);
+        if ($filePath === null) {
+            return null;
         }
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        $size = filesize($filePath);
+        $canView = $size !== false && $size <= PlatformDocsCatalog::MAX_DOCUMENT_BYTES && $extension !== 'pdf';
+        $contents = $canView ? file_get_contents($filePath) : false;
+        $documentHtml = $contents === false
+            ? '<p>Preview unavailable. Download the document to read it.</p>'
+            : ($extension === 'md' ? PublicMarkdownRenderer::render($contents, $sourcePath, $this->projectRoot)
+                : '<pre><code>' . htmlspecialchars($contents, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code></pre>');
 
         $documentTitle = substr($sourcePath, strlen('docs/'));
         foreach (PlatformDocsCatalog::entries() as $entry) {
@@ -70,12 +82,20 @@ final class PlatformDocsController
             [
                 'sourcePath' => $sourcePath,
                 'returnQuery' => array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar'),
-                'documentHtml' => PublicMarkdownRenderer::render($markdown, $sourcePath, $this->projectRoot),
+                'documentHtml' => $documentHtml,
+                'downloadHref' => '/docs/_download/' . implode('/', array_map(rawurlencode(...), explode('/', $sourcePath))),
                 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active()),
             ],
             $documentTitle . ' - Platform Docs',
             'docs',
             ['/assets/platform_docs.js'],
+        );
+    }
+
+    public function missing(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'platform_docs_missing.php', [], 'Document not found', 'docs', ['/assets/platform_docs.js'],
         );
     }
 
