@@ -15,3 +15,17 @@ Branch: `feature/feature_flag_change_pages`, based on `fix/backup-page-tools-nav
   - Full suite not run in this stage (over two minutes); focused result only.
 - Notes:
   - Items already carry `source_signature_status` and `source_signature_href`, which Stage 2 can show instead of inventing signature wording.
+
+## Stage 2 - Change page
+- Changes:
+  - Route `/tools/feature-flags/changes/{id}` (Application route plus the application-route allowlist), `FeatureFlagChangePageController` modeled on `RootApprovalPageController`, template `feature_flag_change.php` with the tools nav, `tool-details.css` mapping.
+  - Page shows flag (label and key), new value, time, operator, and source evidence through the existing `source_metadata` partial (path, commit, signature link/status as the activity item already derives them). It states that it does not re-verify the signature.
+  - Unknown, malformed, traversal-style or unparseable IDs render "Feature flag change unavailable" with 404.
+  - `tests/FeatureFlagChangePageTest.php` (registered in `tests/run.php`).
+- Verification:
+  - `php tests/run.php FeatureFlagChangePageTest ActivityItemLinkTest`: passed, 6 of 6.
+  - `php tests/run.php LocalAppSmokeTest`: passed, 141 of 141.
+  - Visual check of the page: pending until Stage 6.
+- Notes:
+  - Correction to earlier work on `fix/backup-page-tools-nav-order`: running `php tests/LocalAppSmokeTest.php` directly only loads the class and runs nothing, so "smoke test passes" claims made that way were not real checks. The suite was rerun through `tests/run.php` above and passes, including the tab-bar ordering and empty-link assertions from that branch.
+  - A record ID must start with `feature-flag-change-`; the test fixture initially used an invalid ID.
