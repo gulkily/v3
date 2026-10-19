@@ -63,6 +63,7 @@ try {
         fwrite(STDOUT, 'Read-model database: ' . $databasePath . "\n");
         fwrite(STDOUT, 'Score database: ' . $scorePath . "\n");
         fwrite(STDOUT, 'Selected model: ' . $config->provider->model . "\n");
+        fwrite(STDOUT, 'Enabled rubrics: ' . implode(', ', (new \ForumRewrite\Scoring\FastmodSelection($projectRoot))->composition($config)['ids']) . "\n");
         fwrite(STDOUT, "Historical content\n");
         fwrite(STDOUT, '  Total posts: ' . $audit['counts']['total'] . "\n");
         fwrite(STDOUT, '  Ready to backfill: ' . $audit['counts']['unrated'] . "\n");
@@ -171,6 +172,9 @@ try {
             foreach ($store->recentWork((int) ($options['limit'] ?? 10)) as $work) {
                 $probability = $work['probability'] === null ? 'none' : (string) $work['probability'];
                 fwrite(STDOUT, sprintf("  post=%s state=%s probability=%s source=%s attempts=%d failure=%s content_hash=%s rubric_revision=%s updated=%s\n", $work['post_id'], $work['state'], $probability, $work['source'] ?? 'none', $work['attempt_count'], $work['failure_category'] ?? 'none', fastmodShortHash((string) $work['content_hash']), fastmodShortHash((string) $work['rubric_revision']), $work['updated_at']));
+                fwrite(STDOUT, '    scores=' . json_encode($work['scores'], JSON_THROW_ON_ERROR)
+                    . ' legacy=' . ($work['legacy'] ? 'yes' : 'no')
+                    . ' signals=' . json_encode($work['signals'], JSON_THROW_ON_ERROR) . "\n");
             }
         }
         foreach ($store->recentBackfillBatches((int) ($options['limit'] ?? 10)) as $batch) {
@@ -284,7 +288,8 @@ try {
             'post_id' => $postId,
             'provider' => FastScoringConfig::fromPrivateConfig($privateConfig)->provider->provider,
             'model' => FastScoringConfig::fromPrivateConfig($privateConfig)->provider->model,
-            'structured_output' => true,
+            'structured_output' => false,
+            'output_format' => 'csv',
             'result' => $result,
             'exchange_recording_enabled' => $recorder !== null,
         ], JSON_THROW_ON_ERROR) . "\n");

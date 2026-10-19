@@ -30,6 +30,8 @@ final class ToolsPageSupport
     public static function registry(): array
     {
         return [
+            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
+                'description' => 'Choose which independent scores Fastmod records.', 'standalone' => false],
             [
                 'key' => 'activity',
                 'label' => 'Activity',

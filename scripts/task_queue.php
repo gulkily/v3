@@ -422,7 +422,7 @@ try {
         };
 
         try {
-            (new ExecutionLock($queueDirectory . '/forum-rewrite-task-queue.lock', 0))->withExclusiveLock($run);
+            (new ExecutionLock($queueDirectory . '/forum-rewrite-task-queue.lock', (int) ($options['lock-wait-seconds'] ?? 0)))->withExclusiveLock($run);
         } catch (RuntimeException $exception) {
             if (str_contains($exception->getMessage(), 'Timed out waiting for execution lock')) {
                 emitTaskQueue($quiet, "Another task queue worker is already running.\n");
@@ -471,10 +471,13 @@ function parseTaskQueueOptions(array $arguments): array
             $options[substr($argument, 2)] = true;
             continue;
         }
-        foreach (['task-id', 'post-id', 'content-hash', 'limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'static-html-root', 'queue-database-path', 'log', 'error-log'] as $key) {
+        foreach (['task-id', 'post-id', 'content-hash', 'limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'static-html-root', 'queue-database-path', 'log', 'error-log', 'lock-wait-seconds'] as $key) {
             $prefix = '--' . $key . '=';
             if (str_starts_with($argument, $prefix)) {
                 $value = substr($argument, strlen($prefix));
+                if ($key === 'lock-wait-seconds' && (!ctype_digit($value) || (int) $value > 60)) {
+                    throw new InvalidArgumentException('--lock-wait-seconds must be an integer from 0 to 60.');
+                }
                 if ($key === 'task-id' && (!ctype_digit($value) || (int) $value < 1)) {
                     throw new InvalidArgumentException('--task-id must be a positive integer.');
                 }
@@ -548,6 +551,8 @@ function emitFastmodProgress(bool $quiet, string $event, array $progress): void
     }
 
     $probability = $progress['probability'] === null ? 'none' : sprintf('%.6f', (float) $progress['probability']);
+    emitTaskQueue($quiet, '  Fastmod scores=' . json_encode($progress['scores'] ?? [], JSON_THROW_ON_ERROR)
+        . ' signals=' . json_encode($progress['signals'] ?? [], JSON_THROW_ON_ERROR) . "\n");
     $failure = isset($progress['failure_code']) ? ' failure=' . (string) $progress['failure_code'] : '';
     emitTaskQueue($quiet, sprintf(
         "  Fastmod progress: examined=%d/%d post=%s status=%s probability=%s source=%s provider_calls=%d/%d%s%s\n",

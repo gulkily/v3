@@ -146,3 +146,7 @@ composite identity (undefined term)
 		message recipient keys, approval same-username rule); approval itself
 		follows identity_id and is unchanged
 	related: docs/plans/username_change_gate_step1_solution_assessment.md
+
+./v3 task-queue status should not output 2 pages, just the sums
+
+./v3 task-queue run should output errors/failures to a rotated log file so that we can use llm to troubleshoot it.

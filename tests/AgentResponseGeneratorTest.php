@@ -11,6 +11,126 @@ use ForumRewrite\Llm\StubTextChatProvider;
 
 final class AgentResponseGeneratorTest
 {
+    public function testSavedSolReplyWithContextualAttributionGeneratesAndRevalidatesLocally(): void
+    {
+        $fixture = json_decode(file_get_contents(__DIR__ . '/fixtures/scripture_reliability/sol_contextual_attribution.json'), true, 512, JSON_THROW_ON_ERROR);
+        $provider = new FakeTextChatProvider(json_encode($fixture['document'], JSON_THROW_ON_ERROR));
+        $generator = new AgentResponseGenerator($provider, false, false, 8192, ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified']);
+        $task = ['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => $fixture['question']];
+        $reply = $generator->generate($task);
+        assertStringContains('James writes to Christian communities', $reply['response_text']);
+        $generator->validatePublication($reply, $task);
+        $task = ['type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, 'original_post' => $fixture['question'], 'initial_answer' => 'Earlier interpretation.'];
+        $expanded = $generator->generate($task);
+        assertStringContains('Further scripture reflection:', $expanded['response_text']);
+        $generator->validatePublication($expanded, $task);
+    }
+
+    public function testMalformedJsonFailureClassificationRemainsScopedToScripture(): void
+    {
+        assertSame('analysis_suggestion_error', \ForumRewrite\Agent\AgentReplyFailure::code(new JsonException('Unrelated JSON failure.')));
+        try {
+            (new AgentResponseGenerator(new FakeTextChatProvider('invalid JSON'), true, true, 8192,
+                ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified']))->generate([
+                    'type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'Concern.',
+                ]);
+            throw new LogicException('Malformed scripture JSON accepted');
+        } catch (\ForumRewrite\Agent\ScriptureVerificationException $expected) {
+            assertSame('scripture_verification_failed', \ForumRewrite\Agent\AgentReplyFailure::code($expected));
+        }
+    }
+
+    public function testVerifiedTranslationAndSourceLimitationsAndDraftRevalidation(): void
+    {
+        $document = ['segments' => [['type' => 'reflection', 'text' => 'In paraphrase, thoughtful planning helps us act responsibly.']]];
+        $provider = new FakeTextChatProvider(json_encode($document));
+        $config = ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified'];
+        $task = ['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'Use NIV. Help me plan.'];
+        $generator = new AgentResponseGenerator($provider, true, true, 8192, $config);
+        $result = $generator->generate($task);
+        assertStringContains('No other translation has been substituted', $result['response_text']);
+        assertStringContains('Requested translation cannot', $provider->messages[1]['content']);
+        $generator->validatePublication($result, $task);
+        foreach ([array_merge($result, ['response_text' => 'Changed.']), ['response_text' => 'Old unverified draft.']] as $bad) {
+            try { $generator->validatePublication($bad, $task); throw new LogicException('Accepted invalid draft'); }
+            catch (\ForumRewrite\Agent\ScriptureVerificationException $expected) {}
+        }
+        $missing = new AgentResponseGenerator($provider, true, true, 8192, $config + ['SCRIPTURE_SOURCE_PATH' => __FILE__ . '.missing']);
+        $task['target_body'] = 'How should I plan?';
+        $fallback = $missing->generate($task);
+        assertStringContains('Verified KJV source text is unavailable', $fallback['response_text']);
+        $missing->validatePublication($fallback, $task);
+        assertSame('scripture_verification_failed', \ForumRewrite\Agent\AgentReplyFailure::code(new \ForumRewrite\Agent\ScriptureVerificationException()));
+    }
+
+    public function testReaderDiscussionBindsToOriginalInputAtGenerationAndPublication(): void
+    {
+        $doc = ['segments' => [
+            ['type' => 'reflection', 'text' => 'The familiar saying is not an exact Bible verse.'],
+            ['type' => 'discussion', 'origin' => 'reader', 'text' => 'Cleanliness is next to godliness'],
+        ]];
+        $provider = new FakeTextChatProvider(json_encode($doc));
+        $generator = new AgentResponseGenerator($provider, false, false, 8192, ['SCRIPTURE_RESPONSE_GUIDANCE' => 'verified']);
+        $task = ['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'Use NIV. Is Cleanliness is next to godliness in the Bible?'];
+        $reply = $generator->generate($task);
+        assertStringContains('Reader wording (not a verified Bible quotation)', $reply['response_text']);
+        $generator->validatePublication($reply, $task);
+        try {
+            $generator->validatePublication($reply, array_replace($task, ['target_body' => 'Different post.']));
+            throw new LogicException('Reader origin survived changed original input');
+        } catch (\ForumRewrite\Agent\ScriptureVerificationException) {}
+        $expand = ['type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, 'original_post' => 'A different concern.', 'initial_answer' => $reply['response_text']];
+        try {
+            $generator->generate($expand);
+            throw new LogicException('Agent history was accepted as reader origin');
+        } catch (\ForumRewrite\Agent\ScriptureVerificationException) {}
+    }
+
+    public function testScriptureCandidatesAreScopedAndDoNotReduceCompletionAllowance(): void
+    {
+        $provider = new FakeTextChatProvider('Reply.');
+        $config = ['LLM_PROVIDER' => 'openai', 'LLM_MODEL' => 'gpt-5-nano',
+            'SCRIPTURE_RESPONSE_GUIDANCE' => 'revised', 'SCRIPTURE_RESPONSE_REASONING_EFFORT' => 'low', 'SCRIPTURE_RESPONSE_MODEL' => 'gpt-5.6-sol'];
+        $generator = new AgentResponseGenerator($provider, true, true, 8192, $config);
+        $generator->generate(['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE, 'target_body' => 'A concern.']);
+        assertSame('gpt-5.6-sol', $provider->options['scripture_writer_model']);
+        assertSame('low', $provider->options['reasoning_effort']);
+        assertSame(8192, $provider->options['max_completion_tokens']);
+        assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_oriented_analysis_revised.txt')), $provider->messages[1]['content']);
+        $generator->generate(['type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE, 'original_post' => 'Concern.', 'initial_answer' => 'Initial.']);
+        assertSame('gpt-5.6-sol', $provider->options['scripture_writer_model']);
+        assertSame('low', $provider->options['reasoning_effort']);
+        assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_expansion_revised.txt')), $provider->messages[1]['content']);
+        $generator->generate(['type' => AgentResponseTask::LOGIC_ANALYSIS_TYPE]);
+        assertSame(false, isset($provider->options['scripture_writer_model']));
+        assertSame(false, isset($provider->options['reasoning_effort']));
+        assertSame(false, str_contains($provider->messages[1]['content'], 'Examples illustrate judgment'));
+        // An unsupported scripture configuration must not break unrelated tasks.
+        $bad = new AgentResponseGenerator($provider, true, true, 8192, ['SCRIPTURE_RESPONSE_GUIDANCE' => 'bad']);
+        $bad->generate(['type' => AgentResponseTask::DEFAULT_TYPE]);
+        try {
+            $bad->generate(['type' => AgentResponseTask::SCRIPTURE_ORIENTED_ANALYSIS_TYPE]);
+            throw new RuntimeException('Invalid scripture configuration accepted');
+        } catch (InvalidArgumentException $expected) {
+            assertSame('provider_configuration_error', \ForumRewrite\Agent\AgentReplyFailure::code($expected));
+        }
+    }
+
+    public function testScriptureReasoningRejectsUnsupportedProvidersAndModels(): void
+    {
+        foreach ([['openrouter', 'openai/gpt-5-nano'], ['anthropic', 'claude'], ['openai', 'other']] as [$provider, $model]) {
+            try {
+                \ForumRewrite\Agent\ScriptureResponseSettings::fromConfig([
+                    'LLM_PROVIDER' => $provider, 'LLM_MODEL' => $model, 'SCRIPTURE_RESPONSE_REASONING_EFFORT' => 'low',
+                ]);
+                throw new RuntimeException('Unsupported scripture reasoning accepted');
+            } catch (InvalidArgumentException $expected) {
+                assertStringContains('supported OpenAI GPT-5', $expected->getMessage());
+            }
+        }
+        assertSame(null, \ForumRewrite\Agent\ScriptureResponseSettings::fromConfig([])->reasoningEffort);
+    }
+
     public function testGeneratorUsesDelimitedTaskInputAndReturnsNormalizedText(): void
     {
         $provider = new FakeTextChatProvider('A clear reply.');
@@ -35,6 +155,21 @@ final class AgentResponseGeneratorTest
             'content_hash' => 'hash-123',
             'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest([], false),
         ], $provider->options['exchange_context']);
+    }
+
+    public function testExpansionUsesDedicatedPromptAndBothSourceTexts(): void
+    {
+        $provider = new FakeTextChatProvider('Further scripture reflection: Context.');
+        (new AgentResponseGenerator($provider, true, true))->generate([
+            'type' => AgentResponseTask::SCRIPTURE_EXPANSION_TYPE,
+            'original_post' => 'Original concern.', 'initial_answer' => 'Existing reflection.',
+        ]);
+        assertStringContains('Original concern.', $provider->messages[1]['content']);
+        assertStringContains('Existing reflection.', $provider->messages[1]['content']);
+        assertSame(1, substr_count($provider->messages[1]['content'], 'Original concern.'));
+        assertSame(1, substr_count($provider->messages[1]['content'], 'Existing reflection.'));
+        assertStringContains(trim(file_get_contents(__DIR__ . '/../prompts/agent_response_scripture_expansion.txt')), $provider->messages[1]['content']);
+        assertSame(false, AgentResponseTask::isSelectableType(AgentResponseTask::SCRIPTURE_EXPANSION_TYPE));
     }
 
     public function testCompletionBudgetIsBoundedAndPassedToProvider(): void

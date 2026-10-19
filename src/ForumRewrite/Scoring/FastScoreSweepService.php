@@ -59,7 +59,10 @@ final class FastScoreSweepService
             }
             $post = $this->post($postId);
             try {
-                if ($post === null) {
+                $executionRevision = $this->workflow->rubricRevision() ?? $this->rubricRevision;
+                if ((string) $work['rubric_revision'] !== $executionRevision) {
+                    $result = FastScoreResult::excluded(['rubric_changed_before_score']);
+                } elseif ($post === null) {
                     $result = FastScoreResult::excluded(['post_unavailable']);
                 } else {
                     $context = $this->contextFactory->forPost($post);
@@ -119,7 +122,7 @@ final class FastScoreSweepService
                 if (isset($work['backfill_batch_id'])) {
                     $backfillExcluded++;
                 }
-            } elseif (str_ends_with((string) $result['status'], '_error')) {
+            } elseif (!in_array($result['status'], ['disabled', 'excluded'], true)) {
                 $summary['failed']++;
             }
             $this->report($progress, 'completed', $summary, $work, [
@@ -127,6 +130,8 @@ final class FastScoreSweepService
                 'provider_call_limit' => $providerCallLimit,
                 'status' => (string) $result['status'],
                 'probability' => $result['probability'],
+                'scores' => $result['scores'] ?? [],
+                'signals' => $result['signals'] ?? [],
                 'source' => (string) $result['source'],
                 'failure_code' => $result['failure_code'] ?? null,
             ]);
