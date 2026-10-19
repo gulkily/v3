@@ -467,7 +467,7 @@
         }
       });
       querySelect.value = "0";
-      if (queryInput) {
+      if (queryInput && !queryInput.value) {
         queryInput.value = presetQueries[0].sql;
       }
     }
@@ -576,17 +576,33 @@
         if (loadButton) {
           loadButton.textContent = "Reload Database";
         }
+        return true;
       } catch (error) {
         setStatus(error && error.message ? error.message : "The database could not be loaded.", "error");
       } finally {
         if (loadButton) {
           loadButton.disabled = false;
+          loadButton.textContent = database ? "Reload Database" : "Load Database";
         }
       }
     }
 
+    var activeContext = null;
+    root.sqliteViewer = {
+      open: async function (context) {
+        if (activeContext === context.key && database) { return; }
+        activeContext = context.key;
+        queryInput.value = context.sql;
+        queryPanel.hidden = false;
+        var loaded = database || await loadDatabase();
+        if (!loaded) { return; }
+        runQuery();
+      }
+    };
     if (loadButton) {
-      loadButton.addEventListener("click", loadDatabase);
+      loadButton.addEventListener("click", async function () {
+        if (await loadDatabase() && activeContext !== null) { runQuery(); }
+      });
     }
     if (queryButton) {
       queryButton.addEventListener("click", function () {

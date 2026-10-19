@@ -1,7 +1,9 @@
 <section class="stack" data-sqlite-viewer data-runtime-url="<?= htmlspecialchars((string) ($runtimeUrl ?? '/assets/sql-wasm.wasm'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+<?php if (empty($embedded)): ?>
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
+<?php endif; ?>
   <article class="card">
     <p class="meta">The database preserves image references, not image files. Keep the separate image backup with your repository backup.</p>
     <h1>SQLite Viewer</h1>

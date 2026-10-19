@@ -1,0 +1,1 @@
+<button type="button" data-view-query data-query-key="<?= $e($queryKey) ?>" data-query-label="<?= $e($queryLabel) ?>" data-query-sql="<?= $e($querySql) ?>">View query<span class="meta">: <?= $e($queryLabel) ?></span></button>
