@@ -1,1 +1,1 @@
-<p class="activity-security-notice">Current cross-account policy: <?= $approvalPolicyEnabled ? 'enabled' : 'restricted' ?>. Account key grants and recorded approval-policy changes. Restricting future cross-account approvals does not revoke previously accepted keys. Deployment-only policy changes and missing historical acceptance facts remain unknown.</p>
+<p class="activity-security-notice">Current cross-account policy: <?= $approvalPolicyEnabled ? 'enabled' : 'restricted' ?>.</p>

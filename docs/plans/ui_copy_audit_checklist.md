@@ -7,8 +7,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 ## First fixes
 
 - [x] **Invite generation** — Removed policy mechanics; kept link-sharing and existing-account access warnings, with expiry beside the result. Verified phone/desktop rendering and issuance, redemption, and public/private zero-click browser flows. Commit: `30c4ab6e`.
-- [x] **Public backup downloads** — Deleted repeated restoration explanations and preview instructions. Kept backup exclusions, matching image/repository guidance, and the index caveat. Phone/desktop rendering and five backup scope/image checks passed.
-- [ ] **Activity security notice** — [activity_security_notice.php](../../templates/partials/activity_security_notice.php). A four-sentence notice combines current policy, key grants, non-revocation, and historical uncertainty. Keep the current policy concise; move interpretation details behind help, retaining the non-revocation consequence at any policy-changing control. Check both activity views that reuse this partial.
+- [x] **Public backup downloads** — Deleted repeated restoration explanations and preview instructions. Kept backup exclusions, matching image/repository guidance, and the index caveat. Phone/desktop rendering and five backup scope/image checks passed. Commit: `cafd7c64`.
+- [x] **Activity security notice** — Removed the repeated policy explanation from both activity views; kept current policy status. The Feature Flags control retains “Existing approvals remain valid.” Phone/desktop classic and Forte rendering plus seven approval history/policy checks passed.
 - [ ] **Profile diagnostics** — [profile.php](../../templates/pages/profile.php), self-profile block and bootstrap metadata. “Account-aware bootstrap context,” the cookie hint, internal setup artifacts, and route metadata expose implementation concepts during profile viewing. Put diagnostics in a technical section and remove redundant “This is your profile” / “Your current browser identity matches this profile” wording.
 
 ## Other cleanup
