@@ -45,8 +45,8 @@ final class PublicMarkdownRenderer
         $environment->addExtension(new GithubFlavoredMarkdownExtension());
         $environment->addExtension(new HeadingPermalinkExtension());
         $environment->addRenderer(FencedCode::class, new DocsCodeRenderer(), 10);
-        $environment->addRenderer(HtmlBlock::class, new DocsHtmlRenderer(), 10);
-        $environment->addRenderer(HtmlInline::class, new DocsHtmlRenderer(), 10);
+        $environment->addRenderer(HtmlBlock::class, new DocsHtmlRenderer(), 100);
+        $environment->addRenderer(HtmlInline::class, new DocsHtmlRenderer(), 100);
 
         $projectRoot ??= dirname(__DIR__, 3);
         $environment->addEventListener(DocumentParsedEvent::class, static function (DocumentParsedEvent $event) use ($sourcePath, $projectRoot): void {

@@ -21,3 +21,7 @@ Debug mode: enabled
 - Changes: front matter preserved in a collapsed, escaped metadata block; code languages have captions, Mermaid remains readable source; standalone HTML logo uses escaped alternative text and no remote request. HTML comments suppressed; other raw markup escaped.
 - Verification: actual Marp deck, all five private-message Mermaid diagrams, Railspike logo and reference-heavy Thywill review exercised. Metadata/code/image hostile content remains escaped; source languages retained. Focused Docs suite: 17 passed; git diff --check passed.
 - Notes: Stage 2 commit 7d14cbe2. No diagram, slideshow, CSS or arbitrary HTML execution added.
+
+### Stage 3 verification correction
+- Correction to the preceding verification entry: commit 5247c7e2 was made after an overlooked test failure (16 passed, 1 failed), not 17 passes. No Stage 4 work began before correction.
+- GFM installs its raw-HTML renderer at priority 50; the explicit escaped fallback now has priority 100. Rerun: 17 focused Docs tests passed, including actual metadata, comments, logo and hostile source. git diff --check passed. This corrective commit completes Stage 3.
