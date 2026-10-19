@@ -3665,6 +3665,54 @@ NODE;
         assertSame(true, $rejected);
     }
 
+    public function testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $exchangeDb = sys_get_temp_dir() . '/exchange-location-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $config = $exchangeDb . '.php';
+        file_put_contents($config, '<?php return ' . var_export(['LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb], true) . ';');
+        $previous = getenv('FORUM_SECRETS_PATH');
+        $cookies = $_COOKIE;
+        putenv('FORUM_SECRETS_PATH=' . $config);
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $recorder = new \ForumRewrite\Llm\LlmExchangeRecorder(new PDO('sqlite:' . $exchangeDb));
+            $ids = [];
+            foreach (['root-001', 'reply-001'] as $postId) {
+                $ids[$postId] = $recorder->record(['call_type' => 'post_analysis', 'post_id' => $postId,
+                    'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest([$postId])],
+                    ['payload' => []], ['body' => 'Exchange response'], 'completed', 1);
+            }
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $thread = $this->renderMethod($app, 'GET', '/threads/root-001');
+            assertStringNotContains('LLM exchanges:', $thread);
+            foreach ($ids as $postId => $id) {
+                assertStringNotContains('/tools/llm-exchanges/' . $id . '"', $thread);
+                $post = $this->renderMethod($app, 'GET', '/posts/' . $postId);
+                assertStringContains('LLM exchanges:', $post);
+                assertStringContains('/tools/llm-exchanges/' . $id . '"', $post);
+                foreach ($ids as $otherPostId => $otherId) {
+                    if ($otherPostId !== $postId) {
+                        assertStringNotContains('/tools/llm-exchanges/' . $otherId . '"', $post);
+                    }
+                }
+            }
+            $_COOKIE = [];
+            assertStringNotContains('LLM exchanges:', $this->renderMethod($app, 'GET', '/posts/root-001'));
+            file_put_contents($config, '<?php return ' . var_export([
+                'LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb,
+                'LLM_CONVERSATION_UI_ENABLED' => false,
+            ], true) . ';');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $disabledApp = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            assertStringNotContains('LLM exchanges:', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
+        } finally {
+            $_COOKIE = $cookies;
+            putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
+            unlink($config);
+        }
+    }
+
     public function testRetractionMakesDirectAndContextOnlyLlmExchangeDetailsUnavailable(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

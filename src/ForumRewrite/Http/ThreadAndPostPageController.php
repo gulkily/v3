@@ -120,7 +120,6 @@ final class ThreadAndPostPageController
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
-        $llmExchangesByPostId = ($this->viewerCanInspectLlmExchanges)() ? ($this->fetchLlmExchangesForPosts)($posts) : [];
         $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $service->fetchCodexHandoffsForPosts($posts) : [];
         $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $service->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
@@ -148,7 +147,6 @@ final class ThreadAndPostPageController
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
-                'llmExchangesByPostId' => $llmExchangesByPostId,
                 'codexHandoffsByPostId' => $codexHandoffsByPostId,
                 'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $service->agentReplyWorkByPostId(

@@ -51,3 +51,7 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Kept the conduct/integrity consequence in the existing new-member review, because the approval control cannot communicate this responsibility alone. Account-key access warnings remain; own-key and cross-account-key grants omit the new-member wording. Pending approvals now use the same confirmation. Policy/access/prepared-approval checks passed (14/14); desktop/phone browser review covered cancellation, signing failure and retry; real HTTP signed approval covered all three classifications, 390px/1280px new-member rendering, history/rebuild persistence and no overflow. See the [implementation summary](user_approval_meaning/user_approval_meaning_step4_implementation_summary.md).
 
 - Follow-up: at the user’s request, restored one-click pending-list approval, removing the confirmation introduced in this cycle. The pre-existing profile review and its conduct/integrity explanation remain. See the implementation summary for verification.
+
+## LLM exchange display — October 19, 2026
+
+- [x] Removed LLM exchange links from shared thread root/reply cards and stopped fetching exchange lists for thread pages. Post detail pages now render their own exchange links beside the post metadata, retaining approved-viewer, feature-flag, and retraction visibility checks. Two targeted write-API smoke tests passed, covering thread absence, root/reply detail links scoped to the selected post, anonymous/disabled UI absence, and retracted exchange privacy. PHP syntax and diff checks passed.
