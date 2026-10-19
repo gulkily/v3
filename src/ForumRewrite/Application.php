@@ -131,7 +131,7 @@ final class Application
         $securityReviewRequest = ($query['view'] ?? '') === 'security'
             && in_array($path, ['/activity', '/activity/', '/forte/activity', '/forte/activity/', '/api/forte_activity_page', '/api/forte_activity_detail', '/api/forte_commit_detail'], true);
         if ($securityReviewRequest || $this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+            || in_array($path, ['/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/test_self_approval', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/api/private_messages/history_sync/')
             || str_starts_with($path, '/messages/conversation/')
@@ -139,6 +139,11 @@ final class Application
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
             $this->resumeViewerSession();
+        }
+
+        if ($path === '/api/test_self_approval') {
+            $this->testingSelfApproval($method);
+            return;
         }
 
         if ($path === '/api/version') {
@@ -1834,6 +1839,36 @@ final class Application
         }
 
         return $this->privateMessageStore = new PrivateMessageStore(new PDO('sqlite:' . $path));
+    }
+
+    private function testingSelfApproval(string $method): void
+    {
+        $headers = $this->routeServices()->noStoreHeaders();
+        if ($method !== 'POST') {
+            $this->routeServices()->sendJson(['error' => 'Method not allowed.'], 405, $headers);
+            return;
+        }
+        $input = $_POST;
+        $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+        $expectedOrigin = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://')
+            . (string) ($_SERVER['HTTP_HOST'] ?? '');
+        $profile = $this->authenticatedViewerProfile();
+        $token = (string) ($_SESSION['testing_self_approval_token'] ?? '');
+        if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()
+            || $profile === null || $token === ''
+            || !hash_equals($token, (string) ($input['token'] ?? ''))
+            || $origin !== $expectedOrigin || array_diff(array_keys($input), ['token']) !== []) {
+            $this->routeServices()->sendJson(['error' => 'Testing approval is unavailable. Refresh Account Key and try again.'], 403, $headers);
+            return;
+        }
+        try {
+            if ((int) ($profile['is_approved'] ?? 0) !== 1) {
+                $this->routeServices()->writer()->seedApprovedIdentity((string) $profile['identity_id'], 'initial approved user');
+            }
+            $this->routeServices()->sendJson(['status' => 'ok'], 200, $headers);
+        } catch (\RuntimeException $error) {
+            $this->routeServices()->sendJson(['error' => $error->getMessage()], 400, $headers);
+        }
     }
 
     private function authenticatedViewerProfile(): ?array

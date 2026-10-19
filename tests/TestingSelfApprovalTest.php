@@ -12,6 +12,7 @@ final class TestingSelfApprovalTest
         $server = $_SERVER;
         $policy = new \ForumRewrite\Support\TestingSelfApproval($root);
         try {
+            $_SERVER['HTTP_HOST'] = 'localhost:8000';
             $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
             assertSame(false, $policy->isEnabledForRequest());
             file_put_contents($root . '/.test-self-approval', 'contents ignored');
@@ -23,6 +24,11 @@ final class TestingSelfApprovalTest
             $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1';
             assertSame(false, $policy->isEnabledForRequest());
             $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+            assertSame(false, $policy->isEnabledForRequest());
+            unset($_SERVER['HTTP_X_FORWARDED_FOR']);
+            $_SERVER['HTTP_HOST'] = 'public.example';
+            assertSame(false, $policy->isEnabledForRequest());
+            $_SERVER['HTTP_HOST'] = 'localhost';
             unlink($root . '/.test-self-approval');
             assertSame(false, $policy->isEnabledForRequest());
             mkdir($root . '/.test-self-approval');

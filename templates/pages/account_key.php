@@ -38,6 +38,9 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <p class="meta account-key-profile-link" data-role="profile-link-wrap"<?= $viewerProfileHref === '' ? ' hidden' : '' ?>><a data-role="profile-link" href="<?= $e($viewerProfileHref !== '' ? $viewerProfileHref : '/account/key/') ?>"><?= $e($viewerProfileLabel !== '' ? $viewerProfileLabel : 'View profile') ?></a></p>
         </div>
         <div class="account-key-simple-actions">
+<?php if (($testingSelfApprovalToken ?? null) !== null): ?>
+          <button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button>
+<?php endif; ?>
           <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Set up this browser</button>
           <button type="button" class="account-key-secondary-button" data-action="rename-profile"<?= ($usernameChangesEnabled ?? false) ? '' : ' hidden' ?>>Choose username</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
