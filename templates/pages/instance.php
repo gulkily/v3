@@ -17,7 +17,8 @@
 <?php endif; ?>
     </p>
     <section class="feature-flag-group">
-      <h2 class="feature-flag-group-heading">Snapshot freshness</h2>
+      <h2 class="feature-flag-group-heading">Text content</h2>
+      <h3>Snapshot freshness</h3>
 <?php if (($backupSnapshot['generated_at'] ?? '') === ''): ?>
       <p class="meta">Freshness information is not available yet.</p>
 <?php else: ?>
@@ -26,6 +27,21 @@
 <?php if (($backupSnapshot['repository_head'] ?? '') !== ''): ?>
       <p class="meta"><strong>Repository snapshot:</strong> <?= $e(substr((string) $backupSnapshot['repository_head'], 0, 12)) ?></p>
 <?php endif; ?>
+      <table class="backup-downloads" data-role="text-content-downloads">
+        <thead>
+          <tr><th scope="col">Item</th><th scope="col">Format</th><th scope="col">Description</th><th scope="col">Link</th></tr>
+        </thead>
+        <tbody>
+<?php foreach ($downloads as $download): ?>
+          <tr>
+            <th scope="row" data-label="Item"><?= $e($download['item']) ?></th>
+            <td data-label="Format"><code><?= $e($download['format']) ?></code></td>
+            <td data-label="Description"><?= $e($download['description']) ?></td>
+            <td data-label="Link"><a href="<?= $e($download['href']) ?>" aria-label="<?= $e($download['label']) ?>">Download</a></td>
+          </tr>
+<?php endforeach; ?>
+        </tbody>
+      </table>
     </section>
 <?php if ($imageBackupAvailable ?? false): ?>
     <section class="feature-flag-group">
@@ -52,12 +68,7 @@
     </section>
   </article>
   <article class="card">
-    <h2 class="feature-flag-group-heading">Downloads</h2>
-    <ul>
-<?php foreach ($downloads as $download): ?>
-      <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a> - <?= $e($download['description']) ?></li>
-<?php endforeach; ?>
-    </ul>
+    <h2 class="feature-flag-group-heading">About these downloads</h2>
     <h3>Why this matters</h3>
     <p>These downloads preserve the forum's canonical public content and its history, together with a searchable index. With the application software and a new deployment, they support independent restoration, migration, or forking of the public board if the original service changes or disappears.</p>
     <p>They are not a complete instance backup. Private messages and separately stored operational data, browser-local keys and drafts, application software, deployment configuration and secrets, and externally hosted media are not included.</p>

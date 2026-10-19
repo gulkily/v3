@@ -1822,6 +1822,10 @@ PHP;
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
         assertStringContains('Snapshot freshness', $instance);
+        assertStringContains('<table class="backup-downloads" data-role="text-content-downloads">', $instance);
+        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $downloadHref) {
+            assertSame(1, substr_count($instance, 'href="' . $downloadHref));
+        }
         assertStringContains('Generated at:', $instance);
         assertStringContains('Recent included items', $instance);
         assertStringContains('href="/activity/">See all recent activity</a>', $instance);
@@ -1833,7 +1837,7 @@ PHP;
         assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
         if (str_contains($toolsBackup, '>Image backup</h2>')) {
             assertOrdered($toolsBackup, 'tools-nav', '>Image backup</h2>');
-            assertOrdered($toolsBackup, '>Snapshot freshness</h2>', '>Image backup</h2>');
+            assertOrdered($toolsBackup, '>Text content</h2>', '>Image backup</h2>');
             assertOrdered($toolsBackup, '>Image backup</h2>', '>Recent included items</h2>');
         }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
