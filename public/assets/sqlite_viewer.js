@@ -471,7 +471,7 @@
           runQuery();
         }
       });
-      querySelect.value = "0";
+      querySelect.value = queryInput && queryInput.value ? "" : "0";
       if (queryInput && !queryInput.value) {
         queryInput.value = presetQueries[0].sql;
       }
@@ -590,6 +590,7 @@
           ["metadata", "threads", "posts", "profiles"].forEach(function (table) {
             candidate.exec("SELECT * FROM " + table + " LIMIT 0");
           });
+          candidate.exec("SELECT key, value FROM metadata LIMIT 0");
         } catch (error) {
           if (candidate) { candidate.close(); }
           needsRefresh = true;
@@ -659,6 +660,7 @@
           activeContext = context.key;
           var draft = readDraft(context.key);
           queryInput.value = draft ? draft.sql : context.sql;
+          querySelect.value = "";
           queryPage = draft ? draft.page : 0;
           querySortColumn = draft ? draft.column : null;
           querySortDirection = draft ? draft.direction : null;

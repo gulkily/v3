@@ -6,6 +6,10 @@ echo '<!doctype html><html><head><title>Query fixture</title><link rel="styleshe
 if (($argv[1] ?? '') === 'standalone') {
     echo $renderer->renderFragment('pages/sqlite_viewer.php', ['toolNavOptions' => []]);
 } else {
+    if (str_starts_with($argv[1] ?? '', 'board-')) {
+        [, $view, $sort] = explode('-', $argv[1]);
+        echo $renderer->renderFragment('partials/query_action.php', ForumRewrite\Tools\BoardListingQuery::context($view, $sort));
+    }
     foreach (['one' => 'SELECT 42 AS answer;', 'two' => 'SELECT 7 AS other;'] as $key => $sql) {
         echo $renderer->renderFragment('partials/query_action.php', ['queryKey' => $key, 'queryLabel' => $key, 'querySql' => $sql]);
     }
