@@ -37,6 +37,7 @@ async function main() {
   first.type('newer draft');
   finish({ ok: false, async json() { return { status: 'error' }; } });
   await sending;
+  assert.equal(first.feedback.textContent, 'Delivery is unconfirmed. Check previous send before sending again.');
   const saved = JSON.parse(values.get('forum_private_message_draft:alice:bob'));
   assert.equal(saved.plaintext, 'newer draft');
   assert.equal(saved.attempt.encryptedEnvelope, 'cipher-1');
@@ -76,6 +77,8 @@ async function main() {
   await malformed.send();
   assert.equal(malformed.field.value, 'retain on malformed acknowledgment');
   assert.match(malformed.feedback.textContent, /did not match/);
+  assert.match(malformed.feedback.textContent, /Delivery is unconfirmed; recovery cannot be saved/);
+  assert.match(malformed.feedback.textContent, /Keep this page open and check previous send/);
   process.stdout.write('draft recovery checks passed\n');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

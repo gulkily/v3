@@ -47,6 +47,8 @@
     function readStoredTheme() {
       try {
         var storedTheme = localStorage.getItem(storageKey);
+        var aliases = window.forumThemeLegacyAliases || {};
+        if (Object.prototype.hasOwnProperty.call(aliases, storedTheme)) storedTheme = aliases[storedTheme];
         return themes.indexOf(storedTheme) === -1 ? defaultTheme() : storedTheme;
       } catch (error) {
         return defaultTheme();

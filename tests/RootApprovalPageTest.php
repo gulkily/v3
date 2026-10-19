@@ -21,7 +21,7 @@ final class RootApprovalPageTest
     {
         $this->fixture(function ($workspace, $root, $db): void {
             $profile = ProfileRepository::byIdentityId(new PDO('sqlite:' . $db), self::ID);
-            foreach (['/user/' . $profile['username_token'], '/profiles/' . self::KEY,
+            foreach (['/tools/user-access/accounts/' . $profile['username_token'], '/tools/user-access/profiles/' . self::KEY,
                 '/forte/user/' . $profile['username_token'], '/forte/profiles/' . self::KEY] as $path) {
                 $html = $this->render($root, $db, $path);
                 assertStringContains('href="' . self::URL . '">Approval evidence</a>', $html);
@@ -116,7 +116,7 @@ final class RootApprovalPageTest
             $_SESSION = [];
             $grant = $writer->approveUser(['approver_identity_id' => self::ID, 'target_identity_id' => $target['identity_id'],
                 'target_profile_slug' => $target['profile_slug'], 'thread_id' => $target['bootstrap_thread_id'], 'parent_id' => $target['bootstrap_post_id']]);
-            $html = $this->render($root, $db, '/profiles/' . $target['profile_slug']);
+            $html = $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug']);
             assertStringContains('href="/posts/' . $grant['post_id'] . '">Approval evidence</a>', $html);
             putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
             $_SESSION = ['authenticated_identity_id' => $target['identity_id']];
@@ -134,7 +134,7 @@ final class RootApprovalPageTest
             $html = $this->render($root, $db, self::URL);
             assertStringContains('href="/source/blob/' . $sha . '/' . self::SOURCE . '"', $html);
             assertStringContains('href="/source/commits/' . $sha . '"', $html);
-            $profile = $this->render($root, $db, '/profiles/' . self::KEY);
+            $profile = $this->render($root, $db, '/tools/user-access/profiles/' . self::KEY);
             assertStringContains('Committed: <time', $profile);
             assertStringNotContains('Accepted:', $profile);
             assertStringContains('Repository commit dates describe file history.', $html);

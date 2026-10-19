@@ -26,6 +26,7 @@ use ForumRewrite\TaskQueue\ReadModelRebuildTaskHandler;
 use ForumRewrite\TaskQueue\AgentReplyTask;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
+use ForumRewrite\TaskQueue\TaskQueueErrorLog;
 use ForumRewrite\TaskQueue\TaskQueueWorker;
 
 $projectRoot = dirname(__DIR__);
@@ -172,6 +173,7 @@ try {
         $workLimit = max(1, (int) ($options['work-limit'] ?? 250));
         $quiet = ($options['quiet'] ?? false) === true;
         $verbose = ($options['verbose'] ?? false) === true;
+        $errorLog = new TaskQueueErrorLog((string) ($options['error-log'] ?? (getenv('FORUM_TASK_QUEUE_ERROR_LOG') ?: ($projectRoot . '/state/private/task_queue_errors.log'))));
         if (($options['dry-run'] ?? false) === true) {
             $counts = $store->counts();
             emitTaskQueue($quiet, "Task queue dry run\n");
@@ -183,7 +185,7 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $pdo): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $pdo, $errorLog): void {
             $startedAt = microtime(true);
             $reconciledAgentReplyTasks = $taskId === null ? reconcileAgentReplyTasks($store, $databasePath) : 0;
             $executorRun = $store->startExecutorRun();
@@ -303,10 +305,13 @@ try {
                         ->fulfillAgentReplyRequest($request);
                 },
                 new \ForumRewrite\Railspike\AssessmentTask(new \ForumRewrite\Railspike\WorkflowStore($pdo), new \ForumRewrite\Railspike\CodexAssessmentRunner($projectRoot)),
+                static function (int $failedTaskId, Throwable $throwable) use ($errorLog): void {
+                    $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
+                },
             );
             $taskStartedAt = [];
             try {
-                $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, &$taskStartedAt, &$taskOutcomes): void {
+                $summary = $worker->run($limit, static function (string $event, array $task) use ($quiet, $errorLog, &$taskStartedAt, &$taskOutcomes): void {
                 if ($event === 'recovered') {
                     emitTaskQueue($quiet, 'Recovered abandoned tasks: ' . $task['count'] . "\n");
                     return;
@@ -325,6 +330,15 @@ try {
                     return;
                 }
 
+                if (($task['failure_code'] ?? null) !== null && ($task['continued'] ?? false) !== true) {
+                    $errorLog->write('task_failed', (string) ($task['failure_message'] ?? ''), [
+                        'task_id' => $taskId,
+                        'type' => $task['type'] ?? null,
+                        'status' => $task['status'] ?? null,
+                        'failure_code' => $task['failure_code'],
+                        'attempts' => ($task['attempts'] ?? '?') . '/' . ($task['max_attempts'] ?? '?'),
+                    ]);
+                }
                 $elapsed = isset($taskStartedAt[$taskId]) ? microtime(true) - $taskStartedAt[$taskId] : 0.0;
                 $taskOutcomes[] = [
                     'id' => $taskId,
@@ -382,6 +396,7 @@ try {
                 $store->completeExecutorRun((int) $executorRun['id'], $summary, $taskOutcomes);
             } catch (Throwable $throwable) {
                 $store->failExecutorRun((int) $executorRun['id'], 'worker_exception');
+                $errorLog->writeThrowable('worker_exception', $throwable);
                 throw $throwable;
             } finally {
                 $store->pruneHistory();
@@ -407,7 +422,7 @@ try {
         };
 
         try {
-            (new ExecutionLock($queueDirectory . '/forum-rewrite-task-queue.lock', 0))->withExclusiveLock($run);
+            (new ExecutionLock($queueDirectory . '/forum-rewrite-task-queue.lock', (int) ($options['lock-wait-seconds'] ?? 0)))->withExclusiveLock($run);
         } catch (RuntimeException $exception) {
             if (str_contains($exception->getMessage(), 'Timed out waiting for execution lock')) {
                 emitTaskQueue($quiet, "Another task queue worker is already running.\n");
@@ -432,6 +447,9 @@ try {
     printTaskQueueUsage(STDERR);
     exit(1);
 } catch (Throwable $exception) {
+    if ($command === 'run') {
+        (new TaskQueueErrorLog((string) (($options ?? [])['error-log'] ?? (getenv('FORUM_TASK_QUEUE_ERROR_LOG') ?: ($projectRoot . '/state/private/task_queue_errors.log')))))->writeThrowable('run_error', $exception);
+    }
     fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n");
     printTaskQueueUsage(STDERR);
     exit(1);
@@ -453,10 +471,13 @@ function parseTaskQueueOptions(array $arguments): array
             $options[substr($argument, 2)] = true;
             continue;
         }
-        foreach (['task-id', 'post-id', 'content-hash', 'limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'static-html-root', 'queue-database-path', 'log'] as $key) {
+        foreach (['task-id', 'post-id', 'content-hash', 'limit', 'score-limit', 'work-limit', 'repository-root', 'database-path', 'static-html-root', 'queue-database-path', 'log', 'error-log', 'lock-wait-seconds'] as $key) {
             $prefix = '--' . $key . '=';
             if (str_starts_with($argument, $prefix)) {
                 $value = substr($argument, strlen($prefix));
+                if ($key === 'lock-wait-seconds' && (!ctype_digit($value) || (int) $value > 60)) {
+                    throw new InvalidArgumentException('--lock-wait-seconds must be an integer from 0 to 60.');
+                }
                 if ($key === 'task-id' && (!ctype_digit($value) || (int) $value < 1)) {
                     throw new InvalidArgumentException('--task-id must be a positive integer.');
                 }
@@ -530,6 +551,8 @@ function emitFastmodProgress(bool $quiet, string $event, array $progress): void
     }
 
     $probability = $progress['probability'] === null ? 'none' : sprintf('%.6f', (float) $progress['probability']);
+    emitTaskQueue($quiet, '  Fastmod scores=' . json_encode($progress['scores'] ?? [], JSON_THROW_ON_ERROR)
+        . ' signals=' . json_encode($progress['signals'] ?? [], JSON_THROW_ON_ERROR) . "\n");
     $failure = isset($progress['failure_code']) ? ' failure=' . (string) $progress['failure_code'] : '';
     emitTaskQueue($quiet, sprintf(
         "  Fastmod progress: examined=%d/%d post=%s status=%s probability=%s source=%s provider_calls=%d/%d%s%s\n",
@@ -555,7 +578,7 @@ Usage:
   php scripts/task_queue.php enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php retry-agent-reply --post-id=... --content-hash=...
-  php scripts/task_queue.php run [--task-id=N] [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php run [--task-id=N] [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--error-log=/path/task_queue_errors.log] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php cron [--log=/var/log/forum-task-queue.log]
 

@@ -45,6 +45,41 @@ final class ToolsPageController
     ) {
     }
 
+    public function fastmod(): string
+    {
+        $viewer = ($this->resolveViewerProfileFromIdentityHint)();
+        $data = ['rubrics' => [], 'enabledRubrics' => [], 'settingsError' => null];
+        try {
+            $data = $this->routeServices->fastmodSettingsView() + ['settingsError' => null];
+        } catch (\Throwable $error) {
+            $data['settingsError'] = $error->getMessage();
+        }
+        return $this->routeServices->renderPageTemplate('fastmod.php', $data + [
+            'toolNavOptions' => ToolsPageSupport::navOptions('fastmod'),
+            'canManageFastmod' => $this->viewerCanManageFeatureFlags($viewer),
+        ], 'Fastmod', 'tools', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/fastmod.js']);
+    }
+
+    public function fastmodChangeApi(string $method, array $query, bool $finalize): void
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewer = ($this->resolveViewerProfileFromIdentityHint)();
+        if (!$this->viewerCanManageFeatureFlags($viewer)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Fastmod settings require a root-approved identity.'], 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $result = $this->routeServices->changeFastmodRubrics($this->routeServices->requestData($query),
+                (string) ($viewer['identity_id'] ?? ''), $finalize);
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
+        } catch (\RuntimeException | \InvalidArgumentException $error) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        }
+    }
+
     public function index(): string
     {
         return $this->routeServices->renderPageTemplate(

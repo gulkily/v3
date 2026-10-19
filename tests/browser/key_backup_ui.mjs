@@ -135,7 +135,7 @@ try {
   await restored.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]')?.dataset.authenticatedIdentityId));
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),keys.privateKey);
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_fingerprint').toLowerCase()),fingerprint);
-  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'This browser is ready');
+  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'Ready');
   assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);
   // No manual reload: the restored session must work immediately on Messages.
   await restored.goto(base+'/messages/conversation/user-01');
@@ -152,8 +152,9 @@ try {
   restored.on('framenavigated',onNavigation);
   await upload();await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
   await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Backup restored'));
-  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'This browser is ready');
-  assert.match(await restored.locator('#simple-status').textContent(),/All set! Posting as alice/);
+  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'Ready');
+  assert.equal(await restored.locator('#simple-status').isVisible(),false);
+  assert.equal(await restored.locator('[data-role="username-field"]').textContent(),'alice');
   assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);
   assert.equal(navigated,false);restored.off('framenavigated',onNavigation);
   const other=await pgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'other'}],format:'armored'});

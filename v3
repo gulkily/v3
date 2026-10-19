@@ -10,7 +10,7 @@ Usage:
   ./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
   ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test
-  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
+  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
   ./v3 tui
   ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.0-beta.1]
   ./v3 fdp sync ... (deprecated alias)
@@ -43,7 +43,7 @@ Usage:
   ./v3 task-queue enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue retry-agent-reply --post-id=... --content-hash=...
-  ./v3 task-queue run [--task-id=N] [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose]
+  ./v3 task-queue run [--task-id=N] [--limit=1] [--score-limit=25] [--work-limit=250] [--dry-run] [--quiet] [--verbose] [--error-log=/path/task_queue_errors.log]
   ./v3 task-queue status [--limit=25] [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue cron [--log=/var/log/forum-task-queue.log]
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]

@@ -1,0 +1,50 @@
+{
+  "cases": [
+    "i have to leave soon, but i still have a lot of work to do, and also tasks i planned to do today",
+    "i have so many things i planned for today, how do i get them all done?",
+    "My volunteer shift ends at five, but cleanup remains. I have childcare pickup at five thirty. What should I do?",
+    "My sibling needs money, but lending it would leave my rent unpaid. How should I respond?",
+    "Does turning the other cheek mean remaining in an abusive relationship? Explain the passage and differing Christian interpretations.",
+    "After losing my job, I feel ashamed asking my church for help. What might scripture offer?",
+    "Explain James 2 and Romans 4 on faith and works in depth, including differing Christian readings.",
+    "Use NIV. Is 'Money is the root of all evil' an exact biblical quotation? What does the passage mean?"
+  ],
+  "expansion_cases": [
+    1,
+    5,
+    8
+  ],
+  "repeats": 2,
+  "candidates": {
+    "A": {
+      "model": "gpt-5-mini",
+      "guidance": "current",
+      "reasoning": "low"
+    },
+    "B": {
+      "model": "gpt-5-mini",
+      "guidance": "verified",
+      "reasoning": "low"
+    }
+  },
+  "max_completion_tokens": 8192,
+  "budget": {
+    "writing": 48,
+    "moderation": 96,
+    "dollars": 5
+  },
+  "planned_calls": 44,
+  "corpus_sha256": "ccb02dea3f3e2846d473e1423f2d5022609000123926aebdd46e9b7f6ae6895b",
+  "quality": {
+    "initial_passes": 15,
+    "everyday_passes": 8,
+    "everyday_improvements": 4,
+    "expansion_passes": 6,
+    "critical_errors": 0
+  },
+  "latency": {
+    "median_ms": 20000,
+    "improvement_fraction": 0.3,
+    "max_ms": 40000
+  }
+}

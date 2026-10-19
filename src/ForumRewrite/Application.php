@@ -387,8 +387,18 @@ final class Application
             return;
         }
 
+        if ($path === '/api/expand_agent_reply' || $path === '/api/agent_expansion_status') {
+            $this->postWorkflowApiController()->scriptureExpansion($method, $query, $path === '/api/expand_agent_reply');
+            return;
+        }
+
         if ($path === '/api/generate_agent_reply') {
             $this->postWorkflowApiController()->generateAgentReply($method, $query);
+            return;
+        }
+
+        if ($path === '/api/scripture_reply_status') {
+            $this->postWorkflowApiController()->scriptureReplyStatus($method, $query);
             return;
         }
 
@@ -419,6 +429,11 @@ final class Application
 
         if ($path === '/api/feature_flags/navigation') {
             $this->toolsPageController()->featureFlagNavigation($method);
+            return;
+        }
+
+        if ($path === '/api/prepare_fastmod_rubrics' || $path === '/api/finalize_fastmod_rubrics') {
+            $this->toolsPageController()->fastmodChangeApi($method, $query, $path === '/api/finalize_fastmod_rubrics');
             return;
         }
 
@@ -675,6 +690,25 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/user-access/pending/' || $path === '/tools/user-access/pending') {
+            $this->userAccessController()->pending($method);
+            return;
+        }
+        if ($method === 'GET' && preg_match('#^/tools/user-access/profiles/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = $this->userAccessController()->profile($matches[1], $query);
+            $this->sendHtml($html ?? $this->renderMessagePage('Not Found', 'Not Found', 'Account key not found.', 'tools'), $html === null ? 404 : 200, $this->routeServices()->noStoreHeaders());
+            return;
+        }
+        if ($method === 'GET' && ($path === '/tools/user-access/' || $path === '/tools/user-access')) {
+            $this->sendHtml($this->userAccessController()->index(), 200, $this->routeServices()->noStoreHeaders());
+            return;
+        }
+        if ($method === 'GET' && preg_match('#^/tools/user-access/accounts/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = $this->userAccessController()->account($matches[1], $query);
+            $this->sendHtml($html ?? $this->renderMessagePage('Not Found', 'Not Found', 'Account not found.', 'tools'), $html === null ? 404 : 200, $this->routeServices()->noStoreHeaders());
+            return;
+        }
+
         if ($path === '/users/pending/' || $path === '/users/pending') {
             $this->profilePageController()->pendingDirectory($method);
             return;
@@ -712,6 +746,11 @@ final class Application
 
         if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
             $this->visitorStatisticsController()->render($query);
+            return;
+        }
+
+        if ($path === '/tools/fastmod/' || $path === '/tools/fastmod') {
+            $this->sendHtml($this->toolsPageController()->fastmod(), 200);
             return;
         }
 
@@ -1077,7 +1116,7 @@ final class Application
     /**
      * @param array<string, mixed> $profile
      */
-    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null): string
+    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false): string
     {
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $isOwnProfile = $viewerProfile !== null
@@ -1087,7 +1126,7 @@ final class Application
             && ((int) $profile['is_approved']) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
         $approvalReview = null;
-        if ($canApprove) {
+        if ($accessManagement && $canApprove) {
             try {
                 $approvalReview = \ForumRewrite\Security\ApprovalPolicy::review(
                     (new \ForumRewrite\Security\ApprovalPolicy($this->pdo(), $this->repositoryRoot))->evaluate(
@@ -1114,10 +1153,12 @@ final class Application
         }
 
         return $this->renderPageTemplate(
-            'profile.php',
+            $accessManagement ? 'user_access_profile.php' : 'profile.php',
             [
+                'accessManagement' => $accessManagement,
+                'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
-                'approvalHistory' => $this->routeServices()->approvalHistory()->forKey($profile),
+                'approvalHistory' => $accessManagement ? $this->routeServices()->approvalHistory()->forKey($profile) : null,
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
                 'notice' => $notice,
@@ -1129,12 +1170,21 @@ final class Application
                 'canPrivateMessage' => $canPrivateMessage,
             ],
             $pageTitleLabel . ' - Profile',
-            'profiles',
-            $canApprove
+            $accessManagement ? 'tools' : 'profiles',
+            $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
                     : []),
+        );
+    }
+
+    private function userAccessController(): \ForumRewrite\Http\UserAccessController
+    {
+        return new \ForumRewrite\Http\UserAccessController(
+            $this->routeServices(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            fn (array $profile, array $query): string => $this->renderProfilePage($profile, false, ($query['approval'] ?? '') === 'success' && (int) $profile['is_approved'] === 1 ? 'Approval complete.' : null, null, true),
         );
     }
 
@@ -1439,7 +1489,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
-                    posts.created_at, posts.board_tags_json,
+                    posts.created_at, posts.board_tags_json, posts.agent_response_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
@@ -1463,7 +1513,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
-                    posts.author_identity_id, posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    posts.author_identity_id, posts.author_profile_slug, posts.agent_response_json, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
@@ -1883,9 +1933,11 @@ final class Application
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
             '/users', '/users/', '/users/pending', '/users/pending/',
+            '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
@@ -1896,11 +1948,11 @@ final class Application
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
-            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/codex_handoff',
+            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
+            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
@@ -1908,7 +1960,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }
@@ -2313,7 +2365,8 @@ final class Application
                 $profile,
                 false,
                 null,
-                'Approval requires a browser signature. Enable JavaScript and refresh this page before trying again.'
+                'Approval requires a browser signature. Enable JavaScript and refresh this page before trying again.',
+                true
             ),
             400
         );

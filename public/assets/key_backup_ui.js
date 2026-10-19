@@ -87,7 +87,10 @@
       anchor.remove();
       const recorded = window.ForumKeyBackupStatus.record(backup.fingerprint);
       setTimeout(() => URL.revokeObjectURL(url), 30000);
-      status.textContent = 'Verified ' + (isPng ? 'PNG' : 'text') + ' backup download started. Keep the original file and passphrase somewhere safe.' + (recorded ? '' : ' The reminder could not be saved in this browser.');
+      status.textContent = (isPng ? 'PNG' : 'Text') + ' backup download started.';
+      if (!recorded) {
+        status.append(document.createElement('br'), document.createTextNode('Backup reminder could not be saved.'));
+      }
     })));
     find('[data-backup-restore]').addEventListener('click', () => run(async () => {
       const file = find('[data-backup-file]').files[0];

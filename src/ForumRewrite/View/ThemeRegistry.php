@@ -8,6 +8,9 @@ final class ThemeRegistry
 {
     public const THEME_HINT_COOKIE = 'theme-hint';
 
+    /** Retired theme names mapped to their replacements, for saved preferences. */
+    public const LEGACY_ALIASES = ['windark' => 'midnight'];
+
     /**
      * @return list<array{name: string, label: string, mode: string}>
      */
@@ -27,7 +30,7 @@ final class ThemeRegistry
             ['name' => 'thermal', 'label' => 'Thermal', 'mode' => 'dark'],
             ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
-            ['name' => 'windark', 'label' => 'Midnight', 'mode' => 'dark'],
+            ['name' => 'midnight', 'label' => 'Midnight', 'mode' => 'dark'],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],

@@ -228,6 +228,10 @@
     if (!result || result.status !== "ok") {
       return false;
     }
+    if (["requested", "in_progress"].includes(result.generation_status)
+        && result.response_mode_label === "Scripture-oriented analysis") {
+      pollScriptureReply(result.post_id);
+    }
 
     if (result.generation_status === "generated" && result.agent_post_id) {
       placeAgentReplyFeedback(node, false);
@@ -656,6 +660,61 @@
     }
   }
 
+  const scripturePolls = new Set();
+
+  function pollScriptureReply(postId) {
+    if (!postId || scripturePolls.has(postId)) return;
+    const source = document.querySelector('.post-card[data-post-id="' + CSS.escape(postId) + '"]');
+    if (!source) return;
+    scripturePolls.add(postId);
+    const feedback = feedbackForPost(postId);
+    if (feedback) { feedback.setAttribute('role', 'status'); feedback.setAttribute('aria-live', 'polite'); }
+    async function update() {
+      if (!source.isConnected) { scripturePolls.delete(postId); return; }
+      if (document.hidden) { window.setTimeout(update, 2000); return; }
+      try {
+        const response = await fetch('/api/scripture_reply_status?post_id=' + encodeURIComponent(postId),
+          {credentials:'same-origin', cache:'no-store', headers:{Accept:'application/json'}});
+        if ([403, 404, 409].includes(response.status)) {
+          setFeedback(feedback, 'Scripture response is unavailable for this post.');
+          scripturePolls.delete(postId);
+          return;
+        }
+        if (!response.ok) throw new Error('Status unavailable');
+        const result = await response.json();
+        if (['generated', 'already_posted'].includes(result.generation_status) && result.agent_post_id) {
+          const selector = '.post-card[data-post-id="' + CSS.escape(result.agent_post_id) + '"]';
+          if (!document.querySelector(selector)) {
+            // Import the server's canonical escaped card; never interpret model text as markup.
+            const rendered = await fetch('/posts/' + encodeURIComponent(result.agent_post_id), {credentials:'same-origin',cache:'no-store'});
+            if (!rendered.ok) throw new Error('Reply unavailable');
+            const documentCopy = new DOMParser().parseFromString(await rendered.text(), 'text/html');
+            const card = documentCopy.querySelector(selector);
+            if (!card) throw new Error('Reply unavailable');
+            const inserted = document.importNode(card, true);
+            source.after(inserted);
+            if (window.ForumThreadReactions) window.ForumThreadReactions.bindWithin(inserted);
+            bindScriptureExpansions();
+          }
+          source.setAttribute('data-agent-reply-posted-id', result.agent_post_id);
+          source.removeAttribute('data-scripture-pending');
+          applyGenerationResult(feedback, result, null);
+          scripturePolls.delete(postId);
+          return;
+        }
+        applyGenerationResult(feedback, result, null);
+        if (!['requested', 'in_progress'].includes(result.generation_status)) {
+          scripturePolls.delete(postId);
+          return;
+        }
+      } catch (_) {
+        setFeedback(feedback, 'Could not check scripture response. Checking again shortly.');
+      }
+      window.setTimeout(update, 2000);
+    }
+    window.setTimeout(update, 500);
+  }
+
   async function requestAgentReply(button, mode) {
     const postId = button.getAttribute("data-post-id") || "";
     if (postId === "" || !markGenerationStarted(postId)) {
@@ -702,7 +761,105 @@
     });
   }
 
+  function bindScriptureExpansions() {
+    document.querySelectorAll('[data-scripture-expansion]').forEach(function (node) {
+      if (node.dataset.expansionBound === "1") return;
+      node.dataset.expansionBound = "1";
+      const id = node.dataset.postId;
+      const button = node.querySelector('[data-action="expand-scripture"]');
+      const feedback = node.querySelector('[data-expansion-feedback]');
+      const details = node.querySelector('[data-expansion-details]');
+      const body = node.querySelector('[data-expansion-body]');
+      let state = node.dataset.expansionState;
+      let pending = false;
+      let timer = null;
+      const storageKey = "scripture-expansion:" + id;
+      let requestedLocally = false;
+      function requestedHere(value) {
+        if (typeof value === "boolean") requestedLocally = value;
+        try {
+          if (value === true) sessionStorage.setItem(storageKey, "1");
+          if (value === false) sessionStorage.removeItem(storageKey);
+          return requestedLocally || sessionStorage.getItem(storageKey) === "1";
+        } catch (_) { return requestedLocally; }
+      }
+      function schedule() {
+        clearTimeout(timer);
+        timer = setTimeout(function () { update(false); }, 3000);
+      }
+      function show(result) {
+        state = result.generation_status;
+        node.dataset.expansionState = state;
+        if (state === "generated" && typeof result.expansion_body === "string") {
+          // Match the server's readable line breaks without treating model text as HTML.
+          body.replaceChildren();
+          result.expansion_body.split("\n").forEach(function (line, index) {
+            if (index) body.appendChild(document.createElement("br"));
+            body.appendChild(document.createTextNode(line));
+          });
+          details.hidden = false;
+          if (requestedHere()) { details.open = true; requestedHere(false); }
+          if (button) button.hidden = true;
+          feedback.textContent = "Expansion ready.";
+          clearTimeout(timer);
+          return;
+        }
+        if (state === "requested" || state === "in_progress") {
+          feedback.textContent = "Expansion requested. Additional reflection will appear here when ready.";
+          if (button) button.disabled = true;
+          schedule();
+        } else if (state === "failed") {
+          feedback.textContent = result.failure_message || "Expansion failed. An operator can inspect and retry.";
+          if (button) { button.disabled = false; button.textContent = "Check expansion status"; }
+          clearTimeout(timer);
+        } else if (state === "available") {
+          feedback.textContent = "";
+          if (button) { button.disabled = false; button.textContent = "Expand"; }
+        } else {
+          details.hidden = true;
+          body.replaceChildren();
+          feedback.textContent = "Expansion is unavailable for this response or its current source.";
+          if (button) button.hidden = true;
+          clearTimeout(timer);
+        }
+      }
+      async function update(request) {
+        if (pending || !node.isConnected) return;
+        if (!request && document.hidden) { schedule(); return; }
+        pending = true;
+        if (request) requestedHere(true);
+        if (button) button.disabled = true;
+        try {
+          const response = await fetch(request ? "/api/expand_agent_reply" : "/api/agent_expansion_status?post_id=" + encodeURIComponent(id), {
+            method: request ? "POST" : "GET", credentials: "same-origin",
+            headers: { "Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+            body: request ? new URLSearchParams({post_id: id}).toString() : undefined
+          });
+          const result = await response.json();
+          if (!response.ok || result.status !== "ok") {
+            if ([403, 404, 409].includes(response.status)) { show({generation_status: "unavailable"}); return; }
+            throw new Error("Expansion request unavailable");
+          }
+          show(result);
+        } catch (_) {
+          feedback.textContent = "Could not check expansion. Try again or refresh this page.";
+          if (button) { button.disabled = false; button.textContent = "Check expansion status"; }
+          // Retry status only; never repeat a provider request automatically.
+          if (requestedHere() || state === "requested" || state === "in_progress") schedule();
+          state = "check_status";
+        } finally { pending = false; }
+      }
+      if (button) button.addEventListener("click", function () { update(state === "available"); });
+      if (state === "requested" || state === "in_progress") schedule();
+      if (state === "generated" && requestedHere()) { details.open = true; requestedHere(false); }
+    });
+  }
+
   function boot() {
+    document.querySelectorAll('[data-scripture-pending="1"]').forEach(function (card) {
+      pollScriptureReply(card.getAttribute('data-post-id'));
+    });
+    bindScriptureExpansions();
     bindAgentReplyRequestButtons();
     bindCodexHandoffButtons();
 

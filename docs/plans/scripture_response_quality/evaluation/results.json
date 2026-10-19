@@ -1,0 +1,1884 @@
+{
+  "summary": {
+    "A": {
+      "scheduled": 16,
+      "complete": 16,
+      "interrupted": 0,
+      "quality_passes": 0,
+      "everyday_passes": 0,
+      "critical_errors": 1,
+      "median_seconds": 27.799,
+      "maximum_seconds": 36.211,
+      "median_words": 549.0,
+      "token_cost_upper_estimate": 0.025917,
+      "median_queue_ms": 255.39,
+      "median_generation_ms": 27143.331,
+      "median_publication_ms": 31.209,
+      "median_request_and_discovery_overhead_ms": 262.014
+    },
+    "B": {
+      "scheduled": 16,
+      "complete": 16,
+      "interrupted": 0,
+      "quality_passes": 6,
+      "everyday_passes": 3,
+      "critical_errors": 4,
+      "median_seconds": 25.007,
+      "maximum_seconds": 34.938,
+      "median_words": 287.5,
+      "token_cost_upper_estimate": 0.021898200000000003,
+      "median_queue_ms": 54.624,
+      "median_generation_ms": 22798.099,
+      "median_publication_ms": 32.224,
+      "median_request_and_discovery_overhead_ms": 1816.675,
+      "median_reduction_percent": 10.0,
+      "everyday_clear_improvements": 3
+    },
+    "C": {
+      "scheduled": 16,
+      "complete": 15,
+      "interrupted": 1,
+      "quality_passes": 5,
+      "everyday_passes": 2,
+      "critical_errors": 1,
+      "median_seconds": 8.938,
+      "maximum_seconds": 27.041,
+      "median_words": 291,
+      "token_cost_upper_estimate": 0.005661449999999999,
+      "median_queue_ms": 48.848,
+      "median_generation_ms": 6644.852,
+      "median_publication_ms": 27.305,
+      "median_request_and_discovery_overhead_ms": 1268.331,
+      "median_reduction_percent": 67.8,
+      "everyday_clear_improvements": 2
+    }
+  },
+  "budget": {
+    "generation_calls": 48,
+    "moderation_calls": 0,
+    "settled_calls": 47,
+    "unsettled_calls": 1,
+    "settled_uncached_cost_estimate": 0.05347665,
+    "retained_uncertain_reservations": 0.00398345,
+    "total_reserved_or_estimated": 0.0574601
+  },
+  "samples": [
+    {
+      "sample": "initial-01",
+      "variant": "A",
+      "case": 1,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 27637.280095,
+      "request_ms": 202.5458870000001,
+      "anonymous_id": "6ea96772",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Multiple scripture anchors followed by repeated application and closing summary. Assumes laziness from one late start; Proverbs 6 warns habitual sloth. Quotations themselves match KJV."
+      },
+      "usage": {
+        "prompt_tokens": 633,
+        "completion_tokens": 3407,
+        "total_tokens": 4040,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2688,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 26937.622295998153,
+      "answer_sha256": "7bfb1413989007d3e53fffc990a0218ad4960ee4e2beb5202162e1c8e98b8932",
+      "answer_words": 523,
+      "queue_ms": 207.837,
+      "generation_ms": 26947.138,
+      "publication_ms": 120.779,
+      "request_and_discovery_overhead_ms": 319.277,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/6ea96772.json"
+    },
+    {
+      "sample": "initial-02",
+      "variant": "B",
+      "case": 1,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 25216.920383,
+      "request_ms": 319.60704699999997,
+      "anonymous_id": "f472f17b",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Useful reset and limited plan. Proverbs 24:16 is applied by analogy from resilience; quotations match KJV fragments. Some extra encouragement, but no guaranteed outcome."
+      },
+      "usage": {
+        "prompt_tokens": 733,
+        "completion_tokens": 3465,
+        "total_tokens": 4198,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3200,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 22947.337489007623,
+      "answer_sha256": "cd02bbd945536081a565b36ef70eb97e48c5710f203b9a18d157f153bab1b131",
+      "answer_words": 179,
+      "queue_ms": 83.699,
+      "generation_ms": 22956.829,
+      "publication_ms": 89.891,
+      "request_and_discovery_overhead_ms": 2022.281,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/f472f17b.json"
+    },
+    {
+      "sample": "initial-03",
+      "variant": "C",
+      "case": 1,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 6918.972474,
+      "request_ms": 200.70141699999988,
+      "anonymous_id": "60f78b69",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Missing translation labels for all quotations. Repeats immediate-priority advice and adds several tangential anchors. No fabricated verse identified; fragments/ellipses are recognizable KJV."
+      },
+      "usage": {
+        "prompt_tokens": 733,
+        "completion_tokens": 775,
+        "total_tokens": 1508,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 384,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 6211.5582449914655,
+      "answer_sha256": "d3ebc3439613c7b533e8a89fd35298a5270b451ae5d5f9c0f58b7bd8bf011f10",
+      "answer_words": 291,
+      "queue_ms": 55.283,
+      "generation_ms": 6224.555,
+      "publication_ms": 98.955,
+      "request_and_discovery_overhead_ms": 477.469,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/60f78b69.json"
+    },
+    {
+      "sample": "initial-04",
+      "variant": "B",
+      "case": 2,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 25038.182754,
+      "request_ms": 200.69504799999993,
+      "anonymous_id": "7972827e",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Long chain of anchors repeats James 4:15 and practical advice. Luke 10:42 is made a directive to select the single core work task without explaining Mary listening to Jesus or identifying the analogy."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 3465,
+        "total_tokens": 4197,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3008,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 23546.57935599971,
+      "answer_sha256": "56e1875328f2509a37977e59781d9b786d4be795fbeae5ed3b6df52228e5c450",
+      "answer_words": 299,
+      "queue_ms": 45.072,
+      "generation_ms": 23557.534,
+      "publication_ms": 38.561,
+      "request_and_discovery_overhead_ms": 1335.056,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/7972827e.json"
+    },
+    {
+      "sample": "initial-05",
+      "variant": "C",
+      "case": 2,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 6939.393481,
+      "request_ms": 205.03103,
+      "anonymous_id": "f740756b",
+      "quality": {
+        "pass": false,
+        "critical": true,
+        "notes": "James 4:13 quotation invents And now ye that say and such and such a city; KJV reads Go to now, ye that say and such a city. Unmarked omissions also alter v14. Critical inaccurate quotation attributed to KJV, verified against James 4:13-17."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 880,
+        "total_tokens": 1612,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 512,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 6207.750554996892,
+      "answer_sha256": "5b3af1a8593115f172f1836105f3f1fbbcac7399820500ef78baa2f8ca2d7cee",
+      "answer_words": 275,
+      "queue_ms": 50.029,
+      "generation_ms": 6219.341,
+      "publication_ms": 42.132,
+      "request_and_discovery_overhead_ms": 594.849,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/f740756b.json"
+    },
+    {
+      "sample": "initial-06",
+      "variant": "A",
+      "case": 2,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 26912.548899999998,
+      "request_ms": 329.02392899999995,
+      "anonymous_id": "aafbdba2",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Seven-anchor catalogue, practical section, and repeated final plan are disproportionate. Matthew 6:33 concerns necessities/kingdom priorities; extra tasks flowing from this order is an unsupported extension. 1 Corinthians 14:40 concerns ordered worship; analogy is not identified."
+      },
+      "usage": {
+        "prompt_tokens": 632,
+        "completion_tokens": 3319,
+        "total_tokens": 3951,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2496,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 25819.13213300868,
+      "answer_sha256": "4bf06bb6eb5164a129b3b60d40cb67cf78a05285e71a97cce8138a87efdd2ed8",
+      "answer_words": 594,
+      "queue_ms": 607.004,
+      "generation_ms": 25830.81,
+      "publication_ms": 23.544,
+      "request_and_discovery_overhead_ms": 418.465,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/aafbdba2.json"
+    },
+    {
+      "sample": "initial-07",
+      "variant": "C",
+      "case": 3,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 6922.528606,
+      "request_ms": 207.130721,
+      "anonymous_id": "10f206bc",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Direct, actionable patience/forbearance advice. Ephesians 4:2 and Colossians 3:13 quotations match KJV; workplace applications are presented as practical suggestions."
+      },
+      "usage": {
+        "prompt_tokens": 728,
+        "completion_tokens": 557,
+        "total_tokens": 1285,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 192,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 4977.327911008615,
+      "answer_sha256": "5daca556e33a389ac7ba5a6b6567fdcb574fd0decf0e8abaa5305cb0cb994c50",
+      "answer_words": 269,
+      "queue_ms": 45.153,
+      "generation_ms": 4987.672,
+      "publication_ms": 37.668,
+      "request_and_discovery_overhead_ms": 1831.381,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/10f206bc.json"
+    },
+    {
+      "sample": "initial-08",
+      "variant": "A",
+      "case": 3,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 34447.610956,
+      "request_ms": 179.66902500000003,
+      "anonymous_id": "c5d28b8e",
+      "quality": {
+        "pass": false,
+        "critical": true,
+        "notes": "1 Corinthians 13:4 labels Love wording as KJV although KJV says Charity. James 1:5 says abrideth not instead of upbraideth not. Long redundant catalogue also fails proportionality."
+      },
+      "usage": {
+        "prompt_tokens": 628,
+        "completion_tokens": 5146,
+        "total_tokens": 5774,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 4096,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 33918.90008500195,
+      "answer_sha256": "a99559b3edd725d7bd7c20d98d937a9384900f5d3d512c9c36e3fb9bce3c580c",
+      "answer_words": 731,
+      "queue_ms": 195.968,
+      "generation_ms": 33931.001,
+      "publication_ms": 24.406,
+      "request_and_discovery_overhead_ms": 274.764,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/c5d28b8e.json"
+    },
+    {
+      "sample": "initial-09",
+      "variant": "B",
+      "case": 3,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 25046.552681,
+      "request_ms": 236.98857999999996,
+      "anonymous_id": "c8153f97",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Accurate recognizable KJV quotations, but four repeated anchors each with similar application and then a practical restatement are disproportionate to the everyday question."
+      },
+      "usage": {
+        "prompt_tokens": 728,
+        "completion_tokens": 2746,
+        "total_tokens": 3474,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2304,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 24111.86878599983,
+      "answer_sha256": "b1b4675ac0fa1d6a2e803d371dfba61750b996a46a543fd97630f9b72c85877c",
+      "answer_words": 320,
+      "queue_ms": 59.962,
+      "generation_ms": 24119.214,
+      "publication_ms": 21.523,
+      "request_and_discovery_overhead_ms": 818.635,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/c8153f97.json"
+    },
+    {
+      "sample": "initial-10",
+      "variant": "A",
+      "case": 4,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 19363.355139,
+      "request_ms": 195.57770800000003,
+      "anonymous_id": "95cb35db",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Accurate quotations and useful advice, but repeats the same rescheduling/honesty application in passage exposition, a separate three-point approach and closing summary for a short everyday concern."
+      },
+      "usage": {
+        "prompt_tokens": 632,
+        "completion_tokens": 2774,
+        "total_tokens": 3406,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2304,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 18838.823609010433,
+      "answer_sha256": "f0a68d8ecd8220eba86d588f2cf38df826f3dffb35b4bc694476643514f69519",
+      "answer_words": 353,
+      "queue_ms": 201.495,
+      "generation_ms": 18848.095,
+      "publication_ms": 22.626,
+      "request_and_discovery_overhead_ms": 267.75,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/95cb35db.json"
+    },
+    {
+      "sample": "initial-11",
+      "variant": "B",
+      "case": 4,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 34938.375015,
+      "request_ms": 189.51889499999993,
+      "anonymous_id": "9c42df82",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Useful advice, but passage-by-passage presentation and two repeated practical conclusions are disproportionate. Galatians 6:2 spelling fulfill modernizes KJV fulfil; no semantic critical error assigned."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 3470,
+        "total_tokens": 4202,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3072,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 32355.073546001222,
+      "answer_sha256": "efd2bf510c492c605c62925a7baec65f07058e280ce66b3832fca2bf9272a550",
+      "answer_words": 277,
+      "queue_ms": 47.078,
+      "generation_ms": 32379.113,
+      "publication_ms": 135.466,
+      "request_and_discovery_overhead_ms": 2316.799,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/9c42df82.json"
+    },
+    {
+      "sample": "initial-12",
+      "variant": "C",
+      "case": 4,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 21866.609074,
+      "request_ms": 437.11647200000016,
+      "anonymous_id": "26d16ab1",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Direct and useful communication advice, but quotation of Matthew 5:37 renders Nay as Nah while labeling exact KJV. Treat as an accuracy failure, not fabricated doctrine. Repeats rescheduling rather than first checking whether the existing promise can be honored."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 736,
+        "total_tokens": 1468,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 448,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 20156.64333901077,
+      "answer_sha256": "cb5c053f3b7eee8714a10b4841dc5a396afcca6a1b58ba84d5726097f01555bf",
+      "answer_words": 221,
+      "queue_ms": 97.925,
+      "generation_ms": 20171.995,
+      "publication_ms": 52.692,
+      "request_and_discovery_overhead_ms": 1476.991,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/26d16ab1.json"
+    },
+    {
+      "sample": "initial-13",
+      "variant": "B",
+      "case": 5,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 25584.729293,
+      "request_ms": 569.0195920000001,
+      "anonymous_id": "adb01bf4",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Complete response with multiple relevant passages and differing readings of repentance/forgiveness, earned trust, and safe boundaries. Length is justified by explicit request for differing interpretations. Quotations match KJV; denominational labels are appropriately avoided rather than overgeneralized."
+      },
+      "usage": {
+        "prompt_tokens": 726,
+        "completion_tokens": 3537,
+        "total_tokens": 4263,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2944,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 22629.609739000443,
+      "answer_sha256": "cc4907b00eee47f0e2e9e23f76cd3948f0dd3dd0d5bd065f2be7d1ccb4466141",
+      "answer_words": 450,
+      "queue_ms": 104.847,
+      "generation_ms": 22639.369,
+      "publication_ms": 21.342,
+      "request_and_discovery_overhead_ms": 2772.488,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/adb01bf4.json"
+    },
+    {
+      "sample": "initial-14",
+      "variant": "C",
+      "case": 5,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 9409.556759000001,
+      "request_ms": 373.226981,
+      "anonymous_id": "dcc3ca06",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Distinguishes heart-posture forgiveness, repentance, reconciliation and earned trust, explains unconditional versus repentance-linked readings, and protects boundaries. KJV Matthew 6:14 and Luke 17:3-4 match recognizable excerpts; context is substantively explained."
+      },
+      "usage": {
+        "prompt_tokens": 726,
+        "completion_tokens": 914,
+        "total_tokens": 1640,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 384,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 6653.983848998905,
+      "answer_sha256": "3af80dbf4ccdfde260d0225b2914135f04e0362acbb35977307e362e8a8ce193",
+      "answer_words": 416,
+      "queue_ms": 87.051,
+      "generation_ms": 6673.36,
+      "publication_ms": 75.699,
+      "request_and_discovery_overhead_ms": 2520.92,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/dcc3ca06.json"
+    },
+    {
+      "sample": "initial-15",
+      "variant": "A",
+      "case": 5,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 32207.135806,
+      "request_ms": 775.3387010000001,
+      "anonymous_id": "06f23f68",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Broadly useful forgiveness/trust distinction and appropriate safety boundaries, but repeats the same points across exposition, interpretations, and takeaway. Ends by offering a tailored follow-up conversation that this forum feature does not provide. KJV quotations are recognizable; Luke 17 repentance is conflated with already-demonstrated change."
+      },
+      "usage": {
+        "prompt_tokens": 626,
+        "completion_tokens": 4877,
+        "total_tokens": 5503,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3968,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 30351.600322013837,
+      "answer_sha256": "3b41061d1bbbb933b6dd1a61b2349dabf62c8f12867a7944b429128aae56a5c6",
+      "answer_words": 705,
+      "queue_ms": 855.973,
+      "generation_ms": 30362.417,
+      "publication_ms": 33.155,
+      "request_and_discovery_overhead_ms": 855.704,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/06f23f68.json"
+    },
+    {
+      "sample": "initial-16",
+      "variant": "C",
+      "case": 6,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 27040.956747,
+      "request_ms": 188.374096,
+      "anonymous_id": "f343a237",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Compassionate, accurate central point that Jesus wept and grief can coexist with faith. Paul passage is explicitly labeled paraphrase. Fails honest-interaction requirement by offering to tailor a devotional in a follow-up conversation."
+      },
+      "usage": {
+        "prompt_tokens": 727,
+        "completion_tokens": 712,
+        "total_tokens": 1439,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 256,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 26178.188834004686,
+      "answer_sha256": "d79c5680d9d7122c02d2fff02708b5c0b9cee122f3457468d06a49b5c00784a3",
+      "answer_words": 338,
+      "queue_ms": 42.867,
+      "generation_ms": 26186.525,
+      "publication_ms": 21.484,
+      "request_and_discovery_overhead_ms": 768.099,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/f343a237.json"
+    },
+    {
+      "sample": "initial-17",
+      "variant": "A",
+      "case": 6,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 31061.863207,
+      "request_ms": 190.01330299999995,
+      "anonymous_id": "20f69a7e",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Compassionate, complete answer with appropriate grief/hope distinction and support options. Six anchors are verbose but substantially relevant to the pastoral concern; no guaranteed recovery timeline or claim that the father is certainly saved. Quotations are recognizable KJV excerpts; source verification recorded separately. Independent source check found an internal omission of the in 2 Corinthians 1:3 (and God instead of and the God), without ellipsis: minor quotation accuracy failure, not a critical theological fabrication."
+      },
+      "usage": {
+        "prompt_tokens": 627,
+        "completion_tokens": 3530,
+        "total_tokens": 4157,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2944,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 30463.965706003364,
+      "answer_sha256": "9fff5d8a1c38698e9c0a42d9824248d578528ab2dac831441b7ccc35584cfaf1",
+      "answer_words": 431,
+      "queue_ms": 193.116,
+      "generation_ms": 30474.326,
+      "publication_ms": 40.101,
+      "request_and_discovery_overhead_ms": 332.072,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/20f69a7e.json"
+    },
+    {
+      "sample": "initial-18",
+      "variant": "B",
+      "case": 6,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 17351.716264,
+      "request_ms": 267.61620800000003,
+      "anonymous_id": "516b5b9d",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Direct, compassionate, proportionate response. Accurately quotes 2 Corinthians 1:3-4 and explains Paul's comfort-through-trials argument before offering an optional practical step. No promises about grief ending or automatic follow-up."
+      },
+      "usage": {
+        "prompt_tokens": 727,
+        "completion_tokens": 2356,
+        "total_tokens": 3083,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2112,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 15328.758443007246,
+      "answer_sha256": "c2780eb0f34e485d1bbfbbe7d0773f2359b24de2a595d5c6130050b47c1e90a6",
+      "answer_words": 186,
+      "queue_ms": 77.797,
+      "generation_ms": 15348.541,
+      "publication_ms": 43.143,
+      "request_and_discovery_overhead_ms": 1856.92,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/516b5b9d.json"
+    },
+    {
+      "sample": "initial-19",
+      "variant": "A",
+      "case": 7,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 33476.723168,
+      "request_ms": 224.90241500000002,
+      "anonymous_id": "726ef61a",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Substantial requested depth covering creation, law, deliverance, Jesus, Hebrews and different observance patterns. Most core claims are supported; Revelation 1:10 alone does not establish a weekly Sunday pattern. Fails interaction honesty by offering to tailor a weekly rhythm in a follow-up conversation."
+      },
+      "usage": {
+        "prompt_tokens": 629,
+        "completion_tokens": 5254,
+        "total_tokens": 5883,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 4160,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 32769.52436300053,
+      "answer_sha256": "0dab3da20c9c7df518b59ac15fda77161d02a2eeb9472534882728db9e883deb",
+      "answer_words": 749,
+      "queue_ms": 256.228,
+      "generation_ms": 32784.117,
+      "publication_ms": 57.692,
+      "request_and_discovery_overhead_ms": 338.379,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/726ef61a.json"
+    },
+    {
+      "sample": "initial-20",
+      "variant": "B",
+      "case": 7,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 29867.644759,
+      "request_ms": 191.571913,
+      "anonymous_id": "e922196d",
+      "quality": {
+        "pass": false,
+        "critical": true,
+        "notes": "Substantial biblical survey but presents calendar freedom as the settled Christian answer. Names Saturday/Sunday options without explaining their differing theological arguments, so requested interpretive depth is incomplete. Colossians 2:16 changes an holyday to a holyday in KJV wording (minor quotation accuracy error). Final source check also found the Genesis 2 quotation combines rested on the seventh day (v2) with which God created and made (v3) as one continuous quotation; this unmarked synthetic quotation is a critical accuracy error."
+      },
+      "usage": {
+        "prompt_tokens": 729,
+        "completion_tokens": 4243,
+        "total_tokens": 4972,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3520,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 27720.399884012295,
+      "answer_sha256": "a125f8d20b4f5109e5c30c2d58e691f9ddc6bc27140ebfad9d4b3800d6440cef",
+      "answer_words": 514,
+      "queue_ms": 40.735,
+      "generation_ms": 28246.918,
+      "publication_ms": 179.137,
+      "request_and_discovery_overhead_ms": 1245.112,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/e922196d.json"
+    },
+    {
+      "sample": "initial-21",
+      "variant": "C",
+      "case": 7,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 9241.423719,
+      "request_ms": 355.769311,
+      "anonymous_id": "7da187ee",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Detailed prose but does not fairly develop differing Christian readings: treats nonbinding calendar observance as settled. Attributes deliverance grounding to Exodus 20 although that rationale is in Deuteronomy 5. Romans 14:5 quotation reverses sentence order, without identifying a rearrangement."
+      },
+      "usage": {
+        "prompt_tokens": 729,
+        "completion_tokens": 997,
+        "total_tokens": 1726,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 192,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 6628.995910999947,
+      "answer_sha256": "2b72eeccf25d49ef805a0469b1af938cc318c4e2b1ab4149161896f9c0d0e150",
+      "answer_words": 616,
+      "queue_ms": 79.613,
+      "generation_ms": 6644.852,
+      "publication_ms": 29.759,
+      "request_and_discovery_overhead_ms": 2450.054,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/7da187ee.json"
+    },
+    {
+      "sample": "initial-22",
+      "variant": "B",
+      "case": 8,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 24975.716483,
+      "request_ms": 150.454793,
+      "anonymous_id": "52086ced",
+      "quality": {
+        "pass": false,
+        "critical": true,
+        "notes": "Rejects false citation but quotes Proverbs 21:5 in ESV wording while labeling it NIV. Verified against both translations. Also offers a follow-up conversation and applies Philippians 4:13 without explaining contentment in hardship."
+      },
+      "usage": {
+        "prompt_tokens": 743,
+        "completion_tokens": 3492,
+        "total_tokens": 4235,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3136,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 23317.060616987874,
+      "answer_sha256": "ceb06c0ee6a01e991f21b95806c84fa81e007e363399f57944439440db707ae6",
+      "answer_words": 258,
+      "queue_ms": 48.701,
+      "generation_ms": 23327.368,
+      "publication_ms": 38.419,
+      "request_and_discovery_overhead_ms": 1532.914,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/52086ced.json"
+    },
+    {
+      "sample": "initial-23",
+      "variant": "C",
+      "case": 8,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 8959.735264,
+      "request_ms": 163.09097799999995,
+      "anonymous_id": "fcfbf5b9",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Correctly rejects the alleged verse and adage as Scripture, preserves NIV, distinguishes diligence from dependence, and avoids a promise of effortless success. Slightly hedged explanation of the nonexistent Hezekiah book; otherwise usable. The four NIV quotations match their source passages."
+      },
+      "usage": {
+        "prompt_tokens": 743,
+        "completion_tokens": 1043,
+        "total_tokens": 1786,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 640,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 7846.370190993184,
+      "answer_sha256": "c297f5c424376e70f5df6fded8ab783ca8077055e91e3e0c00de20da7bfae5af",
+      "answer_words": 283,
+      "queue_ms": 55.659,
+      "generation_ms": 7866.808,
+      "publication_ms": 23.648,
+      "request_and_discovery_overhead_ms": 993.862,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/fcfbf5b9.json"
+    },
+    {
+      "sample": "initial-24",
+      "variant": "A",
+      "case": 8,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 22546.072034999997,
+      "request_ms": 152.34556499999997,
+      "anonymous_id": "7bd09c73",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Correctly rejects false citation and warns against blaming others, but six-anchor catalogue obscures the key limits of the slogan. Philippians 4:13 contentment context and Isaiah 41 covenant context are omitted. 2 Thessalonians wording differs from current NIV; older-edition wording is not automatically classified as fabrication without further edition evidence."
+      },
+      "usage": {
+        "prompt_tokens": 643,
+        "completion_tokens": 3688,
+        "total_tokens": 4331,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3136,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 22053.342884988524,
+      "answer_sha256": "ac230dd031801481b9871b5ad711473198a08755a3bd85d773c7abad596d45d8",
+      "answer_words": 389,
+      "queue_ms": 198.662,
+      "generation_ms": 22064.939,
+      "publication_ms": 37.022,
+      "request_and_discovery_overhead_ms": 223.281,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/7bd09c73.json"
+    },
+    {
+      "sample": "initial-25",
+      "variant": "B",
+      "case": 1,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 19283.60246,
+      "request_ms": 152.26087499999994,
+      "anonymous_id": "178152d2",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Conversational guidance integrating trust, deliberate priorities and a qualified warning about sleep habits; practical step gives a usable example. Quotations match KJV. No guaranteed productivity or follow-up offer."
+      },
+      "usage": {
+        "prompt_tokens": 733,
+        "completion_tokens": 2506,
+        "total_tokens": 3239,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2176,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 16555.560870008776,
+      "answer_sha256": "4180a20f39cf25a78c3af68cfd3c62b705052e98c88848d8e4964f8b641e14a3",
+      "answer_words": 236,
+      "queue_ms": 45.849,
+      "generation_ms": 16563.927,
+      "publication_ms": 20.916,
+      "request_and_discovery_overhead_ms": 2632.296,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/178152d2.json"
+    },
+    {
+      "sample": "initial-26",
+      "variant": "C",
+      "case": 1,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 6883.967009,
+      "request_ms": 157.17271700000003,
+      "anonymous_id": "17ce4674",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Accurate recognizable KJV quotations and actionable priorities, but repeats advice and closes by offering to choose a plan together in a follow-up conversation the feature does not provide."
+      },
+      "usage": {
+        "prompt_tokens": 733,
+        "completion_tokens": 628,
+        "total_tokens": 1361,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 256,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 4673.0708069953835,
+      "answer_sha256": "d9d7cb1f82118fa48ab2c9c8c90bb4b5ae7e2d8401d46888b69afdc3e99bb220",
+      "answer_words": 278,
+      "queue_ms": 42.965,
+      "generation_ms": 4681.927,
+      "publication_ms": 22.272,
+      "request_and_discovery_overhead_ms": 2118.132,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/17ce4674.json"
+    },
+    {
+      "sample": "initial-27",
+      "variant": "A",
+      "case": 1,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 20006.961336999997,
+      "request_ms": 145.80727000000002,
+      "anonymous_id": "4c9dc722",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Long repeated exposition, practical list, guardrails, nuance and summary for an ordinary late start. James 1:19 listening/anger context is recast as owning lateness without marking an analogy. Recognizable KJV excerpts."
+      },
+      "usage": {
+        "prompt_tokens": 633,
+        "completion_tokens": 3300,
+        "total_tokens": 3933,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2496,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 19528.41693299706,
+      "answer_sha256": "397ada047333f472b80cdb1569562dd88d5fbc85803c01314918572f9714c2bf",
+      "answer_words": 589,
+      "queue_ms": 187.749,
+      "generation_ms": 19540.521,
+      "publication_ms": 29.264,
+      "request_and_discovery_overhead_ms": 228.38,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/4c9dc722.json"
+    },
+    {
+      "sample": "initial-28",
+      "variant": "C",
+      "case": 2,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 6898.268248,
+      "request_ms": 156.90103699999997,
+      "anonymous_id": "58b86c8a",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Useful priorities and accurate KJV quotations, but four anchors, a practical list, an extra seasonal reflection and a repeated next-step summary remain disproportionate and repetitive."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 713,
+        "total_tokens": 1445,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 320,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 5511.366262988304,
+      "answer_sha256": "4ba420e1c519cd03776c6906b9c0eaeb91b507c64d1a270a6be701b9d208010d",
+      "answer_words": 284,
+      "queue_ms": 46.709,
+      "generation_ms": 5527.355,
+      "publication_ms": 33.913,
+      "request_and_discovery_overhead_ms": 1268.331,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/58b86c8a.json"
+    },
+    {
+      "sample": "initial-29",
+      "variant": "A",
+      "case": 2,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 22915.531756,
+      "request_ms": 167.044439,
+      "anonymous_id": "3549a94b",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Long repeated scripture catalogue and practical list. Luke 14 discipleship is reduced to task budgeting, and Matthew 6 necessities/kingdom passage becomes a claim about other responsibilities aligning. KJV quotations themselves are recognizable and accurate."
+      },
+      "usage": {
+        "prompt_tokens": 632,
+        "completion_tokens": 3662,
+        "total_tokens": 4294,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2880,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 22268.10662400385,
+      "answer_sha256": "c1b59ea9d7fb00cb6ce13a8ab52ec89451ed0533a891cf71f377c1bdc8fa984c",
+      "answer_words": 557,
+      "queue_ms": 208.722,
+      "generation_ms": 22292.069,
+      "publication_ms": 57.129,
+      "request_and_discovery_overhead_ms": 302.561,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/3549a94b.json"
+    },
+    {
+      "sample": "initial-30",
+      "variant": "B",
+      "case": 2,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 21338.9074,
+      "request_ms": 158.29961500000002,
+      "anonymous_id": "07804900",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Short, direct, actionable answer and accurate KJV wording. However it describes Luke 14:28 as Jesus teaching a productivity/resource-planning truth without explaining the surrounding cost-of-discipleship argument or identifying the task-planning connection as an analogy."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 2843,
+        "total_tokens": 3575,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2624,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 19088.75639899634,
+      "answer_sha256": "c12cc9cf19efd18767697bd164ae9f574cbcd8b05fd9b3ce5378b130890af68e",
+      "answer_words": 167,
+      "queue_ms": 55.917,
+      "generation_ms": 19100.125,
+      "publication_ms": 39.356,
+      "request_and_discovery_overhead_ms": 2122.023,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/07804900.json"
+    },
+    {
+      "sample": "initial-31",
+      "variant": "A",
+      "case": 3,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 25329.501426,
+      "request_ms": 165.17789200000004,
+      "anonymous_id": "ebb19192",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Long catalogue repeats restraint, patience, speech and forbearance before practical steps and another takeaway. Accurate recognizable KJV quotations, but unnecessary repeated framing for the ordinary concern."
+      },
+      "usage": {
+        "prompt_tokens": 628,
+        "completion_tokens": 3009,
+        "total_tokens": 3637,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2240,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 24486.67044499598,
+      "answer_sha256": "294354a84c5ce06b8e3378979c004fad718d92b7dd03faac1aef4185810434e6",
+      "answer_words": 541,
+      "queue_ms": 534.545,
+      "generation_ms": 24493.603,
+      "publication_ms": 26.233,
+      "request_and_discovery_overhead_ms": 254.134,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/ebb19192.json"
+    },
+    {
+      "sample": "initial-32",
+      "variant": "B",
+      "case": 3,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 21316.24613,
+      "request_ms": 160.14587499999993,
+      "anonymous_id": "bfce6866",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Accurate quotations and useful initial advice, followed by a second extended set of overlapping patience quotations and a repeated practical conclusion. Fails proportionate/nonrepetitive requirement."
+      },
+      "usage": {
+        "prompt_tokens": 728,
+        "completion_tokens": 2966,
+        "total_tokens": 3694,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2496,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 18570.828056996106,
+      "answer_sha256": "8d41209930072a1f2d6b3dbcc594ce382ee92489175fbc43252b1f0de1cda920",
+      "answer_words": 338,
+      "queue_ms": 46.978,
+      "generation_ms": 18580.229,
+      "publication_ms": 22.841,
+      "request_and_discovery_overhead_ms": 2646.923,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/bfce6866.json"
+    },
+    {
+      "sample": "initial-33",
+      "variant": "C",
+      "case": 3,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 6872.281941,
+      "request_ms": 164.44580800000006,
+      "anonymous_id": "9d6e1f70",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Relevant, accurate KJV excerpts and concrete communication options. Some overlap among patience anchors, but accountability/deadline caveat adds useful nuance rather than requiring passive tolerance. Complete and usable."
+      },
+      "usage": {
+        "prompt_tokens": 728,
+        "completion_tokens": 817,
+        "total_tokens": 1545,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 384,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 5666.866277999361,
+      "answer_sha256": "76b4db69e8943afc23cc74d31b71ea2fd5dc00fe7b6d0e44f0421651b9d3a938",
+      "answer_words": 310,
+      "queue_ms": 48.848,
+      "generation_ms": 5674.892,
+      "publication_ms": 22.11,
+      "request_and_discovery_overhead_ms": 1108.078,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/9d6e1f70.json"
+    },
+    {
+      "sample": "initial-34",
+      "variant": "B",
+      "case": 4,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 22844.399154,
+      "request_ms": 156.20129600000007,
+      "anonymous_id": "f60ffa27",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Accurate KJV excerpts, explicitly explained Proverbs 3 context, and practical options conditioned on real ability to help. Includes apology and clear renegotiation rather than merely excusing a broken promise. Some overlap, but detail serves the actual decision."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 3554,
+        "total_tokens": 4286,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3200,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 22038.43181100092,
+      "answer_sha256": "dd4c8339d33efbc8a05ac4fb510a329a59d266439b2236846a9ade7ea22f4d0c",
+      "answer_words": 259,
+      "queue_ms": 48.656,
+      "generation_ms": 22046.771,
+      "publication_ms": 26.028,
+      "request_and_discovery_overhead_ms": 701.814,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/f60ffa27.json"
+    },
+    {
+      "sample": "initial-35",
+      "variant": "C",
+      "case": 4,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 6865.606127,
+      "request_ms": 150.677056,
+      "anonymous_id": "d3e97f6c",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Useful rescheduling advice and recognizable KJV excerpts, but Ecclesiastes 5 concerns vows to God and is not identified as an analogy for a promise to a friend. Ends with an unsupported offer to tailor wording in a follow-up conversation."
+      },
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 952,
+        "total_tokens": 1684,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 576,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 6315.9251759934705,
+      "answer_sha256": "1dc255a65b9c6457b3094f5055904b9b87209808403506298db26e694f739c61",
+      "answer_words": 283,
+      "queue_ms": 45.039,
+      "generation_ms": 6325.097,
+      "publication_ms": 25.894,
+      "request_and_discovery_overhead_ms": 447.069,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/d3e97f6c.json"
+    },
+    {
+      "sample": "initial-36",
+      "variant": "A",
+      "case": 4,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 31955.668208999996,
+      "request_ms": 160.28650800000003,
+      "anonymous_id": "993d5d18",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Ceremonial opening repeats the question, then four anchors, practical list and recap repeat rescheduling advice. Luke 14 cost-of-discipleship analogy is presented as general capacity guidance without identifying the contextual distinction. Quotes are recognizable KJV."
+      },
+      "usage": {
+        "prompt_tokens": 632,
+        "completion_tokens": 4428,
+        "total_tokens": 5060,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3840,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 31369.46503999934,
+      "answer_sha256": "467eb8dad7bbcca77df381ae0f65c3a8f65c1bcca1ff2ef495c1d6e85361bf0d",
+      "answer_words": 430,
+      "queue_ms": 298.102,
+      "generation_ms": 31377.085,
+      "publication_ms": 23.484,
+      "request_and_discovery_overhead_ms": 234.344,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/993d5d18.json"
+    },
+    {
+      "sample": "initial-37",
+      "variant": "C",
+      "case": 5,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 8937.649121999999,
+      "request_ms": 150.783365,
+      "anonymous_id": "4390e207",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Useful forgiveness/trust distinction and boundaries, but does not actually explain differing Christian interpretations as requested. Presents one common heart-posture/reconciliation distinction without discussing repentance-linked forgiveness versus unconditional forgiveness readings. Quotations are recognizable KJV excerpts."
+      },
+      "usage": {
+        "prompt_tokens": 726,
+        "completion_tokens": 1047,
+        "total_tokens": 1773,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 448,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 7560.078349997639,
+      "answer_sha256": "0f2719030b3dd4195b328c13ea5420d58cf2d58d3dbb7180554d174eeb1c2422",
+      "answer_words": 440,
+      "queue_ms": 42.467,
+      "generation_ms": 7566.784,
+      "publication_ms": 20.7,
+      "request_and_discovery_overhead_ms": 1288.78,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/4390e207.json"
+    },
+    {
+      "sample": "initial-38",
+      "variant": "A",
+      "case": 5,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 31344.783620000002,
+      "request_ms": 151.26088900000002,
+      "anonymous_id": "5f863aa9",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Extensive, repetitive response. Repentance-centered interpretation is described inconsistently as both inseparable from repentance and internally obligatory regardless, blurring the requested difference. Ends with an unsupported offer to tailor a follow-up conversation. Direct KJV quotations are recognizable."
+      },
+      "usage": {
+        "prompt_tokens": 626,
+        "completion_tokens": 4738,
+        "total_tokens": 5364,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3520,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 30551.553753000917,
+      "answer_sha256": "bfad9236ba57b7c5e2927a533b46cdd53c0016fcc06a5e0e8537a21f92e96ce5",
+      "answer_words": 884,
+      "queue_ms": 436.202,
+      "generation_ms": 30570.22,
+      "publication_ms": 48.953,
+      "request_and_discovery_overhead_ms": 254.629,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/5f863aa9.json"
+    },
+    {
+      "sample": "initial-39",
+      "variant": "B",
+      "case": 5,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 26919.000649,
+      "request_ms": 158.501445,
+      "anonymous_id": "94b958b0",
+      "quality": {
+        "pass": false,
+        "critical": true,
+        "notes": "Explains different readings and safety, but quotes 2 Corinthians 2:8 with I beg that ye instead of KJV I beseech you that ye, without marking paraphrase. Misattributed quotation verified against KJV source. Also offers unsupported tailored follow-up."
+      },
+      "usage": {
+        "prompt_tokens": 726,
+        "completion_tokens": 4063,
+        "total_tokens": 4789,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3392,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 26361.8058229913,
+      "answer_sha256": "6c550a7658dc1d933e71802efe3819ac025a692fe8a43d66c12ad1aeaa799cea",
+      "answer_words": 490,
+      "queue_ms": 63.285,
+      "generation_ms": 26370.694,
+      "publication_ms": 21.514,
+      "request_and_discovery_overhead_ms": 443.723,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/94b958b0.json"
+    },
+    {
+      "sample": "initial-40",
+      "variant": "A",
+      "case": 6,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 27959.879824,
+      "request_ms": 164.90747699999997,
+      "anonymous_id": "407d45a1",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Compassionate central reassurance, but long chain of overlapping anchors repeats Psalm 34:18 and Psalm 46:10 in the practical section. Psalm 34:18 is initially paraphrased in modern wording while labeled KJV without identifying a paraphrase. No explicit promised recovery deadline."
+      },
+      "usage": {
+        "prompt_tokens": 627,
+        "completion_tokens": 3740,
+        "total_tokens": 4367,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3008,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 27331.51109100436,
+      "answer_sha256": "e880278623b422f14b0bfa75a3304de7443298a5817080107ad68a80b9814c2b",
+      "answer_words": 538,
+      "queue_ms": 334.59,
+      "generation_ms": 27339.523,
+      "publication_ms": 25.019,
+      "request_and_discovery_overhead_ms": 237.818,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/407d45a1.json"
+    },
+    {
+      "sample": "initial-41",
+      "variant": "B",
+      "case": 6,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 22861.160699,
+      "request_ms": 158.93608500000005,
+      "anonymous_id": "6d141348",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Compassionate, complete grief/faith reassurance with accurate KJV excerpts and no recovery deadline or follow-up offer. Multiple anchors remain focused on sorrow, hope, care and lack of guaranteed quick relief."
+      },
+      "usage": {
+        "prompt_tokens": 727,
+        "completion_tokens": 3226,
+        "total_tokens": 3953,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2816,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 20978.43033200479,
+      "answer_sha256": "5032d50f5718d1820b56ccd9412fccfe19eb0973aca2f0126719831d347e540d",
+      "answer_words": 298,
+      "queue_ms": 53.331,
+      "generation_ms": 20987.037,
+      "publication_ms": 21.858,
+      "request_and_discovery_overhead_ms": 1776.429,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/6d141348.json"
+    },
+    {
+      "sample": "initial-42",
+      "variant": "C",
+      "case": 6,
+      "repeat": 2,
+      "outcome": "interrupted",
+      "total_ms": null,
+      "request_ms": null,
+      "anonymous_id": "18eb9f06",
+      "quality": {
+        "pass": null,
+        "critical": false,
+        "notes": "Not assessable: background process stopped during provider call. Reservation retained; no output or visible completion retained; not retried."
+      },
+      "usage": null,
+      "provider_ms": null,
+      "answer_sha256": null,
+      "answer_words": null,
+      "queue_ms": null,
+      "generation_ms": null,
+      "publication_ms": null,
+      "request_and_discovery_overhead_ms": null,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/18eb9f06.json"
+    },
+    {
+      "sample": "initial-43",
+      "variant": "B",
+      "case": 7,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 23073.74567,
+      "request_ms": 304.92689499999983,
+      "anonymous_id": "38eb9bfd",
+      "quality": {
+        "pass": false,
+        "critical": true,
+        "notes": "Substantial historical survey but presents optional calendar observance as settled instead of explaining differing Christian arguments. Isaiah 58:13 quotation substitutes from thy own pleasures for KJV from doing thy pleasure, without marking paraphrase: critical misattributed wording."
+      },
+      "usage": {
+        "prompt_tokens": 729,
+        "completion_tokens": 3461,
+        "total_tokens": 4190,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2496,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 22149.522435996914,
+      "answer_sha256": "97fb6ac16b10be166d97552c9679e3f33cff949608f63fa928ef8bfddb69c3e1",
+      "answer_words": 723,
+      "queue_ms": 227.983,
+      "generation_ms": 22173.468,
+      "publication_ms": 56.55,
+      "request_and_discovery_overhead_ms": 493.795,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/38eb9bfd.json"
+    },
+    {
+      "sample": "initial-44",
+      "variant": "C",
+      "case": 7,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 8997.322814000001,
+      "request_ms": 209.18243200000006,
+      "anonymous_id": "e8f1f072",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Does not develop differing Christian interpretations; presents nonbinding day/work rules as settled. Attributes Egypt deliverance rationale to Exodus 20 rather than Deuteronomy 5. Ends with unsupported tailored-follow-up offer."
+      },
+      "usage": {
+        "prompt_tokens": 729,
+        "completion_tokens": 874,
+        "total_tokens": 1603,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 256,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 7931.304944999283,
+      "answer_sha256": "a0117d6a6e0f24a40982551a1e3e5c3da45a4f1536ca85ba0497f521185540b7",
+      "answer_words": 455,
+      "queue_ms": 47.977,
+      "generation_ms": 7939.744,
+      "publication_ms": 27.305,
+      "request_and_discovery_overhead_ms": 961.419,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/e8f1f072.json"
+    },
+    {
+      "sample": "initial-45",
+      "variant": "A",
+      "case": 7,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 25541.755022999998,
+      "request_ms": 157.43729100000007,
+      "anonymous_id": "e9b65eda",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Extensive survey correctly distinguishes creation and deliverance rationales, but does not explain the competing Christian theological arguments for seventh-day, transferred Sabbath, and nonbinding observance. Genesis 2:3 omits had and Colossians 2:16 omits new-moon clause inside a purported continuous quotation without ellipsis; quotation accuracy fails."
+      },
+      "usage": {
+        "prompt_tokens": 629,
+        "completion_tokens": 3633,
+        "total_tokens": 4262,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2496,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 24938.73973299924,
+      "answer_sha256": "619db09998cae0c8c23be0ff1899fe4b7214533d18b6d8f09f45afaf71fe9405",
+      "answer_words": 837,
+      "queue_ms": 255.931,
+      "generation_ms": 24952.624,
+      "publication_ms": 44.442,
+      "request_and_discovery_overhead_ms": 256.279,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/e9b65eda.json"
+    },
+    {
+      "sample": "initial-46",
+      "variant": "C",
+      "case": 8,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 11002.687556,
+      "request_ms": 163.4234600000001,
+      "anonymous_id": "2b6a5a76",
+      "quality": {
+        "pass": true,
+        "critical": false,
+        "notes": "Rejects the saying as a biblical verse, preserves accurate NIV quotations, and balances responsibility with reliance rather than promising success. Explicitly explaining that Hezekiah is not a Bible book would improve clarity, but the direct rejection answers the false citation. No automatic follow-up offer."
+      },
+      "usage": {
+        "prompt_tokens": 743,
+        "completion_tokens": 1137,
+        "total_tokens": 1880,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 704,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 8757.569501991384,
+      "answer_sha256": "5463e1eb10895ddc95c729c6aee6fac30f3be5d9d77b8b19672f926e8fd34bb5",
+      "answer_words": 323,
+      "queue_ms": 54.507,
+      "generation_ms": 8765.971,
+      "publication_ms": 20.541,
+      "request_and_discovery_overhead_ms": 2142.602,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/2b6a5a76.json"
+    },
+    {
+      "sample": "initial-47",
+      "variant": "A",
+      "case": 8,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 36211.209461,
+      "request_ms": 144.99588299999994,
+      "anonymous_id": "33363235",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Correctly identifies nonexistent Hezekiah book and uses recognizable current NIV quotations. However long catalogue repeats practical takeaways, Philippians 4:13 is recast as task empowerment without its contentment context, and ending offers to retrieve/tailor more verses in an unsupported follow-up conversation."
+      },
+      "usage": {
+        "prompt_tokens": 643,
+        "completion_tokens": 5025,
+        "total_tokens": 5668,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 4288,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 35654.165610001655,
+      "answer_sha256": "a1a7f31695f3ef05948ca6ff1bbcc667c1cd08c33eb78815deb03cb02fa3a813",
+      "answer_words": 541,
+      "queue_ms": 254.849,
+      "generation_ms": 35663.75,
+      "publication_ms": 25.003,
+      "request_and_discovery_overhead_ms": 247.196,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/33363235.json"
+    },
+    {
+      "sample": "initial-48",
+      "variant": "B",
+      "case": 8,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 31086.782456,
+      "request_ms": 159.84716900000012,
+      "anonymous_id": "445869dd",
+      "quality": {
+        "pass": false,
+        "critical": false,
+        "notes": "Rejects the adage and preserves recognizable NIV wording, but treats Hezekiah's specific historical assurance in 2 Chronicles 32:8 as general personal-task help without distinguishing the analogy; Philippians 4:13 contentment context is also omitted. Repeated help/strength anchors add little after the direct correction."
+      },
+      "usage": {
+        "prompt_tokens": 743,
+        "completion_tokens": 3890,
+        "total_tokens": 4633,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3520,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "provider_ms": 28854.97327199846,
+      "answer_sha256": "735462f60684bb983258f0e133da8bceedc827b7d5f1a13613f566932e8a8ceb",
+      "answer_words": 275,
+      "queue_ms": 72.704,
+      "generation_ms": 28864.156,
+      "publication_ms": 19.882,
+      "request_and_discovery_overhead_ms": 2111.022,
+      "answer_artifact": "state/private/scripture-quality-evaluation-20261015/blind/445869dd.json"
+    }
+  ],
+  "collection_attempts": 49,
+  "limitations": [
+    "One baseline answer was seen before anonymous review.",
+    "Source-creation ASCII rejection before provider dispatch was retained and corrected using canonical compose normalization.",
+    "Trial 42 interrupted during provider call; full reservation retained, never repeated.",
+    "Early browser discovery is bounded within combined request/discovery overhead; total monotonic visible duration is measured directly."
+  ]
+}

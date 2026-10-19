@@ -72,6 +72,11 @@
   background: #ffffff;
 }
 
+:root[data-theme="sticker"] .nav-link[data-unread-count]:not([data-unread-count="0"]) {
+  outline: 4px double #0a0a0a;
+  outline-offset: 2px;
+}
+
 :root[data-theme="sticker"] .nav-link.is-active {
   background: #0a0a0a;
   color: #ffffff;

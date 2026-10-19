@@ -62,7 +62,8 @@ try {
  assert.match(stale,/changed/);
  const unsigned=await context.request.post(base+'/api/railspike_workflow',{data:{operation:'prepare',action:'start',post_id:data.direct}});assert.equal(unsigned.status(),400);
  await page.goto(base+'/posts/'+data.direct);const direct=page.locator(`[data-railspike-post="${data.direct}"]`);await direct.locator('summary').first().waitFor();await direct.locator('summary').first().click();await direct.getByRole('button',{name:'Start development',exact:true}).click();await direct.getByText('Railspike Step 1: queued',{exact:true}).waitFor();
- await page.goto(base+'/activity/');await page.locator('[data-railspike-activity]').getByText('Site development · operators only').waitFor();
+ await page.goto(base+'/activity/');await page.locator('[data-railspike-activity] a').first().waitFor();
+ assert.equal(await page.getByText('Site development · operators only',{exact:true}).count(),0);
  const saved=await context.storageState(); saved.cookies=[];
  const resumed=await browser.newContext({storageState:saved,viewport:{width:390,height:844},serviceWorkers:'block'});
  const resumePage=await resumed.newPage();await resumePage.goto(base+'/posts/'+data.direct);await resumePage.locator(`[data-railspike-post="${data.direct}"]`).getByText('Railspike Step 1: queued',{exact:true}).waitFor();await resumed.close();

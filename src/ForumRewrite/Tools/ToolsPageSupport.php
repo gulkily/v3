@@ -115,12 +115,21 @@ final class ToolsPageSupport
                 'standalone' => false,
             ],
             [
+                'key' => 'user-access',
+                'label' => 'User Access',
+                'href' => '/tools/user-access/',
+                'description' => 'Review accounts, keys, and pending approvals.',
+                'standalone' => false,
+            ],
+            [
                 'key' => 'feature-flags',
                 'label' => 'Feature Flags',
                 'href' => '/tools/feature-flags/',
                 'description' => 'Registered site feature flags, defaults, effective values, and override sources.',
                 'standalone' => false,
             ],
+            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
+                'description' => 'Choose which independent scores Fastmod records.', 'standalone' => false],
         ];
     }
 

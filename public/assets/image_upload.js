@@ -39,12 +39,14 @@
     });
     input.addEventListener('cancel', () => {
       form.__imagePickerOpen = false;
-      form.querySelector('.image-upload-choose')?.focus({preventScroll:true});
+      const choose = form.querySelector('.image-upload-choose');
+      const menu = choose?.closest('details');
+      (menu && !menu.open ? menu.querySelector('summary') : choose)?.focus({preventScroll:true});
     });
     form.addEventListener('reset', () => { if (!form.__imageBusy) clear(form); });
     const fields = form.querySelector('.image-compose-fields');
     if (fields) {
-      fields.querySelector('.image-upload-choose').addEventListener('click', () => input.click());
+      form.querySelector('.image-upload-choose').addEventListener('click', () => input.click());
       fields.querySelector('.image-upload-remove').addEventListener('click', () => { if (!form.__imageBusy) clear(form); });
       form.querySelector('.image-upload-recovery button')?.addEventListener('click', () => { if (!form.__imageBusy) clear(form); });
       form.addEventListener('forum:image-state', () => render(form));
@@ -93,7 +95,10 @@
     const status = fields.querySelector('.image-upload-status');
     status.textContent = form.__imageInputNotice || state?.error?.message || (state ? (state.file ? `${state.width} × ${state.height} · ${Math.ceil(state.file.size / 1024)} KiB. ${state.note}` : 'Preparing image on your device…') : '');
     status.dataset.error = String(Boolean(form.__imageInputNotice || state?.error));
-    fields.querySelector('.image-upload-choose').textContent = state ? 'Replace image' : 'Choose an image';
+    const choose = form.querySelector('.image-upload-choose');
+    choose.textContent = state ? 'Replace image' : 'Attach image';
+    choose.hidden = form.__imageEligible !== true;
+    choose.disabled = busy || form.__imageEligible === false;
     const remove = fields.querySelector('.image-upload-remove');remove.hidden = !state;
     const description = fields.querySelector('.image-upload-description');if (description) description.hidden = !state;
     fields.querySelectorAll('button').forEach(button=>{button.disabled=busy || form.__imageEligible===false;});

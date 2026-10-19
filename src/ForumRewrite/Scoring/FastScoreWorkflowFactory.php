@@ -8,7 +8,7 @@ use ForumRewrite\Llm\AnthropicStructuredChatProvider;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\LlmProviderConfig;
 use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
-use ForumRewrite\Llm\StructuredChatProvider;
+use ForumRewrite\Llm\TextChatProvider;
 
 final class FastScoreWorkflowFactory
 {
@@ -38,16 +38,16 @@ final class FastScoreWorkflowFactory
             return null;
         }
 
-        $promptPath = self::promptPath($projectRoot, $config->promptPath);
-        $prompt = @file_get_contents($promptPath);
-        if ($prompt === false || trim($prompt) === '') {
+        try {
+            $composition = (new FastmodSelection($projectRoot))->composition($config);
+        } catch (\RuntimeException | \InvalidArgumentException) {
             return null;
         }
-
-        return new FastPostScorer(self::provider($config->provider, $exchangeRecorder), trim($prompt));
+        return new FastPostScorer(self::provider($config->provider, $exchangeRecorder),
+            $composition['prompt'], $composition['ids'], $composition['revision']);
     }
 
-    private static function provider(LlmProviderConfig $config, ?LlmExchangeRecorder $exchangeRecorder): StructuredChatProvider
+    private static function provider(LlmProviderConfig $config, ?LlmExchangeRecorder $exchangeRecorder): TextChatProvider
     {
         if ($config->provider === 'anthropic') {
             return new AnthropicStructuredChatProvider(
@@ -69,10 +69,5 @@ final class FastScoreWorkflowFactory
             $config->extraHeaders,
             $exchangeRecorder,
         );
-    }
-
-    private static function promptPath(string $projectRoot, string $path): string
-    {
-        return str_starts_with($path, '/') ? $path : rtrim($projectRoot, '/') . '/' . $path;
     }
 }

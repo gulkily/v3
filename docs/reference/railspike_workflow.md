@@ -21,12 +21,17 @@ Follow its approval gates, debug-mode state, and organization rules. After Step 
 approval and branching, new cycles move into their feature folder before the
 planning commit, with navigation and the planning index updated.
 
-The [FDP reference](../fdp/FEATURE_DEVELOPMENT_PROCESS.md) is frozen for cycles
-already started under FDP, including this migration. Their approvals, data,
-and historical documents remain valid. Finish those cycles under their approved
-process unless the user explicitly replans and approves a transition. Do not
-bulk-move or rewrite old plans. Legacy FDP links remain readable and identify
-the transition; they do not govern new work.
+The legacy `docs/fdp/` tree has been removed after the Railspike migration.
+Historical plans retain their original FDP wording, approvals, and paths; those
+paths refer to the former tree rather than current documentation. To inspect the
+frozen workflow for an existing cycle, use Git history, for example:
+
+```bash
+git show 213cdea966f43f851c3d11208890b599012fd239:docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md
+```
+
+Existing cycles keep their approved process unless explicitly replanned and
+approved. Do not bulk-move or rewrite old plans.
 
 ## Update commands
 
@@ -37,7 +42,7 @@ the transition; they do not govern new work.
 ```
 
 `./v3 fdp sync` is a deprecated alias with the same options. It updates Railspike,
-never the frozen FDP reference. See the [CLI reference](v3_cli.md#synchronize-railspike-workflow-documentation).
+never the retired FDP workflow. See the [CLI reference](v3_cli.md#synchronize-railspike-workflow-documentation).
 The command requires a clean repository root, validates the subtree metadata,
 and fetches the explicit release tag (never a branch). It refuses a target that does not descend from the commit recorded in `docs/railspike/RAILSPIKE_SOURCE.md` (e.g. `main`, which is currently older than the beta). It rejects an unexpected `railspike` remote unless you
 explicitly select a source with `--remote-url`. That selection is recorded only
@@ -66,7 +71,7 @@ git subtree pull --prefix=docs/railspike https://github.com/rlspk/railspike.git 
 
 Do not run the pull until existing work is committed or otherwise preserved.
 Check the resulting diff, instruction links, and ordinary-clone availability.
-Keep the frozen `docs/fdp/` tree unchanged.
+The retired `docs/fdp/` tree does not need to be restored for updates.
 
 ## Recovery and older target repositories
 

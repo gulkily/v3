@@ -1,13 +1,11 @@
 <section class="stack">
   <article class="card">
     <h1>Root approval</h1>
-    <p>This seed records root approval for the key below.</p>
     <p class="root-approval-key"><?php if ($profile !== null): ?><a href="/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($keySlug) ?>" aria-label="<?= $e($keySlug) ?>"><?= $e($shortenProfileSlug($keySlug)) ?></a><?php else: ?><span title="<?= $e($keySlug) ?>"><?= $e($shortenProfileSlug($keySlug)) ?></span><?php endif; ?></p>
 <?php if ($profile !== null): ?>
     <p>Current account: <a href="/user/<?= $e($profile['username_token']) ?>#account-keys"><?= $e($profile['username']) ?></a></p>
 <?php endif; ?>
     <p><strong>Recorded reason:</strong> <?= $e($seed->seedReason) ?></p>
-    <p class="meta">Authorizer: not recorded. Acceptance time: not recorded.</p>
 <?php if (trim($seed->body) !== ''): ?>
     <div class="body"><?= nl2br($e($seed->body)) ?></div>
 <?php endif; ?>
@@ -24,11 +22,10 @@
     <p class="meta">A committed version of the current seed could not be verified. The raw seed record above shows the current contents.</p>
 <?php endif; ?>
     <h3>Repository history</h3>
-    <p class="meta">Repository commit dates describe file history. The seed's authorizer and acceptance time are not recorded.</p>
+    <p class="meta">Authorizer: not recorded. Acceptance time: not recorded. Repository commit dates describe file history.</p>
 <?php if ($repositoryHistory === []): ?>
     <p class="meta">Repository history is unavailable for this seed.</p>
 <?php else: ?>
-    <p class="meta">Up to 10 recent commits affecting this seed.</p>
     <ul>
 <?php foreach ($repositoryHistory as $commit): ?>
       <li><a href="<?= $e($commit['href']) ?>" title="<?= $e($commit['sha']) ?>"><?= $e(substr($commit['sha'], 0, 12)) ?></a> · <?= $timestamp($commit['committed_at']) ?> · <?= $e($commit['subject']) ?></li>
