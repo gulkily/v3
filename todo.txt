@@ -199,3 +199,6 @@ User Access icon completed
 	Added person-and-key icon to Tools launcher and shared Tools subnavigation
 	Verified Word97, Chicago, and Windark: launcher plus active/inactive navigation
 	Browser checked 16px dimensions, decoded SVGs, and visually inspected each theme
+
+nojs compatibility
+	this is going to be a big one
