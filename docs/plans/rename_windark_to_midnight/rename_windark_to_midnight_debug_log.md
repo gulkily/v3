@@ -44,3 +44,19 @@ Debug mode: enabled (inherited from Step 2).
 
 **Uncertain assessments**
 - Stage 1 exceeds the 50-line guideline; accepted as a mechanical rename.
+
+## 2026-10-19 UTC, Step 4
+Debug mode: enabled (inherited from the Step 4 summary).
+
+**Necessary/useful instructions**
+- AGENTS.md navigation icon rule: prompted the visual Midnight/Word97/Chicago comparison against `main`.
+- Stage Boundary Protocol: kept the rename, alias and verification as separate commits.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Deployment, migration and documentation-only rules.
+
+**Uncertain assessments**
+- Step 3 asked for active/inactive nav checks; only the `/tools/` page state was compared.
