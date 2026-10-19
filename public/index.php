@@ -11,7 +11,11 @@ use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
 $profile = SiteProfileRegistry::active();
-$repositoryRoot = getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
+$identityRequest = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
+    && parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) === \ForumRewrite\Support\FrontendInstance::PATH;
+$repositoryRoot = getenv('FORUM_REPOSITORY_ROOT') ?: ($identityRequest
+    ? $projectRoot . '/state/local_repository'
+    : LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
 $databasePath = getenv('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($projectRoot);
 $staticHtmlRoot = getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile);
 

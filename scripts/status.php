@@ -8,6 +8,7 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\HealthIndicators;
+use ForumRewrite\Support\FrontendTargetResolver;
 use ForumRewrite\Support\OperatorStatusCollector;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 $projectRoot = dirname(__DIR__);
@@ -25,7 +26,8 @@ try {
         $projectRoot,
         isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null,
     );
-    $frontendUrl = (string) ($options['url'] ?? 'http://127.0.0.1:8000');
+    $frontendResolver = new FrontendTargetResolver($projectRoot, $repositoryRoot, $databasePath);
+    $frontendTarget = $frontendResolver->resolve($options['url'] ?? null);
     $executionLock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock');
     if ($executionLock->isLocked()) {
         fwrite(STDOUT, "Waiting for shared lock before collecting status...\n");
@@ -39,7 +41,9 @@ try {
         $executionLock,
         new ReadModelStaleMarker($databasePath),
         static fn (): PDO => (new ReadModelConnection($databasePath))->open(),
-        $frontendUrl,
+        $frontendTarget['url'],
+        $frontendTarget['source'],
+        static fn (): array => $frontendResolver->check($frontendTarget),
     ))->collect();
 
     printStatus($status, $repositoryRoot, $databasePath, $queuePath);
@@ -178,5 +182,6 @@ function printStatusUsage($stream): void
 Usage:
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
 
+Frontend target: --url, FORUM_STATUS_URL (private config/environment), active development server, verified local port 8000/80.
 TEXT);
 }

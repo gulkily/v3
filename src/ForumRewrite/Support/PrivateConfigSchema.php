@@ -12,6 +12,7 @@ final class PrivateConfigSchema
     public static function definitions(): array
     {
         return [
+            'FORUM_STATUS_URL' => self::definition('', 'string', template: true),
             'LLM_PROVIDER' => self::definition('', 'string', template: true, required: true),
             'LLM_API_KEY' => self::definition('replace-with-real-key', 'string', secret: true, template: true),
             'LLM_API_BASE_URL' => self::definition('', 'string', template: true),
@@ -53,6 +54,7 @@ final class PrivateConfigSchema
             'VISITOR_STATISTICS_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH' => self::definition(null, 'path'),
+            'FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS' => self::definition(5, 'integer'),
         ];
     }
 

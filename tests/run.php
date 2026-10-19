@@ -9,6 +9,7 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 $testFiles = [
     __DIR__ . '/RetractionSweepTest.php',
 
+    __DIR__ . '/TestingSelfApprovalTest.php',
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/RailspikeWorkflowTest.php',
     __DIR__ . '/FastmodCsvTest.php',
@@ -100,6 +101,7 @@ $testFiles = [
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/FrontendProbeTest.php',
+    __DIR__ . '/FrontendTargetResolverTest.php',
     __DIR__ . '/DatabaseLockProbeTest.php',
     __DIR__ . '/HealthIndicatorsTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',

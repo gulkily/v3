@@ -62,6 +62,9 @@ final class HealthIndicatorsTest
             'timed_out' => 'FAIL',
             'not_running' => 'FAIL',
             'error' => 'FAIL',
+            'redirected' => 'FAIL',
+            'ambiguous' => 'WARN',
+            'unresolved' => 'WARN',
         ];
         foreach ($cases as $frontendStatus => $level) {
             $indicators = $this->byLabel(HealthIndicators::fromStatus($this->status([

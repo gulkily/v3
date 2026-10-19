@@ -17,3 +17,6 @@ public/assets/*.[0-9a-f]*.map
 repository.tar.gz
 # Publication coordination for non-Git canonical repositories.
 .retraction-publication-*.lock
+
+# Local testing approval opt-in
+/.test-self-approval
