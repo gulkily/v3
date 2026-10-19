@@ -68,6 +68,8 @@ try {
      await page.setViewportSize({width:1000,height:800});
      const centers=await form.evaluate(f=>['.compose-form-actions > button[type="submit"]','.compose-action-menu-toggle'].map(q=>{const r=f.querySelector(q).getBoundingClientRect();return r.top+r.height/2;}));
      assert.ok(Math.abs(centers[0]-centers[1])<1,'the ... button is vertically aligned with the submit button on '+path);
+     const borders=await form.evaluate(f=>{const probe=document.createElement('i');probe.style.cssText='border:1px solid var(--line)';f.append(probe);const line=getComputedStyle(probe).borderTopColor;probe.remove();return [line,getComputedStyle(f.querySelector('.compose-action-menu-toggle')).borderTopColor];});
+     assert.equal(borders[1],borders[0],'the ... button is outlined with the theme line colour on '+path);
      await page.setViewportSize({width:390,height:844});
      if(path==='/' && body==='') {
        const cancelChooser=page.waitForEvent('filechooser');await (await attachEntry(form)).click();
