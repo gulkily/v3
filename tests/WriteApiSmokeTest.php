@@ -2716,6 +2716,12 @@ NODE;
             assertSame(null, $store->claimRequestedForPost($initial));
             $done = $app->fulfillAgentReplyRequest($claimed);
             assertSame('generated', $done['generation_status']);
+            $saved = $store->findByTarget($initial, $claimed['target_content_hash']);
+            $sourcePost = $pdo->query('SELECT * FROM posts WHERE post_id = ' . $pdo->quote($source))->fetch(PDO::FETCH_ASSOC);
+            $participants = (new \ForumRewrite\Agent\AgentParticipantContext($pdo, $root))->resolve($sourcePost, $claimed['request_context']['agent_reply_request']['requested_by_identity_id']);
+            assertStringContains(\ForumRewrite\Agent\AgentParticipantContext::prompt($participants), $saved['raw_response']['messages'][0]['content']);
+            assertStringContains('Be warm, interested, and direct', $saved['raw_response']['messages'][0]['content']);
+
             $status = json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . rawurlencode($initial)), true);
             assertSame('generated', $status['generation_status']);
             assertSame('Stub agent response.', trim($status['expansion_body']));

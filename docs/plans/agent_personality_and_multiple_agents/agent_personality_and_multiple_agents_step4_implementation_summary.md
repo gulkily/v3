@@ -20,3 +20,8 @@ Step 3 approved. Planning commit: `46ead3d3`. Implementation in progress on `fea
 - Changes: fresh legacy/automatic replies use the common task writer after existing analysis eligibility gates. Completed drafts remain publishable without regeneration; retries resolve current status. Stage 2 commit: `00986420`.
 - Verification: generation/task/command suites plus queued publication and legacy gate checks — 26/26 passed. Automatic analysis-to-reply publication and new legacy fresh/retry/completed-draft scenarios — 2/2 passed. Repeated execution publishes once; retry observes changed approval; completed draft text is retained. `git diff --check` passed.
 - Notes: fresh legacy generation adds one writer call; no stored analysis or published replies are rewritten. Provider absence uses existing failure/recovery handling; additional coverage follows in acceptance.
+
+## Stage 4 - Expansion participant attribution
+- Changes: expansion generation resolves the original human post author and the expansion requester, rather than attributing the initial agent's identity to the reader. Shared personality applies in both text and verified paths. Stage 3 commit: `d1ecd8d9`.
+- Verification: six targeted expansion/verified-scripture API lifecycle tests passed, covering publication/rebuild, participant prompt evidence, source races, requester revocation, hidden/changed sources, unavailable source/translation, stored-draft verification failure and explicit retry. Existing source-dependency recording remains unchanged; `git diff --check` passed.
+- Notes: only fresh generation receives new context; canonical and completed expansion recovery remains unchanged.
