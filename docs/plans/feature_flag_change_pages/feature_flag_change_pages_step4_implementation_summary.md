@@ -59,3 +59,16 @@ Branch: `feature/feature_flag_change_pages`, based on `fix/backup-page-tools-nav
 - Notes:
   - The test record uses a 2030 timestamp so it falls inside the preview's five-item window next to the fixture content.
   - Base branch carried the Backup layout fix as planned, so no conflict arose. The separate Backup page redesign (Step 1 only) will rework this template next.
+
+## Stage 6 - Acceptance
+- Changes:
+  - No code changes; the tests for each surface were added in Stages 1-5.
+- Verification:
+  - Grep for `site_feature_flag` in `src` and `templates`: remaining hits are the shared helper, Forte's delegation to it, the change-page lookup, and unrelated code (read model, write service, security-review partial). No surface keeps its own flag-link mapping.
+  - Full suite `php tests/run.php`: 1279 run, 1277 passed, 2 failed. Both failures reproduce on `main` (`fc2d8e67`) and predate this feature (history shows failing since 2026-10-16): `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` and `WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence` (null `$postId` passed to `ApprovalAcceptance::path()`). Not fixed here, out of scope.
+  - Live check against the local repository (6 signed flag changes, 0 legacy): Activity, Backup preview and the change page in dark, light and `word97` at 1100px and 375px. No horizontal scroll, no flag item links to the generic flags page, and every change link from Activity returns 200. Screenshots of the change page reviewed in dark phone and `word97` desktop.
+  - Forte Activity: the list page showed one change link in the live check; the per-item detail link is covered by the automated test, not by a visual check.
+  - Legacy commit-page fallback: covered by unit test only; the local data has no legacy items. Production data not checked.
+- Notes:
+  - Signature status is shown only as the record's signature file link; the page says it does not re-verify.
+  - A separate `WriteApiSmokeTest` failure touches feature-flag change signing and may deserve its own fix.
