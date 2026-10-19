@@ -6441,6 +6441,8 @@ NODE;
         $_COOKIE = [];
 
         assertSame('ok', $response['status']);
+        assertStringContains('By approving this user, you vouch for their conduct and integrity.', $response['approval_review']['consequence']);
+        assertStringContains('This key will be able to act as alice.', $response['approval_review']['consequence']);
         assertStringContains('Board-Tags: identity approval', $response['canonical_record']);
         assertStringContains('Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $response['canonical_record']);
         assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $response['canonical_record']);

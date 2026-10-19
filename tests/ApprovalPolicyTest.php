@@ -25,6 +25,15 @@ final class ApprovalPolicyTest
             assertSame(false, $policy->evaluate($this->id(2), $this->id(6))['actor_is_operator']);
             assertSame(1, $policy->evaluate($this->id(2), $this->id(6))['existing_key_count']);
             assertSame('Add this key to my account', ApprovalPolicy::review($policy->evaluate($this->id(2), $this->id(5)))['label']);
+            $newReview = ApprovalPolicy::review($policy->evaluate($this->id(2), $this->id(4)));
+            assertStringContains('By approving this user, you vouch for their conduct and integrity.', $newReview['consequence']);
+            assertStringContains('This key will be able to act as ', $newReview['consequence']);
+            foreach ([$this->id(5), $this->id(6)] as $keyTarget) {
+                $keyReview = ApprovalPolicy::review($policy->evaluate($this->id(2), $keyTarget));
+                assertStringNotContains('vouch', $keyReview['consequence']);
+                assertStringContains('This key will be able to act as ', $keyReview['consequence']);
+            }
+            assertStringContains('already has 1 approved keys.', ApprovalPolicy::review($policy->evaluate($this->id(2), $this->id(6)))['consequence']);
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true');
             assertSame(true, $policy->evaluate($this->id(2), $this->id(6))['allowed']);
             putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false');
