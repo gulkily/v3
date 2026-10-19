@@ -47,3 +47,19 @@ Mode source: `.railspike_debug_on` present at project root (new workflow default
 
 **Uncertain assessments**
 - The one-page limit is tight for six stages with six fields each; the plan is terse to fit and may exceed it.
+
+## 2026-10-19T06:03Z — Step 4
+
+**Necessary/useful instructions**
+- Step 4 "Stage Boundary Protocol": forced per-stage verification and summary updates; it caught that earlier "smoke test passes" claims came from running a test file directly. Retain.
+- Planning-commit gate and organization rule: gave a clean planning commit and kept the unrelated Backup redesign Step 1 files out of it. Retain.
+
+**Redundant/unnecessary instructions**
+- Final Verification Checklist items 2-3 repeat the commit-cadence rules in RAILSPIKE.md; consider consolidating.
+
+**Inapplicable instructions**
+- Documentation-only verification; known-user replay stage.
+
+**Uncertain assessments**
+- Instructions don't say how to handle a branch base when unmerged work is a dependency; the base was chosen without an explicit answer. Clarify.
+- Instructions don't say whether pre-existing failing tests need a baseline check; one was done on `main`.
