@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Documentation discovery](docs_discovery/)
+
 - [Markdown renderer](markdown_renderer/)
 
 - [Theme-specific selected nav styling](nav_active_theme_override/)

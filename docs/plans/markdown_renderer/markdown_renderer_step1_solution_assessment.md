@@ -8,7 +8,7 @@ Should we make another Step 1 for improving the Markdown renderer?
 
 ## Understood Intent
 
-Assess shared Markdown rendering improvements independently of [Docs Discovery](../docs_discovery_step1_solution_assessment.md), which remains set aside. Rendering can ship first; discovery can subsequently reuse it. This is a new planning cycle with no branch reuse or implementation approval.
+Assess shared Markdown rendering improvements independently of [Docs Discovery](../docs_discovery/docs_discovery_step1_solution_assessment.md), which remains set aside. Rendering can ship first; discovery can subsequently reuse it. This is a new planning cycle with no branch reuse or implementation approval.
 
 ## Problem and evidence
 
