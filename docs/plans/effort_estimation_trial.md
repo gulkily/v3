@@ -4,7 +4,7 @@
 
 ## Current state
 
-Setup in progress. No candidate feature is authorized or active. Completed outcomes: **0 / 6**. The setup cycle itself is not a study outcome. Candidate records will be added after the protocol stage is committed.
+Setup complete; awaiting maintainer review of R1 and candidate selection. No candidate feature is authorized or active. Completed outcomes: **0 / 6**. The setup cycle itself is not a study outcome. Six proposals and their preserved score histories appear below; selection activates the experiment for a separately approved feature cycle.
 
 ## Frozen reference set R1
 
@@ -40,7 +40,7 @@ For each candidate retain delivered scope/version; feature plan/summary links; s
 
 ## Next action and study review
 
-Finish setup and propose candidates. Then the maintainer reviews selection and the provisional anchor and chooses the first cycle. Each feature gets its own approvals. The agent keeps active candidate, pending items and next action current for resumption. After six accepted outcomes, start a separately approved documentation cycle to assess size errors, scope changes and incomplete acceptance; qualify conclusions if ceiling examples are absent. No measured labor, absolute capacity ceiling or delivery forecast is claimed.
+The maintainer reviews the six proposals and provisional anchor and chooses the first cycle. Start with E01 or E02 if either meets current priorities; this is a suggestion, not a selection or approval. Each feature gets its own approvals. The agent keeps active candidate, pending items and next action current for resumption. After six accepted outcomes, start a separately approved documentation cycle to assess size errors, scope changes and incomplete acceptance; qualify conclusions if ceiling examples are absent. No measured labor, absolute capacity ceiling or delivery forecast is claimed.
 
 ## Candidate intake batch B1
 
@@ -136,3 +136,14 @@ Feature 28 (original text on compose-reply) is now excluded as apparently alread
 | E06 | 0.40 | 0.50 | 0.50 | Pending | Pending | Pending | Pending | Pending |
 
 All six remain proposed and unfinished on the screened evidence. Pending columns mean the feature cycles have not begun; convert Step 1 to not applicable only if that step is actually skipped. Shared composer dependencies mean execution order may change later baselines and estimates; do not sum these scores as a forecast. This batch lacks near-ceiling examples, so it cannot by itself validate the 1.0 ceiling.
+
+## Operational checklist for the agent
+
+1. Resume here: read current state, selected candidate and next action; verify R1 source hashes and restore the latest scope/score snapshot. A ledger selection triggers the vendored study contract; copy the study/candidate ID and ledger link into the feature artifact.
+2. Before new detailed inspection, preserve the intake estimate and starting revision. For an existing B1 candidate, keep its original record and append any new baseline/scope judgment rather than reset it.
+3. Run the selected feature’s normal approvals and capture each applicable checkpoint. Include this ledger in its approved documentation scope. Keep planning updates uncommitted; preserve the planning-commit file gate.
+4. At implementation entry reaffirm or revise the total; append meaningful later discoveries and enforce changed-scope approvals. Keep the comparison table linked to canonical artifact snapshots.
+5. Close out in the feature’s final stage commit: record evidence, retrospective assessment and maintainer judgment (or pending), update status/next action and retain splits/corrections versus new requests. Technical completion alone does not increment accepted outcomes.
+6. After six accepted outcomes, propose the separate study-review cycle. Keep sources and all earlier estimates intact; qualify any conclusion about the ceiling because this proposed batch has no near-ceiling examples.
+
+Synthetic walkthrough evidence lives in the [setup summary](./effort_estimation_trial/effort_estimation_trial_step4_implementation_summary.md), outside candidate histories. Later real feature plans will supply the currently pending checkpoint links.
