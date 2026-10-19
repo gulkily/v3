@@ -69,6 +69,7 @@ $testFiles = [
     __DIR__ . '/IdentityBootstrapDiagnosticsTest.php',
     __DIR__ . '/ImportedQuoteSeedScoringTest.php',
     __DIR__ . '/InvitationIssuanceTest.php',
+    __DIR__ . '/ActivityItemLinkTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',
     __DIR__ . '/LlmProviderConfigTest.php',
     __DIR__ . '/LazyComposeSigningTest.php',
