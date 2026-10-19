@@ -77,29 +77,39 @@
 <?php endforeach; ?>
 </section>
 
-<section class="card docs-library" aria-labelledby="docs-library-heading">
+<?php
+$filterValue = static fn (string $key): string => is_string($query[$key] ?? null) ? $query[$key] : '';
+$returnQuery = array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar');
+$docHref = static fn (string $href): string => $href . ($returnQuery === [] ? '' : '?' . http_build_query($returnQuery));
+?>
+<section class="card docs-library" aria-labelledby="docs-library-heading" data-docs-library>
   <h2 id="docs-library-heading">All documents</h2>
-  <form action="/docs/" method="get">
-    <label>Folder <select name="folder">
-      <option value="">All folders</option>
-<?php foreach ($folders as $item): ?>
-      <option value="<?= $e($item) ?>"<?= $folder === $item ? ' selected' : '' ?>><?= $e($item) ?></option>
+  <form action="/docs/" method="get" data-docs-form>
+    <label>Search <input name="q" type="search" value="<?= $e($filterValue('q')) ?>"></label>
+<?php foreach (['folder' => ['Folder', $folders], 'category' => ['Category', array_values(array_unique(array_column($inventory, 'category')))], 'group' => ['Collection', ['Current guidance', 'Plans and history', 'Workflow']]] as $key => [$label, $options]): ?>
+    <label><?= $e($label) ?> <select name="<?= $e($key) ?>">
+      <option value="">All</option>
+<?php foreach ($options as $item): ?>
+      <option value="<?= $e($item) ?>"<?= $filterValue($key) === $item ? ' selected' : '' ?>><?= $e($item) ?></option>
 <?php endforeach; ?>
     </select></label>
-    <button type="submit">Browse</button>
+<?php endforeach; ?>
+    <button type="submit">Search</button>
+    <a href="/docs/#docs-library-heading" data-docs-clear>Clear filters</a>
   </form>
-  <p><?= $e((string) $total) ?> documents</p>
-  <ul class="docs-entry-list">
+  <p role="status" data-docs-count><?= $e((string) $total) ?> documents</p>
+  <p data-docs-error hidden>Search unavailable. <button type="button" data-docs-retry>Retry</button> or <a href="/docs/">refresh the library</a>.</p>
+  <ul class="docs-entry-list" data-docs-results>
 <?php foreach ($library as $entry): ?>
-    <li><a href="<?= $e($entry['href']) ?>"><?= $e($entry['title']) ?></a><br><code><?= $e($entry['path']) ?></code> · <?= $e($entry['group']) ?></li>
+    <li><a href="<?= $e($docHref($entry['href'])) ?>"><?= $e($entry['title']) ?></a><br><code><?= $e($entry['path']) ?></code> · <?= $e($entry['group']) ?></li>
 <?php endforeach; ?>
   </ul>
-  <nav aria-label="Document pages">
-<?php if ($page > 1): ?>
-    <a href="?<?= $e(http_build_query(['folder' => $folder, 'page' => $page - 1])) ?>">Previous</a>
+  <p data-docs-empty<?= $total > 0 ? ' hidden' : '' ?>>No documents found. <a href="/docs/#docs-library-heading">Clear filters</a></p>
+  <nav aria-label="Document pages" data-docs-pages>
+<?php foreach (['Previous' => $page - 1, 'Next' => $page + 1] as $label => $target): ?>
+<?php if ($target >= 1 && ($target - 1) * 40 < $total): ?>
+    <a href="?<?= $e(http_build_query(array_merge($returnQuery, ['page' => $target]))) ?>#docs-library-heading"><?= $e($label) ?></a>
 <?php endif; ?>
-<?php if ($page * 40 < $total): ?>
-    <a href="?<?= $e(http_build_query(['folder' => $folder, 'page' => $page + 1])) ?>">Next</a>
-<?php endif; ?>
+<?php endforeach; ?>
   </nav>
 </section>

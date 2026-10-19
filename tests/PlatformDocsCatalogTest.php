@@ -94,6 +94,20 @@ final class PlatformDocsCatalogTest
         }
     }
 
+    public function testSearchCoversBodyPathsAndCombinedFilters(): void
+    {
+        $entries = PlatformDocsCatalog::inventory($this->projectRoot);
+        foreach (['post retraction', 'operator recovery', 'docs/plans/', 'docs/railspike/'] as $q) {
+            assertTrue(count(PlatformDocsCatalog::search($entries, ['q' => $q])) > 0, $q);
+        }
+        $body = PlatformDocsCatalog::search($entries, ['q' => 'SCHEMA_VERSION', 'folder' => 'Project', 'category' => 'Project', 'group' => 'Current guidance']);
+        assertTrue(in_array('CONTRIBUTING.md', array_column($body, 'path'), true));
+        assertSame([], PlatformDocsCatalog::search($entries, ['q' => 'no-such-doc-7aa32']));
+        assertSame([], PlatformDocsCatalog::search($entries, ['folder' => 'Project', 'group' => 'Workflow']));
+        assertSame(count($entries), count(PlatformDocsCatalog::search($entries, [])));
+        assertSame('Current guidance', $entries[0]['group']);
+    }
+
     public function testRejectsOversizedFilesAndSymlinkEscapes(): void
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-platform-docs-boundary-' . bin2hex(random_bytes(6));

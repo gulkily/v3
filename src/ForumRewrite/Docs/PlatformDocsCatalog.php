@@ -117,12 +117,33 @@ final class PlatformDocsCatalog
                 'group' => $group,
                 'href' => self::routeForPath($path),
                 'available' => $readable,
+                'text' => $text,
             ];
         }
         usort($entries, static fn (array $a, array $b): int =>
             (($a['group'] === 'Current guidance' ? 0 : 1) <=> ($b['group'] === 'Current guidance' ? 0 : 1))
             ?: strnatcasecmp($a['path'], $b['path']));
         return $entries;
+    }
+
+    public static function search(array $inventory, array $query): array
+    {
+        $value = static fn (string $key): string => is_string($query[$key] ?? null) ? $query[$key] : '';
+        $terms = preg_split('/\s+/u', mb_strtolower(trim($value('q')), 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        return array_values(array_filter($inventory, static function (array $entry) use ($value, $terms): bool {
+            if (($value('folder') !== '' && $entry['folder'] !== $value('folder'))
+                || ($value('category') !== '' && $entry['category'] !== $value('category'))
+                || ($value('group') !== '' && $entry['group'] !== $value('group'))) {
+                return false;
+            }
+            $text = mb_strtolower($entry['title'] . ' ' . $entry['path'] . ' ' . $entry['text'], 'UTF-8');
+            foreach ($terms as $term) {
+                if (!str_contains($text, $term)) {
+                    return false;
+                }
+            }
+            return true;
+        }));
     }
 
     /** Safe source resolution, independent of the renderer's size limit. */

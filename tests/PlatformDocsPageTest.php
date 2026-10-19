@@ -47,6 +47,21 @@ final class PlatformDocsPageTest
         assertStringContains('Repository source: <code>README.md</code>', $root);
     }
 
+    public function testSearchAndReturnStateWorkWithoutJavaScript(): void
+    {
+        $html = $this->render('/docs/?q=SCHEMA_VERSION&folder=Project');
+        assertStringContains('CONTRIBUTING.md', $html);
+        assertStringContains('q=SCHEMA_VERSION&amp;folder=Project', $html);
+        $reader = $this->render('/docs/_project/CONTRIBUTING.md?q=SCHEMA_VERSION&folder=Project');
+        assertStringContains('/docs/?q=SCHEMA_VERSION&amp;folder=Project#docs-library-heading', $reader);
+        $empty = $this->render('/docs/?q=no-such-doc-7aa32');
+        assertStringContains('0 documents', $empty);
+        assertStringContains('No documents found.', $empty);
+        $data = json_decode($this->render('/docs/_search.json'), true, flags: JSON_THROW_ON_ERROR);
+        assertTrue(count($data['entries']) > 1200);
+        assertTrue(in_array('README.md', array_column($data['entries'], 'path'), true));
+    }
+
     public function testPublicIndexUsesConcreteCopy(): void
     {
         $text = strtolower(html_entity_decode(strip_tags($this->render('/docs/')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

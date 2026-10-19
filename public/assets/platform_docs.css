@@ -195,3 +195,26 @@
 .docs-content .docs-metadata {
   margin-bottom: 1rem;
 }
+
+.docs-library form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .75rem;
+}
+.docs-library label {
+  display: grid;
+  gap: .25rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.docs-library select,
+.docs-library input {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.docs-library code {
+  overflow-wrap: anywhere;
+}
+.docs-library nav a + a { margin-inline-start: 1rem; }

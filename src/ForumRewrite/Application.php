@@ -584,6 +584,11 @@ final class Application
             return;
         }
 
+        if ($path === '/docs/_search.json') {
+            $this->sendJson(['entries' => \ForumRewrite\Docs\PlatformDocsCatalog::inventory($this->projectRoot)], 200);
+            return;
+        }
+
         if ($path === '/docs/' || $path === '/docs') {
             $this->sendHtml($this->platformDocsController()->index($query), 200);
             return;
@@ -591,7 +596,7 @@ final class Application
 
         if (preg_match('#^/docs/(.+)$#', $path, $matches) === 1) {
             try {
-                $document = $this->platformDocsController()->document($matches[1]);
+                $document = $this->platformDocsController()->document($matches[1], $query);
             } catch (\ForumRewrite\Docs\MarkdownRenderingUnavailable $error) {
                 error_log($error->getMessage() . ' ' . $error->getPrevious()?->getMessage());
                 $this->sendHtml($this->routeServices()->renderMessagePage(

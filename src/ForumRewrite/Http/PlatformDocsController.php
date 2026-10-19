@@ -26,8 +26,7 @@ final class PlatformDocsController
         }
 
         $inventory = PlatformDocsCatalog::inventory($this->projectRoot);
-        $folder = is_string($query['folder'] ?? null) ? $query['folder'] : '';
-        $matches = array_values(array_filter($inventory, static fn (array $entry): bool => $folder === '' || $entry['folder'] === $folder));
+        $matches = PlatformDocsCatalog::search($inventory, $query);
         $page = max(1, min((int) ($query['page'] ?? 1), max(1, (int) ceil(count($matches) / 40))));
         $library = array_slice($matches, ($page - 1) * 40, 40);
         $folders = array_values(array_unique(array_column($inventory, 'folder')));
@@ -35,13 +34,14 @@ final class PlatformDocsController
         $total = count($matches);
         return $this->routeServices->renderPageTemplate(
             'platform_docs_index.php',
-            ['library' => $library, 'folders' => $folders, 'folder' => $folder, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
+            ['library' => $library, 'folders' => $folders, 'inventory' => $inventory, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
             'Platform Docs',
             'docs',
+            ['/assets/platform_docs.js'],
         );
     }
 
-    public function document(string $encodedPath): ?string
+    public function document(string $encodedPath, array $query = []): ?string
     {
         $sourcePath = PlatformDocsCatalog::sourceForRoute($encodedPath);
         if ($sourcePath === null) {
@@ -69,11 +69,13 @@ final class PlatformDocsController
             'platform_docs_document.php',
             [
                 'sourcePath' => $sourcePath,
+                'returnQuery' => array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar'),
                 'documentHtml' => PublicMarkdownRenderer::render($markdown, $sourcePath, $this->projectRoot),
                 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active()),
             ],
             $documentTitle . ' - Platform Docs',
             'docs',
+            ['/assets/platform_docs.js'],
         );
     }
 
