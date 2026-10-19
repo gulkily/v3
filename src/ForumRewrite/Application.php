@@ -1867,7 +1867,7 @@ final class Application
             }
             $this->routeServices()->sendJson(['status' => 'ok'], 200, $headers);
         } catch (\RuntimeException $error) {
-            $this->routeServices()->sendJson(['error' => $error->getMessage()], 400, $headers);
+            $this->routeServices()->sendJson(['error' => str_replace('then retry the same seed command.', 'then retry Approve current account.', $error->getMessage())], 400, $headers);
         }
     }
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runInThisContext } from 'node:vm';
@@ -53,6 +53,11 @@ try {
   assert.equal((await submit({token, identity_id:'openpgp:'+'a'.repeat(40)})).status(),403);
   const anonymous = await browser.newContext();
   assert.equal((await anonymous.request.post(base+'/api/test_self_approval',{form:{token},headers:{Origin:base}})).status(),403);
+  // A lobby hint is deliberately weaker than proof of the account key.
+  const weakSession = spawnSync('php', ['-r', `session_save_path($argv[1]); session_id('weak-self-approval'); session_start(); $_SESSION['lobby_identity_id']=$argv[2]; $_SESSION['testing_self_approval_token']=$argv[3]; session_write_close();`, join(root,'sessions'), 'openpgp:'+fingerprint, token], {encoding:'utf8'});
+  assert.equal(weakSession.status,0,weakSession.stderr);
+  await anonymous.addCookies([{name:'PHPSESSID',value:'weak-self-approval',url:base}]);
+  assert.equal((await anonymous.request.post(base+'/api/test_self_approval',{form:{token},headers:{Origin:base}})).status(),403);
   await anonymous.close();
   await rm(join(root,'.test-self-approval'));
   assert.equal((await submit({token})).status(),403);
@@ -63,15 +68,30 @@ try {
   for (const width of [390,1280]) {
     await page.setViewportSize({width,height:844});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    if (process.env.SELF_APPROVAL_SCREENSHOTS) await page.screenshot({path:join(process.env.SELF_APPROVAL_SCREENSHOTS, 'account-'+width+'.png'),fullPage:true});
   }
   const activeToken = await button.getAttribute('data-test-self-approval');
+  // Force artifact retirement to fail after canonical approval persists.
+  await mkdir(join(root,'static/current'),{recursive:true});
+  await button.click();
+  await page.waitForFunction(()=>/persisted/.test(document.getElementById('simple-status').textContent));
+  assert.match(await page.locator('#simple-status').textContent(), /repair|rebuild|retry/i);
+  await rm(join(root,'static/current'),{recursive:true,force:true});
+  const repair = spawnSync(join(project,'v3'), ['rebuild',join(root,'repository'),join(root,'read.sqlite3')], {
+    env:{...process.env,FORUM_PUBLIC_ARTIFACT_ROOT:join(root,'static'),FORUM_STATIC_HTML_ROOT:join(root,'static'),FORUM_SECRETS_PATH:join(root,'unused.php')},encoding:'utf8'
+  });
+  assert.equal(repair.status,0,repair.stderr);
   await button.click();
   await page.waitForFunction(()=>!document.querySelector('[data-test-self-approval]'));
   assert.equal((await context.request.get(base+'/api/auth_status')).status(),200);
+  const profile = await context.request.get(base+'/api/get_profile?profile_slug=openpgp-'+fingerprint);
+  assert.match(await profile.text(), /Approved: yes/);
+  const lobby = await context.request.get(base+'/lobby/');
+  assert.match(await lobby.text(), /Enter the site/);
   assert.equal((await submit({token:activeToken})).status(),200);
   const seed = await readFile(join(root,'repository/records/approval-seeds/openpgp-'+fingerprint+'.txt'),'utf8');
   assert.match(seed,/Seed-Reason: initial approved user/);
-  console.log('PASS testing self-approval: authenticated browser, marker removal/re-enable, request protection, one click, immediate access, repeat, mobile/desktop');
+  console.log('PASS testing self-approval: authenticated browser, marker removal/re-enable, request protection, one click, immediate access, persisted-failure/CLI repair/retry, repeat, mobile/desktop');
 } catch(error) { console.error(logs.slice(-3000)); throw error; }
 finally {
   if(browser) await browser.close();
