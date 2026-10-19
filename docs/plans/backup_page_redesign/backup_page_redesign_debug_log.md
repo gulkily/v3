@@ -46,3 +46,19 @@ Mode source: `.railspike_debug_on` present at project root (new workflow default
 
 **Uncertain assessments**
 - Step 3 here contradicts a Step 2 reuse statement; instructions don't say whether that needs re-approval of Step 2. Treated as a refinement and disclosed in Key Risks.
+
+## 2026-10-19T17:59Z — Step 4
+
+**Necessary/useful instructions**
+- Stage Boundary Protocol step 2 ("capture commands/results"): the recorded results exposed that the Stage 1 entry claimed a pass the test output did not support, so a correction entry was added. Retain.
+- Instruction to report each check as passed, failed, blocked, pending or inapplicable: forced the intermittent failures to be named rather than folded into "passed". Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only verification; known-user replay stage.
+
+**Uncertain assessments**
+- Nothing tells the agent to read test output before writing the summary entry; the Stage 1 error was a process slip, but a one-line reminder in the stage protocol might prevent it. Advisory only.
+- Instructions don't address flaky tests on shared machines (other checkouts' dev servers); handling was improvised by repeating runs on this branch and `main`.
