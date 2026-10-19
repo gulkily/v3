@@ -113,10 +113,6 @@ compose form improvements
 	"choose an image" module should look like the other modules
 	"body" module should also look like the other modules
 
-xWord 97 disabled buttons now look disabled (gray text), and a Win Dark theme
-	blends Chicago and Word 97 chrome in a dark palette.
-	See docs/plans/word97_disabled_and_dark_theme/.
-
 xInvite path repaired: opt-in source-page destination, zero-click targeted entry,
 	member access, same-key later naming, and interrupted-redemption recovery.
 	See docs/reference/invitation_entry.md and docs/plans/invite_zero_click/.
@@ -146,3 +142,60 @@ composite identity (undefined term)
 		message recipient keys, approval same-username rule); approval itself
 		follows identity_id and is unchanged
 	related: docs/plans/username_change_gate_step1_solution_assessment.md
+
+for common assumed commands, we should have assistance:
+example: wsl@Lenovo:~/agent/v3-codex-2$ ./v3 import
+         Unknown command: import
+         Run ./v3 with no arguments to see available commands.
+
+
+we need a repository browser
+	this way we can generate a visible div for any response to a meta request
+
+Explain feature for page help
+	add an on-page "Explain" control to reveal contextual explanations
+		keep ordinary task flows concise, with details available on demand
+	edit existing explanations for conciseness and clarity before exposing them
+		cover policy, account/key behavior, storage, and relevant edge cases
+	use docs/plans/ui_copy_audit_checklist.md as the cleanup inventory
+	keep essential warnings and recovery actions visible when needed
+
+/tools/visitor-statistics/
+dates wrap, looks bad
+
+move user management stuff to tools
+
+Split member directory from user/access management under Tools
+	Railspike Step 1: docs/plans/member_directory_access_split/member_directory_access_split_step1_solution_assessment.md
+	Awaiting Step 1 approval; cover standard/Forte pages, subpages, and existing approval recovery flows
+
+Member directory/access split scope revision
+	Leave Forte unchanged; split standard pages only and preserve shared-component compatibility
+	Revised Step 2 awaiting approval; previous Step 3 superseded
+
+Member directory/access split planning update
+	Revised Step 2 approved; Step 3 now covers four stages for standard pages only
+	Forte compatibility checks retained; awaiting Approved Step 3
+
+Member directory/access split implementation complete
+	Standard member pages separated from Tools User Access; Forte presentation preserved
+	Feature branch: feat/member-directory-access-split
+	Summary: docs/plans/member_directory_access_split/member_directory_access_split_step4_implementation_summary.md
+
+Existing feature-flag test failure
+	WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence
+	Reproduced on main ed71ae0f: prepared feature-flag result lacks post_id used at tests/WriteApiSmokeTest.php:4261
+
+Add missing User Access icon for icon themes
+	Map /tools/user-access/ in public/assets/theme-nav-icons.css
+	Cover both Tools launcher and Tools subnavigation in Word97, Chicago, and Windark
+	Verify the icon renders in all three themes; this omission has recurred three times
+	Standing navigation-icon reminder added to AGENTS.md; icon implementation remains pending
+
+i want to have a developer mode where i can self-approve without root approval
+
+
+User Access icon completed
+	Added person-and-key icon to Tools launcher and shared Tools subnavigation
+	Verified Word97, Chicago, and Windark: launcher plus active/inactive navigation
+	Browser checked 16px dimensions, decoded SVGs, and visually inspected each theme

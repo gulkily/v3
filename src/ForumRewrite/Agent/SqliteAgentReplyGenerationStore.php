@@ -315,7 +315,9 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
 
         $existing = $this->findByTarget($postId, $contentHash);
         if ($existing === null
-            || ($existing['status'] ?? null) !== 'pending'
+            || !in_array(($existing['status'] ?? ''),
+                AgentResponseTask::fromStoredRequestContext($existing['request_context'] ?? [])['type'] === AgentResponseTask::SCRIPTURE_EXPANSION_TYPE
+                    ? ['pending', 'complete', 'posting'] : ['pending'], true)
             || !is_array($existing['request_context']['agent_reply_request'] ?? null)
         ) {
             return null;

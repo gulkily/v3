@@ -290,6 +290,11 @@ final class FrontController
             return null;
         }
 
+        // Access reviews and the restricted queue always use live authorization/data.
+        if ($path === '/tools/user-access' || str_starts_with($path, '/tools/user-access/')) {
+            return null;
+        }
+
         if ($path === '/' || $path === '') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/index.html',

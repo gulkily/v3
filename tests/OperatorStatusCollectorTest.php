@@ -30,6 +30,9 @@ final class OperatorStatusCollectorTest
             assertSame('not_initialized', $status['task_queue']['status']);
             assertSame('absent', $status['task_queue']['rebuild_task_status']);
             assertSame('not_observed', $status['task_queue']['automatic_recovery_status']);
+            assertSame('accessible', $status['database_access']['read_model']['status']);
+            assertSame('missing', $status['database_access']['task_queue']['status']);
+            assertSame('not_checked', $status['frontend']['status']);
             assertSame(false, is_file($queuePath));
             assertSame(false, is_file($lockPath));
         } finally {

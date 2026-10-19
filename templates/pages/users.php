@@ -2,11 +2,6 @@
   <article class="card">
     <h1>Users</h1>
   </article>
-<?php if ($showPendingLink): ?>
-  <article class="card">
-    <p><a href="/users/pending/">View users awaiting approval</a></p>
-  </article>
-<?php endif; ?>
 <?php if ($users === []): ?>
   <article class="card">
     <p>No visible users yet.</p>

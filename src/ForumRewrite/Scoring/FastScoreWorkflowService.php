@@ -14,9 +14,14 @@ final class FastScoreWorkflowService
     ) {
     }
 
+    public function rubricRevision(): ?string
+    {
+        return $this->scorer instanceof FastPostScorer ? $this->scorer->rubricRevision() : null;
+    }
+
     /**
      * @param array<string, mixed> $post
-     * @return array{status:string, probability:?float, source:string, signals:list<string>}
+     * @return array{status:string, probability:?float, source:string, signals:list<string>, scores?:array<string,float>, rubric_revision?:?string, legacy?:bool}
      */
     public function scorePost(array $post): array
     {
@@ -34,7 +39,7 @@ final class FastScoreWorkflowService
      * null when the configured provider must be called.
      *
      * @param array<string, mixed> $post
-     * @return array{status:string, probability:?float, source:string, signals:list<string>}|null
+     * @return array{status:string, probability:?float, source:string, signals:list<string>, scores?:array<string,float>, rubric_revision?:?string, legacy?:bool}|null
      */
     public function localResultForPost(array $post): ?array
     {

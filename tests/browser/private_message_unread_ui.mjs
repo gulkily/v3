@@ -11,6 +11,9 @@ export async function checkUnreadIndicators(page, context, base, artifacts) {
   await page.evaluate(() => window.ForumPrivateMessageUnread.refresh());
   const nav = page.locator('[data-private-message-unread]');
   assert.equal(await nav.getAttribute('data-unread-state'), 'ready');
+  assert.equal(await nav.innerText(), 'Messages');
+  assert.equal(await nav.getAttribute('aria-describedby'), 'private-message-unread-status');
+  assert.match(await nav.locator('#private-message-unread-status').textContent(), /^\d+ unread conversations?$/);
   const names = await page.locator('[data-conversation-row]').evaluateAll(rows => rows.map(row => row.dataset.counterpart));
   assert.ok(names.length > 25);
   for (let index = 0; index < names.length; index += 25) {
@@ -26,7 +29,8 @@ export async function checkUnreadIndicators(page, context, base, artifacts) {
   await page.route('**/api/private_messages/unread?*', failure);
   await page.evaluate(() => window.ForumPrivateMessageUnread.refresh());
   assert.equal(await nav.getAttribute('data-unread-state'), 'unavailable');
-  assert.equal(await nav.locator('[data-role="unread-count"]').innerText(), '?');
+  assert.equal(await nav.innerText(), 'Messages');
+  assert.match(await nav.locator('#private-message-unread-status').textContent(), /\S/);
   await page.unroute('**/api/private_messages/unread?*', failure);
   await page.getByRole('button', { name: 'Retry unread status', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready');

@@ -1,7 +1,10 @@
 <section class="stack" data-pending-approvals-root>
   <article class="card">
+<?php if (!empty($accessManagement)): ?>
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
+<?php endif; ?>
     <h1>Users Awaiting Approval</h1>
-    <p><a href="/users/">Back to approved users</a></p>
+    <p><a href="<?= !empty($accessManagement) ? '/tools/user-access/' : '/users/' ?>"><?= !empty($accessManagement) ? 'User Access' : 'Back to approved users' ?></a></p>
   </article>
   <article class="card" data-role="pending-approvals-feedback" hidden></article>
   <article class="card" data-role="pending-approvals-empty"<?= $profiles === [] ? '' : ' hidden' ?>>
@@ -25,10 +28,10 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
 ?>
         <tr data-role="pending-approval-row" data-profile-slug="<?= $e($profile['profile_slug']) ?>" data-username="<?= $e($profile['username']) ?>">
           <td class="pending-approvals-user-cell" data-label="User">
-            <a href="/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($profile['username']) ?></a>
+            <a href="<?= !empty($accessManagement) ? '/tools/user-access/profiles/' : '/profiles/' ?><?= $e($profile['profile_slug']) ?>"><?= $e($profile['username']) ?></a>
             <a
               class="pending-approvals-profile-link"
-              href="/profiles/<?= $e($profile['profile_slug']) ?>"
+              href="<?= !empty($accessManagement) ? '/tools/user-access/profiles/' : '/profiles/' ?><?= $e($profile['profile_slug']) ?>"
               title="<?= $e($profile['profile_slug']) ?>"
               aria-label="<?= $e($profile['profile_slug']) ?>"
             ><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a>

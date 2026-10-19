@@ -1,0 +1,808 @@
+{
+  "candidate_commit": "0976fddb",
+  "provider_calls": 32,
+  "writing_calls": 32,
+  "moderation_calls": 0,
+  "conservative_cost_dollars": 0.069561,
+  "unsettled_calls": 0,
+  "initial_gates": {
+    "passed": false,
+    "checks": {
+      "quality_floor": false,
+      "everyday": false,
+      "four_everyday_improvements": true,
+      "complex_completeness": false,
+      "no_critical_errors": true,
+      "source_checks": true,
+      "complete_latency_evidence": false,
+      "median_20s": true,
+      "improves_30_percent": true,
+      "maximum_40s": true
+    },
+    "stats": {
+      "A": {
+        "completed": 16,
+        "passes": 1,
+        "everyday_passes": 0,
+        "critical_errors": 4,
+        "median_ms": 13217.8610355,
+        "max_ms": 23552.986969999998
+      },
+      "B": {
+        "completed": 10,
+        "passes": 7,
+        "everyday_passes": 6,
+        "critical_errors": 0,
+        "median_ms": 9252.425546999999,
+        "max_ms": 11298.521106
+      }
+    },
+    "everyday_improvements": 6,
+    "evidence_hashes": {
+      "results.jsonl": "9d79b233428a905b176241093dc9036d73ece6b5acf7b982e797eb5bf9819f43",
+      "ratings.json": "64b9fa3ef4cca9717e0dd3e57bbc3696f8d640a1faf7d9cc10f20588e77d45b2",
+      "frozen.json": "09b70283b56e832534e950a1bce3af7d0b2a82a57e2e7b4f01e4f3e12fe6f57a",
+      "protocol.json": "05a3f60eff6e1504d8ae24363bd19b8d3eebc66483d538f67cd5acfc6264884b"
+    }
+  },
+  "results": [
+    {
+      "sample": "initial-1-1-A",
+      "variant": "A",
+      "case": 1,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 11122.076254,
+      "anonymous_id": "0ad5e604",
+      "answer_sha256": "e5bf148f649908d5708916bc092b7c98670d4f87ed2c4736a4ee03b1d775d9b2",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "KJV quotations and marked Philippians 4 omission match source. Gives usable immediate actions but invents anxiety as the organizing problem and repeats them after four passage/application sections. This sample was partially exposed with its label during measurement diagnostics; preserve the blinding limitation."
+      }
+    },
+    {
+      "sample": "initial-1-1-B",
+      "variant": "B",
+      "case": 1,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 9031.968147,
+      "anonymous_id": "d2e26f7d",
+      "answer_sha256": "fa65ef1b4bcd9b1e50d0f220216d40bc52841ac0aa843b6895f2c0cb001e0f13",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Direct deadline/handoff versus optional-plan distinction and responsible closure; source-owned Proverbs 21:5 wording matches and its general diligence theme supports the practical analogy. No catalogue or unsupported follow-up."
+      }
+    },
+    {
+      "sample": "initial-2-1-B",
+      "variant": "B",
+      "case": 2,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 8998.408898000001,
+      "anonymous_id": "c6b1dd75",
+      "answer_sha256": "8fe3d78db60dbe356847426ba5a8d67f721a4fb1e6757f993f36a3ec5876366e",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Directly separates real obligations/deadlines from optional plans and gives a responsible stopping point. Proverbs 21:5 matches and is used as wisdom about diligence rather than a promise all tasks will finish."
+      }
+    },
+    {
+      "sample": "initial-2-1-A",
+      "variant": "A",
+      "case": 2,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 11084.746103000001,
+      "anonymous_id": "e9aad828",
+      "answer_sha256": "88362b54b872c5507bddd940ce571ddf9104112e519859b9a7d6305d3ec9c239",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Quoted KJV excerpts agree with source; omissions are marked. Six-passage advice plus a repeated four-step routine is excessive for the practical concern. Applying Galatians 6:9 to task perseverance without its moral/sowing context weakens faithful application."
+      }
+    },
+    {
+      "sample": "initial-3-1-A",
+      "variant": "A",
+      "case": 3,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 13206.670812,
+      "anonymous_id": "d1bad2f3",
+      "answer_sha256": "38facd2c5d5b89e9825d598fcca3dfe69f3e7e09e01dc4e6e714b4cfd6b76146",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Quotation wording agrees with Galatians 6:2, Proverbs 3:27, Colossians 3:23 and Ecclesiastes 3:1. Four-verse survey, five application steps and a repeated next-step list overwhelm a concrete scheduling decision; Ecclesiastes is made to support organizational scheduling without explaining the contextual/analogical gap."
+      }
+    },
+    {
+      "sample": "initial-3-1-B",
+      "variant": "B",
+      "case": 3,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 9207.538499,
+      "anonymous_id": "75149c8a",
+      "answer_sha256": "01d026ecc1ba2ee36b812a51a5df7801e3fbc64fb9edd1d6776da8fec18b0002",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Correctly treats pickup as the fixed obligation, with communication, safe handoff and a bounded stopping point. KJV Proverbs 21:5 matches; broader stewardship is practical application without a promised outcome."
+      }
+    },
+    {
+      "sample": "initial-4-1-B",
+      "variant": "B",
+      "case": 4,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 9511.69394,
+      "anonymous_id": "cde2d00f",
+      "answer_sha256": "ed01cbcc77cccc814b09686a6878c799cbd48459d45ec87cd322eed55ed63310",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Answers the rent-versus-loan decision directly with an affordable boundary and alternatives. KJV Proverbs 21:5 matches; compassionate stewardship is clearly practical application, with no promised financial outcome."
+      }
+    },
+    {
+      "sample": "initial-4-1-A",
+      "variant": "A",
+      "case": 4,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 13637.200511,
+      "anonymous_id": "4731ecb6",
+      "answer_sha256": "6a142b64186115eba8032104ab547a2c7b2be14d3462643b0264aedfdcd4655a",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Cited KJV excerpts match; marked Luke omission is valid. Repeats generosity/prudence through a verse survey and a second application list. Luke 14 and Galatians 6:5 are used as direct financial-limit warrants without adequate distinction from their discipleship/self-examination contexts."
+      }
+    },
+    {
+      "sample": "initial-5-1-A",
+      "variant": "A",
+      "case": 5,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 11538.467892,
+      "anonymous_id": "5cb4f9ea",
+      "answer_sha256": "9569fbb33946f29ec3a98e3c4b40bf703d5cdc9661e6b0246c4506608c0fe4dd",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "source_pass": false,
+        "critical_error": true,
+        "notes": "Gives protective nonretaliation guidance and useful context, but does not actually explain the competing Christian nonresistance reading requested. Luke 6:29 is rewritten as And if a man smite thee ... turn to him the other also, rather than the KJV wording, while labeled KJV."
+      }
+    },
+    {
+      "sample": "initial-5-1-B",
+      "variant": "B",
+      "case": 5,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 9297.312595,
+      "anonymous_id": "0deebab2",
+      "answer_sha256": "32e4c6213c917d7e1d49e5f25dabf0128a44c21c92010de27a0afd800344c12c",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Matthew 5:39 wording matches; distinguishes nonretaliation from ongoing exposure to abuse and explains nonresistance versus protective-justice readings. Safety and accountability are clear. Forgiveness/repentance phrasing deserves nuance but does not undo the requested distinction; length is warranted by the sensitive question."
+      }
+    },
+    {
+      "sample": "initial-6-1-B",
+      "variant": "B",
+      "case": 6,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 11298.521106,
+      "anonymous_id": "5df35a5c",
+      "answer_sha256": "7d2f7ef6068fbbf89273cf45d7ca0f843645295da94d1fdaee81e5924650793e",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "KJV Proverbs 21:13 wording matches; warning to hear the poor supports community care. The shame/receiving-help question is overwhelmed by rent deadlines, expense triage, self-sufficiency commitments, and a stopping point; these were not the requested concern."
+      }
+    },
+    {
+      "sample": "initial-6-1-A",
+      "variant": "A",
+      "case": 6,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 13229.051259,
+      "anonymous_id": "c27965e0",
+      "answer_sha256": "081064dd9122a328b4ad11864efbba5bfa96726c3088800838d7270bda751cc5",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          false,
+          true,
+          true,
+          false
+        ],
+        "source_pass": false,
+        "critical_error": true,
+        "notes": "Relevant community-care theme, but repetitive multi-passage survey and unsupported offer of personalized future wording. James 2:16 changes notwithstanding to and yet inside a quotation labeled KJV, an unmarked modernization/blend."
+      }
+    },
+    {
+      "sample": "initial-7-1-A",
+      "variant": "A",
+      "case": 7,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 23552.986969999998,
+      "anonymous_id": "bc9befa1",
+      "answer_sha256": "fbe96d3c2e066076356789739a7b07816f706a6cfb956d3dd0e8b38141254f7f",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          false,
+          true,
+          true,
+          true
+        ],
+        "source_pass": false,
+        "critical_error": false,
+        "notes": "Broad requested context and differing readings are present, but harmonization and works/justification distinctions recur in several sections. Romans 4:4 inserts an extra is inside a quotation claimed to be exact KJV. Treat the duplicated word as a transcription fidelity failure rather than a fabricated passage."
+      }
+    },
+    {
+      "sample": "initial-7-1-B",
+      "variant": "B",
+      "case": 7,
+      "repeat": 1,
+      "outcome": "failed",
+      "total_ms": 14149.788628,
+      "anonymous_id": "74bc8a6e",
+      "answer_sha256": null,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Terminal generation/verification failure; no final answer was published. No published quotation to source-check. This is a failed scheduled sample, not an answer-quality pass."
+      },
+      "failure_code": "scripture_verification_failed",
+      "failure_message": "Use verified quotation segments; reflection must be paraphrase or interpretation."
+    },
+    {
+      "sample": "initial-8-1-B",
+      "variant": "B",
+      "case": 8,
+      "repeat": 1,
+      "outcome": "failed",
+      "total_ms": 8406.180369,
+      "anonymous_id": "7b970a42",
+      "answer_sha256": null,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Terminal generation/verification failure; no final answer was published. No published quotation to source-check. This is a failed scheduled sample, not an answer-quality pass."
+      },
+      "failure_code": "scripture_verification_failed",
+      "failure_message": "Use verified quotation segments; reflection must be paraphrase or interpretation."
+    },
+    {
+      "sample": "initial-8-1-A",
+      "variant": "A",
+      "case": 8,
+      "repeat": 1,
+      "outcome": "complete",
+      "total_ms": 9748.075474000001,
+      "anonymous_id": "dfa15633",
+      "answer_sha256": "9903fb3176f3bb4a97327b7ff77dfaa3d2459a42a931fd0c9858cb2c60672ec1",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "source_pass": false,
+        "critical_error": true,
+        "notes": "NIV 1 Timothy 6:10 and its meaning are otherwise accurate, but the purported verbatim context quotation adds Timothy in 6:11, absent from the NIV source. This is an unmarked addition inside named-translation scripture, not a harmless citation/style difference."
+      }
+    },
+    {
+      "sample": "initial-1-2-B",
+      "variant": "B",
+      "case": 1,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 6942.984732,
+      "anonymous_id": "4b3bed1d",
+      "answer_sha256": "0ab1ac919e5b6c4cc758098b93f7b39b41fb600748a9c5df8b1cb732052c8f01",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Directly separates hard commitments from hoped-for tasks and gives notification/handoff, deferral and a stopping point. Source-owned Proverbs 21:5 matches; conditional mention of anxiety does not invent it as the problem."
+      }
+    },
+    {
+      "sample": "initial-1-2-A",
+      "variant": "A",
+      "case": 1,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 13013.63626,
+      "anonymous_id": "35ee146a",
+      "answer_sha256": "f4ed661e71e8a1a1fcc196ca3711f5671afeb502bf89063e3ae14588b9794420",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "KJV excerpts and marked omissions agree with Matthew 6:34, James 4:13-15, Proverbs 16:3 and Colossians 3:23. Multiple verse/application passes invent anxiety and repeatedly restate priorities. Claims that committing work reduces compulsive worry/clarifies priorities overstate the passage as practical causation; not rated a critical fabricated promise."
+      }
+    },
+    {
+      "sample": "initial-2-2-A",
+      "variant": "A",
+      "case": 2,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 14908.576882,
+      "anonymous_id": "8268664c",
+      "answer_sha256": "ca2e54c6137ce79f0120b1a75689319af11057a358a79c556eeeb9aabee75a78",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Cited KJV wording matches at the word level; excerpt punctuation is not a critical error. Repeated multi-verse productivity guidance and summary are disproportionate. Saying that numbering days means estimating tasks/batching is an unqualified productivity gloss on Psalm 90 rather than an explained analogy."
+      }
+    },
+    {
+      "sample": "initial-2-2-B",
+      "variant": "B",
+      "case": 2,
+      "repeat": 2,
+      "outcome": "failed",
+      "total_ms": 8802.384754,
+      "anonymous_id": "2001f1f6",
+      "answer_sha256": null,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Terminal generation/verification failure; no final answer was published. No published quotation to source-check. This is a failed scheduled sample, not an answer-quality pass."
+      },
+      "failure_code": "scripture_verification_failed",
+      "failure_message": "Use verified quotation segments; reflection must be paraphrase or interpretation."
+    },
+    {
+      "sample": "initial-3-2-B",
+      "variant": "B",
+      "case": 3,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 7164.457237,
+      "anonymous_id": "570ab8e6",
+      "answer_sha256": "efb15ecbae636d41a9e7a9d413c8d4be005dfff7e9d2b05914e803e3c740d93b",
+      "rating": {
+        "rubric": [
+          false,
+          true,
+          true,
+          true,
+          false,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "KJV Proverbs 21:5 matches. The practical answer changes a 5:30 pickup deadline into permission to leave the volunteer site at 5:30, contradicting the actual constraint and failing the core deadline judgment. No fabricated quotation or scriptural promise."
+      }
+    },
+    {
+      "sample": "initial-3-2-A",
+      "variant": "A",
+      "case": 3,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 15141.189251000002,
+      "anonymous_id": "ed4644b1",
+      "answer_sha256": "3abac3de51b08824d884a249a669966973d62b8a39921967de674e060c11659e",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Quoted KJV excerpts match. Repeated principles/application/final summary are excessive for the concrete pickup decision. Luke 10 is treated as generic prioritization of family obligations and James 4:17 is used to press arranging alternate childcare without explaining their actual contexts."
+      }
+    },
+    {
+      "sample": "initial-4-2-A",
+      "variant": "A",
+      "case": 4,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 11429.10324,
+      "anonymous_id": "3efa2c5f",
+      "answer_sha256": "bfc0de3a47223f8eccdacb5e6e87f0867217f93d51825efbb3bac25d77e46dd9",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "KJV quotations match at the word level; Proverbs 22 citation includes context beyond the quoted verse. Too many verse-linked repetitions for the rent decision. Luke 14 tower/cost discipleship analogy is presented as direct loan guidance without distinguishing original teaching from application."
+      }
+    },
+    {
+      "sample": "initial-4-2-B",
+      "variant": "B",
+      "case": 4,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 11174.389252,
+      "anonymous_id": "a9f822c6",
+      "answer_sha256": "be223f6e1ec3c9c23c41be66be9513b09acd3a67c0238253fa6416616b28eff0",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Directly protects rent while giving sustainable alternatives and clear loan boundaries. KJV Proverbs 21:5 matches; stewardship/planning is application rather than a guaranteed outcome. Some repetition, but the advice remains focused on the actual decision."
+      }
+    },
+    {
+      "sample": "initial-5-2-B",
+      "variant": "B",
+      "case": 5,
+      "repeat": 2,
+      "outcome": "failed",
+      "total_ms": 11406.654969,
+      "anonymous_id": "6cbb180c",
+      "answer_sha256": null,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Terminal generation/verification failure; no final answer was published. No published quotation to source-check. This is a failed scheduled sample, not an answer-quality pass."
+      },
+      "failure_code": "scripture_verification_failed",
+      "failure_message": "Use verified quotation segments; reflection must be paraphrase or interpretation."
+    },
+    {
+      "sample": "initial-5-2-A",
+      "variant": "A",
+      "case": 5,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 17409.624374,
+      "anonymous_id": "3570ead6",
+      "answer_sha256": "438bd135c5bfd7bf7660e56e87f099d231732bf24c23eefcc94c38881cf80601",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "source_pass": false,
+        "critical_error": true,
+        "notes": "Detailed protective application and meaningful nonresistance versus lawful-protection readings. Luke/Romans/Proverbs excerpts match, but Matthew 5:38 changes it hath been said to it was said inside the named KJV quotation, an unmarked modernized blend."
+      }
+    },
+    {
+      "sample": "initial-6-2-A",
+      "variant": "A",
+      "case": 6,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 13256.367102,
+      "anonymous_id": "f59927e5",
+      "answer_sha256": "bf35ba9153d423b87ceddcba0c7fac42c5a508799e2a80b7be238d3cbd0117a8",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Source wording/marked omissions agree with cited KJV community-care passages. Mutual aid is relevant and the answer is complete, but the multi-passage survey repeats the same reassurance and service/reciprocity point rather than selecting the most useful reasons."
+      }
+    },
+    {
+      "sample": "initial-6-2-B",
+      "variant": "B",
+      "case": 6,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 11109.736636,
+      "anonymous_id": "241dd9e2",
+      "answer_sha256": "4deffff44d54da21dd281f7622808694b20d3c6448eab749f00aa960ba4095a9",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "KJV Galatians 6:2 and Matthew 6:25-34 match source. Reframes shame as expense/deadline planning, applications-per-week and a suggested three-month assistance stopping point. Appends ten verses without proportionate interpretation, obscuring the requested pastoral concern."
+      }
+    },
+    {
+      "sample": "initial-7-2-B",
+      "variant": "B",
+      "case": 7,
+      "repeat": 2,
+      "outcome": "failed",
+      "total_ms": 12738.708308,
+      "anonymous_id": "73b94e8f",
+      "answer_sha256": null,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Terminal generation/verification failure; no final answer was published. No published quotation to source-check. This is a failed scheduled sample, not an answer-quality pass."
+      },
+      "failure_code": "scripture_verification_failed",
+      "failure_message": "Use verified quotation segments; reflection must be paraphrase or interpretation."
+    },
+    {
+      "sample": "initial-7-2-A",
+      "variant": "A",
+      "case": 7,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 21313.132445000003,
+      "anonymous_id": "169f4e40",
+      "answer_sha256": "c0dca75615693d118e5f843c7827254c2d66440b7cdc47350dd927178f666425",
+      "rating": {
+        "rubric": [
+          true,
+          false,
+          true,
+          true,
+          true,
+          false
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Quoted KJV selections use marked omissions and match source words; casing/punctuation differences do not create fabricated content. Meaningful differing readings are included, but several sections repeat the same ground/fruit distinction and the final offer to provide future Greek/translation discussion is unsupported by the interaction contract."
+      }
+    },
+    {
+      "sample": "initial-8-2-A",
+      "variant": "A",
+      "case": 8,
+      "repeat": 2,
+      "outcome": "complete",
+      "total_ms": 11179.386359999999,
+      "anonymous_id": "38fce723",
+      "answer_sha256": "76d656f52adc09f388ab39ceffac875b544c21ba8c3d36dc6f143979950917ce",
+      "rating": {
+        "rubric": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "NIV 1 Timothy 6:10 and context excerpts independently match the licensed text. Distinguishes money from love of money and a root/all kinds from sole origin, supplies relevant context/application, and transparently identifies its brief KJV comparison."
+      }
+    },
+    {
+      "sample": "initial-8-2-B",
+      "variant": "B",
+      "case": 8,
+      "repeat": 2,
+      "outcome": "failed",
+      "total_ms": 8141.472079,
+      "anonymous_id": "ee5a6f91",
+      "answer_sha256": null,
+      "rating": {
+        "rubric": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "source_pass": true,
+        "critical_error": false,
+        "notes": "Terminal generation/verification failure; no final answer was published. No published quotation to source-check. This is a failed scheduled sample, not an answer-quality pass."
+      },
+      "failure_code": "scripture_verification_failed",
+      "failure_message": "Use verified quotation segments; reflection must be paraphrase or interpretation."
+    }
+  ],
+  "private_artifact_root": "state/private/scripture-reliability-evaluation-20261016",
+  "frozen_file_count": 808,
+  "recovered_measurement": "One baseline sample retained with original render timing after whitespace-only comparison correction; no extra provider call. Original harness-error row retained.",
+  "review_limitations": [
+    "Single evaluator; subjectively judged proportionality/context.",
+    "Candidate/timing labels hidden during ratings; style and verification footer can reveal candidate.",
+    "One baseline departure answer partially exposed with its label during measurement diagnosis.",
+    "Rubric not a proof of interpretation; source validation is separate.",
+    "Latency among completions only; six candidate failures block the full latency evidence gate."
+  ]
+}

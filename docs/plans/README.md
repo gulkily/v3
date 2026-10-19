@@ -10,9 +10,17 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Scripture response reliability revision](scripture_response_reliability_revision/)
+
+- [Scripture response reliability](scripture_response_reliability/)
+
+- [Scripture response guidance and expansion](agent_reply_length/)
+- [Member directory and user access split](member_directory_access_split/)
+
 - [Feature flags search and status toolbar](feature_flags_toolbar/)
 - [Username change gate](username_change_gate/)
 - [Music media embeds](music_media_embeds/)
+- [Stable Messages/Invite nav buttons](nav_links_load_stability/)
 - [Word 97 disabled buttons and dark Win9x theme](word97_disabled_and_dark_theme/)
 - [Account key page simplification](account_key_page_simplification/)
 - [Account key page redesign](account_key_page_redesign/)
@@ -192,3 +200,8 @@ and repair its navigation and affected references. See the
 - [Retracted post LLM exchange privacy](./retracted_post_llm_exchange_privacy/retracted_post_llm_exchange_privacy_step1_solution_assessment.md) — suppress recorded exchanges containing retracted content.
 
 - [Phone site development](./phone_site_development/phone_site_development_step1_solution_assessment.md) — operator phone intake through reviewed Railspike Step 1; later lifecycle tracked in the companion checklist.
+
+- [Status frozen-frontend diagnosis](status_frozen_frontend_diagnosis/)
+- [Scripture response quality and latency](./scripture_response_quality/scripture_response_quality_step1_solution_assessment.md) — proportionate scripture replies and faster complete delivery.
+
+- [Fastmod modular scores](./fastmod_meta_score/fastmod_meta_score_step1_solution_assessment.md) — single-call rubric scoring and operator selection.

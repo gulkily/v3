@@ -15,6 +15,20 @@ use ForumRewrite\Scoring\SqliteFastScoreStore;
 
 final class FastScoreSweepServiceTest
 {
+    public function testStaleRubricWorkIsExcludedWithoutCallingProvider(): void
+    {
+        $pdo = $this->postsDatabase();
+        $this->insertPost($pdo, 'post', 'post', null, '', 'Help with interface', 1);
+        $this->enqueue($pdo, 'post', 'old-rubric');
+        $provider = new SweepFakeProvider();
+        $summary = $this->service($pdo, $provider, 'new-rubric')->run(1);
+        assertSame(0, $summary['provider_calls']);
+        assertSame(1, $summary['excluded']);
+        assertSame([], $provider->postIds);
+        assertSame('excluded', $pdo->query("SELECT state FROM fast_score_work")->fetchColumn());
+        assertSame('["rubric_changed_before_score"]', $pdo->query("SELECT signals_json FROM post_fast_scores")->fetchColumn());
+    }
+
     public function testTargetedSweepLeavesOtherPendingWorkUntouched(): void
     {
         $pdo = $this->postsDatabase();

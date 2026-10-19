@@ -422,8 +422,10 @@
         [options.threadId]
       )[0];
       var threadRow = threadResult && threadResult.values && threadResult.values[0] ? threadResult.values[0] : null;
+      var postColumns = options.database.exec("PRAGMA table_info(posts)")[0];
+      var hasAgentMetadata = postColumns && postColumns.values.some(function (column) { return column[1] === "agent_response_json"; });
       var result = options.database.exec(
-        "SELECT post_id, parent_id, subject, body, author_label, created_at "
+        "SELECT post_id, parent_id, subject, body, author_label, created_at, " + (hasAgentMetadata ? "agent_response_json " : "NULL ")
         + "FROM posts WHERE thread_id = ? ORDER BY sequence_number ASC, post_id ASC",
         [options.threadId]
       )[0];
@@ -443,6 +445,17 @@
         back.addEventListener("click", options.onBack);
         options.content.appendChild(back);
       }
+      var expansions = {};
+      rows = rows.filter(function (row) {
+        var meta = null;
+        try { meta = JSON.parse(row[6] || "null"); } catch (_) {}
+        if (row[4] === "reply-agent" && meta && meta.type === "scripture_expansion") {
+          // Snapshot publication has already checked both source versions and visibility.
+          if (meta.expansion_of === row[1]) expansions[row[1]] = row;
+          return false;
+        }
+        return true;
+      });
       rows.forEach(function (row, index) {
         var post = document.createElement("article");
         post.className = index === 0 ? "card post-card thread-root-card" : "card post-card";
@@ -481,6 +494,18 @@
         } else {
           post.appendChild(meta);
           post.appendChild(body);
+        }
+        if (expansions[row[0]]) {
+          var details = document.createElement("details");
+          details.className = "scripture-expansion";
+          var summary = document.createElement("summary");
+          summary.textContent = "Further scripture reflection";
+          details.appendChild(summary);
+          var expansionBody = document.createElement("div");
+          expansionBody.className = "body";
+          expansionBody.innerHTML = nl2br(String(expansions[row[0]][3] || ""));
+          details.appendChild(expansionBody);
+          post.appendChild(details);
         }
         var permalink = document.createElement("a");
         permalink.className = "post-card-permalink";
@@ -521,6 +546,36 @@
       });
       return true;
     }
+  };
+  snapshotPresentation.applyUpdate = function (database, update) {
+    database.run("BEGIN");
+    try {
+      var columns = database.exec("PRAGMA table_info(posts)")[0];
+      var updateColumns = update.exec("PRAGMA table_info(posts)")[0];
+      var hasMetadata = function (result) { return result && result.values.some(function (column) { return column[1] === "agent_response_json"; }); };
+      if (!hasMetadata(columns) && hasMetadata(updateColumns)) database.run("ALTER TABLE posts ADD COLUMN agent_response_json TEXT NULL");
+      if (hasMetadata(updateColumns)) {
+        database.run("CREATE TABLE IF NOT EXISTS unavailable_expansions (post_id TEXT PRIMARY KEY)");
+        database.run("INSERT OR REPLACE INTO metadata (key, value) VALUES ('snapshot_version', '4')");
+      }
+      // Updates contain complete visible threads; retire old copies, including removed expansions.
+      var threads = update.exec("SELECT root_post_id FROM threads")[0];
+      if (threads) threads.values.forEach(function (row) { database.run("DELETE FROM posts WHERE thread_id = ?", [row[0]]); });
+      ["threads", "posts", "public_keys"].forEach(function (table) {
+        var result = update.exec("SELECT * FROM " + table)[0];
+        if (!result) return;
+        var names = result.columns.map(function (name) { return '"' + name.replace(/"/g, '""') + '"'; }).join(",");
+        result.values.forEach(function (row) {
+          database.run("INSERT OR REPLACE INTO " + table + " (" + names + ") VALUES (" + row.map(function () { return "?"; }).join(",") + ")", row);
+        });
+      });
+      var unavailableTable = update.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'unavailable_expansions'")[0];
+      if (unavailableTable) {
+        var unavailable = update.exec("SELECT post_id FROM unavailable_expansions")[0];
+        if (unavailable) unavailable.values.forEach(function (row) { database.run("DELETE FROM posts WHERE post_id = ?", [row[0]]); });
+      }
+      database.run("COMMIT");
+    } catch (error) { database.run("ROLLBACK"); throw error; }
   };
   window.forumOfflineSnapshot = snapshotPresentation;
 
@@ -727,13 +782,7 @@
           var updateResponse = await window.fetch(updateUrl, { credentials: "omit" });
           if (updateResponse.ok) {
             var update = new SQL.Database(new Uint8Array(await updateResponse.arrayBuffer()));
-            ["threads", "posts", "public_keys"].forEach(function (table) {
-              var result = update.exec("SELECT * FROM " + table)[0];
-              if (!result) return;
-              result.values.forEach(function (row) {
-                database.run("INSERT OR REPLACE INTO " + table + " VALUES (" + row.map(function () { return "?"; }).join(",") + ")", row);
-              });
-            });
+            snapshotPresentation.applyUpdate(database, update);
             var generated = metadataValue(update, "generated_at");
             if (generated) database.run("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)", ["last_update_at", generated]);
             update.close();

@@ -212,6 +212,12 @@ pre {
   background: var(--panel);
 }
 
+/* Unread Messages: outline only, so the button's size and caption never change. */
+.nav-link[data-unread-count]:not([data-unread-count="0"]) {
+  outline: 2px solid var(--active-line);
+  outline-offset: 2px;
+}
+
 .board-controls-nav .nav-link:disabled {
   width: auto;
   margin-top: 0;
@@ -697,3 +703,8 @@ pre {
 .account-key-history {
   overflow-wrap: anywhere;
 }
+.scripture-expansion { margin-block: 0.8rem; padding-block: 0.5rem; border-block-start: 1px solid var(--line); }
+.scripture-expansion summary { cursor: pointer; font-family: var(--ui-font); }
+.scripture-expansion summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.scripture-expansion .body { margin-block-start: 0.6rem; overflow-wrap: anywhere; }
+.agent-reply-feedback { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }

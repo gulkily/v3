@@ -47,8 +47,12 @@ final class TemplateRenderer
         'tag.php' => ['/assets/thread-list.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
+        'user_access.php' => ['/assets/tools.css'],
+        'user_access_account.php' => ['/assets/tools.css', '/assets/identity.css'],
+        'user_access_profile.php' => ['/assets/tools.css', '/assets/identity.css'],
         'users_pending.php' => ['/assets/pending-approvals.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';

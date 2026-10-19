@@ -30,6 +30,8 @@ final class ToolsPageSupport
     public static function registry(): array
     {
         return [
+            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
+                'description' => 'Choose which independent scores Fastmod records.', 'standalone' => false],
             [
                 'key' => 'activity',
                 'label' => 'Activity',
@@ -112,6 +114,13 @@ final class ToolsPageSupport
                 'label' => 'Visitor Statistics',
                 'href' => '/tools/visitor-statistics/',
                 'description' => 'Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.',
+                'standalone' => false,
+            ],
+            [
+                'key' => 'user-access',
+                'label' => 'User Access',
+                'href' => '/tools/user-access/',
+                'description' => 'Review accounts, keys, and pending approvals.',
                 'standalone' => false,
             ],
             [

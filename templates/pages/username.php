@@ -9,7 +9,6 @@
   </article>
 <?php else: ?>
   <article class="card">
-    <p><strong>Approved profiles:</strong> <?= count($approvedProfiles) ?></p>
     <p><strong>Combined threads:</strong> <?= (int) $approvedThreadCount ?></p>
     <p><strong>Combined posts:</strong> <?= (int) $approvedPostCount ?></p>
 <?php if ($approverUsernames !== []): ?>
@@ -59,25 +58,8 @@
 <?php endif; ?>
   </article>
 
-  <article class="card">
-    <h2>Approved Profiles</h2>
-    <ul>
-<?php foreach ($approvedProfiles as $profile): ?>
-      <li><a href="/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($profile['profile_slug']) ?>" aria-label="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a></li>
-<?php endforeach; ?>
-    </ul>
-  </article>
 <?php endif; ?>
-
-<?php if ($unapprovedProfiles !== []): ?>
-  <article class="card">
-    <h2>Unapproved Profiles</h2>
-    <ul>
-<?php foreach ($unapprovedProfiles as $profile): ?>
-      <li><a href="/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($profile['profile_slug']) ?>" aria-label="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a></li>
-<?php endforeach; ?>
-    </ul>
+  <article id="account-keys" class="card">
+    <p><a href="/tools/user-access/accounts/<?= $e($usernameToken) ?><?= $historyOffset > 0 ? '?key_offset=' . $historyOffset : '' ?>#account-keys">User Access</a></p>
   </article>
-<?php endif; ?>
-<?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>
 </section>
