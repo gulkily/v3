@@ -4,7 +4,7 @@
   </article>
   <article class="card">
     <h1>Visitor Statistics</h1>
-    <p class="meta">Server-observed eligible page requests only. Static assets, APIs, recognizable automation, and traffic served outside this application are excluded.</p>
+    <p class="meta">Page requests, excluding known bots. No browsing history is retained.</p>
 <?php if ($dashboard['status'] === 'unavailable'): ?>
     <div class="feedback feedback-error">Visitor statistics are currently unavailable. Check the private statistics-state path and try again.</div>
 <?php elseif ($dashboard['status'] === 'initializing'): ?>
@@ -66,8 +66,8 @@
     </table>
     <details class="visitor-statistics-counting">
       <summary>How this is counted</summary>
-      <p>Requests are classified as server-authenticated only when the server has verified a signed-in session. Client counts are privacy-preserving estimates. The request split is additive; client estimates are not, because someone can browse before and after signing in.</p>
-      <p>No visitor list, browsing history, IP address, user agent, session, public key, path, or referrer is retained. Data is stored in UTC hourly aggregates for up to 90 days.</p>
+      <p>Assets, APIs, known bots, and traffic outside this application are excluded. Authenticated requests have a verified session. Client estimates may overlap before and after sign-in.</p>
+      <p>No IP addresses, user agents, sessions, public keys, paths, or referrers are retained. UTC hourly totals are kept for up to 90 days.</p>
     </details>
 <?php endif; ?>
   </article>

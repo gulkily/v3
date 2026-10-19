@@ -287,10 +287,18 @@
       : { state: "missing", detail: "Different from current reader — refresh and recheck" };
   }
 
+  function showHttpsGuidance() {
+    var link = document.createElement("a");
+    link.href = "https://" + window.location.host + "/offline/";
+    link.textContent = "Open over HTTPS";
+    guidance.replaceChildren(link);
+    guidance.hidden = false;
+  }
+
   function setGuidance(online, serviceWorker, artifacts, published) {
     guidance.hidden = false;
     if (!serviceWorker.secure) {
-      guidance.textContent = "Open this page over HTTPS. Service workers require a secure context (except localhost).";
+      showHttpsGuidance();
       return;
     }
     if (!serviceWorker.supported || !artifacts.available) {
@@ -346,7 +354,7 @@
         setHealthStatus("not-ready", "NOT READY");
         summary.textContent = "Offline reading requires HTTPS.";
         guidance.hidden = false;
-        guidance.textContent = "Open https://" + window.location.host + "/offline/. This page is currently " + window.location.protocol + ", so the browser will not expose service workers or Cache Storage.";
+        showHttpsGuidance();
         return;
       }
 

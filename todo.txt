@@ -212,3 +212,16 @@ image attachment: replace the "Remove image" text button with an x button on the
 qr codes should match theme within reason
 remove the windark to midnight theme alias (ThemeRegistry::LEGACY_ALIASES, layout.php and theme_toggle.js reads, theme-hint cookie mapping)
 	once saved Midnight preferences have had time to migrate; see docs/plans/rename_windark_to_midnight/
+
+Review activity heading “Site development · operators only” for UI copy cleanup
+	tracked in docs/plans/ui_copy_audit_checklist.md
+
+Done: removed activity heading “Site development · operators only” completely; supersedes the review task above.
+
+UI copy cleanup: favor deleting text over editing or moving it into help; rely on an intuitive, explorable interface.
+	Keep essential warnings and recovery actions visible; apply this preference to the existing Explain task and audit checklist.
+
+Completed UI copy audit cleanup: all remaining findings handled individually, favoring removal; verified and committed each item.
+	Commit references and verification: docs/plans/ui_copy_audit_checklist.md
+
+Done: move Fastmod to the bottom of the Tools launcher and after Feature Flags in Tools subnavigation, preserving the existing order of other tools.

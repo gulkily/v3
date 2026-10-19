@@ -2,7 +2,7 @@
 
 ## UI copy
 
-Keep UI text minimal; avoid repeating controls or explaining internals. Reveal edited explanations through contextual help or Explain. Keep essential warnings and recovery actions visible. Track cleanup in docs/plans/ui_copy_audit_checklist.md.
+Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Track cleanup in docs/plans/ui_copy_audit_checklist.md.
 
 ## Todo
 

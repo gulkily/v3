@@ -85,7 +85,7 @@
       const response = await fetch(endpoint + '?activity=1', { credentials: 'same-origin', cache: 'no-store' });
       activity.replaceChildren(); activity.hidden = !response.ok;
       if (response.ok) {
-        const data = await response.json(); activity.append(node('h2', 'Site development · operators only'));
+        const data = await response.json();
         data.workflows.forEach(row => { const link = node('a', row.post_id + ' · ' + row.state); link.href = '/threads/' + encodeURIComponent(row.thread_id) + '#post-' + encodeURIComponent(row.post_id); const p = node('p'); p.append(link); activity.append(p); });
       }
     }

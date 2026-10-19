@@ -30,8 +30,6 @@ final class ToolsPageSupport
     public static function registry(): array
     {
         return [
-            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
-                'description' => 'Choose which independent scores Fastmod records.', 'standalone' => false],
             [
                 'key' => 'activity',
                 'label' => 'Activity',
@@ -130,6 +128,8 @@ final class ToolsPageSupport
                 'description' => 'Registered site feature flags, defaults, effective values, and override sources.',
                 'standalone' => false,
             ],
+            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
+                'description' => 'Choose which independent scores Fastmod records.', 'standalone' => false],
         ];
     }
 

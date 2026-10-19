@@ -383,7 +383,7 @@ final class LocalAppSmokeTest
             $board = $this->render($application, '/');
             $authStatus = $this->render($application, '/api/auth_status');
 
-            assertStringContains('This is your profile.', $profile);
+            assertStringContains('Member activity', $profile);
             assertStringContains('User Access', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
@@ -679,8 +679,8 @@ PHP;
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
-            assertStringContains('This is your profile.', $ownProfileAfterClear);
-            assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
+            assertStringContains('Member activity', $ownProfileAfterClear);
+            assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
                 $lobbyAfterClear,
@@ -1587,13 +1587,12 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('canonical public content and its history', $backupPage);
-            assertStringContains('They are not a complete instance backup.', $backupPage);
-            assertStringContains('Private messages and separately stored operational data, browser-local keys and drafts', $backupPage);
-            assertStringContains('application software, deployment configuration and secrets, and externally hosted media are not included', $backupPage);
-            assertStringContains('public identity and governance records', $backupPage);
-            assertStringContains('may also contain supplemental workflow records', $backupPage);
-            assertStringContains('not guaranteed to represent the same instant', $backupPage);
+            assertStringContains('Public content and history only', $backupPage);
+            assertStringContains('not a complete instance backup.', $backupPage);
+            assertStringContains('Private messages, browser keys and drafts, operational data', $backupPage);
+            assertStringContains('software, configuration, secrets, and externally hosted media need separate backups', $backupPage);
+            assertStringContains('include supplemental workflow records', $backupPage);
+            assertStringContains('may lag behind the repository', $backupPage);
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
@@ -1852,7 +1851,7 @@ PHP;
         assertStringContains('Recent included items', $instance);
         assertStringContains('href="/activity/">See all recent activity</a>', $instance);
         assertStringContains('Repository snapshot:', $instance);
-        assertStringContains('preview, not a complete archive listing', $instance);
+        assertStringContains('Recent included items', $instance);
         assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
@@ -1860,8 +1859,8 @@ PHP;
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
         assertStringContains('/downloads/read_model.sqlite3', $instance);
-        assertStringContains('canonical public content and its history', $instance);
-        assertStringContains('They are not a complete instance backup.', $instance);
+        assertStringContains('Public content and history only', $instance);
+        assertStringContains('not a complete instance backup.', $instance);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
@@ -2517,7 +2516,7 @@ PHP;
         assertFingerprintedAsset($board, 'openpgp_loader.js');
         assertFingerprintedAsset($board, 'browser_signing.js');
         assertStringContains('data-role="automatic-guest-publication"', $accountKey);
-        assertStringContains("Off by default: the public key stays on this browser until your first signed action.", $accountKey);
+        assertStringContains("Otherwise, this browser publishes its public key at your first signed action.", $accountKey);
         assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
         assertStringContains('Automatic guest keypair', $featureFlags);
     }
@@ -3348,7 +3347,7 @@ PHP;
         assertStringContains('Last registration error', $healthScript);
         assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
         assertStringContains('Offline reading requires HTTPS.', $healthScript);
-        assertStringContains('Open https://', $healthScript);
+        assertStringContains('Open over HTTPS', $healthScript);
         assertStringContains('Offline reader cache', $healthScript);
         assertStringContains('window.caches.open(matching[0])', $healthScript);
         assertStringContains('new SQL.Database(bytes)', $healthScript);
