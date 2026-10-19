@@ -258,3 +258,7 @@ Consolidate the complete post-retraction workflow
 	Expanded docs/reference/author_post_retraction.md into the end-to-end guide
 	Covers signing, suppression, cleanup, verification, recovery, configuration and deployment
 	Specialist sweep/privacy references link back to the central guide
+
+Make the complete retraction guide discoverable on the website
+	Added Post Retraction: Complete Workflow under Operations in the Platform Docs catalog
+	Existing catalog-based static builds now include the guide
