@@ -432,7 +432,7 @@ final class ForteActivityController
     private function activityItemBoardLink(array $item): array
     {
         if ($item['kind'] === 'site_feature_flag') {
-            return ['href' => '/tools/feature-flags/', 'label' => 'site feature flags'];
+            return $this->routeServices->activityService()->activityItemLink($item);
         }
 
         if ($item['kind'] === 'profile_name_change') {
