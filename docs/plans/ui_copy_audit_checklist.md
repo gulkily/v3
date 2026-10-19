@@ -13,6 +13,7 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 ## Other cleanup
 
+- [x] **SQLite query prerequisite message** — Removed the initial database-loading explanation; retained the live status element for query feedback. PHP syntax and diff checks passed.
 - [x] **Activity site development heading** — [railspike_workflow.js](../../public/assets/railspike_workflow.js), activity panel. Removed “Site development · operators only” completely; workflow links remain. Browser regression passed. Commit: `6bf5bb65`.
 - [x] **Account setup status** — Removed duplicate ready/setup explanations and hid empty mirrored status. Retained actionable feedback, one Ready badge, and username. Six hook checks, phone/desktop rendering, and Chromium-to-Firefox backup/restore/recovery browser checks passed. Commit: `cd95d388`.
 - [x] **Key backup help** — Deleted backup/restore instructions already conveyed by controls and PNG format mechanics. Kept access-loss, forgotten-passphrase, and original-file warnings. Phone/desktop expanded panel, PHP syntax, and Chromium-to-Firefox PNG backup/restore/rejection checks passed. Commit: `01cf0f83`.
@@ -46,8 +47,29 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Recovery checks included a real insecure HTTP origin with a verified HTTPS link target and forced backup-reminder persistence failure. Specific message errors and unconfirmed-delivery/unsaved-recovery warnings remain visible.
 - The core-route smoke check passed after its obsolete backup-copy assertion was updated. The account hook suite passed with pre-existing missing `identityHint` warnings in its minimal fixture. No production data or external services were changed by these checks.
 
+- [x] **Security review entry** — Moved the operator-only link from standard and Forte Activity navigation to User Access beside Pending approvals; shortened it to “Security review”. Existing review URLs and authorization remain intact.
 ## New-member approval meaning — October 19, 2026
 
 - [x] Kept the conduct/integrity consequence in the existing new-member review, because the approval control cannot communicate this responsibility alone. Account-key access warnings remain; own-key and cross-account-key grants omit the new-member wording. Pending approvals now use the same confirmation. Policy/access/prepared-approval checks passed (14/14); desktop/phone browser review covered cancellation, signing failure and retry; real HTTP signed approval covered all three classifications, 390px/1280px new-member rendering, history/rebuild persistence and no overflow. See the [implementation summary](user_approval_meaning/user_approval_meaning_step4_implementation_summary.md).
 
 - Follow-up: at the user’s request, restored one-click pending-list approval, removing the confirmation introduced in this cycle. The pre-existing profile review and its conduct/integrity explanation remain. See the implementation summary for verification.
+
+## LLM exchange display — October 19, 2026
+
+- [x] Removed LLM exchange links from shared thread root/reply cards and stopped fetching exchange lists for thread pages. Post detail pages now render their own exchange links beside the post metadata, retaining approved-viewer, feature-flag, and retraction visibility checks. Two targeted write-API smoke tests passed, covering thread absence, root/reply detail links scoped to the selected post, anonymous/disabled UI absence, and retracted exchange privacy. PHP syntax and diff checks passed.
+
+## Agent reply availability notice — October 19, 2026
+
+- [x] Removed the completed-analysis availability notice and “View agent reply” link from shared root/reply cards and browser generation feedback. Pending and failure feedback remain. PHP/JavaScript syntax checks and three targeted write-API checks passed, covering selected-mode completion rendering and hidden browser feedback for generated/already-posted replies.
+## Compose first paint stability
+
+- [x] Dedicated thread and reply pages — moved existing identity/status feedback below the form so initialization does not move the action row. Existing errors and recovery feedback remain visible; no explanatory copy added. Reserved the image picker footprint during permission checks and rendered Outbox actions before JavaScript initialization. Verified mobile/desktop geometry across Light, Word97, Chicago, and Windark, upload permission states, and both Outbox saves with `node tests/browser/compose_layout_stability.mjs`.
+- [x] Compose action alignment follow-up — aligned Create thread and More actions without adding UI text; removed inherited submit spacing and allowed both controls to share one row on mobile. Regression now checks equal top edges and heights as well as first-paint stability.
+
+## Post retraction sweep
+
+- [x] Separate accepted retraction from local cleanup: one-time “Local cleanup queued.” acknowledgment after reload; enqueue failures keep a concise warning and existing Retry retraction control visible. No new navigation or internal storage explanation in the flow. Verified author/operator/account/partial browser scenarios and keyboard/Escape/touch menu behavior.
+
+- [x] Platform Docs retraction entry — concise title and task-focused description under Operations; reuses the existing document list and reader.
+
+- [x] **Agent button label** — Shortened “Request agent response” to “Agent” on shared thread root and reply cards. Updated the existing rendered-page assertion; targeted write-API smoke test, PHP syntax checks, and diff checks passed.

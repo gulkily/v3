@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Theme-specific selected nav styling](nav_active_theme_override/)
+- [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)
 - [User approval meaning](user_approval_meaning/)
 
 - [Rename windark theme to midnight](rename_windark_to_midnight/)
@@ -216,6 +218,10 @@ and repair its navigation and affected references. See the
 
 - [Fastmod modular scores](./fastmod_meta_score/fastmod_meta_score_step1_solution_assessment.md) — single-call rubric scoring and operator selection.
 
+- [Post retraction sweep](./post_retraction_sweep/post_retraction_sweep_step1_solution_assessment.md)
+
 - [Feature-flag change pages](feature_flag_change_pages/)
 
 - [Backup page redesign](backup_page_redesign/)
+
+- [GPG agent leak](gpg_agent_leak/)

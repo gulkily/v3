@@ -132,21 +132,6 @@
     node.textContent = text;
   }
 
-  function setFeedbackLink(node, text, href, label) {
-    if (!node) {
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = href;
-    link.textContent = label;
-
-    node.hidden = false;
-    node.textContent = "";
-    node.appendChild(document.createTextNode(text + " "));
-    node.appendChild(link);
-  }
-
   function placeAgentReplyFeedback(node, isUnfinished) {
     const card = node ? node.closest("[data-post-id]") : null;
     const actions = card ? card.querySelector(".post-card-actions") : null;
@@ -182,14 +167,6 @@
     }
     element.appendChild(document.createTextNode(value));
     parent.appendChild(element);
-  }
-
-  function agentReplyAnchorUrl(agentPostId) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("created_post_id", agentPostId);
-    url.searchParams.delete("__v");
-    url.hash = "post-" + agentPostId;
-    return url.pathname + url.search + url.hash;
   }
 
   function skippedReason(result, analysis) {
@@ -233,25 +210,12 @@
       pollScriptureReply(result.post_id);
     }
 
-    if (result.generation_status === "generated" && result.agent_post_id) {
+    if (["generated", "already_posted"].includes(result.generation_status) && result.agent_post_id) {
       placeAgentReplyFeedback(node, false);
-      setFeedbackLink(
-        node,
-        agentReplySubject(result) + " added below this post.",
-        agentReplyAnchorUrl(result.agent_post_id),
-        "View agent reply."
-      );
-      return true;
-    }
-
-    if (result.generation_status === "already_posted" && result.agent_post_id) {
-      placeAgentReplyFeedback(node, false);
-      setFeedbackLink(
-        node,
-        agentReplySubject(result) + " already exists below this post.",
-        agentReplyAnchorUrl(result.agent_post_id),
-        "View agent reply."
-      );
+      if (node) {
+        node.textContent = "";
+        node.hidden = true;
+      }
       return true;
     }
 

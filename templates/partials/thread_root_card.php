@@ -35,7 +35,7 @@ $codexHandoffSummaryLabel = match ($codexHandoffStatus) {
 };
 $agentReplyFeedbackText = '';
 if ($agentReplyPostedId !== '') {
-    $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' available.';
+    $agentReplyFeedbackText = '';
 } elseif ($agentReplyStatus === 'requested') {
     $agentReplyFeedbackText = $agentReplyFeedbackSubject . ' requested.';
 } elseif (in_array($agentReplyStatus, ['pending', 'complete', 'posting'], true)) {
@@ -173,8 +173,6 @@ $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
     $postAnalysisLabels = [];
 }
-$postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchangesByPostId : [];
-$postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
@@ -210,7 +208,7 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
       class="thread-reaction-button"
       data-action="request-agent-reply"
       data-post-id="<?= $e($post['post_id']) ?>"
-    >Request agent response</button>
+    >Agent</button>
 <?php endif; ?>
 <?= $partial('partials/railspike_workflow.php') ?>
 <?php if ($showCodexHandoffButton && !$isRetracted): ?>
@@ -224,15 +222,12 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?php if (!$isQdbQuoteRoot): ?>
 <?= $partial('partials/retract_post_control.php') ?>
 <?php endif; ?>
-<?php if ($postLlmExchanges !== []): ?>
-    <span class="meta">LLM exchanges: <?php foreach ($postLlmExchanges as $index => $exchange): ?><?php if ($index > 0): ?>, <?php endif; ?><a href="/tools/llm-exchanges/<?= (int) $exchange['id'] ?>">#<?= (int) $exchange['id'] ?></a><?php endforeach; ?></span>
-<?php endif; ?>
 <?php if (!$isQdbQuoteRoot): ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
     <p class="meta thread-reaction-feedback" data-role="thread-reaction-feedback" hidden></p>
 <?php endif; ?>
 <?php if (!$agentReplyIsUnfinished): ?>
-    <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
+    <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?></p>
 <?php endif; ?>
     <p class="meta codex-handoff-feedback" data-role="codex-handoff-feedback"<?= $codexHandoffFeedbackText === '' ? ' hidden' : '' ?>><?= $e($codexHandoffFeedbackText) ?></p>
 <?php if (is_array($codexHandoff)): ?>

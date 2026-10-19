@@ -146,7 +146,14 @@
         return themes[0];
       }
 
-      return themes[(currentIndex + 1) % themes.length];
+      var currentResolvedTheme = resolvedTheme(currentTheme);
+      for (var offset = 1; offset < themes.length; offset += 1) {
+        var candidate = themes[(currentIndex + offset) % themes.length];
+        if (resolvedTheme(candidate) !== currentResolvedTheme) {
+          return candidate;
+        }
+      }
+      return currentTheme;
     }
 
     function syncButton(theme) {

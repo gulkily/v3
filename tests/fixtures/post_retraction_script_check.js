@@ -70,6 +70,7 @@ async function scenario(confirmAnswer, submit, slow = false) {
     declined: await scenario(false, async () => ({ ok: true, retractionStatus: "complete" })),
     complete: await scenario(true, async () => ({ ok: true, retractionStatus: "complete" })),
     slow: await scenario(true, async () => ({ ok: true, retractionStatus: "complete" }), true),
+    cleanupFailed: await scenario(true, async () => ({ ok: true, retractionStatus: "complete", cleanupStatus: "failed" })),
     partial: await scenario(true, async () => ({ ok: true, retractionStatus: "partial", failedStep: "read_model_refresh" })),
     failure: await scenario(true, async () => ({ ok: false, error: "Only the post author can retract this post." })),
     unavailable: await scenario(true, null),

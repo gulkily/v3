@@ -24,6 +24,7 @@ final class UserAccessController
     {
         return $this->render('user_access.php', [
             'users' => ProfileRepository::approvedDirectoryUsers($this->services->pdo()),
+            'canSecurityReview' => $this->services->securityReviewAllowed(),
         ]);
     }
 

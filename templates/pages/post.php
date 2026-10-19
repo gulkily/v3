@@ -1,4 +1,5 @@
 <?php
+$postLlmExchanges = $llmExchangesByPostId[$post['post_id']] ?? [];
 $authorPublicKeyPath = trim((string) ($post['author_public_key_path'] ?? ''));
 $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
 ?>
@@ -30,6 +31,9 @@ $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
 ]), 2) ?>
 <?php if ($authorPublicKeyHref !== ''): ?>
     <p class="meta">Public key: <a href="<?= $e($authorPublicKeyHref) ?>"><?= $e($authorPublicKeyPath !== '' ? $authorPublicKeyPath : 'Open public key') ?></a></p>
+<?php endif; ?>
+<?php if ($postLlmExchanges !== []): ?>
+    <p class="meta">LLM exchanges: <?php foreach ($postLlmExchanges as $index => $exchange): ?><?php if ($index > 0): ?>, <?php endif; ?><a href="/tools/llm-exchanges/<?= (int) $exchange['id'] ?>">#<?= (int) $exchange['id'] ?></a><?php endforeach; ?></p>
 <?php endif; ?>
     <p><a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply to this post</a></p>
   </article>

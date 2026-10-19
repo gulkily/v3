@@ -57,7 +57,7 @@ Recommended mapping:
 
 Optional runtime setting:
 
-- `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`.
+- `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`. It may also be set in the private config file (`../forum-private/secrets.php`); an environment value takes precedence. Prefer the private config file over `SetEnv` in `public/.htaccess`, which is tracked and blocks `git pull` when edited.
 - `FORUM_UNICODE_AUTHORED_TEXT`: when set to `true`, subject/body prose may contain visible UTF-8 text such as Cyrillic. The default is disabled.
 - `FORUM_APP_VERSION_NOTIFICATION`: when set to `false`, disables browser-side app version polling and the reload banner. The default is enabled.
 - `LLM_CONVERSATION_RECORDING_ENABLED`: controls private exact-prompt/response capture. The default is enabled.
@@ -668,3 +668,12 @@ validate a disposable import with the target host's PHP, SQLite, zlib/OpenSSL,
 Git, and gzip tooling first. Follow the
 [import deployment check](instance_content_import.md#requirements-limits-and-deployment-check)
 for preview, coverage review, served-view verification, and repeat-run checks.
+
+## Retraction sweep operations
+
+See [local cleanup coverage and recovery](../reference/retraction_sweep.md).
+Deploy web/worker changes together and keep the existing single queue cron entry.
+Preview then run immediately or enqueue a sweep; inspect status and retry failures
+without signing another retraction. Canonical/history and backup removal are outside
+this operation. Pause/drain writers and workers before rollback; preserve signed
+evidence and avoid restoring diagnostic payloads.

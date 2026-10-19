@@ -33,7 +33,7 @@ final class ThreadRepository
         return ThreadRowSupport::hydrateThreadRows($rows);
     }
 
-    /** Base row selection shared with the editable listing query. */
+    /** Base row selection shared with the editable listing query; retracted threads are not listed. */
     public static function boardRowsSql(): string
     {
         return 'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
@@ -45,6 +45,7 @@ final class ThreadRepository
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE threads.retracted_at IS NULL
              ORDER BY last_activity_at DESC, root_post_id DESC';
     }
 

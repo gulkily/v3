@@ -37,6 +37,7 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
 <?php endif; ?>
         <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>
         <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
+        <button type="button" data-action="save-compose-outbox" disabled>Save reply to Outbox</button>
 <?php $replyMenuItems = (string) ob_get_clean(); ?>
 <?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $replyMenuItems]) ?>
   </div>

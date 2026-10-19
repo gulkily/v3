@@ -7,6 +7,7 @@ $selectedView ??= 'all';
 ?>
 <div class="paned-folder-tree" data-paned-activity-filter-tree role="listbox" aria-label="Activity views">
 <?php foreach ($viewCounts as $view): ?>
+<?php if ($view['key'] === 'security') continue; ?>
   <div
     class="paned-folder-item<?= $selectedView === $view['key'] ? ' paned-folder-item--selected' : '' ?>"
     data-paned-activity-view="<?= $e($view['key']) ?>"

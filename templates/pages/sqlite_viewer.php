@@ -40,7 +40,7 @@
         <textarea data-role="sqlite-query-input" aria-label="SQL query" cols="80" rows="24" spellcheck="false" placeholder="SELECT ..."></textarea>
 <?php endif; ?>
         <p><button type="button" data-action="run-sqlite-query">Run Query</button></p>
-        <p class="meta" data-role="sqlite-query-status" aria-live="polite" role="alert">Queries run only after the database is loaded.</p>
+        <p class="meta" data-role="sqlite-query-status" aria-live="polite" role="alert"></p>
       </div>
       <div class="sqlite-query-output">
         <div class="sqlite-result-scroll" data-role="sqlite-query-results"></div>

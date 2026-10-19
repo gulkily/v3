@@ -41,7 +41,7 @@ foreach ($viewCounts as $viewCount) {
     <div class="paned-board-main paned-panes-stack">
       <header class="paned-activity-context">
         <div class="paned-activity-heading">
-          <h1>Activity</h1>
+          <h1><?= $selectedView === 'security' ? 'Security review' : 'Activity' ?></h1>
           <a data-paned-activity-rss href="/activity/?view=<?= $e($selectedView) ?>&amp;format=rss"<?= in_array($selectedView, ['security', 'commits'], true) ? ' hidden' : '' ?>>RSS</a>
         </div>
 <?php if ($selectedView === 'security'): ?>
