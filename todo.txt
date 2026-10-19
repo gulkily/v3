@@ -74,8 +74,8 @@ explore server-cooperative content deletion
 xmake it easy to import/sync content from another instance
 	make this schedulable too
 
-identify targets for "ephemeral testing"
-	see https://zenmemes.com/threads/thread-20261006122804-184a64b6 
+xidentify targets for "ephemeral testing"
+x	see https://zenmemes.com/threads/thread-20261006122804-184a64b6
 
 make it easier to copy the bookmarklets as a one-liner js
 	this is what i need to add/bind bookmarklets in qutebrowser
