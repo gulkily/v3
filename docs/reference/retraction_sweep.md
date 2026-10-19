@@ -1,5 +1,7 @@
 # Local retraction sweep
 
+For the full feature lifecycle, see [Post retraction: complete workflow](author_post_retraction.md).
+
 Accepted author/operator retractions immediately queue local cleanup. The
 existing task-queue cron worker discovers missed/imported retractions and
 rechecks completed coverage every five minutes. No additional cron entry is

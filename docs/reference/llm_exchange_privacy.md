@@ -1,5 +1,7 @@
 # LLM exchange privacy after retraction
 
+For the full feature lifecycle, see [Post retraction: complete workflow](author_post_retraction.md).
+
 Retracting a post also withholds recorded LLM exchanges that included it as
 input or context. This applies to author and operator retractions. Approved
 users and operators use the same visibility policy; operator privileges do
