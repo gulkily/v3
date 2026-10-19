@@ -106,6 +106,16 @@
   width: 100%;
   margin-top: 0.75rem;
   border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.backup-downloads th:nth-child(1) {
+  width: 24%;
+}
+
+.backup-downloads th:nth-child(2),
+.backup-downloads th:nth-child(4) {
+  width: 6.5rem;
 }
 
 .backup-downloads th,
@@ -423,6 +433,10 @@
     height: 1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
+  }
+
+  .backup-downloads th:nth-child(n) {
+    width: auto;
   }
 
   .backup-downloads,

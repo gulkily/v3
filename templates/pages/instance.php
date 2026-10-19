@@ -45,8 +45,21 @@
     </section>
 <?php if ($imageBackupAvailable ?? false): ?>
     <section class="feature-flag-group">
-      <h2 class="feature-flag-group-heading">Image backup</h2>
-      <p>Download both the content repository below and <a href="<?= $e($imageBackupHref) ?>">the complete image collection (.tar)</a>. Keep files with matching repository revisions together. The SQLite index alone cannot restore images.</p>
+      <h2 class="feature-flag-group-heading">Images</h2>
+      <table class="backup-downloads" data-role="image-downloads">
+        <thead>
+          <tr><th scope="col">Item</th><th scope="col">Format</th><th scope="col">Description</th><th scope="col">Link</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row" data-label="Item">Image collection</th>
+            <td data-label="Format"><code>.tar</code></td>
+            <td data-label="Description">Every stored image with a checksum manifest tied to the repository revision.</td>
+            <td data-label="Link"><a href="<?= $e($imageBackupHref) ?>" aria-label="Complete image collection (.tar)">Download</a></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="meta">Download this together with the content repository above, and keep files with matching repository revisions together. The SQLite index alone cannot restore images.</p>
       <p class="feature-flags-notice meta">If the repository changes, refresh this page and download both again. Images remain available for backup when image display is disabled. Restore instructions are in the image backup runbook.</p>
     </section>
 <?php endif; ?>
