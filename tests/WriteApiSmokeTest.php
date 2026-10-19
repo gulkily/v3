@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
+use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -7521,7 +7522,7 @@ NODE;
             'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
         );
 
-        $this->deleteTree($home);
+        GpgHomeCleaner::dispose($home);
 
         return trim($publicKey) . "\n";
     }
@@ -7544,10 +7545,14 @@ NODE;
                 throw $e;
             }
             sleep(1);
-            $this->deleteTree($home);
+            GpgHomeCleaner::dispose($home);
             mkdir($home, 0700, true);
             $this->runCommand($home, $generate);
         }
+        // Not every test deletes its signing home; stop its agent and remove it at exit.
+        register_shutdown_function(static function () use ($home): void {
+            GpgHomeCleaner::dispose($home);
+        });
 
         return [
             'home' => $home,
@@ -7605,6 +7610,12 @@ NODE;
     private function deleteTree(string $path): void
     {
         if (!is_dir($path)) {
+            return;
+        }
+
+        if (str_starts_with(basename($path), 'forum-rewrite-approval-gpg-')) {
+            GpgHomeCleaner::dispose($path);
+
             return;
         }
 

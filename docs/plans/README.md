@@ -219,3 +219,5 @@ and repair its navigation and affected references. See the
 - [Feature-flag change pages](feature_flag_change_pages/)
 
 - [Backup page redesign](backup_page_redesign/)
+
+- [GPG agent leak](gpg_agent_leak/)

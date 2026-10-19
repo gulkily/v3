@@ -311,10 +311,6 @@ final class OpenPgpKeyInspector
 
     private function cleanup(string $tempDir): void
     {
-        foreach (glob($tempDir . '/*') ?: [] as $path) {
-            @unlink($path);
-        }
-
-        @rmdir($tempDir);
+        GpgHomeCleaner::dispose($tempDir);
     }
 }

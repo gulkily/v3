@@ -230,3 +230,6 @@ No-JavaScript basic access — plan set aside
 	Plan: docs/plans/nojs_basic_access_step3_development_plan.md
 	Steps 1 and 2 approved; Step 3 draft, implementation not started.
 	Revalidate against current code before resuming plan review.
+
+- Pre-existing test failures on main (found during gpg_agent_leak Stage 5): ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest, LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract, ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts, WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence, WriteApiSmokeTest::testOperatorSecurityReviewRequiresAuthenticatedRootAndCorrelatesPolicyChanges
+- AgentIdentityServiceTest profile page assertion 'Visible username:</strong> reply-agent' fails on main (found during gpg_agent_leak Stage 4)
