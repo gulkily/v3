@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Listing query dialog](listing_query_dialog/)
+
 - [Feature flags search and status toolbar](feature_flags_toolbar/)
 - [Username change gate](username_change_gate/)
 - [Music media embeds](music_media_embeds/)
