@@ -7,9 +7,7 @@ namespace ForumRewrite\Agent;
 use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Analysis\PostAnalysisStore;
 use ForumRewrite\Analysis\PostAnalysisService;
-use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
-use ForumRewrite\Support\GeneratedReplyTextNormalizer;
 use ForumRewrite\Write\LocalWriteService;
 use RuntimeException;
 
@@ -181,7 +179,7 @@ final class AgentReplyFulfillmentService
                 $requester = $existing['request_context']['agent_reply_request']['requested_by_identity_id'] ?? null;
                 $context['participants'] = $this->participants?->resolve($post, $requester) ?? [];
                 $generation = $generationForContext === null
-                    ? $this->generationFromAnalysis($analysis)
+                    ? $this->generationFromTask(AgentResponseTask::defaultForPost($context), $context)
                     : $generationForContext($context);
                 $stored = $this->generationStore->saveComplete($generationContext, $generation);
             } catch (\Throwable $throwable) {
@@ -272,36 +270,6 @@ final class AgentReplyFulfillmentService
             );
             return $this->failedResponse($failed);
         }
-    }
-
-    /**
-     * @param array<string, mixed> $analysis
-     * @return array<string, mixed>
-     */
-    private function generationFromAnalysis(array $analysis): array
-    {
-        $engagement = is_array($analysis['engagement'] ?? null) ? $analysis['engagement'] : [];
-        $respondability = is_array($analysis['respondability'] ?? null) ? $analysis['respondability'] : [];
-        $text = GeneratedReplyTextNormalizer::normalize(
-            (string) ($engagement['suggested_response'] ?? ''),
-            $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
-            $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
-        );
-        if ($text === '') {
-            throw new RuntimeException('Completed analysis did not include a suggested_response.');
-        }
-
-        return [
-            'provider' => (string) ($analysis['provider'] ?? 'analysis'),
-            'provider_model' => (string) ($analysis['provider_model'] ?? 'analysis'),
-            'provider_request_id' => isset($analysis['provider_request_id']) ? (string) $analysis['provider_request_id'] : null,
-            'response_text' => $text,
-            'response_style' => (string) ($engagement['response_style'] ?? 'curious'),
-            'response_intent' => (string) ($respondability['best_response_mode'] ?? 'answer'),
-            'raw_response' => [
-                'source' => 'analysis_suggested_response',
-            ],
-        ];
     }
 
     /**

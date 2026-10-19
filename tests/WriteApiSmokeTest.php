@@ -861,8 +861,9 @@ final class WriteApiSmokeTest
             assertSame(1, $unicodeRiskCount);
             assertSame(1, $generatedCount);
             assertSame('stub', $generatedRow['provider']);
-            assertSame('stub/post-analysis', $generatedRow['provider_model']);
-            assertSame('analysis_suggested_response', $rawResponse['source']);
+            assertSame('stub/agent-response', $generatedRow['provider_model']);
+            assertStringContains('Be warm, interested, and direct', $rawResponse['messages'][0]['content']);
+            assertStringContains('author: approved=', $rawResponse['messages'][0]['content']);
             assertStringContains('data-created-post-id="' . $postId . '"', $threadPage);
             assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $threadPage);
             assertStringNotContains('data-agent-reply-work=', $threadPage);
@@ -1913,6 +1914,45 @@ PHP);
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
             $_COOKIE = [];
         }
+    }
+
+    public function testLegacyReplyWriterRetryAndCompletedDraftRecovery(): void
+    {
+        $previous = $this->useStubLlmProvider();
+        try {
+            foreach (['fresh', 'retry', 'draft'] as $case) {
+                [$root, $db, $artifacts] = $this->createTempEnvironment();
+                $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+                $id = $this->createAnalyzedThread($app, $db);
+                $hash = $this->contentHashForAnalysis($db, $id);
+                $pdo = new PDO('sqlite:' . $db);
+                $store = new SqliteAgentReplyGenerationStore($pdo);
+                $requester = (string) $pdo->query('SELECT identity_id FROM profiles WHERE is_approved = 1 LIMIT 1')->fetchColumn();
+                $context = ['post_id' => $id, 'content_hash' => $hash, 'analysis_hash' => 'legacy'];
+                $store->requestForTarget($context, ['requested_by_identity_id' => $requester]);
+                $row = $store->claimRequestedForPost($id);
+                if ($case === 'retry') {
+                    $store->saveFailed($id, $hash, 'legacy', 'provider_configuration_error', 'Provider missing');
+                    assertSame('failed', $app->fulfillAgentReplyRequest($row)['generation_status']);
+                    $pdo->exec('UPDATE profiles SET is_approved = 0 WHERE identity_id = ' . $pdo->quote($requester));
+                    $app->retryAgentReplyRequest($id, $hash);
+                    $row = $store->claimRequestedForPost($id);
+                } elseif ($case === 'draft') {
+                    $store->saveComplete($context, ['response_text' => 'Preserved completed draft.', 'raw_response' => ['historical' => true]]);
+                }
+                $done = $app->fulfillAgentReplyRequest($row);
+                assertSame('generated', $done['generation_status']);
+                $saved = $store->findByTarget($id, $hash);
+                assertSame($case === 'draft' ? 'Preserved completed draft.' : 'Stub agent response.', $saved['response_text']);
+                if ($case !== 'draft') {
+                    $prompt = $saved['raw_response']['messages'][0]['content'];
+                    assertStringContains('Be warm, interested, and direct', $prompt);
+                    assertStringContains($case === 'retry' ? 'approved=false' : 'approved=true', $prompt);
+                }
+                assertSame('already_posted', $app->fulfillAgentReplyRequest($row)['generation_status']);
+                assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($id))->fetchColumn());
+            }
+        } finally { $this->restoreLlmProviderEnv($previous); $_COOKIE = []; }
     }
 
     public function testTaskQueueProcessesQueuedAgentReplyOnce(): void

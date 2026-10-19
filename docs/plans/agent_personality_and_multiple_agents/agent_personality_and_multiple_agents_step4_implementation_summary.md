@@ -15,3 +15,8 @@ Step 3 approved. Planning commit: `46ead3d3`. Implementation in progress on `fea
 - Changes: one personality prompt shared by text and verified-JSON generation, with eager Bible/Jesus engagement and task/quotation constraints retained. Six fixed review cases cover ordinary, Bible, Jesus, scripture, interpretation, and logic topics.
 - Verification: `php tests/run.php AgentResponseGeneratorTest AgentResponseTaskTest ScriptureVerifiedReplyTest` — 28/28 passed. Shared prompt presence verified for selectable modes and verified scripture; actual response quality remains Stage 5 acceptance work.
 - Notes: prompt configuration and completion limits unchanged. Review cases were saved in the same edit as the new prompt, before any model evaluation; no claim of independently frozen pre-edit evaluation.
+
+## Stage 3 - Automatic, legacy, and recovery paths
+- Changes: fresh legacy/automatic replies use the common task writer after existing analysis eligibility gates. Completed drafts remain publishable without regeneration; retries resolve current status. Stage 2 commit: `00986420`.
+- Verification: generation/task/command suites plus queued publication and legacy gate checks — 26/26 passed. Automatic analysis-to-reply publication and new legacy fresh/retry/completed-draft scenarios — 2/2 passed. Repeated execution publishes once; retry observes changed approval; completed draft text is retained. `git diff --check` passed.
+- Notes: fresh legacy generation adds one writer call; no stored analysis or published replies are rewritten. Provider absence uses existing failure/recovery handling; additional coverage follows in acceptance.
