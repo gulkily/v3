@@ -64,3 +64,8 @@ Debug mode: enabled
 - **Not run:** complete repository test suite and browsers other than Chromium; focused checks are not a full-suite or cross-browser claim.
 - **Deferred by approved split:** QDB/Forte, activity/tags/details, directory/profile lists, offline reader integration and unavailable-source explanations. The broader every-listing request remains follow-up work; no claim of full-site coverage.
 - Unrelated todo and effort-estimation changes remain outside this feature's commits.
+
+## Merge verification
+
+- User authorized merging and pushing `feature/listing-query-dialog` to `main`. Preserved local and remote todo notes and both plan-index entries during merge conflicts.
+- Passed on the merged tree: focused PHP route, board, presentation, and query-catalog checks (10/10), and `node tests/browser/listing_query_dialog.mjs` Chromium acceptance replay. Full repository suite was not run.

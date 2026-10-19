@@ -248,4 +248,3 @@ in dark theme, the two modules that are after each other create a brigher border
 
 i want to be able to use as image posting utility, so would be nice to have an image be non-public by choice
 	like only if someone has the link
-
