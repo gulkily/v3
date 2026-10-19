@@ -36,3 +36,13 @@ Branch: `feature/backup_page_redesign`, based on `feature/feature_flag_change_pa
   - Previously the images-enabled page had no automated coverage (only the browser test); `BackupPageTest` now covers it.
 - Notes:
   - The `word97` full-page screenshot shows the theme's fixed status bar mid-page; it is a screenshot artifact of that theme, not page content.
+
+## Stage 3 - Remove the old Downloads module and reorder
+- Changes:
+  - Most of this stage's page work already landed in Stages 1-2: the download links left the old card (now "About these downloads") and Recent included items sits between the sections and the closing card. This stage confirms the end state and locks it in with tests; no template change was needed.
+  - `BackupPageTest`: asserts the explainer headings follow "About these downloads", which follows Recent included items; every download link (text and image) appears exactly once; exactly two download tables render.
+- Verification:
+  - Explainer text ("Why this matters" through the end of `instance.php`) diffed against `main`: identical.
+  - `php tests/run.php LocalAppSmokeTest BackupPageTest`: passed, 144 of 144. The new test failed once on first run because it expected an escaped apostrophe in "Explain it like I'm five"; the template emits it raw, and the test was corrected.
+- Notes:
+  - The `>Downloads</h2>` absence was already asserted in Stage 2.

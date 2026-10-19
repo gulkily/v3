@@ -27,6 +27,21 @@ final class BackupPageTest
         });
     }
 
+    public function testExplainersCloseThePageAfterRecentItemsAndEveryDownloadLinkAppearsOnce(): void
+    {
+        $this->fixture(true, function (string $root, string $db): void {
+            $html = $this->render($root, $db, '/tools/backup/');
+            assertOrdered($html, '>Recent included items</h2>', '>About these downloads</h2>');
+            foreach (['Why this matters', 'Explain it like I\'m five', 'For technical users'] as $heading) {
+                assertOrdered($html, '>About these downloads</h2>', '<h3>' . $heading . '</h3>');
+            }
+            foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'] as $href) {
+                assertSame(1, substr_count($html, 'href="' . $href));
+            }
+            assertSame(2, substr_count($html, '<table class="backup-downloads"'));
+        });
+    }
+
     public function testImagesSectionIsAbsentWhenImageBackupIsUnavailable(): void
     {
         $this->fixture(false, function (string $root, string $db): void {
