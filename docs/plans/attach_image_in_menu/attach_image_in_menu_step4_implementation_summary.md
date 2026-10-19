@@ -20,3 +20,15 @@ Branch: `attach_image_in_menu`. Planning commit: `0bd7b1c4`.
   - Rendered markup diff: covered by the smoke-test assertion; no separate byte-level diff was captured.
 - Notes:
   - `todo.txt` has an unrelated uncommitted entry (the x button item) and is excluded from this commit.
+
+## Stage 2 - Attach image in the thread menu
+- Changes:
+  - Thread compose renders a hidden `Attach image` entry (`.image-upload-choose`) in the `…` menu; `image_compose_fields.php` omits its own button when `imageChooseInMenu` is set, and otherwise renders it captioned `Attach image`.
+  - `image_upload.js` finds the entry from the form, hides it until the member is eligible, disables it while busy or ineligible, labels it `Replace image` once an image is attached, and returns cancel focus to the `…` toggle when the menu is closed.
+  - Browser test opens `…` before using the entry and asserts it is hidden when ineligible and shown when eligible.
+- Verification:
+  - `node tests/browser/image_content_browser.mjs`: passed (all listed checks, including the 390px 44px target check and picker cancel).
+  - `php tests/run.php LocalAppSmokeTest ImageContentTest`: passed (146 run, 146 passed).
+  - Busy-state disabling is not separately asserted in the browser test.
+- Notes:
+  - Reply forms still render the inline button until Stage 3; the old caption survives only in `image_prepare.js` error text ("Choose an image of at most 32 MiB…"), to be reviewed in Stage 4.
