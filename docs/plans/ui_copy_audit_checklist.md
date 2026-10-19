@@ -68,3 +68,5 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Separate accepted retraction from local cleanup: one-time “Local cleanup queued.” acknowledgment after reload; enqueue failures keep a concise warning and existing Retry retraction control visible. No new navigation or internal storage explanation in the flow. Verified author/operator/account/partial browser scenarios and keyboard/Escape/touch menu behavior.
 
 - [x] Platform Docs retraction entry — concise title and task-focused description under Operations; reuses the existing document list and reader.
+
+- [x] **Agent button label** — Shortened “Request agent response” to “Agent” on shared thread root and reply cards. Updated the existing rendered-page assertion; targeted write-API smoke test, PHP syntax checks, and diff checks passed.

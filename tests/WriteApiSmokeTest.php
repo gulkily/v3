@@ -1258,7 +1258,7 @@ PHP);
 
             assertStringNotContains('data-action="request-agent-reply"', $anonymousThreadPage);
             assertStringContains('data-action="request-agent-reply"', $approvedThreadPage);
-            assertStringContains('Request agent response', $approvedThreadPage);
+            assertStringContains('>Agent</button>', $approvedThreadPage);
             assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
             assertStringContains('Logic analysis', $approvedThreadPage);
             $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
