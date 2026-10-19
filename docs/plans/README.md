@@ -205,3 +205,5 @@ and repair its navigation and affected references. See the
 - [Scripture response quality and latency](./scripture_response_quality/scripture_response_quality_step1_solution_assessment.md) — proportionate scripture replies and faster complete delivery.
 
 - [Fastmod modular scores](./fastmod_meta_score/fastmod_meta_score_step1_solution_assessment.md) — single-call rubric scoring and operator selection.
+
+- [Post retraction sweep](./post_retraction_sweep/post_retraction_sweep_step1_solution_assessment.md)
