@@ -383,7 +383,7 @@ final class LocalAppSmokeTest
             $board = $this->render($application, '/');
             $authStatus = $this->render($application, '/api/auth_status');
 
-            assertStringContains('This is your profile.', $profile);
+            assertStringContains('Member activity', $profile);
             assertStringContains('User Access', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
@@ -679,7 +679,7 @@ PHP;
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
-            assertStringContains('This is your profile.', $ownProfileAfterClear);
+            assertStringContains('Member activity', $ownProfileAfterClear);
             assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
