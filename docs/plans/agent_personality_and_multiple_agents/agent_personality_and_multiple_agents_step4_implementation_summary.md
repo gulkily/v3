@@ -9,4 +9,9 @@ Step 3 approved. Planning commit: `46ead3d3`. Implementation in progress on `fea
 ## Stage 1 - Authoritative participation context
 - Changes: resolve author and distinct requester through existing profile/operator policy at generation time; serialize only boolean/unknown status facts into the system prompt. No public API, authorization, SQL query, or schema changes.
 - Verification: `php tests/run.php AgentParticipantContextTest AgentResponseTaskTest AgentResponseGeneratorTest WriteApiSmokeTest::testGenerateAgentReplyPersistsAndFulfillsSelectedResponseMode` — 25/25 passed; `git diff --check` passed. Includes separate requester, independent approval/operator changes, missing identities, hostile status text, and requested publication.
-- Notes: the read model remains the existing authority for approval; unknown profiles produce unknown status. No display or navigation changes. Stage 1 commit recorded at the next boundary.
+- Notes: the read model remains the existing authority for approval; unknown profiles produce unknown status. No display or navigation changes. Commit: `eae10ce1`.
+
+## Stage 2 - Shared personality guidance
+- Changes: one personality prompt shared by text and verified-JSON generation, with eager Bible/Jesus engagement and task/quotation constraints retained. Six fixed review cases cover ordinary, Bible, Jesus, scripture, interpretation, and logic topics.
+- Verification: `php tests/run.php AgentResponseGeneratorTest AgentResponseTaskTest ScriptureVerifiedReplyTest` — 28/28 passed. Shared prompt presence verified for selectable modes and verified scripture; actual response quality remains Stage 5 acceptance work.
+- Notes: prompt configuration and completion limits unchanged. Review cases were saved in the same edit as the new prompt, before any model evaluation; no claim of independently frozen pre-edit evaluation.

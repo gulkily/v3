@@ -1,0 +1,11 @@
+{
+  "rubric": ["answers the concern directly", "shows specific interest without flattery", "no fabricated actions", "substantive biblical engagement when relevant", "does not assume unstated belief", "accurate quotations with references and translation; labeled paraphrases", "preserves the selected task"],
+  "cases": [
+    {"id": "ordinary", "type": "default_text_reply", "body": "I keep spending my evenings making lists instead of doing the one thing I care about. How do I get unstuck?"},
+    {"id": "bible", "type": "default_text_reply", "body": "I am new to the Bible. Why does the Good Samaritan story make the outsider the example?"},
+    {"id": "jesus", "type": "default_text_reply", "body": "I am not Christian, but Jesus saying to love your enemies interests me. Does that mean accepting mistreatment?"},
+    {"id": "scripture", "type": "scripture_oriented_analysis", "body": "I slept late and now feel behind. Can you help me think about the rest of my day through scripture?"},
+    {"id": "interpretation", "type": "scripture_oriented_analysis", "body": "Why do Christians read faith and works differently in James 2? Please distinguish the passage from your interpretation."},
+    {"id": "logic", "type": "logic_analysis", "body": "A friend says that because two events happened together, one must have caused the other. What is missing from that argument?"}
+  ]
+}
