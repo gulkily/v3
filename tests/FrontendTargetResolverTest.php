@@ -74,6 +74,49 @@ final class FrontendTargetResolverTest
         }
     }
 
+    public function testConventionalDiscoveryRequiresUniqueProofAndNeverMasksExplicitFailure(): void
+    {
+        $root = '/test-checkout'; $repo = '/test-repository'; $db = '/test-database';
+        $identity = \ForumRewrite\Support\FrontendInstance::identity($root, $repo, $db);
+        $router = '<?php if ($_SERVER["REQUEST_URI"] === "/__v3/status-identity") { header("X-V3-Instance: ' . $identity . '"); http_response_code(204); } else { http_response_code(503); }';
+        $matching = new FrontendTestServer($router);
+        $other = new FrontendTestServer('<?php echo "unrelated";');
+        $duplicate = new FrontendTestServer($router);
+        try {
+            $resolver = new FrontendTargetResolver($root, $repo, $db, [$matching->url, $other->url]);
+            $result = $resolver->check($resolver->resolve());
+            assertSame('error', $result['status']);
+            assertSame($matching->url, $result['url']);
+            assertSame('verified local endpoint', $result['source']);
+            $ambiguous = new FrontendTargetResolver($root, $repo, $db, [$matching->url, $duplicate->url]);
+            assertSame('ambiguous', $ambiguous->check($ambiguous->resolve())['status']);
+            $unrelated = new FrontendTargetResolver($root, $repo, $db, [$other->url]);
+            assertSame('unresolved', $unrelated->check($unrelated->resolve())['status']);
+            $explicit = $resolver->check($resolver->resolve($matching->url));
+            assertSame('error', $explicit['status']);
+            assertSame('--url', $explicit['source']);
+        } finally { $matching->close(); $other->close(); $duplicate->close(); }
+    }
+
+    public function testHungCandidateCannotEstablishUniquenessAndBudgetIsShared(): void
+    {
+        $socket = stream_socket_server('tcp://127.0.0.1:0');
+        $url = 'http://' . stream_socket_get_name($socket, false);
+        $identity = \ForumRewrite\Support\FrontendInstance::identity('/test-checkout', '/test-repo', '/test-db');
+        $matching = new FrontendTestServer('<?php header("X-V3-Instance: ' . $identity . '"); http_response_code(204);');
+        try {
+            $resolver = new FrontendTargetResolver('/test-checkout', '/test-repo', '/test-db', [$url, $matching->url]);
+            $start = microtime(true);
+            assertSame('unresolved', $resolver->check($resolver->resolve())['status']);
+            assertSame(true, microtime(true) - $start < 3.2);
+            // Repeated hung candidates still share the single deadline.
+            $resolver = new FrontendTargetResolver('/test-checkout', '/test-repo', '/test-db', array_fill(0, 5, $url));
+            $start = microtime(true);
+            assertSame('unresolved', $resolver->check($resolver->resolve())['status']);
+            assertSame(true, microtime(true) - $start < 3.2);
+        } finally { fclose($socket); $matching->close(); }
+    }
+
     public function testRejectsUnsafeUrls(): void
     {
         foreach (['file:///tmp/test', 'http://user:secret@localhost', "http://localhost/\r\nX: x", 'http://localhost/#fragment'] as $url) {
