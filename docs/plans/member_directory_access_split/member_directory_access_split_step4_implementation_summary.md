@@ -38,3 +38,10 @@ Standard member directory and Tools access management. Forte retains its current
 - Passed: Standard Users → member → activity/messaging rendering and Tools → User Access → exact identity → signed approval → confirmed history, including cancellation/retry, public evidence, legacy links, live authorization and static freshness checks.
 - Inapplicable: Production deployment, external-service changes and schema migration are outside the approved scope. The whole repository test suite was not run; reported results are scoped regressions and the two smoke classes, with the baseline failure above.
 - Request outcome: Forte exclusion implemented; no further requests pending. Public routes and existing policy/signing contracts retained.
+
+## Follow-up request — User Access icon
+
+- Request: Record the missing User Access icon for icon themes and prevent the recurring omission.
+- Disposition and reason: Separate follow-up; user requested a reminder, so icon implementation remains pending. Recorded the specific task in `todo.txt` and a standing navigation-icon check in `AGENTS.md`.
+- Approval status: Reminder/documentation authorized; no icon implementation requested in this follow-up.
+- Outcome: Pending icon mapping for both Tools launcher and subnavigation in Word97, Chicago, and Windark, with visual verification in each theme.

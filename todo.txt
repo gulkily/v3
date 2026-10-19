@@ -189,3 +189,9 @@ Member directory/access split implementation complete
 Existing feature-flag test failure
 	WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence
 	Reproduced on main ed71ae0f: prepared feature-flag result lacks post_id used at tests/WriteApiSmokeTest.php:4261
+
+Add missing User Access icon for icon themes
+	Map /tools/user-access/ in public/assets/theme-nav-icons.css
+	Cover both Tools launcher and Tools subnavigation in Word97, Chicago, and Windark
+	Verify the icon renders in all three themes; this omission has recurred three times
+	Standing navigation-icon reminder added to AGENTS.md; icon implementation remains pending
