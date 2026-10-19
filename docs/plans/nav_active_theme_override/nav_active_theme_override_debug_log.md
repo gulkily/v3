@@ -59,3 +59,24 @@ Debug mode resolved from the project marker `.railspike_debug_on` (new workflow,
 ### Uncertain assessments
 
 - The before/do/after split cost three file reads for a three-stage plan. For small plans, the before checklist could be merged into do; one cycle is not enough evidence.
+
+## 2026-10-19T19:58Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md` › Stage Boundary Protocol, "Run applicable verification… capture commands/results": useful. It prompted rerunning the failing PHP tests against the original CSS, which showed all 6 failures were pre-existing.
+- `step4_implementation_after.md` › item 7, "Identify reproduced baseline failures": useful, and directly applied. Keep it.
+- `RAILSPIKE.md` › Key Rules, "Report Step 4 checks as passed, failed, blocked, pending, or inapplicable": helped state honestly that Stages 2–3 were not done when the user ended the cycle early.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Effort estimation (unselected cycle); Follow-up Cycles Before Merge; Documentation-only scope.
+
+### Uncertain assessments
+
+- Railspike has no explicit guidance for a user ending Step 4 early, with planned stages unstarted, and asking to merge. The minimum commit count rule (1 + stages) can't be met. A short "early closeout" rule (record the unstarted stages, disposition and follow-up) might help.
+- The project's "review before commit" preference conflicts with Railspike's commit-before-next-stage cadence. Pausing for review at each stage boundary resolved it here, but neither document mentions the other.
