@@ -41,7 +41,7 @@ $threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
   </p>
   <details class="compose-disclosure" data-compose-disclosure="tags-subject"<?= $threadComposeTagsSubjectOpen ? ' open' : '' ?>>
     <summary>Subject &amp; tags <span class="meta" data-role="compose-disclosure-summary"><?= $e($threadComposeTagsSubjectSummary) ?></span></summary>
-    <label>Board tags<input type="text" name="board_tags" value="<?= $e($boardTags) ?>"></label>
+    <label>Board tags<input type="text" name="board_tags" autocapitalize="none" value="<?= $e($boardTags) ?>"></label>
     <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="board_tags" hidden>
       <span data-role="compose-field-normalization-message"></span>
       <button
