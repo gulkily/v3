@@ -1295,6 +1295,7 @@
       canonicalRecord: data.canonical_record || "",
       alreadyRetracted: data.already_retracted === true,
       retractionStatus: data.retraction_status || "",
+      cleanupStatus: data.cleanup_status || "",
       failedStep: data.failed_step || "",
       commitSha: data.commit_sha || "",
       serverTiming: serverTiming || {},
@@ -3275,12 +3276,24 @@
     }
 
     function normalizeComposeField(field, options) {
-      const result = normalizeComposeText(field.value, Object.assign({}, options || {}, {
+      const source = field.value;
+      const config = Object.assign({}, options || {}, {
         allowUnicodeAuthoredText: unicodeAuthoredTextEnabled && (field.name === "subject" || field.name === "body"),
         allowEmojiAuthoredText: emojiAuthoredTextEnabled && (field.name === "subject" || field.name === "body"),
-      }));
+      });
+      const result = normalizeComposeText(source, config);
       if (field.value !== result.text) {
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        const direction = field.selectionDirection;
         field.value = result.text;
+        if (typeof start === "number" && typeof end === "number" && typeof field.setSelectionRange === "function") {
+          field.setSelectionRange(
+            normalizeComposeText(source.slice(0, start), config).text.length,
+            normalizeComposeText(source.slice(0, end), config).text.length,
+            direction
+          );
+        }
       }
 
       return result;

@@ -29,6 +29,17 @@ final class PublicOfflineSnapshotBuilder
         int $threadLimit = self::DEFAULT_THREAD_LIMIT,
         int $maxBytes = self::DEFAULT_MAX_BYTES,
     ): array {
+        if (!is_file($sourcePath)) throw new RuntimeException('Offline snapshot source database does not exist.');
+        $token = \ForumRewrite\Retraction\PublicationGuard::begin($sourcePath);
+        $build = function () use ($sourcePath, $targetPath, $threadLimit, $maxBytes, $token): array {
+            if ($token !== null && \ForumRewrite\Retraction\PublicationGuard::generation($token['root']) !== $token['generation']) throw new RuntimeException('Retraction changed before snapshot assembly.');
+            return $this->buildWhileLocked($sourcePath, $targetPath, $threadLimit, $maxBytes, $token);
+        };
+        return $token === null ? $build() : \ForumRewrite\Retraction\PublicationGuard::withLock($token['root'], $build);
+    }
+
+    private function buildWhileLocked(string $sourcePath, string $targetPath, int $threadLimit, int $maxBytes, ?array $retractionToken): array
+    {
         if (!is_file($sourcePath)) {
             throw new RuntimeException('Offline snapshot source database does not exist.');
         }
@@ -111,10 +122,14 @@ final class PublicOfflineSnapshotBuilder
             if ($size === false || $size > $maxBytes) {
                 throw new RuntimeException('Offline snapshot exceeded its configured size limit.');
             }
-            if (!rename($temporaryPath, $targetPath)) {
-                throw new RuntimeException('Unable to publish offline snapshot.');
-            }
-            $this->writeManifest($targetPath, $generatedAt, $size);
+            \ForumRewrite\Retraction\PublicationGuard::publish($retractionToken, $targetPath, function () use ($temporaryPath, $targetPath, $generatedAt, $size, $retractionToken): void {
+                if (!rename($temporaryPath, $targetPath)) throw new RuntimeException('Unable to publish offline snapshot.');
+                $this->writeManifest($targetPath, $generatedAt, $size);
+                if ($retractionToken !== null) {
+                    $manifest = dirname($targetPath) . '/' . (basename($targetPath) === 'snapshot.sqlite3' ? 'manifest.json' : basename($targetPath) . '.manifest.json');
+                    if (file_put_contents($manifest . '.retraction-generation', $retractionToken['generation']) === false) throw new RuntimeException('Cannot record manifest generation.');
+                }
+            });
 
             return [
                 'generated_at' => $generatedAt,

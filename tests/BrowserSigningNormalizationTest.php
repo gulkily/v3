@@ -4,6 +4,49 @@ declare(strict_types=1);
 
 final class BrowserSigningNormalizationTest
 {
+    public function testComposeNormalizationPreservesSelection(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+global.window = {};
+global.localStorage = { getItem(){ return ''; }, setItem(){}, removeItem(){} };
+global.document = { addEventListener(){}, querySelector(){ return null; } };
+global.navigator = {};
+const fs = require('fs');
+const vm = require('vm');
+const assert = require('node:assert/strict');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInThisContext(source);
+const normalizeComposeText = window.__forumComposeNormalization.normalizeComposeText;
+const unicodeAuthoredTextEnabled = false;
+const emojiAuthoredTextEnabled = false;
+const start = source.indexOf('    function normalizeComposeField(');
+const end = source.indexOf('    function fieldLabel(', start);
+eval(source.slice(start, end));
+function check(text, start, end, expected, expectedStart, expectedEnd, options) {
+  let value = text;
+  const field = {
+    name: 'body', selectionStart: start, selectionEnd: end, selectionDirection: 'backward',
+    get value(){ return value; },
+    set value(text){ value = text; this.selectionStart = this.selectionEnd = text.length; },
+    setSelectionRange(start, end, direction){
+      this.selectionStart = start; this.selectionEnd = end; this.selectionDirection = direction;
+    }
+  };
+  normalizeComposeField(field, options);
+  assert.equal(field.value, expected);
+  assert.equal(field.selectionStart, expectedStart);
+  assert.equal(field.selectionEnd, expectedEnd);
+  assert.equal(field.selectionDirection, 'backward');
+}
+check('hello “world', 7, 7, 'hello "world', 7, 7);
+check('a…selected—tail', 2, 10, 'a...selected-tail', 4, 12);
+check('a☃selected tail', 2, 10, 'aselected tail', 1, 9, { removeUnsupported: true });
+check('plain draft', 3, 6, 'plain draft', 3, 6);
+process.stdout.write(JSON.stringify({ ok: true }));
+NODE);
+        assertSame(true, $result['ok']);
+    }
+
     /**
      * @return array<string, mixed>
      */

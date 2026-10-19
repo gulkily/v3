@@ -173,8 +173,6 @@ $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
     $postAnalysisLabels = [];
 }
-$postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchangesByPostId : [];
-$postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
@@ -223,9 +221,6 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
 <?php endif; ?>
 <?php if (!$isQdbQuoteRoot): ?>
 <?= $partial('partials/retract_post_control.php') ?>
-<?php endif; ?>
-<?php if ($postLlmExchanges !== []): ?>
-    <span class="meta">LLM exchanges: <?php foreach ($postLlmExchanges as $index => $exchange): ?><?php if ($index > 0): ?>, <?php endif; ?><a href="/tools/llm-exchanges/<?= (int) $exchange['id'] ?>">#<?= (int) $exchange['id'] ?></a><?php endforeach; ?></span>
 <?php endif; ?>
 <?php if (!$isQdbQuoteRoot): ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>

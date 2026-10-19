@@ -1,4 +1,4 @@
-<section class="stack" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>"<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?>>
+<section class="stack compose-page" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>"<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?>>
 <?php if (is_array($parentPost)): ?>
   <article class="card reply-context-card" aria-labelledby="reply-context-title">
     <h2 id="reply-context-title">Replying to</h2>
@@ -16,7 +16,7 @@
 <?php endif; ?>
   <article class="card">
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
-    <p class="meta" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/reply_form.php', ['showBodyLabel' => false]), 2) ?>
+    <p class="meta" data-role="compose-identity-status" hidden></p>
   </article>
 </section>

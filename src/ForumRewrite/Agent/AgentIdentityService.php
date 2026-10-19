@@ -12,6 +12,7 @@ use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
+use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Write\StaticArtifactInvalidator;
 use RuntimeException;
@@ -171,7 +172,7 @@ final class AgentIdentityService
                 'Unable to export reply-agent private key'
             );
         } finally {
-            $this->deleteTree($home);
+            GpgHomeCleaner::dispose($home);
         }
 
         return [
@@ -365,28 +366,5 @@ final class AgentIdentityService
     private function elapsedMilliseconds(int $startedAt): float
     {
         return round((hrtime(true) - $startedAt) / 1000000, 1);
-    }
-
-    private function deleteTree(string $path): void
-    {
-        if (!is_dir($path)) {
-            return;
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-
-        foreach ($iterator as $item) {
-            if ($item->isDir()) {
-                @rmdir($item->getPathname());
-                continue;
-            }
-
-            @unlink($item->getPathname());
-        }
-
-        @rmdir($path);
     }
 }

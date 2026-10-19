@@ -64,6 +64,12 @@ try {
       localStorage.setItem('forum_pki_published_fingerprint', fingerprint);
       localStorage.setItem('forum_pki_username', `retraction-${role}`);
     }, { key: keys[role], fingerprint, role });
+    // Authenticate before opening the page; automatic session restoration navigates
+    // and would discard mocked failures/menu state while this test interacts.
+    const challenge = (await (await context.request.get(base + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
+    const authSignature = await openpgp.sign({ message: await openpgp.createMessage({ text: challenge }), signingKeys: await openpgp.readPrivateKey({ armoredKey: keys[role].privateKey }), detached: true });
+    const authenticated = await context.request.post(base + '/api/authenticate_identity', { form: { challenge, detached_signature: authSignature, identity_id: identities[role] } });
+    assert.equal(authenticated.status(), 200, await authenticated.text());
     const page = await context.newPage(); page.setDefaultTimeout(15000);
     let confirmations = 0;
     page.on('dialog', dialog => { assert.match(dialog.message(), /^Retract this post\?/); confirmations++; return confirmations === 1 ? dialog.dismiss() : dialog.accept(); });
@@ -83,10 +89,12 @@ try {
     await page.goto(base + '/posts/' + post.post_id);
     const control = page.locator('[data-role="retraction-control"]').first();
     await control.locator('.post-more-actions > summary').click();
-    await control.getByRole('button', { name: 'Retract post', exact: true }).click();
+    await control.getByRole('button', { name: 'Retract post', exact: true }).click({ noWaitAfter: true });
     assert.equal(confirmations, 1);
+    if (await control.locator('details.post-more-actions').getAttribute('open') === null) await control.locator('.post-more-actions > summary').click();
     const completed = page.waitForResponse(response => response.url().endsWith('/api/create_prepared_retraction'));
-    await control.getByRole('button', { name: 'Retract post', exact: true }).click();
+    completed.catch(() => {});
+    await control.getByRole('button', { name: 'Retract post', exact: true }).click({ noWaitAfter: true });
     const response = await completed;
     const fields = new URLSearchParams(response.request().postData());
     assert.equal(fields.get('actor_identity_id'), identities[role]);

@@ -22,7 +22,9 @@ final class AgentIdentityServiceTest
             new CanonicalRecordRepository($repositoryRoot),
         );
 
+        $homesBefore = count(glob(sys_get_temp_dir() . '/forum-rewrite-agent-gpg-*') ?: []);
         $result = $service->ensureReplyAgentIdentity();
+        assertSame($homesBefore, count(glob(sys_get_temp_dir() . '/forum-rewrite-agent-gpg-*') ?: []), 'Temporary GPG home should be removed.');
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         $profile = $this->renderMethod($application, 'GET', '/profiles/' . $result['profile_slug']);
         $privateKeyPath = (string) $result['private_key_path'];

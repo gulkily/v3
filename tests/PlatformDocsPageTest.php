@@ -31,6 +31,8 @@ final class PlatformDocsPageTest
         assertTrue(!str_contains($diagram, './v3 rebuild'));
         assertTrue(!str_contains($diagram, './v3 build-static'));
         assertTrue(!str_contains($diagram, 'docs-diagram-private'));
+        assertTrue(str_contains($html, 'href="/docs/reference/author_post_retraction.md"'));
+        assertTrue(str_contains($html, 'Post Retraction: Complete Workflow'));
         assertTrue(str_contains($html, '/docs/architecture/public_architecture_and_trust.md'));
         assertTrue(str_contains($html, '/docs/examples/extension_improvement_cookbook.md'));
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));

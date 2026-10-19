@@ -7,6 +7,7 @@ require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 require_once __DIR__ . '/Support/ProfileRegressionFixture.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Activity\ActivityService;
@@ -5057,7 +5058,7 @@ PHP;
             'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
         );
 
-        $this->deleteTree($home);
+        GpgHomeCleaner::dispose($home);
 
         return trim($publicKey) . "\n";
     }

@@ -268,9 +268,20 @@ It refuses recovery while the lock or an open file holder is detected.
 - `repository_root` — canonical records checkout to rebuild from
 - `database_path` — SQLite file to write the read model to
 
+## Sweep retracted local content
+
+```
+./v3 retraction-sweep preview|run|status [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
+```
+
+Preview is non-mutating. Run executes one bounded batch immediately; repeat while
+`remaining` is true. The normal queue worker also discovers and continues sweeps.
+See [coverage, exclusions, progress and recovery](retraction_sweep.md).
+
 ## Manage the background task queue
 
 ```
+./v3 task-queue enqueue-retraction-sweep [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
 ./v3 task-queue enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
@@ -286,6 +297,9 @@ agent replies so concurrent triggers coalesce instead of racing. `docs/runbooks/
 `docs/runbooks/operator_recovery.md` reference this command and depend on it
 being installed via cron.
 
+- `enqueue-retraction-sweep` — coalesces or explicitly retries local retraction
+  cleanup. Automatic discovery uses the existing cron worker; completed scans
+  are reconciled every five minutes and terminal failures stay visible.
 - `enqueue-rebuild` — enqueues a `read-model` rebuild task (a no-op if one is
   already queued/running); `--queue-database-path=...` overrides the default
   queue database location

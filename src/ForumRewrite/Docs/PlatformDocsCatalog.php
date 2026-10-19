@@ -61,6 +61,12 @@ final class PlatformDocsCatalog
                 'description' => 'Commands, options, and error handling for the v3 CLI.',
             ],
             [
+                'title' => 'Post Retraction: Complete Workflow',
+                'category' => 'Operations',
+                'path' => 'docs/reference/author_post_retraction.md',
+                'description' => 'Retract a post, verify cleanup, and recover from failures.',
+            ],
+            [
                 'title' => 'Production Deploy Runbook',
                 'category' => 'Operations',
                 'path' => 'docs/runbooks/production_deploy.md',

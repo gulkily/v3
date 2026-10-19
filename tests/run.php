@@ -7,6 +7,8 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/RetractionSweepTest.php',
+
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/RailspikeWorkflowTest.php',
     __DIR__ . '/FastmodCsvTest.php',
@@ -94,6 +96,7 @@ $testFiles = [
     __DIR__ . '/OpenPgpAssetSmokeProbeTest.php',
     __DIR__ . '/OpenPgpProductionCanaryCommandTest.php',
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
+    __DIR__ . '/GpgHomeCleanerTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/FrontendProbeTest.php',

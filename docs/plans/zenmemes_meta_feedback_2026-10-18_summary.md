@@ -63,6 +63,13 @@ Unless marked otherwise, these reports have no explicit resolution in their thre
 | 10 | Running ./v3 start without PHP fails with exec: php: not found. Improve missing-runtime handling; no more specific remedy was requested. | [thread-20261011032053-4bcd6395](https://zenmemes.com/posts/thread-20261011032053-4bcd6395) | 0.1 |
 | 11 | Word 97 theme selected navigation buttons initially appear gray and pressed, but become dark blue and flat after a click or navigation. | [thread-20261014112321-7211adde](https://zenmemes.com/posts/thread-20261014112321-7211adde), [reply-20261014112339-48978dfe](https://zenmemes.com/posts/reply-20261014112339-48978dfe) | 0.2 |
 
+## Local implementation progress (2026-10-19)
+
+- Bug 01: disabled automatic capitalization on the Board tags input (commit `392f43bc`). PHP syntax and diff checks passed; mobile device verification remains open.
+- Bug 02: theme cycling skips modes that resolve to the current appearance; explicit menu selection still permits Auto/System and Light separately. `node tests/browser/theme_cycle.cjs` covers light/dark system preferences, the next-theme label, persistence, checked options, wraparound, explicit selection, and equivalent-only choices. All 11 `ThemeRegistryTest` tests, JavaScript syntax, and diff checks passed. Visual browser verification remains open.
+- Bug 07: reproduced remaining wrapping with the current actions menu: the submit button inherited `width: 100%`, pushing the menu to another row. Giving that button automatic width keeps both controls on one row. `node tests/browser/reply_actions_layout.mjs` passed 20 Chromium combinations (320/375/390/480/768px; Light, Word 97, Chicago, Midnight), checking alignment, overlap, touch-target heights, menu opening, and horizontal overflow. Existing `compose_disclosure.mjs` checks and diff checks also passed. Physical mobile-device verification remains open.
+- Bug 03: compose normalization now restores cursor position and selection direction, adjusting selection offsets when text expands or is removed. Regression coverage includes a smart quote in the middle of a draft, punctuation expansion, unsupported-character removal, and unchanged text. All 82 `BrowserSigningNormalizationTest` tests, JavaScript syntax, and diff checks passed. Device verification remains open.
+
 ## Other
 
 | Item | Summary | Sources | Railspike cycles |

@@ -143,8 +143,6 @@ $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
     $postAnalysisLabels = [];
 }
-$postLlmExchangesByPostId = is_array($llmExchangesByPostId ?? null) ? $llmExchangesByPostId : [];
-$postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null) ? $postLlmExchangesByPostId[$post['post_id']] : [];
 ?>
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
@@ -191,9 +189,6 @@ $postLlmExchanges = is_array($postLlmExchangesByPostId[$post['post_id']] ?? null
     >Handoff to Codex</button>
 <?php endif; ?>
 <?= $partial('partials/retract_post_control.php') ?>
-<?php if ($postLlmExchanges !== []): ?>
-    <span class="meta">LLM exchanges: <?php foreach ($postLlmExchanges as $index => $exchange): ?><?php if ($index > 0): ?>, <?php endif; ?><a href="/tools/llm-exchanges/<?= (int) $exchange['id'] ?>">#<?= (int) $exchange['id'] ?></a><?php endforeach; ?></span>
-<?php endif; ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
 <?php if (!$agentReplyIsUnfinished): ?>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?><?php if ($agentReplyPostedId !== ''): ?> <a href="/posts/<?= $e($agentReplyPostedId) ?>">View agent reply.</a><?php endif; ?></p>
