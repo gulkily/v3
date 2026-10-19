@@ -529,11 +529,10 @@ final class StaticArtifactBuilder
             return '/docs/';
         }
 
-        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $entry) {
-            $route = PlatformDocsCatalog::routeForPath($entry['path']);
-            if ($route === $path || $route . '/' === $path) {
-                return $route;
-            }
+        if (str_starts_with($path, '/docs/')) {
+            $source = PlatformDocsCatalog::sourceForRoute(rtrim(substr($path, 6), '/'));
+            return $source !== null && PlatformDocsCatalog::resolveSource($this->projectRoot, $source) !== null
+                ? PlatformDocsCatalog::routeForPath($source) : null;
         }
 
         if ($path === '/instance' || $path === '/instance/' || $path === '/backup' || $path === '/backup/' || $path === '/tools/backup' || $path === '/tools/backup/') {
@@ -623,10 +622,10 @@ final class StaticArtifactBuilder
             ];
         }
 
-        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $entry) {
-            if (PlatformDocsCatalog::routeForPath($entry['path']) === $route) {
-                return [$this->artifactRoot . $entry['href'] . '.html'];
-            }
+        if (str_starts_with($route, '/docs/')) {
+            $source = PlatformDocsCatalog::sourceForRoute(substr($route, 6));
+            return $source !== null && PlatformDocsCatalog::resolveSource($this->projectRoot, $source) !== null
+                ? [$this->artifactRoot . PlatformDocsCatalog::routeForPath($source) . '.html'] : [];
         }
 
         if ($route === '/instance/') {

@@ -1,4 +1,4 @@
-# Documentation renderer deployment and recovery
+# Documentation library, rendering and recovery
 
 Existing Platform Docs links and direct `/docs/...md` URLs use
 `PublicMarkdownRenderer` for both PHP responses and generated HTML. PHP 8.1+
@@ -19,11 +19,10 @@ below. Commit the entire changed bundle together.
 Core Markdown and GFM tables, nested/loose lists, disabled task checkboxes,
 references, emphasis and strikethrough are supported. Heading IDs are unique per
 document. HTTP(S), email and same-document fragments are allowed; relative
-Markdown links resolve inside the existing Docs boundary. Realpath, file-size
-and extension checks still apply; symlink escapes and encoded structural
-traversal are rejected. Files outside Docs and unsupported assets retain their
-labels followed by “source unavailable” or “image unavailable”; they gain no
-new file-serving route.
+documentation links resolve inside the library boundary below, including root
+documents and supported assets. Realpath, file-size and extension checks apply;
+symlinked sources and encoded structural traversal are rejected. Unsupported files
+and images retain “source unavailable” or “image unavailable” labels.
 
 Raw HTML is escaped, comments are hidden, and the existing HTML logo has an
 escaped alternative. Mermaid remains labeled source. Front matter remains
@@ -31,6 +30,40 @@ escaped inside collapsed Document metadata; embedded presentation CSS is never
 applied. Syntax highlighting, diagrams, slideshows and arbitrary image loading
 are outside this renderer's scope. Tables and code have named keyboard-accessible
 scroll regions; JavaScript is unnecessary for reading or following links.
+
+## Library inventory and search
+
+Tools → Platform Docs follows the deployed repository folders automatically;
+there is no separately maintained folder catalog. Deploy the complete `docs/`
+tree and root `README.md`, `CONTRIBUTING.md`, `AGENTS.md` and `BLESSING.md`.
+The existing curated entries supply starting guides and metadata, not eligibility.
+
+The library includes Markdown, TXT, CSV, JSON, HTML and PDF under `docs/`,
+configuration/example files under `docs/examples/`, and `docs/railspike/LICENSE`.
+Hidden/control files, other executable formats, unrelated root files and private
+instance directories are excluded. Examples are public documentation; live
+credentials belong in the instance's private configuration, outside this tree.
+Root documents use `/docs/_project/<filename>`; existing `/docs/...md` URLs stay
+valid. Non-Markdown text/HTML is escaped in previews. Downloads use attachment
+responses with `application/octet-stream` and `nosniff`; examples never execute.
+PDF and files above the 1 MiB preview limit offer downloads. PDF binary contents
+and oversized file bodies are not indexed; their titles and paths remain searchable.
+
+Search covers titles, paths, headings and available document text, with folder,
+category and collection filters and 40-result pages. Folder filtering includes
+subfolders. Current guidance ranks before plans/history and vendored workflow;
+being listed under plans does not assert that a plan is obsolete. Search includes
+all collections unless filtered. Query URLs preserve results when returning from
+a reader; JavaScript also carries them through related-document links. Dynamic
+search/browsing works without JavaScript; static filtering uses JavaScript and
+`/docs/_search.json`. Index failures expose Retry and a library refresh link.
+
+One inventory snapshot drives each static build, including all readers, inert
+assets and byte-verified downloads. No document registration is needed: add or
+remove an eligible deployed file and run the normal full/shared publication.
+Refresh removes deleted readers/downloads from the candidate. Missing documents
+return 404 with library navigation and Retry; a source file newly added after
+publication becomes available in the next snapshot.
 
 ## Regenerate stale generated pages
 
@@ -42,7 +75,8 @@ local release; run them only for the intended instance.
 ./v3 build-static --shared-only "$records" "$database" "$static_root"
 ```
 
-The shared refresh includes the Docs index and catalogued Docs pages. It copies
+The shared refresh includes the Docs index, complete library, search data and
+attachment snapshots. It copies
 the active complete release, renders into a candidate, then replaces the active
 pointer only after success. If there is no active complete release, run:
 
@@ -52,8 +86,9 @@ pointer only after success. If there is no active complete release, run:
 
 A full build is also required for changed canonical records, retractions or a
 static-detail-page mode transition; shared refresh cannot replace those steps.
-Uncatalogued safe Docs URLs render dynamically or through the existing on-demand
-path; they use the same renderer.
+All eligible Docs URLs use the shared eligibility policy and renderer. The
+anonymous static host serves the active snapshot; personalized requests retain
+the existing dynamic-response policy.
 
 Reload `/docs/reference/author_post_retraction.md` after refresh. Verify four
 tables, the uninterrupted six-step numbered procedure, emphasis and a working
@@ -84,6 +119,7 @@ retrying. Existing atomic publication remains responsible for activation.
 ```sh
 php tests/run.php PlatformDocsPageTest PlatformDocsCatalogTest PlatformDocsStaticTest
 node tests/browser/platform_docs.mjs
+node tests/browser/docs_discovery.mjs
 python3 tests/platform_docs_release_test.py
 ```
 
@@ -99,3 +135,12 @@ generated documents, and demonstrates stale refresh, missing/partial runtime
 regeneration. No Composer process runs during these deployment checks.
 It retains logs, screenshots and a JSON report in the printed temporary directory.
 It never activates the source checkout's or a production instance's releases.
+
+The discovery browser check uses `DOCS_DYNAMIC_BASE_URL` and
+`DOCS_STATIC_BASE_URL` (defaults 8184/8185) plus `DOCS_EVIDENCE_ROOT`. Point these
+at isolated fixture servers; the static server must have an active full release.
+It checks 16 delivery/width/theme combinations, search/return/reset, inert assets,
+HTTP download headers, missing/retry recovery and both Docs icon surfaces.
+Static scenarios suppress preference-cookie writes to exercise the anonymous
+fast path; theme CSS is
+applied directly. Screenshots and machine-readable evidence are saved locally.

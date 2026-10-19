@@ -13,6 +13,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 ## Other cleanup
 
+- [x] **Platform Docs discovery** — Removed the repeated source-path explanation and guide descriptions; retained paths, starting guides and the architecture disclosure. Library controls precede the explainer. Desktop/mobile search, recovery and both theme-icon surfaces passed across dynamic/static delivery; recorded in [Docs Discovery](docs_discovery/docs_discovery_step4_implementation_summary.md).
+
 - [x] **SQLite query prerequisite message** — Removed the initial database-loading explanation; retained the live status element for query feedback. PHP syntax and diff checks passed.
 - [x] **Activity site development heading** — [railspike_workflow.js](../../public/assets/railspike_workflow.js), activity panel. Removed “Site development · operators only” completely; workflow links remain. Browser regression passed. Commit: `6bf5bb65`.
 - [x] **Account setup status** — Removed duplicate ready/setup explanations and hid empty mirrored status. Retained actionable feedback, one Ready badge, and username. Six hook checks, phone/desktop rendering, and Chromium-to-Firefox backup/restore/recovery browser checks passed. Commit: `cd95d388`.

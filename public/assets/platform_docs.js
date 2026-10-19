@@ -49,6 +49,8 @@
         item.append(link, document.createElement('br'), path, document.createTextNode(' · ' + entry.group));
         results.append(item);
       }
+      root.dataset.docsQuery = location.search;
+      root.dataset.docsReady = 'true';
       root.querySelector('[data-docs-count]').textContent = matches.length + ' documents';
       root.querySelector('[data-docs-empty]').hidden = matches.length !== 0;
       for (const [label, target] of [['Previous', page - 1], ['Next', page + 1]]) {

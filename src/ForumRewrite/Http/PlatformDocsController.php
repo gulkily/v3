@@ -67,9 +67,9 @@ final class PlatformDocsController
         $documentHtml = $contents === false
             ? '<p>Preview unavailable. Download the document to read it.</p>'
             : ($extension === 'md' ? PublicMarkdownRenderer::render($contents, $sourcePath, $this->projectRoot)
-                : '<pre><code>' . htmlspecialchars($contents, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code></pre>');
+                : '<pre tabindex="0" role="region" aria-label="Document source"><code>' . htmlspecialchars($contents, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code></pre>');
 
-        $documentTitle = substr($sourcePath, strlen('docs/'));
+        $documentTitle = str_starts_with($sourcePath, 'docs/') ? substr($sourcePath, 5) : $sourcePath;
         foreach (PlatformDocsCatalog::entries() as $entry) {
             if ($entry['path'] === $sourcePath) {
                 $documentTitle = $entry['title'];

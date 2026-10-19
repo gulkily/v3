@@ -78,13 +78,15 @@ final class PlatformDocsCatalogTest
     {
         $root = sys_get_temp_dir() . '/docs-inventory-' . bin2hex(random_bytes(5));
         mkdir($root . '/docs', 0777, true);
-        file_put_contents($root . '/docs/new.md', '# New document');
+        file_put_contents($root . '/docs/new.md', "# New document\n\nInvalid byte: \xff");
         file_put_contents($root . '/docs/large.md', str_repeat('x', PlatformDocsCatalog::MAX_DOCUMENT_BYTES + 1));
         file_put_contents($root . '/private.md', '# Secret');
         symlink($root . '/private.md', $root . '/docs/escape.md');
         try {
             $entries = array_column(PlatformDocsCatalog::inventory($root), null, 'path');
             assertSame('New document', $entries['docs/new.md']['title']);
+            assertTrue(mb_check_encoding($entries['docs/new.md']['text'], 'UTF-8'));
+            assertTrue(is_string(json_encode($entries, JSON_THROW_ON_ERROR)));
             assertSame(false, $entries['docs/large.md']['available']);
             assertTrue(!isset($entries['docs/escape.md']));
             unlink($root . '/docs/new.md');
@@ -134,12 +136,17 @@ final class PlatformDocsCatalogTest
         file_put_contents($root . '/docs/large.md', str_repeat('a', PlatformDocsCatalog::MAX_DOCUMENT_BYTES + 1));
         file_put_contents($root . '/outside.md', '# outside');
         symlink($root . '/outside.md', $root . '/docs/escape.md');
+        file_put_contents($root . '/docs/.hidden.md', '# Hidden');
+        symlink($root . '/docs/.hidden.md', $root . '/docs/alias.md');
 
         try {
             assertSame(null, PlatformDocsCatalog::resolvePath($root, 'docs/large.md'));
             assertSame(null, PlatformDocsCatalog::resolvePath($root, 'docs/escape.md'));
+            assertSame(null, PlatformDocsCatalog::resolveSource($root, 'docs/alias.md'));
         } finally {
             @unlink($root . '/docs/escape.md');
+            @unlink($root . '/docs/alias.md');
+            @unlink($root . '/docs/.hidden.md');
             @unlink($root . '/docs/large.md');
             @unlink($root . '/outside.md');
             @rmdir($root . '/docs');

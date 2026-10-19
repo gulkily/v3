@@ -23,7 +23,8 @@ final class PlatformDocsPageTest
 
         assertTrue(str_contains($html, '<h1>zenmemes Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
-        assertTrue(str_contains($html, '<h2>How it works</h2>'));
+        assertTrue(str_contains($html, '<summary>How it works</summary>'));
+        assertTrue(strpos($html, 'data-docs-library') < strpos($html, 'docs-transparency'));
         assertTrue(str_contains($html, '<title id="docs-diagram-title">zenmemes public architecture</title>'));
         assertTrue(str_contains($diagram, "Member's browser"));
         assertTrue(str_contains($diagram, 'signed write'));
@@ -45,6 +46,7 @@ final class PlatformDocsPageTest
         assertStringContains('docs/research/', $html);
         $root = $this->render('/docs/_project/README.md');
         assertStringContains('Repository source: <code>README.md</code>', $root);
+        assertStringContains('<title>README.md - Platform Docs', $root);
     }
 
     public function testSearchAndReturnStateWorkWithoutJavaScript(): void
@@ -71,6 +73,7 @@ final class PlatformDocsPageTest
         $example = $this->render('/docs/examples/secrets.php.example');
         assertStringContains('replace-with-real-key', $example);
         assertStringContains('&lt;?php', $example);
+        assertStringContains('tabindex="0" role="region" aria-label="Document source"', $example);
         $pdf = $this->render('/docs/research/sigtbd_fault_tolerant_governance_for_internet_message_boards.pdf');
         assertStringContains('Preview unavailable', $pdf);
         assertStringContains('Download</a>', $pdf);

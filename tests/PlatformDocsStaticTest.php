@@ -81,6 +81,25 @@ final class PlatformDocsStaticTest
         }
     }
 
+    public function testOnDemandRootAndWorkflowReadersUseTheSameBoundary(): void
+    {
+        $root = sys_get_temp_dir() . '/docs-on-demand-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        $repo = __DIR__ . '/fixtures/parity_minimal_v1';
+        try {
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($repo, $root . '/read.sqlite3', new \ForumRewrite\Canonical\CanonicalRecordRepository($repo)))->rebuild();
+            $builder = new StaticArtifactBuilder(dirname(__DIR__), $repo, $root . '/read.sqlite3', $root . '/release');
+            foreach (['/docs/_project/CONTRIBUTING.md', '/docs/railspike/README.md'] as $route) {
+                assertTrue($builder->buildSingleRoute($route));
+                assertStringContains('route-source: static-html', file_get_contents($root . '/release' . $route . '.html'));
+            }
+            assertSame(false, $builder->buildSingleRoute('/docs/%2e%2e/README.md'));
+            assertSame(false, $builder->buildSingleRoute('/docs/missing.md'));
+        } finally {
+            $this->deleteTree($root);
+        }
+    }
+
     private function render(FrontController $controller, string $path): string
     {
         ob_start();

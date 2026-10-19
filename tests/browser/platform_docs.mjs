@@ -17,6 +17,7 @@ try {
       if (width === 1280 && theme === 'default') {
         await page.goto(base + '/tools/');
         await page.locator('a[href="/docs/"]').first().click();
+        await page.getByText('Starting guides', { exact: true }).click();
         await page.locator('a[href="/docs/reference/author_post_retraction.md"]').first().click();
       } else {
         await page.goto(base + '/docs/reference/author_post_retraction.md');
@@ -56,7 +57,7 @@ try {
         assert.ok(await code.evaluate(e => e.scrollLeft > 0));
       }
       // Real Tab traversal must reach a scroll region, not just programmatic focus.
-      await page.locator('.docs-source a').focus();
+      await page.locator('[data-docs-return]').focus();
       let tabReachedRegion = false;
       for (let n = 0; n < 90; n++) {
         await page.keyboard.press('Tab');

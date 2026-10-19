@@ -110,6 +110,7 @@ final class PlatformDocsCatalog
             $size = filesize($resolved);
             $readable = $size !== false && $size <= self::MAX_DOCUMENT_BYTES;
             $text = $readable && strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'pdf' ? (string) file_get_contents($resolved) : '';
+            $text = mb_scrub($text, 'UTF-8');
             preg_match('/^#\s+(.+)$/m', $text, $heading);
             $group = str_starts_with($path, 'docs/plans/') ? 'Plans and history'
                 : (str_starts_with($path, 'docs/railspike/') ? 'Workflow' : 'Current guidance');
@@ -159,6 +160,9 @@ final class PlatformDocsCatalog
                 || ($value('group') !== '' && $entry['group'] !== $value('group'))) {
                 return false;
             }
+            if ($terms === []) {
+                return true;
+            }
             $text = mb_strtolower($entry['title'] . ' ' . $entry['path'] . ' ' . $entry['text'], 'UTF-8');
             foreach ($terms as $term) {
                 if (!str_contains($text, $term)) {
@@ -178,7 +182,7 @@ final class PlatformDocsCatalog
             return null;
         }
         $resolved = realpath($root . '/' . $path);
-        if ($resolved === false || !is_file($resolved)) {
+        if ($resolved === false || !is_file($resolved) || $resolved !== $root . '/' . $path) {
             return null;
         }
         if (in_array($path, self::ROOT_DOCUMENTS, true)) {
@@ -274,7 +278,7 @@ final class PlatformDocsCatalog
         }
         $path = rawurldecode($encodedPath);
 
-        if ($path === '' || str_starts_with($path, '/') || preg_match('/[\x00-\x1f\x7f\\\\]/', $path) === 1) {
+        if ($path === '' || !mb_check_encoding($path, 'UTF-8') || str_starts_with($path, '/') || preg_match('/[\x00-\x1f\x7f\\\\]/', $path) === 1) {
             return null;
         }
 
