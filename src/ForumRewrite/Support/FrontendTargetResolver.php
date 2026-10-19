@@ -8,11 +8,11 @@ use RuntimeException;
 
 final class FrontendTargetResolver
 {
-    public function __construct(private readonly string $projectRoot, private readonly string $repositoryRoot)
+    public function __construct(private readonly string $projectRoot, private readonly string $repositoryRoot, private readonly string $databasePath = '')
     {
     }
 
-    /** @return array{url:string,source:string} */
+    /** @return array<string,mixed> */
     public function resolve(?string $explicitUrl = null): array
     {
         $config = PrivateConfig::load($this->projectRoot);
@@ -26,7 +26,28 @@ final class FrontendTargetResolver
             }
             return ['url' => self::validateUrl($configured), 'source' => 'FORUM_STATUS_URL'];
         }
-        return ['url' => 'http://127.0.0.1:8000', 'source' => 'default'];
+        $servers = DevServerRegistry::active($this->projectRoot, $this->repositoryRoot, $this->database());
+        if (count($servers) > 1) {
+            return ['url' => '', 'source' => 'development discovery', 'status' => 'ambiguous', 'detail' => 'multiple development servers match this instance'];
+        }
+        return $servers[0] ?? ['url' => 'http://127.0.0.1:8000', 'source' => 'default'];
+    }
+
+    public function check(array $target): array
+    {
+        if (isset($target['status'])) { return $target + ['latency_ms' => null]; }
+        $deadline = hrtime(true) / 1e9 + 3.0;
+        $probe = new FrontendProbe();
+        if (isset($target['identity'])) {
+            $proof = $probe->probe($target['url'], max(0, $deadline - hrtime(true) / 1e9), $target['identity']);
+            if ($proof['status'] !== 'responding') { return $proof + $target; }
+        }
+        return $probe->probe($target['url'], max(0, $deadline - hrtime(true) / 1e9)) + $target;
+    }
+
+    private function database(): string
+    {
+        return $this->databasePath !== '' ? $this->databasePath : $this->projectRoot . '/state/cache/post_index.sqlite3';
     }
 
     public static function validateUrl(string $url): string

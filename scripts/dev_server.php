@@ -82,7 +82,14 @@ if (!is_resource($process)) {
     exit(1);
 }
 $serverErrors = $pipes[2];
-$shutdownServer = static function () use (&$process, $serverErrors): void {
+$registration = \ForumRewrite\Support\DevServerRegistry::register(
+    $root,
+    getenv('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository',
+    getenv('FORUM_DATABASE_PATH') ?: $root . '/state/cache/post_index.sqlite3',
+    proc_get_status($process)['pid'],
+    $address,
+);
+$shutdownServer = static function () use (&$process, $serverErrors, $registration): void {
     if (!is_resource($process)) {
         return;
     }
@@ -99,6 +106,7 @@ $shutdownServer = static function () use (&$process, $serverErrors): void {
     fclose($serverErrors);
     proc_close($process);
     $process = null;
+    if ($registration !== null) { @unlink($registration); }
 };
 register_shutdown_function($shutdownServer);
 

@@ -24,6 +24,7 @@ final class OperatorStatusCollector
         private readonly \Closure $readModelPdo,
         private readonly ?string $frontendUrl = null,
         private readonly string $frontendSource = 'explicit',
+        private readonly ?\Closure $frontendCheck = null,
     ) {
     }
 
@@ -103,6 +104,7 @@ final class OperatorStatusCollector
      */
     private function frontendStatus(): array
     {
+        if ($this->frontendCheck !== null) { return ($this->frontendCheck)(); }
         if ($this->frontendUrl === null) {
             return ['status' => 'not_checked', 'detail' => 'not checked', 'latency_ms' => null, 'url' => 'none'];
         }

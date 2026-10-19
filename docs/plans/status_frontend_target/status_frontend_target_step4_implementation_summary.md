@@ -18,3 +18,8 @@ Planning commit: `1f7e49d1`. Production deployment is outside this cycle; actual
 
 ## Additional requests
 - Request: update `zenmemes_meta_feedback_2026-10-18_summary.md`, marking resolved items. Disposition: separately authorized documentation upkeep, independent of frontend implementation. Approval: explicit user request. Outcome: reviewed against current code and completion records; update will use a separate documentation commit.
+
+## Stage 3 - Development discovery lifecycle
+- Changes: startup registers the actual PHP child after exec; records bind address, checkout/instance identity, boot ID, start ticks and command identity. Shutdown removes its registration; status ignores exited/zombie/reused processes and mismatched instances without writing. Wildcard listeners map to loopback; multiple live hints produce WARN; a selected server must pass proof before its health is checked.
+- Verification: 28 resolver/status/health/dev-log checks passed, including stale process identity, exited process, wildcard normalization, ambiguity and unrelated listener rejection. Real `./v3 start 127.0.0.2:8001 --quiet` followed by plain status reported the development target at 8001; SIGTERM removed the registration. Failed bind also left no registration.
+- Notes: `127.0.0.1:8001` already belongs to a separate user checkout, which was left running; the real replay used `127.0.0.2:8001`. Linux `/proc` supplies process identity; platforms without it use conventional discovery/configuration in Stage 4. Stage 2 commit: `0528f0a8`; requested feedback-summary update committed separately as `fde98f83`.
