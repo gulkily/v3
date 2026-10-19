@@ -85,6 +85,7 @@
   display: block;
   max-width: min(28rem, 70vw);
   overflow: hidden;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -93,6 +94,13 @@
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Keep theme button chrome from changing the height of text-only cells. */
+:root[data-theme] [data-sqlite-viewer] .sqlite-result-scroll button.sqlite-cell-toggle {
+  border: 0;
+  box-shadow: none;
+  line-height: inherit;
 }
 
 .sqlite-cell-toggle.is-expanded {

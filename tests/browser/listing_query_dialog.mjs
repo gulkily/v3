@@ -22,16 +22,19 @@ try {
       downloads++;
       if (delay) { await new Promise(resolve => setTimeout(resolve, delay)); }
       await route.fulfill({ status: fail ? 503 : 200, body: fail ? 'unavailable' : database });
-    } else { await route.fulfill({ body: html(path.includes('standalone') ? 'standalone' : path.slice(1)), contentType: 'text/html' }); }
+    } else { await route.fulfill({ body: html(path.includes('standalone') || path === '/tools/sqlite/' ? 'standalone' : path.slice(1)), contentType: 'text/html' }); }
   });
   await page.goto('https://query.test/codebase');
   await page.locator('[data-query-key="one"]').click();
   await page.locator('[data-query-dialog][open]').waitFor();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-status"]').textContent.includes('could not'));
   fail = false;
-  await page.getByRole('button', { name: 'Load Database', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
+  await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('42'));
   assert.equal(await page.locator('[data-role="sqlite-query-select"]').inputValue(), "", "contextual SQL must not claim a different preset");
+  assert.equal(await page.locator('#query-dialog-title').textContent(), 'Query viewer');
   const input = page.locator('[data-role="sqlite-query-input"]');
   await input.fill('SELECT 99 AS edited');
   await page.getByRole('button', { name: 'Run Query', exact: true }).click();
@@ -82,13 +85,16 @@ try {
     assert.match(await page.locator('[data-role="sqlite-status"]').textContent(), /incompatible or damaged/);
     assert.equal(downloads, before, 'invalid saved data is rejected without silent replacement');
   }
+  await page.getByRole('link', { name: 'Open full viewer' }).click();
+  await page.getByRole('button', { name: 'Load Database', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-status"]').dataset.state === 'error');
   const preservedSql = await input.inputValue();
   await page.getByRole('button', { name: 'Refresh saved database', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-status"]').textContent.includes('could not'));
   assert.equal(await input.inputValue(), preservedSql);
   fail = false;
   await page.getByRole('button', { name: 'Refresh saved database', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-source-details"]').textContent.includes('test-revision'));
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-status"]').dataset.state === 'ok');
   await input.fill('SELECT FROM broken');
   await page.getByRole('button', { name: 'Run Query', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-status"]').dataset.state === 'error');
@@ -227,7 +233,11 @@ try {
   await page.goto('https://query.test/codebase');
   await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('42'));
-  assert.match(await page.locator('[data-role="sqlite-source-details"]').textContent(), /storage unavailable/);
+  assert.equal(await page.locator('[data-role="sqlite-source-details"]').count(), 0);
+  assert.equal(await page.locator('[data-role="sqlite-explorer"]').count(), 0);
+  assert.equal(await page.locator('[data-action="load-sqlite"]').count(), 0);
+  assert.equal(await page.locator('[data-role="sqlite-status"]').isVisible(), false);
+  assert.equal(await page.getByRole('link', { name: 'Open full viewer' }).getAttribute('href'), '/tools/sqlite/');
   assert.deepEqual(errors, [], 'no browser runtime errors');
   console.log('TIMINGS ' + JSON.stringify(timings));
   console.log('PASS six board SQL.js contexts/pages, pending-load race, read-only enforcement, denied cache/session storage, keyboard/mobile return state, and recovery');

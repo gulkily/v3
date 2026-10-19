@@ -69,3 +69,46 @@ Debug mode: enabled
 
 - User authorized merging and pushing `feature/listing-query-dialog` to `main`. Preserved local and remote todo notes and both plan-index entries during merge conflicts.
 - Passed on the merged tree: focused PHP route, board, presentation, and query-catalog checks (10/10), and `node tests/browser/listing_query_dialog.mjs` Chromium acceptance replay. Full repository suite was not run.
+
+## Follow-up dialog information cleanup
+
+- Request: remove the dialog information section and replace it with one link to the full viewer.
+- Disposition and approval: directly authorized small UI correction; no further planning required.
+- Changes: embedded viewer shows only the full-viewer link above the query panel during normal use. Database status appears only for errors; load/refresh remains available below the interface.
+- Verification: passed Chromium dialog acceptance replay, including mobile layout and error recovery; PHP route/query-catalog checks passed 5/5. PHP/JavaScript syntax and whitespace checks passed. Changes remain uncommitted.
+
+## Follow-up query viewer layout cleanup
+
+- Request and approval: user directly requested a bottom-left full-viewer link, fixed “Query viewer” dialog title, and removal of the Run query heading, Preset query control, and SQL label. Small UI refinement.
+- Changes: moved the link to the dialog content footer, removed the embedded preset selector and headings/labels, retained an accessible SQL editor name, and guarded optional preset-selector access. The Run Query action remains available.
+- Verification: Chromium dialog acceptance replay passed, including mobile layout, editing, and recovery; focused PHP checks passed 5/5. PHP/JavaScript syntax and whitespace checks passed. Changes remain uncommitted.
+
+## Label removal clarification
+
+- Request and approval: user clarified that only visible labels should be removed, retaining form elements.
+- Correction: restored the embedded preset selector with an accessible name; SQL editor and Run Query action remain available. The earlier selector removal was an incorrect interpretation.
+- Verification: browser acceptance replay passed, including mobile layout and recovery; PHP syntax and whitespace checks passed. Changes remain uncommitted.
+
+## Remove dialog table explorer
+
+- Request and approval: user directly requested removal of the entire Explore tables section from the dialog.
+- Changes: omit the explorer markup from the embedded viewer; full viewer retains table exploration.
+- Verification: PHP syntax, whitespace checks, and browser acceptance replay passed. Changes remain uncommitted.
+
+## Remove dialog refresh control
+
+- Request and approval: user directly requested removal of the refresh button.
+- Changes: removed the embedded load/refresh button; the footer retains the full-viewer link.
+- Verification: PHP syntax, whitespace checks, and focused route check passed. Earlier browser replay predates this change and its dialog refresh scenarios require revision. Changes remain uncommitted.
+
+## Match expand control height to text
+
+- Request and approval: user directly requested matching cell expand-button height to plain text.
+- Changes: remove inherited button top margin and override theme borders/shadows for text-only expand controls; inherit cell line height. Expanded content can still wrap naturally.
+- Verification: Chromium measured identical plain/expand-control row heights in default, Word97, Chicago, and Midnight styles. Whitespace checks passed. Changes remain uncommitted.
+
+## Commit and push UI refinements
+
+- User authorized committing and pushing the accumulated query-viewer refinements.
+- Updated browser acceptance checks to recover initial loading by reopening the dialog and perform explicit refresh through the full viewer. Confirmed the dialog has no explorer or load/refresh button.
+- Passed final Chromium acceptance replay and focused PHP route/catalog checks (5/5). Theme row-height measurements passed earlier. Full repository suite not run.

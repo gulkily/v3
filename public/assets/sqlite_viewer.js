@@ -126,6 +126,7 @@
     function setStatus(message, state) {
       if (status) {
         status.textContent = message;
+        if (root.closest('[data-query-dialog]')) { status.hidden = state !== "error"; }
         if (state) {
           status.dataset.state = state;
         } else {
@@ -650,7 +651,7 @@
       return null;
     }
     queryInput.addEventListener("input", saveDraft);
-    querySelect.addEventListener("change", saveDraft);
+    if (querySelect) { querySelect.addEventListener("change", saveDraft); }
     window.addEventListener("pagehide", saveDraft);
     root.sqliteViewer = {
       open: async function (context) {
@@ -660,7 +661,7 @@
           activeContext = context.key;
           var draft = readDraft(context.key);
           queryInput.value = draft ? draft.sql : context.sql;
-          querySelect.value = "";
+          if (querySelect) { querySelect.value = ""; }
           queryPage = draft ? draft.page : 0;
           querySortColumn = draft ? draft.column : null;
           querySortDirection = draft ? draft.direction : null;

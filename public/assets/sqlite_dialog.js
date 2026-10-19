@@ -20,7 +20,6 @@
       var action = event.target.closest("[data-view-query]");
       if (!action) { return; }
       returnFocus = action;
-      dialog.querySelector("h2").textContent = action.dataset.queryLabel;
       if (!dialog.open) {
         background = { x: window.scrollX, y: window.scrollY, overflow: document.body.style.overflow,
           ranges: pendingRanges || captureRanges() };
