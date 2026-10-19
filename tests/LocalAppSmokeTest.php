@@ -3068,6 +3068,10 @@ PHP;
         assertStringContains('title="Copy one-line bookmarklet"', $bookmarklets);
         assertStringContains('role="status"', $bookmarklets);
         $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
+        foreach (['/tools/fastmod/', '/tools/user-access/'] as $toolHref) {
+            assertStringContains('.tool-launcher-button[href="' . $toolHref . '"]::before', $navIconsCss);
+            assertStringContains('.tools-nav .nav-link[href="' . $toolHref . '"]::before', $navIconsCss);
+        }
         assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
         assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
         assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
