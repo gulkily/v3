@@ -39,3 +39,23 @@ No supported findings.
 ### Uncertain assessments
 
 - Enabling the existing shared confirmation on pending actions interprets Step 2's requirement to explain consequences before confirmation. It adds no second dialog, but changes the previous one-click pending-list behavior; that change is explicit in the plan for approval.
+
+## 2026-10-19T18:56:32.882550+00:00 — Step 4
+
+### Necessary/useful instructions
+
+- Source: `step4_implementation_before.md`, Planning Docs Commit Gate. Planning commit `758f5c32` preserved approved scope before implementation; separate stage commit `62fa6ecc` contains the completed change and its summary. Retain.
+- Source: `step4_implementation_do.md`, Stage Boundary Protocol. Focused policy/API checks, mock-browser cancellation/failure recovery, and actual signed HTTP publication supplied distinct evidence without claiming full-suite coverage. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Schema migration, navigation icons, deployment and external services: none changed or required by this approved presentation slice.
+- Experimental effort estimation: cycle unselected; no study result inferred.
+
+### Uncertain assessments
+
+No supported findings.
