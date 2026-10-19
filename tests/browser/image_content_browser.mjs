@@ -18,6 +18,8 @@ const keys = await openpgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{nam
 const key = await openpgp.readKey({armoredKey:keys.publicKey});
 const fingerprint = key.getFingerprint();
 const env = {...process.env, IMAGE_TEST_ROOT:root, FORUM_SECRETS_PATH:join(root,'unused.php'), FORUM_STATIC_HTML_ROOT:join(root,'static'),FORUM_PUBLIC_ARTIFACT_ROOT:join(root,'artifacts'),FAST_SCORING_ENABLED:'false', FORUM_APP_VERSION_NOTIFICATION:'false'};
+// Thread forms keep Attach image in the "..." menu; open it before using the entry.
+const attachEntry=async scope=>{const toggle=scope.locator('.compose-action-menu-toggle');if(await toggle.count()){await scope.locator('.image-compose-fields:not([hidden])').waitFor();await toggle.click();}return scope.locator('.image-upload-choose');};
 function command(executable,args,options={}) {
  const r=spawnSync(executable,args,{cwd:project,env,encoding:'utf8',...options});
  assert.equal(r.status,0,r.stderr + '\n' + r.stdout);return r.stdout;
@@ -53,9 +55,13 @@ try {
      const details=page.locator('[data-inline-reply-details]').first();
      if(path==='/') await details.locator('[data-inline-reply-trigger]').click();
      const form=page.locator('[data-compose-form]').first();
-     await form.locator('.image-upload-choose').waitFor();
+     await form.locator('.image-compose-fields:not([hidden])').waitFor();
+     await page.setViewportSize({width:1000,height:800});
+     const centers=await form.evaluate(f=>['.compose-form-actions > button[type="submit"]','.compose-action-menu-toggle'].map(q=>{const r=f.querySelector(q).getBoundingClientRect();return r.top+r.height/2;}));
+     assert.ok(Math.abs(centers[0]-centers[1])<1,'the ... button is vertically aligned with the submit button on '+path);
+     await page.setViewportSize({width:390,height:844});
      if(path==='/' && body==='') {
-       const cancelChooser=page.waitForEvent('filechooser');await form.locator('.image-upload-choose').click();
+       const cancelChooser=page.waitForEvent('filechooser');await (await attachEntry(form)).click();
        await (await cancelChooser).setFiles([]);await form.locator('[name="image"]').dispatchEvent('cancel');
        await page.evaluate(()=>{const button=document.createElement('button');button.textContent='outside composer';document.body.append(button);button.focus();});
        await page.waitForFunction(()=>!document.querySelector('[data-inline-reply-details]').open);
@@ -67,7 +73,7 @@ try {
      await page.route('**/api/get_profile?*', async route=>{reached();await gate;await route.continue();});
      try {
        const chooserPromise=page.waitForEvent('filechooser');
-       await form.locator('.image-upload-choose').click();const chooser=await chooserPromise;
+       await (await attachEntry(form)).click();const chooser=await chooserPromise;
        await page.evaluate(()=>{document.activeElement.blur();window.dispatchEvent(new Event('focus'));});
        await started;
        if(path==='/') assert.equal(await details.evaluate(e=>e.open),true,'Composer must stay open while the picker owns focus');
@@ -97,9 +103,11 @@ try {
  await page.route('**/api/get_profile?*',route=>route.fulfill({status:200,body:'Identity-ID: openpgp:'+fingerprint+'\nApproved: no\nImage-Upload-Allowed: no\n'}));
  await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
  assert.equal(await page.locator('.image-compose-fields').isVisible(),false);
+ assert.equal(await page.locator('.image-upload-choose').evaluate(e=>e.hidden),true,'Attach image entry hidden when ineligible');
  await page.unroute('**/api/get_profile?*');
  await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
  assert.equal(await page.locator('.image-compose-fields').isVisible(),true);
+ assert.equal(await page.locator('.image-upload-choose').evaluate(e=>e.hidden),false,'Attach image entry shown when eligible');
  await context.setOffline(true);
  await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
  assert.equal(await page.locator('.image-compose-fields').isVisible(),false);
@@ -116,7 +124,7 @@ try {
  assert.equal(await page.locator('.image-upload-description').isVisible(),false,'description hidden before an image is attached');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.setViewportSize({width:390,height:844});
- const choose=page.locator('.image-upload-choose');await choose.focus();
+ await page.locator('.compose-action-menu-toggle').click();const choose=page.locator('.image-upload-choose');await choose.focus();
  assert.equal(await choose.evaluate(e=>document.activeElement===e),true);
  const target=await choose.boundingBox();assert.ok(target.width>=44 && target.height>=44);
  for(const method of ['drop','paste']) {
@@ -218,11 +226,15 @@ try {
  await page.locator('.post-image img').first().waitFor();
  await page.locator('[data-paned-board-reply]').click();
  const forteReply=page.locator('[data-paned-compose-panel]');
- await forteReply.locator('.image-upload-choose').waitFor();
+ await forteReply.locator('.image-compose-fields:not([hidden])').waitFor();
+ await forteReply.locator('.compose-action-menu-toggle').click();
+ assert.deepEqual(await forteReply.locator('.compose-action-menu-list > button').allTextContents(),['Attach image','Post anonymous reply','Clear fields']);
+ assert.equal(await forteReply.locator('.image-upload-dropzone .image-upload-choose').count(),0,'no standalone chooser beside the preview');
  await forteReply.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  await forteReply.locator('.image-upload-preview img').waitFor();
  await page.locator('[data-paned-board-new]').click();
- const forteNew=page.locator('[data-paned-new-thread-dialog]');await forteNew.locator('.image-upload-choose').waitFor();
+ const forteNew=page.locator('[data-paned-new-thread-dialog]');await forteNew.locator('.image-compose-fields:not([hidden])').waitFor();
+ assert.equal(await (await attachEntry(forteNew)).textContent(),'Attach image');await forteNew.locator('.compose-action-menu-toggle').click();
  assert.equal(await forteNew.locator('.image-upload-preview').isVisible(),false);
  assert.equal(await forteReply.locator('.image-upload-preview').isVisible(),true);
  await forteNew.locator('[data-paned-new-thread-cancel]').click();
@@ -230,7 +242,7 @@ try {
  assert.equal((await context.request.get(base+imageUrl)).status(),200);
  assert.match(await (await context.request.get(base+'/threads/'+thread.thread_id)).text(),/post-image/);
  await page.goto(base+'/add');
- await page.locator('.image-upload-choose').waitFor();
+ await page.locator('.image-compose-fields:not([hidden])').waitFor();
  await page.locator('[name="body"]').fill('<alice> A quote with an image');
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  const qdbResponse=page.waitForResponse(r=>r.url().endsWith('/api/create_prepared_post')).then(r=>webkitRun?r.json():outcomes.at(-1));

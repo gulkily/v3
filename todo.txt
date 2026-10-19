@@ -111,6 +111,7 @@ x	collapse the image selector one small thing that doesn't double the size of th
 compose form improvements
 	the ... button should be in the corner (bottom right)
 	"choose an image" module should look like the other modules
+		(chooser is now "Attach image" in the ... menu; the preview/remove area remains)
 	"body" module should also look like the other modules
 
 xInvite path repaired: opt-in source-page destination, zero-click targeted entry,
@@ -203,3 +204,7 @@ User Access icon completed
 nojs compatibility
 	this is going to be a big one
 
+
+image attachment: replace the "Remove image" text button with an x button on the selected image preview
+	(accessible name "Remove image"; keep 44px touch target, busy handling, and the recovery notice button)
+	follow-up to attach_image_in_menu (docs/plans/attach_image_in_menu/attach_image_in_menu_step2_feature_description.md)

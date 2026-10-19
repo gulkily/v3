@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Attach image in the compose menu](attach_image_in_menu/)
 - [Scripture response reliability revision](scripture_response_reliability_revision/)
 
 - [Scripture response reliability](scripture_response_reliability/)
