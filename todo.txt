@@ -248,3 +248,18 @@ in dark theme, the two modules that are after each other create a brigher border
 
 i want to be able to use as image posting utility, so would be nice to have an image be non-public by choice
 	like only if someone has the link
+
+backup page: download sizes
+---------------------------
+	show a Size column in the Backup page download tables (deferred from the
+		backup_page_redesign feature, docs/plans/backup_page_redesign_*)
+	what is knowable ahead of time:
+		SQLite index: exact (filesize of the served file; can go stale)
+		image archive: payload sum from ImageStore inventory, "about X"
+			(tar adds manifest and headers)
+		repository .tar.gz/.zip: built per request, real size unknown; only the
+			uncompressed tree size (ImageBackup::treeBytes, includes .git) is known
+	decide: label repository rows "built on download" vs "uncompressed X"
+	needs a small read-only size helper in InstancePageController; avoid a
+		recursive tree walk on every page view (cache or compute lazily)
+	risk: a stale or loose number misleads disk-space checks before a backup
