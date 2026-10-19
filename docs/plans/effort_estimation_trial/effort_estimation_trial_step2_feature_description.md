@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./effort_estimation_trial_step1_solution_assessment.md) · [Step 2](./effort_estimation_trial_step2_feature_description.md) · [Step 3](./effort_estimation_trial_step3_development_plan.md) · Step 4 pending
+> **Feature plan:** [Step 1](./effort_estimation_trial_step1_solution_assessment.md) · [Step 2](./effort_estimation_trial_step2_feature_description.md) · [Step 3](./effort_estimation_trial_step3_development_plan.md) · [Step 4](./effort_estimation_trial_step4_implementation_summary.md)
 
 Debug mode: enabled
 
