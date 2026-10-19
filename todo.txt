@@ -250,3 +250,6 @@ Complete post-retraction sweep implementation
 	Coverage and operator recovery: docs/reference/retraction_sweep.md
 	Implementation summary: docs/plans/post_retraction_sweep/post_retraction_sweep_step4_implementation_summary.md
 	No production deployment or cron installation performed
+
+Make retraction sweep CLI output readable
+	Preview, status and run use text summaries by default; --json retains structured output

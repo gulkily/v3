@@ -13,6 +13,9 @@ needed. Enqueueing does not mean execution has finished; queue backlog can delay
 ./v3 task-queue status
 ```
 
+Commands print readable summaries by default; add `--json` for machine-readable
+output with all progress fields.
+
 `preview` changes no storage and reports a bounded sample, not a full inventory
 when `remaining` is true. `run` immediately processes a batch without waiting
 for cron; repeat while `remaining` is true. The worker continues batches using

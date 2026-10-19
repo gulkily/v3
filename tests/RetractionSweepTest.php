@@ -286,19 +286,21 @@ final class RetractionSweepTest
         [$root] = $this->fixture();
         mkdir($root . '/static');
         mkdir($root . '/public');
-        $invoke = static function (string $command) use ($root): array {
+        $invoke = static function (string $command, bool $json = true) use ($root): array|string {
             $process = proc_open([dirname(__DIR__) . '/v3', 'retraction-sweep', $command,
                 '--repository-root=' . $root, '--exchange-database-path=' . $root . '/exchanges.sqlite3',
-                '--state-path=' . $root . '/cli-state.json', '--static-html-root=' . $root . '/static', '--limit=1'],
+                '--state-path=' . $root . '/cli-state.json', '--static-html-root=' . $root . '/static', '--limit=1', ...($json ? ['--json'] : [])],
                 [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, null,
                 [...getenv(), 'FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public']);
             fclose($pipes[0]);
             $output = stream_get_contents($pipes[1]); $error = stream_get_contents($pipes[2]);
             fclose($pipes[1]); fclose($pipes[2]);
             assertSame(0, proc_close($process), $error);
-            return json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+            return $json ? json_decode($output, true, 512, JSON_THROW_ON_ERROR) : $output;
         };
         $hash = hash_file('sha256', $root . '/exchanges.sqlite3');
+        assertStringContains('Retraction sweep: preview', $invoke('preview', false));
+        assertStringContains('Exchanges to clean: 1', $invoke('preview', false));
         assertSame(1, $invoke('preview')['affected']);
         assertSame($hash, hash_file('sha256', $root . '/exchanges.sqlite3'));
         assertSame(false, file_exists($root . '/cli-state.json'));
@@ -306,7 +308,10 @@ final class RetractionSweepTest
         assertSame(1, $invoke('status')['cursor']);
         for ($i = 0; $i < 10 && $invoke('status')['remaining']; ++$i) $invoke('run');
         assertSame('complete', $invoke('status')['status']);
+        assertStringContains('Retraction sweep: complete', $invoke('status', false));
+        assertStringContains('Exchanges cleaned: 2', $invoke('status', false));
         assertSame(2, $invoke('status')['totals']['cleaned']);
         assertSame(1, $invoke('status')['totals']['uncertain']);
+        assertStringContains('Retraction sweep: pending', $invoke('run', false));
     }
 }

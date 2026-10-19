@@ -271,7 +271,7 @@ It refuses recovery while the lock or an open file holder is detected.
 ## Sweep retracted local content
 
 ```
-./v3 retraction-sweep preview|run|status [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
+./v3 retraction-sweep preview|run|status [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
 ```
 
 Preview is non-mutating. Run executes one bounded batch immediately; repeat while
