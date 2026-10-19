@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
+use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -861,8 +862,9 @@ final class WriteApiSmokeTest
             assertSame(1, $unicodeRiskCount);
             assertSame(1, $generatedCount);
             assertSame('stub', $generatedRow['provider']);
-            assertSame('stub/post-analysis', $generatedRow['provider_model']);
-            assertSame('analysis_suggested_response', $rawResponse['source']);
+            assertSame('stub/agent-response', $generatedRow['provider_model']);
+            assertStringContains('Be warm, interested, and direct', $rawResponse['messages'][0]['content']);
+            assertStringContains('author: approved=', $rawResponse['messages'][0]['content']);
             assertStringContains('data-created-post-id="' . $postId . '"', $threadPage);
             assertStringContains('data-agent-reply-posted-id="' . $agentPostId . '"', $threadPage);
             assertStringNotContains('data-agent-reply-work=', $threadPage);
@@ -1915,6 +1917,53 @@ PHP);
         }
     }
 
+    public function testLegacyReplyWriterRetryAndCompletedDraftRecovery(): void
+    {
+        $previous = $this->useStubLlmProvider();
+        $previousKey = getenv('LLM_API_KEY');
+        try {
+            foreach (['fresh', 'retry', 'draft'] as $case) {
+                [$root, $db, $artifacts] = $this->createTempEnvironment();
+                $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+                $id = $this->createAnalyzedThread($app, $db);
+                $hash = $this->contentHashForAnalysis($db, $id);
+                $pdo = new PDO('sqlite:' . $db);
+                $store = new SqliteAgentReplyGenerationStore($pdo);
+                $requester = (string) $pdo->query('SELECT identity_id FROM profiles WHERE is_approved = 1 LIMIT 1')->fetchColumn();
+                $context = ['post_id' => $id, 'content_hash' => $hash, 'analysis_hash' => 'legacy'];
+                $store->requestForTarget($context, ['requested_by_identity_id' => $requester]);
+                $row = $store->claimRequestedForPost($id);
+                if ($case === 'retry') {
+                    putenv('LLM_PROVIDER=openai'); putenv('LLM_API_KEY=');
+                    $failed = $app->fulfillAgentReplyRequest($row);
+                    assertSame('failed', $failed['generation_status']);
+                    assertSame('provider_configuration_error', $failed['failure_code']);
+                    putenv('LLM_PROVIDER=stub');
+                    $pdo->exec('UPDATE profiles SET is_approved = 0 WHERE identity_id = ' . $pdo->quote($requester));
+                    $app->retryAgentReplyRequest($id, $hash);
+                    $row = $store->claimRequestedForPost($id);
+                } elseif ($case === 'draft') {
+                    $store->saveComplete($context, ['response_text' => 'Preserved completed draft.', 'raw_response' => ['historical' => true]]);
+                }
+                $done = $app->fulfillAgentReplyRequest($row);
+                assertSame('generated', $done['generation_status']);
+                $saved = $store->findByTarget($id, $hash);
+                assertSame($case === 'draft' ? 'Preserved completed draft.' : 'Stub agent response.', $saved['response_text']);
+                if ($case !== 'draft') {
+                    $prompt = $saved['raw_response']['messages'][0]['content'];
+                    assertStringContains('Be warm, interested, and direct', $prompt);
+                    assertStringContains($case === 'retry' ? 'approved=false' : 'approved=true', $prompt);
+                }
+                assertSame('already_posted', $app->fulfillAgentReplyRequest($row)['generation_status']);
+                assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE parent_id = ' . $pdo->quote($id))->fetchColumn());
+            }
+        } finally {
+            $this->restoreLlmProviderEnv($previous);
+            putenv($previousKey === false ? 'LLM_API_KEY' : 'LLM_API_KEY=' . $previousKey);
+            $_COOKIE = [];
+        }
+    }
+
     public function testTaskQueueProcessesQueuedAgentReplyOnce(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2126,6 +2175,10 @@ PHP);
             assertSame('invalid response_mode', $retired['error']);
             assertSame($mode, $stored['request_context']['agent_reply_request']['agent_response_task']['type']);
             assertSame($mode, $stored['response_intent']);
+            $participantPrompt = $stored['raw_response']['messages'][0]['content'];
+            assertStringContains('Application participation context', $participantPrompt);
+            assertStringContains('approved=', $participantPrompt);
+            assertStringNotContains('requested_by_identity_id', $participantPrompt);
             assertSame('generated', $fulfilled['generation_status']);
             assertSame(1, $analysisCount);
             assertSame(true, str_starts_with($stored['analysis_hash'], 'task:'));
@@ -2672,6 +2725,12 @@ NODE;
             assertSame(null, $store->claimRequestedForPost($initial));
             $done = $app->fulfillAgentReplyRequest($claimed);
             assertSame('generated', $done['generation_status']);
+            $saved = $store->findByTarget($initial, $claimed['target_content_hash']);
+            $sourcePost = $pdo->query('SELECT * FROM posts WHERE post_id = ' . $pdo->quote($source))->fetch(PDO::FETCH_ASSOC);
+            $participants = (new \ForumRewrite\Agent\AgentParticipantContext($pdo, $root))->resolve($sourcePost, $claimed['request_context']['agent_reply_request']['requested_by_identity_id']);
+            assertStringContains(\ForumRewrite\Agent\AgentParticipantContext::prompt($participants), $saved['raw_response']['messages'][0]['content']);
+            assertStringContains('Be warm, interested, and direct', $saved['raw_response']['messages'][0]['content']);
+
             $status = json_decode($this->renderMethod($app, 'GET', '/api/agent_expansion_status?post_id=' . rawurlencode($initial)), true);
             assertSame('generated', $status['generation_status']);
             assertSame('Stub agent response.', trim($status['expansion_body']));
@@ -3417,11 +3476,12 @@ NODE;
         $pdo = new PDO('sqlite:' . $db);
         foreach ([\ForumRewrite\ReadModel\AuthoredContentRepository::visibleThreads($pdo, [$author['identity_id']]),
             \ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts($pdo, [$author['identity_id']])] as $rows) {
-            assertSame(true, count($rows) > 0);
-            foreach ($rows as $row) {
-                assertSame('operator', $row['retraction_class']);
-                assertSame('author', $row['retraction_attribution']);
-            }
+            assertSame([], $rows);
+        }
+        foreach (['threads' => 'root_post_id', 'posts' => 'post_id'] as $table => $idColumn) {
+            $row = $pdo->query("SELECT retraction_class, retraction_attribution FROM {$table} WHERE {$idColumn} = " . $pdo->quote($quote['post_id']))->fetch(PDO::FETCH_ASSOC);
+            assertSame('operator', $row['retraction_class']);
+            assertSame('author', $row['retraction_attribution']);
         }
     }
 
@@ -3607,6 +3667,54 @@ NODE;
         assertSame(true, $rejected);
     }
 
+    public function testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $exchangeDb = sys_get_temp_dir() . '/exchange-location-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $config = $exchangeDb . '.php';
+        file_put_contents($config, '<?php return ' . var_export(['LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb], true) . ';');
+        $previous = getenv('FORUM_SECRETS_PATH');
+        $cookies = $_COOKIE;
+        putenv('FORUM_SECRETS_PATH=' . $config);
+        try {
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $recorder = new \ForumRewrite\Llm\LlmExchangeRecorder(new PDO('sqlite:' . $exchangeDb));
+            $ids = [];
+            foreach (['root-001', 'reply-001'] as $postId) {
+                $ids[$postId] = $recorder->record(['call_type' => 'post_analysis', 'post_id' => $postId,
+                    'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest([$postId])],
+                    ['payload' => []], ['body' => 'Exchange response'], 'completed', 1);
+            }
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $thread = $this->renderMethod($app, 'GET', '/threads/root-001');
+            assertStringNotContains('LLM exchanges:', $thread);
+            foreach ($ids as $postId => $id) {
+                assertStringNotContains('/tools/llm-exchanges/' . $id . '"', $thread);
+                $post = $this->renderMethod($app, 'GET', '/posts/' . $postId);
+                assertStringContains('LLM exchanges:', $post);
+                assertStringContains('/tools/llm-exchanges/' . $id . '"', $post);
+                foreach ($ids as $otherPostId => $otherId) {
+                    if ($otherPostId !== $postId) {
+                        assertStringNotContains('/tools/llm-exchanges/' . $otherId . '"', $post);
+                    }
+                }
+            }
+            $_COOKIE = [];
+            assertStringNotContains('LLM exchanges:', $this->renderMethod($app, 'GET', '/posts/root-001'));
+            file_put_contents($config, '<?php return ' . var_export([
+                'LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb,
+                'LLM_CONVERSATION_UI_ENABLED' => false,
+            ], true) . ';');
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $disabledApp = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            assertStringNotContains('LLM exchanges:', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
+        } finally {
+            $_COOKIE = $cookies;
+            putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
+            unlink($config);
+        }
+    }
+
     public function testRetractionMakesDirectAndContextOnlyLlmExchangeDetailsUnavailable(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -3769,7 +3877,7 @@ NODE;
         assertSame(false, str_contains($this->readModelFileBytes($databasePath), 'zzprosemarker'), 'Prose left in the read-model file');
     }
 
-    public function testRetractedRootShowsPlaceholderKeepsRepliesAndDropsAuthorActions(): void
+    public function testRetractedRootShowsPlaceholderOnPermalinkKeepsRepliesAndLeavesBoard(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
@@ -3804,7 +3912,8 @@ NODE;
         assertStringContains('data-action="apply-post-tag"', $thread);
 
         $board = $this->renderMethod($application, 'GET', '/threads/?view=all&sort=newest');
-        assertStringContains('Deleted post', $board);
+        assertSame(false, str_contains($board, 'Deleted post'), 'Retracted thread remains in the board listing');
+        assertSame(false, str_contains($board, rawurlencode($author['thread_id'])));
         assertSame(false, str_contains($board, 'Subject retract-render'));
 
         $post = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($author['thread_id']));
@@ -6410,6 +6519,8 @@ NODE;
         $_COOKIE = [];
 
         assertSame('ok', $response['status']);
+        assertStringContains('By approving this user, you vouch for their conduct and integrity.', $response['approval_review']['consequence']);
+        assertStringContains('This key will be able to act as alice.', $response['approval_review']['consequence']);
         assertStringContains('Board-Tags: identity approval', $response['canonical_record']);
         assertStringContains('Author-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $response['canonical_record']);
         assertStringContains('Approve-Identity-ID: ' . $target['identity_id'], $response['canonical_record']);
@@ -7488,7 +7599,7 @@ NODE;
             'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
         );
 
-        $this->deleteTree($home);
+        GpgHomeCleaner::dispose($home);
 
         return trim($publicKey) . "\n";
     }
@@ -7511,10 +7622,14 @@ NODE;
                 throw $e;
             }
             sleep(1);
-            $this->deleteTree($home);
+            GpgHomeCleaner::dispose($home);
             mkdir($home, 0700, true);
             $this->runCommand($home, $generate);
         }
+        // Not every test deletes its signing home; stop its agent and remove it at exit.
+        register_shutdown_function(static function () use ($home): void {
+            GpgHomeCleaner::dispose($home);
+        });
 
         return [
             'home' => $home,
@@ -7572,6 +7687,12 @@ NODE;
     private function deleteTree(string $path): void
     {
         if (!is_dir($path)) {
+            return;
+        }
+
+        if (str_starts_with(basename($path), 'forum-rewrite-approval-gpg-')) {
+            GpgHomeCleaner::dispose($path);
+
             return;
         }
 

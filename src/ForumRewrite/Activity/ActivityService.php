@@ -349,7 +349,7 @@ final class ActivityService
             ],
             'content' => [
                 'AND activity.board_tags_json NOT LIKE :hidden_tag
-                 AND (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)',
+                 AND (activity.post_id IS NULL OR (COALESCE(posts.is_hidden, 0) = 0 AND posts.retracted_at IS NULL))',
                 ['hidden_tag' => $quotedHiddenTag],
             ],
             default => ['', []],
@@ -538,6 +538,36 @@ final class ActivityService
         return match ($column) {
             default => (string) $item['committed_at'],
         };
+    }
+
+    /**
+     * Destination for an activity item: the one mapping from item kind to page.
+     * Signed feature-flag changes get their change page, legacy flag changes
+     * their commit page, and anything else keeps its post, thread or profile page.
+     *
+     * @param array<string, mixed> $item
+     * @return array{href: string, label: string}
+     */
+    public function activityItemLink(array $item): array
+    {
+        $kind = (string) ($item['kind'] ?? '');
+        if ($kind === 'site_feature_flag') {
+            $sourcePath = (string) ($item['source_path'] ?? '');
+            $prefix = 'records/feature-flag-changes/';
+            if (str_starts_with($sourcePath, $prefix) && preg_match('/^[A-Za-z0-9._-]+$/D', substr($sourcePath, strlen($prefix), -4)) === 1 && str_ends_with($sourcePath, '.txt')) {
+                return ['href' => '/tools/feature-flags/changes/' . substr($sourcePath, strlen($prefix), -4), 'label' => 'site feature flags'];
+            }
+
+            return ['href' => $this->sourceCommitHref((string) ($item['source_commit_sha'] ?? '')) ?? '/tools/feature-flags/', 'label' => 'site feature flags'];
+        }
+        if ($kind === 'profile_name_change') {
+            return ['href' => '/profiles/' . rawurlencode((string) ($item['author_profile_slug'] ?? '')), 'label' => (string) ($item['author_label'] ?? '')];
+        }
+        if ($kind === 'thread_label_add') {
+            return ['href' => '/threads/' . (string) ($item['thread_id'] ?? ''), 'label' => (string) ($item['thread_id'] ?? '')];
+        }
+
+        return ['href' => '/posts/' . (string) ($item['post_id'] ?? ''), 'label' => (string) ($item['post_id'] ?? '')];
     }
 
     public function sourcePathHref(string $sourcePath, string $sourceCommitSha): ?string

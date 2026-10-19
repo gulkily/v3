@@ -27,13 +27,19 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
     <span data-role="compose-normalization-message"></span>
   </p>
 <?php if ($imageContentEnabled ?? false): ?>
-<?= $partial('partials/image_compose_fields.php') ?>
+<?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
 <?php endif; ?>
   <div class="compose-form-actions">
     <button type="submit"><?= $e($submitLabel) ?></button>
-    <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>
-    <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
-    <button type="button" data-action="save-compose-outbox" disabled>Save reply to Outbox</button>
+<?php ob_start(); ?>
+<?php if ($imageContentEnabled ?? false): ?>
+        <button type="button" class="image-upload-choose" hidden>Attach image</button>
+<?php endif; ?>
+        <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>
+        <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
+        <button type="button" data-action="save-compose-outbox" disabled>Save reply to Outbox</button>
+<?php $replyMenuItems = (string) ob_get_clean(); ?>
+<?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $replyMenuItems]) ?>
   </div>
   <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
   <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">

@@ -675,6 +675,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/tools/feature-flags/changes/([^/]+)/?$#', $path, $matches) === 1) {
+            (new \ForumRewrite\Http\FeatureFlagChangePageController($this->routeServices(), $this->repositoryRoot))->show($matches[1]);
+            return;
+        }
+
         if (preg_match('#^/source/current/(.+)$#', $path, $matches) === 1) {
             $this->sourceFileController()->currentFile($matches[1]);
             return;
@@ -1960,7 +1965,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }

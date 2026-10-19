@@ -85,6 +85,7 @@
   display: block;
   max-width: min(28rem, 70vw);
   overflow: hidden;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -93,6 +94,13 @@
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Keep theme button chrome from changing the height of text-only cells. */
+:root[data-theme] [data-sqlite-viewer] .sqlite-result-scroll button.sqlite-cell-toggle {
+  border: 0;
+  box-shadow: none;
+  line-height: inherit;
 }
 
 .sqlite-cell-toggle.is-expanded {
@@ -189,3 +197,31 @@
 .sqlite-tab-panel[hidden] {
   display: none;
 }
+.sqlite-dialog {
+  width: calc(100vw - 2rem);
+  max-width: 1600px;
+  max-height: calc(100dvh - 2rem);
+  box-sizing: border-box;
+  overflow: auto;
+  color: inherit;
+  background: var(--page-bg, Canvas);
+}
+.sqlite-dialog::backdrop { background: rgb(0 0 0 / 45%); }
+.sqlite-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: var(--page-bg, Canvas);
+}
+.sqlite-dialog-header h2 { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sqlite-dialog-header button { flex: 0 0 auto; width: auto; }
+.sqlite-dialog [data-role="sqlite-explorer"],
+.sqlite-dialog [data-role="sqlite-query-panel"] { width: 100%; margin-left: 0; }
+.sqlite-dialog textarea { width: 100%; box-sizing: border-box; }
+.sqlite-dialog pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sqlite-dialog p { overflow-wrap: anywhere; }
+.sqlite-dialog .sqlite-query-bottom > * { max-width: 100%; min-width: 0; }

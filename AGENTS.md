@@ -2,15 +2,15 @@
 
 ## UI copy
 
-Keep UI text minimal; avoid repeating controls or explaining internals. Reveal edited explanations through contextual help or Explain. Keep essential warnings and recovery actions visible. Track cleanup in docs/plans/ui_copy_audit_checklist.md.
+Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Track cleanup in docs/plans/ui_copy_audit_checklist.md.
 
 ## Todo
 
-Append new entries to todo.txt.
+Do not modify `todo.txt` unless the user explicitly requests an edit to that file. Record task progress and follow-up work in the relevant planning or implementation documents instead.
 
 ## Navigation icons
 
-When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` for icon themes (currently Word97, Chicago, and Windark). Cover both Tools launcher buttons and Tools subnavigation where applicable. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
+When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` for icon themes (currently Word97, Chicago, and Midnight). Cover both Tools launcher buttons and Tools subnavigation where applicable. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
 
 ## Railspike
 

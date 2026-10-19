@@ -55,7 +55,7 @@ try {
  for (const width of [390, 1280]) {
    await page.setViewportSize({width,height:1000});
    for (const [theme, images, approved] of [
-     ['light',true,true], ['word97',true,true], ['chicago',true,true], ['windark',true,true],
+     ['light',true,true], ['word97',true,true], ['chicago',true,true], ['midnight',true,true],
      ['light',true,false], ['light',false,false]
    ]) {
      await setFlags({images});
@@ -86,7 +86,10 @@ try {
          await page.waitForLoadState('networkidle');
          if (images) {
            await page.waitForFunction(() => typeof document.querySelector('[data-compose-form]').__imageEligible === 'boolean');
+           assert.equal(await page.locator('.image-upload-choose').evaluate(button => !button.hidden),approved);
+           await page.locator('.compose-action-menu-toggle').click();
            assert.equal(await page.locator('.image-upload-choose').isVisible(),approved);
+           await page.locator('.compose-action-menu-toggle').click();
          } else assert.equal(await page.locator('.image-compose-fields').count(),0);
          assert.deepEqual(await geometry(),before,`${path}: ${theme}, ${width}px, images=${images}, approved=${approved}`);
          assert.equal(await page.locator('[data-action="save-compose-outbox"]').isEnabled(),true);

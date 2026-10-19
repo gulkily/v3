@@ -18,12 +18,6 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 <?php endif; ?>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
   </article>
-<?php if ($isOwnProfile): ?>
-  <article class="card">
-    <p><strong>This is your profile.</strong></p>
-    <p class="meta">Your current browser identity matches this profile.</p>
-  </article>
-<?php endif; ?>
 <?php if ($canPrivateMessage): ?>
 <?= $indent($partial('partials/private_message_composer.php', [
     'recipientUsernameToken' => (string) $profile['username_token'],

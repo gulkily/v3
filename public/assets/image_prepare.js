@@ -39,7 +39,7 @@
     try { img.src = url; await img.decode(); return img; } finally { URL.revokeObjectURL(url); }
   }
   async function prepare(file) {
-    if (!file || !file.size || file.size > MAX_BYTES) throw new Error('Choose an image of at most 32 MiB for local preparation.');
+    if (!file || !file.size || file.size > MAX_BYTES) throw new Error('Attach an image of at most 32 MiB.');
     const [sourceWidth, sourceHeight, format] = dimensions(await file.arrayBuffer());
     bound(sourceWidth, sourceHeight);
     let bitmap, timer;

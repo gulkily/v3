@@ -66,7 +66,7 @@ final class ForteActivityReadModelRecoveryTest
         putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
 
         $pdo = new PDO('sqlite:' . $databasePath);
-        $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, is_hidden INTEGER NOT NULL DEFAULT 0)');
+        $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, is_hidden INTEGER NOT NULL DEFAULT 0, retracted_at TEXT NULL)');
         $pdo->exec(
             'CREATE TABLE activity (
                 id INTEGER PRIMARY KEY,

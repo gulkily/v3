@@ -37,7 +37,9 @@ final class TemplateRenderer
         'compose_thread.php' => ['/assets/compose.css'],
         'qdb_add.php' => ['/assets/compose.css'],
         'codebase_state.php' => ['/assets/tool-details.css'],
+        'instance.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
+        'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
         'offline_reader.php' => ['/assets/sqlite.css', '/assets/thread-list.css', '/assets/tags.css', '/assets/content-interactions.css'],
@@ -85,11 +87,20 @@ final class TemplateRenderer
         bool $publicAuthenticationResume = false,
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
+        $hasQueryDialog = $pageTemplate === 'codebase_state.php' || !empty($pageData['listingQuery']);
+        if ($hasQueryDialog) {
+            $content .= $this->renderFile('partials/sqlite_dialog.php', []);
+            $scriptPaths = array_merge($scriptPaths, ['/assets/sql-wasm.js', '/assets/sqlite_viewer.js', '/assets/sqlite_dialog.js']);
+        }
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
         $pageStylesheetPaths = [];
         foreach (self::PAGE_STYLESHEET_PATHS[$pageTemplate] ?? [] as $stylesheetPath) {
             $pageStylesheetPaths[] = $this->assetPath($stylesheetPath);
+        }
+
+        if ($hasQueryDialog) {
+            $pageStylesheetPaths[] = $this->assetPath('/assets/sqlite.css');
         }
 
         $viewerProfile = is_array($pageData['viewerProfile'] ?? null) ? $pageData['viewerProfile'] : null;
@@ -222,6 +233,7 @@ final class TemplateRenderer
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
             'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
+            'themeLegacyAliases' => ThemeRegistry::LEGACY_ALIASES,
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
@@ -279,6 +291,7 @@ final class TemplateRenderer
     private function themeHint(array $explicitThemeNames): ?string
     {
         $hint = (string) ($_COOKIE[ThemeRegistry::THEME_HINT_COOKIE] ?? '');
+        $hint = ThemeRegistry::LEGACY_ALIASES[$hint] ?? $hint;
 
         return in_array($hint, $explicitThemeNames, true) ? $hint : null;
     }

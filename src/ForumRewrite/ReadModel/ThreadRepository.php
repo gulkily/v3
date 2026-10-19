@@ -22,16 +22,7 @@ final class ThreadRepository
     public static function fetchThreads(PDO $pdo): array
     {
         $rows = $pdo->query(
-            'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
-                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    posts.body AS root_post_body,
-                    posts.post_score_total AS root_post_score_total,
-                    threads.event_date, threads.event_location, threads.event_link, threads.event_time,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
-             FROM threads
-             JOIN posts ON posts.post_id = threads.root_post_id
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             ORDER BY last_activity_at DESC, root_post_id DESC'
+            self::boardRowsSql()
         )->fetchAll();
 
         $rows = array_values(array_filter(
@@ -40,6 +31,22 @@ final class ThreadRepository
         ));
 
         return ThreadRowSupport::hydrateThreadRows($rows);
+    }
+
+    /** Base row selection shared with the editable listing query; retracted threads are not listed. */
+    public static function boardRowsSql(): string
+    {
+        return 'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
+                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    posts.body AS root_post_body,
+                    posts.post_score_total AS root_post_score_total,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time,
+                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+             FROM threads
+             JOIN posts ON posts.post_id = threads.root_post_id
+             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE threads.retracted_at IS NULL
+             ORDER BY last_activity_at DESC, root_post_id DESC';
     }
 
     /**

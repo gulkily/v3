@@ -11,21 +11,19 @@ $hasMembersOnlyAccess = $viewerProfile !== null
   <article class="card">
     <h1>Lobby</h1>
 <?php if ($viewerProfile === null): ?>
-    <p>This site is for approved members. Set up or select your browser key to continue.</p>
+    <p>This site is for approved members. <a href="/account/key/">Sign in or set up your account</a>.</p>
 <?php elseif ($hasMembersOnlyAccess): ?>
-    <p>Your account is approved. <a href="/">Enter the site</a>.</p>
+    <p><a href="/">Enter the site</a></p>
 <?php elseif (((int) ($viewerProfile['is_approved'] ?? 0)) === 1): ?>
-    <p>Your identity is recognized in the lobby, but member access is cleared.</p>
-    <p>Use <a href="/account/key/">Account</a> to authenticate again, or view <a href="/profiles/<?= $e((string) ($viewerProfile['profile_slug'] ?? '')) ?>">your profile</a>.</p>
+    <p><a href="/account/key/">Sign in again</a> to enter the site.</p>
 <?php else: ?>
-    <p>Your identity is set up, but approval is still pending.</p>
-    <p>Use <a href="/account/key/">Account</a> to review your identity and profile.</p>
+    <p>Approval pending.</p>
 <?php endif; ?>
     <p class="meta" data-role="private-site-auth-status" hidden></p>
   </article>
   <article class="card" data-invitation-redemption hidden>
     <h2>Board invitation</h2>
-    <p>Opening an invitation with a destination automatically redeems it and opens that page. You can choose a username later in Account.</p>
+    <p>Invitations with a destination are accepted automatically.</p>
     <button type="button" data-action="redeem-invitation">Redeem invitation</button>
     <p class="meta" data-role="invitation-redemption-feedback" role="status" hidden></p>
     <p><a href="/account/key/">Review or restore your account</a> · <a href="/">Go to the board</a></p>

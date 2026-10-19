@@ -67,6 +67,14 @@ final class ThemeRegistryTest
         assertSame(false, ThemeRegistry::isExplicitName('unknown'));
     }
 
+    public function testLegacyThemeAliasesPointToCurrentExplicitThemes(): void
+    {
+        foreach (ThemeRegistry::LEGACY_ALIASES as $legacy => $current) {
+            assertSame(false, ThemeRegistry::isKnownName($legacy));
+            assertSame(true, ThemeRegistry::isExplicitName($current));
+        }
+    }
+
     public function testEveryExplicitThemeHasAnIsolatedStylesheet(): void
     {
         $publicRoot = dirname(__DIR__) . '/public';

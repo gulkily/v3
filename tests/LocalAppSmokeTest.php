@@ -7,6 +7,7 @@ require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 require_once __DIR__ . '/Support/ProfileRegressionFixture.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Activity\ActivityService;
@@ -383,7 +384,7 @@ final class LocalAppSmokeTest
             $board = $this->render($application, '/');
             $authStatus = $this->render($application, '/api/auth_status');
 
-            assertStringContains('This is your profile.', $profile);
+            assertStringContains('Member activity', $profile);
             assertStringContains('User Access', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
@@ -679,8 +680,8 @@ PHP;
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
-            assertStringContains('This is your profile.', $ownProfileAfterClear);
-            assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
+            assertStringContains('Member activity', $ownProfileAfterClear);
+            assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
                 $lobbyAfterClear,
@@ -965,6 +966,16 @@ PHP;
             assertStringContains(
                 '"openpgpV5":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/openpgp.v5.11.3.min.js') . '"',
                 $hintedHtml,
+            );
+
+            $_COOKIE = ['theme-hint' => 'windark'];
+            $legacyHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
+
+            assertStringContains(
+                'id="theme-stylesheet" rel="stylesheet" href="'
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-midnight.css')
+                . '" fetchpriority="high"',
+                $legacyHintHtml
             );
 
             $_COOKIE = ['theme-hint' => 'auto'];
@@ -1577,13 +1588,12 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('canonical public content and its history', $backupPage);
-            assertStringContains('They are not a complete instance backup.', $backupPage);
-            assertStringContains('Private messages and separately stored operational data, browser-local keys and drafts', $backupPage);
-            assertStringContains('application software, deployment configuration and secrets, and externally hosted media are not included', $backupPage);
-            assertStringContains('public identity and governance records', $backupPage);
-            assertStringContains('may also contain supplemental workflow records', $backupPage);
-            assertStringContains('not guaranteed to represent the same instant', $backupPage);
+            assertStringContains('Public content and history only', $backupPage);
+            assertStringContains('not a complete instance backup.', $backupPage);
+            assertStringContains('Private messages, browser keys and drafts, operational data', $backupPage);
+            assertStringContains('software, configuration, secrets, and externally hosted media need separate backups', $backupPage);
+            assertStringContains('include supplemental workflow records', $backupPage);
+            assertStringContains('may lag behind the repository', $backupPage);
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
@@ -1838,20 +1848,35 @@ PHP;
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
         assertStringContains('Snapshot freshness', $instance);
+        assertStringContains('<table class="backup-downloads" data-role="text-content-downloads">', $instance);
+        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $downloadHref) {
+            assertSame(1, substr_count($instance, 'href="' . $downloadHref));
+        }
         assertStringContains('Generated at:', $instance);
         assertStringContains('Recent included items', $instance);
         assertStringContains('href="/activity/">See all recent activity</a>', $instance);
         assertStringContains('Repository snapshot:', $instance);
-        assertStringContains('preview, not a complete archive listing', $instance);
+        assertStringContains('Recent included items', $instance);
         assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
+        // The tools tab bar must be the first thing in the page body, before any page content.
+        assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
+        assertOrdered($toolsBackup, '<h1>Backup</h1>', '>Text content</h2>');
+        assertStringNotContains('>Downloads</h2>', $toolsBackup);
+        assertStringContains('>About these downloads</h2>', $toolsBackup);
+        if (str_contains($toolsBackup, '>Images</h2>')) {
+            assertOrdered($toolsBackup, 'tools-nav', '>Images</h2>');
+            assertOrdered($toolsBackup, '>Text content</h2>', '>Images</h2>');
+            assertOrdered($toolsBackup, '>Images</h2>', '>Recent included items</h2>');
+        }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
+        assertStringNotContains('href="/posts/">', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
         assertStringContains('/downloads/read_model.sqlite3', $instance);
-        assertStringContains('canonical public content and its history', $instance);
-        assertStringContains('They are not a complete instance backup.', $instance);
+        assertStringContains('Public content and history only', $instance);
+        assertStringContains('not a complete instance backup.', $instance);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
@@ -1956,14 +1981,14 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","windark"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","midnight"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
         assertStringContains('data-theme-option="whitehot"', $board);
         assertStringContains('data-theme-option="word97"', $board);
-        assertStringContains('data-theme-option="windark"', $board);
+        assertStringContains('data-theme-option="midnight"', $board);
         assertStringNotContains('data-theme-option="qdb"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
@@ -2507,7 +2532,7 @@ PHP;
         assertFingerprintedAsset($board, 'openpgp_loader.js');
         assertFingerprintedAsset($board, 'browser_signing.js');
         assertStringContains('data-role="automatic-guest-publication"', $accountKey);
-        assertStringContains("Off by default: the public key stays on this browser until your first signed action.", $accountKey);
+        assertStringContains("Otherwise, this browser publishes its public key at your first signed action.", $accountKey);
         assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
         assertStringContains('Automatic guest keypair', $featureFlags);
     }
@@ -3059,11 +3084,15 @@ PHP;
         assertStringContains('title="Copy one-line bookmarklet"', $bookmarklets);
         assertStringContains('role="status"', $bookmarklets);
         $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
+        foreach (['/tools/fastmod/', '/tools/user-access/'] as $toolHref) {
+            assertStringContains('.tool-launcher-button[href="' . $toolHref . '"]::before', $navIconsCss);
+            assertStringContains('.tools-nav .nav-link[href="' . $toolHref . '"]::before', $navIconsCss);
+        }
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }
@@ -3338,7 +3367,7 @@ PHP;
         assertStringContains('Last registration error', $healthScript);
         assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
         assertStringContains('Offline reading requires HTTPS.', $healthScript);
-        assertStringContains('Open https://', $healthScript);
+        assertStringContains('Open over HTTPS', $healthScript);
         assertStringContains('Offline reader cache', $healthScript);
         assertStringContains('window.caches.open(matching[0])', $healthScript);
         assertStringContains('new SQL.Database(bytes)', $healthScript);
@@ -5029,7 +5058,7 @@ PHP;
             'gpg --batch --no-tty --homedir ' . $homedir . ' --armor --export'
         );
 
-        $this->deleteTree($home);
+        GpgHomeCleaner::dispose($home);
 
         return trim($publicKey) . "\n";
     }

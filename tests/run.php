@@ -8,6 +8,8 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/RetractionSweepTest.php',
+
+    __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/RailspikeWorkflowTest.php',
     __DIR__ . '/FastmodCsvTest.php',
     __DIR__ . '/FastmodRubricsTest.php',
@@ -34,6 +36,7 @@ $testFiles = [
     __DIR__ . '/AgentReplyTaskTest.php',
     __DIR__ . '/AgentResponseGeneratorTest.php',
     __DIR__ . '/AgentResponseTaskTest.php',
+    __DIR__ . '/AgentParticipantContextTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',
     __DIR__ . '/AccountKeyPageHooksTest.php',
     __DIR__ . '/AuthNavigationTest.php',
@@ -76,6 +79,9 @@ $testFiles = [
     __DIR__ . '/IdentityBootstrapDiagnosticsTest.php',
     __DIR__ . '/ImportedQuoteSeedScoringTest.php',
     __DIR__ . '/InvitationIssuanceTest.php',
+    __DIR__ . '/ActivityItemLinkTest.php',
+    __DIR__ . '/FeatureFlagChangePageTest.php',
+    __DIR__ . '/BackupPageTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',
     __DIR__ . '/LlmProviderConfigTest.php',
     __DIR__ . '/LazyComposeSigningTest.php',
@@ -90,6 +96,7 @@ $testFiles = [
     __DIR__ . '/OpenPgpAssetSmokeProbeTest.php',
     __DIR__ . '/OpenPgpProductionCanaryCommandTest.php',
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
+    __DIR__ . '/GpgHomeCleanerTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/FrontendProbeTest.php',

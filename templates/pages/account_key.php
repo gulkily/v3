@@ -42,7 +42,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <button type="button" class="account-key-secondary-button" data-action="rename-profile"<?= ($usernameChangesEnabled ?? false) ? '' : ' hidden' ?>>Choose username</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
-        <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
+        <p class="meta account-key-simple-status" id="simple-status" hidden></p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
       <details class="account-key-advanced" id="key-backup" data-key-backup>
@@ -53,18 +53,16 @@ $authenticatedIdentityId = is_array($viewerProfile)
             <button type="button" role="tab" id="key-restore-tab" aria-controls="key-restore-panel" aria-selected="true" data-backup-tab="restore">Restore</button>
           </div>
           <div class="stack" id="key-backup-panel" role="tabpanel" aria-labelledby="key-backup-tab" data-backup-panel="backup" hidden>
-            <p>Keep access to your identity and private messages if you clear browser data or change devices. Backups are encrypted here in your browser.</p>
-            <p class="meta">Use a strong, unique passphrase and keep it somewhere safe. A forgotten passphrase cannot be recovered.</p>
+            <p class="meta">Back up before clearing browser data or changing devices to keep access to your identity and private messages. Forgotten passphrases cannot be recovered.</p>
             <label>Backup passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
             <label>Confirm passphrase <input type="password" data-backup-confirm autocomplete="new-password"></label>
             <div class="button-row">
               <button type="button" data-backup-download="text">Download text backup</button>
               <button type="button" data-backup-download="png">Download Starfield PNG</button>
             </div>
-            <p class="meta">Keep the original PNG file. Lossless PNG recompression is supported, but screenshots, resizing, and JPEG conversion can destroy the backup. Text is also available.</p>
+            <p class="meta">Keep the original PNG file. Screenshots or edited images may not restore.</p>
           </div>
           <div class="stack" id="key-restore-panel" role="tabpanel" aria-labelledby="key-restore-tab" data-backup-panel="restore">
-            <p>Choose your encrypted text backup or Starfield PNG and enter its passphrase to restore your identity in this browser.</p>
             <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
             <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
             <button type="button" data-backup-restore>Restore backup</button>
@@ -118,15 +116,15 @@ No browser private key saved yet.
         <div class="stack">
           <ul class="meta account-key-where">
             <li><strong>This browser:</strong> private key, public key, username, and fingerprint (local storage). Backup passphrases never leave it.</li>
-            <li><strong>Server:</strong> your public key once published, at your first signed action or immediately if enabled below, plus your signed posts.</li>
+            <li><strong>Server:</strong> your published public key and signed posts.</li>
             <li><strong>Cookie:</strong> an identity hint, kept 30 days, so the server can show which profile this browser last used.</li>
           </ul>
           <p class="meta" data-role="browser-key-status">
             <span data-role="browser-key-status-message">Ready.</span>
             <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
           </p>
-          <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
-          <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
+          <label><input type="checkbox" data-role="automatic-guest-publication"> Publish guest key immediately</label>
+          <p class="meta">Otherwise, this browser publishes its public key at your first signed action.</p>
           <p class="meta">
             <strong>Identity hint:</strong> <?= $e($identityHint !== '' ? $identityHint : 'none') ?>
             · <strong>Saved browser identity:</strong> <span data-role="identity-id-field">none</span>
@@ -161,17 +159,17 @@ No browser private key saved yet.
       return readStorageValue('forum_pki_fingerprint').trim().toLowerCase();
     }
 
-    function friendlyStatusMessage(rawMessage, username, ready) {
+    function friendlyStatusMessage(rawMessage) {
       if (!rawMessage || rawMessage === 'Ready.') {
-        return ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
+        return '';
       }
 
       if (rawMessage.indexOf('Browser keypair ready for ') === 0) {
-        return 'All set! Posting as ' + username + '.';
+        return '';
       }
 
       if (rawMessage.indexOf('Restored browser keypair for ') === 0) {
-        return 'All set! Posting as ' + username + '.';
+        return '';
       }
 
       if (rawMessage === 'Loaded the saved browser public key into the form.') {
@@ -232,7 +230,7 @@ No browser private key saved yet.
       }
 
       if (statusBadge) {
-        statusBadge.textContent = ready ? 'This browser is ready' : 'Not set up yet';
+        statusBadge.textContent = ready ? 'Ready' : 'Not set up yet';
       }
 
       if (generateButton) {
@@ -246,7 +244,8 @@ No browser private key saved yet.
       }
 
       if (simpleStatus && !simpleStatus.dataset.kind) {
-        simpleStatus.textContent = ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
+        simpleStatus.textContent = '';
+        simpleStatus.hidden = true;
       }
 
       syncProfileLinks(root);
@@ -282,18 +281,15 @@ No browser private key saved yet.
       var statusNode = root.querySelector('[data-role="browser-key-status"]');
       var statusMessage = root.querySelector('[data-role="browser-key-status-message"]');
       var simpleStatus = root.querySelector('#simple-status');
-      var username = readStorageValue('forum_pki_username') || 'guest';
-      var ready = hasBrowserKeypair();
 
       if (!statusNode || !simpleStatus) {
         return;
       }
 
       simpleStatus.textContent = friendlyStatusMessage(
-        statusMessage ? statusMessage.textContent.trim() : statusNode.textContent.trim(),
-        username,
-        ready
+        statusMessage ? statusMessage.textContent.trim() : statusNode.textContent.trim()
       );
+      simpleStatus.hidden = simpleStatus.textContent === '';
       simpleStatus.dataset.kind = statusNode.dataset.kind || '';
     }
 

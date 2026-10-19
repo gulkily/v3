@@ -41,7 +41,7 @@ $threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
   </p>
   <details class="compose-disclosure" data-compose-disclosure="tags-subject"<?= $threadComposeTagsSubjectOpen ? ' open' : '' ?>>
     <summary>Subject &amp; tags <span class="meta" data-role="compose-disclosure-summary"><?= $e($threadComposeTagsSubjectSummary) ?></span></summary>
-    <label>Board tags<input type="text" name="board_tags" value="<?= $e($boardTags) ?>"></label>
+    <label>Board tags<input type="text" name="board_tags" autocapitalize="none" value="<?= $e($boardTags) ?>"></label>
     <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="board_tags" hidden>
       <span data-role="compose-field-normalization-message"></span>
       <button
@@ -78,21 +78,22 @@ $threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
     <span data-role="compose-normalization-message"></span>
   </p>
 <?php if ($imageContentEnabled ?? false): ?>
-<?= $partial('partials/image_compose_fields.php') ?>
+<?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
 <?php endif; ?>
   <div class="compose-form-actions<?= $isCompactThreadCompose ? ' compact-thread-compose-actions' : '' ?>">
     <button type="submit"><?= $e($threadComposeSubmitLabel) ?></button>
-    <details class="compose-action-menu" data-role="compose-action-menu">
-      <summary class="compose-action-menu-toggle" aria-label="More actions" title="More actions">&hellip;</summary>
-      <div class="compose-action-menu-list">
+<?php ob_start(); ?>
+<?php if ($imageContentEnabled ?? false): ?>
+        <button type="button" class="image-upload-choose" hidden>Attach image</button>
+<?php endif; ?>
         <button type="submit" data-action="submit-anonymous-compose"><?= $e($threadComposeAnonymousLabel) ?></button>
 <?php if ($threadComposeAuthoringOperation === 'quote'): ?>
         <button type="button" class="compose-clear-button" data-action="clean-quote-text" title="Remove timestamps and tidy nick formatting in the pasted chat">Remove timestamps</button>
 <?php endif; ?>
         <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
         <button type="button" data-action="save-compose-outbox" disabled>Save thread to Outbox</button>
-      </div>
-    </details>
+<?php $threadComposeMenuItems = (string) ob_get_clean(); ?>
+<?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $threadComposeMenuItems]) ?>
   </div>
   <input type="hidden" name="author_identity_id" value="">
   <input type="hidden" name="return_to" value="<?= $e($returnTo ?? '') ?>">

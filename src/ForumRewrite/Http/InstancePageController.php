@@ -57,16 +57,22 @@ final class InstancePageController
                     [
                         'href' => '/downloads/repository.tar.gz' . $revisionQuery,
                         'label' => 'Content repository (.tar.gz)',
+                        'item' => 'Content repository',
+                        'format' => '.tar.gz',
                         'description' => 'Tarball of the full repository, including .git history.',
                     ],
                     [
                         'href' => '/downloads/repository.zip' . $revisionQuery,
                         'label' => 'Content repository (.zip)',
+                        'item' => 'Content repository',
+                        'format' => '.zip',
                         'description' => 'ZIP archive of the full repository, including .git history.',
                     ],
                     [
                         'href' => '/downloads/read_model.sqlite3',
                         'label' => 'SQLite index database',
+                        'item' => 'SQLite index database',
+                        'format' => '.sqlite3',
                         'description' => 'Current read-model database for local indexing and queries.',
                     ],
                 ],
@@ -165,7 +171,10 @@ final class InstancePageController
         return [
             'generated_at' => $metadata['rebuilt_at'] ?? '',
             'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice(($this->fetchActivity)('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
+            'items' => array_map(
+                fn (array $item): array => $item + ['link' => $this->routeServices->activityService()->activityItemLink($item)],
+                array_slice(($this->fetchActivity)('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
+            ),
         ];
     }
 

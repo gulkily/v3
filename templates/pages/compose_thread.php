@@ -2,7 +2,6 @@
   <article class="card">
     <h1>New thread</h1>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
-    <p class="meta">Write your post below. Open the sections underneath to add a subject, tags, or an event.</p>
 <?= $indent($partial('partials/thread_compose_form.php', ['compact' => false]), 2) ?>
     <p class="meta" data-role="compose-identity-status" hidden></p>
   </article>
