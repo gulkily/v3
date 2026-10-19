@@ -68,3 +68,6 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Separate accepted retraction from local cleanup: one-time “Local cleanup queued.” acknowledgment after reload; enqueue failures keep a concise warning and existing Retry retraction control visible. No new navigation or internal storage explanation in the flow. Verified author/operator/account/partial browser scenarios and keyboard/Escape/touch menu behavior.
 
 - [x] Platform Docs retraction entry — concise title and task-focused description under Operations; reuses the existing document list and reader.
+
+## Markdown reader
+- [x] Keep existing document/source navigation. Added only code-language captions, collapsed metadata, and unavailable-source/image labels where formatting alone cannot communicate the fallback. Table/code scroll regions have accessible names; no extra reading instructions or controls. Verified desktop/mobile and keyboard with JavaScript disabled.

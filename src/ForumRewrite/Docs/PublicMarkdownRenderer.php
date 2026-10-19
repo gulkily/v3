@@ -13,7 +13,9 @@ use League\CommonMark\Event\DocumentParsedEvent;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
 use League\CommonMark\Node\Inline\Text;
+use League\CommonMark\Extension\Table\Table;
 use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\CommonMark\Node\Block\IndentedCode;
 use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
 use League\CommonMark\Extension\CommonMark\Node\Inline\HtmlInline;
 
@@ -45,6 +47,8 @@ final class PublicMarkdownRenderer
         $environment->addExtension(new GithubFlavoredMarkdownExtension());
         $environment->addExtension(new HeadingPermalinkExtension());
         $environment->addRenderer(FencedCode::class, new DocsCodeRenderer(), 10);
+        $environment->addRenderer(IndentedCode::class, new DocsCodeRenderer(), 10);
+        $environment->addRenderer(Table::class, new DocsTableRenderer(), 10);
         $environment->addRenderer(HtmlBlock::class, new DocsHtmlRenderer(), 100);
         $environment->addRenderer(HtmlInline::class, new DocsHtmlRenderer(), 100);
 
@@ -73,9 +77,9 @@ final class PublicMarkdownRenderer
 
         $metadata = '';
         if (preg_match('/\A(?:\xEF\xBB\xBF)?---\r?\n(.*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/s', $markdown, $match) === 1) {
-            $metadata = '<details class="docs-metadata"><summary>Document metadata</summary><pre><code>'
+            $metadata = '<details class="docs-metadata"><summary>Document metadata</summary>' . "\n" . '<pre tabindex="0" role="region" aria-label="Document metadata"><code>'
                 . htmlspecialchars($match[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-                . '</code></pre></details>' . "\n";
+                . "</code></pre>\n</details>" . "\n";
             $markdown = substr($markdown, strlen($match[0]));
         }
 

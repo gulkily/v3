@@ -211,6 +211,19 @@ final class PlatformDocsPageTest
         assertStringContains('<figcaption>html</figcaption>', $hostile);
     }
 
+
+    public function testDocumentTemplatePreservesCodeBytes(): void
+    {
+        $markdown = file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md');
+        $expected = PublicMarkdownRenderer::render($markdown, 'docs/reference/author_post_retraction.md');
+        $page = $this->render('/docs/reference/author_post_retraction.md');
+        preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $expected, $expectedBlocks);
+        preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $page, $actualBlocks);
+        assertSame($expectedBlocks[1], $actualBlocks[1]);
+        assertStringContains('tabindex="0" role="region" aria-label="Table"', $page);
+        assertStringContains('tabindex="0" role="region" aria-label="Code"', $page);
+    }
+
     private function render(string $path): string
     {
         $application = new Application(

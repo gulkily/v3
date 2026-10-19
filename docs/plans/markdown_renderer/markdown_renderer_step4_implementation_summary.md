@@ -25,3 +25,8 @@ Debug mode: enabled
 ### Stage 3 verification correction
 - Correction to the preceding verification entry: commit 5247c7e2 was made after an overlooked test failure (16 passed, 1 failed), not 17 passes. No Stage 4 work began before correction.
 - GFM installs its raw-HTML renderer at priority 50; the explicit escaped fallback now has priority 100. Rerun: 17 focused Docs tests passed, including actual metadata, comments, logo and hostile source. git diff --check passed. This corrective commit completes Stage 3.
+
+## Stage 4 - Mobile and keyboard reading
+- Changes: scoped scrollable tables, focusable named table/code regions, preserved whitespace, theme-aware borders/focus indicators. Captions and pre blocks use separate lines so the shared template indenter preserves code bytes. Copy audit updated with only necessary fallback labels.
+- Verification: 18 focused Docs tests passed; actual template code bytes match parser output. Eight Chromium scenarios passed at 1280px/390px with JavaScript disabled, default/Word97/Chicago/Midnight CSS, keyboard Tab/focus/ArrowRight scrolling, no page-wide overflow and actual cross-document CLI-fragment navigation. Theme sheets applied directly with preference scripts disabled. Dynamic browser measurements are saved beside this summary; screenshots in /tmp/markdown-renderer-browser were visually inspected. git diff --check passed.
+- Notes: Stage 3 corrective commit 4474af35. Browser setup retries corrected style injection under disabled JavaScript; they did not change application behavior. No navigation changes, so navigation-icon remapping is inapplicable.
