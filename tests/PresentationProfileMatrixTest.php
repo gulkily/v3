@@ -39,6 +39,43 @@ final class PresentationProfileMatrixTest
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());
     }
 
+    public function testListingQueryRoutesAndCodebaseCoverage(): void
+    {
+        $application = $this->application();
+        foreach (ProfileRegressionContract::all() as $profileId => $contract) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                foreach (['/', '/threads', '/threads/'] as $path) {
+                    foreach (['all', 'liked'] as $view) {
+                        foreach (['newest', 'oldest', 'top'] as $sort) {
+                            $html = $this->render($application, $path . '?view=' . $view . '&sort=' . $sort);
+                            if ($contract['experience'] === 'forum') {
+                                assertStringContains('data-query-key="board-' . $view . '-' . $sort . '"', $html);
+                                assertSame(1, substr_count($html, 'data-query-dialog '));
+                                assertStringContains('sqlite_dialog.', $html);
+                                $footer = strpos($html, '<footer class="listing-query-footer">');
+                                assertTrue($footer !== false && $footer < strpos($html, 'data-query-key="board-'));
+                                assertTrue($footer > strrpos($html, 'data-compose-root'));
+                                if (str_contains($html, 'class="card thread-card"')) {
+                                    assertTrue($footer > strrpos($html, 'class="card thread-card"'));
+                                }
+                            }
+                        }
+                    }
+                }
+                $codebase = $this->render($application, '/tools/codebase/');
+                preg_match_all('/data-query-sql="([^"]+)"/', $codebase, $queries);
+                assertTrue(count($queries[1]) >= 16);
+                assertStringNotContains('<code>SELECT ', $codebase);
+                foreach ($queries[1] as $sql) {
+                    assertTrue(str_starts_with(html_entity_decode($sql, ENT_QUOTES), 'SELECT '));
+                }
+                assertStringContains('git -C state/local_repository', $codebase);
+                assertStringNotContains('data-query-dialog', $this->render($application, '/forte/'));
+            } finally { putenv('FORUM_SITE_ID'); }
+        }
+    }
+
     private function application(): Application
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-presentation-matrix-repo-' . bin2hex(random_bytes(6));

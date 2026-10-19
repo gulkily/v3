@@ -9,7 +9,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 - Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.2.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
-- The full upstream tree, including its license, is preserved without local edits.
+- The full upstream tree and license are retained, with the local experimental estimation patch described below. The upstream Ref/Commit identifies the imported baseline, not the locally patched contents.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
   Review those revisions and changes when updating. Keep project guidance here,
   outside `docs/railspike/`, to avoid conflicts with upstream instructions.
@@ -32,6 +32,14 @@ git show 213cdea966f43f851c3d11208890b599012fd239:docs/fdp/FEATURE_DEVELOPMENT_P
 
 Existing cycles keep their approved process unless explicitly replanned and
 approved. Do not bulk-move or rewrite old plans.
+
+## Local experimental effort-estimation patch
+
+The [effort estimation trial](../plans/effort_estimation_trial.md) adds an opt-in contract in [vendored Railspike](../railspike/RAILSPIKE.md#experimental-effort-estimation) and hooks in its eight Step 1–4 instruction files. Project-specific sources, hashes, candidates and outcomes remain in the host ledger; selected feature artifacts carry snapshots. Selection must be explicit, and the setup cycle itself is not one of the six study outcomes. Unrelated cycles need no estimates.
+
+This is an intentional local product patch, not a new upstream release. Its scope is `docs/railspike/RAILSPIKE.md` and the eight Markdown files in `docs/railspike/docs/workflow/`. Keep the recorded upstream provenance unchanged. The setup's [implementation summary](../plans/effort_estimation_trial/effort_estimation_trial_step4_implementation_summary.md) records the stage commit for later roll-up. Plans, diagnostics and study data stay outside the vendored tree.
+
+Before a future subtree update, inspect and preserve this patch in branch history; compare the incoming workflow for equivalent estimation behavior and resolve any conflicts deliberately. Do not silently drop the experiment or duplicate its contract. Recheck opt-in behavior, checkpoint hooks and relative links after updating. Upstream submission/roll-up and any subtree update are separate authorized work; this trial does not perform them.
 
 ## Update commands
 

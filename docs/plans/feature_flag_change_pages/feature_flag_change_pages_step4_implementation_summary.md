@@ -1,0 +1,74 @@
+> **Feature plan:** [Step 1](./feature_flag_change_pages_step1_solution_assessment.md) · [Step 2](./feature_flag_change_pages_step2_feature_description.md) · [Step 3](./feature_flag_change_pages_step3_development_plan.md) · [Step 4](./feature_flag_change_pages_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+Branch: `feature/feature_flag_change_pages`, based on `fix/backup-page-tools-nav-order` (unmerged; carries the Backup layout fix that Stage 5 depends on). The base was not specified at approval; this was the recommended option.
+
+## Stage 1 - Shared activity link mapping
+- Changes:
+  - `ActivityService::activityItemLink()` maps an item to `{href, label}`: signed flag change to `/tools/feature-flags/changes/{id}`, legacy flag change to its commit page (generic flags page only if no valid commit), other kinds unchanged.
+  - `tests/ActivityItemLinkTest.php` (registered in `tests/run.php`).
+  - No surface uses the helper yet, and the change page route arrives in Stage 2.
+- Verification:
+  - `php tests/run.php ActivityItemLinkTest`: passed, 4 of 4.
+  - Census of the local read model: 6 signed flag items, 0 legacy. Production data not checked, so the legacy fallback stays in place.
+  - Full suite not run in this stage (over two minutes); focused result only.
+- Notes:
+  - Items already carry `source_signature_status` and `source_signature_href`, which Stage 2 can show instead of inventing signature wording.
+
+## Stage 2 - Change page
+- Changes:
+  - Route `/tools/feature-flags/changes/{id}` (Application route plus the application-route allowlist), `FeatureFlagChangePageController` modeled on `RootApprovalPageController`, template `feature_flag_change.php` with the tools nav, `tool-details.css` mapping.
+  - Page shows flag (label and key), new value, time, operator, and source evidence through the existing `source_metadata` partial (path, commit, signature link/status as the activity item already derives them). It states that it does not re-verify the signature.
+  - Unknown, malformed, traversal-style or unparseable IDs render "Feature flag change unavailable" with 404.
+  - `tests/FeatureFlagChangePageTest.php` (registered in `tests/run.php`).
+- Verification:
+  - `php tests/run.php FeatureFlagChangePageTest ActivityItemLinkTest`: passed, 6 of 6.
+  - `php tests/run.php LocalAppSmokeTest`: passed, 141 of 141.
+  - Visual check of the page: pending until Stage 6.
+- Notes:
+  - Correction to earlier work on `fix/backup-page-tools-nav-order`: running `php tests/LocalAppSmokeTest.php` directly only loads the class and runs nothing, so "smoke test passes" claims made that way were not real checks. The suite was rerun through `tests/run.php` above and passes, including the tab-bar ordering and empty-link assertions from that branch.
+  - A record ID must start with `feature-flag-change-`; the test fixture initially used an invalid ID.
+
+## Stage 3 - Activity page and RSS
+- Changes:
+  - `ActivityPageController` attaches `link` (from `activityItemLink`) to each item; `activity.php` renders it, replacing its four-way branch. The RSS feed uses the same helper's `href`.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest FeatureFlagChangePageTest ActivityItemLinkTest ForteActivity`: passed, 147 of 147 (filters match whole classes plus the Forte activity tests).
+  - New assertions: the Activity page and RSS link a signed flag change to its change page and no longer to the generic flags page.
+  - Full suite not run in this stage.
+- Notes:
+  - Test method renamed to `testSignedChangeRendersPageAndActivityAndRssLinkToIt` since it now covers all three.
+
+## Stage 4 - Forte Activity
+- Changes:
+  - `ForteActivityController::activityItemBoardLink` delegates the `site_feature_flag` branch to `activityItemLink`; post, thread and profile branches are unchanged (they link into the Forte board, which the shared helper does not do).
+  - Corrected the comment in `paned_activity_detail_article.php` about where flag items point.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest FeatureFlagChangePageTest ActivityItemLinkTest ForteActivity ForteBoard`: passed, 147 of 147.
+  - New assertion: the Forte activity detail fragment (`/api/forte_activity_detail`) links a signed change to its change page.
+- Notes:
+  - The Forte profile_name_change branch still duplicates part of the shared mapping; left alone because it is outside this feature's scope.
+
+## Stage 5 - Backup preview
+- Changes:
+  - `InstancePageController::fetchBackupSnapshot` attaches `link` from `activityItemLink` to each preview item; `instance.php` renders it, replacing its local mapping (which was added in `c7535a96` on the base branch).
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest FeatureFlagChangePageTest ActivityItemLinkTest ImageContentTest`: passed, 151 of 151.
+  - New assertion: the Backup preview links a signed change to its change page, not the generic flags page.
+- Notes:
+  - The test record uses a 2030 timestamp so it falls inside the preview's five-item window next to the fixture content.
+  - Base branch carried the Backup layout fix as planned, so no conflict arose. The separate Backup page redesign (Step 1 only) will rework this template next.
+
+## Stage 6 - Acceptance
+- Changes:
+  - No code changes; the tests for each surface were added in Stages 1-5.
+- Verification:
+  - Grep for `site_feature_flag` in `src` and `templates`: remaining hits are the shared helper, Forte's delegation to it, the change-page lookup, and unrelated code (read model, write service, security-review partial). No surface keeps its own flag-link mapping.
+  - Full suite `php tests/run.php`: 1279 run, 1277 passed, 2 failed. Both failures reproduce on `main` (`fc2d8e67`) and predate this feature (history shows failing since 2026-10-16): `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` and `WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence` (null `$postId` passed to `ApprovalAcceptance::path()`). Not fixed here, out of scope.
+  - Live check against the local repository (6 signed flag changes, 0 legacy): Activity, Backup preview and the change page in dark, light and `word97` at 1100px and 375px. No horizontal scroll, no flag item links to the generic flags page, and every change link from Activity returns 200. Screenshots of the change page reviewed in dark phone and `word97` desktop.
+  - Forte Activity: the list page showed one change link in the live check; the per-item detail link is covered by the automated test, not by a visual check.
+  - Legacy commit-page fallback: covered by unit test only; the local data has no legacy items. Production data not checked.
+- Notes:
+  - Signature status is shown only as the record's signature file link; the page says it does not re-verify.
+  - A separate `WriteApiSmokeTest` failure touches feature-flag change signing and may deserve its own fix.

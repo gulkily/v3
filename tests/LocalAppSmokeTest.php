@@ -967,6 +967,16 @@ PHP;
                 $hintedHtml,
             );
 
+            $_COOKIE = ['theme-hint' => 'windark'];
+            $legacyHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
+
+            assertStringContains(
+                'id="theme-stylesheet" rel="stylesheet" href="'
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-midnight.css')
+                . '" fetchpriority="high"',
+                $legacyHintHtml
+            );
+
             $_COOKIE = ['theme-hint' => 'auto'];
             $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
 
@@ -1837,6 +1847,10 @@ PHP;
         assertStringContains('Backup', $backup);
         assertStringContains('Backup', $toolsBackup);
         assertStringContains('Snapshot freshness', $instance);
+        assertStringContains('<table class="backup-downloads" data-role="text-content-downloads">', $instance);
+        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $downloadHref) {
+            assertSame(1, substr_count($instance, 'href="' . $downloadHref));
+        }
         assertStringContains('Generated at:', $instance);
         assertStringContains('Recent included items', $instance);
         assertStringContains('href="/activity/">See all recent activity</a>', $instance);
@@ -1844,7 +1858,18 @@ PHP;
         assertStringContains('Recent included items', $instance);
         assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
+        // The tools tab bar must be the first thing in the page body, before any page content.
+        assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
+        assertOrdered($toolsBackup, '<h1>Backup</h1>', '>Text content</h2>');
+        assertStringNotContains('>Downloads</h2>', $toolsBackup);
+        assertStringContains('>About these downloads</h2>', $toolsBackup);
+        if (str_contains($toolsBackup, '>Images</h2>')) {
+            assertOrdered($toolsBackup, 'tools-nav', '>Images</h2>');
+            assertOrdered($toolsBackup, '>Text content</h2>', '>Images</h2>');
+            assertOrdered($toolsBackup, '>Images</h2>', '>Recent included items</h2>');
+        }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
+        assertStringNotContains('href="/posts/">', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
@@ -1955,14 +1980,14 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","windark"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","midnight"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
         assertStringContains('data-theme-option="whitehot"', $board);
         assertStringContains('data-theme-option="word97"', $board);
-        assertStringContains('data-theme-option="windark"', $board);
+        assertStringContains('data-theme-option="midnight"', $board);
         assertStringNotContains('data-theme-option="qdb"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
@@ -3058,11 +3083,15 @@ PHP;
         assertStringContains('title="Copy one-line bookmarklet"', $bookmarklets);
         assertStringContains('role="status"', $bookmarklets);
         $navIconsCss = (string) file_get_contents(__DIR__ . '/../public/assets/theme-nav-icons.css');
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
-        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="windark"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
+        foreach (['/tools/fastmod/', '/tools/user-access/'] as $toolHref) {
+            assertStringContains('.tool-launcher-button[href="' . $toolHref . '"]::before', $navIconsCss);
+            assertStringContains('.tools-nav .nav-link[href="' . $toolHref . '"]::before', $navIconsCss);
+        }
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[data-bookmarklet-kind="tweet"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/forte"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/account/key/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/tools/sqlite/"]::before', $navIconsCss);
+        assertStringContains(':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before', $navIconsCss);
         assertStringContains('value="Saved Title"', $prefilledCompose);
         assertStringContains('>Saved Body</textarea>', $prefilledCompose);
     }

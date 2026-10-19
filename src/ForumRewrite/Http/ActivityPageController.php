@@ -69,7 +69,10 @@ final class ActivityPageController
                         'is_active' => false,
                     ],
                 ],
-                'items' => $activityService->fetchActivity($view, 'date', 'desc')['items'],
+                'items' => array_map(
+                    static fn (array $item): array => $item + ['link' => $activityService->activityItemLink($item)],
+                    $activityService->fetchActivity($view, 'date', 'desc')['items'],
+                ),
             ],
             'Activity',
             'activity',
@@ -83,12 +86,7 @@ final class ActivityPageController
         $view = $activityService->normalizeActivityView($view);
         $items = [];
         foreach ($activityService->fetchActivity($view, 'date', 'desc')['items'] as $item) {
-            $link = match ($item['kind']) {
-                'thread_label_add' => '/threads/' . $item['thread_id'],
-                'site_feature_flag' => '/tools/feature-flags/',
-                'profile_name_change' => '/profiles/' . rawurlencode((string) ($item['author_profile_slug'] ?? '')),
-                default => '/posts/' . $item['post_id'],
-            };
+            $link = $activityService->activityItemLink($item)['href'];
             $items[] = RssFeed::item($item['label'], $link, $item['kind'], (string) $item['created_at']);
         }
 

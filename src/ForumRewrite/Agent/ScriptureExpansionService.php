@@ -183,6 +183,9 @@ final class ScriptureExpansionService
                 $input = AgentResponseTask::generationInputForType(($this->contextForPost)($initial), AgentResponseTask::SCRIPTURE_EXPANSION_TYPE);
                 $input['original_post'] = (string) $source['body'];
                 $input['initial_answer'] = (string) $initial['body'];
+                $input['participants'] = (new AgentParticipantContext($this->pdo, $this->repositoryRoot))->resolve(
+                    $source, $row['request_context']['agent_reply_request']['requested_by_identity_id'] ?? null,
+                );
                 $generation = $generator->generate($input);
                 $generation['response_intent'] = AgentResponseTask::SCRIPTURE_EXPANSION_TYPE;
             }
