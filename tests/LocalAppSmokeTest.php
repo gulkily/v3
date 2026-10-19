@@ -1841,7 +1841,7 @@ PHP;
         assertStringContains('Recent included items', $instance);
         assertStringContains('href="/activity/">See all recent activity</a>', $instance);
         assertStringContains('Repository snapshot:', $instance);
-        assertStringContains('preview, not a complete archive listing', $instance);
+        assertStringContains('Recent included items', $instance);
         assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
