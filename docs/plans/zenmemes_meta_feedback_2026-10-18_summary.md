@@ -63,6 +63,11 @@ Unless marked otherwise, these reports have no explicit resolution in their thre
 | 10 | Running ./v3 start without PHP fails with exec: php: not found. Improve missing-runtime handling; no more specific remedy was requested. | [thread-20261011032053-4bcd6395](https://zenmemes.com/posts/thread-20261011032053-4bcd6395) | 0.1 |
 | 11 | Word 97 theme selected navigation buttons initially appear gray and pressed, but become dark blue and flat after a click or navigation. | [thread-20261014112321-7211adde](https://zenmemes.com/posts/thread-20261014112321-7211adde), [reply-20261014112339-48978dfe](https://zenmemes.com/posts/reply-20261014112339-48978dfe) | 0.2 |
 
+## Local implementation progress (2026-10-19)
+
+- Bug 01: disabled automatic capitalization on the Board tags input (commit `392f43bc`). PHP syntax and diff checks passed; mobile device verification remains open.
+- Bug 03: compose normalization now restores cursor position and selection direction, adjusting selection offsets when text expands or is removed. Regression coverage includes a smart quote in the middle of a draft, punctuation expansion, unsupported-character removal, and unchanged text. All 82 `BrowserSigningNormalizationTest` tests, JavaScript syntax, and diff checks passed. Device verification remains open.
+
 ## Other
 
 | Item | Summary | Sources | Railspike cycles |
