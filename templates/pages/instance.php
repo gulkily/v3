@@ -1,12 +1,5 @@
 <section class="stack">
 <?php if (isset($toolNavOptions)): ?>
-<?php if ($imageBackupAvailable ?? false): ?>
-  <article class="card">
-    <h2>Image backup</h2>
-    <p>Download both the content repository below and <a href="<?= $e($imageBackupHref) ?>">the complete image collection (.tar)</a>. Keep files with matching repository revisions together. The SQLite index alone cannot restore images.</p>
-    <p class="meta">If the repository changes, refresh this page and download both again. Images remain available for backup when image display is disabled. Restore instructions are in the image backup runbook.</p>
-  </article>
-<?php endif; ?>
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
@@ -23,22 +16,30 @@
 <?php endforeach; ?>
 <?php endif; ?>
     </p>
-  </article>
-  <article class="card">
-    <h2>Snapshot freshness</h2>
+    <section class="feature-flag-group">
+      <h2 class="feature-flag-group-heading">Snapshot freshness</h2>
 <?php if (($backupSnapshot['generated_at'] ?? '') === ''): ?>
-    <p class="meta">Freshness information is not available yet.</p>
+      <p class="meta">Freshness information is not available yet.</p>
 <?php else: ?>
-    <p><strong>Generated at:</strong> <?= $timestamp($backupSnapshot['generated_at']) ?></p>
+      <p><strong>Generated at:</strong> <?= $timestamp($backupSnapshot['generated_at']) ?></p>
 <?php endif; ?>
 <?php if (($backupSnapshot['repository_head'] ?? '') !== ''): ?>
-    <p class="meta"><strong>Repository snapshot:</strong> <?= $e(substr((string) $backupSnapshot['repository_head'], 0, 12)) ?></p>
+      <p class="meta"><strong>Repository snapshot:</strong> <?= $e(substr((string) $backupSnapshot['repository_head'], 0, 12)) ?></p>
 <?php endif; ?>
-    <h3>Recent included items</h3>
+    </section>
+<?php if ($imageBackupAvailable ?? false): ?>
+    <section class="feature-flag-group">
+      <h2 class="feature-flag-group-heading">Image backup</h2>
+      <p>Download both the content repository below and <a href="<?= $e($imageBackupHref) ?>">the complete image collection (.tar)</a>. Keep files with matching repository revisions together. The SQLite index alone cannot restore images.</p>
+      <p class="feature-flags-notice meta">If the repository changes, refresh this page and download both again. Images remain available for backup when image display is disabled. Restore instructions are in the image backup runbook.</p>
+    </section>
+<?php endif; ?>
+    <section class="feature-flag-group">
+      <h2 class="feature-flag-group-heading">Recent included items</h2>
 <?php if (($backupSnapshot['items'] ?? []) === []): ?>
-    <p>No recent content items are available in this snapshot.</p>
+      <p>No recent content items are available in this snapshot.</p>
 <?php else: ?>
-    <ul class="backup-preview">
+      <ul class="backup-preview">
 <?php foreach ($backupSnapshot['items'] as $item): ?>
 <?php if (($item['kind'] ?? '') === 'thread_label_add'): ?>
 <?php $href = '/threads/' . ($item['thread_id'] ?? ''); ?>
@@ -47,15 +48,16 @@
 <?php $href = '/posts/' . ($item['post_id'] ?? ''); ?>
 <?php $linkLabel = $item['post_id'] ?? ''; ?>
 <?php endif; ?>
-      <li><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a> - <?= $e($item['label'] ?? '') ?> <span class="meta"><?= $e($item['kind'] ?? '') ?></span></li>
+        <li><a href="<?= $e($href) ?>"><?= $e($linkLabel) ?></a> - <?= $e($item['label'] ?? '') ?> <span class="meta"><?= $e($item['kind'] ?? '') ?></span></li>
 <?php endforeach; ?>
-    </ul>
-    <p class="meta">Showing the five most recent content items when available; this is a preview, not a complete archive listing.</p>
+      </ul>
+      <p class="meta">Showing the five most recent content items when available; this is a preview, not a complete archive listing.</p>
 <?php endif; ?>
-    <p><a href="/activity/">See all recent activity</a></p>
+      <p><a href="/activity/">See all recent activity</a></p>
+    </section>
   </article>
   <article class="card">
-    <h2>Downloads</h2>
+    <h2 class="feature-flag-group-heading">Downloads</h2>
     <ul>
 <?php foreach ($downloads as $download): ?>
       <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a> - <?= $e($download['description']) ?></li>

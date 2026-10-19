@@ -1829,6 +1829,13 @@ PHP;
         assertStringContains('preview, not a complete archive listing', $instance);
         assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
+        // The tools tab bar must be the first thing in the page body, before any page content.
+        assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
+        if (str_contains($toolsBackup, '>Image backup</h2>')) {
+            assertOrdered($toolsBackup, 'tools-nav', '>Image backup</h2>');
+            assertOrdered($toolsBackup, '>Snapshot freshness</h2>', '>Image backup</h2>');
+            assertOrdered($toolsBackup, '>Image backup</h2>', '>Recent included items</h2>');
+        }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
