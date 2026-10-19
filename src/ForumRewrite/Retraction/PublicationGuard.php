@@ -13,12 +13,24 @@ use RuntimeException;
  * Rendering/provider calls never run under this lock. */
 final class PublicationGuard
 {
+    private static array $held = [];
     public static function lock(string $repositoryRoot): ExecutionLock
     {
         $root = realpath($repositoryRoot) ?: $repositoryRoot;
         $path = is_dir($root . '/.git') ? $root . '/.git/retraction-publication.lock'
             : dirname($root) . '/.retraction-publication-' . hash('sha256', $root) . '.lock';
         return new ExecutionLock($path);
+    }
+
+    public static function withLock(string $repositoryRoot, callable $callback): mixed
+    {
+        $key = realpath($repositoryRoot) ?: $repositoryRoot;
+        if (isset(self::$held[$key])) return $callback();
+        return self::lock($repositoryRoot)->withExclusiveLock(function () use ($key, $callback): mixed {
+            self::$held[$key] = true;
+            try { return $callback(); }
+            finally { unset(self::$held[$key]); }
+        });
     }
 
     public static function generation(string $repositoryRoot): string
@@ -51,7 +63,7 @@ final class PublicationGuard
     public static function publish(?array $token, string $path, callable $publish): void
     {
         if ($token === null) { $publish(); return; }
-        self::lock($token['root'])->withExclusiveLock(function () use ($token, $path, $publish): void {
+        self::withLock($token['root'], function () use ($token, $path, $publish): void {
             if (self::generation($token['root']) !== $token['generation']) throw new RuntimeException('Retraction changed during publication; rebuild and retry.');
             $publish();
             if (file_put_contents($path . '.retraction-generation', $token['generation']) === false) throw new RuntimeException('Cannot record artifact generation.');

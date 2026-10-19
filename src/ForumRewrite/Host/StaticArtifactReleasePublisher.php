@@ -38,11 +38,9 @@ final class StaticArtifactReleasePublisher
             }
 
             $releasePath = $releaseDirectory . '/release-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4));
-            if (!rename($candidatePath, $releasePath)) {
-                throw new RuntimeException('Unable to finalize static artifact release.');
-            }
-
-            \ForumRewrite\Retraction\PublicationGuard::publish($token, $releasePath, static function (): void {});
+            \ForumRewrite\Retraction\PublicationGuard::publish($token, $releasePath, static function () use ($candidatePath, $releasePath): void {
+                if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
+            });
             return $releasePath;
         } catch (\Throwable $throwable) {
             $this->removeDirectory($candidatePath);
@@ -89,7 +87,10 @@ final class StaticArtifactReleasePublisher
 
         $candidatePath = $this->staticHtmlRoot . '/.candidate-' . bin2hex(random_bytes(8));
         try {
-            $this->copyDirectory($activeReleasePath, $candidatePath);
+            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($token, $activeReleasePath, $candidatePath): void {
+                if (\ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot) !== $token['generation']) throw new RuntimeException('Retraction changed before shared refresh.');
+                $this->copyDirectory($activeReleasePath, $candidatePath);
+            });
             (new StaticArtifactBuilder(
                 $this->projectRoot,
                 $this->repositoryRoot,
@@ -104,11 +105,9 @@ final class StaticArtifactReleasePublisher
             }
 
             $releasePath = $releaseDirectory . '/release-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4));
-            if (!rename($candidatePath, $releasePath)) {
-                throw new RuntimeException('Unable to finalize static artifact release.');
-            }
-
-            \ForumRewrite\Retraction\PublicationGuard::publish($token, $releasePath, static function (): void {});
+            \ForumRewrite\Retraction\PublicationGuard::publish($token, $releasePath, static function () use ($candidatePath, $releasePath): void {
+                if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
+            });
             return $releasePath;
         } catch (\Throwable $throwable) {
             $this->removeDirectory($candidatePath);

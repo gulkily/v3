@@ -32,8 +32,8 @@ still physically removes a canonical file and is a separate operation.
   and the whole-checkout downloads at `/downloads/repository.tar.gz` and
   `/downloads/repository.zip`, still has it.
 - It does not reach backups, other servers, or copies other people saved.
-- Physical purge of history, artifacts, and backups is a later slice under the
-  same record.
+- Canonical/history and backup purge remain separate. Managed artifact and LLM
+  payload cleanup uses the [local retraction sweep](retraction_sweep.md).
 
 The completion text explains these limits; confirmation asks “Retract this post?”.
 The wording lives in
@@ -106,6 +106,9 @@ posts.
 - `actor_identity_id` identifies the signer in both requests. The existing
   `author_identity_id` request parameter remains a backward-compatible alias
   for the actor; canonical Author-Identity-ID still names the target author.
+- `cleanup_status` is `pending` after queueing, or `failed` if queueing failed;
+  it is separate from signed acceptance. Retry without signing again. Operators
+  inspect current cleanup through `./v3 retraction-sweep status`.
 - `retraction_status` is `complete`, or `partial` when the record is committed but
   a refresh failed; `failed_step` is `read_model_refresh` or `artifact_invalidate`.
 - To recover a partial result, call `/api/prepare_retraction` again. For an

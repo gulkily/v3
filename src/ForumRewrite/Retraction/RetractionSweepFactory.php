@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace ForumRewrite\Retraction;
 
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
-use ForumRewrite\Llm\ExchangeRetractionState;
 use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 

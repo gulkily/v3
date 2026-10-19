@@ -15,18 +15,36 @@ final class ArtifactSweep
         if ($stack === []) {
             foreach (array_unique($roots) as $root) {
                 if (is_link($root)) throw new RuntimeException('Artifact root must not be a symlink.');
+                if (file_exists($root) && !is_dir($root)) throw new RuntimeException('Artifact root is not a directory.');
                 if (is_dir($root)) $stack[] = ['path' => rtrim($root, '/'), 'after' => '', 'top' => true];
             }
         }
         $examined = $cleaned = $affected = 0;
+        $directories = [];
         while ($stack !== [] && $examined < max(1, $limit)) {
             $index = count($stack) - 1;
             $frame = $stack[$index];
+            $allowed = false;
+            foreach ($roots as $root) {
+                $base = rtrim($root, '/');
+                if ($frame['path'] === $base || str_starts_with($frame['path'], $base . '/')) {
+                    if (is_link($base)) throw new RuntimeException('Artifact root must not be a symlink.');
+                    $resolvedBase = realpath($base);
+                    $resolvedFrame = realpath($frame['path']);
+                    if ($resolvedFrame !== false && $resolvedFrame !== $resolvedBase . substr($frame['path'], strlen($base))) throw new RuntimeException('Artifact traversal crossed a symlink.');
+                    $allowed = true;
+                }
+            }
+            if (!$allowed || str_contains($frame['path'], '/..') || is_link($frame['path'])) throw new RuntimeException('Invalid artifact traversal state.');
             if (!is_dir($frame['path'])) { array_pop($stack); continue; }
-            $names = scandir($frame['path']);
-            if ($names === false) throw new RuntimeException('Cannot inspect artifact directory.');
-            $name = null;
-            foreach ($names as $entry) if ($entry !== '.' && $entry !== '..' && strcmp($entry, $frame['after']) > 0) { $name = $entry; break; }
+            if (!isset($directories[$frame['path']])) {
+                $names = scandir($frame['path']);
+                if ($names === false) throw new RuntimeException('Cannot inspect artifact directory.');
+                $directories[$frame['path']] = ['names' => array_values(array_filter($names, static fn (string $entry): bool => $entry !== '.' && $entry !== '..' && strcmp($entry, $frame['after']) > 0)), 'offset' => 0];
+            }
+            $directory = &$directories[$frame['path']];
+            $name = $directory['names'][$directory['offset']++] ?? null;
+            unset($directory);
             if ($name === null) { array_pop($stack); continue; }
             $stack[$index]['after'] = $name;
             ++$examined;

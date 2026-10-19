@@ -228,3 +228,25 @@ Close project naming exploration
 	Completed: retain v3 and commit the README title correction and naming record
 	Earlier naming exploration and candidate-selection entries are closed; no approval is pending
 	The earlier 200-name candidate file is no longer present in this checkout
+
+Explore post-retraction sweep
+	Step 1: compare inline, cron reconciliation, queue plus reconciliation, and lifecycle hooks
+	Assessment: docs/plans/post_retraction_sweep/post_retraction_sweep_step1_solution_assessment.md
+	Pending Step 1 approval; no implementation authorized
+
+Define post-retraction sweep requirements
+	Step 1 approved; Step 2 drafted in docs/plans/post_retraction_sweep/post_retraction_sweep_step2_feature_description.md
+	Pending Step 2 approval; implementation not started
+
+Plan post-retraction sweep implementation
+	Step 2 approved; seven-stage Step 3 plan drafted
+	Pending Step 3 approval; no implementation or commits started
+
+Complete post-retraction sweep implementation
+	Completed all seven approved stages on feature/post-retraction-sweep; supersedes the pending approval entries above
+	Immediate CLI preview/run/status, acceptance queueing, cron reconciliation, bounded recovery, and publication safety implemented
+	Final focused suite: 55 passed; browser retraction/privacy/menu checks passed
+	Full PHP suite: 1,331 passed, 3 failures reproduced on unchanged base
+	Coverage and operator recovery: docs/reference/retraction_sweep.md
+	Implementation summary: docs/plans/post_retraction_sweep/post_retraction_sweep_step4_implementation_summary.md
+	No production deployment or cron installation performed

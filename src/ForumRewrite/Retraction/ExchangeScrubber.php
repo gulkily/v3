@@ -15,6 +15,20 @@ final class ExchangeScrubber
         return ['exchange_dependencies' => ExchangeDependencies::manifest($dependencies), 'retraction_scrubbed' => true];
     }
 
+    public static function isClean(array $row, array $dependencies): bool
+    {
+        foreach (['request_json', 'response_json', 'error_json'] as $field) {
+            if (json_decode((string) ($row[$field] ?? ''), true) !== []) return false;
+        }
+        $context = json_decode((string) ($row['context_json'] ?? ''), true);
+        if (!is_array($context) || ($context['retraction_scrubbed'] ?? false) !== true) return false;
+        if (array_diff(array_keys($context), ['exchange_dependencies', 'retraction_scrubbed', 'post_id', 'call_type']) !== []) return false;
+        if (isset($context['post_id']) && !in_array($context['post_id'], $dependencies, true)) return false;
+        if (isset($context['call_type']) && $context['call_type'] !== 'redacted') return false;
+        foreach (['provider', 'provider_model', 'provider_request_id', 'related_content_hash'] as $field) if (($row[$field] ?? null) !== null) return false;
+        return ($row['call_type'] ?? '') === 'redacted' && ($row['status'] ?? '') === 'retracted';
+    }
+
     public static function scrub(PDO $pdo, int $id, array $dependencies): void
     {
         $stmt = $pdo->prepare("UPDATE llm_exchanges SET call_type='redacted', related_content_hash=NULL,

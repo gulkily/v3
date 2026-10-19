@@ -53,6 +53,8 @@ final class RetractionSweepTest
             assertSame('retracted', $row['status']);
         }
         assertSame($preserved, $pdo->query('SELECT * FROM llm_exchanges WHERE id >= 3')->fetchAll(PDO::FETCH_ASSOC));
+        assertSame(1, $sweep->state()['totals']['uncertain']);
+        assertSame(0, $sweep->preview()['affected']);
         assertSame(0, $sweep->run()['cleaned']);
     }
 
@@ -171,5 +173,140 @@ final class RetractionSweepTest
         assertSame(1, $store->counts()['failed']);
         \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($sweep, $store);
         assertSame(0, $store->counts()['queued']);
+    }
+    public function testWalReaderBlocksCompletionUntilCheckpointCanRetirePayload(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $pdo->exec('PRAGMA journal_mode=WAL');
+        $reader = new PDO('sqlite:' . $root . '/exchanges.sqlite3');
+        $reader->beginTransaction();
+        $reader->query('SELECT * FROM llm_exchanges')->fetchAll();
+        $failed = false;
+        try { $sweep->run(); } catch (RuntimeException) { $failed = true; }
+        assertSame(true, $failed);
+        assertSame('failed', $sweep->state()['status']);
+        $reader->rollBack();
+        $reader = null;
+        assertSame('complete', $sweep->run()['status']);
+        clearstatcache();
+        assertSame(true, !is_file($root . '/exchanges.sqlite3-wal') || filesize($root . '/exchanges.sqlite3-wal') === 0);
+    }
+
+    public function testKilledTransactionRecoversAndCleansOnRetry(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $code = 'require ' . var_export(dirname(__DIR__) . '/autoload.php', true) . ';'
+            . '$pdo = new PDO(' . var_export('sqlite:' . $root . '/exchanges.sqlite3', true) . ');'
+            . '\ForumRewrite\Retraction\ExchangeScrubber::prepare($pdo); $pdo->exec("BEGIN IMMEDIATE");'
+            . '\ForumRewrite\Retraction\ExchangeScrubber::scrub($pdo, 1, ["target"]);'
+            . 'fwrite(STDOUT, "ready\n"); fflush(STDOUT); sleep(30);';
+        $process = proc_open([PHP_BINARY, '-r', $code], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+        assertSame(true, is_resource($process));
+        assertSame("ready\n", fgets($pipes[1]));
+        proc_terminate($process, 9);
+        foreach ($pipes as $pipe) fclose($pipe);
+        proc_close($process);
+        assertSame(2, $sweep->run()['cleaned']);
+        assertSame('complete', $sweep->state()['status']);
+        assertSame(false, file_exists($root . '/exchanges.sqlite3-journal'));
+    }
+
+    public function testPublicationLockSerializesIndependentPublishers(): void
+    {
+        [$root] = $this->fixture();
+        $code = 'require ' . var_export(dirname(__DIR__) . '/autoload.php', true) . '; putenv("FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS=0");'
+            . '$root=' . var_export($root, true) . ';'
+            . 'try { \ForumRewrite\Retraction\PublicationGuard::publish(["root"=>$root,"generation"=>\ForumRewrite\Retraction\PublicationGuard::generation($root)], $root . "/output.html", function () use ($root) { file_put_contents($root . "/output.html", "unsafe"); }); } catch (RuntimeException) { exit(7); }';
+        $result = \ForumRewrite\Retraction\PublicationGuard::lock($root)->withExclusiveLock(function () use ($code): int {
+            $process = proc_open([PHP_BINARY, '-r', $code], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+            foreach ($pipes as $pipe) fclose($pipe);
+            return proc_close($process);
+        });
+        assertSame(7, $result);
+        assertSame(false, is_file($root . '/output.html'));
+    }
+    public function testScrubMarkerDoesNotExcuseResidualPayloadOrMetadata(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $sweep->run();
+        $pdo->exec("UPDATE llm_exchanges SET provider_model='RESIDUAL-SECRET', request_json=" . $pdo->quote(json_encode(['body' => 'RESIDUAL-SECRET'])) . ' WHERE id=1');
+        assertSame(1, $sweep->preview()['affected']);
+        assertSame(1, $sweep->run()['cleaned']);
+        assertSame(false, str_contains(json_encode($pdo->query('SELECT * FROM llm_exchanges WHERE id=1')->fetch(PDO::FETCH_ASSOC)), 'RESIDUAL-SECRET'));
+    }
+
+    public function testResumedTraversalRejectsAnAncestorReplacedBySymlink(): void
+    {
+        [$root] = $this->fixture();
+        mkdir($root . '/static', 0700);
+        mkdir($root . '/outside/nested', 0700, true);
+        file_put_contents($root . '/outside/nested/keep.html', 'Keep this');
+        symlink($root . '/outside', $root . '/static/posts');
+        $failed = false;
+        try {
+            \ForumRewrite\Retraction\ArtifactSweep::run([$root . '/static'], \ForumRewrite\Retraction\PublicationGuard::generation($root),
+                [['path' => $root . '/static/posts/nested', 'after' => '', 'top' => false]], 250);
+        } catch (RuntimeException) { $failed = true; }
+        assertSame(true, $failed);
+        assertSame('Keep this', file_get_contents($root . '/outside/nested/keep.html'));
+    }
+
+    public function testPublicationRequiresSuppressionInItsSourceModel(): void
+    {
+        [$root] = $this->fixture();
+        $path = $root . '/source.sqlite3';
+        $source = new PDO('sqlite:' . $path);
+        $source->exec('CREATE TABLE posts (post_id TEXT, retracted_at TEXT)');
+        $source->exec("INSERT INTO posts VALUES ('target', NULL)");
+        $failed = false;
+        try { \ForumRewrite\Retraction\PublicationGuard::begin($path, $root); }
+        catch (RuntimeException) { $failed = true; }
+        assertSame(true, $failed);
+        $source->exec("UPDATE posts SET retracted_at='2026-10-14'");
+        $token = \ForumRewrite\Retraction\PublicationGuard::begin($path, $root);
+        \ForumRewrite\Retraction\PublicationGuard::publish($token, $root . '/fresh.html', function () use ($root): void { file_put_contents($root . '/fresh.html', 'safe'); });
+        assertSame('safe', file_get_contents($root . '/fresh.html'));
+    }
+    public function testCompletedCoverageIsPeriodicallyRediscoveredWithoutFlooding(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $sweep->run();
+        $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new PDO('sqlite::memory:'));
+        \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($sweep, $store);
+        assertSame(0, $store->counts()['queued']);
+        $state = json_decode(file_get_contents($root . '/state.json'), true);
+        $state['updated_at'] = '2000-01-01T00:00:00Z';
+        file_put_contents($root . '/state.json', json_encode($state));
+        \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($sweep, $store);
+        \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($sweep, $store);
+        assertSame(1, $store->counts()['queued']);
+    }
+    public function testManualCliPreviewRunAndStatusUseTheSameResumablePolicy(): void
+    {
+        [$root] = $this->fixture();
+        mkdir($root . '/static');
+        mkdir($root . '/public');
+        $invoke = static function (string $command) use ($root): array {
+            $process = proc_open([dirname(__DIR__) . '/v3', 'retraction-sweep', $command,
+                '--repository-root=' . $root, '--exchange-database-path=' . $root . '/exchanges.sqlite3',
+                '--state-path=' . $root . '/cli-state.json', '--static-html-root=' . $root . '/static', '--limit=1'],
+                [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, null,
+                [...getenv(), 'FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public']);
+            fclose($pipes[0]);
+            $output = stream_get_contents($pipes[1]); $error = stream_get_contents($pipes[2]);
+            fclose($pipes[1]); fclose($pipes[2]);
+            assertSame(0, proc_close($process), $error);
+            return json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+        };
+        $hash = hash_file('sha256', $root . '/exchanges.sqlite3');
+        assertSame(1, $invoke('preview')['affected']);
+        assertSame($hash, hash_file('sha256', $root . '/exchanges.sqlite3'));
+        assertSame(false, file_exists($root . '/cli-state.json'));
+        assertSame('pending', $invoke('run')['status']);
+        assertSame(1, $invoke('status')['cursor']);
+        for ($i = 0; $i < 10 && $invoke('status')['remaining']; ++$i) $invoke('run');
+        assertSame('complete', $invoke('status')['status']);
+        assertSame(2, $invoke('status')['totals']['cleaned']);
+        assertSame(1, $invoke('status')['totals']['uncertain']);
     }
 }

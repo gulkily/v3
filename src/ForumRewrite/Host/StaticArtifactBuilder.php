@@ -310,13 +310,9 @@ final class StaticArtifactBuilder
             throw new RuntimeException('Unable to create temporary artifact path in ' . $directory);
         }
 
-        if (file_put_contents($temporaryPath, $contents) === false) {
-            @unlink($temporaryPath);
-            throw new RuntimeException('Unable to write temporary artifact: ' . $temporaryPath);
-        }
-
         try {
-            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, static function () use ($temporaryPath, $path): void {
+            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, static function () use ($temporaryPath, $path, $contents): void {
+                if (file_put_contents($temporaryPath, $contents) === false) throw new RuntimeException('Unable to write temporary artifact.');
                 if (!rename($temporaryPath, $path)) throw new RuntimeException('Unable to publish artifact.');
             });
         } finally { if (is_file($temporaryPath)) @unlink($temporaryPath); }
@@ -350,13 +346,9 @@ final class StaticArtifactBuilder
             throw new RuntimeException('Unable to create temporary artifact path in ' . $directory);
         }
 
-        if (file_put_contents($temporaryPath, $contents) === false) {
-            @unlink($temporaryPath);
-            throw new RuntimeException('Unable to write temporary artifact: ' . $temporaryPath);
-        }
-
         try {
-            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, static function () use ($temporaryPath, $path): void {
+            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, static function () use ($temporaryPath, $path, $contents): void {
+                if (file_put_contents($temporaryPath, $contents) === false) throw new RuntimeException('Unable to write temporary artifact.');
                 if (!rename($temporaryPath, $path)) throw new RuntimeException('Unable to publish artifact.');
             });
         } finally { if (is_file($temporaryPath)) @unlink($temporaryPath); }

@@ -29,6 +29,17 @@ final class PublicOfflineSnapshotBuilder
         int $threadLimit = self::DEFAULT_THREAD_LIMIT,
         int $maxBytes = self::DEFAULT_MAX_BYTES,
     ): array {
+        if (!is_file($sourcePath)) throw new RuntimeException('Offline snapshot source database does not exist.');
+        $token = \ForumRewrite\Retraction\PublicationGuard::begin($sourcePath);
+        $build = function () use ($sourcePath, $targetPath, $threadLimit, $maxBytes, $token): array {
+            if ($token !== null && \ForumRewrite\Retraction\PublicationGuard::generation($token['root']) !== $token['generation']) throw new RuntimeException('Retraction changed before snapshot assembly.');
+            return $this->buildWhileLocked($sourcePath, $targetPath, $threadLimit, $maxBytes, $token);
+        };
+        return $token === null ? $build() : \ForumRewrite\Retraction\PublicationGuard::withLock($token['root'], $build);
+    }
+
+    private function buildWhileLocked(string $sourcePath, string $targetPath, int $threadLimit, int $maxBytes, ?array $retractionToken): array
+    {
         if (!is_file($sourcePath)) {
             throw new RuntimeException('Offline snapshot source database does not exist.');
         }
@@ -41,7 +52,6 @@ final class PublicOfflineSnapshotBuilder
             throw new RuntimeException('Unable to create offline snapshot directory.');
         }
 
-        $retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($sourcePath);
         $temporaryPath = $targetPath . '.tmp-' . bin2hex(random_bytes(8));
         $this->sourcePostColumns = null;
         $source = new PDO('sqlite:' . $sourcePath);
