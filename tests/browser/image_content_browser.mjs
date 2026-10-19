@@ -56,6 +56,10 @@ try {
      if(path==='/') await details.locator('[data-inline-reply-trigger]').click();
      const form=page.locator('[data-compose-form]').first();
      await form.locator('.image-compose-fields:not([hidden])').waitFor();
+     await page.setViewportSize({width:1000,height:800});
+     const centers=await form.evaluate(f=>['.compose-form-actions > button[type="submit"]','.compose-action-menu-toggle'].map(q=>{const r=f.querySelector(q).getBoundingClientRect();return r.top+r.height/2;}));
+     assert.ok(Math.abs(centers[0]-centers[1])<1,'the ... button is vertically aligned with the submit button on '+path);
+     await page.setViewportSize({width:390,height:844});
      if(path==='/' && body==='') {
        const cancelChooser=page.waitForEvent('filechooser');await (await attachEntry(form)).click();
        await (await cancelChooser).setFiles([]);await form.locator('[name="image"]').dispatchEvent('cancel');

@@ -57,3 +57,14 @@ Branch: `attach_image_in_menu`. Planning commit: `0bd7b1c4`.
   - Not run: full PHP suite; the 44px check on the reply-form menu entry (same CSS as the checked thread entry); physical-device testing.
 - Notes:
   - The `…` button position (todo.txt line 112) was left unchanged by request.
+
+## Follow-up fix - `…` button vertical alignment
+- Request: the `…` button was not vertically aligned with the submit button on `/compose/thread`, the expanding reply form, and the dedicated reply page (the board page was fine) / Disposition: in-scope refinement of the menu placement, fixed on the same branch / Approval: requested by the user.
+- Changes:
+  - `compose.css`: `.compose-form-actions > button` drops the global `margin-top: .35rem` that pushed the submit button down; the menu is a flex container whose toggle fills the row height, so both buttons share top and bottom edges.
+- Verification:
+  - Isolated Chromium measurement at 600px and 340px: top and bottom edges match; before the fix the submit button sat 5.6px lower. The menu list still opens above the toggle, right-aligned.
+  - `IMAGE_PICKER_ONLY=1 node tests/browser/image_content_browser.mjs`: new centre-alignment assertion fails on `/compose/thread` without the fix and passes with it (also covers `/`). This mode had not been run in Stages 2 and 4, so it also exercises those test edits: passed.
+  - Default `node tests/browser/image_content_browser.mjs` and `php tests/run.php LocalAppSmokeTest`: passed.
+- Notes:
+  - Reply forms are covered by the same CSS rule but have no dedicated alignment assertion; the expanding reply form and dedicated reply page were not measured in a real page.
