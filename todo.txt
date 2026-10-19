@@ -156,3 +156,15 @@ we should update existing viewable queries, such as in /tools/codebase/ to this 
 
 we need to split the users page that is membership directory from the users page that is operator/moderator cosole
 	perhaps link from one to the other
+
+we need to roll "choose an image" into the ... button
+	also, change the caption to "Attach image"
+
+the way the merged consecutive user posts expand on hover is very jarring, needs redo
+
+in dark theme, the two modules that are after each other create a brigher border where they connect, should not happen
+	theme:
+
+i want to be able to use as image posting utility, so would be nice to have an image be non-public by choice
+	like only if someone has the link
+
