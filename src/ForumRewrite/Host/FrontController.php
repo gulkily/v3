@@ -42,6 +42,15 @@ final class FrontController
      */
     public function handle(string $method, string $requestUri, array $cookies = []): void
     {
+        // Keep discovery independent of sessions, read-model initialization and public caches.
+        if ($method === 'GET' && parse_url($requestUri, PHP_URL_PATH) === \ForumRewrite\Support\FrontendInstance::PATH) {
+            header('Cache-Control: no-store, private');
+            header('Content-Length: 0');
+            header('X-V3-Instance: ' . \ForumRewrite\Support\FrontendInstance::identity($this->projectRoot, $this->repositoryRoot, $this->databasePath));
+            http_response_code(204);
+            return;
+        }
+
         $configurationError = $this->configurationError();
         if ($configurationError !== null) {
             $this->sendHtml($this->renderConfigurationError($configurationError), 503);
