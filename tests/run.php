@@ -93,6 +93,7 @@ $testFiles = [
     __DIR__ . '/OpenPgpAssetSmokeProbeTest.php',
     __DIR__ . '/OpenPgpProductionCanaryCommandTest.php',
     __DIR__ . '/OpenPgpKeyInspectorTest.php',
+    __DIR__ . '/GpgHomeCleanerTest.php',
     __DIR__ . '/OpenAiCompatibleStructuredChatProviderTest.php',
     __DIR__ . '/OperatorStatusCollectorTest.php',
     __DIR__ . '/FrontendProbeTest.php',

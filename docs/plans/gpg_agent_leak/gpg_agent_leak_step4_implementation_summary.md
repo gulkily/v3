@@ -13,3 +13,13 @@ Debug mode: enabled (inherited from Step 3)
 - Notes:
   - Risk 1 confirmed: kill is path-keyed; helper must run kill before delete and pass the explicit home.
   - In this plain shell, 2.2.27 agents exited on their own when the home was deleted, so the reported leak is likely environment-dependent (e.g. missing `XDG_RUNTIME_DIR`, or PHP-spawned processes). Explicit kill is correct either way; Stage 5 measures the real suite.
+
+## Stage 2 - Shared cleanup helper
+- Changes:
+  - New `ForumRewrite\Security\GpgHomeCleaner::dispose(string $home): void`: runs `gpgconf --homedir <home> --kill all` (10s timeout, failures ignored), then deletes the tree recursively.
+  - New `tests/GpgHomeCleanerTest.php`, registered in `tests/run.php`.
+- Verification:
+  - Passed: `php tests/run.php GpgHomeCleanerTest OpenPgpKeyInspectorTest` (8 run, 8 passed); `gpg-agent` count 0 afterwards.
+  - Not yet run: missing-`gpgconf` (stripped PATH) case beyond the swallowed-failure design; covered by `@exec` plus ignored exit status.
+- Notes:
+  - The recursive delete also fixes the inspector's old `glob('/*')` cleanup, which skipped dotfiles and nested dirs such as `private-keys-v1.d`, leaving temp homes behind.
