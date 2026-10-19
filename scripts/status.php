@@ -8,6 +8,7 @@ use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\HealthIndicators;
+use ForumRewrite\Support\FrontendTargetResolver;
 use ForumRewrite\Support\OperatorStatusCollector;
 use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
 $projectRoot = dirname(__DIR__);
@@ -25,7 +26,7 @@ try {
         $projectRoot,
         isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null,
     );
-    $frontendUrl = (string) ($options['url'] ?? 'http://127.0.0.1:8000');
+    $frontendTarget = (new FrontendTargetResolver($projectRoot, $repositoryRoot))->resolve($options['url'] ?? null);
     $executionLock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock');
     if ($executionLock->isLocked()) {
         fwrite(STDOUT, "Waiting for shared lock before collecting status...\n");
@@ -39,7 +40,8 @@ try {
         $executionLock,
         new ReadModelStaleMarker($databasePath),
         static fn (): PDO => (new ReadModelConnection($databasePath))->open(),
-        $frontendUrl,
+        $frontendTarget['url'],
+        $frontendTarget['source'],
     ))->collect();
 
     printStatus($status, $repositoryRoot, $databasePath, $queuePath);

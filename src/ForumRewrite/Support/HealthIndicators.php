@@ -23,6 +23,9 @@ final class HealthIndicators
         $rebuildRunning = $queue['rebuild_task_status'] === 'running';
         $indicators = [];
 
+        if (isset($frontend['source'])) {
+            $frontend['url'] .= ' (' . $frontend['source'] . ')';
+        }
         if ($frontend['status'] !== 'not_checked') {
             $indicators[] = match ($frontend['status']) {
                 'responding' => self::row(self::OK, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url']),

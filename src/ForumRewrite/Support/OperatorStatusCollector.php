@@ -23,6 +23,7 @@ final class OperatorStatusCollector
         private readonly ReadModelStaleMarker $staleMarker,
         private readonly \Closure $readModelPdo,
         private readonly ?string $frontendUrl = null,
+        private readonly string $frontendSource = 'explicit',
     ) {
     }
 
@@ -106,7 +107,7 @@ final class OperatorStatusCollector
             return ['status' => 'not_checked', 'detail' => 'not checked', 'latency_ms' => null, 'url' => 'none'];
         }
 
-        return (new FrontendProbe())->probe($this->frontendUrl) + ['url' => $this->frontendUrl];
+        return (new FrontendProbe())->probe($this->frontendUrl) + ['url' => $this->frontendUrl, 'source' => $this->frontendSource];
     }
 
     /**
