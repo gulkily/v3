@@ -186,6 +186,31 @@ final class PlatformDocsPageTest
         }
     }
 
+
+    public function testInventoriedSpecialSourcesRemainReadableAndEscaped(): void
+    {
+        $root = dirname(__DIR__);
+        $slides = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/research/sigtbd_fault_tolerant_governance_slides_5min_marp.md'));
+        assertStringContains('<summary>Document metadata</summary>', $slides);
+        assertStringContains('marp: true', $slides);
+        assertStringContains('id="byzantine-fault-tolerant-governance-for-internet-message-boards"', $slides);
+        assertTrue(!str_contains($slides, '<style'));
+        assertTrue(!str_contains($slides, '&lt;!--'));
+        $diagrams = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/architecture/private_messaging.md'));
+        assertSame(5, substr_count($diagrams, '<figcaption>Mermaid source</figcaption>'));
+        assertStringContains('class="language-mermaid"', $diagrams);
+        $logo = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/railspike/README.md'));
+        assertStringContains('Railspike rail and spike logo (image unavailable)', $logo);
+        assertTrue(!str_contains($logo, '<img'));
+        $references = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/plans/thywill_site_option_review.md'), 'docs/plans/thywill_site_option_review.md');
+        assertTrue(!str_contains($references, '[T1]'));
+        assertStringContains('source unavailable', $references);
+        $hostile = PublicMarkdownRenderer::render("---\nstyle: <script>bad</script>\n---\n\n~~~html\n<script>bad</script>\n~~~\n\n<img src=x alt=\"&lt;script&gt;\">\n");
+        assertTrue(!str_contains($hostile, '<script>'));
+        assertStringContains('&lt;script&gt;', $hostile);
+        assertStringContains('<figcaption>html</figcaption>', $hostile);
+    }
+
     private function render(string $path): string
     {
         $application = new Application(

@@ -13,6 +13,9 @@ use League\CommonMark\Event\DocumentParsedEvent;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
 use League\CommonMark\Node\Inline\Text;
+use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
+use League\CommonMark\Extension\CommonMark\Node\Inline\HtmlInline;
 
 final class PublicMarkdownRenderer
 {
@@ -41,6 +44,9 @@ final class PublicMarkdownRenderer
         $environment->addExtension(new CommonMarkCoreExtension());
         $environment->addExtension(new GithubFlavoredMarkdownExtension());
         $environment->addExtension(new HeadingPermalinkExtension());
+        $environment->addRenderer(FencedCode::class, new DocsCodeRenderer(), 10);
+        $environment->addRenderer(HtmlBlock::class, new DocsHtmlRenderer(), 10);
+        $environment->addRenderer(HtmlInline::class, new DocsHtmlRenderer(), 10);
 
         $projectRoot ??= dirname(__DIR__, 3);
         $environment->addEventListener(DocumentParsedEvent::class, static function (DocumentParsedEvent $event) use ($sourcePath, $projectRoot): void {
@@ -65,6 +71,14 @@ final class PublicMarkdownRenderer
             }
         });
 
-        return (string) (new MarkdownConverter($environment))->convert($markdown);
+        $metadata = '';
+        if (preg_match('/\A(?:\xEF\xBB\xBF)?---\r?\n(.*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/s', $markdown, $match) === 1) {
+            $metadata = '<details class="docs-metadata"><summary>Document metadata</summary><pre><code>'
+                . htmlspecialchars($match[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                . '</code></pre></details>' . "\n";
+            $markdown = substr($markdown, strlen($match[0]));
+        }
+
+        return $metadata . (string) (new MarkdownConverter($environment))->convert($markdown);
     }
 }

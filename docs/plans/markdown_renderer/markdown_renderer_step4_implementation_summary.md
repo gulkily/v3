@@ -16,3 +16,8 @@ Debug mode: enabled
 - Changes: controller supplies source/root context; catalog resolves relative Markdown targets to public routes after realpath/size validation. One AST policy covers inline/reference/autolinks. Unsupported sources and images retain labels as plain text.
 - Verification: 16 focused Docs tests passed; relative parent links, CLI fragment, references, HTTP autolinks, local fragments, encoded traversal, repeated encoding, protocol-relative/unsafe schemes, missing sources and symlink escape covered. git diff --check passed.
 - Notes: Stage 1 commit 0e13f9db. Local links support ordinary parent paths inside docs; encoded structural path characters are rejected. Image embedding stays disabled; readable alternatives are completed in Stage 3.
+
+## Stage 3 - Readable special sources
+- Changes: front matter preserved in a collapsed, escaped metadata block; code languages have captions, Mermaid remains readable source; standalone HTML logo uses escaped alternative text and no remote request. HTML comments suppressed; other raw markup escaped.
+- Verification: actual Marp deck, all five private-message Mermaid diagrams, Railspike logo and reference-heavy Thywill review exercised. Metadata/code/image hostile content remains escaped; source languages retained. Focused Docs suite: 17 passed; git diff --check passed.
+- Notes: Stage 2 commit 7d14cbe2. No diagram, slideshow, CSS or arbitrary HTML execution added.
