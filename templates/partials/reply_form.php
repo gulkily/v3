@@ -33,6 +33,7 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
     <button type="submit"><?= $e($submitLabel) ?></button>
     <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>
     <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
+    <button type="button" data-action="save-compose-outbox" disabled>Save reply to Outbox</button>
   </div>
   <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
   <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">

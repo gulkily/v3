@@ -36,3 +36,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Standard Users and member/profile subpages — removed approval controls, key inventories/history, and technical diagnostics; retained public status/attribution, messaging and contextual User Access recovery links.
 - [x] Tools User Access — concise account/queue links; existing policy consequences and signing failures remain beside actions. Technical key details stay expandable. Standard legacy history anchors and pagination retain a path to Tools.
 - [x] Forte compatibility — retained its combined directory/access UI; shared history links remain within Forte. No Forte copy cleanup included in this cycle.
+
+## Compose first paint stability
+
+- [x] Dedicated thread and reply pages — moved existing identity/status feedback below the form so initialization does not move the action row. Existing errors and recovery feedback remain visible; no explanatory copy added. Reserved the image picker footprint during permission checks and rendered Outbox actions before JavaScript initialization. Verified mobile/desktop geometry across Light, Word97, Chicago, and Windark, upload permission states, and both Outbox saves with `node tests/browser/compose_layout_stability.mjs`.
+- [x] Compose action alignment follow-up — aligned Create thread and More actions without adding UI text; removed inherited submit spacing and allowed both controls to share one row on mobile. Regression now checks equal top edges and heights as well as first-paint stability.

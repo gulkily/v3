@@ -199,3 +199,13 @@ User Access icon completed
 	Added person-and-key icon to Tools launcher and shared Tools subnavigation
 	Verified Word97, Chicago, and Windark: launcher plus active/inactive navigation
 	Browser checked 16px dimensions, decoded SVGs, and visually inspected each theme
+
+Fix first-paint button movement on /compose/thread and /compose/reply
+	Completed: server-render Outbox actions, reserve image picker space, move identity feedback below forms
+	Verified 24 browser layout cases, both Outbox saves, image posting/recovery integration, and focused Outbox tests
+	Regression: tests/browser/compose_layout_stability.mjs
+
+Align Create thread and More actions controls on /compose/thread
+	Removed inherited submit top margin and full-width sizing in action rows with a menu
+	Matched menu height to the submit button and kept both controls on one row at mobile widths
+	Extended compose layout regression to check top edges, heights, and horizontal placement

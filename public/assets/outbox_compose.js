@@ -38,9 +38,9 @@
     Array.from(document.querySelectorAll('[data-compose-form][data-compose-kind="reply"]')).forEach(function (form) {
       var actions = form.querySelector(".compose-form-actions");
       if (!actions) return;
-      var button = document.createElement("button");
-      button.type = "button";
-      button.textContent = "Save reply to Outbox";
+      var button = form.querySelector('[data-action="save-compose-outbox"]');
+      if (!button) return;
+      button.disabled = false;
       var status = document.createElement("p");
       status.className = "meta";
       status.setAttribute("data-role", "outbox-compose-status");
@@ -71,15 +71,14 @@
           status.hidden = false;
         });
       });
-      actions.appendChild(button);
       form.appendChild(status);
     });
     Array.from(document.querySelectorAll('[data-compose-form][data-compose-kind="thread"]')).forEach(function (form) {
       var actions = form.querySelector(".compose-form-actions");
       if (!actions) return;
-      var button = document.createElement("button");
-      button.type = "button";
-      button.textContent = "Save thread to Outbox";
+      var button = form.querySelector('[data-action="save-compose-outbox"]');
+      if (!button) return;
+      button.disabled = false;
       var status = document.createElement("p");
       status.className = "meta";
       status.setAttribute("data-role", "outbox-compose-status");
@@ -110,7 +109,6 @@
           status.hidden = false;
         });
       });
-      (form.querySelector(".compose-action-menu-list") || actions).appendChild(button);
       form.appendChild(status);
     });
   });
