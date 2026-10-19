@@ -55,3 +55,16 @@ Branch: `feature/backup_page_redesign`, based on `feature/feature_flag_change_pa
   - `node tests/browser/image_content_browser.mjs` (default Chrome at `/opt/google/chrome/chrome`): passed, exit 0. Its checks include revision-matched backups and CLI verify/restore/rebuild, reached through the new page's `href`-prefix selectors for the image and repository downloads.
 - Notes:
   - The browser test ran against the default chromium only, not webkit or firefox.
+
+## Stage 5 - Acceptance
+- Changes:
+  - None; no fixes were needed beyond Stages 1-4.
+- Verification:
+  - Full suite `php tests/run.php` on this branch: 1282 run, 1280 passed, 2 failed. Both failures are the known baseline ones that also fail on `main` (`ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, `WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence`). The intermittent rebuild-diagnosis and start-shorthand tests passed in this run.
+  - Click-through against a live local server with image backup on: all four download links from the page return 200 with the expected types (`images.tar` as `application/x-tar`, repository `.tar.gz` and `.zip`, SQLite as `application/x-sqlite3`).
+  - Image backup forced off (`FORUM_IMAGE_CONTENT_ENABLED=false`): no images section or table renders; the text section is unchanged. The local instance has the image flag enabled by default, so the off state needed the override.
+  - Scroll width checked programmatically for dark/light/`word97` at 1100px and 375px, with and without images: no horizontal scroll in any of the 12 renders.
+  - Screenshots actually reviewed: dark phone and light desktop (Stage 1), `word97` desktop and the images section on dark phone and `word97` desktop (Stage 2), light phone with images off. Not every theme and width combination was viewed by eye.
+- Notes:
+  - Browser image-backup test was run on the default chromium only (Stage 4).
+  - Download sizes remain deferred in `todo.txt`, which is uncommitted on this branch.
