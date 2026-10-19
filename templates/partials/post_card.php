@@ -177,7 +177,7 @@ if (!is_array($postAnalysisLabels)) {
       class="thread-reaction-button"
       data-action="request-agent-reply"
       data-post-id="<?= $e($post['post_id']) ?>"
-    >Request agent response</button>
+    >Agent</button>
 <?php endif; ?>
 <?= $partial('partials/railspike_workflow.php') ?>
 <?php if ($showCodexHandoffButton && !$isRetracted): ?>

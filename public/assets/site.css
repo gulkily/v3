@@ -447,7 +447,8 @@ pre {
   margin: 0.5rem 0 0;
 }
 
-:root:not([data-theme="chicago"]) .nav-link.is-active {
+/* Default only: :where() keeps theme .nav-link rules winning even though theme sheets load first. */
+:where(:root:not([data-theme="chicago"])) .nav-link.is-active {
   color: var(--active-ink);
   background: var(--active-bg);
   border-color: var(--active-line);

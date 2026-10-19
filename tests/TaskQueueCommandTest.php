@@ -125,6 +125,7 @@ final class TaskQueueCommandTest
             [$exitCode, $stdout, $stderr] = $this->runCommand(
                 dirname(__DIR__),
                 './v3 task-queue run --quiet --queue-database-path=' . escapeshellarg($queuePath)
+                . ' --repository-root=' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1')
                 . ' --database-path=' . escapeshellarg($queuePath . '.empty-read.sqlite3'),
             );
             $runs = (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new \PDO('sqlite:' . $queuePath)))->recentExecutorRuns(1);

@@ -1295,6 +1295,7 @@
       canonicalRecord: data.canonical_record || "",
       alreadyRetracted: data.already_retracted === true,
       retractionStatus: data.retraction_status || "",
+      cleanupStatus: data.cleanup_status || "",
       failedStep: data.failed_step || "",
       commitSha: data.commit_sha || "",
       serverTiming: serverTiming || {},

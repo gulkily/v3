@@ -36,6 +36,11 @@ final class PostRetractionScriptTest
         assertSame(false, $result['partial']['disabled']);
         assertSame('Retracted. Site update incomplete.', $result['partial']['feedback']);
 
+        assertSame('Retracted. Cleanup could not be queued.', $result['cleanupFailed']['feedback']);
+        assertSame(false, $result['cleanupFailed']['disabled']);
+        assertSame(0, $result['cleanupFailed']['calls']['reload']);
+        assertSame('Retry retraction', $result['cleanupFailed']['label']);
+
         assertSame('Retraction failed. Try again.', $result['failure']['feedback']);
         assertSame(false, $result['failure']['disabled']);
         assertSame('Retraction failed. Try again.', $result['thrown']['feedback']);

@@ -1,5 +1,7 @@
 # LLM exchange privacy after retraction
 
+For the full feature lifecycle, see [Post retraction: complete workflow](author_post_retraction.md).
+
 Retracting a post also withholds recorded LLM exchanges that included it as
 input or context. This applies to author and operator retractions. Approved
 users and operators use the same visibility policy; operator privileges do
@@ -33,8 +35,9 @@ uncertain. Agent prompts track only their actual input fields, rather than
 unrelated analysis context they do not send. Provenance is not added to the
 model prompt or inferred from arbitrary forum prose.
 
-Recorded requests and responses remain exact diagnostic payloads. Added
-provenance is recording context; existing exchange rows are not rewritten.
+Unaffected recorded requests and responses remain exact diagnostic payloads.
+Added provenance is recording context. The [local retraction sweep](retraction_sweep.md)
+scrubs proven-affected payloads; late proven-affected results are scrubbed at recording.
 
 ## Historical handling
 
@@ -64,15 +67,15 @@ restore access to affected or uncertain exchanges.
 
 Deploy recording and reader changes together. Do not roll back to readers
 that omit the policy: they would expose retained payloads again. Historical
-classification is repeatable and leaves source rows unchanged. Preserve
+classification is repeatable; only proven-affected rows qualify for sweeping. Preserve
 canonical retraction history and public keys as described in
 [Author and operator post retraction](author_post_retraction.md).
 
 ## Retention boundary
 
-This feature suppresses application access; it does not erase diagnostic
-storage. Server administrators with direct database/filesystem access can
-still inspect raw logs. Backups, provider-held data, and previously saved or
+Visibility suppression alone does not erase diagnostic storage. The local
+sweep removes proven-affected exchange payloads; uncertain historical exchanges
+and excluded caches/logs remain available to administrators with direct storage access. Backups, provider-held data, and previously saved or
 already loaded browser copies are outside this suppression boundary.
 
 Signed retraction evidence and Activity's Commits view remain available.

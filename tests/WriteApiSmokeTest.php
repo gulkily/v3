@@ -1258,7 +1258,7 @@ PHP);
 
             assertStringNotContains('data-action="request-agent-reply"', $anonymousThreadPage);
             assertStringContains('data-action="request-agent-reply"', $approvedThreadPage);
-            assertStringContains('Request agent response', $approvedThreadPage);
+            assertStringContains('>Agent</button>', $approvedThreadPage);
             assertStringContains('data-agent-response-mode-catalog', $approvedThreadPage);
             assertStringContains('Logic analysis', $approvedThreadPage);
             $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
@@ -4086,6 +4086,33 @@ NODE;
         $this->deleteTree($archive);
     }
 
+    public function testRetractionCleanupEnqueueFailurePreservesAcceptanceAndRetriesWithoutSigning(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'cleanup-retraction', 'Cleanup recovery prose');
+        $fail = true;
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+            enqueueRetractionSweep: static function () use (&$fail): void { if ($fail) throw new RuntimeException('Queue offline'); });
+        $input = ['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']];
+        $prepared = $writer->prepareRetraction($input);
+        $result = $writer->finalizePreparedRetraction($input + [
+            'prepare_token' => $prepared['prepare_token'], 'record_path' => $prepared['record_path'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ]);
+        assertSame('complete', $result['retraction_status']);
+        assertSame('failed', $result['cleanup_status']);
+        $head = $this->gitOutput($root, 'rev-parse HEAD');
+        $fail = false;
+        $retry = $writer->prepareRetraction($input);
+        assertSame(true, $retry['already_retracted']);
+        assertSame('pending', $retry['cleanup_status']);
+        assertSame($head, $this->gitOutput($root, 'rev-parse HEAD'));
+        $page = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+        assertStringNotContains('Cleanup recovery prose', $page);
+    }
+
     public function testRetractionArtifactFailureRetriesWithoutAnotherCommit(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -6868,6 +6895,7 @@ NODE;
             foreach ([null, $target['identity_id']] as $viewer) {
                 $_SESSION = $viewer === null ? [] : ['authenticated_identity_id' => $viewer];
                 $_COOKIE = ['identity_hint' => $operator];
+                assertStringNotContains('>Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
                 foreach ($paths as $path) {
                     $denied = $this->renderMethod($app, 'GET', $path);
                     assertSame(403, http_response_code());
@@ -6877,14 +6905,21 @@ NODE;
             }
             $_SESSION = ['authenticated_identity_id' => $operator];
             $_COOKIE = [];
+            assertStringContains('<a href="/activity/?view=security">Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
+            foreach (['/activity/', '/forte/activity/'] as $path) {
+                $page = $this->renderMethod($app, 'GET', $path);
+                assertStringNotContains('Operator security review', $page);
+                assertStringNotContains('<span>Operator security review</span>', $page);
+            }
             foreach (['/activity/?view=security', '/forte/activity/?view=security'] as $path) {
                 $page = $this->renderMethod($app, 'GET', $path);
                 assertSame(200, http_response_code());
-                assertStringContains('Operator security review', $page);
+                assertStringNotContains('>Operator security review</a>', $page);
+                assertStringNotContains('<span>Operator security review</span>', $page);
                 assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true', $page);
                 assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false', $page);
                 assertStringContains('security-target', $page);
-                assertStringContains('Account key grants and recorded approval-policy changes.', $page);
+                assertStringContains('Current cross-account policy:', $page);
                 if (str_starts_with($path, '/forte/')) {
                     assertStringContains('data-paned-activity-rss href="/activity/?view=security&amp;format=rss" hidden', $page);
                     assertSame(1, substr_count($page, 'Current cross-account policy:'));
