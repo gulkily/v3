@@ -45,3 +45,21 @@
 
 **Uncertain assessments**
 - Stage sizing is provisional until instance-proof feasibility is validated; material expansion must trigger replanning before dependent work.
+
+## 2026-10-19T21:56:39Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md`, planning-doc gate: isolated approved artifacts on `feature/status-frontend-target` in planning commit `1f7e49d1` before any summary or source changes. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol: all five stages include summary updates and commits (`ea68d865`, `0528f0a8`, `13fd0a6c`, `d495f798`, `ef106678`). Retain for recoverable staged work.
+- `step4_implementation_after.md`, environment and baseline verification: isolated network acceptance exercised exact local port 8001 and a port-80 fixture while leaving real listeners untouched; three broader failures were reproduced on base, and a startup timing failure passed on both revisions on replay. Production acceptance remains explicitly pending. Retain.
+- `RAILSPIKE.md`, Enhancement Requests: the independently requested feedback-summary review was recorded and committed separately as `fde98f83`, preserving its boundary from frontend changes. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only implementation and schema-change verification: this cycle changes application behavior without a read-model schema change.
+- Experimental effort study: this cycle was not selected.
+
+**Uncertain assessments**
+- The Step 3 approximate line-count sizing is a weak fit for security/routing fixtures: Stage 2 required considerably more test code than the nominal size, while retaining a single bounded proof/probe responsibility. Consider clarifying whether test fixtures count toward that heuristic; no reliable active-time measurement was collected.
