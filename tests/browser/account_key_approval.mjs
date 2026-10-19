@@ -69,9 +69,15 @@ try {
     assert.match(response.headers()['cache-control'], /no-store/);
     if (process.env.USER_ACCESS_SCREENSHOT_DIR && cancel) await page.screenshot({ path: join(process.env.USER_ACCESS_SCREENSHOT_DIR, 'review.png'), fullPage: true });
     assert.equal(await page.locator('[data-signed-approval-form] button').innerText(), label);
+    const consequence = await page.locator('[data-signed-approval-form] p').innerText();
+    assert.match(consequence, /This key will be able to act as/);
+    if (label.startsWith('Approve')) assert.match(consequence, /By approving this user, you vouch for their conduct and integrity/);
+    else assert.doesNotMatch(consequence, /vouch/);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     page.once('dialog', async dialog => {
       assert.match(dialog.message(), new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       assert.ok(dialog.message().includes(target.identity_id));
+      assert.ok(dialog.message().includes(consequence));
       if (label.startsWith('Grant')) assert.match(dialog.message(), /already has 1 approved keys/);
       await (cancel ? dialog.dismiss() : dialog.accept());
     });
@@ -87,6 +93,9 @@ try {
       assert.match(await page.locator('.account-key-history').innerText(), /Accepted:/);
     }
   }
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await approve(first, 'Approve new member browser-member', true);
+  await page.setViewportSize({ width: 390, height: 844 });
   await approve(first, 'Approve new member browser-member', true);
   await approve(first, 'Approve new member browser-member');
   await page.setViewportSize({ width: 1280, height: 800 });

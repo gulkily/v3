@@ -29,9 +29,13 @@ try {
     let dialogCount = 0;
     page.on('dialog', async dialog => {
       dialogCount++;
-      assert.match(dialog.message(), /bob already has 2 approved keys/);
+      if (dialogCount <= 2) assert.match(dialog.message(), /bob already has 2 approved keys/);
+      else {
+        assert.match(dialog.message(), /By approving this user, you vouch for their conduct and integrity/);
+        assert.match(dialog.message(), /This key will be able to act as bob/);
+      }
       assert.match(dialog.message(), /Account key: openpgp:bbbb/);
-      if (dialogCount === 1) await dialog.dismiss(); else await dialog.accept();
+      if (dialogCount === 1 || dialogCount === 3) await dialog.dismiss(); else await dialog.accept();
     });
     const cancel = await page.evaluate(() => window.ForumBrowserSigning.submitSignedApproval('target'));
     assert.equal(cancel.ok, false);
@@ -44,17 +48,30 @@ try {
     assert.equal((await page.evaluate(() => window.ForumBrowserSigning.submitSignedApproval('target'))).ok, false);
     assert.equal(await page.evaluate(() => window.signed), 1);
     await page.evaluate(() => {
-      window.review = { label: 'Approve new member bob', consequence: 'Approve this key.', target_identity_id: 'openpgp:' + 'b'.repeat(40) };
+      window.review = { label: 'Approve new member bob', consequence: 'By approving this user, you vouch for their conduct and integrity. This key will be able to act as bob.', target_identity_id: 'openpgp:' + 'b'.repeat(40) };
       document.body.innerHTML = '<section data-pending-approvals-root><p data-role="pending-approvals-feedback" hidden></p><table><tbody data-role="pending-approvals-body"><tr data-username="bob"><td><button data-action="approve-user" data-profile-slug="target">Approve</button></td></tr></tbody></table></section>';
     });
     await page.addScriptTag({ path: 'public/assets/pending_approvals.js' });
     await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
     await page.getByRole('button', { name: 'Approve', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('[data-role="pending-approvals-feedback"]').textContent.includes('cancelled'));
+    assert.equal(await page.locator('[data-action="approve-user"]:enabled').count(), 1);
+    assert.equal(await page.evaluate(() => window.signed), 1);
+    assert.equal(await page.evaluate(() => window.finalized), 1);
+    await page.evaluate(() => {
+      const sign = window.openpgp.sign;
+      window.openpgp.sign = async () => { window.openpgp.sign = sign; throw new Error('Signing failed. Try again.'); };
+    });
+    await page.getByRole('button', { name: 'Approve', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('[data-role="pending-approvals-feedback"]').textContent.includes('Signing failed'));
+    assert.equal(await page.locator('[data-action="approve-user"]:enabled').count(), 1);
+    assert.equal(await page.evaluate(() => window.finalized), 1);
+    await page.getByRole('button', { name: 'Approve', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('[data-role="pending-approvals-feedback"]').textContent === 'Approved user bob.');
-    assert.equal(dialogCount, 2);
+    assert.equal(dialogCount, 5);
     assert.equal(await page.evaluate(() => window.signed), 2);
     assert.equal(await page.evaluate(() => window.finalized), 2);
     await context.close();
   }
-  console.log('PASS approval review: desktop/mobile profile confirmation, cancel, retry, missing review; pending directory approves without confirmation');
+  console.log('PASS approval review: desktop/mobile profile confirmation, cancel, retry, missing review; pending confirmation, cancel, signing failure and retry');
 } finally { await browser.close(); }

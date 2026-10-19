@@ -48,7 +48,7 @@
       setFeedback(feedback, "Preparing and signing approval...", "ok");
 
       try {
-        await approveUser(profileSlug, { confirm: false });
+        await approveUser(profileSlug);
 
         const row = button.closest("tr");
         const username = row ? row.getAttribute("data-username") || profileSlug : profileSlug;
