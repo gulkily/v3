@@ -116,15 +116,15 @@ No browser private key saved yet.
         <div class="stack">
           <ul class="meta account-key-where">
             <li><strong>This browser:</strong> private key, public key, username, and fingerprint (local storage). Backup passphrases never leave it.</li>
-            <li><strong>Server:</strong> your public key once published, at your first signed action or immediately if enabled below, plus your signed posts.</li>
+            <li><strong>Server:</strong> your published public key and signed posts.</li>
             <li><strong>Cookie:</strong> an identity hint, kept 30 days, so the server can show which profile this browser last used.</li>
           </ul>
           <p class="meta" data-role="browser-key-status">
             <span data-role="browser-key-status-message">Ready.</span>
             <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
           </p>
-          <label><input type="checkbox" data-role="automatic-guest-publication"> Publish this browser's automatically prepared guest public key immediately</label>
-          <p class="meta">Off by default: the public key stays on this browser until your first signed action. This setting applies only to this browser.</p>
+          <label><input type="checkbox" data-role="automatic-guest-publication"> Publish guest key immediately</label>
+          <p class="meta">Otherwise, this browser publishes its public key at your first signed action.</p>
           <p class="meta">
             <strong>Identity hint:</strong> <?= $e($identityHint !== '' ? $identityHint : 'none') ?>
             · <strong>Saved browser identity:</strong> <span data-role="identity-id-field">none</span>
