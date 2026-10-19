@@ -53,18 +53,16 @@ $authenticatedIdentityId = is_array($viewerProfile)
             <button type="button" role="tab" id="key-restore-tab" aria-controls="key-restore-panel" aria-selected="true" data-backup-tab="restore">Restore</button>
           </div>
           <div class="stack" id="key-backup-panel" role="tabpanel" aria-labelledby="key-backup-tab" data-backup-panel="backup" hidden>
-            <p>Keep access to your identity and private messages if you clear browser data or change devices. Backups are encrypted here in your browser.</p>
-            <p class="meta">Use a strong, unique passphrase and keep it somewhere safe. A forgotten passphrase cannot be recovered.</p>
+            <p class="meta">Back up before clearing browser data or changing devices to keep access to your identity and private messages. Forgotten passphrases cannot be recovered.</p>
             <label>Backup passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
             <label>Confirm passphrase <input type="password" data-backup-confirm autocomplete="new-password"></label>
             <div class="button-row">
               <button type="button" data-backup-download="text">Download text backup</button>
               <button type="button" data-backup-download="png">Download Starfield PNG</button>
             </div>
-            <p class="meta">Keep the original PNG file. Lossless PNG recompression is supported, but screenshots, resizing, and JPEG conversion can destroy the backup. Text is also available.</p>
+            <p class="meta">Keep the original PNG file. Screenshots or edited images may not restore.</p>
           </div>
           <div class="stack" id="key-restore-panel" role="tabpanel" aria-labelledby="key-restore-tab" data-backup-panel="restore">
-            <p>Choose your encrypted text backup or Starfield PNG and enter its passphrase to restore your identity in this browser.</p>
             <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
             <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
             <button type="button" data-backup-restore>Restore backup</button>
