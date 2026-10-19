@@ -6807,6 +6807,7 @@ NODE;
             foreach ([null, $target['identity_id']] as $viewer) {
                 $_SESSION = $viewer === null ? [] : ['authenticated_identity_id' => $viewer];
                 $_COOKIE = ['identity_hint' => $operator];
+                assertStringNotContains('>Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
                 foreach ($paths as $path) {
                     $denied = $this->renderMethod($app, 'GET', $path);
                     assertSame(403, http_response_code());
@@ -6816,14 +6817,21 @@ NODE;
             }
             $_SESSION = ['authenticated_identity_id' => $operator];
             $_COOKIE = [];
+            assertStringContains('<a href="/activity/?view=security">Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
+            foreach (['/activity/', '/forte/activity/'] as $path) {
+                $page = $this->renderMethod($app, 'GET', $path);
+                assertStringNotContains('Operator security review', $page);
+                assertStringNotContains('<span>Operator security review</span>', $page);
+            }
             foreach (['/activity/?view=security', '/forte/activity/?view=security'] as $path) {
                 $page = $this->renderMethod($app, 'GET', $path);
                 assertSame(200, http_response_code());
-                assertStringContains('Operator security review', $page);
+                assertStringNotContains('>Operator security review</a>', $page);
+                assertStringNotContains('<span>Operator security review</span>', $page);
                 assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true', $page);
                 assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false', $page);
                 assertStringContains('security-target', $page);
-                assertStringContains('Account key grants and recorded approval-policy changes.', $page);
+                assertStringContains('Current cross-account policy:', $page);
                 if (str_starts_with($path, '/forte/')) {
                     assertStringContains('data-paned-activity-rss href="/activity/?view=security&amp;format=rss" hidden', $page);
                     assertSame(1, substr_count($page, 'Current cross-account policy:'));

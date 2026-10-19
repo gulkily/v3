@@ -3,6 +3,9 @@
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
     <h1>User Access</h1>
     <p><a href="/tools/user-access/pending/">Pending approvals</a></p>
+<?php if ($canSecurityReview): ?>
+    <p><a href="/activity/?view=security">Security review</a></p>
+<?php endif; ?>
   </article>
   <article class="card">
     <h2>Accounts</h2>

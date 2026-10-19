@@ -259,3 +259,5 @@ backup page: download sizes
 	needs a small read-only size helper in InstancePageController; avoid a
 		recursive tree walk on every page view (cache or compute lazily)
 	risk: a stale or loose number misleads disk-space checks before a backup
+
+[x] Move operator Security review entry from Activity navigation to Tools → User Access.
