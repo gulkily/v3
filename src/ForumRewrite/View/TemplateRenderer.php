@@ -222,6 +222,7 @@ final class TemplateRenderer
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
             'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
+            'themeLegacyAliases' => ThemeRegistry::LEGACY_ALIASES,
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
@@ -279,6 +280,7 @@ final class TemplateRenderer
     private function themeHint(array $explicitThemeNames): ?string
     {
         $hint = (string) ($_COOKIE[ThemeRegistry::THEME_HINT_COOKIE] ?? '');
+        $hint = ThemeRegistry::LEGACY_ALIASES[$hint] ?? $hint;
 
         return in_array($hint, $explicitThemeNames, true) ? $hint : null;
     }

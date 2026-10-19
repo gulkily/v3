@@ -48,6 +48,15 @@ try {
  const initialAuth = await context.request.post(base+'/api/authenticate_identity',{data:{challenge:initialChallenge,detached_signature:initialSignature,identity_id:'openpgp:'+fingerprint}});
  assert.equal(initialAuth.status(),200,await initialAuth.text());
  const page=await context.newPage();const errors=[],expectedOfflineErrors=[];page.on('pageerror',e=>{if(process.env.IMAGE_BROWSER==='webkit' && e.message.includes('due to access control checks.')) expectedOfflineErrors.push(e.message);else errors.push(e.message);});
+ // A theme saved under the retired name windark must still render Midnight and be rewritten.
+ await page.goto(base+'/');
+ const themeKey=await page.evaluate(()=>window.forumBrowserRuntime.themeStorageKey);
+ await page.evaluate(key=>localStorage.setItem(key,'windark'),themeKey);
+ await page.reload();
+ assert.equal(await page.evaluate(()=>document.documentElement.getAttribute('data-theme')),'midnight');
+ assert.equal(await page.evaluate(key=>localStorage.getItem(key),themeKey),'midnight');
+ assert.equal((await context.cookies(base)).find(c=>c.name==='theme-hint')?.value,'midnight');
+ await page.evaluate(key=>localStorage.removeItem(key),themeKey);
  if(process.env.IMAGE_PICKER_ONLY==='1') {
    const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC','base64');
    for(const [path,body] of [['/',''],['/','Photo and text'],['/compose/thread',''],['/compose/thread','Photo and text']]) {
