@@ -23,6 +23,15 @@ final class PublicMarkdownRenderer
 {
     public static function render(string $markdown, ?string $sourcePath = null, ?string $projectRoot = null): string
     {
+        try {
+            return self::convert($markdown, $sourcePath, $projectRoot);
+        } catch (\Throwable $error) {
+            throw new MarkdownRenderingUnavailable('Markdown rendering unavailable; restore the complete application package.', 0, $error);
+        }
+    }
+
+    private static function convert(string $markdown, ?string $sourcePath, ?string $projectRoot): string
+    {
         $autoload = dirname(__DIR__, 3) . '/third_party/markdown/vendor/autoload.php';
         if (!is_file($autoload)) {
             throw new \RuntimeException('Markdown runtime missing; restore the complete third_party/markdown package.');

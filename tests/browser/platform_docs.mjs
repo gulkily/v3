@@ -14,7 +14,13 @@ try {
       const page = await context.newPage();
       page.setDefaultTimeout(12000);
       console.log("Checking", base, width, theme);
-      await page.goto(base + '/docs/reference/author_post_retraction.md');
+      if (width === 1280 && theme === 'default') {
+        await page.goto(base + '/tools/');
+        await page.locator('a[href="/docs/"]').first().click();
+        await page.locator('a[href="/docs/reference/author_post_retraction.md"]').first().click();
+      } else {
+        await page.goto(base + '/docs/reference/author_post_retraction.md');
+      }
       if (theme !== 'default') {
         // Exercise theme CSS independently of the disabled preference script.
         await page.evaluate(theme => (document.getElementById('theme-stylesheet')?.remove(), document.documentElement.setAttribute('data-theme', theme)), theme);
@@ -42,6 +48,13 @@ try {
       await code.focus();
       assert.equal(await code.evaluate(e => document.activeElement === e), true);
       assert.equal(await code.evaluate(e => getComputedStyle(e).whiteSpace), 'pre');
+      assert.ok((await page.locator('.docs-content').innerText()).includes('(source unavailable)'));
+      if (width === 390) {
+        assert.ok(await code.evaluate(e => e.scrollWidth > e.clientWidth));
+        await page.keyboard.press('ArrowRight');
+        await page.waitForTimeout(200);
+        assert.ok(await code.evaluate(e => e.scrollLeft > 0));
+      }
       // Real Tab traversal must reach a scroll region, not just programmatic focus.
       await page.locator('.docs-source a').focus();
       let tabReachedRegion = false;

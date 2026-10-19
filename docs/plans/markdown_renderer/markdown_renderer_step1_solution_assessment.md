@@ -8,13 +8,13 @@ Should we make another Step 1 for improving the Markdown renderer?
 
 ## Understood Intent
 
-Assess shared Markdown rendering improvements independently of [Docs Discovery](docs_discovery_step1_solution_assessment.md), which remains set aside. Rendering can ship first; discovery can subsequently reuse it. This is a new planning cycle with no branch reuse or implementation approval.
+Assess shared Markdown rendering improvements independently of [Docs Discovery](../docs_discovery_step1_solution_assessment.md), which remains set aside. Rendering can ship first; discovery can subsequently reuse it. This is a new planning cycle with no branch reuse or implementation approval.
 
 ## Problem and evidence
 
 The existing renderer breaks formatting already used in project documentation: the [inventory](../markdown_renderer_inventory.md) found nested lists in 435 documents, wrapped list items in 153, tables in 46, checkboxes in 42, and fragment links in 47, alongside reference links and other unsupported syntax.
 
-[PublicMarkdownRenderer](../../src/ForumRewrite/Docs/PublicMarkdownRenderer.php) serves both dynamic and generated documentation. PHP 8.1 compatibility is required; the project currently has no Composer dependency setup.
+[PublicMarkdownRenderer](../../../src/ForumRewrite/Docs/PublicMarkdownRenderer.php) serves both dynamic and generated documentation. PHP 8.1 compatibility is required; the project currently has no Composer dependency setup.
 
 ## Option A — Expand the custom renderer
 

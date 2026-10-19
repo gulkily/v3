@@ -301,8 +301,15 @@ final class StaticArtifactBuilder
         }
 
         ob_start();
-        $application->handle('GET', $route);
-        $contents = (string) ob_get_clean();
+        try {
+            $application->handle('GET', $route);
+            $contents = (string) ob_get_contents();
+        } finally {
+            ob_end_clean();
+        }
+        if (str_starts_with($route, '/docs/') && http_response_code() >= 400) {
+            throw new RuntimeException('Documentation rendering failed for ' . $route . '; retain the prior complete release and restore the application package.');
+        }
         $this->copyReferencedAssets($contents);
         $this->assertFingerprintReferencesAvailable($contents);
         $temporaryPath = tempnam($directory, 'artifact-');

@@ -180,7 +180,8 @@
   overflow-wrap: normal;
 }
 
-.docs-content pre code {
+.docs-content pre code,
+.docs-content table code {
   white-space: pre;
   overflow-wrap: normal;
 }

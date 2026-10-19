@@ -590,7 +590,18 @@ final class Application
         }
 
         if (preg_match('#^/docs/(.+)$#', $path, $matches) === 1) {
-            $document = $this->platformDocsController()->document($matches[1]);
+            try {
+                $document = $this->platformDocsController()->document($matches[1]);
+            } catch (\ForumRewrite\Docs\MarkdownRenderingUnavailable $error) {
+                error_log($error->getMessage() . ' ' . $error->getPrevious()?->getMessage());
+                $this->sendHtml($this->routeServices()->renderMessagePage(
+                    'Documentation unavailable',
+                    'Documentation unavailable',
+                    'The document could not be rendered. Retry after the operator restores the complete application package.',
+                    'docs',
+                ), 503, ['Retry-After' => '60']);
+                return;
+            }
             if ($document === null) {
                 $this->notFound();
                 return;
