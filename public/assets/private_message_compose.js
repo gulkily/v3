@@ -128,7 +128,7 @@
     if (window.addEventListener) window.addEventListener('resize', grow);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', grow);
     if (state.legacy) setFeedback(feedback, "An older draft was restored. Check the conversation before sending: its previous delivery cannot be confirmed automatically.", "error");
-    if (pending) setFeedback(feedback, "A previous send is unconfirmed. Check it before sending another message; your draft is retained.", "error");
+    if (pending) setFeedback(feedback, "A previous send is unconfirmed. Check it before sending again.", "error");
     recovery();
     async function send(event, retryOnly) {
       event.preventDefault();
@@ -166,7 +166,18 @@
         }));
         if (!handled && successUrl && saved && window.location && window.location.assign) window.location.assign(successUrl);
       } catch (error) {
-        setFeedback(feedback, (error instanceof Error ? error.message : "Unable to confirm delivery.") + (pending ? " Delivery is unconfirmed; check the previous send before sending another." : "") + (!saved ? " Recovery cannot be saved; keep this page open." : ""), "error");
+        const reason = error instanceof Error ? error.message : "";
+        const details = [];
+        if (reason && (!pending || reason !== "Unable to confirm the private message.")) details.push(reason);
+        if (pending) {
+          details.push(saved
+            ? "Delivery is unconfirmed. Check previous send before sending again."
+            : "Delivery is unconfirmed; recovery cannot be saved. Keep this page open and check previous send before sending again.");
+        } else {
+          if (!reason) details.push("Message not sent.");
+          if (!saved) details.push("Draft cannot be saved; keep this page open.");
+        }
+        setFeedback(feedback, details.join(" "), "error");
       } finally {
         submitting = false;
         if (button) button.disabled = false;
