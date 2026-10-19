@@ -680,7 +680,7 @@ PHP;
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
             assertStringContains('Member activity', $ownProfileAfterClear);
-            assertStringContains('Your identity is recognized in the lobby, but member access is cleared.', $lobbyAfterClear);
+            assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
                 $lobbyAfterClear,
