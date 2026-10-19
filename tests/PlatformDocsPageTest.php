@@ -141,6 +141,51 @@ final class PlatformDocsPageTest
         assertSame(6, substr_count($procedure, '<li>'));
     }
 
+
+    public function testDocumentLinkPolicyCoversAllMarkdownLinkForms(): void
+    {
+        $source = "[CLI](v3_cli.md#delete-a-canonical-record)\n\n[architecture][a]\n\n[a]: ../architecture/public_architecture_and_trust.md\n\n<https://example.test/guide>\n\n[section](#local)\n\n![Logo](../../public/logo.svg)";
+        $html = PublicMarkdownRenderer::render($source, 'docs/reference/author_post_retraction.md');
+        assertStringContains('href="/docs/reference/v3_cli.md#delete-a-canonical-record"', $html);
+        assertStringContains('href="/docs/architecture/public_architecture_and_trust.md"', $html);
+        assertStringContains('href="https://example.test/guide"', $html);
+        assertStringContains('href="#local"', $html);
+        assertStringContains('Logo (image unavailable)', $html);
+        assertTrue(!str_contains($html, '<img'));
+        foreach (['//evil.test/x', 'javascript:alert%281%29', 'data:text/html,evil',
+            '%2e%2e/v3_cli.md', '%252e%252e/v3_cli.md', '../../autoload.php',
+            '/autoload.php', '../missing.md', 'v3_cli.md?download=1', 'file:///etc/passwd',
+            'https://example.test/%0aevil', '..%5c..%5cautoload.php'] as $url) {
+            $result = PublicMarkdownRenderer::render('[label](' . $url . ')', 'docs/reference/author_post_retraction.md');
+            if ($url === 'https://example.test/%0aevil') {
+                // Encoded HTTP path data does not become local file access or HTML.
+                assertStringContains('href="https://example.test/%0aevil"', $result);
+            } else {
+                assertTrue(!str_contains($result, '<a '));
+                assertStringContains('label (source unavailable)', $result);
+            }
+        }
+        assertStringContains('source unavailable', PublicMarkdownRenderer::render('[source](autoload.php)'));
+    }
+
+    public function testDocumentLinkPolicyRejectsSymlinkEscape(): void
+    {
+        $root = sys_get_temp_dir() . '/docs-link-policy-' . bin2hex(random_bytes(4));
+        mkdir($root . '/docs', 0777, true);
+        file_put_contents($root . '/secret.md', '# Private');
+        symlink($root . '/secret.md', $root . '/docs/escape.md');
+        try {
+            $html = PublicMarkdownRenderer::render('[private](escape.md)', 'docs/index.md', $root);
+            assertTrue(!str_contains($html, '<a '));
+            assertStringContains('source unavailable', $html);
+        } finally {
+            unlink($root . '/docs/escape.md');
+            unlink($root . '/secret.md');
+            rmdir($root . '/docs');
+            rmdir($root);
+        }
+    }
+
     private function render(string $path): string
     {
         $application = new Application(

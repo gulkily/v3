@@ -81,6 +81,70 @@ final class PlatformDocsCatalog
         ];
     }
 
+    /**
+     * Resolve a Markdown destination to the existing public document route.
+     * Local URLs never grant access beyond resolvePath's realpath/size boundary.
+     */
+    public static function resolveLink(string $url, ?string $sourcePath, string $projectRoot): ?string
+    {
+        if ($url === '' || preg_match('/[\x00-\x20\x7f\\\\]/', $url) === 1 || str_starts_with($url, '//')) {
+            return null;
+        }
+        if (preg_match('~^https?://~i', $url) === 1) {
+            return filter_var($url, FILTER_VALIDATE_URL) !== false ? $url : null;
+        }
+        if (preg_match('~^mailto:~i', $url) === 1) {
+            return filter_var(substr($url, 7), FILTER_VALIDATE_EMAIL) !== false ? $url : null;
+        }
+        if (str_starts_with($url, '#')) {
+            return preg_match('/^#[^%<>"]+$/u', $url) === 1 ? $url : null;
+        }
+        if (preg_match('~^[a-z][a-z0-9+.-]*:~i', $url) === 1 || str_contains($url, '?')) {
+            return null;
+        }
+        [$path, $fragment] = array_pad(explode('#', $url, 2), 2, null);
+        $decoded = rawurldecode($path);
+        // Reject encoded path syntax, repeated encoding and control characters.
+        if (preg_match('~%(?:2e|2f|5c|25|0[0-9a-f]|1[0-9a-f]|7f)~i', $path) === 1
+            || preg_match('/[\x00-\x1f\x7f\\\\]/', $decoded) === 1) {
+            return null;
+        }
+        if (str_starts_with($decoded, '/')) {
+            if (!str_starts_with($decoded, '/docs/')) {
+                return null;
+            }
+            $candidate = substr($decoded, 1);
+        } else {
+            if ($sourcePath === null || self::normalizePath($sourcePath) !== $sourcePath) {
+                return null;
+            }
+            $candidate = dirname($sourcePath) . '/' . $decoded;
+        }
+        $segments = [];
+        foreach (explode('/', $candidate) as $segment) {
+            if ($segment === '.' || $segment === '') {
+                continue;
+            }
+            if ($segment === '..') {
+                if (count($segments) <= 1) {
+                    return null;
+                }
+                array_pop($segments);
+            } else {
+                $segments[] = $segment;
+            }
+        }
+        $target = implode('/', $segments);
+        if (self::resolvePath($projectRoot, $target) === null) {
+            return null;
+        }
+        if ($fragment !== null && self::resolveLink('#' . $fragment, null, $projectRoot) === null) {
+            return null;
+        }
+
+        return self::routeForPath($target) . ($fragment === null ? '' : '#' . $fragment);
+    }
+
     public static function normalizePath(string $encodedPath): ?string
     {
         $path = rawurldecode($encodedPath);

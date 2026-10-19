@@ -58,7 +58,7 @@ final class PlatformDocsController
             'platform_docs_document.php',
             [
                 'sourcePath' => $sourcePath,
-                'documentHtml' => PublicMarkdownRenderer::render($markdown),
+                'documentHtml' => PublicMarkdownRenderer::render($markdown, $sourcePath, $this->projectRoot),
                 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active()),
             ],
             $documentTitle . ' - Platform Docs',

@@ -9,10 +9,14 @@ use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
 use League\CommonMark\MarkdownConverter;
+use League\CommonMark\Event\DocumentParsedEvent;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
+use League\CommonMark\Node\Inline\Text;
 
 final class PublicMarkdownRenderer
 {
-    public static function render(string $markdown): string
+    public static function render(string $markdown, ?string $sourcePath = null, ?string $projectRoot = null): string
     {
         $autoload = dirname(__DIR__, 3) . '/third_party/markdown/vendor/autoload.php';
         if (!is_file($autoload)) {
@@ -37,6 +41,29 @@ final class PublicMarkdownRenderer
         $environment->addExtension(new CommonMarkCoreExtension());
         $environment->addExtension(new GithubFlavoredMarkdownExtension());
         $environment->addExtension(new HeadingPermalinkExtension());
+
+        $projectRoot ??= dirname(__DIR__, 3);
+        $environment->addEventListener(DocumentParsedEvent::class, static function (DocumentParsedEvent $event) use ($sourcePath, $projectRoot): void {
+            $resources = [];
+            foreach ($event->getDocument()->iterator() as $node) {
+                if ($node instanceof Link || $node instanceof Image) {
+                    $resources[] = $node;
+                }
+            }
+            foreach ($resources as $node) {
+                $url = $node instanceof Image ? null : PlatformDocsCatalog::resolveLink($node->getUrl(), $sourcePath, $projectRoot);
+                if ($url !== null) {
+                    $node->setUrl($url);
+                    continue;
+                }
+                // Preserve formatted labels without emitting a clickable unsupported source.
+                while ($child = $node->firstChild()) {
+                    $node->insertBefore($child);
+                }
+                $node->insertBefore(new Text($node instanceof Image ? ' (image unavailable)' : ' (source unavailable)'));
+                $node->detach();
+            }
+        });
 
         return (string) (new MarkdownConverter($environment))->convert($markdown);
     }
