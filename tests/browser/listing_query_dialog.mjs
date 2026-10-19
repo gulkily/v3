@@ -79,6 +79,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('7'));
   await page.keyboard.press('Escape');
   await page.locator('[data-query-key="one"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-input"]').value === 'SELECT 55 AS memory_draft');
   assert.equal(await input.inputValue(), 'SELECT 55 AS memory_draft');
   console.log('PASS separate drafts and navigation recovery, saved-data reuse, corruption rejection, codebase dialog load retry, auto-run, edit, close/reopen, background and standalone');
 } finally { await browser.close(); }
