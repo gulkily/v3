@@ -493,6 +493,7 @@
         querySortDirection = sortDirection === "ASC" || sortDirection === "DESC" ? sortDirection : null;
       }
       queryPage = typeof page === "number" && Number.isFinite(page) && page >= 0 ? page : 0;
+      saveDraft();
       var query = queryInput.value;
       if (!isSingleSelectQuery(query)) {
         clearNode(queryResults);
@@ -623,15 +624,47 @@
     }
 
     var activeContext = null;
+    var contextVersion = 0;
+    var drafts = Object.create(null);
+    function draftKey(key) { return "sqlite-query-draft:" + databaseUrl + ":" + key; }
+    function saveDraft() {
+      if (activeContext === null) { return; }
+      var draft = { sql: queryInput.value, page: queryPage, column: querySortColumn, direction: querySortDirection };
+      drafts[activeContext] = draft;
+      try { window.sessionStorage.setItem(draftKey(activeContext), JSON.stringify(draft)); }
+      catch (error) { /* In-memory drafts remain available when persistence is denied. */ }
+    }
+    function readDraft(key) {
+      if (drafts[key]) { return drafts[key]; }
+      try {
+        var draft = JSON.parse(window.sessionStorage.getItem(draftKey(key)));
+        if (draft && typeof draft.sql === "string") { return draft; }
+      } catch (error) { /* Missing, damaged, or denied storage starts a fresh context. */ }
+      return null;
+    }
+    queryInput.addEventListener("input", saveDraft);
+    querySelect.addEventListener("change", saveDraft);
+    window.addEventListener("pagehide", saveDraft);
     root.sqliteViewer = {
       open: async function (context) {
+        saveDraft();
         if (activeContext === context.key && database) { return; }
-        activeContext = context.key;
-        queryInput.value = context.sql;
+        if (activeContext !== context.key) {
+          activeContext = context.key;
+          var draft = readDraft(context.key);
+          queryInput.value = draft ? draft.sql : context.sql;
+          queryPage = draft ? draft.page : 0;
+          querySortColumn = draft ? draft.column : null;
+          querySortDirection = draft ? draft.direction : null;
+          clearNode(queryResults);
+          clearEffectiveQuery();
+          setQueryStatus("Preparing this query...", "loading");
+        }
+        var version = ++contextVersion;
         queryPanel.hidden = false;
         var loaded = database || await loadDatabase();
-        if (!loaded) { return; }
-        runQuery();
+        if (!loaded || version !== contextVersion) { return; }
+        runQuery(queryPage, querySortColumn, querySortDirection);
       }
     };
     if (loadButton) {

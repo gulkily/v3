@@ -18,3 +18,8 @@ Debug mode: enabled
 - Changes: reuse a validated saved published database; share pending database/runtime loads; display revision and stale-data caveat; retain in-memory operation when browser persistence is unavailable. Existing table-change handlers no longer accumulate on reload.
 - Verification: browser replay passed saved-data reuse across navigation with the download endpoint failing, no warm-reopen downloads, corrupt saved-data rejection, and Stage 1/standalone regression. Query catalog checks passed 4/4; JS syntax passed.
 - Notes: Stage 1 commit `eca4f4a4`. Explicit incompatible-data refresh recovery remains Stage 6; current validation rejects damaged or missing core tables without substituting another source.
+
+## Stage 3 - Recoverable editing sessions
+- Changes: separate source/context-keyed drafts, saved on edits and page exit; recover drafts and query paging/sorting after navigation, with in-memory fallback on storage denial. Ignore outdated context load completions and keep same-context results mounted on reopening.
+- Verification: browser replay passed two independent drafts, switch-back recovery, reload recovery with automatic results, and denied-session-storage in-memory recovery, plus prior checks. JS syntax and whitespace checks passed.
+- Notes: Stage 2 commit `fdf53d59`. Drafts persist only within the same tab; a denied persistence API cannot retain drafts across a document reload, but does not block local editing.

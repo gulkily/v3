@@ -38,6 +38,18 @@ try {
   assert.equal(await input.inputValue(), 'SELECT 99 AS edited');
   assert.equal(downloads, before);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.locator('[data-query-key="two"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('7'));
+  await input.fill('SELECT 88 AS second_draft');
+  await page.keyboard.press('Escape');
+  await page.locator('[data-query-key="one"]').click();
+  assert.equal(await input.inputValue(), 'SELECT 99 AS edited');
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await page.locator('[data-query-key="two"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('88'));
+  assert.equal(await input.inputValue(), 'SELECT 88 AS second_draft');
+  await page.keyboard.press('Escape');
   assert.equal(await page.getByLabel('Background draft').inputValue(), 'keep me');
   fail = true;
   await page.goto('https://query.test/standalone');
@@ -55,5 +67,18 @@ try {
   await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-status"]').dataset.state === 'error');
   assert.equal(downloads, before, 'corrupt saved data is rejected without silent replacement');
-  console.log('PASS saved-data reuse, corruption rejection, codebase dialog load retry, auto-run, edit, close/reopen, background and standalone');
+  await page.evaluate(() => caches.delete('forum-query-read-model-v1'));
+  await page.addInitScript(() => Object.defineProperty(window, 'sessionStorage', { get() { throw new Error('storage denied'); } }));
+  fail = false;
+  await page.goto('https://query.test/codebase');
+  await page.locator('[data-query-key="one"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('42'));
+  await input.fill('SELECT 55 AS memory_draft');
+  await page.keyboard.press('Escape');
+  await page.locator('[data-query-key="two"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('7'));
+  await page.keyboard.press('Escape');
+  await page.locator('[data-query-key="one"]').click();
+  assert.equal(await input.inputValue(), 'SELECT 55 AS memory_draft');
+  console.log('PASS separate drafts and navigation recovery, saved-data reuse, corruption rejection, codebase dialog load retry, auto-run, edit, close/reopen, background and standalone');
 } finally { await browser.close(); }
