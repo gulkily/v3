@@ -165,7 +165,10 @@ final class InstancePageController
         return [
             'generated_at' => $metadata['rebuilt_at'] ?? '',
             'repository_head' => $metadata['repository_head'] ?? ReadModelMetadata::repositoryHead($this->repositoryRoot),
-            'items' => array_slice(($this->fetchActivity)('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
+            'items' => array_map(
+                fn (array $item): array => $item + ['link' => $this->routeServices->activityService()->activityItemLink($item)],
+                array_slice(($this->fetchActivity)('content', 'date', 'desc')['items'], 0, self::BACKUP_PREVIEW_LIMIT),
+            ),
         ];
     }
 

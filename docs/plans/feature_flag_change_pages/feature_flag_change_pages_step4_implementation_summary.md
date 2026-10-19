@@ -49,3 +49,13 @@ Branch: `feature/feature_flag_change_pages`, based on `fix/backup-page-tools-nav
   - New assertion: the Forte activity detail fragment (`/api/forte_activity_detail`) links a signed change to its change page.
 - Notes:
   - The Forte profile_name_change branch still duplicates part of the shared mapping; left alone because it is outside this feature's scope.
+
+## Stage 5 - Backup preview
+- Changes:
+  - `InstancePageController::fetchBackupSnapshot` attaches `link` from `activityItemLink` to each preview item; `instance.php` renders it, replacing its local mapping (which was added in `c7535a96` on the base branch).
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest FeatureFlagChangePageTest ActivityItemLinkTest ImageContentTest`: passed, 151 of 151.
+  - New assertion: the Backup preview links a signed change to its change page, not the generic flags page.
+- Notes:
+  - The test record uses a 2030 timestamp so it falls inside the preview's five-item window next to the fixture content.
+  - Base branch carried the Backup layout fix as planned, so no conflict arose. The separate Backup page redesign (Step 1 only) will rework this template next.

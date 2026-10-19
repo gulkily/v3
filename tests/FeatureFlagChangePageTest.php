@@ -16,7 +16,7 @@ final class FeatureFlagChangePageTest
     public function testSignedChangeRendersPageAndActivityAndRssLinkToIt(): void
     {
         $this->fixture(function ($workspace, $root, $db): void {
-            $workspace->put($root . '/' . self::SOURCE, "Record-ID: feature-flag-change-test-001\nCreated-At: 2026-01-02T03:04:05Z\nFlag-Key: FORUM_IMAGE_CONTENT_ENABLED\nValue: true\nOperator-Identity-ID: " . self::OPERATOR . "\n\n");
+            $workspace->put($root . '/' . self::SOURCE, "Record-ID: feature-flag-change-test-001\nCreated-At: 2030-01-02T03:04:05Z\nFlag-Key: FORUM_IMAGE_CONTENT_ENABLED\nValue: true\nOperator-Identity-ID: " . self::OPERATOR . "\n\n");
             foreach ([['add', self::SOURCE], ['commit', '-qm', 'Record flag change']] as $args) {
                 [$code, $output] = $workspace->command(['git', '-C', $root, ...$args]);
                 assertSame(0, $code, $output);
@@ -37,6 +37,9 @@ final class FeatureFlagChangePageTest
             assertStringContains('<a href="/tools/feature-flags/changes/feature-flag-change-test-001">site feature flags</a>', $activity);
             assertStringNotContains('<a href="/tools/feature-flags/">site feature flags</a>', $activity);
             assertStringContains('/tools/feature-flags/changes/feature-flag-change-test-001', $this->render($root, $db, '/activity/?view=all&format=rss'));
+            $backup = $this->render($root, $db, '/tools/backup/');
+            assertStringContains('<li><a href="/tools/feature-flags/changes/feature-flag-change-test-001">site feature flags</a>', $backup);
+            assertStringNotContains('<a href="/tools/feature-flags/">site feature flags</a>', $backup);
             $activityId = (int) (new PDO('sqlite:' . $db))->query("SELECT id FROM activity WHERE source_path = '" . self::SOURCE . "'")->fetchColumn();
             $detail = (string) json_decode($this->render($root, $db, '/api/forte_activity_detail?id=' . $activityId), true)['html'];
             assertStringContains('href="/tools/feature-flags/changes/feature-flag-change-test-001"', $detail);
