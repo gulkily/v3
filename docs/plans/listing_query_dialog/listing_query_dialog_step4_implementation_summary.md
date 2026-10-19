@@ -24,3 +24,8 @@ Debug mode: enabled
 - Verification: browser replay passed two independent drafts, switch-back recovery, reload recovery with automatic results, and denied-session-storage in-memory recovery, plus prior checks. JS syntax and whitespace checks passed.
 - Notes: Stage 2 commit `fdf53d59`. Drafts persist only within the same tab; a denied persistence API cannot retain drafts across a document reload, but does not block local editing.
 - Verification correction: `eaffc0f5` was committed before inspecting the final added storage-denial check, so its summary prematurely stated that check passed. The check read the previous context before the deliberately deferred open completed; corrected it to await context restoration. Full browser replay now passed before starting Stage 4. Whitespace checks are scoped to feature files because unrelated concurrent todo edits contain trailing whitespace.
+
+## Stage 4 - Standard All boards
+- Changes: standard All boards now expose contextual queries using the repository's shared base row selection, identity exclusion, pinned priority and full newest/oldest/top ordering. Queries reproduce the full listing without the sample catalog's 100-row cap. QDB/Forte remain excluded.
+- Verification: fixed-data PHP parity passed across all sorts, fallback sorts, over 100 rows, empty lists, ties, malformed/scalar JSON, identity rows, hidden/retracted rows; query catalog 4/4 and browser regression passed. Changed PHP files passed syntax checks.
+- Notes: Stage 3 verification correction commit `3bf80f73`. Existing sample queries are unchanged because contextual queries need complete listing scope and canonical fields.

@@ -2,6 +2,9 @@
 <?php if (!$isQdbInstance): ?>
   <article class="card">
     <div class="nav board-controls-nav">
+<?php if (!empty($listingQuery)): ?>
+<?= $partial('partials/query_action.php', $listingQuery) ?>
+<?php endif; ?>
       <a class="nav-link" href="/tags/">Tags</a>
 <?php foreach ($viewOptions as $option): ?>
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
