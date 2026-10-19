@@ -48,10 +48,12 @@ try {
   }, { keys, fingerprint });
   const page = await context.newPage();
   await page.goto(base + '/tools/fastmod/');
-  await page.getByRole('button', { name: 'Choose rubrics' }).click();
-  await page.keyboard.press('Escape');
-  assert.equal(await page.locator('dialog').evaluate(el => el.open), false);
-  await page.getByRole('button', { name: 'Choose rubrics' }).click();
+  await page.waitForFunction(() => !document.querySelector('[data-public-auth-resume="true"]'));
+  assert.equal(await page.locator('dialog').count(), 0);
+  for (const id of ['meta', 'moderation']) {
+    assert.equal(await page.locator('#fastmod-prompt-' + id).textContent(), readFileSync(join(project, 'prompts/fastmod/' + id + '.txt'), 'utf8').trim());
+    assert.equal(await page.locator('#fastmod-prompt-' + id).isVisible(), true);
+  }
   await page.getByLabel('Moderation', { exact: true }).uncheck();
   await page.getByLabel('Meta', { exact: true }).uncheck();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -79,7 +81,6 @@ try {
   await page.goto(base + '/posts/' + postId);
   assert.match(await page.locator('body').textContent(), /Meta: 0.80/);
   await page.goto(base + '/tools/fastmod/');
-  await page.getByRole('button', { name: 'Choose rubrics' }).click();
   await page.getByLabel('Moderation', { exact: true }).check();
   await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Save', exact: true }).click()]);
   assert.equal(calls.length, 1);
@@ -100,7 +101,7 @@ try {
   const recovered = await worker('retry');
   assert.equal(recovered.summary.scored, 1);
   assert.equal(calls.length, 4);
-  console.log(JSON.stringify({ status: 'passed', checks: ['keyboard dialog close', 'empty selection rejected', 'signed meta-only save', 'save does not score', 'publication queues work', 'one text provider call', 'disabled rubric omitted', 'named score recorded and displayed', 'two scores still one call', 'malformed output recorded without partial scores', 'explicit retry recovers'] }));
+  console.log(JSON.stringify({ status: 'passed', checks: ['inline controls and rubric prompts', 'empty selection rejected', 'signed meta-only save', 'save does not score', 'publication queues work', 'one text provider call', 'disabled rubric omitted', 'named score recorded and displayed', 'two scores still one call', 'malformed output recorded without partial scores', 'explicit retry recovers'] }));
 } finally {
   if (browser) await browser.close();
   if (server) { server.kill(); await once(server, 'exit'); }

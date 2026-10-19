@@ -1,14 +1,9 @@
 (function () {
   'use strict';
-  var dialog = document.querySelector('[data-fastmod-dialog]');
-  var open = document.querySelector('[data-fastmod-open]');
-  if (!dialog || !open) return;
-  var form = dialog.querySelector('form');
-  var status = dialog.querySelector('[data-fastmod-status]');
+  var form = document.querySelector('[data-fastmod-form]');
+  if (!form) return;
+  var status = form.querySelector('[data-fastmod-status]');
   var pending = false;
-  open.addEventListener('click', function () { dialog.showModal(); });
-  dialog.querySelector('[data-fastmod-close]').addEventListener('click', function () { if (!pending) dialog.close(); });
-  dialog.addEventListener('cancel', function (event) { if (pending) event.preventDefault(); });
   async function request(path, fields) {
     var response = await fetch(path, { method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fields).toString() });

@@ -21,9 +21,9 @@ receives target text plus bounded parent/root context for replies.
 
 ### Rubric selection
 
-Open **Tools → Fastmod → Choose rubrics** as a root-approved operator. Enable
+Open **Tools → Fastmod** as a root-approved operator. Each rubric displays its repository prompt beside its checkbox. Enable
 one or more rubrics and save using the browser identity signature. No individual
-rubric is mandatory, but the dialog and harness reject an empty selection.
+rubric is mandatory, but the panel and harness reject an empty selection.
 Saving settings does not enqueue work or call the model. Disabled rubric text
 is omitted from the prompt and response contract entirely.
 
@@ -35,7 +35,7 @@ requests, bug reports, and help concerning the platform, instance, or interactio
 with the application and interfaces. Ordinary subject-matter questions are not
 meta. Support and hostility may overlap.
 
-Adding a template automatically adds a dialog option; changing/removing templates
+Adding a template automatically adds a panel option; changing/removing templates
 requires no scoring-pipeline changes. Preserve an identity's meaning; use a new
 identity for a different signal. Before removing an enabled rubric, disable it
 and leave at least one other selected. Missing, empty, or invalid selected
@@ -47,7 +47,7 @@ Selection is stored privately and atomically in
 both run against the same application root and can access this file. Without a
 saved selection, both initial rubrics are enabled; a PHP private configuration
 may set `FAST_SCORING_RUBRICS` to a nonempty array of IDs as the initial selection.
-The saved dialog selection takes precedence. IDs are sorted lexically for the
+The saved panel selection takes precedence. IDs are sorted lexically for the
 prompt and CSV order.
 
 The response is only comma-separated probabilities, for example `0.8,0.2` for
@@ -166,7 +166,7 @@ Custom prompt overrides need a CSV introduction; generated legacy default paths
 are translated automatically. Preserve private score and settings files across
 application releases. No automatic backfill or new scheduling trigger is added.
 
-Inspect configuration errors in the dialog and `./v3 fast-score status`; correct
+Inspect configuration errors in the panel and `./v3 fast-score status`; correct
 missing/empty templates or permissions before retrying. For a malformed manually
 edited selection, restore a valid nonempty JSON array in the private settings
 file (or remove it to restore configured defaults). Provider and invalid CSV

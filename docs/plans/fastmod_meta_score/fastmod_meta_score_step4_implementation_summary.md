@@ -39,3 +39,12 @@ Implementation in progress on `feat/fastmod-meta-score`. Planning commit: `08b9b
 - All six stages completed on `feat/fastmod-meta-score`, with a planning commit and per-stage commits; Stage 4 also has an assertion-correction follow-up commit.
 - Use Tools → Fastmod → Choose rubrics. Both initial rubrics are enabled by default; at least one selection is required. No new scoring trigger or moderation action was introduced.
 - Remaining verification limit: external live-model accuracy was not tested. Full-suite concurrency failure passed independently; no private-message implementation was changed.
+
+## Follow-up - Inline rubric panel
+- Request: Replace the modal with controls on the page and display rubric prompts.
+- Disposition: Small presentation refinement requested by the user; implemented directly. Each checkbox shows the current repository template, with escaped text and preserved line breaks. Visitors can read prompts; root-approved identities can save selections.
+- Verification: Four focused PHP tests, PHP/JavaScript syntax checks, and the Fastmod browser flow passed. Browser setup now waits for automatic sign-in to finish before editing controls. Signed saves, empty-selection validation, and scoring behavior remain covered.
+
+- Additional request: Display the intro query for context. Implemented above the rubric controls, using the configured introduction template shared with prompt composition.
+
+- Additional request: Link Fastmod settings and Feature Flags in context, and place rubric checkboxes beside their labels. Added a link to the scoring flag from Fastmod and links back from both scoring flags; scoped checkbox layout overrides the full-width input default.

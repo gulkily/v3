@@ -2,29 +2,31 @@
   <article class="card"><?= $partial('partials/tools_nav.php') ?></article>
   <article class="card">
     <h1>Fastmod</h1>
+    <p>Enable Fastmod and automatic scoring in <a href="/tools/feature-flags/#flag-FAST_SCORING_ENABLED">Feature Flags</a>.</p>
     <p>Choose which scores to record for future evaluations. Scores do not trigger actions.</p>
 <?php if ($settingsError !== null): ?>
     <p role="alert"><?= $e($settingsError) ?></p>
 <?php else: ?>
     <p>Enabled: <?= $e(implode(', ', $enabledRubrics)) ?></p>
-<?php if ($canManageFastmod): ?>
-    <button type="button" data-fastmod-open>Choose rubrics</button>
-    <dialog data-fastmod-dialog aria-labelledby="fastmod-title">
-      <h2 id="fastmod-title">Fastmod rubrics</h2>
-      <p>Enable at least one. Each evaluation records the selected scores together.</p>
-      <form data-fastmod-form>
-<?php foreach ($rubrics as $id): ?>
-        <p><label><input type="checkbox" name="rubrics[]" value="<?= $e($id) ?>"<?= in_array($id, $enabledRubrics, true) ? ' checked' : '' ?>> <?= $e(ucfirst(str_replace('_', ' ', $id))) ?></label></p>
+    <h2>Introductory prompt</h2>
+    <p id="fastmod-introduction"><?= nl2br($e($introduction)) ?></p>
+    <h2>Fastmod rubrics</h2>
+    <p>Enable at least one. Each evaluation records the selected scores together.</p>
+    <form<?= $canManageFastmod ? ' data-fastmod-form' : '' ?>>
+<?php foreach ($rubrics as $id => $prompt): ?>
+      <div class="stack">
+        <label class="fastmod-rubric-label"><input type="checkbox" name="rubrics[]" value="<?= $e($id) ?>" aria-describedby="fastmod-prompt-<?= $e($id) ?>"<?= in_array($id, $enabledRubrics, true) ? ' checked' : '' ?><?= $canManageFastmod ? '' : ' disabled' ?>> <?= $e(ucfirst(str_replace('_', ' ', $id))) ?></label>
+        <p id="fastmod-prompt-<?= $e($id) ?>"><?= nl2br($e($prompt)) ?></p>
+      </div>
 <?php endforeach; ?>
-        <p role="status" aria-live="polite" data-fastmod-status></p>
-        <button type="submit">Save</button>
-        <button type="button" data-fastmod-close>Cancel</button>
-      </form>
-    </dialog>
-    <noscript>JavaScript and a root-approved browser identity are required to save settings.</noscript>
+<?php if ($canManageFastmod): ?>
+      <p role="status" aria-live="polite" data-fastmod-status></p>
+      <button type="submit">Save</button>
+      <noscript>JavaScript and a root-approved browser identity are required to save settings.</noscript>
 <?php else: ?>
-    <p>A root-approved identity is required to change these settings.</p>
+      <p>A root-approved identity is required to change these settings.</p>
 <?php endif; ?>
+    </form>
 <?php endif; ?>
   </article>
 </section>

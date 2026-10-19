@@ -23,6 +23,17 @@ final class FastmodRubrics
         return $catalog;
     }
 
+    /** @return array<string, string> */
+    public function templates(): array
+    {
+        return array_map(fn (string $path): string => $this->read($path), $this->catalog());
+    }
+
+    public function introduction(): string
+    {
+        return $this->read(str_starts_with($this->introductionPath, '/') ? $this->introductionPath : $this->projectRoot . '/' . $this->introductionPath);
+    }
+
     /** @param list<string> $enabledIds
      * @return array{prompt:string, ids:list<string>, revision:string}
      */
@@ -40,7 +51,7 @@ final class FastmodRubrics
             }
         }
         sort($enabledIds, SORT_STRING);
-        $parts = [$this->read(str_starts_with($this->introductionPath, '/') ? $this->introductionPath : $this->projectRoot . '/' . $this->introductionPath)];
+        $parts = [$this->introduction()];
         foreach ($enabledIds as $id) {
             $parts[] = $id . ': ' . $this->read($catalog[$id]);
         }

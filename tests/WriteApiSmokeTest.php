@@ -28,7 +28,7 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
-    public function testFastmodDialogAndSignedSelectionPersistWithoutContentWrites(): void
+    public function testFastmodPanelAndSignedSelectionPersistWithoutContentWrites(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();
         $key = $this->createSigningKey('fastmod-operator');
@@ -77,14 +77,16 @@ final class WriteApiSmokeTest
             $_COOKIE = [];
             $application = new Application(dirname(__DIR__), $root, $database, $artifacts);
             $anonymous = $this->renderMethod($application, 'GET', '/tools/fastmod/');
-            assertStringNotContains('data-fastmod-dialog', $anonymous);
+            assertStringNotContains('data-fastmod-form', $anonymous);
+            assertStringContains('fastmod-prompt-meta', $anonymous);
             assertStringContains('root-approved identity', $anonymous);
             $_POST = ['rubrics' => ['meta']];
             $denied = json_decode($this->renderMethod($application, 'POST', '/api/prepare_fastmod_rubrics'), true);
             assertSame('error', $denied['status']);
             $_COOKIE = ['identity_hint' => $identity];
             $authorized = $this->renderMethod($application, 'GET', '/tools/fastmod/');
-            assertStringContains('data-fastmod-dialog', $authorized);
+            assertStringContains('data-fastmod-form', $authorized);
+            assertStringNotContains('<dialog', $authorized);
             assertStringContains('/assets/fastmod.', $authorized);
         } finally {
             $_COOKIE = $cookies;

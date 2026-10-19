@@ -186,7 +186,8 @@ final class RouteServices
     public function fastmodSettingsView(): array
     {
         $config = FastScoringConfig::fromPrivateConfig(PrivateConfig::load($this->projectRoot));
-        return ['rubrics' => array_keys((new \ForumRewrite\Scoring\FastmodRubrics($this->projectRoot))->catalog()),
+        $rubrics = new \ForumRewrite\Scoring\FastmodRubrics($this->projectRoot, $config->promptPath);
+        return ['rubrics' => $rubrics->templates(), 'introduction' => $rubrics->introduction(),
             'enabledRubrics' => (new \ForumRewrite\Scoring\FastmodSelection($this->projectRoot))->enabled($config)];
     }
 
