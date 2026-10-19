@@ -6,6 +6,8 @@ namespace ForumRewrite\Docs;
 
 final class PlatformDocsCatalog
 {
+    private static array $snapshots = [];
+
     public const DOCUMENT_ROOT = 'docs';
     public const MAX_DOCUMENT_BYTES = 1048576;
     public const ROOT_DOCUMENTS = ['README.md', 'CONTRIBUTING.md', 'AGENTS.md', 'BLESSING.md'];
@@ -85,6 +87,9 @@ final class PlatformDocsCatalog
     /** Discover from the deployed source tree, without a separately maintained catalog. */
     public static function inventory(string $projectRoot): array
     {
+        if (isset(self::$snapshots[$projectRoot])) {
+            return self::$snapshots[$projectRoot];
+        }
         $paths = self::ROOT_DOCUMENTS;
         $docs = rtrim($projectRoot, '/') . '/docs';
         if (is_dir($docs) && !is_link($docs)) {
@@ -118,6 +123,7 @@ final class PlatformDocsCatalog
                 'href' => self::routeForPath($path),
                 'available' => $readable,
                 'text' => $text,
+                'hash' => hash_file('sha256', $resolved),
                 'format' => strtolower(pathinfo($path, PATHINFO_EXTENSION)),
             ];
         }
@@ -125,6 +131,22 @@ final class PlatformDocsCatalog
             (($a['group'] === 'Current guidance' ? 0 : 1) <=> ($b['group'] === 'Current guidance' ? 0 : 1))
             ?: strnatcasecmp($a['path'], $b['path']));
         return $entries;
+    }
+
+    /** Scope one build's metadata/search reads to the same source inventory. */
+    public static function withSnapshot(string $projectRoot, callable $work): mixed
+    {
+        $previous = self::$snapshots[$projectRoot] ?? null;
+        self::$snapshots[$projectRoot] = self::inventory($projectRoot);
+        try {
+            return $work();
+        } finally {
+            if ($previous === null) {
+                unset(self::$snapshots[$projectRoot]);
+            } else {
+                self::$snapshots[$projectRoot] = $previous;
+            }
+        }
     }
 
     public static function search(array $inventory, array $query): array

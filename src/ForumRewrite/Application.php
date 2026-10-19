@@ -597,6 +597,11 @@ final class Application
             return;
         }
 
+        if ($path === '/docs/_missing.html') {
+            $this->sendHtml($this->platformDocsController()->missing(), 200);
+            return;
+        }
+
         if ($path === '/docs/_search.json') {
             $this->sendJson(['entries' => \ForumRewrite\Docs\PlatformDocsCatalog::inventory($this->projectRoot)], 200);
             return;
