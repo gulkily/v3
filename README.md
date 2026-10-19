@@ -1,4 +1,4 @@
-# PHP Forum Rewrite
+# v3
 
 Minimal local test slice for the rewrite spec.
 
