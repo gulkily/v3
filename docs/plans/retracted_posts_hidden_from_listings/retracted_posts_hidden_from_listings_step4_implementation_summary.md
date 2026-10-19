@@ -42,3 +42,15 @@ Branch: `feat/retracted-posts-hidden-from-listings`. Planning commit: `52e5d3c1`
   - Read-model schema check: not applicable. `retracted_at` is already in the current schema, so no version bump.
 - Notes:
   - Whether the `all` Activity view should also hide retracted posts was not covered by the approved plan and is left unchanged.
+
+## Stage 4 - Permalink regression and cleanup
+- Changes:
+  - No code changes. Permalink regression coverage is the existing `WriteApiSmokeTest::testRetractedRootShowsPlaceholderOnPermalinkKeepsRepliesAndLeavesBoard`, which asserts the thread page and `/posts/` page still show the retraction notice and the reply, while the board does not list the thread.
+  - Template cleanup: no branch was removed. `thread_root_card`, `post_card`, `paned_board_content_article` and `paned_thread_reply_tree` render retraction notices on thread, post and Forte pages, which still resolve retracted content. `thread_card.php` keeps a retracted guard; no evidence it is unused, so it stays. The title helpers in `Application`, `BoardPageController` and `TemplateRenderer` are still used for thread pages.
+  - `docs/plans/ui_copy_audit_checklist.md` not updated: no UI text was removed.
+- Verification:
+  - Full suite last run after Stage 3: 1339 run, 1332 passed, 7 failed (one new failure, fixed and re-run in isolation; six long-standing). Not re-run after the final fixture edit, since Stage 4 changes no code.
+  - Manual check on a local instance: not done. The smoke test above renders the real board, thread and post routes in-process; the profile, tag and Activity pages are asserted at the repository/service level, not as rendered pages.
+  - Read-model schema check: not applicable.
+- Notes:
+  - Retracted items remain in the Activity `all` view by design of this change's scope.
