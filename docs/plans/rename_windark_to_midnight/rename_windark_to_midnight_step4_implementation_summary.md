@@ -30,3 +30,12 @@ Branch: `rename_windark_to_midnight` (from `main`). Planning commit: `a5e1a150`.
 - Notes:
   - The alias test lives in the image browser test only because it already provides a running server and signed-in context; it is not about images.
   - The `theme_toggle.js` branch is covered only indirectly, since `layout.php` rewrites the value first.
+
+## Stage 3 - Server alias
+- Changes:
+  - `TemplateRenderer::themeHint` maps a `theme-hint` cookie of `windark` to `midnight` through `ThemeRegistry::LEGACY_ALIASES`, so the first stylesheet is `theme-midnight.css`.
+  - `ThemeRegistryTest` asserts each legacy alias is no longer a known name and points to a current explicit theme.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest ThemeRegistryTest`: passed (152 run, 152 passed); the new `windark` cookie assertion fails with the renderer change stashed.
+- Notes:
+  - No cookie rewrite on the server; the existing client hint update rewrites it on the next page load.

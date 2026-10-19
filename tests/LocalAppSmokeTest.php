@@ -967,6 +967,16 @@ PHP;
                 $hintedHtml,
             );
 
+            $_COOKIE = ['theme-hint' => 'windark'];
+            $legacyHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
+
+            assertStringContains(
+                'id="theme-stylesheet" rel="stylesheet" href="'
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-midnight.css')
+                . '" fetchpriority="high"',
+                $legacyHintHtml
+            );
+
             $_COOKIE = ['theme-hint' => 'auto'];
             $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
 

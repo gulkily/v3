@@ -280,6 +280,7 @@ final class TemplateRenderer
     private function themeHint(array $explicitThemeNames): ?string
     {
         $hint = (string) ($_COOKIE[ThemeRegistry::THEME_HINT_COOKIE] ?? '');
+        $hint = ThemeRegistry::LEGACY_ALIASES[$hint] ?? $hint;
 
         return in_array($hint, $explicitThemeNames, true) ? $hint : null;
     }
