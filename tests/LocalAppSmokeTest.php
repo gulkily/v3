@@ -3337,7 +3337,7 @@ PHP;
         assertStringContains('Last registration error', $healthScript);
         assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
         assertStringContains('Offline reading requires HTTPS.', $healthScript);
-        assertStringContains('Open https://', $healthScript);
+        assertStringContains('Open over HTTPS', $healthScript);
         assertStringContains('Offline reader cache', $healthScript);
         assertStringContains('window.caches.open(matching[0])', $healthScript);
         assertStringContains('new SQL.Database(bytes)', $healthScript);
