@@ -44,7 +44,7 @@ try {
         exit(0);
     }
 
-    if (!in_array($command, ['retry-agent-reply', 'enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
+    if (!in_array($command, ['enqueue-retraction-sweep', 'retry-agent-reply', 'enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
         throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
     }
 
@@ -76,6 +76,12 @@ try {
             }
         );
         fwrite(STDOUT, 'Agent reply requeued: task_id=' . $task['id'] . "\nRun only this task: ./v3 task-queue run --task-id=" . $task['id'] . "\n");
+        exit(0);
+    }
+
+    if ($command === 'enqueue-retraction-sweep') {
+        $task = $store->enqueue(SqliteTaskQueueStore::RETRACTION_SWEEP, 'retraction-sweep');
+        fwrite(STDOUT, 'Cleanup queued: task_id=' . $task['id'] . "\n");
         exit(0);
     }
 
@@ -187,6 +193,11 @@ try {
 
         $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $pdo, $errorLog): void {
             $startedAt = microtime(true);
+            $retractionSweep = \ForumRewrite\Retraction\RetractionSweepFactory::create($projectRoot, $repositoryRoot, $staticHtmlRoot);
+            if ($taskId === null) {
+                try { \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($retractionSweep, $store); }
+                catch (Throwable) { $errorLog->write('retraction_discovery_failed', 'Cannot discover retraction cleanup. Run retraction-sweep status.'); }
+            }
             $reconciledAgentReplyTasks = $taskId === null ? reconcileAgentReplyTasks($store, $databasePath) : 0;
             $executorRun = $store->startExecutorRun();
             $taskOutcomes = [];
@@ -308,6 +319,7 @@ try {
                 static function (int $failedTaskId, Throwable $throwable) use ($errorLog): void {
                     $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
                 },
+                runRetractionSweep: static fn (): array => $retractionSweep->run($workLimit),
             );
             $taskStartedAt = [];
             try {

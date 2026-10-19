@@ -126,4 +126,50 @@ final class RetractionSweepTest
         catch (RuntimeException $error) { assertSame('failed', $sweep->state()['status']); }
         assertSame(true, is_file($root . '/records/posts/target.txt'));
     }
+    public function testCronCommandDiscoversAndExecutesMissedRetractionCleanup(): void
+    {
+        [$root, $pdo] = $this->fixture();
+        mkdir($root . '/static');
+        mkdir($root . '/public');
+        file_put_contents($root . '/secrets.php', '<?php return ' . var_export(['LLM_EXCHANGE_DATABASE_PATH' => $root . '/exchanges.sqlite3'], true) . ';');
+        $env = ['FORUM_REPOSITORY_ROOT' => $root, 'FORUM_DATABASE_PATH' => $root . '/index.sqlite3',
+            'FORUM_STATIC_HTML_ROOT' => $root . '/static', 'FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public',
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => $root . '/queue.sqlite3', 'FORUM_SECRETS_PATH' => $root . '/secrets.php',
+            'FORUM_RETRACTION_SWEEP_STATE_PATH' => $root . '/cron-state.json'];
+        $prefix = 'env';
+        foreach ($env as $key => $value) $prefix .= ' ' . escapeshellarg($key . '=' . $value);
+        $output = []; $code = 0;
+        exec($prefix . ' ' . escapeshellarg(dirname(__DIR__) . '/v3') . ' task-queue cron --log=' . escapeshellarg($root . '/cron.log'), $output, $code);
+        assertSame(0, $code);
+        $line = null;
+        foreach ($output as $row) if (str_contains($row, '* * * * * ')) $line = trim($row);
+        assertSame(true, is_string($line));
+        $command = substr($line, strlen('* * * * * '));
+        exec($prefix . ' bash -c ' . escapeshellarg($command), $ignored, $code);
+        assertSame(0, $code);
+        $state = json_decode(file_get_contents($root . '/cron-state.json'), true);
+        assertSame('complete', $state['status']);
+        assertSame(2, $state['cleaned']);
+        $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new PDO('sqlite:' . $root . '/queue.sqlite3'));
+        assertSame('completed', $store->latestByType($store::RETRACTION_SWEEP)['status']);
+    }
+
+    public function testSweepQueueCoalescesContinuesAndKeepsTerminalFailuresVisible(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new PDO('sqlite::memory:'));
+        \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($sweep, $store);
+        \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($sweep, $store);
+        assertSame(1, $store->counts()['queued']);
+        $worker = new \ForumRewrite\TaskQueue\TaskQueueWorker($store, static function (): void {}, runRetractionSweep: fn () => $sweep->run(1));
+        assertSame(1, $worker->run()['continued']);
+        for ($i = 0; $i < 5 && $store->counts()['queued'] > 0; ++$i) $worker->run();
+        assertSame(1, $store->counts()['completed']);
+        file_put_contents($root . '/records/post-retractions/post-retraction-target.txt', 'broken');
+        $store->enqueue($store::RETRACTION_SWEEP, 'retraction-sweep', 1);
+        $worker->run();
+        assertSame(1, $store->counts()['failed']);
+        \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($sweep, $store);
+        assertSame(0, $store->counts()['queued']);
+    }
 }

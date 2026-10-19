@@ -10,6 +10,7 @@ use PDO;
 final class SqliteTaskQueueStore
 {
     public const REBUILD_READ_MODEL = 'rebuild_read_model';
+    public const RETRACTION_SWEEP = 'retraction_sweep';
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const AGENT_REPLY = 'agent_reply';
@@ -825,7 +826,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::RAILSPIKE_ASSESSMENT], true)) {
+        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::RAILSPIKE_ASSESSMENT], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

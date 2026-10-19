@@ -48,6 +48,7 @@ class LocalWriteService
 
     /** @var (callable():void)|null */
     private $enqueueOfflineSnapshotPublication;
+    private $enqueueRetractionSweep;
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -59,8 +60,10 @@ class LocalWriteService
         private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
         private readonly array $additionalArtifactRoots = [],
         ?callable $enqueueOfflineSnapshotPublication = null,
+        ?callable $enqueueRetractionSweep = null,
     ) {
         $this->enqueueOfflineSnapshotPublication = $enqueueOfflineSnapshotPublication;
+        $this->enqueueRetractionSweep = $enqueueRetractionSweep;
     }
 
     /**
@@ -840,11 +843,18 @@ class LocalWriteService
             catch (\Throwable) { $failedStep ??= 'artifact_invalidate'; }
         }
 
+        $cleanupStatus = 'pending';
+        if ($this->enqueueRetractionSweep !== null) {
+            try { ($this->enqueueRetractionSweep)(); }
+            catch (\Throwable) { $cleanupStatus = 'failed'; }
+        }
+
         $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
 
         return [
             'status' => 'ok',
             'retraction_status' => $failedStep === null ? 'complete' : 'partial',
+            'cleanup_status' => $cleanupStatus,
             'failed_step' => $failedStep,
             'already_retracted' => $alreadyRetracted,
             'post_id' => $postId,

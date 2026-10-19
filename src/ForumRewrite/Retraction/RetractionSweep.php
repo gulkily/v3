@@ -18,6 +18,12 @@ final class RetractionSweep
         private readonly array $artifactRoots = [],
     ) {}
 
+    public function hasRetractions(): bool
+    {
+        $ids = ExchangeRetractionState::read($this->repositoryRoot);
+        return $ids === null ? is_dir($this->repositoryRoot . '/records/post-retractions') : $ids !== [];
+    }
+
     public function preview(int $limit = 250): array
     {
         $ids = ExchangeRetractionState::read($this->repositoryRoot);

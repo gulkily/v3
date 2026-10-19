@@ -16,11 +16,12 @@ try {
         $options[$m[1]] = $m[2];
     }
     if (!in_array($command, ['preview', 'status', 'run'], true)) throw new InvalidArgumentException('Use preview, status or run.');
-    $sweep = new RetractionSweep(
+    $sweep = \ForumRewrite\Retraction\RetractionSweepFactory::create(
+        $root,
         $options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository'),
-        $options['exchange-database-path'] ?? LlmExchangeDatabaseConfig::path($root, PrivateConfig::load($root)),
-        $options['state-path'] ?? $root . '/state/private/retraction_sweep.json',
-        [$options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: $root . '/state/static_html'), getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $root . '/public'],
+        $options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: $root . '/state/static_html'),
+        $options['exchange-database-path'] ?? null,
+        $options['state-path'] ?? null,
     );
     $limit = $options['limit'] ?? '250';
     if (!ctype_digit($limit) || (int) $limit < 1 || (int) $limit > 10000) throw new InvalidArgumentException('Limit must be 1–10000.');

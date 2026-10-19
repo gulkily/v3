@@ -131,6 +131,11 @@ final class RouteServices
             new CanonicalRecordRepository($this->repositoryRoot),
             featureFlags: $this->featureFlags,
             additionalArtifactRoots: $this->additionalArtifactRoots(),
+            enqueueRetractionSweep: function (): void {
+                $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+                if (!is_dir(dirname($queuePath)) && !mkdir(dirname($queuePath), 0700, true) && !is_dir(dirname($queuePath))) throw new RuntimeException('Cannot open cleanup queue.');
+                (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::RETRACTION_SWEEP, 'retraction-sweep');
+            },
             enqueueOfflineSnapshotPublication: function (): void {
                 $this->enqueueOfflineSnapshotPublication();
             },
