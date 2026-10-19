@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Theme-specific selected nav styling](nav_active_theme_override/)
 - [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)
+- [Testing self-approval](testing_self_approval/)
+
 - [User approval meaning](user_approval_meaning/)
 
 - [Rename windark theme to midnight](rename_windark_to_midnight/)

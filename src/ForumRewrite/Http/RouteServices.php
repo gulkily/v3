@@ -76,6 +76,17 @@ final class RouteServices
     ) {
     }
 
+    public function testingSelfApprovalToken(): ?string
+    {
+        $profile = $this->defaultViewerProfile();
+        if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()
+            || $profile === null || (int) ($profile['is_approved'] ?? 0) === 1
+            || session_status() !== PHP_SESSION_ACTIVE) {
+            return null;
+        }
+        return $_SESSION['testing_self_approval_token'] ??= bin2hex(random_bytes(32));
+    }
+
     public function pdo(): PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();

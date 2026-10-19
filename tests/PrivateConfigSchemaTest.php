@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\PrivateConfigSchema;
 
 final class PrivateConfigSchemaTest
@@ -47,6 +48,28 @@ final class PrivateConfigSchemaTest
         assertSame('<placeholder>', PrivateConfigSchema::formatValue('LLM_API_KEY', 'replace-with-real-key'));
         assertStringNotContains('example.test', PrivateConfigSchema::formatValue('LLM_EXTRA_HEADERS', ['X-Title' => 'https://example.test']));
         assertSame(['CUSTOM_SETTING'], PrivateConfigSchema::additionalFileValues(['CUSTOM_SETTING' => 'kept', 'LLM_MODEL' => 'model']));
+    }
+
+    public function testExecutionLockTimeoutReadsPrivateConfigBelowEnvironment(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-lock-timeout-' . bin2hex(random_bytes(4)) . '.php';
+        file_put_contents($secretsPath, "<?php\nreturn ['FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS' => 0];\n");
+        $oldSecrets = getenv('FORUM_SECRETS_PATH');
+        $oldTimeout = getenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
+        $timeout = static fn (): int => (new ReflectionProperty(ExecutionLock::class, 'timeoutSeconds'))->getValue(new ExecutionLock($secretsPath . '.lock'));
+
+        try {
+            putenv('FORUM_SECRETS_PATH=' . $secretsPath);
+            putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS');
+            assertSame(0, $timeout());
+
+            putenv('FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS=7');
+            assertSame(7, $timeout());
+        } finally {
+            putenv($oldSecrets === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $oldSecrets);
+            putenv($oldTimeout === false ? 'FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS' : 'FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS=' . $oldTimeout);
+            @unlink($secretsPath);
+        }
     }
 
     public function testLlmEditorMetadataValidatesAndRedactsChanges(): void

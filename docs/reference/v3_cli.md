@@ -60,6 +60,25 @@ For conflicts, resolve and commit or use `git merge --abort` in the target.
 See the [project workflow guide](railspike_workflow.md) for review, recovery,
 and existing-plan policy.
 
+## Testing account approval
+
+Create an ignored `.test-self-approval` file in the project root once per testing
+checkout (`touch .test-self-approval`). Start the server normally, set up or
+restore your browser account, and open **Account Key** (`/account/key/`). Click
+**Approve current account** to apply the same root approval seed as
+`./v3 approve <current_identity_id>`, with immediate member access.
+
+The shortcut requires an authenticated account and a direct loopback connection
+using `localhost`, `127.0.0.1`, or `[::1]`; public hostnames and forwarded proxy
+requests are ineligible. The file contents do not matter. Remove the file
+(`rm .test-self-approval`) to disable further submissions immediately, including
+from pages already open. Existing approvals remain valid. Each new checkout
+needs its own marker; no extra startup option or restart is required.
+
+If approval reports incomplete refresh, follow the displayed rebuild command,
+then retry **Approve current account**. A persisted approval is retained during
+repair. The marker file is not created by installation or tracked in Git.
+
 ## Start the local dev server
 
 ```
