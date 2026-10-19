@@ -217,3 +217,32 @@ The plan retains four stages and exceeds a compact printed page to preserve requ
 ### User-feedback follow-through
 
 Removed temporary caution notices from both plans after reconciliation, as requested. Updated the personal checklist in the same change. No vendored instructions, application files or Git commits were changed.
+
+## 2026-10-19T03:25:48Z — Completed Step 4
+
+### Necessary/useful instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate: organized approved Steps 1–3 and debug history under the feature folder, kept the auxiliary personal checklist out of the initial commit, and created the summary only afterward. Retain the explicit planning-commit boundary.
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol: preserved provenance before candidate rating, saved intake before source screening, and committed each stage plus summary before the next. The E03 scope/score revision remains traceable instead of replacing the initial estimate. Retain sequential evidence checkpoints.
+- `docs/railspike/docs/workflow/step4_implementation_after.md`, Final Verification Checklist: verified 72 concrete links, three frozen source hashes, authorized-file scope, whitespace and the one-planning-plus-four-stage commit structure. Retain documentation-proportional checks.
+- `docs/railspike/RAILSPIKE.md`, experimental checkpoint contract added in this cycle: the static walkthroughs distinguish total projections from retrospective assessment, skipped/missing scores, selection state and scope approvals. Retain these distinctions; real-use effectiveness remains to be studied.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Runtime, UI, deployment and migration verification are inapplicable to this documentation-only setup. Candidate mobile/iPhone acceptance is explicitly future work; static source screening does not establish those user outcomes.
+
+### Uncertain assessments
+
+- Synthetic document walkthroughs check consistency and discoverability, not whether future agents comply or whether the scores predict comfortable fit. Six real accepted outcomes and maintainer judgments remain pending.
+- The proposed batch lacks near-ceiling scopes. This follows the approved usefulness-first policy, but later analysis must not claim calibration of the ceiling from this batch alone.
+
+### Commit and handoff evidence
+
+- Planning: `89ae9c13`; Stage 1: `e8548e75`; Stage 2: `17222a5d`; Stage 3: `3954ae89`; Stage 4: `612ad589`. Each stage commit contains its implementation-summary update. The final stage includes the separate maintainer checklist.
+- Branch: `feat/effort-estimation-trial`. Final pre-log working tree was clean. No application, AGENTS.md, provenance identifiers, upstream publishing, subtree sync, merge or deployment changes.
+- The initially modified `todo.txt` was read but never edited or staged by this work; it no longer appeared modified at later status checks.
+- Setup complete; 0/6 accepted study outcomes. Next action is maintainer review of R1 and the six proposals, then selection and separate feature approvals.
