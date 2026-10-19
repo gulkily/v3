@@ -87,3 +87,24 @@ No supported findings.
 
 - Stage 2 sizing depends on existing browser authentication refresh behavior. Keep the stage to one focused implementation session; discoveries that expand scope require replanning, not silent additions.
 - Windows-host browser forwarding cannot be claimed verified from WSL Chromium. The completion contract requires explicit pending status when that check is unavailable.
+
+## 2026-10-19 UTC — Step 4
+
+### Necessary/useful instructions
+
+- Step 4 planning-commit gate and stage boundary protocol: planning commit `37594b14` preceded summary creation and code; stage commits `1f86f805`, `b7ca38b7`, and `8b230c6b` each include their summary update. Retain the auditable sequence.
+- Step 4 Completion Contract and final verification: testing includes the real browser button, missing/removed marker, weak authentication, persisted refresh failure, CLI repair, retry, profile/lobby consistency, and immediate member access. Retain outcome-based verification.
+- Final verification distinguishes the reproduced baseline profile-copy assertion failure from passing focused coverage, and WSL Chromium from unverified Windows-host browser forwarding. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Navigation icon remapping, read-model schema migration checks, production deployment, and effort-study scoring are inapplicable: no new navigation/schema, no deployment authorization, and no selected study.
+
+### Uncertain assessments
+
+- Windows-host forwarding has not been tested. Direct WSL Chromium localhost is verified; documentation explicitly limits eligibility to direct loopback and excludes public proxy paths.
+- Full suite was not run. A seed regression expecting removed self-profile copy fails with the pre-change Application as well; this remains separate follow-up rather than an implementation pass.
