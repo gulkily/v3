@@ -1,0 +1,26 @@
+Karpathy's second brain pattern runs on Grok Bot now: stop explaining your life to AI from zero every chat, keep a wiki that writes itself
+
+three bots in one group chat, each with its own memory:
+
+the reader takes every link, PDF and voice note you drop and never edits it
+the librarian rewrites every wiki page that source touches, usually 10 to 15 of them
+the checker wakes up on a nightly routine and hunts contradictions, stale claims and pages nothing links to
+
+→ you ask a question: the answer gets filed back as a page, so the brain grows from use, not only from reading
+→ a new source contradicts an old page: the checker tags you instead of quietly overwriting it
+→ a page goes 30 days without a fresh source: it gets marked unconfirmed
+
+a second brain can sound sure while remembering the wrong thing
+
+Reader collects. Librarian writes. Checker doubts.
+
+every page has to show:
+> the claim
+> the source it came from
+> the date it was last confirmed
+
+paste this into Grok Bot:
+
+"Build me a second brain with three bots in one group chat. Keep my sources untouched in raw/, maintain wiki/ yourself, file good answers back as pages and run a nightly check for contradictions. Show me the structure first. Do not create anything until I confirm"
+
+start with one topic you actually work on, not your whole life
