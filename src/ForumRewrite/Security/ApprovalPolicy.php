@@ -87,6 +87,9 @@ final class ApprovalPolicy
         $consequence = $context['classification'] === 'cross_account_key'
             ? $username . ' already has ' . $context['existing_key_count'] . ' approved keys. This key will be able to act as ' . $username . '.'
             : 'This key will be able to act as ' . $username . '.';
+        if ($context['classification'] === 'new_account') {
+            $consequence = 'By approving this user, you vouch for their conduct and integrity. ' . $consequence;
+        }
         return ['label' => $label, 'consequence' => $consequence, 'target_identity_id' => $context['target_identity_id']];
     }
 

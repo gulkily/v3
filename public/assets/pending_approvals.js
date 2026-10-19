@@ -103,7 +103,7 @@
       }
 
       try {
-        const result = await approveUser(profileSlug);
+        const result = await approveUser(profileSlug, { confirm: false });
         const postId = encodeURIComponent(String(result.postId || ""));
         const commitSha = encodeURIComponent(String(result.commitSha || ""));
         const profileBase = form.getAttribute("data-approval-return") === "tools" ? "/tools/user-access/profiles/" : "/profiles/";

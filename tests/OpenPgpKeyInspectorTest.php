@@ -138,4 +138,29 @@ final class OpenPgpKeyInspectorTest
             throw new RuntimeException('Expected non-negative timing for ' . $name . '.');
         }
     }
+
+    public function testInspectAndVerifyLeaveNoGpgAgentsBehind(): void
+    {
+        $publicKey = (string) file_get_contents(__DIR__ . '/fixtures/parity_minimal_v1/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc');
+        $before = $this->gpgAgentCount();
+        $homesBefore = count(glob(sys_get_temp_dir() . '/forum-rewrite-gpg-*') ?: []);
+
+        (new OpenPgpKeyInspector())->inspect($publicKey);
+        (new OpenPgpSignatureVerifier())->verifyDetached($publicKey, 'text', 'not a signature', '0168FF20EB09C3EA6193BD3C92A73AA7D20A0954');
+
+        // Agents told to stop by earlier operations may still be exiting; wait for the count to settle.
+        for ($attempt = 0; $attempt < 20 && $this->gpgAgentCount() > $before; $attempt++) {
+            usleep(100000);
+        }
+        assertTrue($this->gpgAgentCount() <= $before, 'GPG agents should not outlive the operations.');
+        assertSame($homesBefore, count(glob(sys_get_temp_dir() . '/forum-rewrite-gpg-*') ?: []), 'No temp GPG homes should remain.');
+    }
+
+    private function gpgAgentCount(): int
+    {
+        $pids = [];
+        exec('pgrep -x gpg-agent 2>/dev/null', $pids);
+
+        return count($pids);
+    }
 }
