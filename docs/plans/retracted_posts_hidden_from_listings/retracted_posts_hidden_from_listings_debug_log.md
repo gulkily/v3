@@ -48,3 +48,22 @@ Mode source: `.railspike_debug_on` project marker (new workflow, no explicit req
 
 ### Uncertain assessments
 - The `before` and `after` phase files mostly restate the Do file's checks; consolidating them may be possible, but this is a single cycle's view.
+
+## 2026-10-19 UTC - Step 4
+
+### Necessary/useful instructions
+- `step4_implementation_before.md` Planning Docs Commit Gate: kept plans, folder move and index entry in one planning commit before code. Retain.
+- `step4_implementation_do.md` Stage Boundary Protocol: running verification before each commit caught two tests that encoded the old behavior (Stages 1 and 2) and one fixture gap (Stage 3). Retain.
+
+### Redundant/unnecessary instructions
+- No supported findings
+
+### Inapplicable instructions
+- Effort estimation: cycle not selected.
+- Deployment/migration checks: no schema change.
+
+### Uncertain assessments
+- Stage 4 produced no code, only a verification and summary commit; the plan could have folded it into Stage 3. A judgment call about stage granularity.
+- The full suite takes several minutes and exceeded the default tool timeout; Railspike offers no guidance on long verification runs.
+
+Final full-suite result (not a per-stage figure): 1339 run, 1333 passed, 6 failed; the six failures were also recorded in earlier runs.

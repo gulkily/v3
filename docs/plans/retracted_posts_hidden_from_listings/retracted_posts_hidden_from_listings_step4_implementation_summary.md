@@ -49,7 +49,7 @@ Branch: `feat/retracted-posts-hidden-from-listings`. Planning commit: `52e5d3c1`
   - Template cleanup: no branch was removed. `thread_root_card`, `post_card`, `paned_board_content_article` and `paned_thread_reply_tree` render retraction notices on thread, post and Forte pages, which still resolve retracted content. `thread_card.php` keeps a retracted guard; no evidence it is unused, so it stays. The title helpers in `Application`, `BoardPageController` and `TemplateRenderer` are still used for thread pages.
   - `docs/plans/ui_copy_audit_checklist.md` not updated: no UI text was removed.
 - Verification:
-  - Full suite last run after Stage 3: 1339 run, 1332 passed, 7 failed (one new failure, fixed and re-run in isolation; six long-standing). Not re-run after the final fixture edit, since Stage 4 changes no code.
+  - Final full suite after all stages: 1339 run, 1333 passed, 6 failed; the six failures were also recorded in earlier runs, none new.
   - Manual check on a local instance: not done. The smoke test above renders the real board, thread and post routes in-process; the profile, tag and Activity pages are asserted at the repository/service level, not as rendered pages.
   - Read-model schema check: not applicable.
 - Notes:
