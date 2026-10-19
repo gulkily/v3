@@ -54,7 +54,7 @@ final class BoardPageController
         return $this->routeServices->renderPageTemplate(
             'board.php',
             [
-                'listingQuery' => $qdbPolicy === null && $view === 'all' ? \ForumRewrite\Tools\BoardListingQuery::context($view, $sort) : null,
+                'listingQuery' => $qdbPolicy === null ? \ForumRewrite\Tools\BoardListingQuery::context($view, $sort) : null,
                 'threads' => $threads,
                 'view' => $view,
                 'sort' => $sort,

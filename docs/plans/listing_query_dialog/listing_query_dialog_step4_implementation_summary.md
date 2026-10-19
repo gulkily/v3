@@ -30,3 +30,8 @@ Debug mode: enabled
 - Verification: fixed-data PHP parity passed across all sorts, fallback sorts, over 100 rows, empty lists, ties, malformed/scalar JSON, identity rows, hidden/retracted rows; query catalog 4/4 and browser regression passed. Changed PHP files passed syntax checks.
 - Notes: Stage 3 verification correction commit `3bf80f73`. Existing sample queries are unchanged because contextual queries need complete listing scope and canonical fields.
 - Verification correction: the browser rerun returned another premature editor assertion at switch-back; `1dc2f34a` was recorded before that output was inspected. All switch-back assertions now await deferred context restoration, and the complete browser replay passed. Stage 5 starts only after this corrective verification commit.
+
+## Stage 5 - Standard Liked boards
+- Changes: contextual queries now cover All/Liked and newest/oldest/top, matching root-post score eligibility and JSON label membership; normalized view/sort context keys keep drafts separate.
+- Verification: PHP fixed-data matrix matched controller selection/order for 15 normalized/fallback combinations, including negative root scores and empty Liked results. Board/catalog/presentation-profile tests passed 8/8; full dialog browser replay passed.
+- Notes: Stage 4 correction commit `f4618c98`. Route aliases share BoardPageController; full HTTP action wiring is checked in Stage 8.

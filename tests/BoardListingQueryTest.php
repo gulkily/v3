@@ -24,6 +24,24 @@ final class BoardListingQueryTest
         assertSame([], $pdo->query(BoardListingQuery::context('all', 'newest')['querySql'])->fetchAll());
     }
 
+    public function testLikedFiltersAndSortsMatchController(): void
+    {
+        $pdo = $this->fixture();
+        $controller = (new ReflectionClass(BoardPageController::class))->newInstanceWithoutConstructor();
+        $matches = new ReflectionMethod(BoardPageController::class, 'matchesView');
+        $compare = new ReflectionMethod(BoardPageController::class, 'compareThreads');
+        foreach (['liked', 'all', 'unknown'] as $view) {
+            foreach (['newest', 'oldest', 'top', 'leetness', 'unknown'] as $sort) {
+                $expected = array_values(array_filter(ThreadRepository::fetchThreads($pdo), fn (array $row): bool => $matches->invoke($controller, $row, $view)));
+                usort($expected, fn (array $a, array $b): int => $compare->invoke($controller, $a, $b, $sort, null));
+                $actual = $pdo->query(BoardListingQuery::context($view, $sort)['querySql'])->fetchAll(PDO::FETCH_ASSOC);
+                assertSame(array_column($expected, 'root_post_id'), array_column($actual, 'root_post_id'));
+            }
+        }
+        $pdo->exec('UPDATE posts SET post_score_total = -1');
+        assertSame([], $pdo->query(BoardListingQuery::context('liked', 'top')['querySql'])->fetchAll());
+    }
+
     public function fixture(): PDO
     {
         $pdo = new PDO('sqlite::memory:');
