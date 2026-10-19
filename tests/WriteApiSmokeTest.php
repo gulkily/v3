@@ -3475,11 +3475,12 @@ NODE;
         $pdo = new PDO('sqlite:' . $db);
         foreach ([\ForumRewrite\ReadModel\AuthoredContentRepository::visibleThreads($pdo, [$author['identity_id']]),
             \ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts($pdo, [$author['identity_id']])] as $rows) {
-            assertSame(true, count($rows) > 0);
-            foreach ($rows as $row) {
-                assertSame('operator', $row['retraction_class']);
-                assertSame('author', $row['retraction_attribution']);
-            }
+            assertSame([], $rows);
+        }
+        foreach (['threads' => 'root_post_id', 'posts' => 'post_id'] as $table => $idColumn) {
+            $row = $pdo->query("SELECT retraction_class, retraction_attribution FROM {$table} WHERE {$idColumn} = " . $pdo->quote($quote['post_id']))->fetch(PDO::FETCH_ASSOC);
+            assertSame('operator', $row['retraction_class']);
+            assertSame('author', $row['retraction_attribution']);
         }
     }
 

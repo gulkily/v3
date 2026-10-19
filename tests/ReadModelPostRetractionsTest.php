@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\Tools\BoardListingQuery;
@@ -81,6 +82,23 @@ final class ReadModelPostRetractionsTest
         $listing = $pdo->query(BoardListingQuery::context('all', 'newest')['querySql'])->fetchAll(PDO::FETCH_ASSOC);
         assertSame(false, in_array('thread-gone', array_column($listing, 'root_post_id'), true));
         assertSame('thread-gone', ThreadRepository::byId($pdo, 'thread-gone')['root_post_id'] ?? null);
+    }
+
+    public function testRetractedPostsLeaveAuthoredContentListsAndCounts(): void
+    {
+        $root = $this->fixtureWithThread();
+        $pdo = $this->rebuild($root);
+        $before = AuthoredContentRepository::visiblePosts($pdo, [self::AUTHOR]);
+        assertTrue(in_array('thread-gone', array_column($before, 'post_id'), true));
+        assertTrue(in_array('thread-gone', array_column(AuthoredContentRepository::visibleThreads($pdo, [self::AUTHOR]), 'root_post_id'), true));
+
+        $this->writeRetraction($root, 'thread-gone', self::AUTHOR);
+        $pdo = $this->rebuild($root);
+
+        $posts = AuthoredContentRepository::visiblePosts($pdo, [self::AUTHOR]);
+        assertSame(false, in_array('thread-gone', array_column($posts, 'post_id'), true));
+        assertSame(false, in_array('thread-gone', array_column(AuthoredContentRepository::visibleThreads($pdo, [self::AUTHOR]), 'root_post_id'), true));
+        assertSame(count($before) - 1, AuthoredContentRepository::countVisible($pdo, [self::AUTHOR], false));
     }
 
     private function fixtureWithThread(): string
