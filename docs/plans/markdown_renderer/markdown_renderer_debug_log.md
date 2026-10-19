@@ -42,3 +42,23 @@
 
 ### Uncertain assessments
 - Step 3 Do/After, one-page limit versus mandatory fields: five atomic stages require a longer screenful to preserve every required field. Clarify whether a concise structured plan of approximately 750 words satisfies the page target.
+
+## 2026-10-19 21:58:39 UTC — Step 4
+
+### Necessary/useful instructions
+- Step 4 Before, planning commit gate and organization rule: isolated approved plans on feature/markdown-renderer before application work and preserved unrelated Discovery drafts. Retain; final link checking found two remaining move-related references, repaired without scope changes.
+- Step 4 Do, stage verification/summary/commit boundary: kept the five stages separately reviewable. A Stage 3 test failure was overlooked before its first commit; an explicit summary correction and additional verified corrective commit completed that stage before Stage 4. Retain this boundary and require inspection of the actual test summary rather than a successful trailing shell command.
+- Step 3 Completion Contract and Step 4 After, outcome/recovery verification: prompted actual Tools entry, desktop/mobile no-JavaScript browsing, dynamic/generated parity, stale shared refresh, failed-build retention and complete copied-package restoration on PHP 8.1. Retain.
+- Step 4 After, scoped results and baseline classification: the complete suite had seven failures; targeted runs on untouched main reproduced every failure, avoiding a false full-suite-pass claim. Retain.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Railspike experimental effort estimation: this cycle was not selected in the study; no score or ledger update was required.
+- Documentation-only file boundaries and runtime-check exemptions: this was an approved application change, so browser/runtime/release checks applied.
+- Production activation, read-model migration and navigation-icon verification: no production deployment, schema change or navigation destination change was in this cycle.
+
+### Uncertain assessments
+- Step 4 After says to open only after completing Do, while final acceptance requirements are useful during test preparation. It was opened once early while inspecting verification guidance, then reread after all stages were committed. Clarify whether read-ahead for final-check preparation is permitted; implementation remained within the approved stages.
+- Minimum commit count was satisfied: planning plus five stages and one corrective commit before this diagnostics-only handoff commit. The extra correction improved traceability; no claim that this cadence alone guarantees successful verification.
