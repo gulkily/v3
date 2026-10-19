@@ -8,6 +8,7 @@ final class PlatformDocsCatalog
 {
     public const DOCUMENT_ROOT = 'docs';
     public const MAX_DOCUMENT_BYTES = 1048576;
+    public const ROOT_DOCUMENTS = ['README.md', 'CONTRIBUTING.md', 'AGENTS.md', 'BLESSING.md'];
 
     /**
      * The catalog improves discovery; it does not determine which safe
@@ -79,6 +80,75 @@ final class PlatformDocsCatalog
                 'description' => 'How to check and repair the production read model and workers.',
             ],
         ];
+    }
+
+    /** Discover from the deployed source tree, without a separately maintained catalog. */
+    public static function inventory(string $projectRoot): array
+    {
+        $paths = self::ROOT_DOCUMENTS;
+        $docs = rtrim($projectRoot, '/') . '/docs';
+        if (is_dir($docs) && !is_link($docs)) {
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($docs, \FilesystemIterator::SKIP_DOTS));
+            foreach ($iterator as $file) {
+                if ($file->isFile() && !$file->isLink()) {
+                    $paths[] = 'docs/' . substr($file->getPathname(), strlen($docs) + 1);
+                }
+            }
+        }
+        $curated = array_column(self::entries(), null, 'path');
+        $entries = [];
+        foreach ($paths as $path) {
+            $resolved = self::resolveSource($projectRoot, $path);
+            if ($resolved === null) {
+                continue;
+            }
+            $size = filesize($resolved);
+            $readable = $size !== false && $size <= self::MAX_DOCUMENT_BYTES;
+            $text = $readable ? (string) file_get_contents($resolved) : '';
+            preg_match('/^#\s+(.+)$/m', $text, $heading);
+            $group = str_starts_with($path, 'docs/plans/') ? 'Plans and history'
+                : (str_starts_with($path, 'docs/railspike/') ? 'Workflow' : 'Current guidance');
+            $entries[] = [
+                'path' => $path,
+                'title' => $curated[$path]['title'] ?? trim($heading[1] ?? basename($path)),
+                'category' => $curated[$path]['category'] ?? (str_contains($path, '/') ? explode('/', $path)[1] : 'Project'),
+                'description' => $curated[$path]['description'] ?? '',
+                'folder' => dirname($path) === '.' ? 'Project' : dirname($path),
+                'group' => $group,
+                'href' => self::routeForPath($path),
+                'available' => $readable,
+            ];
+        }
+        usort($entries, static fn (array $a, array $b): int =>
+            (($a['group'] === 'Current guidance' ? 0 : 1) <=> ($b['group'] === 'Current guidance' ? 0 : 1))
+            ?: strnatcasecmp($a['path'], $b['path']));
+        return $entries;
+    }
+
+    /** Safe source resolution, independent of the renderer's size limit. */
+    public static function resolveSource(string $projectRoot, string $encodedPath): ?string
+    {
+        $path = self::normalizePath($encodedPath);
+        $root = realpath($projectRoot);
+        if ($path === null || $root === false) {
+            return null;
+        }
+        $resolved = realpath($root . '/' . $path);
+        if ($resolved === false || !is_file($resolved)) {
+            return null;
+        }
+        if (in_array($path, self::ROOT_DOCUMENTS, true)) {
+            return $resolved === $root . '/' . $path ? $resolved : null;
+        }
+        $docs = realpath($root . '/docs');
+        return $docs === $root . '/docs' && str_starts_with($resolved, $docs . '/') ? $resolved : null;
+    }
+
+    public static function sourceForRoute(string $encodedPath): ?string
+    {
+        return str_starts_with($encodedPath, '_project/')
+            ? self::normalizePath(substr($encodedPath, 9))
+            : self::normalizePath('docs/' . $encodedPath);
     }
 
     /**
@@ -160,7 +230,8 @@ final class PlatformDocsCatalog
             }
         }
 
-        if (!str_starts_with($path, self::DOCUMENT_ROOT . '/') || !str_ends_with($path, '.md')) {
+        if (!in_array($path, self::ROOT_DOCUMENTS, true)
+            && (!str_starts_with($path, self::DOCUMENT_ROOT . '/') || !str_ends_with($path, '.md'))) {
             return null;
         }
 
@@ -173,29 +244,19 @@ final class PlatformDocsCatalog
             return null;
         }
 
-        $relativePath = substr($sourcePath, strlen(self::DOCUMENT_ROOT . '/'));
+        $relativePath = in_array($sourcePath, self::ROOT_DOCUMENTS, true)
+            ? '_project/' . $sourcePath : substr($sourcePath, strlen(self::DOCUMENT_ROOT . '/'));
 
         return '/docs/' . implode('/', array_map(rawurlencode(...), explode('/', $relativePath)));
     }
 
     public static function resolvePath(string $projectRoot, string $encodedPath): ?string
     {
-        $path = self::normalizePath($encodedPath);
-        $docsRoot = realpath(rtrim($projectRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::DOCUMENT_ROOT);
-
-        if ($path === null || $docsRoot === false) {
+        $resolvedPath = self::resolveSource($projectRoot, $encodedPath);
+        if ($resolvedPath === null) {
             return null;
         }
-
-        $resolvedPath = realpath(rtrim($projectRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $path);
-        $docsPrefix = rtrim($docsRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-
-        if ($resolvedPath === false || !is_file($resolvedPath) || !str_starts_with($resolvedPath, $docsPrefix)) {
-            return null;
-        }
-
         $size = filesize($resolvedPath);
-
         return $size !== false && $size <= self::MAX_DOCUMENT_BYTES ? $resolvedPath : null;
     }
 }

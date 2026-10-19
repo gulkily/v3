@@ -585,7 +585,7 @@ final class Application
         }
 
         if ($path === '/docs/' || $path === '/docs') {
-            $this->sendHtml($this->platformDocsController()->index(), 200);
+            $this->sendHtml($this->platformDocsController()->index($query), 200);
             return;
         }
 

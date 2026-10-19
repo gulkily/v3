@@ -38,6 +38,15 @@ final class PlatformDocsPageTest
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));
     }
 
+    public function testLibraryBrowsesRepositoryFoldersAndRootDocuments(): void
+    {
+        $html = $this->render('/docs/?folder=docs%2Fresearch');
+        assertStringContains('All documents', $html);
+        assertStringContains('docs/research/', $html);
+        $root = $this->render('/docs/_project/README.md');
+        assertStringContains('Repository source: <code>README.md</code>', $root);
+    }
+
     public function testPublicIndexUsesConcreteCopy(): void
     {
         $text = strtolower(html_entity_decode(strip_tags($this->render('/docs/')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

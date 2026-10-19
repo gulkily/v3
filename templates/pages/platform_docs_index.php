@@ -2,7 +2,6 @@
   <article class="card">
     <h1><?= $e($platformDocsBrand['heading']) ?></h1>
     <p><?= $e($platformDocsBrand['introduction']) ?></p>
-    <p>Each entry below shows the path of the file it is rendered from, so you can read the source and propose changes.</p>
   </article>
   <article class="card docs-transparency">
     <h2>How it works</h2>
@@ -76,4 +75,31 @@
     </ul>
   </article>
 <?php endforeach; ?>
+</section>
+
+<section class="card docs-library" aria-labelledby="docs-library-heading">
+  <h2 id="docs-library-heading">All documents</h2>
+  <form action="/docs/" method="get">
+    <label>Folder <select name="folder">
+      <option value="">All folders</option>
+<?php foreach ($folders as $item): ?>
+      <option value="<?= $e($item) ?>"<?= $folder === $item ? ' selected' : '' ?>><?= $e($item) ?></option>
+<?php endforeach; ?>
+    </select></label>
+    <button type="submit">Browse</button>
+  </form>
+  <p><?= $e((string) $total) ?> documents</p>
+  <ul class="docs-entry-list">
+<?php foreach ($library as $entry): ?>
+    <li><a href="<?= $e($entry['href']) ?>"><?= $e($entry['title']) ?></a><br><code><?= $e($entry['path']) ?></code> · <?= $e($entry['group']) ?></li>
+<?php endforeach; ?>
+  </ul>
+  <nav aria-label="Document pages">
+<?php if ($page > 1): ?>
+    <a href="?<?= $e(http_build_query(['folder' => $folder, 'page' => $page - 1])) ?>">Previous</a>
+<?php endif; ?>
+<?php if ($page * 40 < $total): ?>
+    <a href="?<?= $e(http_build_query(['folder' => $folder, 'page' => $page + 1])) ?>">Next</a>
+<?php endif; ?>
+  </nav>
 </section>
