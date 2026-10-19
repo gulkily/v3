@@ -225,3 +225,5 @@ and repair its navigation and affected references. See the
 - [Backup page redesign](backup_page_redesign/)
 
 - [GPG agent leak](gpg_agent_leak/)
+
+- [Status frontend target](status_frontend_target/)
