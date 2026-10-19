@@ -29,13 +29,9 @@ try {
     let dialogCount = 0;
     page.on('dialog', async dialog => {
       dialogCount++;
-      if (dialogCount <= 2) assert.match(dialog.message(), /bob already has 2 approved keys/);
-      else {
-        assert.match(dialog.message(), /By approving this user, you vouch for their conduct and integrity/);
-        assert.match(dialog.message(), /This key will be able to act as bob/);
-      }
+      assert.match(dialog.message(), /bob already has 2 approved keys/);
       assert.match(dialog.message(), /Account key: openpgp:bbbb/);
-      if (dialogCount === 1 || dialogCount === 3) await dialog.dismiss(); else await dialog.accept();
+      if (dialogCount === 1) await dialog.dismiss(); else await dialog.accept();
     });
     const cancel = await page.evaluate(() => window.ForumBrowserSigning.submitSignedApproval('target'));
     assert.equal(cancel.ok, false);
@@ -53,11 +49,6 @@ try {
     });
     await page.addScriptTag({ path: 'public/assets/pending_approvals.js' });
     await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
-    await page.getByRole('button', { name: 'Approve', exact: true }).click();
-    await page.waitForFunction(() => document.querySelector('[data-role="pending-approvals-feedback"]').textContent.includes('cancelled'));
-    assert.equal(await page.locator('[data-action="approve-user"]:enabled').count(), 1);
-    assert.equal(await page.evaluate(() => window.signed), 1);
-    assert.equal(await page.evaluate(() => window.finalized), 1);
     await page.evaluate(() => {
       const sign = window.openpgp.sign;
       window.openpgp.sign = async () => { window.openpgp.sign = sign; throw new Error('Signing failed. Try again.'); };
@@ -68,10 +59,10 @@ try {
     assert.equal(await page.evaluate(() => window.finalized), 1);
     await page.getByRole('button', { name: 'Approve', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('[data-role="pending-approvals-feedback"]').textContent === 'Approved user bob.');
-    assert.equal(dialogCount, 5);
+    assert.equal(dialogCount, 2);
     assert.equal(await page.evaluate(() => window.signed), 2);
     assert.equal(await page.evaluate(() => window.finalized), 2);
     await context.close();
   }
-  console.log('PASS approval review: desktop/mobile profile confirmation, cancel, retry, missing review; pending confirmation, cancel, signing failure and retry');
+  console.log('PASS approval review: desktop/mobile profile confirmation, cancel, retry, missing review; pending one-click approval without confirmation, signing failure and retry');
 } finally { await browser.close(); }

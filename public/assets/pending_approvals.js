@@ -48,7 +48,7 @@
       setFeedback(feedback, "Preparing and signing approval...", "ok");
 
       try {
-        await approveUser(profileSlug);
+        await approveUser(profileSlug, { confirm: false });
 
         const row = button.closest("tr");
         const username = row ? row.getAttribute("data-username") || profileSlug : profileSlug;
@@ -103,7 +103,7 @@
       }
 
       try {
-        const result = await approveUser(profileSlug);
+        const result = await approveUser(profileSlug, { confirm: false });
         const postId = encodeURIComponent(String(result.postId || ""));
         const commitSha = encodeURIComponent(String(result.commitSha || ""));
         const profileBase = form.getAttribute("data-approval-return") === "tools" ? "/tools/user-access/profiles/" : "/profiles/";

@@ -20,3 +20,10 @@ Step 3 approved. Planning commit: `758f5c32`. Branch: `feat/user-approval-meanin
 
 - Request: Approved Step 3 / Disposition: execute approved single-stage slice / Approval status: approved in conversation / Outcome: delivered and verified above.
 - No scope additions or unresolved follow-ups in this cycle. Optional study remains unselected. Branch is ready for review; merge and deployment are outside this cycle.
+
+
+## Follow-up - Remove confirmations introduced by this cycle
+
+- Request: “Please get rid of all confirm() dialogs that we added in user-approval-meaning*”. Disposition: explicitly requested correction; restore pending-list one-click approval. The shared profile confirmation predates this cycle and remains unchanged. Approval status: directly authorized by the user; supersedes this cycle's pending-list confirmation requirement.
+- Changes: pending-list calls once again bypass confirmation. The new conduct/integrity explanation remains on the User Access profile and in its existing review. No unrelated dialogs changed.
+- Verification: pending desktop/phone browser checks cover no new dialog, signing failure with retained/enabled row, and successful retry; `node tests/browser/approval_review.mjs` passed at both widths; JavaScript syntax and `git diff --check` passed.
