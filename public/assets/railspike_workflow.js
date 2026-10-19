@@ -100,7 +100,7 @@
   window.ForumRailspike = { act, refresh, button, node };
   async function init() {
     if (!mounts().length && !document.querySelector('[data-railspike-activity]')) return;
-    try { const auth = await fetch('/api/auth_status', { credentials: 'same-origin', cache: 'no-store' }); if (auth.status === 401 && window.PrivateSiteAuth && localStorage.getItem('forum_pki_private_key')) await window.PrivateSiteAuth.authenticate(); await refresh(); } catch (_) { /* Account controls handle login failures. */ }
+    try { const auth = await fetch('/api/auth_status', { credentials: 'same-origin', cache: 'no-store' }); if (auth.status === 401 && window.PrivateSiteAuth && localStorage.getItem('forum_pki_private_key')) await window.PrivateSiteAuth.authenticate({ navigate: false }); await refresh(); } catch (_) { /* Account controls handle login failures. */ }
     let attempts = 0;
     const timer = setInterval(() => { if (++attempts > 120) { clearInterval(timer); return; } refresh().catch(() => {}); }, 5000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh().catch(() => {}); });
