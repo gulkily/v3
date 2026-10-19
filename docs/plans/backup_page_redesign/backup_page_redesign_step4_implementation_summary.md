@@ -46,3 +46,12 @@ Branch: `feature/backup_page_redesign`, based on `feature/feature_flag_change_pa
   - `php tests/run.php LocalAppSmokeTest BackupPageTest`: passed, 144 of 144. The new test failed once on first run because it expected an escaped apostrophe in "Explain it like I'm five"; the template emits it raw, and the test was corrected.
 - Notes:
   - The `>Downloads</h2>` absence was already asserted in Stage 2.
+
+## Stage 4 - Tests and external check
+- Changes:
+  - `LocalAppSmokeTest` Backup assertions: h1 precedes "Text content", no standalone "Downloads" heading, "About these downloads" present. The fuller section, table, order and unavailable-images assertions live in `BackupPageTest` (Stages 2-3).
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest BackupPageTest`: passed, 144 of 144.
+  - `node tests/browser/image_content_browser.mjs` (default Chrome at `/opt/google/chrome/chrome`): passed, exit 0. Its checks include revision-matched backups and CLI verify/restore/rebuild, reached through the new page's `href`-prefix selectors for the image and repository downloads.
+- Notes:
+  - The browser test ran against the default chromium only, not webkit or firefox.

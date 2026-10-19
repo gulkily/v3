@@ -1835,6 +1835,9 @@ PHP;
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
         // The tools tab bar must be the first thing in the page body, before any page content.
         assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
+        assertOrdered($toolsBackup, '<h1>Backup</h1>', '>Text content</h2>');
+        assertStringNotContains('>Downloads</h2>', $toolsBackup);
+        assertStringContains('>About these downloads</h2>', $toolsBackup);
         if (str_contains($toolsBackup, '>Images</h2>')) {
             assertOrdered($toolsBackup, 'tools-nav', '>Images</h2>');
             assertOrdered($toolsBackup, '>Text content</h2>', '>Images</h2>');
