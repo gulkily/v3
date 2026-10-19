@@ -130,8 +130,14 @@ try {
       window.scrollTo(0, 0);
     });
     const selection = await page.evaluate(() => window.getSelection().toString());
+    await page.locator('[data-query-key="one"]').evaluate(el => { el.dataset.queryLabel = 'Database query: current listing'; });
     await page.locator('[data-query-key="one"]').click();
     await page.locator('[data-query-dialog][open]').waitFor();
+    assert.equal(await page.locator('.sqlite-dialog-header').evaluate(el => {
+      const title = el.querySelector('h2').getBoundingClientRect();
+      const close = el.querySelector('button').getBoundingClientRect();
+      return close.width < 120 && title.width > close.width && title.height < 100;
+    }), true, 'shared site styles keep the close button compact and the title readable');
     for (let i = 0; i < 20; i++) {
       await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(() => document.querySelector('[data-query-dialog]').contains(document.activeElement) || document.activeElement === document.body), true);

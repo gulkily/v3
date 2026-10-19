@@ -2,6 +2,12 @@
 
 Debug mode: enabled
 
+## Follow-up UI refinement — header and board action
+- Request: fix the oversized dialog close button and squeezed title; move the page-level query action to the bottom.
+- Disposition: small direct UI correction under AGENTS.md; keep codebase's individual SQL actions attached to their source values and move the standard board action below the listing.
+- Approval status: authorized by the user's direct request; no scope expansion.
+- Outcome/verification: fixed compact close-button sizing/title flex and moved the board query action into a footer after the listing. Browser replay passed at 390px/1280px with the real shared stylesheet and explicit header dimensions; application route/footer coverage and core-route smoke checks passed. PHP syntax and whitespace checks passed. Earlier browser fixture omitted the shared site stylesheet, so it did not expose the inherited full-width button rule.
+
 ## Scope and coverage checklist
 - Planning commit: `201343c9`; branch `feature/listing-query-dialog`.
 - Codebase: admin SQL, all metadata SQL sources, and all read-model row-count SQL. File/shell sources remain explanatory text.

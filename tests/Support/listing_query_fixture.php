@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../../autoload.php';
 $renderer = new ForumRewrite\View\TemplateRenderer(__DIR__ . '/../../templates');
-echo '<!doctype html><html><head><title>Query fixture</title><link rel="stylesheet" href="/assets/sqlite.css"></head><body><input aria-label="Background draft" value="keep me">';
+echo '<!doctype html><html><head><title>Query fixture</title><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/sqlite.css"></head><body><input aria-label="Background draft" value="keep me">';
 if (($argv[1] ?? '') === 'standalone') {
     echo $renderer->renderFragment('pages/sqlite_viewer.php', ['toolNavOptions' => []]);
 } else {

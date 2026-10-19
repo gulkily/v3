@@ -53,6 +53,12 @@ final class PresentationProfileMatrixTest
                                 assertStringContains('data-query-key="board-' . $view . '-' . $sort . '"', $html);
                                 assertSame(1, substr_count($html, 'data-query-dialog '));
                                 assertStringContains('sqlite_dialog.', $html);
+                                $footer = strpos($html, '<footer class="listing-query-footer">');
+                                assertTrue($footer !== false && $footer < strpos($html, 'data-query-key="board-'));
+                                assertTrue($footer > strrpos($html, 'data-compose-root'));
+                                if (str_contains($html, 'class="card thread-card"')) {
+                                    assertTrue($footer > strrpos($html, 'class="card thread-card"'));
+                                }
                             }
                         }
                     }
