@@ -8,6 +8,7 @@
     }
 
     var loadButton = root.querySelector('[data-action="load-sqlite"]');
+    var sourceDetails = root.querySelector('[data-role="sqlite-source-details"]');
     var status = root.querySelector('[data-role="sqlite-status"]');
     var explorer = root.querySelector('[data-role="sqlite-explorer"]');
     var tableSelect = root.querySelector('[data-role="sqlite-table-select"]');
@@ -28,6 +29,7 @@
     var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
     var database = null;
     var loadPromise = null;
+    var needsRefresh = false;
     var runtimePromise = null;
     var savedCacheName = "forum-query-read-model-v1";
     var maxPreviewRows = 25;
@@ -556,7 +558,7 @@
 
     async function performLoad(refresh) {
       setLoading(true);
-      setStatus("Downloading the published database...", "loading");
+      setStatus("Loading the published read-model database...", "loading");
 
       try {
         if (typeof window.initSqlJs !== "function") {
@@ -581,15 +583,17 @@
           }}).catch(function (error) { runtimePromise = null; throw error; });
         }
         var SQL = await runtimePromise;
-        var candidate = new SQL.Database(bytes);
+        var candidate = null;
         try {
+          candidate = new SQL.Database(bytes);
           if (candidate.exec("PRAGMA quick_check")[0].values[0][0] !== "ok") { throw new Error("Invalid database"); }
           ["metadata", "threads", "posts", "profiles"].forEach(function (table) {
             candidate.exec("SELECT * FROM " + table + " LIMIT 0");
           });
         } catch (error) {
-          candidate.close();
-          throw new Error("Saved database is incompatible or damaged. Use Reload Database to fetch a fresh copy.");
+          if (candidate) { candidate.close(); }
+          needsRefresh = true;
+          throw new Error("Saved database is incompatible or damaged. Choose Refresh saved database to fetch a fresh copy.");
         }
         var revision = candidate.exec("SELECT key, value FROM metadata WHERE key IN ('repository_head', 'rebuilt_at')")[0];
         var provenance = revision ? revision.values.map(function (row) { return row[0] + ": " + row[1]; }).join("; ") : "Revision unavailable";
@@ -597,6 +601,8 @@
           try { await cache.put(databaseUrl, new Response(bytes, { headers: { "Content-Type": "application/x-sqlite3" } })); }
           catch (error) { provenance += "; browser storage unavailable (in-memory only)"; }
         } else if (!cache) { provenance += "; browser storage unavailable (in-memory only)"; }
+        needsRefresh = false;
+        if (sourceDetails) { sourceDetails.textContent = provenance + ". Saved data may differ from the live page. Refresh explicitly to update it."; }
         var previous = database;
         database = candidate;
         if (previous) { previous.close(); }
@@ -610,7 +616,7 @@
         }
         setStatus((saved ? "Saved" : "Published") + " read-model loaded. " + provenance + ". Queries run locally; saved data may differ from the live page.", "ok");
         if (loadButton) {
-          loadButton.textContent = "Reload Database";
+          loadButton.textContent = "Refresh saved database";
         }
         return true;
       } catch (error) {
@@ -618,7 +624,7 @@
       } finally {
         if (loadButton) {
           loadButton.disabled = false;
-          loadButton.textContent = database ? "Reload Database" : "Load Database";
+          loadButton.textContent = database || needsRefresh ? "Refresh saved database" : "Load Database";
         }
       }
     }
@@ -669,7 +675,7 @@
     };
     if (loadButton) {
       loadButton.addEventListener("click", async function () {
-        if (await loadDatabase(!!database) && activeContext !== null) { runQuery(); }
+        if (await loadDatabase(!!database || needsRefresh) && activeContext !== null) { runQuery(); }
       });
     }
     if (queryButton) {

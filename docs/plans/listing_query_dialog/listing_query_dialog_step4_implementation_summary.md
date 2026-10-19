@@ -35,3 +35,8 @@ Debug mode: enabled
 - Changes: contextual queries now cover All/Liked and newest/oldest/top, matching root-post score eligibility and JSON label membership; normalized view/sort context keys keep drafts separate.
 - Verification: PHP fixed-data matrix matched controller selection/order for 15 normalized/fallback combinations, including negative root scores and empty Liked results. Board/catalog/presentation-profile tests passed 8/8; full dialog browser replay passed.
 - Notes: Stage 4 correction commit `f4618c98`. Route aliases share BoardPageController; full HTTP action wiring is checked in Stage 8.
+
+## Stage 6 - Refresh and failure recovery
+- Changes: explicit refresh labels, independent persistent provenance/freshness details, actionable damaged/incompatible saved-data recovery, and replacement only after validation. Failed refresh leaves the prior database and edits usable.
+- Verification: browser replay passed corrupt-cache → failed refresh → successful refresh, SQL preservation, query syntax-error correction, and successful local rerun after a later failed refresh. Board/catalog tests passed 6/6; JS/PHP syntax passed.
+- Notes: Stage 5 commit `59500bd5`. Refresh fetches only the published read model; offline snapshot lifecycle is untouched. Unsupported/absent metadata values are honestly shown as revision unavailable.
