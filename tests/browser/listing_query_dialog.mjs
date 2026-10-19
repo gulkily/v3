@@ -35,6 +35,7 @@ try {
   await page.keyboard.press('Escape');
   const before = downloads;
   await page.locator('[data-query-key="one"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-input"]').value === 'SELECT 99 AS edited');
   assert.equal(await input.inputValue(), 'SELECT 99 AS edited');
   assert.equal(downloads, before);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
@@ -43,6 +44,7 @@ try {
   await input.fill('SELECT 88 AS second_draft');
   await page.keyboard.press('Escape');
   await page.locator('[data-query-key="one"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-input"]').value === 'SELECT 99 AS edited');
   assert.equal(await input.inputValue(), 'SELECT 99 AS edited');
   await page.keyboard.press('Escape');
   await page.reload();
