@@ -600,5 +600,5 @@ function taskQueueLlmExchangeRecorder(string $projectRoot, string $repositoryRoo
         throw new RuntimeException('LLM exchange database directory is not writable.');
     }
 
-    return new LlmExchangeRecorder(new PDO('sqlite:' . $path));
+    return new LlmExchangeRecorder(new PDO('sqlite:' . $path), true, $repositoryRoot);
 }

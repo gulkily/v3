@@ -91,7 +91,19 @@ final class RetractionSweep
     {
         if (!is_file($this->statePath)) return ['status' => 'pending', 'remaining' => true];
         $state = json_decode((string) file_get_contents($this->statePath), true);
-        return is_array($state) ? $state : ['status' => 'failed', 'remaining' => true];
+                if (!is_array($state)) return ['status' => 'failed', 'remaining' => true];
+        if (($state['status'] ?? '') === 'complete') {
+            $ids = ExchangeRetractionState::read($this->repositoryRoot);
+            if ($ids === null) return [...$state, 'status' => 'failed', 'remaining' => true];
+            ksort($ids);
+            $changed = ($state['generation'] ?? '') !== hash('sha256', json_encode(array_keys($ids), JSON_THROW_ON_ERROR));
+            if (is_file($this->exchangePath)) {
+                $pdo = new PDO('sqlite:file:' . $this->exchangePath . '?mode=ro');
+                $changed = $changed || (int) $pdo->query('SELECT COALESCE(MAX(id), 0) FROM llm_exchanges')->fetchColumn() > (int) ($state['cursor'] ?? 0);
+            }
+            if ($changed) return [...$state, 'status' => 'pending', 'remaining' => true, 'cursor' => 0];
+        }
+        return $state;
     }
 
     private function save(array $state): void

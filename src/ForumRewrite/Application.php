@@ -1419,7 +1419,7 @@ final class Application
             throw new RuntimeException('LLM exchange database directory is not writable: ' . $directory);
         }
 
-        $this->llmExchangeRecorder = new LlmExchangeRecorder(new PDO('sqlite:' . $path));
+        $this->llmExchangeRecorder = new LlmExchangeRecorder(new PDO('sqlite:' . $path), true, $this->repositoryRoot);
 
         return $this->llmExchangeRecorder;
     }

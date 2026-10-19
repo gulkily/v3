@@ -404,7 +404,7 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
     if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
         throw new RuntimeException('LLM exchange database directory is not writable.');
     }
-    return new LlmExchangeRecorder(new PDO('sqlite:' . $path));
+    return new LlmExchangeRecorder(new PDO('sqlite:' . $path), true, $repositoryRoot);
 }
 
 function fastScoreUsage($stream): void

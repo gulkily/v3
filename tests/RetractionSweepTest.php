@@ -71,4 +71,20 @@ final class RetractionSweepTest
         try { $sweep->run(); throw new RuntimeException('Expected failure'); }
         catch (RuntimeException $error) { assertSame('failed', $sweep->state()['status']); }
     }
+    public function testLateResultsScrubAtRecordingAndUncoordinatedWritesBecomePending(): void
+    {
+        [$root, $pdo, $sweep] = $this->fixture();
+        $sweep->run();
+        $recorder = new LlmExchangeRecorder($pdo, true, $root);
+        $id = $recorder->record(['post_id' => 'target', 'provider' => 'SECRET', 'exchange_dependencies' => ExchangeDependencies::manifest(['target'])],
+            ['body' => 'LATE-SECRET'], ['body' => 'LATE-SECRET'], 'provider_error', 1, ['message' => 'LATE-SECRET']);
+        $row = $pdo->query('SELECT * FROM llm_exchanges WHERE id=' . $id)->fetch(PDO::FETCH_ASSOC);
+        assertSame(false, str_contains(json_encode($row), 'SECRET'));
+        assertSame('pending', $sweep->state()['status']);
+        $sweep->run();
+        assertSame('complete', $sweep->state()['status']);
+        (new LlmExchangeRecorder($pdo))->record(['post_id' => 'target', 'exchange_dependencies' => ExchangeDependencies::manifest(['target'])], ['body' => 'old writer'], [], 'completed', 1);
+        assertSame('pending', $sweep->state()['status']);
+        assertSame(1, $sweep->run()['cleaned']);
+    }
 }
