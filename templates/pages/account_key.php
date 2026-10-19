@@ -42,7 +42,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <button type="button" class="account-key-secondary-button" data-action="rename-profile"<?= ($usernameChangesEnabled ?? false) ? '' : ' hidden' ?>>Choose username</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
-        <p class="meta account-key-simple-status" id="simple-status">Choose a name to set up this browser.</p>
+        <p class="meta account-key-simple-status" id="simple-status" hidden></p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
       <details class="account-key-advanced" id="key-backup" data-key-backup>
@@ -161,17 +161,17 @@ No browser private key saved yet.
       return readStorageValue('forum_pki_fingerprint').trim().toLowerCase();
     }
 
-    function friendlyStatusMessage(rawMessage, username, ready) {
+    function friendlyStatusMessage(rawMessage) {
       if (!rawMessage || rawMessage === 'Ready.') {
-        return ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
+        return '';
       }
 
       if (rawMessage.indexOf('Browser keypair ready for ') === 0) {
-        return 'All set! Posting as ' + username + '.';
+        return '';
       }
 
       if (rawMessage.indexOf('Restored browser keypair for ') === 0) {
-        return 'All set! Posting as ' + username + '.';
+        return '';
       }
 
       if (rawMessage === 'Loaded the saved browser public key into the form.') {
@@ -232,7 +232,7 @@ No browser private key saved yet.
       }
 
       if (statusBadge) {
-        statusBadge.textContent = ready ? 'This browser is ready' : 'Not set up yet';
+        statusBadge.textContent = ready ? 'Ready' : 'Not set up yet';
       }
 
       if (generateButton) {
@@ -246,7 +246,8 @@ No browser private key saved yet.
       }
 
       if (simpleStatus && !simpleStatus.dataset.kind) {
-        simpleStatus.textContent = ready ? 'All set! Posting as ' + username + '.' : 'Choose a name to set up this browser.';
+        simpleStatus.textContent = '';
+        simpleStatus.hidden = true;
       }
 
       syncProfileLinks(root);
@@ -282,18 +283,15 @@ No browser private key saved yet.
       var statusNode = root.querySelector('[data-role="browser-key-status"]');
       var statusMessage = root.querySelector('[data-role="browser-key-status-message"]');
       var simpleStatus = root.querySelector('#simple-status');
-      var username = readStorageValue('forum_pki_username') || 'guest';
-      var ready = hasBrowserKeypair();
 
       if (!statusNode || !simpleStatus) {
         return;
       }
 
       simpleStatus.textContent = friendlyStatusMessage(
-        statusMessage ? statusMessage.textContent.trim() : statusNode.textContent.trim(),
-        username,
-        ready
+        statusMessage ? statusMessage.textContent.trim() : statusNode.textContent.trim()
       );
+      simpleStatus.hidden = simpleStatus.textContent === '';
       simpleStatus.dataset.kind = statusNode.dataset.kind || '';
     }
 
