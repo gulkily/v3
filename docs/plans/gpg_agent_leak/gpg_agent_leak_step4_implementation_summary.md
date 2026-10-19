@@ -33,3 +33,13 @@ Debug mode: enabled (inherited from Step 3)
   - Limitation: the new test also passes against the old code on this host, because GnuPG 2.2.27 here exits agents on its own once the home vanishes. It guards against regressions but does not reproduce the reported leak; Stage 5 must measure the real environment.
 - Notes:
   - `gpgconf --kill` is asynchronous, so the test tolerates agents still exiting from earlier operations.
+
+## Stage 4 - Agent keypair generation uses the helper
+- Changes:
+  - `AgentIdentityService::generateKeypair` now ends with `GpgHomeCleaner::dispose($home)` in its `finally` block, after both exports; the private `deleteTree` was removed (no other caller).
+  - `AgentIdentityServiceTest` asserts no `forum-rewrite-agent-gpg-*` temp home remains after bootstrap.
+- Verification:
+  - Passed: temp-home assertion; the second test in the file; `gpg-agent` count 0 before and after.
+  - Failed, pre-existing: `testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts` fails at the later `Visible username:</strong> reply-agent` profile assertion. It fails identically on unmodified `main` (checked), so it is unrelated to this change and not fixed here.
+- Notes:
+  - Logged as separate work; scope not expanded.
