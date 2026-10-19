@@ -65,7 +65,18 @@
         return;
       }
 
+      if (result.cleanupStatus === "failed") {
+        setFeedback(feedback, "Retracted. Cleanup could not be queued.", "error");
+        if (retry) retry.hidden = false;
+        else button.textContent = "Retry retraction";
+        buttons.forEach(function (action) { action.removeAttribute("disabled"); });
+        return;
+      }
+
       if (retry) retry.hidden = true;
+      if (result.cleanupStatus === "pending") {
+        try { window.sessionStorage.setItem("forum-retraction-cleanup", button.getAttribute("data-post-id") || ""); } catch (_) {}
+      }
       window.location.reload();
     } catch (error) {
       stopProgress();
@@ -73,6 +84,24 @@
       buttons.forEach(function (action) { action.removeAttribute("disabled"); });
     }
   }
+
+  // One-time acknowledgment survives the reload that removes the retracted prose.
+  // It describes the accepted queue request, not current cleanup completion.
+  try {
+    const postId = window.sessionStorage.getItem("forum-retraction-cleanup");
+    if (postId && document.querySelectorAll) {
+      for (const notice of document.querySelectorAll("[data-retracted-post-id]")) {
+        if (notice.getAttribute("data-retracted-post-id") !== postId) continue;
+        const status = document.createElement("p");
+        status.className = "meta";
+        status.setAttribute("role", "status");
+        status.textContent = "Local cleanup queued.";
+        notice.appendChild(status);
+        window.sessionStorage.removeItem("forum-retraction-cleanup");
+        break;
+      }
+    }
+  } catch (_) {}
 
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape" || !(event.target instanceof Element)) return;

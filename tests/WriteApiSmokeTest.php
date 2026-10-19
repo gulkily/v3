@@ -3969,6 +3969,33 @@ NODE;
         $this->deleteTree($archive);
     }
 
+    public function testRetractionCleanupEnqueueFailurePreservesAcceptanceAndRetriesWithoutSigning(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'cleanup-retraction', 'Cleanup recovery prose');
+        $fail = true;
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+            enqueueRetractionSweep: static function () use (&$fail): void { if ($fail) throw new RuntimeException('Queue offline'); });
+        $input = ['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']];
+        $prepared = $writer->prepareRetraction($input);
+        $result = $writer->finalizePreparedRetraction($input + [
+            'prepare_token' => $prepared['prepare_token'], 'record_path' => $prepared['record_path'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ]);
+        assertSame('complete', $result['retraction_status']);
+        assertSame('failed', $result['cleanup_status']);
+        $head = $this->gitOutput($root, 'rev-parse HEAD');
+        $fail = false;
+        $retry = $writer->prepareRetraction($input);
+        assertSame(true, $retry['already_retracted']);
+        assertSame('pending', $retry['cleanup_status']);
+        assertSame($head, $this->gitOutput($root, 'rev-parse HEAD'));
+        $page = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+        assertStringNotContains('Cleanup recovery prose', $page);
+    }
+
     public function testRetractionArtifactFailureRetriesWithoutAnotherCommit(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

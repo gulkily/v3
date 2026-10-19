@@ -41,3 +41,7 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 - [x] Dedicated thread and reply pages — moved existing identity/status feedback below the form so initialization does not move the action row. Existing errors and recovery feedback remain visible; no explanatory copy added. Reserved the image picker footprint during permission checks and rendered Outbox actions before JavaScript initialization. Verified mobile/desktop geometry across Light, Word97, Chicago, and Windark, upload permission states, and both Outbox saves with `node tests/browser/compose_layout_stability.mjs`.
 - [x] Compose action alignment follow-up — aligned Create thread and More actions without adding UI text; removed inherited submit spacing and allowed both controls to share one row on mobile. Regression now checks equal top edges and heights as well as first-paint stability.
+
+## Post retraction sweep
+
+- [x] Separate accepted retraction from local cleanup: one-time “Local cleanup queued.” acknowledgment after reload; enqueue failures keep a concise warning and existing Retry retraction control visible. No new navigation or internal storage explanation in the flow. Verified author/operator/account/partial browser scenarios and keyboard/Escape/touch menu behavior.
