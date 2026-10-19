@@ -58,3 +58,27 @@ No supported findings.
 ### Uncertain assessments
 
 - Stage time limits remain estimates; integration discoveries may require splitting a stage before implementation. The plan makes that explicit.
+
+## 2026-10-19T17:39:24Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate: separate planning commit `46ead3d3` preserved the approved boundary before source changes; retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol: five stage commits (`eae10ce1`, `00986420`, `d1ecd8d9`, `18bd710a`, `04902d77`) each include summary updates and scoped checks; retain staged verification.
+- `step4_implementation_after.md`, Completion Contract and truthful check reporting: live trials exposed style and verified-output issues that fixture tests could not show. Prompt corrections and all trial outcomes are retained, alongside the unrelated baseline failure and residual quality limitations. Retain the normal-flow/external evidence requirement.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Effort estimation remains unselected. No schema, navigation icon, or UI-copy changes occurred. Production deployment was outside scope.
+
+### Uncertain assessments
+
+- Stage 5 required several serial live-model rounds to correct prompt behavior. Fixed stage-duration estimates are weak predictors for model-quality acceptance; the documented sample limits and preserved intermediate results are more useful evidence than a claim of deterministic tone. Retain the requirement to disclose uncertainty.
+
+### Closeout checks
+
+- Five implementation commits plus the planning commit meet the required cadence. Plan navigation and local links resolve. Working tree was otherwise clean before this log-only closeout. Final stage commit: `04902d77`.
