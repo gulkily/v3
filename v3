@@ -38,6 +38,7 @@ Usage:
   ./v3 agent-reply test-local
   ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
   ./v3 codex-handoff test-local
+  ./v3 retraction-sweep preview|status|run [--limit=250] [--repository-root=/path/repository]
   ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
@@ -68,6 +69,10 @@ EOF
 fi
 
 case "${COMMAND}" in
+  retraction-sweep)
+    shift
+    exec php "${ROOT}/scripts/retraction_sweep.php" "$@"
+    ;;
   images)
     shift
     exec php "${ROOT}/scripts/restore_images.php" "$@"
