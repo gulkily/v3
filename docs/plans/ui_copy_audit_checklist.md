@@ -30,3 +30,9 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [ ] Remove text that repeats visible controls or state. Check shared partials and browser/server feedback so the same explanation does not return through another source.
 - [ ] Confirm concise copy still explains material access, privacy, data-loss, and recovery consequences at the relevant decision. Keep useful help accessible without relying on hover alone.
 - [ ] Update copy assertions affected by the edits and run the relevant existing checks. Mark individual findings complete only after their UI changes are verified.
+
+## Member directory / access split
+
+- [x] Standard Users and member/profile subpages — removed approval controls, key inventories/history, and technical diagnostics; retained public status/attribution, messaging and contextual User Access recovery links.
+- [x] Tools User Access — concise account/queue links; existing policy consequences and signing failures remain beside actions. Technical key details stay expandable. Standard legacy history anchors and pagination retain a path to Tools.
+- [x] Forte compatibility — retained its combined directory/access UI; shared history links remain within Forte. No Forte copy cleanup included in this cycle.

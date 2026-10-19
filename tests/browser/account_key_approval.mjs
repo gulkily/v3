@@ -44,11 +44,30 @@ try {
     assert.ok(values.profile_slug, JSON.stringify(values));
     return values;
   }
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(base + '/tools/');
+    await page.locator('.tool-launcher a[href="/tools/user-access/"]').click();
+    await page.getByRole('heading', { name: 'User Access', exact: true }).waitFor();
+    await page.getByRole('link', { name: 'Pending approvals', exact: true }).click();
+    await page.getByRole('heading', { name: 'Users Awaiting Approval', exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.goto(base + '/users/pending/');
+    assert.equal(new URL(page.url()).pathname, '/tools/user-access/pending/');
+    await page.goto(base + '/users/');
+    await page.locator('main a[href="/user/browser-inviter"]').click();
+    assert.equal(await page.locator('.account-key-history,[data-signed-approval-form]').count(), 0);
+    if (process.env.USER_ACCESS_SCREENSHOT_DIR && width === 390) await page.screenshot({ path: join(process.env.USER_ACCESS_SCREENSHOT_DIR, 'member.png'), fullPage: true });
+    await page.locator('#account-keys a').click();
+    await page.getByRole('heading', { name: 'Account key history', exact: true }).waitFor();
+  }
   const first = await target('browser-member');
   const own = await target('browser-inviter');
   const cross = await target('browser-member');
   async function approve(target, label, cancel = false) {
-    await page.goto(base + '/profiles/' + target.profile_slug);
+    const response = await page.goto(base + '/tools/user-access/profiles/' + target.profile_slug);
+    assert.match(response.headers()['cache-control'], /no-store/);
+    if (process.env.USER_ACCESS_SCREENSHOT_DIR && cancel) await page.screenshot({ path: join(process.env.USER_ACCESS_SCREENSHOT_DIR, 'review.png'), fullPage: true });
     assert.equal(await page.locator('[data-signed-approval-form] button').innerText(), label);
     page.once('dialog', async dialog => {
       assert.match(dialog.message(), new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -63,6 +82,8 @@ try {
       assert.match(await profile.text(), /Approved: no/);
     } else {
       await page.waitForURL(/approval=success/);
+      assert.ok(new URL(page.url()).pathname.startsWith('/tools/user-access/profiles/'));
+      assert.match(await page.locator('main').innerText(), /Approval complete/);
       assert.match(await page.locator('.account-key-history').innerText(), /Accepted:/);
     }
   }
@@ -72,11 +93,11 @@ try {
   await approve(own, 'Add this key to my account');
   await page.setViewportSize({ width: 390, height: 844 });
   await approve(cross, 'Grant this key access as browser-member');
-  await page.goto(base + '/user/browser-member');
+  await page.goto(base + '/tools/user-access/accounts/browser-member');
   assert.match(await page.locator('.account-key-history').innerText(), /operator override/);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await checkRootApprovalPages({ page, context, base, rootKey: 'openpgp-' + fingerprint, username: 'browser-inviter' });
-  await page.goto(base + '/user/browser-member');
+  await page.goto(base + '/tools/user-access/accounts/browser-member');
   const review = await context.request.get(base + '/activity/?view=security');
   assert.equal(review.status(), 200);
   assert.match(review.headers()['cache-control'], /no-store/);

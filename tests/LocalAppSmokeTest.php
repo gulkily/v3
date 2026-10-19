@@ -384,7 +384,7 @@ final class LocalAppSmokeTest
             $authStatus = $this->render($application, '/api/auth_status');
 
             assertStringContains('This is your profile.', $profile);
-            assertStringContains('Key approval', $profile);
+            assertStringContains('User Access', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);
@@ -1288,7 +1288,7 @@ PHP;
         $_POST = [];
         $targetIdentityId = $this->extractResponseValue($response, 'identity_id');
         $targetProfileSlug = $this->extractResponseValue($response, 'profile_slug');
-        $unapprovedProfile = $this->render($application, '/profiles/' . $targetProfileSlug);
+        $unapprovedProfile = $this->render($application, '/tools/user-access/profiles/' . $targetProfileSlug);
 
         assertStringContains('Approved:</strong> no', $unapprovedProfile);
         assertStringContains('Public key', $unapprovedProfile);
@@ -1306,7 +1306,7 @@ PHP;
         exec($command, $output, $exitCode);
 
         $profile = $this->render($application, '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
-        $approvedProfile = $this->render($application, '/profiles/' . $targetProfileSlug);
+        $approvedProfile = $this->render($application, '/tools/user-access/profiles/' . $targetProfileSlug);
 
         assertSame(0, $exitCode);
         assertStringContains('Approved ' . $targetIdentityId, implode("\n", $output));
@@ -1700,7 +1700,7 @@ PHP;
         $users = $this->render($application, '/users/');
         $tags = $this->render($application, '/tags/');
         $tagPage = $this->render($application, '/tags/bug');
-        $pendingUsers = $this->render($application, '/users/pending/');
+        $pendingUsers = $this->render($application, '/tools/user-access/pending/');
         $_COOKIE = [];
         $composeThread = $this->render($application, '/compose/thread');
         $prefilledSubjectCompose = $this->render($application, '/compose/thread?subject=Saved%20Title');
@@ -1920,13 +1920,13 @@ PHP;
         assertStringContains('Harvard St Commons', $about);
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
-        assertStringContains('Identity ID', $profile);
-        assertStringContains('Public key', $profile);
-        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
+        assertStringNotContains('Identity ID', $profile);
+        assertStringNotContains('Public key', $profile);
+        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);
-        assertStringContains('Approved Profiles', $username);
+        assertStringNotContains('Approved Profiles', $username);
         assertStringContains('Combined threads:', $username);
         assertStringContains('Combined posts:', $username);
         assertStringContains('Users', $users);

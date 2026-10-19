@@ -47,5 +47,5 @@ $isApproved = ((int) $profile['is_approved']) === 1;
   </div>
 </div>
 
-<?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory]) ?>
+<?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory, 'historyAccountBase' => '/forte/user/', 'historyProfileBase' => '/forte/profiles/']) ?>
 </section>

@@ -8,6 +8,9 @@ Keep UI text minimal; avoid repeating controls or explaining internals. Reveal e
 
 Append new entries to todo.txt.
 
+## Navigation icons
+
+When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` for icon themes (currently Word97, Chicago, and Windark). Cover both Tools launcher buttons and Tools subnavigation where applicable. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
 
 ## Railspike
 

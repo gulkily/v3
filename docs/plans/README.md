@@ -15,6 +15,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Scripture response reliability](scripture_response_reliability/)
 
 - [Scripture response guidance and expansion](agent_reply_length/)
+- [Member directory and user access split](member_directory_access_split/)
 
 - [Feature flags search and status toolbar](feature_flags_toolbar/)
 - [Username change gate](username_change_gate/)

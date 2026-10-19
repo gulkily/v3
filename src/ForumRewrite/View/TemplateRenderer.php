@@ -50,6 +50,9 @@ final class TemplateRenderer
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
+        'user_access.php' => ['/assets/tools.css'],
+        'user_access_account.php' => ['/assets/tools.css', '/assets/identity.css'],
+        'user_access_profile.php' => ['/assets/tools.css', '/assets/identity.css'],
         'users_pending.php' => ['/assets/pending-approvals.css'],
     ];
     private const CRITICAL_CSS_END_MARKER = '/* critical-css-end */';

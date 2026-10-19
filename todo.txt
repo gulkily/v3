@@ -164,3 +164,38 @@ Explain feature for page help
 dates wrap, looks bad
 
 move user management stuff to tools
+
+Split member directory from user/access management under Tools
+	Railspike Step 1: docs/plans/member_directory_access_split/member_directory_access_split_step1_solution_assessment.md
+	Awaiting Step 1 approval; cover standard/Forte pages, subpages, and existing approval recovery flows
+
+Member directory/access split scope revision
+	Leave Forte unchanged; split standard pages only and preserve shared-component compatibility
+	Revised Step 2 awaiting approval; previous Step 3 superseded
+
+Member directory/access split planning update
+	Revised Step 2 approved; Step 3 now covers four stages for standard pages only
+	Forte compatibility checks retained; awaiting Approved Step 3
+
+Member directory/access split implementation complete
+	Standard member pages separated from Tools User Access; Forte presentation preserved
+	Feature branch: feat/member-directory-access-split
+	Summary: docs/plans/member_directory_access_split/member_directory_access_split_step4_implementation_summary.md
+
+Existing feature-flag test failure
+	WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence
+	Reproduced on main ed71ae0f: prepared feature-flag result lacks post_id used at tests/WriteApiSmokeTest.php:4261
+
+Add missing User Access icon for icon themes
+	Map /tools/user-access/ in public/assets/theme-nav-icons.css
+	Cover both Tools launcher and Tools subnavigation in Word97, Chicago, and Windark
+	Verify the icon renders in all three themes; this omission has recurred three times
+	Standing navigation-icon reminder added to AGENTS.md; icon implementation remains pending
+
+i want to have a developer mode where i can self-approve without root approval
+
+
+User Access icon completed
+	Added person-and-key icon to Tools launcher and shared Tools subnavigation
+	Verified Word97, Chicago, and Windark: launcher plus active/inactive navigation
+	Browser checked 16px dimensions, decoded SVGs, and visually inspected each theme

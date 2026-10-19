@@ -106,7 +106,8 @@
         const result = await approveUser(profileSlug);
         const postId = encodeURIComponent(String(result.postId || ""));
         const commitSha = encodeURIComponent(String(result.commitSha || ""));
-        window.location.assign(`/profiles/${encodeURIComponent(profileSlug)}?approval=success&post_id=${postId}&commit=${commitSha}`);
+        const profileBase = form.getAttribute("data-approval-return") === "tools" ? "/tools/user-access/profiles/" : "/profiles/";
+        window.location.assign(`${profileBase}${encodeURIComponent(profileSlug)}?approval=success&post_id=${postId}&commit=${commitSha}`);
       } catch (error) {
         if (feedback) {
           feedback.textContent = error instanceof Error ? error.message : "Unable to approve user.";
