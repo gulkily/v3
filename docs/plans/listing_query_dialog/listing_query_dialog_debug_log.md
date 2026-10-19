@@ -62,3 +62,26 @@ No supported findings.
 ### Uncertain assessments
 
 - `step1_solution_assessment.md`, one-page limit: the broad coverage request requires scope qualifications alongside options; the concise Markdown artifact may exceed a rendered page depending on display. Clarify whether this limit is a length guideline or a fixed rendering constraint.
+
+## 2026-10-19 02:13:15 UTC — Step 4 completed
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, planning commit gate: branch and approved planning commit `201343c9` preceded application edits; feature plans and navigation remain together. Retain.
+- `step4_implementation_do.md`, canonical reuse: reusing the SQLite editor/explorer and repository row selection preserved standalone behavior and avoided the sample query row cap. Retain.
+- `step4_implementation_after.md`, qualified verification: recorded 20 focused PHP passes, real SQL.js browser parity/recovery, timing variability, deferred families, and unrun full-suite/cross-browser checks separately. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md`, inspect verification before stage commit: two tool orchestration sequences committed before their browser outputs were inspected. Corrective commits `3bf80f73` and `f4618c98` restored verified boundaries before dependent stages. The rule is useful; consider an explicit reminder that awaiting a tool result and inspecting it must precede preparing the commit call, particularly with orchestrated tools.
+
+### Completion evidence
+
+- Eight stages completed; Stage 8 acceptance commit `a8087420`; eleven cycle commits before this log-only handoff commit, exceeding the nine-commit minimum. No implementation history rewritten.
+- Final browser replay passed six board contexts, PHP/SQL.js result parity, paging, read-only enforcement, cache corruption/incompatibility, failed refresh, denied storage, pending-load edits/context switching, navigation drafts, standalone access, and desktop/mobile keyboard return state.
+- Last local timing sample: cold shell 2.4 ms/results 86 ms, warm shell 8.8 ms, no warm download or additional runtime initialization. Fixture timings varied across runs.
+- Production deployment and merge are outside scope; no complete-suite or cross-browser claim. Broader listing families remain deferred under the approved split.
