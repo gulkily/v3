@@ -85,11 +85,20 @@ final class TemplateRenderer
         bool $publicAuthenticationResume = false,
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
+        $hasQueryDialog = $pageTemplate === 'codebase_state.php' || !empty($pageData['listingQuery']);
+        if ($hasQueryDialog) {
+            $content .= $this->renderFile('partials/sqlite_dialog.php', []);
+            $scriptPaths = array_merge($scriptPaths, ['/assets/sql-wasm.js', '/assets/sqlite_viewer.js', '/assets/sqlite_dialog.js']);
+        }
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
         $pageStylesheetPaths = [];
         foreach (self::PAGE_STYLESHEET_PATHS[$pageTemplate] ?? [] as $stylesheetPath) {
             $pageStylesheetPaths[] = $this->assetPath($stylesheetPath);
+        }
+
+        if ($hasQueryDialog) {
+            $pageStylesheetPaths[] = $this->assetPath('/assets/sqlite.css');
         }
 
         $viewerProfile = is_array($pageData['viewerProfile'] ?? null) ? $pageData['viewerProfile'] : null;

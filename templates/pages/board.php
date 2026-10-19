@@ -53,3 +53,8 @@
 <?php if ($boardFooterPartial !== null): ?>
 <?= $partial($boardFooterPartial, ['qdbQuoteCount' => $qdbQuoteCount]) ?>
 <?php endif; ?>
+<?php if (!empty($listingQuery)): ?>
+<footer class="listing-query-footer">
+<?= $partial('partials/query_action.php', $listingQuery) ?>
+</footer>
+<?php endif; ?>
