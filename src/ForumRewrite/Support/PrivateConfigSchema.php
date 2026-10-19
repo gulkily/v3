@@ -53,6 +53,7 @@ final class PrivateConfigSchema
             'VISITOR_STATISTICS_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH' => self::definition(null, 'path'),
+            'FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS' => self::definition(5, 'integer'),
         ];
     }
 
