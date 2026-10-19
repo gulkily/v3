@@ -45,3 +45,11 @@ Standard member directory and Tools access management. Forte retains its current
 - Disposition and reason: Separate follow-up; user requested a reminder, so icon implementation remains pending. Recorded the specific task in `todo.txt` and a standing navigation-icon check in `AGENTS.md`.
 - Approval status: Reminder/documentation authorized; no icon implementation requested in this follow-up.
 - Outcome: Pending icon mapping for both Tools launcher and subnavigation in Word97, Chicago, and Windark, with visual verification in each theme.
+
+
+### Icon implementation completed
+
+- Request: Add the icons now and list every placement; explicitly authorized by the user.
+- Changes: Added the shared person-and-key SVG mapping and subnavigation pseudo-element sizing in `public/assets/theme-nav-icons.css`. Covers the User Access launcher on `/tools/` and its shared Tools subnavigation link wherever rendered, including active and inactive states, in Word97, Chicago, and Windark.
+- Verification: Passed Chromium checks for all three themes: launcher and both navigation states have 16×16 pseudo-elements with successfully decoded SVG images. Visually inspected screenshots for all three themes. `git diff --check` passed.
+- Outcome: Completed; supersedes the pending icon status above. Standing reminder in `AGENTS.md` retained. Small CSS follow-up handled directly under the repository's straightforward-change exception.

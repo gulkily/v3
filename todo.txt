@@ -197,3 +197,9 @@ Add missing User Access icon for icon themes
 	Standing navigation-icon reminder added to AGENTS.md; icon implementation remains pending
 
 i want to have a developer mode where i can self-approve without root approval
+
+
+User Access icon completed
+	Added person-and-key icon to Tools launcher and shared Tools subnavigation
+	Verified Word97, Chicago, and Windark: launcher plus active/inactive navigation
+	Browser checked 16px dimensions, decoded SVGs, and visually inspected each theme
