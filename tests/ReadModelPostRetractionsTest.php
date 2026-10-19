@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\ReadModel\AuthoredContentRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ThreadRepository;
+use ForumRewrite\Tools\BoardListingQuery;
 
 final class ReadModelPostRetractionsTest
 {
@@ -64,6 +68,55 @@ final class ReadModelPostRetractionsTest
 
         assertSame(0, $this->markerCount($pdo));
         assertSame('2026-10-13T12:00:00Z', $pdo->query("SELECT retracted_at FROM posts WHERE post_id = 'thread-gone'")->fetchColumn());
+    }
+
+    public function testRetractedRootIsOmittedFromThreadListingsButStillResolvable(): void
+    {
+        $root = $this->fixtureWithThread();
+        $pdo = $this->rebuild($root);
+        assertTrue(in_array('thread-gone', array_column(ThreadRepository::fetchThreads($pdo), 'root_post_id'), true));
+
+        $this->writeRetraction($root, 'thread-gone', self::AUTHOR);
+        $pdo = $this->rebuild($root);
+
+        assertSame(false, in_array('thread-gone', array_column(ThreadRepository::fetchThreads($pdo), 'root_post_id'), true));
+        $listing = $pdo->query(BoardListingQuery::context('all', 'newest')['querySql'])->fetchAll(PDO::FETCH_ASSOC);
+        assertSame(false, in_array('thread-gone', array_column($listing, 'root_post_id'), true));
+        assertSame('thread-gone', ThreadRepository::byId($pdo, 'thread-gone')['root_post_id'] ?? null);
+    }
+
+    public function testRetractedPostsLeaveAuthoredContentListsAndCounts(): void
+    {
+        $root = $this->fixtureWithThread();
+        $pdo = $this->rebuild($root);
+        $before = AuthoredContentRepository::visiblePosts($pdo, [self::AUTHOR]);
+        assertTrue(in_array('thread-gone', array_column($before, 'post_id'), true));
+        assertTrue(in_array('thread-gone', array_column(AuthoredContentRepository::visibleThreads($pdo, [self::AUTHOR]), 'root_post_id'), true));
+
+        $this->writeRetraction($root, 'thread-gone', self::AUTHOR);
+        $pdo = $this->rebuild($root);
+
+        $posts = AuthoredContentRepository::visiblePosts($pdo, [self::AUTHOR]);
+        assertSame(false, in_array('thread-gone', array_column($posts, 'post_id'), true));
+        assertSame(false, in_array('thread-gone', array_column(AuthoredContentRepository::visibleThreads($pdo, [self::AUTHOR]), 'root_post_id'), true));
+        assertSame(count($before) - 1, AuthoredContentRepository::countVisible($pdo, [self::AUTHOR], false));
+    }
+
+    public function testRetractedPostsLeaveContentActivityAndItsTotal(): void
+    {
+        $root = $this->fixtureWithThread();
+        $this->writeRetraction($root, 'thread-gone', self::AUTHOR);
+        $pdo = $this->rebuild($root);
+        $databasePath = (string) $pdo->query('PRAGMA database_list')->fetch(PDO::FETCH_ASSOC)['file'];
+        $service = new ActivityService(static fn (): PDO => new PDO('sqlite:' . $databasePath), $root, $databasePath);
+
+        $content = $service->fetchActivityRows('content', 'date', 'desc')['items'];
+        $all = $service->fetchActivityRows('all', 'date', 'desc')['items'];
+
+        assertSame(false, in_array('thread-gone', array_column($content, 'post_id'), true));
+        assertTrue(in_array('reply-to-gone', array_column($content, 'post_id'), true));
+        assertTrue(in_array('thread-gone', array_column($all, 'post_id'), true));
+        assertSame(count($content), $service->countActivityViewTotal('content'));
     }
 
     private function fixtureWithThread(): string

@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)
 - [Rename windark theme to midnight](rename_windark_to_midnight/)
 - [Attach image in the compose menu](attach_image_in_menu/)
 - [Agent personality and participation context](agent_personality_and_multiple_agents/)
