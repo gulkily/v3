@@ -223,6 +223,9 @@ try {
  await page.locator('[data-paned-board-reply]').click();
  const forteReply=page.locator('[data-paned-compose-panel]');
  await forteReply.locator('.image-compose-fields:not([hidden])').waitFor();
+ await forteReply.locator('.compose-action-menu-toggle').click();
+ assert.deepEqual(await forteReply.locator('.compose-action-menu-list > button').allTextContents(),['Attach image','Post anonymous reply','Clear fields']);
+ assert.equal(await forteReply.locator('.image-upload-dropzone .image-upload-choose').count(),0,'no standalone chooser beside the preview');
  await forteReply.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  await forteReply.locator('.image-upload-preview img').waitFor();
  await page.locator('[data-paned-board-new]').click();

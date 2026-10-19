@@ -32,3 +32,14 @@ Branch: `attach_image_in_menu`. Planning commit: `0bd7b1c4`.
   - Busy-state disabling is not separately asserted in the browser test.
 - Notes:
   - Reply forms still render the inline button until Stage 3; the old caption survives only in `image_prepare.js` error text ("Choose an image of at most 32 MiB…"), to be reviewed in Stage 4.
+
+## Stage 3 - Reply form menu
+- Changes:
+  - `reply_form.php` now renders the shared `…` menu holding Attach image, Post anonymous reply, and Clear fields; the primary submit remains visible. Button types and `data-action` values are unchanged.
+- Verification:
+  - Selector review: `browser_signing.js` finds these buttons by `data-action`; Forte CSS rules on `.compose-form-actions > button` only affect direct children and the default-button ring targets the primary submit. No selector changes were needed.
+  - `node tests/browser/image_content_browser.mjs`: passed, now asserting the Forte reply menu lists Attach image, Post anonymous reply, Clear fields, and no standalone chooser remains.
+  - `php tests/run.php LocalAppSmokeTest BrowserSigningNormalizationTest`: passed (223 run, 223 passed).
+  - `php tests/run.php WriteApiSmokeTest`: 1 failure (`testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence`), which reproduces identically on unchanged Stage 2 code.
+- Notes:
+  - Anonymous reply and Clear fields are now one tap further away in reply forms, as approved in Step 2. Reply flows on the thread page and compose-reply page were not clicked through in a browser beyond the Forte pane.
