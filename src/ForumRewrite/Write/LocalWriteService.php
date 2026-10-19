@@ -3134,7 +3134,7 @@ class LocalWriteService
     {
         $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
             $this->recoverSignedReactionWrites();
-            return $callback();
+            return \ForumRewrite\Retraction\PublicationGuard::lock($this->repositoryRoot)->withExclusiveLock($callback);
         });
         $result = $locked['result'];
         if (($result['commit_sha'] ?? null) !== null && $this->enqueueOfflineSnapshotPublication !== null) {

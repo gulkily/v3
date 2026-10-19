@@ -26,6 +26,10 @@ final class RetractionSweep
             'uncertain' => 0, 'cleaned' => 0, 'remaining' => false,
             'stores' => ['generated_html', 'offline_copies', 'llm_exchanges'],
             'excluded' => ['canonical_and_history', 'analysis_caches', 'other_logs', 'backups', 'attachments', 'published_replies', 'external_copies']];
+        if ($ids !== []) {
+            $artifact = ArtifactSweep::run($this->artifactRoots, PublicationGuard::generation($this->repositoryRoot), [], $limit, true);
+            $result['artifacts'] = ['examined' => $artifact['examined'], 'affected' => $artifact['affected'], 'remaining' => $artifact['stack'] !== []];
+        }
         if (!is_file($this->exchangePath)) return $result;
         $pdo = new PDO('sqlite:file:' . $this->exchangePath . '?mode=ro');
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
@@ -77,6 +81,19 @@ final class RetractionSweep
                     } catch (\Throwable $error) { $pdo->exec('ROLLBACK'); throw $error; }
                     ExchangeScrubber::checkpoint($pdo);
                 }
+                if ($ids !== []) {
+                    $artifact = PublicationGuard::lock($this->repositoryRoot)->withExclusiveLock(function () use ($state, $generation, $limit): array {
+                        if (PublicationGuard::generation($this->repositoryRoot) !== $generation) throw new RuntimeException('Retraction changed during cleanup.');
+                        $stack = ($state['generation'] ?? '') === $generation && ($state['remaining'] ?? false) ? ($state['artifact_stack'] ?? []) : [];
+                        if (($state['artifacts_done'] ?? false) && ($state['generation'] ?? '') === $generation && ($state['remaining'] ?? false)) return ['stack' => [], 'examined' => 0, 'cleaned' => 0, 'affected' => 0];
+                        return ArtifactSweep::run($this->artifactRoots, $generation, $stack, $limit);
+                    });
+                    $result['artifact_stack'] = $artifact['stack'];
+                    $result['artifacts_done'] = $artifact['stack'] === [];
+                    $result['artifacts'] = ['examined' => $artifact['examined'], 'cleaned' => $artifact['cleaned']];
+                    $result['remaining'] = $result['remaining'] || !$result['artifacts_done'];
+                }
+                if (PublicationGuard::generation($this->repositoryRoot) !== $generation) throw new RuntimeException('Retraction changed during cleanup.');
                 $result['status'] = $result['remaining'] ? 'pending' : 'complete';
                 $this->save($result);
                 return $result;

@@ -87,4 +87,43 @@ final class RetractionSweepTest
         assertSame('pending', $sweep->state()['status']);
         assertSame(1, $sweep->run()['cleaned']);
     }
+    public function testArtifactSweepResumesAndKeepsCurrentGeneration(): void
+    {
+        [$root, $pdo] = $this->fixture();
+        $artifacts = $root . '/static';
+        mkdir($artifacts . '/releases/old/posts', 0700, true);
+        mkdir($artifacts . '/.candidate-old/offline', 0700, true);
+        mkdir($artifacts . '/posts', 0700, true);
+        file_put_contents($artifacts . '/releases/old/posts/target.html', 'OLD-SECRET');
+        file_put_contents($artifacts . '/.candidate-old/offline/snapshot.sqlite3', 'OLD-SECRET');
+        file_put_contents($artifacts . '/posts/fresh.html', 'Clean content');
+        symlink('releases/old', $artifacts . '/current');
+        $gen = \ForumRewrite\Retraction\PublicationGuard::generation($root);
+        file_put_contents($artifacts . '/posts/fresh.html.retraction-generation', $gen);
+        $sweep = new RetractionSweep($root, $root . '/exchanges.sqlite3', $root . '/artifacts.json', [$artifacts]);
+        assertSame(true, $sweep->preview(100)['artifacts']['affected'] > 0);
+        $runs = 0;
+        do { $result = $sweep->run(2); assertSame(true, ++$runs < 100); } while ($result['remaining']);
+        assertSame(false, is_link($artifacts . '/current'));
+        assertSame(false, is_file($artifacts . '/releases/old/posts/target.html'));
+        assertSame(false, is_file($artifacts . '/.candidate-old/offline/snapshot.sqlite3'));
+        assertSame('Clean content', file_get_contents($artifacts . '/posts/fresh.html'));
+        assertSame(0, $sweep->run(100)['artifacts']['cleaned']);
+    }
+
+    public function testStalePublicationAndDirectorySymlinksAreRejected(): void
+    {
+        [$root] = $this->fixture();
+        $old = ['root' => $root, 'generation' => 'old'];
+        try {
+            \ForumRewrite\Retraction\PublicationGuard::publish($old, $root . '/output.html', function () use ($root): void { file_put_contents($root . '/output.html', 'STALE'); });
+            throw new RuntimeException('Expected rejection');
+        } catch (RuntimeException $error) { assertSame(false, is_file($root . '/output.html')); }
+        mkdir($root . '/static');
+        symlink($root . '/records', $root . '/static/posts');
+        $sweep = new RetractionSweep($root, $root . '/exchanges.sqlite3', $root . '/unsafe.json', [$root . '/static']);
+        try { $sweep->run(); throw new RuntimeException('Expected rejection'); }
+        catch (RuntimeException $error) { assertSame('failed', $sweep->state()['status']); }
+        assertSame(true, is_file($root . '/records/posts/target.txt'));
+    }
 }

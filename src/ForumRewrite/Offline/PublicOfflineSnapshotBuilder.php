@@ -41,6 +41,7 @@ final class PublicOfflineSnapshotBuilder
             throw new RuntimeException('Unable to create offline snapshot directory.');
         }
 
+        $retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($sourcePath);
         $temporaryPath = $targetPath . '.tmp-' . bin2hex(random_bytes(8));
         $this->sourcePostColumns = null;
         $source = new PDO('sqlite:' . $sourcePath);
@@ -111,10 +112,14 @@ final class PublicOfflineSnapshotBuilder
             if ($size === false || $size > $maxBytes) {
                 throw new RuntimeException('Offline snapshot exceeded its configured size limit.');
             }
-            if (!rename($temporaryPath, $targetPath)) {
-                throw new RuntimeException('Unable to publish offline snapshot.');
-            }
-            $this->writeManifest($targetPath, $generatedAt, $size);
+            \ForumRewrite\Retraction\PublicationGuard::publish($retractionToken, $targetPath, function () use ($temporaryPath, $targetPath, $generatedAt, $size, $retractionToken): void {
+                if (!rename($temporaryPath, $targetPath)) throw new RuntimeException('Unable to publish offline snapshot.');
+                $this->writeManifest($targetPath, $generatedAt, $size);
+                if ($retractionToken !== null) {
+                    $manifest = dirname($targetPath) . '/' . (basename($targetPath) === 'snapshot.sqlite3' ? 'manifest.json' : basename($targetPath) . '.manifest.json');
+                    if (file_put_contents($manifest . '.retraction-generation', $retractionToken['generation']) === false) throw new RuntimeException('Cannot record manifest generation.');
+                }
+            });
 
             return [
                 'generated_at' => $generatedAt,
