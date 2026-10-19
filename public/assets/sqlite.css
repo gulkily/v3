@@ -196,10 +196,24 @@
   box-sizing: border-box;
   overflow: auto;
   color: inherit;
-  background: var(--bg, #fff);
+  background: var(--page-bg, Canvas);
 }
 .sqlite-dialog::backdrop { background: rgb(0 0 0 / 45%); }
-.sqlite-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.sqlite-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: var(--page-bg, Canvas);
+}
+.sqlite-dialog-header h2 { overflow-wrap: anywhere; }
+.sqlite-dialog-header button { flex-shrink: 0; }
 .sqlite-dialog [data-role="sqlite-explorer"],
 .sqlite-dialog [data-role="sqlite-query-panel"] { width: 100%; margin-left: 0; }
 .sqlite-dialog textarea { width: 100%; box-sizing: border-box; }
+.sqlite-dialog pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sqlite-dialog p { overflow-wrap: anywhere; }
+.sqlite-dialog .sqlite-query-bottom > * { max-width: 100%; min-width: 0; }

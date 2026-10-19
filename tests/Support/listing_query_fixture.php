@@ -11,4 +11,5 @@ if (($argv[1] ?? '') === 'standalone') {
     }
     echo $renderer->renderFragment('partials/sqlite_dialog.php', []);
 }
+echo '<p id="background-selection">Remember this selection</p><div style="height:1800px"></div>';
 echo '<script src="/assets/sql-wasm.js"></script><script src="/assets/sqlite_viewer.js"></script><script src="/assets/sqlite_dialog.js"></script></body></html>';

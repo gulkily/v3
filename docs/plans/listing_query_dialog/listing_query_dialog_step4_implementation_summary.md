@@ -40,3 +40,8 @@ Debug mode: enabled
 - Changes: explicit refresh labels, independent persistent provenance/freshness details, actionable damaged/incompatible saved-data recovery, and replacement only after validation. Failed refresh leaves the prior database and edits usable.
 - Verification: browser replay passed corrupt-cache → failed refresh → successful refresh, SQL preservation, query syntax-error correction, and successful local rerun after a later failed refresh. Board/catalog tests passed 6/6; JS/PHP syntax passed.
 - Notes: Stage 5 commit `59500bd5`. Refresh fetches only the published read model; offline snapshot lifecycle is untouched. Unsupported/absent metadata values are honestly shown as revision unavailable.
+
+## Stage 7 - Accessible return to page
+- Changes: capture background selection before pointer default behavior, lock/restore background scrolling, retain dialog scroll before native close/cancel, and restore trigger focus. Cancel outdated deferred opens; keep Close visible; use theme background and constrain narrow-screen query controls/text.
+- Verification: browser replay passed 1280px/390px keyboard traversal, Escape and Close, focus return, selection/form/background-scroll preservation, dialog scroll on reopen, and no dialog horizontal overflow, plus all prior scenarios.
+- Notes: Stage 6 commit `01b16ff4`. Tests exposed native selection clearing, scroll reset, and pagination overflow; corrected these before stage completion. Browser assertions wait for the native close event to finish restoration.

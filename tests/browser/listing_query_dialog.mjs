@@ -33,25 +33,30 @@ try {
   await page.getByRole('button', { name: 'Run Query', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('99'));
   await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   const before = downloads;
   await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-input"]').value === 'SELECT 99 AS edited');
   assert.equal(await input.inputValue(), 'SELECT 99 AS edited');
   assert.equal(downloads, before);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   await page.locator('[data-query-key="two"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('7'));
   await input.fill('SELECT 88 AS second_draft');
   await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-input"]').value === 'SELECT 99 AS edited');
   assert.equal(await input.inputValue(), 'SELECT 99 AS edited');
   await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   await page.reload();
   await page.locator('[data-query-key="two"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('88'));
   assert.equal(await input.inputValue(), 'SELECT 88 AS second_draft');
   await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   assert.equal(await page.getByLabel('Background draft').inputValue(), 'keep me');
   fail = true;
   await page.goto('https://query.test/standalone');
@@ -97,11 +102,52 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('42'));
   await input.fill('SELECT 55 AS memory_draft');
   await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   await page.locator('[data-query-key="two"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('7'));
   await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-input"]').value === 'SELECT 55 AS memory_draft');
   assert.equal(await input.inputValue(), 'SELECT 55 AS memory_draft');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.evaluate(() => {
+      const range = document.createRange();
+      range.selectNodeContents(document.querySelector('#background-selection'));
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      window.scrollTo(0, 0);
+    });
+    const selection = await page.evaluate(() => window.getSelection().toString());
+    await page.locator('[data-query-key="one"]').click();
+    await page.locator('[data-query-dialog][open]').waitFor();
+    for (let i = 0; i < 20; i++) {
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.querySelector('[data-query-dialog]').contains(document.activeElement) || document.activeElement === document.body), true);
+    }
+    assert.equal(await page.evaluate(() => {
+      const d = document.querySelector('[data-query-dialog]');
+      return d.getBoundingClientRect().width <= innerWidth && d.scrollWidth <= d.clientWidth + 1;
+    }), true, 'dialog fits narrow screens without horizontal page overflow');
+    const savedScroll = await page.evaluate(() => {
+      const d = document.querySelector('[data-query-dialog]');
+      d.scrollTop = 200;
+      return d.scrollTop;
+    });
+    await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
+    assert.equal(await page.evaluate(() => window.scrollY), 0);
+    assert.equal(await page.evaluate(() => window.getSelection().toString()), selection);
+    assert.equal(await page.locator('[data-query-key="one"]').evaluate(el => el === document.activeElement), true);
+    assert.equal(await page.getByLabel('Background draft').inputValue(), 'keep me');
+    await page.locator('[data-query-key="one"]').click();
+    await page.locator('[data-query-dialog][open]').waitFor();
+    assert.equal(await page.locator('[data-query-dialog]').evaluate(el => el.scrollTop), savedScroll);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
+  }
   console.log('PASS separate drafts and navigation recovery, saved-data reuse, corruption rejection, codebase dialog load retry, auto-run, edit, close/reopen, background and standalone');
 } finally { await browser.close(); }
