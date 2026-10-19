@@ -27,6 +27,9 @@
     var databaseUrl = "/downloads/read_model.sqlite3";
     var runtimeUrl = root.getAttribute("data-runtime-url") || "/assets/sql-wasm.wasm";
     var database = null;
+    var loadPromise = null;
+    var runtimePromise = null;
+    var savedCacheName = "forum-query-read-model-v1";
     var maxPreviewRows = 25;
     var maxQueryRows = 25;
     var tablePage = 0;
@@ -437,11 +440,11 @@
         option.textContent = row[0];
         tableSelect.appendChild(option);
       });
-      tableSelect.addEventListener("change", function () {
+      tableSelect.onchange = function () {
         tableSortColumn = null;
         tableSortDirection = null;
         renderTable(tableSelect.value, 0);
-      });
+      };
       if (explorer) {
         explorer.removeAttribute("hidden");
       }
@@ -543,7 +546,14 @@
       }
     }
 
-    async function loadDatabase() {
+    function loadDatabase(refresh) {
+      if (loadPromise) { return loadPromise; }
+      if (database && !refresh) { return Promise.resolve(true); }
+      loadPromise = performLoad(!!refresh).finally(function () { loadPromise = null; });
+      return loadPromise;
+    }
+
+    async function performLoad(refresh) {
       setLoading(true);
       setStatus("Downloading the published database...", "loading");
 
@@ -552,18 +562,43 @@
           throw new Error("The browser SQLite runtime is unavailable.");
         }
 
-        var response = await window.fetch(databaseUrl, { credentials: "same-origin" });
-        if (!response.ok) {
-          throw new Error("The published database could not be downloaded.");
+        var cache = null;
+        var response = null;
+        var saved = false;
+        try {
+          cache = await window.caches.open(savedCacheName);
+          if (!refresh) { response = await cache.match(databaseUrl); saved = !!response; }
+        } catch (error) { /* Storage is optional; keep the in-memory viewer usable. */ }
+        if (!response) {
+          response = await window.fetch(databaseUrl, { credentials: "same-origin", cache: "no-store" });
         }
-
+        if (!response.ok) { throw new Error("The published database could not be downloaded. Retry when connected."); }
         var bytes = new Uint8Array(await response.arrayBuffer());
-        var SQL = await window.initSqlJs({
-          locateFile: function (fileName) {
+        if (!runtimePromise) {
+          runtimePromise = window.initSqlJs({ locateFile: function (fileName) {
             return fileName === "sql-wasm.wasm" ? runtimeUrl : "/assets/" + fileName;
-          }
-        });
-        database = new SQL.Database(bytes);
+          }}).catch(function (error) { runtimePromise = null; throw error; });
+        }
+        var SQL = await runtimePromise;
+        var candidate = new SQL.Database(bytes);
+        try {
+          if (candidate.exec("PRAGMA quick_check")[0].values[0][0] !== "ok") { throw new Error("Invalid database"); }
+          ["metadata", "threads", "posts", "profiles"].forEach(function (table) {
+            candidate.exec("SELECT * FROM " + table + " LIMIT 0");
+          });
+        } catch (error) {
+          candidate.close();
+          throw new Error("Saved database is incompatible or damaged. Use Reload Database to fetch a fresh copy.");
+        }
+        var revision = candidate.exec("SELECT key, value FROM metadata WHERE key IN ('repository_head', 'rebuilt_at')")[0];
+        var provenance = revision ? revision.values.map(function (row) { return row[0] + ": " + row[1]; }).join("; ") : "Revision unavailable";
+        if (cache && !saved) {
+          try { await cache.put(databaseUrl, new Response(bytes, { headers: { "Content-Type": "application/x-sqlite3" } })); }
+          catch (error) { provenance += "; browser storage unavailable (in-memory only)"; }
+        } else if (!cache) { provenance += "; browser storage unavailable (in-memory only)"; }
+        var previous = database;
+        database = candidate;
+        if (previous) { previous.close(); }
         populateExplorer();
         populateQuerySelector();
         if (explorer) {
@@ -572,7 +607,7 @@
         if (queryPanel) {
           queryPanel.removeAttribute("hidden");
         }
-        setStatus("Database loaded. Browsing and queries will run locally in this page.", "ok");
+        setStatus((saved ? "Saved" : "Published") + " read-model loaded. " + provenance + ". Queries run locally; saved data may differ from the live page.", "ok");
         if (loadButton) {
           loadButton.textContent = "Reload Database";
         }
@@ -601,7 +636,7 @@
     };
     if (loadButton) {
       loadButton.addEventListener("click", async function () {
-        if (await loadDatabase() && activeContext !== null) { runQuery(); }
+        if (await loadDatabase(!!database) && activeContext !== null) { runQuery(); }
       });
     }
     if (queryButton) {

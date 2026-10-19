@@ -13,3 +13,8 @@ Debug mode: enabled
 - Changes: shared native dialog reuses the canonical SQLite viewer; codebase SQL opens editable automatically executed queries; warm close/reopen preserves the mounted viewer. File/shell displays remain intact. Standalone viewer retained.
 - Verification: `node tests/browser/listing_query_dialog.mjs` passed load retry, auto-run, editing, reopen, background and standalone checks with real SQL.js/WASM; `php tests/run.php SqliteQueryCatalogTest` passed 4/4. PHP syntax, JS syntax, and whitespace checks passed.
 - Notes: an initial browser check exposed a load-failure button label stuck at Loading; corrected before stage completion. Persistence and per-context recovery belong to Stages 2–3.
+
+## Stage 2 - Saved database reuse
+- Changes: reuse a validated saved published database; share pending database/runtime loads; display revision and stale-data caveat; retain in-memory operation when browser persistence is unavailable. Existing table-change handlers no longer accumulate on reload.
+- Verification: browser replay passed saved-data reuse across navigation with the download endpoint failing, no warm-reopen downloads, corrupt saved-data rejection, and Stage 1/standalone regression. Query catalog checks passed 4/4; JS syntax passed.
+- Notes: Stage 1 commit `eca4f4a4`. Explicit incompatible-data refresh recovery remains Stage 6; current validation rejects damaged or missing core tables without substituting another source.
