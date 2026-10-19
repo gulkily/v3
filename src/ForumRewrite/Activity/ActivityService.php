@@ -349,7 +349,7 @@ final class ActivityService
             ],
             'content' => [
                 'AND activity.board_tags_json NOT LIKE :hidden_tag
-                 AND (activity.post_id IS NULL OR COALESCE(posts.is_hidden, 0) = 0)',
+                 AND (activity.post_id IS NULL OR (COALESCE(posts.is_hidden, 0) = 0 AND posts.retracted_at IS NULL))',
                 ['hidden_tag' => $quotedHiddenTag],
             ],
             default => ['', []],

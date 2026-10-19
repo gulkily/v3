@@ -29,3 +29,16 @@ Branch: `feat/retracted-posts-hidden-from-listings`. Planning commit: `52e5d3c1`
   - Read-model schema check: not applicable.
 - Notes:
   - Profile pages and Forte profile / user-detail API consume these lists, so they are covered through the repository; no page-level assertions were added.
+
+## Stage 3 - Activity content view
+- Changes:
+  - The `content` view clause in `ActivityService::activityViewClause` now also requires the joined post to be non-retracted (rows with no post, such as approvals and commits, still pass). Row listing, paging cursor and `countActivityViewTotal` share that clause, so totals match rows.
+  - Other Activity views (all, identity, bootstrap, approval, security) are unchanged, so "Deleted post" rows remain visible in the `all` view.
+  - Added `testRetractedPostsLeaveContentActivityAndItsTotal` to `tests/ReadModelPostRetractionsTest.php`.
+  - `ForteActivityReadModelRecoveryTest` builds a hand-made `posts` table; added the existing `retracted_at` column to it so the content query can run.
+- Verification:
+  - Full `php tests/run.php`: 1339 run, 1332 passed, 7 failed. One was new (`ForteActivityReadModelRecoveryTest`, failing with `no such column: posts.retracted_at` on its hand-made table), fixed and re-run: 2 passed. The other six failed in earlier recorded runs.
+  - The full suite was not re-run after that fixture edit.
+  - Read-model schema check: not applicable. `retracted_at` is already in the current schema, so no version bump.
+- Notes:
+  - Whether the `all` Activity view should also hide retracted posts was not covered by the approved plan and is left unchanged.
