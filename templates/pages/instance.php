@@ -41,7 +41,13 @@
 <?php else: ?>
       <ul class="backup-preview">
 <?php foreach ($backupSnapshot['items'] as $item): ?>
-<?php if (($item['kind'] ?? '') === 'thread_label_add'): ?>
+<?php if (($item['kind'] ?? '') === 'site_feature_flag'): ?>
+<?php $href = '/tools/feature-flags/'; ?>
+<?php $linkLabel = 'site feature flags'; ?>
+<?php elseif (($item['kind'] ?? '') === 'profile_name_change'): ?>
+<?php $href = '/profiles/' . rawurlencode((string) ($item['author_profile_slug'] ?? '')); ?>
+<?php $linkLabel = $item['author_label'] ?? ''; ?>
+<?php elseif (($item['kind'] ?? '') === 'thread_label_add'): ?>
 <?php $href = '/threads/' . ($item['thread_id'] ?? ''); ?>
 <?php $linkLabel = $item['thread_id'] ?? ''; ?>
 <?php else: ?>

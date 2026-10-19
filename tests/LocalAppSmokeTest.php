@@ -1837,6 +1837,7 @@ PHP;
             assertOrdered($toolsBackup, '>Image backup</h2>', '>Recent included items</h2>');
         }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
+        assertStringNotContains('href="/posts/">', $toolsBackup);
         assertStringContains('/user/guest', $instance);
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
