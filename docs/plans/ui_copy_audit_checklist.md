@@ -1,6 +1,6 @@
 # UI copy audit checklist
 
-Reduce reading required to complete ordinary forum tasks. Prefer self-explanatory controls, short contextual help, and details available on demand. Keep material consequences and recovery actions beside the affected control.
+Reduce reading required to complete ordinary forum tasks. Favor removing text over rewriting or relocating it, relying on an intuitive, explorable interface. For every finding below, first consider deleting the explanation; suggestions to shorten text or move it into help are fallbacks only when users need information the interface cannot communicate. Keep material consequences and recovery actions beside the affected control.
 
 Source review dated October 17, 2026 covered page templates, shared partials, and selected first-party browser messages. These are copy and presentation findings; rendered layouts and every runtime state have not been reviewed. Product copy is unchanged. Items below remain open.
 
@@ -13,6 +13,7 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 ## Other cleanup
 
+- [x] **Activity site development heading** — [railspike_workflow.js](../../public/assets/railspike_workflow.js), activity panel. Removed “Site development · operators only” completely; workflow links remain.
 - [ ] **Account setup status** — [account_key.php](../../templates/pages/account_key.php), simple status card and `friendlyStatusMessage`. The ready badge, username, and “All set! Posting as…” repeat the same state. Use one status plus the username; retain actionable error feedback and verify messages mirrored from the advanced section.
 - [ ] **Key backup help** — [account_key.php](../../templates/pages/account_key.php), backup panel. Tighten the introductory and passphrase text. Shorten the PNG warning to the action needed to preserve the original; move recompression and conversion mechanics into format help. Preserve forgotten-passphrase and damaged-backup consequences. This panel is already collapsed, so it is a lower priority than invite generation.
 - [ ] **Storage and privacy controls** — [account_key.php](../../templates/pages/account_key.php), storage section. The automatic guest-publication checkbox is a sentence of implementation terminology followed by another explanation. Give the setting a short label and one consequence sentence; keep storage and cookie details in the existing technical section.
