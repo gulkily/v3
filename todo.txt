@@ -216,3 +216,6 @@ Done: removed activity heading “Site development · operators only” complete
 
 UI copy cleanup: favor deleting text over editing or moving it into help; rely on an intuitive, explorable interface.
 	Keep essential warnings and recovery actions visible; apply this preference to the existing Explain task and audit checklist.
+
+Completed UI copy audit cleanup: all remaining findings handled individually, favoring removal; verified and committed each item.
+	Commit references and verification: docs/plans/ui_copy_audit_checklist.md
