@@ -39,3 +39,15 @@ Branch: `rename_windark_to_midnight` (from `main`). Planning commit: `a5e1a150`.
   - `php tests/run.php LocalAppSmokeTest ThemeRegistryTest`: passed (152 run, 152 passed); the new `windark` cookie assertion fails with the renderer change stashed.
 - Notes:
   - No cookie rewrite on the server; the existing client hint update rewrites it on the next page load.
+
+## Stage 4 - Browser verification, docs and todo
+- Changes:
+  - `AGENTS.md` and the two historical `todo.txt` lines now say Midnight; a removal todo for the alias was appended to `todo.txt`.
+  - The stage commit also carries a one-line `todo.txt` note ("qr codes should match theme within reason") that the user had added and left uncommitted.
+- Verification:
+  - Browser (Chromium, 1100px): Tools page (header nav, subnavigation and launcher buttons) rendered for Midnight, Word97 and Chicago on this branch and on `main` (Midnight stored as `windark` there); full-page screenshots are byte-identical in all three themes, and icons are visibly present in the Midnight screenshot.
+  - `git grep -i windark` outside `docs/plans`: only the alias, its two tests, and the new removal todo.
+  - Full PHP suite `php tests/run.php`: 1320 run, 1316 passed, 4 failed. All four reproduce without this change: `AgentIdentityServiceTest` and `ReadModelBuilderTimingTest` fail identically on `main`; `WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence` failed the same way on unchanged Stage 2 code earlier; `PrivateMessageHistorySyncTest::testConcurrentSyncWritesLeaveForegroundMessageStoreResponsive` is flaky (passes and fails on both `main` and this branch across three alternating runs).
+  - Not run: other browser suites that need external servers (for example `bookmarklet_copy_ui.mjs`, which iterates every theme option); other Tools pages and states where a different nav item is active; physical devices.
+- Notes:
+  - Alias lives in `ThemeRegistry::LEGACY_ALIASES`, `layout.php`, `theme_toggle.js`, and `TemplateRenderer::themeHint` until the todo is done.
