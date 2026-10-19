@@ -64,3 +64,9 @@
   - `php tests/run.php WriteApiSmokeTest` — the signed prepare, invalid-signature recovery, valid finalize, committed evidence, warm activity, and rebuilt activity coverage passed; the only known failure is the pre-existing task-queue test.
 - Notes:
   - This exercises the normal server flow used by the Feature Flags page; a manual browser smoke remains environment-dependent as recorded in Stage 5.
+
+## Regression assertion repair — October 19, 2026
+
+- Reproduced the long-standing signed feature-flag API test failure: it accessed nonexistent `post_id` and expected an account-approval acceptance receipt. Feature-flag actions use `record_id` and commit the snapshot, signed action record, and detached signature; they do not create approval receipts.
+- Replaced the unrelated receipt assertion with an exact committed-file set check. Existing invalid-signature rejection, signer attribution, signed evidence, warm activity, and full-rebuild activity checks remain. Production behavior is unchanged.
+- Verification: five targeted tests passed (signed prepare/finalize, API authorization, canonical write/invalidation, and both feature-flag change page tests). `git diff --check` passed.
