@@ -46,3 +46,19 @@ Debug mode: enabled (inherited from Step 2 artifact).
 
 **Uncertain assessments**
 - Stage 3 may need more than 50 lines if Forte CSS selectors need rework; reassess at Stage 3.
+
+## 2026-10-18 UTC, Step 4
+Debug mode: enabled (inherited from the Step 4 summary).
+
+**Necessary/useful instructions**
+- Stage Boundary Protocol: kept each stage verified and committed with its summary update.
+- Planning Docs Commit Gate: the organization allowance moved plans into the feature folder cleanly.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only rules; deployment, migration and external-system checks.
+
+**Uncertain assessments**
+- The test runner's name filter was not documented where Step 4 asks for verification; `tests/run.php` accepts class names as arguments.
