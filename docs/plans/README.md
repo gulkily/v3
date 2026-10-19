@@ -197,3 +197,5 @@ and repair its navigation and affected references. See the
 - [Status frozen-frontend diagnosis](status_frozen_frontend_diagnosis/)
 
 - [Feature-flag change pages](feature_flag_change_pages/)
+
+- [Backup page redesign](backup_page_redesign/)
