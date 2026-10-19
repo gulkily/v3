@@ -3999,8 +3999,12 @@ const card = helper.createPendingReplyCard({
   status: 'Posting...'
 });
 const inserted = helper.insertPendingReplyCard(composer, card);
+const anonymousCard = helper.createPendingReplyCard({ body: 'Reply without an author label' });
 process.stdout.write(JSON.stringify({
   inserted,
+  anonymousChildren: anonymousCard.children.map((child) => child.className),
+  anonymousBody: anonymousCard.querySelector('.body').textContent,
+  anonymousStatus: anonymousCard.querySelector('[data-role="pending-reply-status"]').textContent,
   cardId: card.id,
   className: card.className,
   pendingId: card.attributes['data-pending-reply-id'],
@@ -4016,6 +4020,9 @@ NODE;
         $result = $this->runScript($script);
 
         assertSame(true, $result['inserted']);
+        assertSame(['body', 'meta pending-reply-status'], $result['anonymousChildren']);
+        assertSame('Reply without an author label', $result['anonymousBody']);
+        assertSame('Posting...', $result['anonymousStatus']);
         assertSame('pending-reply:test', $result['cardId']);
         assertSame('card post-card pending-reply-card', $result['className']);
         assertSame('pending-reply:test', $result['pendingId']);

@@ -75,3 +75,7 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Platform Docs retraction entry — concise title and task-focused description under Operations; reuses the existing document list and reader.
 
 - [x] **Agent button label** — Shortened “Request agent response” to “Agent” on shared thread root and reply cards. Updated the existing rendered-page assertion; targeted write-API smoke test, PHP syntax checks, and diff checks passed.
+
+## Pending reply identity notice — October 19, 2026
+
+- [x] Removed “Posting as your browser identity” from pending reply cards; omit the metadata row when no author label is available. Existing author labels, posting status and failure/retry behavior remain. Four targeted browser-signing renderer/submission/recovery checks and JavaScript syntax passed. Tracks Zenmemes feedback Feature 33.

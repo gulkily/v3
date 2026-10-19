@@ -42,7 +42,7 @@ Railspike cycle estimates use an uncapped scale from 0 upward, including decimal
 | 30 | Reproduce classic website designs as themes, extending the theme system if necessary. | [thread-20260906033429-d326109c](https://zenmemes.com/posts/thread-20260906033429-d326109c) | 1.5 | **Resolved** — classic themes available; further designs remain possible |
 | 31 | Always provide a button to record what happened without switching context; tagged important/accessibility. | [thread-20260906052218-cdd8d04b](https://zenmemes.com/posts/thread-20260906052218-cdd8d04b) | 0.6 | Open — resolution not verified |
 | 32 | After posting, redirect to the bottom of the thread rather than the new item permalink. | [reply-20261008094138-b1609bd1](https://zenmemes.com/posts/reply-20261008094138-b1609bd1) | 0.15 | Open — resolution not verified |
-| 33 | Remove the redundant Posting as your browser identity text. | [reply-20261008192706-f5c2eb4e](https://zenmemes.com/posts/reply-20261008192706-f5c2eb4e) | 0.03 | Open — resolution not verified |
+| 33 | Remove the redundant Posting as your browser identity text. | [reply-20261008192706-f5c2eb4e](https://zenmemes.com/posts/reply-20261008192706-f5c2eb4e) | 0.03 | **Resolved** — fallback notice and empty pending-reply metadata row removed |
 | 34 | Add an expanded view with a reasonably long excerpt of each post. | [thread-20261008203343-938289d2](https://zenmemes.com/posts/thread-20261008203343-938289d2) | 0.35 | Open — resolution not verified |
 
 ## Bug reports
@@ -69,6 +69,8 @@ Unless marked otherwise, these reports have no explicit resolution in their thre
 - Bug 02: theme cycling skips modes that resolve to the current appearance; explicit menu selection still permits Auto/System and Light separately. `node tests/browser/theme_cycle.cjs` covers light/dark system preferences, the next-theme label, persistence, checked options, wraparound, explicit selection, and equivalent-only choices. All 11 `ThemeRegistryTest` tests, JavaScript syntax, and diff checks passed. Visual browser verification remains open.
 - Bug 07: reproduced remaining wrapping with the current actions menu: the submit button inherited `width: 100%`, pushing the menu to another row. Giving that button automatic width keeps both controls on one row. `node tests/browser/reply_actions_layout.mjs` passed 20 Chromium combinations (320/375/390/480/768px; Light, Word 97, Chicago, Midnight), checking alignment, overlap, touch-target heights, menu opening, and horizontal overflow. Existing `compose_disclosure.mjs` checks and diff checks also passed. Physical mobile-device verification remains open.
 - Bug 03: compose normalization now restores cursor position and selection direction, adjusting selection offsets when text expands or is removed. Regression coverage includes a smart quote in the middle of a draft, punctuation expansion, unsupported-character removal, and unchanged text. All 82 `BrowserSigningNormalizationTest` tests, JavaScript syntax, and diff checks passed. Device verification remains open.
+
+- Feature 33: removed the generic browser-identity notice from pending reply cards and omitted the metadata row when no author label exists. Available author labels and posting status remain. Four targeted pending-reply renderer/submission/recovery checks and JavaScript syntax passed.
 
 ### Resolution evidence and remaining scope
 

@@ -715,10 +715,12 @@
     article.setAttribute("data-pending-reply-id", pendingId);
     article.setAttribute("data-parent-id", data.parentId || "");
 
-    const meta = document.createElement("p");
-    meta.className = "meta";
-    meta.textContent = data.authorLabel || "Posting as your browser identity";
-    article.appendChild(meta);
+    if (data.authorLabel) {
+      const meta = document.createElement("p");
+      meta.className = "meta";
+      meta.textContent = data.authorLabel;
+      article.appendChild(meta);
+    }
 
     const body = document.createElement("div");
     body.className = "body";
