@@ -225,3 +225,5 @@ Completed UI copy audit cleanup: all remaining findings handled individually, fa
 	Commit references and verification: docs/plans/ui_copy_audit_checklist.md
 
 Done: move Fastmod to the bottom of the Tools launcher and after Feature Flags in Tools subnavigation, preserving the existing order of other tools.
+
+Done: prevent Railspike widget background authentication from reloading thread pages; verified pending and approved authentication outcomes with tests/browser/railspike_auth_navigation.mjs.
