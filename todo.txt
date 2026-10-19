@@ -68,9 +68,6 @@ explore server-cooperative content deletion
 xmake it easy to import/sync content from another instance
 	make this schedulable too
 
-xidentify targets for "ephemeral testing"
-x	see https://zenmemes.com/threads/thread-20261006122804-184a64b6
-
 continue with docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md;
 
 when we import another instance, we end up with a lot of unapproved accounts
@@ -137,9 +134,6 @@ every page that has data listing should have a query to reproduce that listing i
 the database interface should open in a popup dialog that is as instant as possible and retain state and preserve background page state easy to return to.
 we should update existing viewable queries, such as in /tools/codebase/ to this new mode.
 
-we need to split the users page that is membership directory from the users page that is operator/moderator cosole
-	perhaps link from one to the other
-
 for common assumed commands, we should have assistance:
 example: wsl@Lenovo:~/agent/v3-codex-2$ ./v3 import
          Unknown command: import
@@ -160,19 +154,7 @@ Existing feature-flag test failure
 	WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence
 	Reproduced on main ed71ae0f: prepared feature-flag result lacks post_id used at tests/WriteApiSmokeTest.php:4261
 
-Add missing User Access icon for icon themes
-	Map /tools/user-access/ in public/assets/theme-nav-icons.css
-	Cover both Tools launcher and Tools subnavigation in Word97, Chicago, and Midnight
-	Verify the icon renders in all three themes; this omission has recurred three times
-	Standing navigation-icon reminder added to AGENTS.md; icon implementation remains pending
-
 i want to have a developer mode where i can self-approve without root approval
-
-
-User Access icon completed
-	Added person-and-key icon to Tools launcher and shared Tools subnavigation
-	Verified Word97, Chicago, and Midnight: launcher plus active/inactive navigation
-	Browser checked 16px dimensions, decoded SVGs, and visually inspected each theme
 
 nojs compatibility
 	this is going to be a big one
@@ -185,23 +167,8 @@ qr codes should match theme within reason
 remove the windark to midnight theme alias (ThemeRegistry::LEGACY_ALIASES, layout.php and theme_toggle.js reads, theme-hint cookie mapping)
 	once saved Midnight preferences have had time to migrate; see docs/plans/rename_windark_to_midnight/
 
-Review activity heading “Site development · operators only” for UI copy cleanup
-	tracked in docs/plans/ui_copy_audit_checklist.md
-
-Done: removed activity heading “Site development · operators only” completely; supersedes the review task above.
-
 UI copy cleanup: favor deleting text over editing or moving it into help; rely on an intuitive, explorable interface.
 	Keep essential warnings and recovery actions visible; apply this preference to the existing Explain task and audit checklist.
-
-Completed UI copy audit cleanup: all remaining findings handled individually, favoring removal; verified and committed each item.
-	Commit references and verification: docs/plans/ui_copy_audit_checklist.md
-
-Done: move Fastmod to the bottom of the Tools launcher and after Feature Flags in Tools subnavigation, preserving the existing order of other tools.
-
-Done: prevent Railspike widget background authentication from reloading thread pages; verified pending and approved authentication outcomes with tests/browser/railspike_auth_navigation.mjs.
-
-we need to roll "choose an image" into the ... button
-	also, change the caption to "Attach image"
 
 the way the merged consecutive user posts expand on hover is very jarring, needs redo
 
