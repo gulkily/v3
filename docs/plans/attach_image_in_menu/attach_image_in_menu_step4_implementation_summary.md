@@ -43,3 +43,17 @@ Branch: `attach_image_in_menu`. Planning commit: `0bd7b1c4`.
   - `php tests/run.php WriteApiSmokeTest`: 1 failure (`testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence`), which reproduces identically on unchanged Stage 2 code.
 - Notes:
   - Anonymous reply and Clear fields are now one tap further away in reply forms, as approved in Step 2. Reply flows on the thread page and compose-reply page were not clicked through in a browser beyond the Forte pane.
+
+## Stage 4 - Coverage and copy cleanup
+- Changes:
+  - Browser test also asserts the Forte new-thread dialog menu entry reads `Attach image`.
+  - The image-size error in `image_prepare.js` now reads "Attach an image of at most 32 MiB." so "Choose an image" no longer appears in the UI.
+  - `todo.txt` notes the chooser move under the "module should look like the other modules" item; the earlier x-button entry is committed here too. `ui_copy_audit_checklist.md` gains a completed entry.
+- Verification:
+  - `node tests/browser/image_content_browser.mjs`: passed (Forte reply pane and new-thread dialog menus, 44px target at 390px width on the thread form, eligibility hiding).
+  - `php tests/run.php ImageContentTest LocalAppSmokeTest`: passed (146 run, 146 passed).
+  - Grep: "Choose an image" remains only in historical plan docs and the todo item's quoted text.
+  - Navigation icon themes: not applicable (no navigation destination).
+  - Not run: full PHP suite; the 44px check on the reply-form menu entry (same CSS as the checked thread entry); physical-device testing.
+- Notes:
+  - The `…` button position (todo.txt line 112) was left unchanged by request.

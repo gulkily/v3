@@ -23,6 +23,7 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [ ] **Offline health recovery** — [offline_health.js](../../public/assets/offline_health.js), HTTP guidance. Lead with the HTTPS link and the action needed. Move “service workers or Cache Storage” into diagnostic details rather than requiring users to understand browser APIs.
 - [ ] **Private message send recovery** — [private_message_compose.js](../../public/assets/private_message_compose.js), composed failure feedback. Multiple conditional suffixes can stack delivery and storage caveats. Consolidate the active state into a short outcome and next action. Preserve unconfirmed-delivery, duplicate-send, and unsaved-draft warnings; do not shorten away “keep this page open” when recovery cannot be saved.
 - [ ] **Root approval evidence** — [root_approval.php](../../templates/pages/root_approval.php). Missing authorizer/acceptance-time information is stated twice around repository history. Consolidate it near the evidence; keep the distinction between commit dates and acceptance dates. This is an evidence page, so technical detail has a clearer purpose here.
+- [x] **Image attach control** — [image_compose_fields.php](../../templates/partials/image_compose_fields.php), compose menus. The standalone “Choose an image” button became “Attach image” in the `…` menu of thread and reply forms; the error text no longer says “Choose an image”.
 
 ## Verify each fix
 

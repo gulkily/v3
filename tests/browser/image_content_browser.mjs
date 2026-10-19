@@ -230,6 +230,7 @@ try {
  await forteReply.locator('.image-upload-preview img').waitFor();
  await page.locator('[data-paned-board-new]').click();
  const forteNew=page.locator('[data-paned-new-thread-dialog]');await forteNew.locator('.image-compose-fields:not([hidden])').waitFor();
+ assert.equal(await (await attachEntry(forteNew)).textContent(),'Attach image');await forteNew.locator('.compose-action-menu-toggle').click();
  assert.equal(await forteNew.locator('.image-upload-preview').isVisible(),false);
  assert.equal(await forteReply.locator('.image-upload-preview').isVisible(),true);
  await forteNew.locator('[data-paned-new-thread-cancel]').click();
