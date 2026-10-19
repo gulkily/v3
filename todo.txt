@@ -263,5 +263,5 @@ backup page: download sizes
 	needs a small read-only size helper in InstancePageController; avoid a
 		recursive tree walk on every page view (cache or compute lazily)
 	risk: a stale or loose number misleads disk-space checks before a backup
-- GPG agent leak: one-time manual cleanup of already-leaked gpg-agent processes (see docs/plans/gpg_agent_leak_*)
+- Pre-existing test failures on main (found during gpg_agent_leak Stage 5): ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest, LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract, ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts, WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence, WriteApiSmokeTest::testOperatorSecurityReviewRequiresAuthenticatedRootAndCorrelatesPolicyChanges
 - AgentIdentityServiceTest profile page assertion 'Visible username:</strong> reply-agent' fails on main (found during gpg_agent_leak Stage 4)

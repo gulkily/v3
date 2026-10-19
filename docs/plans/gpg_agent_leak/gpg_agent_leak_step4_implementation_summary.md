@@ -43,3 +43,18 @@ Debug mode: enabled (inherited from Step 3)
   - Failed, pre-existing: `testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts` fails at the later `Visible username:</strong> reply-agent` profile assertion. It fails identically on unmodified `main` (checked), so it is unrelated to this change and not fixed here.
 - Notes:
   - Logged as separate work; scope not expanded.
+
+## Stage 5 - Acceptance on this host and recovery
+- Changes:
+  - Found the main leak source with the first full-suite run: test helpers, not app code. All 44 leftover agents were `gpg-agent --homedir /tmp/forum-rewrite-approval-gpg-*`, started by `WriteApiSmokeTest::createSigningKey`. The 1,325 homes already in `/tmp` at the start had the same prefix.
+  - `WriteApiSmokeTest`: `deleteTree` routes `forum-rewrite-approval-gpg-*` homes through `GpgHomeCleaner::dispose`; `createSigningKey` registers a shutdown dispose, because many tests never delete their signing home; `generatePublicKey` and the time-conflict retry use `dispose`.
+  - `LocalAppSmokeTest::generatePublicKey` uses `dispose`.
+  - This is within the Stage 5 mitigation ("grep for remaining gpg call sites and extend").
+- Verification:
+  - Full suite before the test-helper fix: agents 0 → 44, temp homes 1,325 → 1,369 (leak reproduced).
+  - Full suite after: agents 0 → 0, temp homes 0 → 0 (passed).
+  - `php tests/run.php`: 1335 run, 1329 passed, 6 failed. All 6 also fail on unmodified `main` (checked in a temporary worktree), so they are not caused by this change: `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts`, `LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract`, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, `WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence`, `WriteApiSmokeTest::testOperatorSecurityReviewRequiresAuthenticatedRootAndCorrelatesPolicyChanges`.
+  - A first attempt at the `deleteTree` change failed 17 more tests because it kept iterating after `dispose` had removed the directory; it now returns early. Final run above.
+- Notes:
+  - Recovery for already-leaked processes (done once on this host during the stage): `pgrep -f 'gpg-agent --homedir /tmp/forum-rewrite-' | xargs -r kill; rm -rf /tmp/forum-rewrite-*gpg*`. Do not use `pkill -f` with that pattern from a shell whose own command line contains it, since it kills that shell.
+  - During verification, every `gpg-agent` on the host was stopped (`pgrep -x gpg-agent | xargs kill`); a personal agent restarts on demand.
