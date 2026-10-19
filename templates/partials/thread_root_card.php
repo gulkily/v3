@@ -179,7 +179,7 @@ if (!is_array($postAnalysisLabels)) {
 <?php endif; ?>
   <div class="button-row button-row-natural post-card-actions thread-root-actions">
 <?php if (!$isQdbQuoteRoot): ?>
-    <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
+    <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>" data-inline-reply-link>Reply</a>
 <?php endif; ?>
 <?php if (!$isQdbQuoteRoot && !$isRetracted): ?>
     <button

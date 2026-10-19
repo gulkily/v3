@@ -1,5 +1,57 @@
 # UI copy audit checklist
 
+## Next audit — candidates to verify
+
+These source-review candidates are not confirmed removal decisions. Review the
+rendered states before choosing changes; keep necessary consequences and recovery
+visible. An unchecked item remains open until changes and verification are recorded,
+or the review establishes that the existing copy should remain.
+
+- [ ] **Outbox** — Review repeated action summaries and technical timestamps,
+  including “Action time (signed)” and “Integration time pending.” Check empty,
+  draft, queued, published, failed, and retry states. Keep delivery uncertainty,
+  unsaved work, and recovery actions clear. Source: `public/assets/outbox.js`.
+- [ ] **Bookmarklets** — Review overlap among the introduction, installation
+  instructions, group notes, and button descriptions. Check same-window and
+  new-window groups, copy success/failure, and phone installation. Retain necessary
+  setup, compatibility, and popup-blocking guidance. Source:
+  `templates/pages/bookmarklets.php` and its browser feedback.
+- [ ] **Fastmod** — Review the enabled-score summary against checked controls,
+  repeated selection instructions, and whether full prompts need to appear by
+  default. Check operator/read-only views, settings failures, and save feedback.
+  Preserve the meaning of scores, the minimum-selection requirement, and access
+  recovery. Source: `templates/pages/fastmod.php` and its browser feedback.
+- [ ] **Offline reading** — Review repeated “Showing saved…” success feedback
+  and overlapping missing-content notices. Check saved board, tags, thread,
+  unavailable content, queued likes, and reconnect outcomes. Retain snapshot scope,
+  freshness limitations, and actionable recovery. Sources:
+  `templates/pages/offline_reader.php`, `public/assets/offline_reader.js`.
+- [ ] **Thread/post analysis** — Review expanded analysis for overlapping
+  summaries and technical fields that do not help the reader make a decision.
+  Check root/reply cards, post detail, and affected alternate views, including
+  pending, failed, and completed states. Preserve useful attribution and moderation
+  consequences. Source: `templates/partials/post_card.php` and shared feedback.
+- [ ] **Feature Flags** — Review descriptions, state badges, save feedback,
+  and operator-access explanations for duplication. Check search/no matches,
+  enabled/disabled/overridden flags, and save failure/retry. Keep site-wide effects
+  and flag-specific consequences beside their controls. Sources:
+  `templates/pages/feature_flags.php`, `public/assets/feature_flags.js`.
+- [ ] **Users empty state** — Review whether the explanation following “No
+  visible users yet” adds necessary information. Check truly empty and
+  approved-without-visible-content cases, including affected alternate views.
+  Source: `templates/pages/users.php`.
+
+For each item:
+
+- [ ] Inspect phone and desktop rendering after real content loads, including
+  relevant expanded, empty, pending, success, partial, and failure states.
+- [ ] Review shared templates and browser/server feedback together; remove
+  repeated explanations and hide empty status elements.
+- [ ] Verify the main action, necessary consequences, keyboard/touch access,
+  recovery, page overflow, and primary-action stability in affected states.
+- [ ] Update affected assertions, run relevant existing checks, and record the
+  decision, changes, verification, and unresolved follow-ups before closing it.
+
 Reduce reading required to complete ordinary forum tasks. Favor removing text over rewriting or relocating it, relying on an intuitive, explorable interface. For every finding below, first consider deleting the explanation; suggestions to shorten text or move it into help are fallbacks only when users need information the interface cannot communicate. Keep material consequences and recovery actions beside the affected control.
 
 Source review dated October 17, 2026 covered page templates, shared partials, and selected first-party browser messages. The original review identified copy and presentation findings without rendered-state verification. Per-item notes below record the subsequent implementation and checks.
@@ -79,3 +131,10 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 ## Pending reply identity notice — October 19, 2026
 
 - [x] Removed “Posting as your browser identity” from pending reply cards; omit the metadata row when no author label is available. Existing author labels, posting status and failure/retry behavior remain. Four targeted browser-signing renderer/submission/recovery checks and JavaScript syntax passed. Tracks Zenmemes feedback Feature 33.
+
+## SQLite viewer copy cleanup — October 19, 2026
+
+- [x] Removed the backup warning, initial loading prerequisite/status copy, redundant query heading, preset descriptions, and query success announcement. Reduced the introduction to read-only/local execution, shortened download links and invalid-query feedback, and kept provenance plus the saved-data caveat in one place. Empty status elements are hidden; loading, errors, refresh recovery, pagination, and effective-query details remain.
+- Verification: PHP/JavaScript syntax and diff checks passed; all six targeted SQLite smoke checks passed after updating copy assertions and one stale preset-selection assertion. Existing listing-query browser suite passed, including standalone/dialog use, pagination/sorting, storage denial, invalid queries, and load recovery. Live 390px/1280px checks covered initial/loaded/success/invalid-query states; desktop had no overflow. The loaded mobile page initially had horizontal overflow, also reproduced using the prior JavaScript (397px document at 390px viewport); resolved in the follow-up below.
+
+- [x] **SQLite mobile overflow follow-up** — Constrained the query pagination flex item to its output width so its controls wrap on narrow screens. Added standalone browser coverage at 320px, 390px, and 1280px for page/container overflow and working Previous/Next controls; the full listing-query browser suite passed. Live 320px/390px checks also verified horizontal table scrolling and expanded effective-query details without page overflow. Diff checks passed.

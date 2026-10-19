@@ -95,6 +95,21 @@
       openComposer(false);
     }
 
+    if (body) {
+      document.querySelectorAll("[data-inline-reply-link]").forEach(function (link) {
+        link.addEventListener("click", function (event) {
+          if (event.defaultPrevented || event.button !== 0 || event.ctrlKey ||
+              event.metaKey || event.shiftKey || event.altKey ||
+              link.hasAttribute("download") || (link.target && link.target !== "_self")) {
+            return;
+          }
+
+          event.preventDefault();
+          openComposer(true);
+        });
+      });
+    }
+
     if (trigger) {
       trigger.addEventListener("click", function (event) {
         event.preventDefault();

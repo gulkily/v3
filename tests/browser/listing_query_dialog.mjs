@@ -169,6 +169,23 @@ try {
     await page.getByRole('button', { name: 'Close', exact: true }).click();
   await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   }
+  await page.goto('https://query.test/standalone');
+  await page.getByRole('button', { name: 'Load Database', exact: true }).click();
+  await page.locator('[data-role="sqlite-query-panel"]').waitFor({ state: 'visible' });
+  await input.fill('SELECT root_post_id, subject FROM threads');
+  await page.getByRole('button', { name: 'Run Query', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-status"]').dataset.state === 'ok');
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    assert.equal(await page.locator('[data-role="sqlite-query-pagination"]').evaluate(el => {
+      const output = el.closest('.sqlite-query-output').getBoundingClientRect();
+      return el.getBoundingClientRect().right <= output.right + 1 && el.scrollWidth <= el.clientWidth + 1;
+    }), true, `standalone pagination fits its output at ${width}px`);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
+      `standalone page fits at ${width}px`);
+    await page.locator('[data-role="sqlite-query-pagination"]').getByRole('button', { name: 'Next', exact: true }).click();
+    await page.locator('[data-role="sqlite-query-pagination"]').getByRole('button', { name: 'Previous', exact: true }).click();
+  }
   const expected = JSON.parse(execFileSync('php', ['-r', `require "autoload.php"; require "tests/BoardListingQueryTest.php"; $p=(new BoardListingQueryTest())->fixture(); $out=[]; foreach (['all','liked'] as $v) foreach (['newest','oldest','top'] as $s) { $rows=$p->query(ForumRewrite\\Tools\\BoardListingQuery::context($v,$s)['querySql'])->fetchAll(PDO::FETCH_ASSOC); $out["$v-$s"]=array_column($rows,'root_post_id'); } echo json_encode($out);`], { encoding: 'utf8' }));
   await page.evaluate(() => caches.delete('forum-query-read-model-v1'));
   const timings = {};

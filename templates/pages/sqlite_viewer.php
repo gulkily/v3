@@ -8,20 +8,16 @@
   <p class="meta" data-role="sqlite-status" aria-live="polite" hidden></p>
 <?php else: ?>
   <article class="card">
-    <p class="meta">The database preserves image references, not image files. Keep the separate image backup with your repository backup.</p>
     <h1>SQLite Viewer</h1>
-    <p>Inspect the published read-model database in your browser. This viewer is read-only: queries run locally against a copy loaded into this page, and are not sent to the server.</p>
-    <p><strong>Source:</strong> <a href="/downloads/read_model.sqlite3">/downloads/read_model.sqlite3</a></p>
-    <p class="meta" data-role="sqlite-source-details">Saved data may differ from the live page. Source revision will appear after loading.</p>
-    <p><strong>Local query pack:</strong> <a href="/downloads/sqlite_query_catalog.sql">sqlite_query_catalog.sql</a></p>
+    <p>Read-only. Queries run locally in your browser.</p>
+    <p><a href="/downloads/read_model.sqlite3">Download database</a></p>
+    <p class="meta" data-role="sqlite-source-details" hidden></p>
+    <p><a href="/downloads/sqlite_query_catalog.sql">Download query pack</a></p>
     <p><button type="button" data-action="load-sqlite">Load Database</button></p>
-    <p class="meta" data-role="sqlite-status" aria-live="polite">Database not loaded.</p>
+    <p class="meta" data-role="sqlite-status" aria-live="polite" hidden></p>
   </article>
 <?php endif; ?>
   <article class="card" data-role="sqlite-query-panel" hidden>
-<?php if (empty($embedded)): ?>
-    <h2>Run query</h2>
-<?php endif; ?>
     <div class="sqlite-query-layout" data-query-layout>
       <div class="sqlite-query-editor">
 <?php if (empty($embedded)): ?>
