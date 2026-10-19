@@ -65,11 +65,11 @@ final class PlatformDocsPageTest
         $architecture = $this->render('/docs/architecture/public_architecture_and_trust.md');
 
         assertTrue(str_contains($catalogued, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
-        assertTrue(str_contains($catalogued, '<h1>Extension and Improvement Cookbook</h1>'));
+        assertTrue(str_contains($catalogued, '<h1 id="extension-and-improvement-cookbook">Extension and Improvement Cookbook</h1>'));
         assertTrue(str_contains($uncatalogued, 'Repository source: <code>docs/railspike/README.md</code>'));
-        assertTrue(str_contains($uncatalogued, '<h1>Railspike</h1>'));
+        assertTrue(str_contains($uncatalogued, '<h1 id="railspike">Railspike</h1>'));
         assertTrue(str_contains($architecture, 'Repository source: <code>docs/architecture/public_architecture_and_trust.md</code>'));
-        assertTrue(str_contains($architecture, '<h1>Public Architecture and Trust Model</h1>'));
+        assertTrue(str_contains($architecture, '<h1 id="public-architecture-and-trust-model">Public Architecture and Trust Model</h1>'));
         assertTrue(str_contains($architecture, 'The public record lives in Git'));
     }
 
@@ -78,7 +78,7 @@ final class PlatformDocsPageTest
         $workflow = $this->render('/docs/railspike/RAILSPIKE.md');
         $guide = $this->render('/docs/reference/railspike_workflow.md');
         $legacy = $this->render('/docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md');
-        assertStringContains('<h1>Railspike</h1>', $workflow);
+        assertStringContains('<h1 id="railspike">Railspike</h1>', $workflow);
         assertStringContains('Git subtree', $guide);
         assertStringContains('tree has been removed', strip_tags($guide));
         assertStringContains('<h1>Not Found</h1>', $legacy);
@@ -119,6 +119,26 @@ final class PlatformDocsPageTest
         assertTrue(!str_contains($html, '<script>'));
         assertTrue(!str_contains($html, 'href="javascript:'));
         assertTrue(str_contains($html, 'href="https://example.test/docs"'));
+    }
+
+
+    public function testCoreFormattingAndDocumentScopedAnchors(): void
+    {
+        $source = "# Same\n\n# Same\n\n- [x] Done\n  - Nested\n\n[ref][r] and ~~old~~ and _emphasis_\n\n[r]: https://example.test\n";
+        $html = PublicMarkdownRenderer::render($source);
+        assertStringContains('id="same"', $html);
+        assertStringContains('id="same-1"', $html);
+        assertStringContains('disabled=""', $html);
+        assertSame(2, substr_count($html, '<ul>'));
+        assertStringContains('<del>old</del>', $html);
+        assertStringContains('<em>emphasis</em>', $html);
+        assertStringContains('href="https://example.test"', $html);
+        assertSame($html, PublicMarkdownRenderer::render($source));
+        $guide = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'));
+        assertSame(4, substr_count($guide, '<table>'));
+        assertSame(1, substr_count($guide, '<ol>'));
+        $procedure = explode('</ol>', explode('<ol>', $guide)[1])[0];
+        assertSame(6, substr_count($procedure, '<li>'));
     }
 
     private function render(string $path): string

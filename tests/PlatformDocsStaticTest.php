@@ -46,8 +46,8 @@ final class PlatformDocsStaticTest
             $invalid = $this->render($controller, '/docs/%2e%2e/README.md');
             $workflow = $this->render($controller, '/docs/railspike/RAILSPIKE.md');
             $readme = $this->render($controller, '/docs/railspike/README.md');
-            assertStringContains('<h1>Railspike</h1>', $workflow);
-            assertStringContains('<h1>Railspike</h1>', $readme);
+            assertStringContains('<h1 id="railspike">Railspike</h1>', $workflow);
+            assertStringContains('<h1 id="railspike">Railspike</h1>', $readme);
 
             assertTrue(str_contains($index, 'route-source: static-html'));
             assertTrue(str_contains($index, 'Platform Docs'));
