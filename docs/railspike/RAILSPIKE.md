@@ -32,6 +32,36 @@ Do not automatically reprint instruction files. Explicit requests to show them r
 
 Each phase file ends with instructions for when to proceed so you never overrun the context window.
 
+## Experimental Effort Estimation
+
+This is an opt-in experiment for explicitly selected study cycles, not a default score requirement. The consuming project's study ledger owns its candidate selection, reference set and acceptance criteria; do not embed project paths or study data in these reusable instructions. Existing approvals, documentation boundaries and commit cadence still apply. A score never authorizes implementation or expands scope.
+
+**Activation and recovery**
+- Activate only when the user or an approved consuming-project study selects the cycle. In its first artifact, record `Effort study: <study/candidate ID>` and a relative link to the host ledger below the Plan navigation/debug state; inherit this field into subsequent artifacts. An approved setup/protocol alone does not select all future features.
+- On step entry, resumption and handoff, restore selection, the latest snapshot, scope version and frozen references from the current artifact and ledger. Unselected cycles require no score, extra field or ledger update. An absent field is not opt-out evidence when the ledger already selects the cycle; resolve conflicting selection before rating.
+- If a reference is missing or its content hash differs, restore the recorded source or explicitly version an accepted replacement before rating. Do not silently reset the unit or manufacture a score. Missing historical checkpoints stay missing; skipped Step 1 is not applicable, not zero. Any later reconstruction is explicitly retrospective.
+
+**Score semantics and evidence**
+- Use the study's frozen references with **1.0 = the largest well-scoped, releasable slice we would comfortably approve for one Railspike cycle, including required verification and documentation**. Nonnegative decimals are freeform. Scores above 1.0 prompt a split discussion, not an automatic cycle count.
+- Each projection estimates total work for the scoped cycle from its starting point: inspection, planning, implementation, required verification, documentation and ordinary correction. It is not remaining effort, hours, priority, an approval, measured actual effort or an additive delivery forecast. Do not derive it from lines, stage counts or commit timestamps.
+- Preserve inherited estimates separately and record prior exposure. Claim independent ratings only when independently collected before discussion; otherwise identify single-rater/exposed judgments honestly. Record active-work measurements only when reliable, separately from scores.
+- Keep checkpoint snapshots in their step artifacts, with a comparison index in the host ledger. Each snapshot records study/candidate ID, checkpoint, UTC date, rater, score, scope version (including starting revision, outcome and recovery), reference version, exposure and reason for change. Explicitly reaffirm unchanged values. Append revisions and retain original scope/scores and approval context; distinguish new understanding from changed scope.
+
+**Checkpoints**
+| Checkpoint | Required record for selected cycles |
+| --- | --- |
+| Intake | Preserve initial scoped estimate in the ledger or first artifact before detailed implementation inspection; disclose earlier inspection instead of pretending it was prospective. |
+| Step 1 handoff, if used | Projected total for the recommended scoped approach. |
+| Step 2 handoff | Projected total for defined outcome, scope and recovery. |
+| Step 3 handoff | Projected total informed by planned implementation and verification. |
+| Step 4 entry | Before implementation, preserve or explicitly reaffirm the Step 3 projection in the summary created after the planning commit. |
+| Step 4 discoveries/revisions | Append a revised total when warranted, before dependent work where possible; changed scope still requires renewed approvals. |
+| Step 4 closeout | Separately labeled retrospective scope assessment, verification/omissions and maintainer comfortable-fit judgment. Never call this a prospective score or measured actual. |
+
+Before each planning handoff, capture the applicable snapshot and link it from the ledger when that write is authorized. Do not duplicate snapshots merely because a phase resumes. Include a brief projected-total statement in the normal handoff for selected cycles. Scope ledger updates into that cycle's approved documentation boundary; pending planning updates remain uncommitted and accumulated outcome updates belong in its closeout commit. Never bypass the planning-commit file gate to commit a ledger early. If ledger edits are outside the current scope, retain the artifact snapshot and record the pending ledger update until authorized.
+
+At closeout, retain delivered scope, starting/final revisions, commits/diffs, planned/completed stages, verification and omissions, corrective work versus new requests, splits and the maintainer judgment. If that judgment is unavailable, mark study acceptance pending rather than inventing it; technical cycle completion and study outcome acceptance are distinct. Keep original scope/estimate when splitting and follow the host study's explicit outcome-counting rules; do not silently count child cycles as independent observations. The trial's later assessment and any reference revision need their own approved scope.
+
 ## Railspike Debug Mode
 
 Debug mode is optional feedback for improving Railspike's instructions, not application debugging. New workflows default to disabled unless the consuming project opts in. Enable or disable it for a workflow with a plain-language request such as “Enable Railspike debug mode for this workflow” or “Disable Railspike debug mode.”

@@ -6,7 +6,7 @@ Favor removing UI text over rewriting or relocating it. Rely on an intuitive, ex
 
 ## Todo
 
-Append new entries to todo.txt.
+Do not modify `todo.txt` unless the user explicitly requests an edit to that file. Record task progress and follow-up work in the relevant planning or implementation documents instead.
 
 ## Navigation icons
 

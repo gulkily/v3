@@ -34,6 +34,7 @@ $testFiles = [
     __DIR__ . '/AgentReplyTaskTest.php',
     __DIR__ . '/AgentResponseGeneratorTest.php',
     __DIR__ . '/AgentResponseTaskTest.php',
+    __DIR__ . '/AgentParticipantContextTest.php',
     __DIR__ . '/ApplicationServerTimingTest.php',
     __DIR__ . '/AccountKeyPageHooksTest.php',
     __DIR__ . '/AuthNavigationTest.php',

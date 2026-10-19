@@ -12,6 +12,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Rename windark theme to midnight](rename_windark_to_midnight/)
 - [Attach image in the compose menu](attach_image_in_menu/)
+- [Agent personality and participation context](agent_personality_and_multiple_agents/)
+
+- [Effort estimation trial](effort_estimation_trial/) · [Maintainer checklist](effort_estimation_trial_maintainer_checklist.md)
+
 - [Scripture response reliability revision](scripture_response_reliability_revision/)
 
 - [Scripture response reliability](scripture_response_reliability/)

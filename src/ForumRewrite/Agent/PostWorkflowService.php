@@ -964,6 +964,7 @@ final class PostWorkflowService
                 $stmt->execute([$requester]); $approved = $stmt->fetchColumn(); $stmt->closeCursor();
                 if ((int) $approved !== 1) { throw new ScriptureVerificationException('Scripture requester is no longer approved.'); }
             },
+            new AgentParticipantContext($this->pdo(), $this->repositoryRoot),
         );
     }
 
