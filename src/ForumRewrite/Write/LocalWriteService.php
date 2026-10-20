@@ -143,6 +143,7 @@ class LocalWriteService
                 'status' => 'ok',
                 'post_id' => $postId,
                 'thread_id' => $postId,
+                'fastmod_new_post' => true,
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
@@ -465,6 +466,7 @@ class LocalWriteService
                 'thread_id' => $threadId,
                 'record_path' => $recordPath,
                 'signature_path' => $recordPath . '.asc',
+                'fastmod_new_post' => true,
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
@@ -2108,7 +2110,7 @@ class LocalWriteService
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
 
-            $updatedState = FeatureFlagEvaluator::forRepository($this->repositoryRoot)->evaluate($key);
+            $updatedState = $this->featureFlags->withSiteValues($values)->evaluate($key);
 
             return [
                 'status' => 'ok',
@@ -2300,7 +2302,7 @@ class LocalWriteService
             );
             $this->invalidator()->invalidateFeatureFlags();
             $this->deletePreparedPost($prepareToken);
-            $updatedState = FeatureFlagEvaluator::forRepository($this->repositoryRoot)->evaluate($action->flagKey);
+            $updatedState = $this->featureFlags->withSiteValues($values)->evaluate($action->flagKey);
 
             return [
                 'status' => 'ok', 'key' => $action->flagKey,

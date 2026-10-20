@@ -2,8 +2,7 @@
   <article class="card"><?= $partial('partials/tools_nav.php') ?></article>
   <article class="card">
     <h1>Fastmod</h1>
-    <p>Enable Fastmod and automatic scoring in <a href="/tools/feature-flags/#flag-FAST_SCORING_ENABLED">Feature Flags</a>.</p>
-    <p>Choose which scores to record for future evaluations. Scores do not trigger actions.</p>
+    <p><a href="/tools/feature-flags/#flag-FASTMOD_AUTOMATIC_TAGGING_ENABLED">Feature Flags</a></p>
 <?php if ($settingsError !== null): ?>
     <p role="alert"><?= $e($settingsError) ?></p>
 <?php else: ?>

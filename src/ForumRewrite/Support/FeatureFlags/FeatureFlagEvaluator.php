@@ -46,6 +46,12 @@ final class FeatureFlagEvaluator
         }
     }
 
+    /** Re-evaluate a saved site snapshot without losing private dependency settings. */
+    public function withSiteValues(array $values): self
+    {
+        return new self($this->registry, $values, privateConfigValues: $this->privateConfigValues);
+    }
+
     /**
      * @return list<FeatureFlagState>
      */
@@ -145,6 +151,19 @@ final class FeatureFlagEvaluator
                 null,
                 $this->siteValues[$definition->key],
             );
+        }
+
+        // Compatibility is a fallback, never an override of the shared site switch.
+        if ($key === FeatureFlagRegistry::FASTMOD_AUTOMATIC_TAGGING_ENABLED) {
+            $legacyEnvironment = $this->environmentFlagValue('FASTMOD_META_TAGGING_ENABLED');
+            if ($legacyEnvironment !== null) {
+                return new FeatureFlagState($definition, $legacyEnvironment, 'legacy-environment', siteError: $this->siteError);
+            }
+            if (array_key_exists('FASTMOD_META_TAGGING_ENABLED', $this->privateConfigValues)) {
+                return new FeatureFlagState($definition,
+                    $this->configFlagValue($this->privateConfigValues['FASTMOD_META_TAGGING_ENABLED'], false),
+                    'legacy-private-config', siteError: $this->siteError);
+            }
         }
 
         return new FeatureFlagState(
