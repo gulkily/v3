@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Shared Fastmod automatic-tagging flag](fastmod_tagging_flag/)
+
 - [Fastmod rubric actions — automatic meta tagging](fastmod_rubric_actions/)
 
 - [Theme-specific selected nav styling](nav_active_theme_override/)
