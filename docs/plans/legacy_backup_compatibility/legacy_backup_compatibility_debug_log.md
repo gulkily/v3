@@ -58,3 +58,23 @@ No supported findings.
 ### Uncertain assessments
 
 - Source: `docs/railspike/docs/workflow/step3_development_plan_after.md`, stage sizing and one-page checklist. Four stages separate compatibility, diagnostics, HTTP acceptance, and operations; test fixture work may require splitting a stage. Printed page count was not verified. Preserve explicit stage sizing review before implementation rather than claiming measured duration.
+
+## 2026-10-20T22:53:03Z — Step 4
+
+### Necessary/useful instructions
+
+- Source: `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. The planning commit and four stage commits each preserve their verification and summary boundary. This made the local fix, regression proof, and operator handoff reviewable separately; retain the protocol.
+- Source: `docs/railspike/docs/workflow/step4_implementation_after.md`, Final Verification Checklist 7. Reporting baseline failures and named-user evidence separately prevented 1372 passing tests from being represented as a green full suite or live incident recovery. Retain the explicit evidence requirements.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Source: `docs/railspike/RAILSPIKE.md`, Experimental Effort Estimation. This cycle was not selected; no scoring or ledger updates were performed.
+
+### Uncertain assessments
+
+- Source: `docs/railspike/docs/workflow/step3_development_plan_do.md`, stage sizing. Stage 1 and Stage 3 test changes exceeded the approximate line target while remaining focused on their approved outcome. Line count alone was a poor indicator of fixture complexity; the one-hour sizing target and stage scope remained useful. Consider clarifying that fixture/test lines do not independently demand splitting a releasable slice.
+- Source: `docs/railspike/docs/workflow/step4_implementation_after.md`, log-only handoff commit. This report uses the required separate commit after the four implementation stages; its benefit relative to a final-stage report is not established from one cycle. No workflow change is proposed here.
