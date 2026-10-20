@@ -33,6 +33,7 @@ Usage:
   ./v3 openpgp smoke [--origin=zenmemes.com]
   ./v3 openpgp canary --confirm-production-write [--origin=http://zenmemes.com] [--browser-executable=/path/to/chromium] [--headed]
   ./v3 fast-score status|audit|retry|invalidate|smoke|prune [...options]
+  ./v3 fast-score meta-status|meta-remove|meta-rollback|meta-retry [...options]
   ./v3 agent-reply status [post_id] [--limit=25] [--database-path=/path/post_index.sqlite3]
   ./v3 agent-reply test [--timeout=30]
   ./v3 agent-reply test-local

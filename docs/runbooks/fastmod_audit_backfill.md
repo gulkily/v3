@@ -1,7 +1,8 @@
 # Fastmod Historical Audit and Backfill
 
 Use this runbook only as a deployment operator. Historical scoring is opt-in;
-normal Fastmod publication behavior is unchanged.
+historical evaluations never create automatic meta tags. See
+[root meta tagging](./fastmod_meta_tagging.md) for the separate new-publication-only policy.
 
 Before auditing, use Tools → Fastmod to confirm at least one enabled rubric.
 The audit and backfill target the current enabled set and template revision;

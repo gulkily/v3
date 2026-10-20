@@ -25,6 +25,7 @@ final class FeatureFlagRegistry
     public const ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL = 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL';
     public const AUTOMATIC_GUEST_KEYPAIR_ENABLED = 'FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED';
     public const USERNAME_CHANGES_ENABLED = 'FORUM_USERNAME_CHANGES_ENABLED';
+    public const FASTMOD_AUTOMATIC_TAGGING_ENABLED = 'FASTMOD_AUTOMATIC_TAGGING_ENABLED';
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
 
@@ -217,6 +218,16 @@ final class FeatureFlagRegistry
                 false,
                 self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
                 'private',
+                requiresEnabledFlag: self::FAST_SCORING_ENABLED,
+                group: 'FASTMOD',
+            ),
+            new FeatureFlagDefinition(
+                self::FASTMOD_AUTOMATIC_TAGGING_ENABLED,
+                'Automatic Fastmod tagging',
+                'Apply tags from eligible Fastmod results. Disabling preserves existing tags.',
+                false,
+                self::FASTMOD_AUTOMATIC_TAGGING_ENABLED,
+                siteMutable: true,
                 requiresEnabledFlag: self::FAST_SCORING_ENABLED,
                 group: 'FASTMOD',
             ),

@@ -51,6 +51,7 @@ use RuntimeException;
  */
 final class RouteServices
 {
+    private ?PDO $tagReadConnection = null;
     private bool $viewerProfileResolved = false;
     private ?array $resolvedViewerProfile = null;
     private bool $lenientViewerProfileResolved = false;
@@ -89,7 +90,8 @@ final class RouteServices
 
     public function pdo(): PDO
     {
-        return (new ReadModelConnection($this->databasePath))->open();
+        return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
+            (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
     }
 
     public function databasePath(): string
@@ -228,7 +230,7 @@ final class RouteServices
         );
     }
 
-    public function enqueueFastScoreForPublishedPost(string $postId): void
+    public function enqueueFastScoreForPublishedPost(string $postId, bool $newLocalPost = false): void
     {
         $privateConfig = PrivateConfig::load($this->projectRoot);
         $config = FastScoringConfig::fromPrivateConfig($privateConfig);
@@ -252,6 +254,13 @@ final class RouteServices
         $scoreDirectory = dirname($scorePath);
         if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
             throw new RuntimeException('Fastmod database directory is not writable.');
+        }
+        if ($newLocalPost && $post['post_id'] === $post['thread_id']
+            && \ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($this->projectRoot,$this->repositoryRoot)
+            && in_array('meta', (new \ForumRewrite\Scoring\FastmodSelection($this->projectRoot))->enabled($config), true)) {
+            (new \ForumRewrite\Scoring\FastmodMetaStore(new PDO('sqlite:' . $scorePath)))->recordEligibleRoot(
+                $postId, (string)$context['content_hash'], FastScoringRubricRevision::fromConfig($config,$this->projectRoot),
+                \ForumRewrite\Scoring\FastmodMetaConfig::identity($config), \ForumRewrite\Scoring\FastmodMetaConfig::threshold($privateConfig));
         }
         (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork(
             $postId,

@@ -4,6 +4,18 @@ declare(strict_types=1);
 require dirname(__DIR__, 2) . '/autoload.php';
 if (PHP_SAPI !== 'cli') exit(1);
 $root = $argv[1];
+if (($argv[2] ?? '') === 'rebuild') {
+    (new \ForumRewrite\ReadModel\ReadModelBuilder($root.'/repository',$root.'/read.sqlite3',new \ForumRewrite\Canonical\CanonicalRecordRepository($root.'/repository')))->rebuild();
+    echo json_encode(['rebuilt'=>true]);exit;
+}
+if (($argv[2] ?? '') === 'artifacts') {
+    (new \ForumRewrite\Host\StaticArtifactBuilder($root,$root.'/repository',$root.'/read.sqlite3',$root.'/static'))->buildFromReadModel();
+    $snapshot=new PDO('sqlite:'.$root.'/static/offline/snapshot.sqlite3');
+    echo json_encode(['labels'=>$snapshot->query('SELECT root_post_id,thread_labels_json FROM threads')->fetchAll(PDO::FETCH_ASSOC),
+        'private_tables'=>$snapshot->query("SELECT name FROM sqlite_master WHERE name LIKE 'fastmod%' OR name='post_fast_scores'")->fetchAll(PDO::FETCH_COLUMN)]);
+    exit;
+}
+
 $pdo = new PDO('sqlite:' . $root . '/read.sqlite3');
 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 $fetch = static function (string $id) use ($pdo): ?array {
@@ -22,5 +34,5 @@ if (($argv[2] ?? '') === 'retry') {
     }
 }
 $sweep = new \ForumRewrite\Scoring\FastScoreSweepService($pdo, new \ForumRewrite\Scoring\FastScoreContextFactory($fetch), $workflow, $store,
-    \ForumRewrite\Scoring\FastScoringRubricRevision::fromConfig(\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig($config), $root));
+    \ForumRewrite\Scoring\FastScoringRubricRevision::fromConfig(\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig($config), $root), \ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$config,$root.'/static',$root.'/repository'));
 echo json_encode(['summary' => $sweep->run(1), 'work' => $store->recentWork()]);

@@ -44,6 +44,33 @@ final class PublicOfflineSnapshotBuilderTest
         }
     }
 
+    public function testIncludesEffectiveRootMetaWithoutPrivateScoresOrChangingSource(): void
+    {
+        $root=sys_get_temp_dir().'/meta-snapshot-'.bin2hex(random_bytes(5));mkdir($root);
+        $previous=getenv('FORUM_SECRETS_PATH');
+        try {
+            $this->createSource($root.'/source.sqlite3');
+            $path=$root.'/private.sqlite3';$m=new \ForumRewrite\Scoring\FastmodMetaStore(new PDO('sqlite:'.$path));
+            $m->recordEligibleRoot('thread-055','h','r','model',0.9);
+            $m->apply(['post_id'=>'thread-055','content_hash'=>'h','rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>0.95]],'model');
+            file_put_contents($root.'/secrets.php','<?php return '.var_export(['FAST_SCORING_DATABASE_PATH'=>$path],true).';');
+            putenv('FORUM_SECRETS_PATH='.$root.'/secrets.php');
+            (new PublicOfflineSnapshotBuilder($root))->build($root.'/source.sqlite3',$root.'/snapshot.sqlite3');
+            $snapshot=new PDO('sqlite:'.$root.'/snapshot.sqlite3');
+            assertSame(['meta'],json_decode($snapshot->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn(),true));
+            assertSame(false,$snapshot->query("SELECT name FROM sqlite_master WHERE name LIKE 'fastmod%' OR name='post_fast_scores'")->fetchColumn());
+            $source=new PDO('sqlite:'.$root.'/source.sqlite3');
+            assertSame('[]',$source->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
+            $m->removeAndSuppress('thread-055');
+            (new PublicOfflineSnapshotBuilder($root))->build($root.'/source.sqlite3',$root.'/corrected.sqlite3');
+            $corrected=new PDO('sqlite:'.$root.'/corrected.sqlite3');
+            assertSame('[]',$corrected->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
+        } finally {
+            putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH='.$previous);
+            foreach(glob($root.'/*') as $file)unlink($file);rmdir($root);
+        }
+    }
+
     private function createSource(string $path): void
     {
         $pdo = new PDO('sqlite:' . $path);

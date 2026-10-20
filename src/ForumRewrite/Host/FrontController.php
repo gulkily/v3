@@ -104,7 +104,7 @@ final class FrontController
         }
 
         $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
-        if ($staticArtifact !== null && is_file($staticArtifact)) {
+        if ($staticArtifact !== null && is_file($staticArtifact) && $this->metaArtifactCurrent($staticArtifact)) {
             (new VisitorStatisticsObserver($this->projectRoot))->record($method, parse_url($requestUri, PHP_URL_PATH) ?: '/');
             $contents = file_get_contents($staticArtifact);
             if ($contents === false) {
@@ -486,18 +486,18 @@ final class FrontController
 
         $locator = new OfflineSnapshotLocator();
         $snapshotPath = $locator->servedSnapshotPath($this->staticHtmlRoot);
-        if ($snapshotPath !== null) {
+        if ($snapshotPath !== null && $this->metaArtifactCurrent($snapshotPath)) {
             return $snapshotPath;
         }
 
         return (new ExecutionLock($this->staticHtmlRoot . '/offline/snapshot-bootstrap.lock'))->withExclusiveLock(
             function () use ($locator): ?string {
                 $currentSnapshot = $locator->servedSnapshotPath($this->staticHtmlRoot);
-                if ($currentSnapshot !== null) {
+                if ($currentSnapshot !== null && $this->metaArtifactCurrent($currentSnapshot)) {
                     return $currentSnapshot;
                 }
 
-                (new OfflineSnapshotBootstrap($this->staticHtmlRoot))->ensure($this->databasePath, true);
+                (new \ForumRewrite\Offline\OfflineSnapshotPublisher($this->staticHtmlRoot,new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder($this->projectRoot)))->publish($this->databasePath);
 
                 return $locator->servedSnapshotPath($this->staticHtmlRoot);
             },
@@ -521,7 +521,8 @@ final class FrontController
             return null;
         }
 
-        return (new OfflineSnapshotLocator())->servedUpdatePath($this->staticHtmlRoot);
+        $path=(new OfflineSnapshotLocator())->servedUpdatePath($this->staticHtmlRoot);
+        return $path !== null && $this->metaArtifactCurrent($path) ? $path : null;
     }
 
     /**
@@ -548,6 +549,12 @@ final class FrontController
         }
 
         return null;
+    }
+
+    private function metaArtifactCurrent(string $path): bool
+    {
+        try { \ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact(\ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot),$path); return true; }
+        catch (\Throwable $error) { error_log($error->getMessage()); return false; }
     }
 
     private function activeStaticReleaseRoot(): ?string

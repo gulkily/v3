@@ -16,6 +16,8 @@ final class PublicOfflineSnapshotBuilder
 {
     public const SNAPSHOT_VERSION = '4';
     private ?array $sourcePostColumns = null;
+    private array $metaToken = [];
+    public function __construct(private readonly ?string $projectRoot = null) {}
 
     public const DEFAULT_THREAD_LIMIT = 200;
     public const DEFAULT_MAX_BYTES = 100 * 1024 * 1024;
@@ -30,6 +32,7 @@ final class PublicOfflineSnapshotBuilder
         int $maxBytes = self::DEFAULT_MAX_BYTES,
     ): array {
         if (!is_file($sourcePath)) throw new RuntimeException('Offline snapshot source database does not exist.');
+        $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot ?? dirname(__DIR__,3));
         $token = \ForumRewrite\Retraction\PublicationGuard::begin($sourcePath);
         $build = function () use ($sourcePath, $targetPath, $threadLimit, $maxBytes, $token): array {
             if ($token !== null && \ForumRewrite\Retraction\PublicationGuard::generation($token['root']) !== $token['generation']) throw new RuntimeException('Retraction changed before snapshot assembly.');
@@ -56,6 +59,9 @@ final class PublicOfflineSnapshotBuilder
         $this->sourcePostColumns = null;
         $source = new PDO('sqlite:' . $sourcePath);
         $source->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try { $metaRepository=\ForumRewrite\ReadModel\ReadModelMetadata::readMetadata($source)['repository_root'] ?? null; }
+        catch (\Throwable) { $metaRepository=null; } // Legacy standalone sources have no metadata.
+        \ForumRewrite\Scoring\FastmodMetaRead::forApplication($source,$this->projectRoot ?? dirname(__DIR__,3),$metaRepository);
         $snapshot = new PDO('sqlite:' . $temporaryPath);
         $snapshot->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -123,12 +129,16 @@ final class PublicOfflineSnapshotBuilder
                 throw new RuntimeException('Offline snapshot exceeded its configured size limit.');
             }
             \ForumRewrite\Retraction\PublicationGuard::publish($retractionToken, $targetPath, function () use ($temporaryPath, $targetPath, $generatedAt, $size, $retractionToken): void {
+                \ForumRewrite\Scoring\FastmodMetaPublication::publish($this->metaToken,$targetPath,function () use ($temporaryPath,$targetPath,$generatedAt,$size,$retractionToken): void {
                 if (!rename($temporaryPath, $targetPath)) throw new RuntimeException('Unable to publish offline snapshot.');
                 $this->writeManifest($targetPath, $generatedAt, $size);
+                $metaManifest=dirname($targetPath).'/'.(basename($targetPath)==='snapshot.sqlite3' ? 'manifest.json' : basename($targetPath).'.manifest.json');
+                if (file_put_contents($metaManifest.'.fastmod-generation',$this->metaToken['generation']) === false) throw new RuntimeException('Cannot record Fastmod manifest generation.');
                 if ($retractionToken !== null) {
                     $manifest = dirname($targetPath) . '/' . (basename($targetPath) === 'snapshot.sqlite3' ? 'manifest.json' : basename($targetPath) . '.manifest.json');
                     if (file_put_contents($manifest . '.retraction-generation', $retractionToken['generation']) === false) throw new RuntimeException('Cannot record manifest generation.');
                 }
+                });
             });
 
             return [

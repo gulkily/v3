@@ -144,3 +144,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 ## Markdown reader
 - [x] Keep existing document/source navigation. Added only code-language captions, collapsed metadata, and unavailable-source/image labels where formatting alone cannot communicate the fallback. Table/code scroll regions have accessible names; no extra reading instructions or controls. Verified desktop/mobile and keyboard with JavaScript disabled.
+
+## Shared Fastmod tagging flag — October 20, 2026
+
+- [x] Removed the obsolete Fastmod explanation “Scores do not trigger actions” and shortened its existing Feature Flags link to the shared tagging control. Reused the existing flag row, signed save/failure feedback and tag presentation; no new styling or navigation destination.
+- Verification: real-browser signed toggle, simulated failed-save/retry, anonymous refusal, no model call on save, root tagging and site-off behavior passed. At 390px/1280px, checked light/dark/console/Word97/Chicago/Midnight flag and tag discovery without page overflow; inspected phone Midnight and desktop Word97 screenshots. Existing Feature Flags toolbar browser checks passed for filtering, empty/read-only states, keyboard and failed-save preservation. No unresolved layout issue introduced by this row was observed.

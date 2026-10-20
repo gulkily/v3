@@ -164,8 +164,20 @@ final class SqliteFastScoreStore implements FastScoreStore
     }
 
     /** @param array<string, mixed> $work @param array<string, mixed> $result */
-    public function completeWork(array $work, array $result): array
+    public function completeWork(array $work, array $result, ?callable $retainEvidence = null): array
     {
+        if ($retainEvidence !== null) {
+            $this->pdo->exec('BEGIN IMMEDIATE');
+            try {
+                $saved=$this->completeWork($work,$result);
+                $retainEvidence($this->pdo);
+                $this->pdo->exec('COMMIT');
+                return $saved;
+            } catch (\Throwable $error) {
+                $this->pdo->exec('ROLLBACK');
+                throw $error;
+            }
+        }
         $postId = (string) $work['post_id'];
         $contentHash = (string) $work['content_hash'];
         $rubricRevision = (string) $work['rubric_revision'];
