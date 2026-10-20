@@ -1,0 +1,63 @@
+# zenmemes.com import HTTP 409 findings
+
+Date: 2026-10-20. Inspected checkout: `b1a3ffed575f5d9f8780a4ca166b61600a7d98d0`.
+Scope: investigation and this findings document only; no code changes, deployment, or destination import. This is a focused diagnostic report, not an implementation plan.
+
+## Finding
+
+The source archive endpoint currently fails while parsing a post without a nonempty `Created-At` header. The importer hides that response body behind a generic HTTP failure message. The observed failure is in source backup generation, before destination merging, rather than evidence that public downloads require enabling or that WSL is malfunctioning.
+
+An unauthenticated GET to [the source archive endpoint](https://zenmemes.com/downloads/repository.tar.gz), matching the importer's Accept, Accept-Encoding, and User-Agent headers, returned:
+
+```text
+HTTP/2 409
+cache-control: private, no-store
+content-type: text/plain; charset=utf-8
+date: Tue, 20 Oct 2026 22:17:14 GMT
+
+Backup failed: Missing required post header: Created-At
+```
+
+Reproduction command (bounded to avoid downloading a large archive if the endpoint recovers):
+
+```bash
+curl --silent --show-error --max-time 25 --max-filesize 16384 -i \
+  -H 'Accept: application/gzip' -H 'Accept-Encoding: identity' \
+  -A 'ForumInstanceImport/1' \
+  https://zenmemes.com/downloads/repository.tar.gz
+```
+
+## Failure chain and source evidence
+
+1. [`InstanceArchiveDownloader::download`](../../src/ForumRewrite/Import/InstanceArchiveDownloader.php) appends `/downloads/repository.tar.gz` to the resolved base URL. Any non-200 response outside supported redirects throws `Source archive returned HTTP <status>; public repository download is required.` It does not read or report the error body. Consequently, the reported suffix does not diagnose this 409.
+2. [`Application`](../../src/ForumRewrite/Application.php) routes that endpoint to [`InstancePageController::downloadRepository`](../../src/ForumRewrite/Http/InstancePageController.php). In this checkout, an existing image-store directory or an explicit revision query selects `downloadImageBackup`; otherwise the controller uses the older raw repository archiver.
+3. [`ImageBackup::export`](../../src/ForumRewrite/Images/ImageBackup.php) inventories images and invokes `references()` for **all supported export kinds**, including repository tarballs and ZIPs, before assembling the archive.
+4. `ImageBackup::references()` scans every `.txt` file under `records/posts` and invokes `PostRecordParser` directly before checking whether the body contains an image reference. Thus even a plain-text legacy post can prevent the whole archive from being generated.
+5. [`PostRecordParser`](../../src/ForumRewrite/Canonical/PostRecordParser.php) requires a nonempty `Created-At`. Its `CanonicalRecordParseException` extends `RuntimeException`; the exporter wraps it as `Backup failed: ...`, and `downloadImageBackup()` sends that text with HTTP 409. This matches the live response exactly.
+
+The existing application accommodates missing legacy timestamps elsewhere: [`CanonicalRecordRepository::loadPost`](../../src/ForumRewrite/Canonical/CanonicalRecordRepository.php) handles this specific parser exception and resolves a legacy date. The [import runbook](../runbooks/instance_content_import.md#coverage-and-results), [`RepositoryArchive`](../../src/ForumRewrite/Import/RepositoryArchive.php), and [`LegacyArchiveTimestamps`](../../src/ForumRewrite/Import/LegacyArchiveTimestamps.php) describe/implement recovery from isolated archived Git history and hash-bound timestamp metadata. That machinery runs only after a successful download, so it cannot compensate for the source export failure.
+
+## Verification and limits
+
+- Reproduced the live source HTTP 409 and captured the actual error body above.
+- Ran `ImageBackup::references()` against a temporary directory containing one text-only post with `Post-ID` and `Board-Tags`, but no `Created-At`. It threw `Missing required post header: Created-At`. Adding a valid `Created-At` to that temporary fixture produced zero image references successfully. The fixture was removed afterward; no repository records were edited.
+- Reviewed existing coverage: [`ImageContentTest::testBackupInventoriesAndRejectsMissingOrMismatchedPairs`](../../tests/ImageContentTest.php) uses posts with explicit timestamps, including its record named `legacy`. [`ImportInstanceCommandTest`](../../tests/ImportInstanceCommandTest.php) and [`LegacyTimestampImportTest`](../../tests/LegacyTimestampImportTest.php) cover import flows and legacy date recovery separately. The reviewed tests do not exercise their intersection: a real source archive request with an image-store directory and a timestamp-less legacy post.
+- No full suite or end-to-end destination import was run. The local reproduction isolates the parser failure; the live GET verifies its externally visible result.
+- The remote deployed revision, offending filename(s), and reason for missing timestamps were not available. Missing timestamps can represent supported legacy data; this response alone does not establish corruption. Given this checkout's routing, the no-query request would reach this exporter when the image-store directory exists; that remote filesystem condition was not inspected directly.
+- The user's WSL checkout was not accessible. Conclusions about its execution order follow the matching output and the inspected code, not an inspection of that machine.
+
+## Destination impact and recovery
+
+In [`scripts/import_instance.php`](../../scripts/import_instance.php), downloading precedes archive extraction, publisher construction, and `ContentImportRunner::run()`. This failure therefore does not itself merge records, create an import recovery journal, or rebuild/publish destination views. The temporary download workspace is removed in `finally`.
+
+The `--resume` sentence is printed unconditionally for caught failures. It is not an appropriate remedy for this download failure: resume requires a journal from an actual interrupted merge. A previously existing interrupted import would be a separate matter.
+
+Once source export works, retry the original source command, preferably first with `--dry-run`. Changing destination paths, adding `--verbose`, or rebuilding the destination cannot fix the source's current archive response. `--dry-run` also needs the same download and will fail until the source problem is resolved.
+
+## Recommended follow-up (not implemented)
+
+1. Make image-reference discovery compatible with supported legacy post bytes. Use an established legacy-aware loading path if its timestamp requirements fit backup semantics, or extract and validate the body/image reference without requiring unrelated timestamp metadata. Preserve fail-closed behavior for missing or damaged referenced images and unsafe files. Do not silently skip records or add fabricated dates to canonical bytes; rewriting bytes can invalidate hashes/signatures.
+2. Preserve a bounded, sanitized source error detail in the downloader so operators can distinguish backup failures from access restrictions. Emit resume guidance only when the failure actually involves resumable import state.
+3. Add regression coverage for an actual repository download and importer preview with a committed legacy text-only post lacking `Created-At`, archived history, and an existing image-store directory. Include a legacy image-bearing post and retain missing/damaged image rejection coverage. Verify supported repository formats and image backup behavior.
+
+If an operator needs an archive before a fix is deployed, an independently prepared filesystem repository archive preserving canonical bytes and Git history may bypass the failing web exporter. The existing `import-repository` command accepts local archives but has its own options and policy; this investigation did not validate that alternative end to end. Do not remove the image store or rewrite source records merely to bypass the check. Any source changes or workaround execution require separate work.

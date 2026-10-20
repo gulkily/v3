@@ -429,6 +429,11 @@ Preview an import:
 
 Remove `--dry-run` to perform the import.
 
+Source HTTP failures report bounded, sanitized plain-text error detail when
+available. Repair the source download and retry; `--resume` advice appears only
+when the selected destination has an interrupted-import journal. Supported legacy
+posts do not need their original bytes rewritten for source backups.
+
 Exit codes are 0 for complete supported-content results, 2 for partial results
 requiring review, and 1 for failures. Reports group exclusions and rejected
 records; `--verbose` includes per-file details. `--resume` recovers a saved interrupted run without another download;

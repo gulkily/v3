@@ -125,6 +125,71 @@ reports and conflict copies live below the printed
 
 ## Recovery
 
+### Source download failures
+
+An HTTP failure during `Downloading repository archive...` occurs before the
+merge. It does not itself change destination content, create a recovery journal,
+or publish views. `--dry-run` uses the same download; destination rebuilds and
+`--verbose` cannot repair a failing source exporter. The CLI reports the HTTP
+status and up to 1 KiB of sanitized plain-text source detail, reading at most
+4 KiB under its existing deadline. HTML, encoded, or invalid UTF-8 error bodies
+fall back to status and retry guidance.
+
+For a bounded endpoint probe matching the importer, save the body separately:
+
+```bash
+probe_body=$(mktemp)
+curl --silent --show-error --max-time 25 --max-filesize 16384 \
+  --dump-header - --output "$probe_body" \
+  -H 'Accept: application/gzip' -H 'Accept-Encoding: identity' \
+  -A 'ForumInstanceImport/1' \
+  https://zenmemes.com/downloads/repository.tar.gz
+```
+
+For a non-200 `text/plain` response, inspect the saved body. With a 200 response,
+curl may exit 63 because the archive exceeds the probe limit; that is a partial
+probe file, not an importable archive. Remove the temporary file after inspection.
+
+`409` with `Backup failed: Missing required post header: Created-At` identifies
+source backup parsing, not a local merge conflict or evidence of disabled public
+downloads. An existing image-store directory selects the image-aware exporter,
+which scans plain-text posts too. Deploy the legacy-compatible backup fix on the
+source. Update the importing checkout as well to obtain improved diagnostics.
+The original [zenmemes.com findings](../plans/zenmemes_import_http409_findings.txt)
+are preserved for incident context.
+
+On the source, from its content repository, identify candidates and inspect the
+addition history of a reported path (replace `POST_ID`):
+
+```bash
+rg --files-without-match --glob '*.txt' '^Created-At: .+' records/posts
+git log --follow --diff-filter=A --format='%aI %H' -- records/posts/POST_ID.txt
+```
+
+Missing dates can be supported legacy data. Backup scanning accepts hash-bound
+timestamp metadata or Git provenance, never filesystem modification times.
+Remaining parse/reference errors identify the affected record path. Preserve
+history, original post bytes, and signatures; do not invent dates, skip records,
+or remove the image store to bypass validation. Missing/corrupt referenced images
+still block complete backups and require source repair.
+
+After an authorized source deployment, verify a successful public archive
+response and repeat the original WSL workflow from `~/v3-test-kris`, using the
+same destination configuration:
+
+```bash
+./v3 import-instance zenmemes.com --dry-run
+./v3 import-instance zenmemes.com
+./v3 import-instance zenmemes.com
+```
+
+Review the preview before importing. Check an imported thread/tag page and
+original creation dates; the repeat should report `import: 0` if the source has
+not changed. Image objects remain a separate transfer. A local test pass does
+not verify zenmemes.com deployment or this WSL destination's recovery.
+
+### Interrupted merges
+
 Imports serialize with normal writes and keep a private journal before changing
 content. A failure can leave import-owned files or a committed import awaiting
 publication. Preserve the journal and its saved payloads. Correct the reported
@@ -142,6 +207,11 @@ uses the saved source payload, so it does not need the remote source or alias
 file. It verifies import-owned bytes, recognizes an already-created import
 commit, and rebuilds/publishes even when there are no new records. A new source
 import is refused while a recovery journal is pending.
+
+The CLI emits resume guidance only when the selected destination already has
+`.git/instance-import/pending.json`. A download failure without that journal
+requires source repair and retry, not `--resume`. Preserve an independently
+pending journal even if a later download attempt fails.
 
 If unrelated pending edits or divergent import-owned content are detected,
 automatic recovery stops. Inspect `pending.json`, the saved payload/report, and

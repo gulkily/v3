@@ -7,7 +7,7 @@ Debug mode: enabled
 - Steps 1–3 explicitly approved. Branch: `fix/legacy-backup-compatibility`; planning commit: `099870a5`.
 - Application work follows four approved stages. No deployment or production import is authorized. Production/WSL acceptance remains pending until verified there.
 - Requests: diagnose/prevent recurrence (implementation authorized); preserve remote findings (saved unchanged; include with operator documentation stage).
-- Stages 1–3 complete; Stage 4 next.
+- Stages 1–4 complete locally; production deployment and named WSL acceptance remain pending.
 
 ## Stage 1 - Legacy-compatible backup validation
 
@@ -27,3 +27,17 @@ Debug mode: enabled
 - Verification: Focused new HTTP test passed. `php tests/run.php` completed: **1377 run, 1372 passed, 5 failed**. All backup/import/publication/recovery tests passed. `git diff --check` passed. Full-suite output: `/tmp/legacy-backup-full-tests.log` (temporary local evidence).
 - Baseline failures: All five reproduce individually on unchanged `main` (`4c521b74`) in a temporary detached worktree: `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts`, `LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary`, `LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel`, and `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`. Baseline logs: `/tmp/legacy-backup-baseline-tests.log`, `/tmp/legacy-backup-baseline-additional-tests.log`, `/tmp/legacy-backup-baseline-timing-tests.log`. Temporary worktree removed. These unrelated assertion failures remain follow-up work; the full suite is not green.
 - Notes: Stage 2 commit `77f391f2`. Fixture correction: static detail pages are disabled by default, so verify published tag output plus the actual served thread. Release SQLite inspection cursors before starting the target HTTP request. An invalid timestamp fails application startup with 503 before export; use a malformed image reference to exercise the exporter's path-bearing 409. No production/WSL success claimed.
+
+## Stage 4 - Operator recovery and incident handoff
+
+- Changes: Added bounded endpoint diagnosis, legacy-path/history inspection, source deployment and WSL preview/import/repeat instructions, image/provenance caveats, and journal-specific recovery guidance to the runbook and CLI/operator references. Tracked terminal-copy verification in the UI copy audit checklist. Included the user-requested source findings unchanged at `docs/plans/zenmemes_import_http409_findings.txt`.
+- Verification: Plan navigation, new runbook links, Bash snippet syntax, and `git diff --check` passed. Local fixed-route acceptance passed in Stage 3. At **2026-10-20 22:51:31 UTC**, the unauthenticated live source still returned 409 with `Backup failed: Missing required post header: Created-At`. The updated CLI against that source, using an initialized disposable destination and `--dry-run`, correctly displayed the source detail, omitted resume advice, and created no journal/database; temporary destination removed.
+- Notes: Stage 3 commit `4235376b`. **Pending:** deploy the source-side fix through the authorized release process, update the importing checkout for diagnostics, verify a successful public archive, then obtain the user's actual WSL preview/import/repeat and content/date checks. No production content was changed. This implementation is not evidence of incident recovery.
+
+## Final verification status
+
+- **Passed:** legacy compatibility and provenance restrictions; actual tar/ZIP/image HTTP downloads; CLI preview/import/repeat; preserved post bytes/dates; published/served content; malformed reference and missing/corrupt image rejection; safe bounded error details; destination preservation; interrupted-merge recovery; documentation/links/diff checks.
+- **Failed (baseline-confirmed):** full suite, 1372 passed / 1377 total; all five failures listed in Stage 3 reproduce on unchanged `main` and remain unrelated follow-ups. Existing account-template `identityHint` warnings also appeared; that template is unchanged.
+- **Pending:** source deployment and successful live zenmemes.com archive, named user's WSL recovery evidence. The live source is still failing; no deployment access or authorization was assumed.
+- **Inapplicable:** schema migration/rebuild acceptance (no read-model change), browser/phone/theme/icon layout checks (no browser UI or navigation change), production writes (not authorized).
+- All approved implementation requests are delivered locally. Original source findings preserved. No changes to `todo.txt`, strict parser contract, original records, or deployed systems. No merge/push performed.

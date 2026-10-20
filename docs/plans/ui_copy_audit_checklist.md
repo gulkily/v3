@@ -1,5 +1,10 @@
 # UI copy audit checklist
 
+## Import CLI recovery guidance — October 20, 2026
+
+- [x] Removed unconditional `--resume` advice from import failures; show recovery guidance only when the selected destination has a pending journal. Replaced generic public-download wording with HTTP status, bounded sanitized source detail, and source retry guidance.
+- Verification: Actual CLI/HTTP tests cover initial preview/import success, source failure without a journal, failure with an independently pending journal, interrupted publication, and successful resume. Full suite: 1372/1377 passed; all five failures reproduced on unchanged `main` and are listed in the [implementation summary](legacy_backup_compatibility/legacy_backup_compatibility_step4_implementation_summary.md). Browser layout/theme checks are inapplicable: this change affects terminal output only. Production source and user WSL verification remain pending.
+
 ## Next audit — candidates to verify
 
 These source-review candidates are not confirmed removal decisions. Review the
