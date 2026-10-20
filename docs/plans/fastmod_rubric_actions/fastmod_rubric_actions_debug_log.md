@@ -106,3 +106,27 @@ No supported findings.
 ### Uncertain assessments
 
 - Eight stages with six required fields plus retained history exceed the one-page preference. Compact explicit contracts preserve auditability; a reusable instruction-length resolution requires separate authorization.
+
+
+## 2026-10-20T06:10:37.650606+00:00 — Step 4 complete, scope v3
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md`, Enhancement Requests / Experimental Effort Estimation: the larger v2 scope and 1.20 discovery projection remain historical; the explicitly approved root-only v3 has projected total 0.85 and separately labeled retrospective assessment 0.90. Maintainer acceptance remains pending, with no accepted outcome invented. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol: revised planning commit `fe9578f9` precedes eight independently committed stage summaries; the operational closeout `1f35e6be` and current-state correction `19efc11f` preserve history. Retain.
+- `step4_implementation_after.md`, verification claims: focused/browser success is separated from 1,380-test full-suite results and eight baseline/environment failures. Same-instance baseline diagnostics distinguish ambient members-only configuration from regression. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only implementation restrictions are inapplicable to this approved application slice. Deployment/external live-model validation was outside scope; no deployment, public activation or live provider call was performed.
+
+### Uncertain assessments
+
+- Atomic-stage and one-page guidance still uses legacy time/line heuristics alongside unit estimates. This cycle retained explicit stage boundaries and used the agreed relative scope references without converting hours or stage counts into scores. Clarify the relationship only in separately authorized workflow work.
+- An interrupted broader cycle followed by a reduced replacement needs careful outcome accounting: v3 is technically delivered, but neither original v2 completion nor independent child acceptance is inferred. Existing experimental instructions supported the distinction; future trial review should retain it.
+
+Final production code: `d1da4d40`; Stage 8 adds operational documentation and the explicit browser rebuild assertion. Final focused 27 passed, earlier broader focused 68 passed, final browser passed. Full suite 1,372/1,380 passed with eight reproduced baseline/environment failures; it began before final atomic-evidence/enablement corrections, which final focused/browser runs cover. No core schema change, score export, new styling or todo edit. Current stage summaries and trial ledger were reconciled before this log-only handoff commit.
