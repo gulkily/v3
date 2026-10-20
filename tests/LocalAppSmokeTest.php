@@ -2088,9 +2088,10 @@ PHP;
         assertStringContains('Signature:', $activity);
         assertStringContains('anonymous unsigned', $activity);
         assertStringNotContains('@ commit unavailable', $activity);
-        assertStringContains('GET /about/', $llms);
-        assertStringContains('POST /api/analyze_post', $llms);
+        assertStringContains('## This instance', $llms);
+        assertStringContains('POST /api/create_prepared_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
+        assertStringContains('(/api/version)', $llms);
     }
 
     public function testBootstrapPostShowsUnavailablePublicKeyWhenProfileKeyIsEmpty(): void

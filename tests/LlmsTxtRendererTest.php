@@ -1,0 +1,124 @@
+<?php
+
+declare(strict_types=1);
+
+use ForumRewrite\Application;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Http\ApiRouteCatalog;
+use ForumRewrite\Http\LlmsTxtRenderer;
+use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry as Registry;
+
+require __DIR__ . '/../autoload.php';
+
+final class LlmsTxtRendererTest
+{
+    public function testEachInstanceFactFollowsItsFlag(): void
+    {
+        $cases = [
+            Registry::UNICODE_AUTHORED_TEXT => ['Text: Unicode is accepted', 'Text: ASCII only.'],
+            Registry::APPROVED_MEMBERS_ONLY => ['Posting: members only.', 'Posting: open to any new identity'],
+            Registry::IMAGE_CONTENT_ENABLED => ['Images: enabled for approved identities.', 'Images: disabled.'],
+            Registry::USERNAME_CHANGES_ENABLED => ['Username changes: enabled', 'Username changes: disabled.'],
+        ];
+        foreach ($cases as $flag => [$whenOn, $whenOff]) {
+            $on = $this->render([$flag => true]);
+            $off = $this->render([$flag => false]);
+            assertStringContains($whenOn, $on);
+            assertStringNotContains($whenOff, $on);
+            assertStringContains($whenOff, $off);
+            assertStringNotContains($whenOn, $off);
+        }
+    }
+
+    public function testEmojiFactOnlyAppearsWithUnicode(): void
+    {
+        assertStringContains('including emoji.', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => true]));
+        assertStringContains('emoji are not.', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => false]));
+        assertStringNotContains('emoji', $this->render([Registry::UNICODE_AUTHORED_TEXT => false, Registry::EMOJI_AUTHORED_TEXT => true]));
+    }
+
+    public function testPolicyFlowAndLinks(): void
+    {
+        $text = $this->render([]);
+        assertStringContains('Agents are welcome.', $text);
+        assertStringContains('Label agent accounts as agent accounts', $text);
+        assertStringNotContains('rate limit', strtolower($text));
+        assertStringContains('6. GET /api/get_post?post_id=<post_id>', $text);
+        assertStringContains('create_thread and create_reply are anonymous only', $text);
+        assertStringContains('(/api/version)', $text);
+        assertStringContains('(/api/)', $text);
+        assertStringContains('(' . LlmsTxtRenderer::REFERENCE_PATH . ')', $text);
+    }
+
+    public function testListedRoutesComeFromTheCatalog(): void
+    {
+        $text = $this->render([]);
+        preg_match_all('#^- (?:GET|POST)(?:/POST)? (/api/[a-z_/]+)#m', $text, $matches);
+        assertTrue(count($matches[1]) >= 10, 'Expected the agent routes to be listed.');
+        foreach ($matches[1] as $path) {
+            assertTrue(in_array($path, ApiRouteCatalog::paths(), true), 'Not in catalog: ' . $path);
+        }
+        assertStringNotContains('/api/create_thread (', $text);
+    }
+
+    public function testMembersOnlyInstanceServesAgentDocsButNotContent(): void
+    {
+        $root = sys_get_temp_dir() . '/llms-members-only-' . bin2hex(random_bytes(6));
+        $repositoryRoot = $root . '/repo';
+        $databasePath = $root . '/read.sqlite3';
+        mkdir($root, 0700);
+        exec('cp -r ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1') . ' ' . escapeshellarg($repositoryRoot));
+        @mkdir($repositoryRoot . '/records/instance', 0700, true);
+        file_put_contents($repositoryRoot . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_APPROVED_MEMBERS_ONLY: true\n");
+        try {
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+            $get = static function (string $path) use ($repositoryRoot, $databasePath): string {
+                ob_start();
+                (new Application(dirname(__DIR__), $repositoryRoot, $databasePath))->handle('GET', $path);
+                return (string) ob_get_clean();
+            };
+            assertStringContains('Posting: members only.', $get('/llms.txt'));
+            assertStringContains('Plain-text API. Agents start at /llms.txt.', $get('/api/'));
+            assertStringNotContains('root-001', $get('/api/list_index'));
+        } finally {
+            exec('rm -rf ' . escapeshellarg($root));
+        }
+    }
+
+    /**
+     * @param array<string, bool> $siteValues
+     */
+    private function render(array $siteValues): string
+    {
+        return (new LlmsTxtRenderer(new FeatureFlagEvaluator(siteValues: $siteValues)))->render();
+    }
+}
+
+if (!function_exists('assertTrue')) {
+    function assertTrue(bool $condition, string $message = 'Failed asserting that condition is true.'): void
+    {
+        if (!$condition) {
+            throw new RuntimeException($message);
+        }
+    }
+}
+
+if (!function_exists('assertStringContains')) {
+    function assertStringContains(string $needle, string $haystack): void
+    {
+        if (!str_contains($haystack, $needle)) {
+            throw new RuntimeException('Failed asserting that output contains: ' . $needle);
+        }
+    }
+}
+
+if (!function_exists('assertStringNotContains')) {
+    function assertStringNotContains(string $needle, string $haystack): void
+    {
+        if (str_contains($haystack, $needle)) {
+            throw new RuntimeException('Failed asserting that output does not contain: ' . $needle);
+        }
+    }
+}

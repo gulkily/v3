@@ -1330,7 +1330,7 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nPOST /api/analyze_post\nPOST /api/score_post\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
+        return (new \ForumRewrite\Http\LlmsTxtRenderer($this->featureFlags()))->render();
     }
 
     /**
@@ -1912,6 +1912,11 @@ final class Application
     private function membersOnlyRequestAllowed(string $method, string $path): bool
     {
         if ($method === 'GET' && ($path === '/docs' || $path === '/docs/' || str_starts_with($path, '/docs/'))) {
+            return true;
+        }
+
+        // Agent onboarding text: protocol and instance flags only, no content.
+        if ($method === 'GET' && ($path === '/llms.txt' || $path === '/api/' || $path === '/api')) {
             return true;
         }
 

@@ -18,6 +18,22 @@ Branch: `feat/agent-api-docs`, from `origin/main` at `c6fe21b4` (which adds the 
   - `apply_thread_tag`/`apply_post_tag` are marked `hint`: they act on the unsigned identity hint cookie. This is related to the Cycle A attribution finding; flagged for Cycle A, not changed here.
   - The parity test reads the `/api/` literals in `Application.php`, the only file that routes them.
 
+## Stage 2 - Generated `/llms.txt`
+- Changes:
+  - New `LlmsTxtRenderer`, replacing the hard-coded "Local test slice" text. It renders the agent policy, four instance facts (text mode with emoji detail, members-only posting, images, username changes), the six-step signed flow, retry guidance, the agent routes from `ApiRouteCatalog`, and links to `/api/`, `/api/version`, the reference and `/docs/`.
+  - The members-only gate now lets `GET /llms.txt` and `GET /api/` through (`Application::membersOnlyRequestAllowed`). Content routes such as `list_index` stay gated. See Enhancement Requests.
+  - The `LocalAppSmokeTest` `/llms.txt` assertions are updated for the new content.
+- Verification:
+  - `php tests/run.php LlmsTxtRendererTest`: 5 passed. Covers each flag on and off, emoji only under Unicode, policy and links, routes drawn from the catalog, and members-only access.
+  - Mutation check: disabling the gate change makes the members-only test fail.
+  - `php tests/run.php LlmsTxtRendererTest ApiRouteCatalogTest LocalAppSmokeTest`: 147 passed, 2 failed (the same baseline static-build failures as Stage 1). `WebServerRoutingTest UserAccessTest`: passed.
+  - Flow claims checked against code: `prepareIdentityBootstrap`/`createIdentityBootstrap` field names, the `openpgp:<fingerprint>` identity ID, username normalization in `OpenPgpKeyInspector`, the 600-second prepare token lifetime, JSON request bodies in `RouteServices::requestData`, and no approval check on signed prepare when members-only is off.
+  - Cache risk (Step 3): `/llms.txt` is not prebuilt or cached; it renders per request.
+- Notes:
+  - I removed a draft line telling agents to "post at a human pace": it was unapproved policy, and Step 1 excludes rate-limit statements. A test guards against "rate limit" text appearing.
+  - The reference link resolves after Stage 3.
+
 ## Enhancement Requests
 
 - **Request:** commit the onboarding checklist to `main` and push it, so the user can work on other cycles elsewhere. / **Disposition:** separate work, done outside this branch (`c6fe21b4` on `origin/main`); this branch is based on it. / **Approval:** requested by the user. / **Outcome:** pushed.
+- **Request:** let `/llms.txt` and `/api/` through the members-only gate. I found during Stage 2 that both returned the lobby page, so agents on members-only instances could not read them. / **Disposition:** in-scope refinement, needed for the Completion Contract's normal entry; it is an access-policy change, so I asked first. / **Approval:** the user chose "Allow both". / **Outcome:** implemented in Stage 2 with a test.
