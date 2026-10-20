@@ -14,6 +14,7 @@ use ForumRewrite\SiteProfileRegistry;
 
 $projectRoot = dirname(__DIR__);
 $workspace = null;
+$repository = null;
 $exitCode = 1;
 try {
     $options = importInstanceOptions(array_slice($argv, 1));
@@ -101,7 +102,9 @@ try {
     $exitCode = $result['status'] === 'complete' ? 0 : 2;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");
-    fwrite(STDERR, "If a merge was interrupted, use --resume with the same destination options.\n");
+    if (is_string($repository) && is_file($repository . '/.git/instance-import/pending.json')) {
+        fwrite(STDERR, "An interrupted merge is pending. Use --resume with the same destination options.\n");
+    }
 } finally {
     if ($workspace !== null && is_dir($workspace)) {
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($workspace, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);

@@ -80,7 +80,10 @@ final class InstanceArchiveDownloader
                         continue;
                     }
                     if ($status !== 200) {
-                        throw new RuntimeException('Source archive returned HTTP ' . $status . '; public repository download is required.');
+                        $detail = $this->errorDetail($input, $values, $deadline);
+                        throw new RuntimeException('Source archive returned HTTP ' . $status . '.'
+                            . ($detail === '' ? '' : ' Source error: ' . $detail)
+                            . ' Check the source repository download and retry.');
                     }
                     if (isset($values['content-encoding']) && strtolower($values['content-encoding']) !== 'identity') {
                         throw new RuntimeException('Unsupported archive transport encoding.');
@@ -138,6 +141,23 @@ final class InstanceArchiveDownloader
             }
             throw $error;
         }
+    }
+
+    /** Read only a small plain-text error; never render remote HTML or terminal controls. */
+    private function errorDetail($input, array $headers, float $deadline): string
+    {
+        if (preg_match('#^text/plain(?:\s*;|$)#i', $headers['content-type'] ?? '') !== 1
+            || strtolower($headers['content-encoding'] ?? 'identity') !== 'identity') {
+            return '';
+        }
+        $remaining = $deadline - microtime(true);
+        if ($remaining <= 0) { return ''; }
+        $wait = min(20.0, $remaining);
+        stream_set_timeout($input, (int) $wait, (int) (($wait - (int) $wait) * 1000000));
+        $body = @fread($input, 4096);
+        if ($body === false || !mb_check_encoding($body, 'UTF-8')) { return ''; }
+        $detail = trim(preg_replace('/[\p{C}\p{Z}]+/u', ' ', $body) ?? '');
+        return mb_strcut($detail, 0, 1024, 'UTF-8');
     }
 
     private function redirectUrl(string $url, string $location): string

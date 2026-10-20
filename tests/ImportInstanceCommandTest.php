@@ -123,6 +123,14 @@ final class ImportInstanceCommandTest
         [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, ...$options]);
         assertSame(1, $code, $output);
         assertTrue(is_file($target . '/records/posts/resume-thread.txt'));
+        assertStringContains('An interrupted merge is pending. Use --resume', $output);
+        $journal = file_get_contents($target . '/.git/instance-import/pending.json');
+        $w->put($w->root . '/router.php', '<?php http_response_code(409); header("Content-Type: text/plain"); echo "Backup failed: Missing required post header: Created-At";');
+        [$failedCode, $failedOutput] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, ...$options]);
+        assertSame(1, $failedCode, $failedOutput);
+        assertStringContains('Source error: Backup failed: Missing required post header: Created-At', $failedOutput);
+        assertStringContains('An interrupted merge is pending. Use --resume', $failedOutput);
+        assertSame($journal, file_get_contents($target . '/.git/instance-import/pending.json'));
         unset($server);
         unlink($static);
         [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', ...$options]);
@@ -171,6 +179,64 @@ final class ImportInstanceCommandTest
         assertSame('', trim($w->command(['git', '-C', $target, 'status', '--porcelain'])[1]));
         assertSame('1', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
         assertTrue(!is_dir($w->root . '/static'));
+    }
+
+    public function testSourceErrorDetailIsBoundedAndSafe(): void
+    {
+        $w = new ImportTestWorkspace();
+        $w->put($w->root . '/router.php', <<<'ROUTER'
+<?php
+http_response_code(409);
+header('Content-Type: text/plain; charset=utf-8');
+$path = $_SERVER['REQUEST_URI'];
+if (str_starts_with($path, '/html/')) { header('Content-Type: text/html'); echo '<html>secret login</html>'; exit; }
+if (str_starts_with($path, '/binary/')) { echo "\xff\x00"; exit; }
+if (str_starts_with($path, '/empty/')) { exit; }
+if (str_starts_with($path, '/large/')) { echo str_repeat('x', 100000) . 'TAIL'; exit; }
+if (str_starts_with($path, '/slow/')) { echo 'prefix'; flush(); sleep(2); echo 'late'; exit; }
+echo "Backup failed:\nMissing required post header: Created-At\x1b\r\x00\u{202e}";
+ROUTER);
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        foreach (['plain', 'html', 'binary', 'empty', 'large', 'slow'] as $kind) {
+            $started = microtime(true);
+            try {
+                (new InstanceArchiveDownloader(timeoutSeconds: 1))->download($server->url . '/' . $kind, $w->root . '/download');
+                throw new RuntimeException('Expected download rejection');
+            } catch (RuntimeException $error) {
+                $message = $error->getMessage();
+                assertStringContains('Source archive returned HTTP 409', $message);
+                assertStringContains('Check the source repository download and retry.', $message);
+                assertTrue(strlen($message) < 1200);
+                assertSame(0, preg_match('/[\p{C}]/u', $message));
+                if ($kind === 'plain') { assertStringContains('Backup failed: Missing required post header: Created-At', $message); }
+                if (in_array($kind, ['html', 'binary', 'empty'], true)) { assertStringNotContains('Source error:', $message); }
+                assertStringNotContains('secret login', $message);
+                assertStringNotContains('TAIL', $message);
+            }
+            assertTrue(microtime(true) - $started < 1.8, 'Error read exceeded the configured deadline');
+            assertTrue(!is_file($w->root . '/download'));
+        }
+    }
+
+    public function testSource409DoesNotSuggestResumeOrChangeDestination(): void
+    {
+        $w = new ImportTestWorkspace();
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $head = $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1];
+        $w->put($w->root . '/router.php', '<?php http_response_code(409); header("Content-Type: text/plain"); echo "Backup failed: Missing required post header: Created-At";');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url,
+            '--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3', '--static-html-root=' . $w->root . '/static']);
+        assertSame(1, $code, $output);
+        assertStringContains('Source error: Backup failed: Missing required post header: Created-At', $output);
+        assertStringNotContains('--resume', $output);
+        assertStringNotContains('public repository download is required', $output);
+        assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+        assertSame('', trim($w->command(['git', '-C', $target, 'status', '--porcelain'])[1]));
+        assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
+        assertTrue(!is_dir($w->root . '/static'));
+        assertTrue(!is_file($w->root . '/cache/index.sqlite3'));
     }
 
     public function testDownloadFailuresAreBoundedAndLeaveNoFile(): void
