@@ -98,6 +98,7 @@ $showRootMetaExtras = $index === $rootRunTailIndex;
     'boardTags' => 'general',
     'body' => '',
     'submitLabel' => 'Post reply',
+    'phoneReplyEnabled' => true,
     'showBodyLabel' => false,
 ]), 2) ?>
       </div>

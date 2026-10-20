@@ -126,6 +126,7 @@
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
   <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
+  <script src="<?= $e($replyViewportScriptPath) ?>" defer></script>
   <script src="<?= $e($composeDisclosureScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
 <?php if ($appVersionNotificationEnabled): ?>

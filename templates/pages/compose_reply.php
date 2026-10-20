@@ -16,7 +16,7 @@
 <?php endif; ?>
   <article class="card">
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
-<?= $indent($partial('partials/reply_form.php', ['showBodyLabel' => false]), 2) ?>
+<?= $indent($partial('partials/reply_form.php', ['showBodyLabel' => false, 'phoneReplyEnabled' => true]), 2) ?>
     <p class="meta" data-role="compose-identity-status" hidden></p>
   </article>
 </section>
