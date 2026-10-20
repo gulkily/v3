@@ -6,6 +6,106 @@ Effort study: E07 — [trial ledger](../effort_estimation_trial.md#e07--fastmod-
 
 ## Completion Contract
 
+**Scope v3: root-only meta tagging.** A newly published local top-level post receives `meta` after its ordinary successful Fastmod score meets the configured threshold (initial **≥0.90**). Existing-style tags support normal live/static/offline discovery. Private SQLite owns scores/classifications/suppression; no per-tag canonical files or Git commits, public score export, styling, reply tagging, browser controls or automatic reclassification. CLI status, remove-and-suppress, retry recovery and machine-only rollback complete the outcome. Preserve human tags, signed bytes, votes and visibility.
+
+Default off; only publication-time eligible roots qualify, including retries of their initial work. Configuration changes never backfill. Keep classifications stable until explicit removal; no model-accuracy gate. Complete root publication → score → tag → discovery → CLI correction/rollback plus restart/rebuild and generation-safe artifact checks. No external deployment required; report unavailable checks. Documentation: reference/runbook, feature plans/log, trial ledger, schema spec only if applicable. This replaces the historical plan below; original Stage 1 remains complete, but its later stages are superseded.
+
+## Key Risks
+
+- **High risk: ownership/loss.** Private machine decisions outlive transient scores; test private migration/retention first, preserve human labels and document backup. No public attachment/export of private evidence.
+- **High risk: replay/rollback.** Capture eligibility during new local publication; retain idempotent evidence receipts and suppression. Verify old/reply/backfill work and duplicate retries cannot create or resurrect tags.
+- **High risk: stale artifacts.** Live joins are feasible (prior Stage 1 probe); generated outputs must use one root-label selection contract and classification generation guard through publication/activation. Implement this explicitly in Stages 5–6, before final verification.
+
+## Stage 1 — Root classification storage
+
+- Goal: durable machine ownership and correction state.
+- Dependencies: revised Step 3 approval and revised planning commit before application edits.
+- Expected changes: extend private SQLite for eligible root receipts, minimal score/model/content/rubric/threshold evidence, tags, suppression, pending application and generation; operations `recordEligibleRoot`, `apply`, `removeAndSuppress`, `rollback`.
+- Verification approach: migration/restart, threshold boundaries, duplicate receipts, score-pruning independence and human-state isolation.
+- Risks or open questions: separate persistent decisions from score/work retention; reject malformed/legacy evidence for new tags.
+- Canonical components/API contracts touched: SqliteFastScoreStore or companion private store; new focused root-tag service/config.
+
+## Stage 2 — Publication and worker integration
+
+- Goal: ordinary scoring adds tags only to newly eligible roots.
+- Dependencies: Stage 1.
+- Expected changes: default-off configuration and threshold; capture eligibility on normal/signed local root publication, consume current successful meta result in the worker, retain failed application separately for provider-free retry. No new scoring trigger.
+- Verification approach: both publication paths; score once/add once; replies/imports/backfill/old queues excluded; missing meta/provider failure; disable and changed configuration during work.
+- Risks or open questions: persist eligibility before acknowledging enqueue; validate captured scoring configuration/content at creation, never reclassify existing tags.
+- Canonical components/API contracts touched: RouteServices publication enqueue, FastScoreSweepService, workflow/config and CLI/task-worker factories.
+
+## Stage 3 — Live tag discovery
+
+- Goal: existing root tag presentation includes effective machine meta.
+- Dependencies: Stage 2.
+- Expected changes: shared indexed read-only attachment/join or bulk lookup; merge/deduplicate into root labels used by shared thread cards, tag index/detail, board/Forte/QDB/profile/search consumers. No live read-model copy or new styling.
+- Verification approach: existing tag navigation, mixed-origin labels, hidden/retracted roots, bounded queries, counts/order, unchanged votes/visibility and unavailable private store recovery.
+- Risks or open questions: preserve ordinary human-only reading; report unavailable classification rather than silently claim complete meta results. Do not attach private state to downloadable database connections.
+- Canonical components/API contracts touched: shared tag read service, RouteServices, ThreadRepository/TagGrouping and shared root/detail consumers identified by prior investigation.
+
+## Stage 4 — CLI correction and recovery
+
+- Goal: operator removes mistakes without database edits.
+- Dependencies: Stage 3.
+- Expected changes: extend fast-score CLI with root meta status, remove-and-suppress, machine-only bulk rollback and application recovery using existing operator shell trust; configuration disables additions. No restore command or browser API.
+- Verification approach: repeated/interrupted operations, suppression versus worker, rollback preserving human tags, restart and provider-free retry.
+- Risks or open questions: already committed decisions still repeat failed invalidation; keep pending application visible and recoverable using retained evidence.
+- Canonical components/API contracts touched: scripts/fast_score.php, v3 help, private classification service/store and existing worker status/retry.
+
+## Stage 5 — Artifact freshness guard
+
+- Goal: corrected tags cannot reappear from concurrent builds.
+- Dependencies: Stage 4.
+- Expected changes: generation-aware invalidation/publication contract for generated HTML, snapshots, shared refresh and static release activation; retryable regeneration. Reuse existing invalidation/locking patterns while keeping retraction protection.
+- Verification approach: classification/correction during build, build-before-correction/activate-after-correction, partial invalidation retry and served-artifact probes.
+- Risks or open questions: fixed lock order; generation checks must cover final activation, not just extraction. Never hold locks across provider requests.
+- Canonical components/API contracts touched: StaticArtifactInvalidator, static builder/release publisher, offline publisher and root-tag generation guard.
+
+## Stage 6 — Generated root tags
+
+- Goal: public artifacts carry effective tags through existing root formats.
+- Dependencies: Stage 5.
+- Expected changes: apply shared merged root labels during static route enumeration/rendering and offline snapshot/update construction; keep existing offline root-label presentation/format. No score/evidence export or offline item-level schema/client feature.
+- Verification approach: meta tag routes and offline filter, human/meta deduplication, exports containing labels but no scores/audit, no mutation of main live read model or canonical files.
+- Risks or open questions: root-only output must obey existing visibility/size rules and generation guard; verify source connections never copy attached private tables.
+- Canonical components/API contracts touched: StaticArtifactBuilder, PublicOfflineSnapshotBuilder, snapshot publisher and existing export paths. Core schema changes are not planned; if needed, follow CONTRIBUTING version/spec/prior-startup/rebuild requirements before dependent queries.
+
+## Stage 7 — End-to-end verification
+
+- Goal: prove the normal reader/operator journey.
+- Dependencies: Stages 1–6 focused checks complete.
+- Expected changes: extend existing Fastmod/browser fixtures and regression scenarios; fix only in-scope defects.
+- Verification approach: publish/score/tag/discover/remove/retry/rollback with deterministic provider; phone/desktop, keyboard, long/empty/error content and affected themes; restart/rebuild; inspect generated static/offline results.
+- Risks or open questions: no model-accuracy claim from fixtures; record unavailable checks as pending. No new navigation means no new icon mapping.
+- Canonical components/API contracts touched: Fastmod browser harness, write/worker/tag/artifact regressions and shared existing presentation.
+
+## Stage 8 — Operations and study closeout
+
+- Goal: recoverable documented release with accurate outcome accounting.
+- Dependencies: Stage 7.
+- Expected changes: reference/runbook for enable/threshold/status/remove/retry/rollback, private backup and stable classifications; update summary and ledger, retaining original scope and reduced replacement separately.
+- Verification approach: documented commands, appropriate regression suite, links/diff/scope checks and final pass/fail/pending inventory; no unsolicited deployment/live-model calls.
+- Risks or open questions: Git alone cannot restore tags/suppression; record maintainer comfortable-fit judgment as pending unless supplied. Reduced release does not complete historical roots/replies scope.
+- Canonical components/API contracts touched: reference/runbook, feature summary/debug log, effort ledger and relevant test commands.
+
+## Execution and study checkpoint
+
+Retain investigation commit `79bc519f` and earlier history. Revised implementation starts with a separate planning-only commit containing approved plans/log and necessary organization fixes; exclude summary/ledger changes until their authorized implementation commits. Then commit each numbered stage with its summary before the next; no amendments or squashing. The eight stages now separate artifact production from browser verification; no repeated exploratory stage is planned. Any material discovery requiring a scope/stage change must be recorded and replanned before dependent work.
+
+E07, revised Step 3 handoff, UTC 2026-10-20; scope **v3**, R1 hashes reverified; Codex single exposed rater. Original start `4c521b743575979b8fefc66b38271551a57a08ef`; investigation baseline `79bc519f`; outcome/recovery as contracted above. **0.85 Railspike units reaffirmed**, total including original investigation/replanning, implementation, verification, documentation and ordinary correction. Root-label formats/shared UI are reused; no new reply snapshot/client or signed browser workflow. Private persistence, joins, CLI recovery and artifact guards remain included; not a remaining-work estimate or conversion from stage counts/hours. Original 0.85/0.95/1.20 snapshots remain historical and do not imply acceptance of the broader outcome.
+
+Scope v3 Step 2 approved explicitly by user. Revised Step 3 awaits `Approved Step 3`; application work remains paused. This approval will apply to v3 only, not historical requirements below.
+
+<details>
+<summary>Historical Step 3 v2/A2 — superseded after the completed investigation</summary>
+
+
+Debug mode: enabled
+
+Effort study: E07 — [trial ledger](../effort_estimation_trial.md#e07--fastmod-rubric-actions)
+
+## Completion Contract
+
 Ordinary local publication → existing async evaluation → item-level machine-owned `meta` → normal tag discovery → signed operator correction/retry/rollback. Preserve human tags, signed bytes, scoring and visibility. Default off; inclusive initial threshold 0.90, operator-adjustable. User explicitly removed the human-labeled accuracy gate; no benchmark, live-model accuracy claim or threshold-calibration requirement for this slice. Retain human correction. No historical backfill, extra rubrics, ranking or holds. Verify phone/desktop, affected themes, rebuild/restart and generated output; record unavailable checks. Approved documentation scope includes feature plans/log, references/runbook, schema specification and trial ledger. No deployment required.
 
 ## Key Risks
@@ -107,3 +207,5 @@ Request: omit human-labeled accuracy gate / user-authorized Step 2 amendment / i
 - Request: user accepted joining instead of copying for live reads, with effective tags included when generating public artifacts. Disposition: in-scope architecture refinement; Step 3 approval remains pending. Supersedes the earlier continuous live projection proposal, without changing Step 2's reader/operator outcome.
 - Private SQLite remains authoritative for scores, tags, correction and audit. Live reads combine tags through indexed read-only attachment/join or equivalent bulk lookup; public database/static/offline artifacts materialize public tags only at generation time. Generated copies require invalidation on classification changes; there is no continuous live-read-model synchronization. Scores remain private.
 - E07 Step 3 revision, UTC 2026-10-20, scope v2 unchanged, architecture revision A2; Codex single exposed rater, R1, starting revision unchanged: **0.95 reaffirmed** for the total cycle. Removing live projection synchronization offsets cross-database availability/locking and artifact-generation integration. Earlier snapshots remain historical; no measured performance improvement is claimed.
+
+</details>

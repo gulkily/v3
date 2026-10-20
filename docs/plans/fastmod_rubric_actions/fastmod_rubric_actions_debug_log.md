@@ -73,3 +73,36 @@ No supported findings.
 ### Uncertain assessments
 
 - Read-only attachment versus bulk lookup remains an implementation-contract choice to validate in Stage 1, particularly for unavailable stores, locking and filtering before pagination. No benchmark claim was made.
+
+
+## 2026-10-20 — Revised Step 2, scope v3
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md`, Enhancement Requests / Experimental Effort Estimation: recorded the user's explicit scope reduction separately from original approvals and the 1.20 discovery estimate. New 0.85 projection covers the reduced total cycle, including prior work. Retain.
+- `step2_feature_description.md`, approval gate: revised Step 2 before revising Step 3 prevents architecture/scope agreement from silently authorizing application work. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- Original required historical records make the file longer than the one-page preference; an explicitly marked collapsed historical section preserves substantive approval/estimate context while keeping the active description separate. No historical content was deleted.
+
+
+## 2026-10-20 — Revised Step 3, scope v3
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, all wiring and recovery: worker eligibility is captured at publication rather than inferred from old scores; artifact guards and materialization have explicit production stages before verification. Retain.
+- `RAILSPIKE.md`, Enhancement Requests / Experimental Effort Estimation: historical v2 plan remains collapsed below active v3; 0.85 total reaffirmed without pretending prior investigation is free or reduced scope completes the original outcome. Retain.
+- `step3_development_plan_after.md`, gating: renewed Step 2 approval permits this plan, with application work still awaiting renewed Step 3 approval. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- Eight stages with six required fields plus retained history exceed the one-page preference. Compact explicit contracts preserve auditability; a reusable instruction-length resolution requires separate authorization.
