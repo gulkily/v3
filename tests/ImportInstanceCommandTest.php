@@ -73,6 +73,94 @@ final class ImportInstanceCommandTest
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
 
+    public function testLegacySourceWithImagesDownloadsImportsAndReportsRealBackupFailures(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('legacy-source', true);
+        $target = $w->repository('legacy-target', true);
+        $image = $w->root . '/pixel.png';
+        $w->put($image, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC'));
+        $store = new \ForumRewrite\Images\ImageStore($source);
+        $ref = \ForumRewrite\Images\ImageStore::inspect($image, 'Legacy pixel');
+        $store->put($image, $ref);
+        $bodies = ['legacy-text' => 'Legacy plain body', 'legacy-image' => \ForumRewrite\Images\ImageReference::line($ref), 'legacy-portable' => 'Legacy portable body'];
+        $original = [];
+        foreach ($bodies as $id => $body) {
+            $original[$id] = str_replace("Created-At: 2026-04-10T12:00:00Z\n", '', $w->post($id, '', $body));
+            $w->put($source . '/records/posts/' . $id . '.txt', $original[$id]);
+        }
+        $w->put($source . '/records/post-timestamps/legacy-portable.json', \ForumRewrite\Canonical\LegacyPostTimestamp::encode('legacy-portable', $original['legacy-portable'], '2020-01-02T03:04:05Z'));
+        $w->git($source);
+        $w->git($target);
+        $loader = new \ForumRewrite\Canonical\CanonicalRecordRepository($source, allowLegacyFilesystemTimestamp: false);
+        $expectedDates = [];
+        foreach ($bodies as $id => $_) { $expectedDates[$id] = $loader->loadPost('records/posts/' . $id . '.txt')->createdAt; }
+        $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/source.log', [
+            'FORUM_REPOSITORY_ROOT' => $source,
+            'FORUM_DATABASE_PATH' => $w->root . '/source-cache/index.sqlite3',
+            'FORUM_STATIC_HTML_ROOT' => $w->root . '/source-static',
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => $w->root . '/source-private/tasks.sqlite3',
+            'FORUM_APPROVED_MEMBERS_ONLY' => 'false',
+        ]);
+        foreach (['repository.tar.gz' => "\x1f\x8b", 'repository.zip' => 'PK', 'images.tar' => 'manifest.json'] as $format => $prefix) {
+            $bytes = file_get_contents($server->url . '/downloads/' . $format);
+            assertSame($prefix, substr($bytes, 0, strlen($prefix)), $format);
+            assertStringContains('200', $http_response_header[0]);
+        }
+        $command = [__DIR__ . '/../v3', 'import-instance', $server->url,
+            '--repository-root=' . $target, '--database-path=' . $w->root . '/target-cache/index.sqlite3', '--static-html-root=' . $w->root . '/target-static'];
+        [$code, $output] = $w->command([...$command, '--dry-run']);
+        assertSame(0, $code, $output);
+        assertStringContains('Preview result: complete', $output);
+        assertTrue(!is_file($target . '/records/posts/legacy-text.txt'));
+        [$code, $output] = $w->command($command);
+        assertSame(0, $code, $output);
+        assertStringContains('Import result: complete', $output);
+        assertStringContains('Image files are separate', $output);
+        $pdo = new PDO('sqlite:' . $w->root . '/target-cache/index.sqlite3');
+        foreach ($original as $id => $bytes) {
+            assertSame($bytes, file_get_contents($source . '/records/posts/' . $id . '.txt'));
+            assertSame($bytes, file_get_contents($target . '/records/posts/' . $id . '.txt'));
+            $query = $pdo->prepare('SELECT created_at FROM posts WHERE post_id = ?');
+            $query->execute([$id]);
+            assertSame($expectedDates[$id], $query->fetchColumn());
+        }
+        $query = null;
+        $pdo = null;
+        assertStringContains('Imported legacy-text', file_get_contents($w->root . '/target-static/current/tags/general.html'));
+        $targetServer = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/target.log', [
+            'FORUM_REPOSITORY_ROOT' => $target,
+            'FORUM_DATABASE_PATH' => $w->root . '/target-cache/index.sqlite3',
+            'FORUM_STATIC_HTML_ROOT' => $w->root . '/target-static',
+            'FORUM_TASK_QUEUE_DATABASE_PATH' => $w->root . '/target-private/tasks.sqlite3',
+            'FORUM_APPROVED_MEMBERS_ONLY' => 'false',
+        ]);
+        assertStringContains('Legacy plain body', file_get_contents($targetServer->url . '/threads/legacy-text'));
+        $head = $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1];
+        [$code, $output] = $w->command($command);
+        assertSame(0, $code, $output);
+        assertStringContains('import: 0', $output);
+        assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+        assertSame('', trim($w->command(['git', '-C', $source, 'status', '--porcelain'])[1]));
+
+        // Replay a source validation failure through the real exporter and CLI.
+        $w->put($source . '/records/posts/broken.txt', $w->post('broken', '', \ForumRewrite\Images\ImageReference::line($ref) . "\n" . \ForumRewrite\Images\ImageReference::line($ref)));
+        $w->git($source);
+        [$code, $output] = $w->command([...$command, '--dry-run']);
+        assertSame(1, $code, $output);
+        if (!str_contains($output, 'Source archive returned HTTP 409')) { throw new RuntimeException($output); }
+        assertStringContains('records/posts/broken.txt:', $output);
+        assertStringNotContains('--resume', $output);
+        assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+        unlink($source . '/records/posts/broken.txt');
+        $w->git($source);
+        unlink($store->resolve($ref));
+        [$code, $output] = $w->command([...$command, '--dry-run']);
+        assertSame(1, $code, $output);
+        if (!str_contains($output, 'Source archive returned HTTP 409')) { throw new RuntimeException($output); }
+        assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+    }
+
     public function testPartialResultsExplainConflictsAndExclusions(): void
     {
         $w = new ImportTestWorkspace();

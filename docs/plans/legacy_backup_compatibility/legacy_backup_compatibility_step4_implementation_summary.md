@@ -7,7 +7,7 @@ Debug mode: enabled
 - Steps 1–3 explicitly approved. Branch: `fix/legacy-backup-compatibility`; planning commit: `099870a5`.
 - Application work follows four approved stages. No deployment or production import is authorized. Production/WSL acceptance remains pending until verified there.
 - Requests: diagnose/prevent recurrence (implementation authorized); preserve remote findings (saved unchanged; include with operator documentation stage).
-- Stages 1–2 complete; Stage 3 next.
+- Stages 1–3 complete; Stage 4 next.
 
 ## Stage 1 - Legacy-compatible backup validation
 
@@ -20,3 +20,10 @@ Debug mode: enabled
 - Changes: Read at most 4 KiB from plain-text, unencoded error responses under the download deadline, reject invalid UTF-8, normalize Unicode/terminal controls, and display at most 1 KiB of detail. Non-text errors retain HTTP status and retry guidance. Resume advice is emitted only when the selected destination has a pending import journal.
 - Verification: `php tests/run.php ImportInstanceCommandTest ContentImportRecoveryTest` passed (11 tests). Includes bounded slow/oversized/HTML/binary/empty/control-filled failures, unchanged destination and no journal after 409, preserved independently pending journal, failed-publication advice, and successful offline resume. `git diff --check` passed.
 - Notes: Stage 1 commit `a2b7298b`. Production/WSL checks pending. Existing terminal sanitization remains in place; browser UI is unchanged.
+
+## Stage 3 - HTTP and import acceptance
+
+- Changes: Added real application-route coverage for committed legacy text/image posts, portable metadata, an existing image-store directory, tar/ZIP/image downloads, preview/import, preserved bytes/dates, published tag and served thread content, repeat import, and exporter 409/missing-image failures.
+- Verification: Focused new HTTP test passed. `php tests/run.php` completed: **1377 run, 1372 passed, 5 failed**. All backup/import/publication/recovery tests passed. `git diff --check` passed. Full-suite output: `/tmp/legacy-backup-full-tests.log` (temporary local evidence).
+- Baseline failures: All five reproduce individually on unchanged `main` (`4c521b74`) in a temporary detached worktree: `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts`, `LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary`, `LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel`, and `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`. Baseline logs: `/tmp/legacy-backup-baseline-tests.log`, `/tmp/legacy-backup-baseline-additional-tests.log`, `/tmp/legacy-backup-baseline-timing-tests.log`. Temporary worktree removed. These unrelated assertion failures remain follow-up work; the full suite is not green.
+- Notes: Stage 2 commit `77f391f2`. Fixture correction: static detail pages are disabled by default, so verify published tag output plus the actual served thread. Release SQLite inspection cursors before starting the target HTTP request. An invalid timestamp fails application startup with 503 before export; use a malformed image reference to exercise the exporter's path-bearing 409. No production/WSL success claimed.
