@@ -19,9 +19,15 @@ This application assumes a conservative shared-host style environment with:
 
 - PHP 8.1+
 - PDO SQLite
+- mbstring
 - standard filesystem functions
 - shell access sufficient for non-interactive `git` commands
 - Apache with `mod_rewrite`
+
+Deploy the complete tracked `third_party/markdown/` runtime with the application;
+the serving host does not need Composer. After renderer updates, refresh generated
+Docs pages and verify the reported document. See [Markdown renderer packaging,
+regeneration and rollback](markdown_renderer.md).
 
 ## Required Directory Layout
 
@@ -33,6 +39,7 @@ One workable layout:
     public/
     src/
     templates/
+    third_party/markdown/   packaged Markdown runtime and upstream notices
     scripts/
   repository/               writable canonical content checkout
     records/

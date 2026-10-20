@@ -17,7 +17,7 @@ final class PlatformDocsController
     ) {
     }
 
-    public function index(): string
+    public function index(array $query = []): string
     {
         $categories = [];
         foreach (PlatformDocsCatalog::entries() as $entry) {
@@ -25,28 +25,51 @@ final class PlatformDocsController
             $categories[$entry['category']][] = $entry;
         }
 
+        $inventory = PlatformDocsCatalog::inventory($this->projectRoot);
+        $matches = PlatformDocsCatalog::search($inventory, $query);
+        $page = max(1, min((int) ($query['page'] ?? 1), max(1, (int) ceil(count($matches) / 40))));
+        $library = array_slice($matches, ($page - 1) * 40, 40);
+        $folders = ['Project', 'docs'];
+        foreach ($inventory as $entry) {
+            $folderPath = $entry['folder'];
+            while ($folderPath !== '.' && $folderPath !== 'Project') {
+                $folders[] = $folderPath;
+                $folderPath = dirname($folderPath);
+            }
+        }
+        $folders = array_values(array_unique($folders));
+        sort($folders);
+        $total = count($matches);
         return $this->routeServices->renderPageTemplate(
             'platform_docs_index.php',
-            ['categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
+            ['library' => $library, 'folders' => $folders, 'inventory' => $inventory, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
             'Platform Docs',
             'docs',
+            ['/assets/platform_docs.js'],
         );
     }
 
-    public function document(string $encodedPath): ?string
+    public function document(string $encodedPath, array $query = []): ?string
     {
-        $sourcePath = PlatformDocsCatalog::normalizePath('docs/' . $encodedPath);
+        $sourcePath = PlatformDocsCatalog::sourceForRoute($encodedPath);
         if ($sourcePath === null) {
             return null;
         }
 
-        $filePath = PlatformDocsCatalog::resolvePath($this->projectRoot, $sourcePath);
-        $markdown = $filePath === null ? false : file_get_contents($filePath);
-        if ($markdown === false) {
+        $filePath = PlatformDocsCatalog::resolveSource($this->projectRoot, $sourcePath);
+        if ($filePath === null) {
             return null;
         }
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        $size = filesize($filePath);
+        $canView = $size !== false && $size <= PlatformDocsCatalog::MAX_DOCUMENT_BYTES && $extension !== 'pdf';
+        $contents = $canView ? file_get_contents($filePath) : false;
+        $documentHtml = $contents === false
+            ? '<p>Preview unavailable. Download the document to read it.</p>'
+            : ($extension === 'md' ? PublicMarkdownRenderer::render($contents, $sourcePath, $this->projectRoot)
+                : '<pre tabindex="0" role="region" aria-label="Document source"><code>' . htmlspecialchars($contents, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code></pre>');
 
-        $documentTitle = substr($sourcePath, strlen('docs/'));
+        $documentTitle = str_starts_with($sourcePath, 'docs/') ? substr($sourcePath, 5) : $sourcePath;
         foreach (PlatformDocsCatalog::entries() as $entry) {
             if ($entry['path'] === $sourcePath) {
                 $documentTitle = $entry['title'];
@@ -58,11 +81,21 @@ final class PlatformDocsController
             'platform_docs_document.php',
             [
                 'sourcePath' => $sourcePath,
-                'documentHtml' => PublicMarkdownRenderer::render($markdown),
+                'returnQuery' => array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar'),
+                'documentHtml' => $documentHtml,
+                'downloadHref' => '/docs/_download/' . implode('/', array_map(rawurlencode(...), explode('/', $sourcePath))),
                 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active()),
             ],
             $documentTitle . ' - Platform Docs',
             'docs',
+            ['/assets/platform_docs.js'],
+        );
+    }
+
+    public function missing(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'platform_docs_missing.php', [], 'Document not found', 'docs', ['/assets/platform_docs.js'],
         );
     }
 

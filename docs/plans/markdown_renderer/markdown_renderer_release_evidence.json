@@ -1,0 +1,12 @@
+{
+  "php": "8.1.2-1ubuntu2.26",
+  "composerAtRuntime": false,
+  "dynamicStaticParity": "passed",
+  "staleSharedRefreshRetry": "passed",
+  "missingBundle503": "passed",
+  "partialBundle503": "passed",
+  "failedBuildRetainsActiveRelease": "passed",
+  "completePackageRollbackAndRegeneration": "passed",
+  "staticBrowserScenarios": 8,
+  "root": "/tmp/markdown-release-uu_r0ebp"
+}

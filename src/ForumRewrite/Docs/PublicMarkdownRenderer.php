@@ -4,146 +4,94 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Docs;
 
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
+use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
+use League\CommonMark\MarkdownConverter;
+use League\CommonMark\Event\DocumentParsedEvent;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
+use League\CommonMark\Node\Inline\Text;
+use League\CommonMark\Extension\Table\Table;
+use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\CommonMark\Node\Block\IndentedCode;
+use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
+use League\CommonMark\Extension\CommonMark\Node\Inline\HtmlInline;
+
 final class PublicMarkdownRenderer
 {
-    public static function render(string $markdown): string
+    public static function render(string $markdown, ?string $sourcePath = null, ?string $projectRoot = null): string
     {
-        $lines = preg_split('/\r\n|\r|\n/', $markdown) ?: [];
-        $html = [];
-        $paragraph = [];
-        $listType = null;
-        $inCodeBlock = false;
-        $codeLines = [];
+        try {
+            return self::convert($markdown, $sourcePath, $projectRoot);
+        } catch (\Throwable $error) {
+            throw new MarkdownRenderingUnavailable('Markdown rendering unavailable; restore the complete application package.', 0, $error);
+        }
+    }
 
-        $flushParagraph = static function () use (&$html, &$paragraph): void {
-            if ($paragraph !== []) {
-                $html[] = '<p>' . self::inline(implode("\n", $paragraph)) . '</p>';
-                $paragraph = [];
-            }
-        };
-        $flushList = static function () use (&$html, &$listType): void {
-            if ($listType !== null) {
-                $html[] = '</' . $listType . '>';
-                $listType = null;
-            }
-        };
+    private static function convert(string $markdown, ?string $sourcePath, ?string $projectRoot): string
+    {
+        $autoload = dirname(__DIR__, 3) . '/third_party/markdown/vendor/autoload.php';
+        if (!is_file($autoload)) {
+            throw new \RuntimeException('Markdown runtime missing; restore the complete third_party/markdown package.');
+        }
+        require_once $autoload;
 
-        foreach ($lines as $line) {
-            if (preg_match('/^\s*```/', $line) === 1) {
-                $flushParagraph();
-                $flushList();
-                if ($inCodeBlock) {
-                    $html[] = '<pre><code>' . self::escape(implode("\n", $codeLines)) . '</code></pre>';
-                    $codeLines = [];
+        // Build a fresh environment so duplicate heading counters are document scoped.
+        $environment = new Environment([
+            'html_input' => 'escape',
+            'allow_unsafe_links' => false,
+            'max_nesting_level' => 100,
+            'max_delimiters_per_line' => 1000,
+            'heading_permalink' => [
+                'insert' => 'none',
+                'id_prefix' => '',
+                'fragment_prefix' => '',
+                'apply_id_to_heading' => true,
+            ],
+            'slug_normalizer' => ['unique' => 'document'],
+        ]);
+        $environment->addExtension(new CommonMarkCoreExtension());
+        $environment->addExtension(new GithubFlavoredMarkdownExtension());
+        $environment->addExtension(new HeadingPermalinkExtension());
+        $environment->addRenderer(FencedCode::class, new DocsCodeRenderer(), 10);
+        $environment->addRenderer(IndentedCode::class, new DocsCodeRenderer(), 10);
+        $environment->addRenderer(Table::class, new DocsTableRenderer(), 10);
+        $environment->addRenderer(HtmlBlock::class, new DocsHtmlRenderer(), 100);
+        $environment->addRenderer(HtmlInline::class, new DocsHtmlRenderer(), 100);
+
+        $projectRoot ??= dirname(__DIR__, 3);
+        $environment->addEventListener(DocumentParsedEvent::class, static function (DocumentParsedEvent $event) use ($sourcePath, $projectRoot): void {
+            $resources = [];
+            foreach ($event->getDocument()->iterator() as $node) {
+                if ($node instanceof Link || $node instanceof Image) {
+                    $resources[] = $node;
                 }
-                $inCodeBlock = !$inCodeBlock;
-                continue;
             }
-
-            if ($inCodeBlock) {
-                $codeLines[] = $line;
-                continue;
-            }
-
-            if (trim($line) === '') {
-                $flushParagraph();
-                $flushList();
-                continue;
-            }
-
-            if (preg_match('/^(#{1,6})\s+(.+?)\s*#*\s*$/', $line, $matches) === 1) {
-                $flushParagraph();
-                $flushList();
-                $level = strlen($matches[1]);
-                $html[] = "<h{$level}>" . self::inline($matches[2]) . "</h{$level}>";
-                continue;
-            }
-
-            if (preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) === 1) {
-                $flushParagraph();
-                $flushList();
-                $html[] = '<hr>';
-                continue;
-            }
-
-            if (preg_match('/^\s*([-*+])\s+(.+)$/', $line, $matches) === 1) {
-                $flushParagraph();
-                if ($listType !== 'ul') {
-                    $flushList();
-                    $html[] = '<ul>';
-                    $listType = 'ul';
+            foreach ($resources as $node) {
+                $url = $node instanceof Image ? null : PlatformDocsCatalog::resolveLink($node->getUrl(), $sourcePath, $projectRoot);
+                if ($url !== null) {
+                    $node->setUrl($url);
+                    continue;
                 }
-                $html[] = '<li>' . self::inline($matches[2]) . '</li>';
-                continue;
-            }
-
-            if (preg_match('/^\s*\d+[.)]\s+(.+)$/', $line, $matches) === 1) {
-                $flushParagraph();
-                if ($listType !== 'ol') {
-                    $flushList();
-                    $html[] = '<ol>';
-                    $listType = 'ol';
+                // Preserve formatted labels without emitting a clickable unsupported source.
+                while ($child = $node->firstChild()) {
+                    $node->insertBefore($child);
                 }
-                $html[] = '<li>' . self::inline($matches[1]) . '</li>';
-                continue;
+                $node->insertBefore(new Text($node instanceof Image ? ' (image unavailable)' : ' (source unavailable)'));
+                $node->detach();
             }
+        });
 
-            if (preg_match('/^>\s?(.*)$/', $line, $matches) === 1) {
-                $flushParagraph();
-                $flushList();
-                $html[] = '<blockquote><p>' . self::inline($matches[1]) . '</p></blockquote>';
-                continue;
-            }
-
-            $flushList();
-            $paragraph[] = $line;
+        $metadata = '';
+        if (preg_match('/\A(?:\xEF\xBB\xBF)?---\r?\n(.*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/s', $markdown, $match) === 1) {
+            $metadata = '<details class="docs-metadata"><summary>Document metadata</summary>' . "\n" . '<pre tabindex="0" role="region" aria-label="Document metadata"><code>'
+                . htmlspecialchars($match[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                . "</code></pre>\n</details>" . "\n";
+            $markdown = substr($markdown, strlen($match[0]));
         }
 
-        $flushParagraph();
-        $flushList();
-
-        if ($inCodeBlock) {
-            $html[] = '<pre><code>' . self::escape(implode("\n", $codeLines)) . '</code></pre>';
-        }
-
-        return implode("\n", $html);
-    }
-
-    private static function inline(string $text): string
-    {
-        $tokens = [];
-        $escaped = self::escape($text);
-        $escaped = preg_replace_callback('/`([^`]+)`/', static function (array $matches) use (&$tokens): string {
-            $token = "\x1A" . count($tokens) . "\x1A";
-            $tokens[$token] = '<code>' . $matches[1] . '</code>';
-
-            return $token;
-        }, $escaped) ?? $escaped;
-        $escaped = preg_replace_callback('/\[([^\]]+)\]\(([^\s)]+)(?:\s+&quot;[^)]*&quot;)?\)/', static function (array $matches): string {
-            $url = html_entity_decode($matches[2], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            if (!self::isSafeLink($url)) {
-                return $matches[1];
-            }
-
-            return '<a href="' . self::escape($url) . '">' . self::inline($matches[1]) . '</a>';
-        }, $escaped) ?? $escaped;
-        $escaped = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
-        $escaped = preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $escaped) ?? $escaped;
-
-        return strtr($escaped, $tokens);
-    }
-
-    private static function isSafeLink(string $url): bool
-    {
-        return str_starts_with($url, '/')
-            || str_starts_with($url, '#')
-            || preg_match('#^https?://#i', $url) === 1
-            || preg_match('#^mailto:#i', $url) === 1
-            || preg_match('~^(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+(?:#[A-Za-z0-9_-]+)?$~', $url) === 1;
-    }
-
-    private static function escape(string $value): string
-    {
-        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return $metadata . (string) (new MarkdownConverter($environment))->convert($markdown);
     }
 }

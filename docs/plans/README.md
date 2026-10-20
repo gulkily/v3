@@ -13,6 +13,9 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Shared Fastmod automatic-tagging flag](fastmod_tagging_flag/)
 
 - [Fastmod rubric actions — automatic meta tagging](fastmod_rubric_actions/)
+- [Documentation discovery](docs_discovery/)
+
+- [Markdown renderer](markdown_renderer/)
 
 - [Theme-specific selected nav styling](nav_active_theme_override/)
 - [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)

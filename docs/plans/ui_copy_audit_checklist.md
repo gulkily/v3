@@ -65,6 +65,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 ## Other cleanup
 
+- [x] **Platform Docs discovery** — Removed the repeated source-path explanation and guide descriptions; retained paths, starting guides and the architecture disclosure. Library controls precede the explainer. Desktop/mobile search, recovery and both theme-icon surfaces passed across dynamic/static delivery; recorded in [Docs Discovery](docs_discovery/docs_discovery_step4_implementation_summary.md).
+
 - [x] **SQLite query prerequisite message** — Removed the initial database-loading explanation; retained the live status element for query feedback. PHP syntax and diff checks passed.
 - [x] **Testing self-approval** — Added one conditional Account Key action, “Approve current account,” without setup explanations or a confirmation dialog. Reused existing feedback for failure/repair; recovery points back to the button. Desktop/mobile browser checks cover the action, overflow, marker removal, and persisted-failure/repair/retry. See [implementation summary](testing_self_approval/testing_self_approval_step4_implementation_summary.md).
 
@@ -143,3 +145,11 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 - [x] Removed the obsolete Fastmod explanation “Scores do not trigger actions” and shortened its existing Feature Flags link to the shared tagging control. Reused the existing flag row, signed save/failure feedback and tag presentation; no new styling or navigation destination.
 - Verification: real-browser signed toggle, simulated failed-save/retry, anonymous refusal, no model call on save, root tagging and site-off behavior passed. At 390px/1280px, checked light/dark/console/Word97/Chicago/Midnight flag and tag discovery without page overflow; inspected phone Midnight and desktop Word97 screenshots. Existing Feature Flags toolbar browser checks passed for filtering, empty/read-only states, keyboard and failed-save preservation. No unresolved layout issue introduced by this row was observed.
+## Markdown reader
+- [x] Keep existing document/source navigation. Added only code-language captions, collapsed metadata, and unavailable-source/image labels where formatting alone cannot communicate the fallback. Table/code scroll regions have accessible names; no extra reading instructions or controls. Verified desktop/mobile and keyboard with JavaScript disabled.
+
+## System State query controls
+
+- [x] Restored visible inline SQL on System State, with compact magnifying-glass buttons opening the query viewers. Accessible names and tooltips retain the query context; other pages keep their existing controls. PHP syntax and existing query coverage checks passed.
+
+- System State follow-up: query viewer icons use flat, transparent buttons without borders or shadows, including hover/pressed theme states; keyboard focus remains visible. CSS diff check passed.

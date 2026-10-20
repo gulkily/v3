@@ -23,7 +23,8 @@ final class PlatformDocsPageTest
 
         assertTrue(str_contains($html, '<h1>zenmemes Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
-        assertTrue(str_contains($html, '<h2>How it works</h2>'));
+        assertTrue(str_contains($html, '<summary>How it works</summary>'));
+        assertTrue(strpos($html, 'data-docs-library') < strpos($html, 'docs-transparency'));
         assertTrue(str_contains($html, '<title id="docs-diagram-title">zenmemes public architecture</title>'));
         assertTrue(str_contains($diagram, "Member's browser"));
         assertTrue(str_contains($diagram, 'signed write'));
@@ -36,6 +37,53 @@ final class PlatformDocsPageTest
         assertTrue(str_contains($html, '/docs/architecture/public_architecture_and_trust.md'));
         assertTrue(str_contains($html, '/docs/examples/extension_improvement_cookbook.md'));
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));
+    }
+
+    public function testLibraryBrowsesRepositoryFoldersAndRootDocuments(): void
+    {
+        $html = $this->render('/docs/?folder=docs%2Fresearch');
+        assertStringContains('All documents', $html);
+        assertStringContains('docs/research/', $html);
+        $root = $this->render('/docs/_project/README.md');
+        assertStringContains('Repository source: <code>README.md</code>', $root);
+        assertStringContains('<title>README.md - Platform Docs', $root);
+    }
+
+    public function testSearchAndReturnStateWorkWithoutJavaScript(): void
+    {
+        $html = $this->render('/docs/?q=SCHEMA_VERSION&folder=Project');
+        assertStringContains('CONTRIBUTING.md', $html);
+        assertStringContains('q=SCHEMA_VERSION&amp;folder=Project', $html);
+        $reader = $this->render('/docs/_project/CONTRIBUTING.md?q=SCHEMA_VERSION&folder=Project');
+        assertStringContains('/docs/?q=SCHEMA_VERSION&amp;folder=Project#docs-library-heading', $reader);
+        $empty = $this->render('/docs/?q=no-such-doc-7aa32');
+        assertStringContains('0 documents', $empty);
+        assertStringContains('No documents found.', $empty);
+        $data = json_decode($this->render('/docs/_search.json'), true, flags: JSON_THROW_ON_ERROR);
+        assertTrue(count($data['entries']) > 1200);
+        assertTrue(in_array('README.md', array_column($data['entries'], 'path'), true));
+    }
+
+    public function testAssetsAreInertAndMissingDocumentsOfferRecovery(): void
+    {
+        $html = $this->render('/docs/plans/backlog/feature-flags-redesign.html');
+        assertStringContains('&lt;html', strtolower($html));
+        assertStringContains('/docs/_download/docs/plans/backlog/feature-flags-redesign.html', $html);
+        assertSame(1, substr_count(strtolower($html), '<html'));
+        $example = $this->render('/docs/examples/secrets.php.example');
+        assertStringContains('replace-with-real-key', $example);
+        assertStringContains('&lt;?php', $example);
+        assertStringContains('tabindex="0" role="region" aria-label="Document source"', $example);
+        $pdf = $this->render('/docs/research/sigtbd_fault_tolerant_governance_for_internet_message_boards.pdf');
+        assertStringContains('Preview unavailable', $pdf);
+        assertStringContains('Download</a>', $pdf);
+        $missing = $this->render('/docs/not-present.md');
+        assertStringContains('data-docs-return', $missing);
+        assertStringContains('data-docs-document-retry', $missing);
+        $download = $this->render('/docs/_download/docs/examples/secrets.php.example');
+        assertSame(file_get_contents(dirname(__DIR__) . '/docs/examples/secrets.php.example'), $download);
+        $invalid = $this->render('/docs/_download/docs/%2e%2e/private.md');
+        assertStringContains('<h1>Not Found</h1>', $invalid);
     }
 
     public function testPublicIndexUsesConcreteCopy(): void
@@ -65,11 +113,11 @@ final class PlatformDocsPageTest
         $architecture = $this->render('/docs/architecture/public_architecture_and_trust.md');
 
         assertTrue(str_contains($catalogued, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
-        assertTrue(str_contains($catalogued, '<h1>Extension and Improvement Cookbook</h1>'));
+        assertTrue(str_contains($catalogued, '<h1 id="extension-and-improvement-cookbook">Extension and Improvement Cookbook</h1>'));
         assertTrue(str_contains($uncatalogued, 'Repository source: <code>docs/railspike/README.md</code>'));
-        assertTrue(str_contains($uncatalogued, '<h1>Railspike</h1>'));
+        assertTrue(str_contains($uncatalogued, '<h1 id="railspike">Railspike</h1>'));
         assertTrue(str_contains($architecture, 'Repository source: <code>docs/architecture/public_architecture_and_trust.md</code>'));
-        assertTrue(str_contains($architecture, '<h1>Public Architecture and Trust Model</h1>'));
+        assertTrue(str_contains($architecture, '<h1 id="public-architecture-and-trust-model">Public Architecture and Trust Model</h1>'));
         assertTrue(str_contains($architecture, 'The public record lives in Git'));
     }
 
@@ -78,7 +126,7 @@ final class PlatformDocsPageTest
         $workflow = $this->render('/docs/railspike/RAILSPIKE.md');
         $guide = $this->render('/docs/reference/railspike_workflow.md');
         $legacy = $this->render('/docs/fdp/FEATURE_DEVELOPMENT_PROCESS.md');
-        assertStringContains('<h1>Railspike</h1>', $workflow);
+        assertStringContains('<h1 id="railspike">Railspike</h1>', $workflow);
         assertStringContains('Git subtree', $guide);
         assertStringContains('tree has been removed', strip_tags($guide));
         assertStringContains('<h1>Not Found</h1>', $legacy);
@@ -119,6 +167,109 @@ final class PlatformDocsPageTest
         assertTrue(!str_contains($html, '<script>'));
         assertTrue(!str_contains($html, 'href="javascript:'));
         assertTrue(str_contains($html, 'href="https://example.test/docs"'));
+    }
+
+
+    public function testCoreFormattingAndDocumentScopedAnchors(): void
+    {
+        $source = "# Same\n\n# Same\n\n- [x] Done\n  - Nested\n\n[ref][r] and ~~old~~ and _emphasis_\n\n[r]: https://example.test\n";
+        $html = PublicMarkdownRenderer::render($source);
+        assertStringContains('id="same"', $html);
+        assertStringContains('id="same-1"', $html);
+        assertStringContains('disabled=""', $html);
+        assertSame(2, substr_count($html, '<ul>'));
+        assertStringContains('<del>old</del>', $html);
+        assertStringContains('<em>emphasis</em>', $html);
+        assertStringContains('href="https://example.test"', $html);
+        assertSame($html, PublicMarkdownRenderer::render($source));
+        $guide = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'));
+        assertSame(4, substr_count($guide, '<table>'));
+        assertSame(1, substr_count($guide, '<ol>'));
+        $procedure = explode('</ol>', explode('<ol>', $guide)[1])[0];
+        assertSame(6, substr_count($procedure, '<li>'));
+    }
+
+
+    public function testDocumentLinkPolicyCoversAllMarkdownLinkForms(): void
+    {
+        $source = "[CLI](v3_cli.md#delete-a-canonical-record)\n\n[architecture][a]\n\n[a]: ../architecture/public_architecture_and_trust.md\n\n<https://example.test/guide>\n\n[section](#local)\n\n![Logo](../../public/logo.svg)";
+        $html = PublicMarkdownRenderer::render($source, 'docs/reference/author_post_retraction.md');
+        assertStringContains('href="/docs/reference/v3_cli.md#delete-a-canonical-record"', $html);
+        assertStringContains('href="/docs/architecture/public_architecture_and_trust.md"', $html);
+        assertStringContains('href="https://example.test/guide"', $html);
+        assertStringContains('href="#local"', $html);
+        assertStringContains('Logo (image unavailable)', $html);
+        assertTrue(!str_contains($html, '<img'));
+        foreach (['//evil.test/x', 'javascript:alert%281%29', 'data:text/html,evil',
+            '%2e%2e/v3_cli.md', '%252e%252e/v3_cli.md', '../../autoload.php',
+            '/autoload.php', '../missing.md', 'v3_cli.md?download=1', 'file:///etc/passwd',
+            'https://example.test/%0aevil', '..%5c..%5cautoload.php'] as $url) {
+            $result = PublicMarkdownRenderer::render('[label](' . $url . ')', 'docs/reference/author_post_retraction.md');
+            if ($url === 'https://example.test/%0aevil') {
+                // Encoded HTTP path data does not become local file access or HTML.
+                assertStringContains('href="https://example.test/%0aevil"', $result);
+            } else {
+                assertTrue(!str_contains($result, '<a '));
+                assertStringContains('label (source unavailable)', $result);
+            }
+        }
+        assertStringContains('source unavailable', PublicMarkdownRenderer::render('[source](autoload.php)'));
+    }
+
+    public function testDocumentLinkPolicyRejectsSymlinkEscape(): void
+    {
+        $root = sys_get_temp_dir() . '/docs-link-policy-' . bin2hex(random_bytes(4));
+        mkdir($root . '/docs', 0777, true);
+        file_put_contents($root . '/secret.md', '# Private');
+        symlink($root . '/secret.md', $root . '/docs/escape.md');
+        try {
+            $html = PublicMarkdownRenderer::render('[private](escape.md)', 'docs/index.md', $root);
+            assertTrue(!str_contains($html, '<a '));
+            assertStringContains('source unavailable', $html);
+        } finally {
+            unlink($root . '/docs/escape.md');
+            unlink($root . '/secret.md');
+            rmdir($root . '/docs');
+            rmdir($root);
+        }
+    }
+
+
+    public function testInventoriedSpecialSourcesRemainReadableAndEscaped(): void
+    {
+        $root = dirname(__DIR__);
+        $slides = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/research/sigtbd_fault_tolerant_governance_slides_5min_marp.md'));
+        assertStringContains('<summary>Document metadata</summary>', $slides);
+        assertStringContains('marp: true', $slides);
+        assertStringContains('id="byzantine-fault-tolerant-governance-for-internet-message-boards"', $slides);
+        assertTrue(!str_contains($slides, '<style'));
+        assertTrue(!str_contains($slides, '&lt;!--'));
+        $diagrams = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/architecture/private_messaging.md'));
+        assertSame(5, substr_count($diagrams, '<figcaption>Mermaid source</figcaption>'));
+        assertStringContains('class="language-mermaid"', $diagrams);
+        $logo = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/railspike/README.md'));
+        assertStringContains('Railspike rail and spike logo (image unavailable)', $logo);
+        assertTrue(!str_contains($logo, '<img'));
+        $references = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/plans/thywill_site_option_review.md'), 'docs/plans/thywill_site_option_review.md');
+        assertTrue(!str_contains($references, '[T1]'));
+        assertStringContains('source unavailable', $references);
+        $hostile = PublicMarkdownRenderer::render("---\nstyle: <script>bad</script>\n---\n\n~~~html\n<script>bad</script>\n~~~\n\n<img src=x alt=\"&lt;script&gt;\">\n");
+        assertTrue(!str_contains($hostile, '<script>'));
+        assertStringContains('&lt;script&gt;', $hostile);
+        assertStringContains('<figcaption>html</figcaption>', $hostile);
+    }
+
+
+    public function testDocumentTemplatePreservesCodeBytes(): void
+    {
+        $markdown = file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md');
+        $expected = PublicMarkdownRenderer::render($markdown, 'docs/reference/author_post_retraction.md');
+        $page = $this->render('/docs/reference/author_post_retraction.md');
+        preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $expected, $expectedBlocks);
+        preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $page, $actualBlocks);
+        assertSame($expectedBlocks[1], $actualBlocks[1]);
+        assertStringContains('tabindex="0" role="region" aria-label="Table"', $page);
+        assertStringContains('tabindex="0" role="region" aria-label="Code"', $page);
     }
 
     private function render(string $path): string

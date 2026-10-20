@@ -484,3 +484,30 @@
     max-width: none;
   }
 }
+
+.codebase-query-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  padding: 0.25rem;
+  margin-left: 0.35rem;
+  font-size: 0.78rem;
+  width: auto;
+}
+
+/* Keep query icons flat across themes, including pressed states. */
+:root button.codebase-query-action,
+:root button.codebase-query-action:hover,
+:root button.codebase-query-action:active {
+  appearance: none;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: inherit;
+}
+
+:root button.codebase-query-action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

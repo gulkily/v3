@@ -65,7 +65,7 @@ $rowCountSources = [
 <?php endforeach; ?>
 <?php endif; ?>
     </p>
-<?= $partial('partials/query_action.php', ['queryKey' => 'codebase-admins', 'queryLabel' => 'Instance admins', 'querySql' => "SELECT username_token, MIN(username) AS username FROM profiles WHERE approved_by_label = 'root' GROUP BY username_token ORDER BY username_token ASC;"]) ?>
+<?= $partial('partials/query_action.php', ['queryCompact' => true, 'queryKey' => 'codebase-admins', 'queryLabel' => 'Instance admins', 'querySql' => "SELECT username_token, MIN(username) AS username FROM profiles WHERE approved_by_label = 'root' GROUP BY username_token ORDER BY username_token ASC;"]) ?>
   </article>
   <article class="card" data-role="codebase-state">
     <h2>Repository</h2>
@@ -78,7 +78,7 @@ $rowCountSources = [
             <code><?= $e($row['value']) ?></code>
 <?php if (isset($row['source'])): ?>
 <?php if (str_starts_with($row['source'], 'SELECT')): ?>
-<?= $partial('partials/query_action.php', ['queryKey' => 'codebase-' . $row['label'], 'queryLabel' => $row['label'], 'querySql' => $row['source']]) ?>
+<?= $partial('partials/query_action.php', ['queryCompact' => true, 'queryKey' => 'codebase-' . $row['label'], 'queryLabel' => $row['label'], 'querySql' => $row['source']]) ?>
 <?php else: ?>
             <div class="codebase-source"><code><?= $e($row['source']) ?></code></div>
 <?php endif; ?>
@@ -100,7 +100,7 @@ $rowCountSources = [
             <code><?= $e($row['value']) ?></code>
 <?php if (isset($row['source'])): ?>
 <?php if (str_starts_with($row['source'], 'SELECT')): ?>
-<?= $partial('partials/query_action.php', ['queryKey' => 'codebase-' . $row['label'], 'queryLabel' => $row['label'], 'querySql' => $row['source']]) ?>
+<?= $partial('partials/query_action.php', ['queryCompact' => true, 'queryKey' => 'codebase-' . $row['label'], 'queryLabel' => $row['label'], 'querySql' => $row['source']]) ?>
 <?php else: ?>
             <div class="codebase-source"><code><?= $e($row['source']) ?></code></div>
 <?php endif; ?>
@@ -121,7 +121,7 @@ $rowCountSources = [
           <td>
             <code><?= $e($value) ?></code>
 <?php if (isset($rowCountSources[$label])): ?>
-<?= $partial('partials/query_action.php', ['queryKey' => 'codebase-count-' . $label, 'queryLabel' => $label, 'querySql' => $rowCountSources[$label]]) ?>
+<?= $partial('partials/query_action.php', ['queryCompact' => true, 'queryKey' => 'codebase-count-' . $label, 'queryLabel' => $label, 'querySql' => $rowCountSources[$label]]) ?>
 <?php endif; ?>
           </td>
         </tr>

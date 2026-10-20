@@ -2,10 +2,56 @@
   <article class="card">
     <h1><?= $e($platformDocsBrand['heading']) ?></h1>
     <p><?= $e($platformDocsBrand['introduction']) ?></p>
-    <p>Each entry below shows the path of the file it is rendered from, so you can read the source and propose changes.</p>
   </article>
-  <article class="card docs-transparency">
-    <h2>How it works</h2>
+  <details class="card docs-starting-guides">
+    <summary>Starting guides</summary>
+    <ul class="docs-entry-list">
+<?php foreach ($categories as $entries): ?>
+<?php foreach ($entries as $entry): ?>
+      <li><a href="<?= $e($entry['href']) ?>"><?= $e($entry['title']) ?></a><br><code><?= $e($entry['path']) ?></code></li>
+<?php endforeach; ?>
+<?php endforeach; ?>
+    </ul>
+  </details>
+<?php
+$filterValue = static fn (string $key): string => is_string($query[$key] ?? null) ? $query[$key] : '';
+$returnQuery = array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar');
+$docHref = static fn (string $href): string => $href . ($returnQuery === [] ? '' : '?' . http_build_query($returnQuery));
+?>
+<section class="card docs-library" aria-labelledby="docs-library-heading" data-docs-library>
+  <h2 id="docs-library-heading">All documents</h2>
+  <form action="/docs/" method="get" data-docs-form>
+    <label>Search <input name="q" type="search" value="<?= $e($filterValue('q')) ?>"></label>
+<?php foreach (['folder' => ['Folder', $folders], 'category' => ['Category', array_values(array_unique(array_column($inventory, 'category')))], 'group' => ['Collection', ['Current guidance', 'Plans and history', 'Workflow']]] as $key => [$label, $options]): ?>
+    <label><?= $e($label) ?> <select name="<?= $e($key) ?>">
+      <option value="">All</option>
+<?php foreach ($options as $item): ?>
+      <option value="<?= $e($item) ?>"<?= $filterValue($key) === $item ? ' selected' : '' ?>><?= $e($item) ?></option>
+<?php endforeach; ?>
+    </select></label>
+<?php endforeach; ?>
+    <button type="submit">Search</button>
+    <a href="/docs/#docs-library-heading" data-docs-clear>Clear filters</a>
+  </form>
+  <p role="status" data-docs-count><?= $e((string) $total) ?> documents</p>
+  <p data-docs-error hidden>Search unavailable. <button type="button" data-docs-retry>Retry</button> or <a href="/docs/">refresh the library</a>.</p>
+  <ul class="docs-entry-list" data-docs-results>
+<?php foreach ($library as $entry): ?>
+    <li><a href="<?= $e($docHref($entry['href'])) ?>"><?= $e($entry['title']) ?></a><br><code><?= $e($entry['path']) ?></code> · <?= $e($entry['group']) ?></li>
+<?php endforeach; ?>
+  </ul>
+  <p data-docs-empty<?= $total > 0 ? ' hidden' : '' ?>>No documents found.</p>
+  <nav aria-label="Document pages" data-docs-pages>
+<?php foreach (['Previous' => $page - 1, 'Next' => $page + 1] as $label => $target): ?>
+<?php if ($target >= 1 && ($target - 1) * 40 < $total): ?>
+    <a href="?<?= $e(http_build_query(array_merge($returnQuery, ['page' => $target]))) ?>#docs-library-heading"><?= $e($label) ?></a>
+<?php endif; ?>
+<?php endforeach; ?>
+  </nav>
+</section>
+
+  <details class="card docs-transparency">
+    <summary>How it works</summary>
     <div class="docs-architecture-diagram">
       <svg viewBox="0 0 740 250" role="img" aria-labelledby="docs-diagram-title docs-diagram-description">
         <title id="docs-diagram-title"><?= $e($platformDocsBrand['architectureTitle']) ?></title>
@@ -61,19 +107,6 @@
       </section>
     </div>
     <p>Full details: <a href="/docs/architecture/public_architecture_and_trust.md">Public Architecture and Trust Model</a></p>
-  </article>
-<?php foreach ($categories as $category => $entries): ?>
-  <article class="card docs-category">
-    <h2><?= $e($category) ?></h2>
-    <ul class="docs-entry-list">
-<?php foreach ($entries as $entry): ?>
-      <li>
-        <a href="<?= $e($entry['href']) ?>"><?= $e($entry['title']) ?></a>
-        <p><?= $e($entry['description']) ?></p>
-        <code><?= $e($entry['path']) ?></code>
-      </li>
-<?php endforeach; ?>
-    </ul>
-  </article>
-<?php endforeach; ?>
+  </details>
+
 </section>
