@@ -14,7 +14,7 @@ namespace ForumRewrite;
 final class ProfilePresentationContent
 {
     /**
-     * @var array<string, array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, architectureDescription:string, busyTitle:string, busyHeading:string, busyMessage:string, socialLinks:list<array{label:string, url:string}>, introText:string, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}>
+     * @var array<string, array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, busyTitle:string, busyHeading:string, busyMessage:string, socialLinks:list<array{label:string, url:string}>, introText:string, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}>
      */
     private const EDITORIAL = [
         'zenmemes' => [
@@ -25,7 +25,6 @@ final class ProfilePresentationContent
             ],
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
-            'architectureDescription' => 'A member\'s browser creates signed writes to records in Git, which produce SQLite and static HTML views for readers.',
             'busyTitle' => 'Meme Oven Is Busy',
             'busyHeading' => 'Meme Oven Is Busy',
             'busyMessage' => 'The next batch of zenmemes is still baking. Try again in a moment.',
@@ -55,7 +54,6 @@ final class ProfilePresentationContent
             ],
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
-            'architectureDescription' => 'A member\'s browser creates signed writes to records in Git, which produce SQLite and static HTML views for readers.',
             'busyTitle' => 'Temporarily Busy',
             'busyHeading' => 'Temporarily Busy',
             'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
@@ -85,7 +83,6 @@ final class ProfilePresentationContent
             ],
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
-            'architectureDescription' => 'A member\'s browser creates signed writes to records in Git, which produce SQLite and static HTML views for readers.',
             'busyTitle' => 'Temporarily Busy',
             'busyHeading' => 'Temporarily Busy',
             'busyMessage' => 'The site is temporarily busy. Try again in a moment.',
@@ -115,7 +112,6 @@ final class ProfilePresentationContent
             ],
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
-            'architectureDescription' => 'A member\'s browser creates signed writes to records in Git, which produce SQLite and static HTML views for readers.',
             'busyTitle' => 'Cypher\'s Full',
             'busyHeading' => 'The Cypher\'s Full',
             'busyMessage' => 'The mic\'s getting passed around right now. Try again in a moment.',
@@ -170,7 +166,7 @@ final class ProfilePresentationContent
 
     /**
      * @param array<string, mixed> $profile
-     * @return array{heading:string, introduction:string, architectureTitle:string, architectureDescription:string}
+     * @return array{heading:string, introduction:string, architectureTitle:string}
      */
     public static function platformDocs(array $profile): array
     {
@@ -181,7 +177,6 @@ final class ProfilePresentationContent
             'heading' => $displayName . ' Platform Docs',
             'introduction' => sprintf($editorial['docsIntro'], $displayName),
             'architectureTitle' => sprintf($editorial['architectureTitle'], $displayName),
-            'architectureDescription' => $editorial['architectureDescription'],
         ];
     }
 
@@ -202,7 +197,7 @@ final class ProfilePresentationContent
 
     /**
      * @param array<string, mixed> $profile
-     * @return array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, architectureDescription:string, busyTitle:string, busyHeading:string, busyMessage:string, socialLinks:list<array{label:string, url:string}>, introText:string, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}
+     * @return array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, busyTitle:string, busyHeading:string, busyMessage:string, socialLinks:list<array{label:string, url:string}>, introText:string, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}
      */
     private static function editorial(array $profile): array
     {

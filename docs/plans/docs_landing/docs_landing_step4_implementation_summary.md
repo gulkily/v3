@@ -47,3 +47,18 @@ Follow-up cycle: predecessor [docs_discovery](../docs_discovery/docs_discovery_s
   - Restoring the path note and descriptions reverses the earlier UI-copy cleanup at the user's approved request. A new UI-copy checklist entry records this, with verification pending Stage 8.
   - The local server on port 8004 runs from this checkout and no longer shows `main`. Port 8007 serves the `v3-codex-3` checkout. Both were left running and untouched.
   - Known interim state: the results view still contains the Stage 1 select form, so it shows two search inputs. Stage 4 replaces it. The diagram still scrolls horizontally inside its frame on narrow screens (Stage 3).
+
+## Stage 3 - How it works diagram and concepts
+- Changes:
+  - Replaced the fixed-viewBox SVG with an ordered list (`.docs-flow`) labeled by the profile's architecture title. The four boxes and three labeled edges (signed write, builds, serves) are real text, so the list is the text equivalent and no hidden duplicate is needed. Arrows are decorative CSS (`aria-hidden`). The key icon stays as a decorative inline SVG drawn in `currentColor`.
+  - Vertical by default, with labels set beside the arrows so they never touch. It switches to a row only when the panel is at least 52rem wide (container query), which the shared 760px shell never reaches. Boxes are capped at 22rem and centered.
+  - All colors come from `--ink`, `--ink-soft`, `--line`, `--panel` and `--input-bg`. Box backgrounds use `--input-bg` because chicago's `--page-bg` is the teal desktop. Diagram text is at least 0.875rem.
+  - The concept blurbs stack, and become three columns only when each column gets at least 18rem (a 58rem container).
+  - Removed the now-unused `architectureDescription` profile string.
+- Verification:
+  - `php tests/run.php PlatformDocsCatalogTest PlatformDocsPageTest ProfilePresentationContentTest`: passed 28/28. Diagram assertions now check the labeled list for every site profile, 4 nodes and 3 decorative arrows, and the absence of command text.
+  - `php -l`, `git diff --check`: passed.
+  - Chromium screenshots: default at 1280 and 320px, chicago at 1280, and midnight at 200% zoom (320 CSS px). No horizontal overflow, no label overlapping an arrow, and no diagram text below 0.875rem (the only text under 0.85rem on the page is the site's existing inline `code` at 13px in the blurbs).
+- Notes:
+  - Departure: the brief allowed either an SVG with `<title>`/`<desc>` or HTML/CSS. HTML/CSS was chosen because a fixed SVG can only shrink or scroll, not stack.
+  - Inside the 760px shell the diagram is always vertical. A horizontal layout would have to break code paths mid-word to fit.

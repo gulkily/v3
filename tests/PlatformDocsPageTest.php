@@ -19,7 +19,7 @@ final class PlatformDocsPageTest
     public function testPublicIndexListsCataloguedDocuments(): void
     {
         $html = $this->render('/docs/');
-        $diagram = explode('</svg>', (string) strstr($html, '<svg'), 2)[0];
+        $diagram = explode('</ol>', (string) strstr($html, '<ol class="docs-flow"'), 2)[0];
 
         assertTrue(str_contains($html, '<h1>zenmemes Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
@@ -40,13 +40,14 @@ final class PlatformDocsPageTest
         assertTrue(str_contains($results, 'data-docs-library>'));
         assertTrue(str_contains($results, 'docs-topics" data-docs-landing hidden'));
         assertTrue(str_contains($this->render('/docs/?q=retraction'), 'value="retraction"'));
-        assertTrue(str_contains($html, '<title id="docs-diagram-title">zenmemes public architecture</title>'));
+        assertTrue(str_contains($html, '<ol class="docs-flow" aria-label="zenmemes public architecture">'));
+        assertSame(4, substr_count($diagram, 'class="docs-flow__node'));
+        assertSame(3, substr_count($diagram, '<span class="docs-flow__arrow" aria-hidden="true"></span>'));
         assertTrue(str_contains($diagram, "Member's browser"));
         assertTrue(str_contains($diagram, 'signed write'));
         assertTrue(str_contains($diagram, 'static HTML'));
         assertTrue(!str_contains($diagram, './v3 rebuild'));
         assertTrue(!str_contains($diagram, './v3 build-static'));
-        assertTrue(!str_contains($diagram, 'docs-diagram-private'));
         assertTrue(str_contains($html, 'href="/docs/reference/author_post_retraction.md"'));
         assertTrue(str_contains($html, 'Post Retraction: Complete Workflow'));
         assertTrue(str_contains($html, '/docs/architecture/public_architecture_and_trust.md'));

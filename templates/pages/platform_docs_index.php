@@ -19,46 +19,28 @@ $documentCount = array_sum($counts['group']);
   </article>
   <article class="card docs-transparency" data-docs-landing<?= $isResults ? ' hidden' : '' ?>>
     <h2>How it works</h2>
-    <div class="docs-architecture-diagram">
-      <svg viewBox="0 0 740 250" role="img" aria-labelledby="docs-diagram-title docs-diagram-description">
-        <title id="docs-diagram-title"><?= $e($platformDocsBrand['architectureTitle']) ?></title>
-        <desc id="docs-diagram-description"><?= $e($platformDocsBrand['architectureDescription']) ?></desc>
-        <defs>
-          <marker id="docs-diagram-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-            <path d="M0,0 L8,4 L0,8 z" class="docs-diagram-arrowhead" />
-          </marker>
-        </defs>
-
-        <rect x="20" y="45" width="145" height="125" rx="4" class="docs-diagram-box" />
-        <text x="92" y="76" text-anchor="middle" class="docs-diagram-title">Member's browser</text>
-        <path d="M79 98 v33 M63 113 h32 M67 105 l24 24 M91 105 l-24 24" class="docs-diagram-key" />
-        <text x="92" y="153" text-anchor="middle" class="docs-diagram-caption">private key (never leaves)</text>
-
-        <path d="M165 110 H220" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <text x="192" y="96" text-anchor="middle" class="docs-diagram-caption">signed write</text>
-
-        <rect x="220" y="30" width="150" height="160" rx="4" class="docs-diagram-records" />
-        <text x="295" y="70" text-anchor="middle" class="docs-diagram-title">records/ in Git</text>
-        <text x="295" y="110" text-anchor="middle" class="docs-diagram-code">records/posts/</text>
-        <text x="295" y="140" text-anchor="middle" class="docs-diagram-code">records/identity/</text>
-        <text x="295" y="170" text-anchor="middle" class="docs-diagram-caption">source of truth</text>
-
-        <path d="M370 80 H470" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <rect x="470" y="42" width="130" height="70" rx="4" class="docs-diagram-box" />
-        <text x="535" y="84" text-anchor="middle" class="docs-diagram-title">SQLite</text>
-
-        <path d="M370 150 H470" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <rect x="470" y="128" width="130" height="70" rx="4" class="docs-diagram-box" />
-        <text x="535" y="170" text-anchor="middle" class="docs-diagram-title">static HTML</text>
-        <text x="535" y="220" text-anchor="middle" class="docs-diagram-caption">built from records, can be rebuilt</text>
-
-        <path d="M600 77 H620 V110 H640" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <path d="M600 163 H620 V110" class="docs-diagram-arrow" />
-        <rect x="640" y="75" width="80" height="70" rx="4" class="docs-diagram-box" />
-        <text x="680" y="117" text-anchor="middle" class="docs-diagram-title">Readers</text>
-
-      </svg>
-    </div>
+    <ol class="docs-flow" aria-label="<?= $e($platformDocsBrand['architectureTitle']) ?>">
+      <li class="docs-flow__node">
+        <svg class="docs-flow__key" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M20 4 v32 M4 20 h32 M8 8 l24 24 M32 8 l-24 24" /></svg>
+        <strong>Member's browser</strong>
+        <span>private key (never leaves)</span>
+      </li>
+      <li class="docs-flow__edge"><span class="docs-flow__arrow" aria-hidden="true"></span><span>signed write</span></li>
+      <li class="docs-flow__node docs-flow__node--source">
+        <strong>records/ in Git</strong>
+        <code>records/posts/</code>
+        <code>records/identity/</code>
+        <span>source of truth</span>
+      </li>
+      <li class="docs-flow__edge"><span class="docs-flow__arrow" aria-hidden="true"></span><span>builds</span></li>
+      <li class="docs-flow__node docs-flow__node--views">
+        <strong>SQLite</strong>
+        <strong>static HTML</strong>
+        <span>built from records, can be rebuilt</span>
+      </li>
+      <li class="docs-flow__edge"><span class="docs-flow__arrow" aria-hidden="true"></span><span>serves</span></li>
+      <li class="docs-flow__node"><strong>Readers</strong></li>
+    </ol>
     <div class="docs-transparency-grid">
       <section>
         <h3>Public records live in Git</h3>

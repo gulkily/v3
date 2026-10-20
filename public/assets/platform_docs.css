@@ -140,85 +140,182 @@
   min-height: 2.75rem;
 }
 
+/* Concept blurbs: three columns only where each column gets at least 18rem. */
+.docs-transparency {
+  container-type: inline-size;
+}
+
 .docs-transparency-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
+@container (min-width: 58rem) {
+  .docs-transparency-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .docs-transparency-grid h3 {
-  margin-bottom: 0.35rem;
+  margin: 0 0 0.35rem;
 }
 
 .docs-transparency-grid p {
   margin-top: 0;
 }
 
-.docs-architecture-diagram {
-  max-width: 100%;
+/*
+ * How it works: an ordered list read as text, drawn as boxes and arrows.
+ * Vertical by default (the shared shell, narrow screens, zoom); a row only in a wide panel.
+ */
+.docs-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   margin: 1rem 0;
-  overflow-x: auto;
+  padding: 1rem;
+  list-style: none;
   border: 1px solid var(--line);
   background: var(--panel);
-}
-
-.docs-architecture-diagram svg {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  height: auto;
-  color: var(--ink);
-}
-
-.docs-architecture-diagram .docs-diagram-box,
-.docs-architecture-diagram .docs-diagram-records {
-  fill: var(--panel);
-  stroke: var(--line);
-  stroke-width: 2;
-}
-
-.docs-architecture-diagram .docs-diagram-records {
-  stroke: var(--ink);
-  stroke-width: 4;
-}
-
-.docs-architecture-diagram .docs-diagram-arrow,
-.docs-architecture-diagram .docs-diagram-key {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 2;
-}
-
-.docs-architecture-diagram .docs-diagram-arrowhead {
-  fill: var(--ink);
-}
-
-.docs-architecture-diagram .docs-diagram-title {
-  fill: var(--ink);
   font-family: var(--ui-font);
-  font-size: 14px;
-  font-weight: 700;
 }
 
-.docs-architecture-diagram .docs-diagram-caption {
-  fill: var(--ink-soft);
+.docs-flow__node {
+  width: min(100%, 22rem);
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.docs-flow__node {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 2px solid var(--line);
+  background: var(--input-bg);
+  color: var(--ink);
+  text-align: center;
+}
+
+.docs-flow__node--source {
+  border: 4px solid var(--ink);
+}
+
+.docs-flow__node strong {
+  font-size: 1rem;
+}
+
+.docs-flow__node span {
+  color: var(--ink-soft);
   font-family: var(--body-font);
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 
-.docs-architecture-diagram .docs-diagram-code {
-  fill: var(--ink);
+.docs-flow__node code {
   font-family: var(--code-font);
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 
-@media (max-width: 720px) {
-  .docs-transparency-grid {
-    grid-template-columns: 1fr;
+.docs-flow__node--views strong + strong {
+  margin-top: 0.25rem;
+  padding-top: 0.45rem;
+  border-top: 2px solid var(--line);
+  align-self: stretch;
+}
+
+.docs-flow__key {
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+/* Edges: an arrow (line and head) with its label beside it, so the two never touch. */
+.docs-flow__edge {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  min-height: 3.5rem;
+  padding-inline-start: calc(50% - 0.4rem);
+  color: var(--ink);
+  font-family: var(--body-font);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.docs-flow__edge > span:last-child {
+  align-self: center;
+}
+
+.docs-flow__arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  width: 0.8rem;
+  padding-block: 0.25rem;
+}
+
+.docs-flow__arrow::before {
+  content: "";
+  flex: 1;
+  width: 2px;
+  background: var(--ink);
+}
+
+.docs-flow__arrow::after {
+  content: "";
+  border: 0.4rem solid transparent;
+  border-top: 0.55rem solid var(--ink);
+  border-bottom-width: 0;
+}
+
+/* A row needs room for unbroken code paths and edge labels; the shared shell stays vertical. */
+@container (min-width: 52rem) {
+  .docs-flow {
+    flex-direction: row;
+    align-items: center;
   }
 
-  .docs-architecture-diagram svg {
-    min-width: 700px;
+  .docs-flow__node,
+  .docs-flow__edge {
+    width: auto;
+    margin-inline: 0;
+  }
+
+  .docs-flow__node {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .docs-flow__edge {
+    flex: 0 0 auto;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0.35rem;
+    min-height: 0;
+    min-width: 4.5rem;
+    padding: 0 0.25rem;
+    text-align: center;
+  }
+
+  .docs-flow__arrow {
+    flex-direction: row;
+    width: auto;
+    height: 0.8rem;
+    padding: 0;
+  }
+
+  .docs-flow__arrow::before {
+    width: auto;
+    height: 2px;
+  }
+
+  .docs-flow__arrow::after {
+    border: 0.4rem solid transparent;
+    border-left: 0.55rem solid var(--ink);
+    border-right-width: 0;
   }
 }
 
