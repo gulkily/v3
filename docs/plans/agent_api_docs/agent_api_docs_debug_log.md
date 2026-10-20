@@ -47,3 +47,21 @@
 
 ### Uncertain assessments
 - The 50-line guideline does not distinguish data entries from logic. Suggestion: clarify that declarative data may exceed it.
+
+## 2026-10-20T22:41:29Z — Step 4 (Implementation)
+
+### Necessary/useful instructions
+- `step3_development_plan_do.md` Completion Contract, "end-to-end outcome": requiring the worked example to run in tests caught a real documentation error (`create_prepared_post` needs `record_path`, `post_id` and `author_identity_id` echoed back), which a source-only review in Steps 1-3 had missed. Retain.
+- `RAILSPIKE.md` Enhancement Requests: recording the members-only gate change as an in-scope refinement, and asking first because it changed access policy, kept a policy change out of silent implementation. Retain.
+- `step4_implementation_after.md` item 7, "Identify reproduced baseline failures": comparing against the base commit and the runner's history kept 5 pre-existing failures from being reported as regressions. Retain.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Follow-up Cycles Before Merge: a new branch from `origin/main` was used, not reuse.
+- Documentation-only scope checks: application change.
+
+### Uncertain assessments
+- The organization rule assumes the planning commit's links resolve. Step 1 linked an untracked source checklist; the user's mid-cycle request to commit it to `main` resolved this here. Suggestion: clarify how to handle approved plans that link to uncommitted source documents.
+- Step 3 required a "skip with reason" for missing gpg, but the host runner has no skip mechanism. Suggestion: clarify that Step 3 verification plans should be checked against the host test runner's capabilities.
