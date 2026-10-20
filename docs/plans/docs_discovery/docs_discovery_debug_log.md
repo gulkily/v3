@@ -48,3 +48,22 @@
 ### Uncertain assessments
 - `step3_development_plan_after.md`, one-page limit: the compact plan is 658 whitespace-delimited words including navigation and required repeated fields; physical pagination depends on rendering. Clarify the page target with a word budget or field allowance.
 - `step3_development_plan_do.md`, stage sizing: discovery and static publication estimates depend on existing host integration; inspect during implementation and split oversized stages before dependent work, preserving scope and required commit cadence. Retain the sizing check.
+
+## 2026-10-20 00:00:02 UTC — Step 4
+
+### Necessary/useful instructions
+- `step4_implementation_before.md`, Planning Docs Commit Gate: isolated the cycle on `feature/docs-discovery`, organized and committed approved plans as `00a1511a`, and created the summary afterward. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol: each of five stages has verification and a summary-bearing commit before the next stage (`e69cac54`, `b42ca8d3`, `d4ed4ee5`, `4ddb6812`, `721ff486`). Retain.
+- `step4_implementation_do.md`, Completion Contract: required Tools entry, search/read/return, safe downloads, static publication and recovery rather than direct-route checks alone. Chromium and local publication acceptance exposed fixture cookie/configuration issues that PHP tests did not cover. Retain.
+- `step4_implementation_after.md`, final verification statuses: distinguished focused PHP/browser acceptance from the unrun repository-wide and copied-package dependency-removal harnesses, and kept production deployment outside scope. Retain.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- `RAILSPIKE.md`, effort-study snapshots: this cycle was not selected for the experiment.
+- `step4_implementation_do.md`, documentation-only boundary: this is an approved application change.
+
+### Uncertain assessments
+- `step3_development_plan_do.md`, approximately one-hour stage targets: five functional stages remained manageable, but complete-library builds and UI acceptance required substantially more lines than the alternative 50-line heuristic. Clarify that the size heuristic must not discourage necessary safety/publication wiring and verification.
+- `step4_implementation_after.md`, full-suite versus focused verification: the explicit distinction helped avoid overstating results; repository-specific guidance could further identify mandatory broad checks without forcing expensive redundant full-library builds. Retain the current reporting requirement.
