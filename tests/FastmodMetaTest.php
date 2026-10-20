@@ -62,6 +62,23 @@ final class FastmodMetaTest
         } finally {unlink($path);}
     }
 
+    public function testCliRemoveAndRollbackPreserveSuppression(): void
+    {
+        $dir=sys_get_temp_dir().'/meta-cli-'.bin2hex(random_bytes(5));mkdir($dir);
+        try {
+            $path=$dir.'/scores.sqlite3';$m=new FastmodMetaStore(new PDO('sqlite:'.$path));
+            $m->recordEligibleRoot('root','h','r','m',0.9);$m->apply(['post_id'=>'root','content_hash'=>'h','rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]],'m');
+            file_put_contents($dir.'/secrets.php','<?php return '.var_export(['FAST_SCORING_DATABASE_PATH'=>$path],true).';');
+            $run=static function(string $args) use ($dir): array {
+                $cmd='FORUM_SECRETS_PATH='.escapeshellarg($dir.'/secrets.php').' php '.escapeshellarg(dirname(__DIR__).'/scripts/fast_score.php').' '.$args;
+                exec($cmd,$output,$exit);assertSame(0,$exit);return json_decode(implode("\n",$output),true,512,JSON_THROW_ON_ERROR);
+            };
+            assertSame(1,(int)$run('meta-status')['items'][0]['active']);
+            assertSame(1,(int)$run('meta-remove --post-id=root')['items'][0]['suppressed']);
+            assertSame(1,(int)$run('meta-rollback')['items'][0]['suppressed']);
+        } finally {foreach(glob($dir.'/*') as $f)unlink($f);rmdir($dir);}
+    }
+
     public function testIneligibleEvidenceCannotCreateTags(): void
     {
         $m=new FastmodMetaStore(new PDO('sqlite::memory:'));$m->recordEligibleRoot('root','h','r','m',0.9);

@@ -18,7 +18,7 @@ final class FastmodMetaRead
     public static function activeIds(string $path, bool $required=false): array
     {
         if (!file_exists($path)) {
-            if ($required) throw new \RuntimeException('Fastmod meta state is unavailable. Restore private state or disable meta tagging.');
+            if ($required) error_log('Fastmod meta state is not initialized. Run ./v3 fast-score meta-status; restore private state if this instance previously had meta tags.');
             return [];
         }
         $private=new PDO('sqlite:file:'.$path.'?mode=ro');

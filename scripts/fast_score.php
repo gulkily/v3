@@ -37,6 +37,23 @@ try {
     }
     $privateConfig = PrivateConfig::load($projectRoot);
     $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
+    if (str_starts_with($command, 'meta-')) {
+        $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig);
+        if ($command === 'meta-remove') {
+            $id=trim((string)($options['post-id'] ?? ''));
+            if ($id === '') throw new InvalidArgumentException('--post-id is required.');
+            $runtime->store->removeAndSuppress($id);
+        } elseif ($command === 'meta-rollback') {
+            $runtime->store->rollback();
+        } elseif ($command === 'meta-retry') {
+            $path=(string)($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: $projectRoot.'/state/cache/post_index.sqlite3'));
+            if (!is_file($path)) throw new InvalidArgumentException('Read-model database not found.');
+            $config=FastScoringConfig::fromPrivateConfig($privateConfig);
+            $runtime->recover(new PDO('sqlite:'.$path), FastScoringRubricRevision::fromConfig($config,$projectRoot));
+        }
+        fwrite(STDOUT,json_encode($runtime->store->status(),JSON_THROW_ON_ERROR)."\n");
+        exit(0);
+    }
     if ($command === 'audit') {
         if (($options['include-existing'] ?? false) !== true) {
             throw new InvalidArgumentException('--include-existing is required for historical audit. Run: ./v3 fast-score audit --include-existing');
@@ -308,6 +325,10 @@ try {
 function fastScoreOptions(string $command, array $arguments): array
 {
     $definitions = [
+        'meta-status' => [],
+        'meta-remove' => ['post-id'=>true],
+        'meta-rollback' => [],
+        'meta-retry' => ['database-path'=>true],
         'status' => [
             'limit' => true,
             'verbose' => false,
@@ -409,6 +430,7 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 
 function fastScoreUsage($stream): void
 {
+    fwrite($stream, "Root meta tags: ./v3 fast-score meta-status|meta-remove --post-id=ID|meta-rollback|meta-retry [--database-path=PATH]\n");
     fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--verbose] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=... [--run]\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
 }
 

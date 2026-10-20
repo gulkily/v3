@@ -81,3 +81,9 @@ Revised Steps 2 and 3 approved. New branch `feat/fastmod-root-meta`, revised pla
 - Changes: shared root-label reads use a request-local indexed public-ID join. Private state is read in bulk through a separate read-only connection; only IDs enter temporary request state, keeping private evidence inaccessible to user-entered SQL. Shared existing thread/card/tag/Forte/profile queries inherit merged labels. No persistent main schema/data copy or new styling.
 - Verification: 4 meta tests passed, including effective labels, unchanged main human labels/scores and absence of private tables/attachments from the live connection. Joins precede filtering/counts. No core read-model schema/column dependency change.
 - Notes: chose the approved bulk-read alternative to attaching private tables to programmable query connections. Generated artifacts are handled in Stages 5–6; CLI unavailable-state recovery follows.
+
+## Stage 4 - CLI correction and recovery (v3)
+
+- Changes: added meta-status, meta-remove --post-id, meta-rollback and meta-retry; registered default-off configuration and threshold environment/template keys. CLI uses existing operator shell trust; no browser controls. Missing initial private state does not break ordinary reading; operator logs identify initialization/restore action.
+- Verification: 10 meta/private-config checks passed, including real CLI subprocess status/remove/rollback and persistent suppression. Existing score store/read model remain separate.
+- Notes: explicit command status includes generation/dirty state; artifact flush wiring is Stage 5. Restore workflow remains excluded.

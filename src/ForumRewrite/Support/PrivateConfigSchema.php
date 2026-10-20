@@ -27,6 +27,8 @@ final class PrivateConfigSchema
             'SCRIPTURE_RESPONSE_TIMING_ENABLED' => self::definition(false, 'boolean'),
             'LLM_EXTRA_HEADERS' => self::definition([], 'map', template: true),
             'LLM_POST_ANALYSIS_PROMPT_PATH' => self::definition('prompts/dedalus_post_analysis_system.txt', 'path', template: true),
+            'FASTMOD_META_TAGGING_ENABLED' => self::definition(false, 'boolean', template: true),
+            'FASTMOD_META_THRESHOLD' => self::definition(0.90, 'number', template: true),
             'FAST_SCORING_ENABLED' => self::definition(false, 'boolean', template: true),
             'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED' => self::definition(false, 'boolean', template: true),
             'FAST_SCORING_LLM_PROVIDER' => self::definition(null, 'string'),
