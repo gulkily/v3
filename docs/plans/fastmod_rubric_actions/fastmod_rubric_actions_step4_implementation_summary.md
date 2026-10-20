@@ -138,3 +138,14 @@ Raw local verification logs: `/tmp/fastmod-root-meta-full-tests.log`, `/tmp/fast
 ### Closeout record correction
 
 Stage 8 committed as `1f35e6be`. Corrected the trial ledger's stale top-level replanning status in a separate documentation follow-up; historical estimates and substantive records remain unchanged. No application changes, extra scope or test-result changes. All eight stage commits include their stage summary; revised planning plus eight stages gives nine commits before this correction and the final debug report.
+
+## Follow-up request — meta tagging feature flag
+
+- Request: make automatic meta tagging controllable as a feature flag.
+- Disposition: bounded follow-up to the completed root-tagging slice; changes the earlier no-browser-controls boundary, so not silently incorporated into completed scope. Reuse the existing Feature Flags page and signed operator setting flow; keep threshold configuration private and behavior default-off.
+- Investigation: FeatureFlagRegistry already groups Fastmod flags, but meta enablement currently reads only private configuration. Registering a flag alone would be insufficient: publication eligibility and worker fresh-enable checks must use the same evaluator/site state and configuration precedence.
+- Approval status: scope discussion requested; follow-up implementation not yet approved. No application changes or instance flag changes made. Preserve completed E07 v3 outcome/estimates; do not infer a new study selection or revise its closeout score.
+
+- Follow-up refinement: user rejected per-rubric/tag flag growth and requested implementing one shared automatic-tagging capability. [Separate Step 2](../fastmod_tagging_flag/fastmod_tagging_flag_step2_feature_description.md) now captures that scope; meta remains the first fixed mapping with private threshold. Fresh approval pending; prior completed E07 scope/estimates and instance settings remain unchanged.
+
+- Follow-up implemented on `feat/fastmod-tagging-flag`: [shared flag implementation summary](../fastmod_tagging_flag/fastmod_tagging_flag_step4_implementation_summary.md). Fresh Steps 2/3 approvals led to planning `a9a009eb`, flag policy `28b5246e`, runtime wiring `7ac693f3` and signed UI verification `bb2dca18`; closeout follows in that cycle. The old meta-only setting remains a fallback, with one general site flag taking precedence. This is separate work; E07 outcome/estimates and study acceptance remain unchanged.

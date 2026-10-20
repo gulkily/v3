@@ -191,14 +191,20 @@ provider requests. Real-model rubric accuracy remains an operator evaluation.
 
 ## Automatic root meta tagging
 
-Set `FASTMOD_META_TAGGING_ENABLED=true` with scoring/ordinary enqueue enabled
-and the meta rubric selected. `FASTMOD_META_THRESHOLD` defaults to 0.90, inclusive.
+Enable **Automatic Fastmod tagging** in Tools → Feature Flags → Fastmod,
+with scoring/ordinary enqueue enabled and the meta rubric selected. One shared
+`FASTMOD_AUTOMATIC_TAGGING_ENABLED` flag controls all automatic tag mappings;
+this release includes only the root meta mapping. `FASTMOD_META_THRESHOLD`
+defaults to 0.90, inclusive.
 Only newly published local roots qualify; replies, imports, old work and backfill
 do not. Existing tags are stable across configuration/model/rubric changes.
 
 Use `./v3 fast-score meta-status`, `meta-remove --post-id=ID`, `meta-retry`
 and `meta-rollback` for shell-based operation. Removal suppresses reapplication;
 rollback preserves human tags. Disabling stops additions without removing tags.
-No browser controls, tag styling, restore workflow or automatic reclassification
-is added. See the [runbook](../runbooks/fastmod_meta_tagging.md) for backup, artifact
-freshness and interrupted recovery.
+The enable switch reuses existing Feature Flags; no tag styling, mapping editor,
+restore workflow or automatic reclassification is added. Shared environment
+override takes priority over a saved site value, then legacy
+`FASTMOD_META_TAGGING_ENABLED` is a compatibility fallback. A saved shared false
+overrides legacy true. See the [runbook](../runbooks/fastmod_meta_tagging.md) for
+backup, artifact freshness and interrupted recovery.
