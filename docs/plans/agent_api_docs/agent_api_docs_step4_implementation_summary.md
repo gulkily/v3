@@ -33,6 +33,16 @@ Branch: `feat/agent-api-docs`, from `origin/main` at `c6fe21b4` (which adds the 
   - I removed a draft line telling agents to "post at a human pace": it was unapproved policy, and Step 1 excludes rate-limit statements. A test guards against "rate limit" text appearing.
   - The reference link resolves after Stage 3.
 
+## Stage 3 - Protocol reference
+- Changes:
+  - New `docs/reference/agent_api.md`, covering policy, request encodings and response formats, identities and usernames, signing, the flow, text rules, approval and members-only access, unsigned routes, retries, main errors, and "Current limitations" (the statements Cycles A-C will change).
+  - New `PlatformDocsCatalog` entry, "Agent API Reference" (Extending the Platform).
+- Verification:
+  - `php tests/run.php LlmsTxtRendererTest PlatformDocsCatalogTest PlatformDocsPageTest PlatformDocsStaticTest`: 19 passed. The new test checks that every route the reference names is in `ApiRouteCatalog`, and that the reference renders at `/docs/reference/agent_api.md`.
+  - Each error message and field name was checked against `LocalWriteService`, `AuthApiController`, `OpenPgpKeyInspector` and `RouteServices`. The rendered checklist link resolves to `/docs/plans/agent_api_onboarding_checklist.md`.
+- Notes:
+  - The worked-example script is not linked from the reference: `/docs` only serves Markdown. Stage 4 decides where the example's sample responses go.
+
 ## Enhancement Requests
 
 - **Request:** commit the onboarding checklist to `main` and push it, so the user can work on other cycles elsewhere. / **Disposition:** separate work, done outside this branch (`c6fe21b4` on `origin/main`); this branch is based on it. / **Approval:** requested by the user. / **Outcome:** pushed.

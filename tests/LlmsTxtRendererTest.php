@@ -63,6 +63,31 @@ final class LlmsTxtRendererTest
         assertStringNotContains('/api/create_thread (', $text);
     }
 
+    public function testReferenceNamesOnlyCatalogRoutesAndRenders(): void
+    {
+        $reference = (string) file_get_contents(dirname(__DIR__) . LlmsTxtRenderer::REFERENCE_PATH);
+        preg_match_all('#/api/([a-z_]+)#', $reference, $paths);
+        preg_match_all('#`((?:prepare|create|finalize|get|list|inspect|auth|authenticate)_[a-z_]+)`#', $reference, $names);
+        $named = array_diff(array_unique(array_merge($paths[1], $names[1])), ['prepare_token']);
+        assertTrue(count($named) >= 10, 'Expected the reference to name routes.');
+        foreach ($named as $name) {
+            assertTrue(in_array('/api/' . $name, ApiRouteCatalog::paths(), true), 'Reference names unknown route: ' . $name);
+        }
+
+        $root = sys_get_temp_dir() . '/agent-api-reference-' . bin2hex(random_bytes(6));
+        $repositoryRoot = __DIR__ . '/fixtures/parity_minimal_v1';
+        try {
+            (new ReadModelBuilder($repositoryRoot, $root . '.sqlite3', new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+            ob_start();
+            (new Application(dirname(__DIR__), $repositoryRoot, $root . '.sqlite3'))->handle('GET', LlmsTxtRenderer::REFERENCE_PATH);
+            $page = (string) ob_get_clean();
+        } finally {
+            @unlink($root . '.sqlite3');
+        }
+        assertStringContains('<h1>Agent API reference</h1>', $page);
+        assertStringContains('Repository source: <code>docs/reference/agent_api.md</code>', $page);
+    }
+
     public function testMembersOnlyInstanceServesAgentDocsButNotContent(): void
     {
         $root = sys_get_temp_dir() . '/llms-members-only-' . bin2hex(random_bytes(6));

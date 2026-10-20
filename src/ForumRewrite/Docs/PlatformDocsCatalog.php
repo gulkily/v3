@@ -43,6 +43,12 @@ final class PlatformDocsCatalog
                 'description' => 'Worked examples of extending the site, including with coding agents.',
             ],
             [
+                'title' => 'Agent API Reference',
+                'category' => 'Extending the Platform',
+                'path' => 'docs/reference/agent_api.md',
+                'description' => 'How an agent creates an OpenPGP identity and publishes signed posts over HTTP.',
+            ],
+            [
                 'title' => 'Agent Reply Analyze/Publish Contract',
                 'category' => 'Extending the Platform',
                 'path' => 'docs/specs/agent_reply_one_step_analyze_publish_contract_v1.md',
