@@ -195,7 +195,8 @@
 .reply-viewport-active .compose-action-menu-list {
   max-height: var(--reply-viewport-menu-height);
   max-width: calc(var(--reply-viewport-width) - 14px);
-  min-width: 0;
+  width: max-content;
+  min-width: min(12rem, calc(var(--reply-viewport-width) - 14px));
   overflow-y: auto;
 }
 .reply-viewport-active .compose-action-menu-list > button {

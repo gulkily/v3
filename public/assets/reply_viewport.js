@@ -8,6 +8,7 @@
     document.querySelectorAll('[data-phone-reply]').forEach(function (form) {
       const body = form.querySelector('textarea[name="body"]');
       const actions = form.querySelector('.compose-form-actions');
+      const menu = actions && actions.querySelector('.compose-action-menu');
       if (!body || !actions) return;
       let frame = 0;
       let interacting = false;
@@ -15,7 +16,8 @@
       function update() {
         frame = 0;
         const active = document.activeElement;
-        const editing = interacting || active === body || actions.contains(active);
+        const editing = interacting || active === body || actions.contains(active) ||
+          (menu && menu.open && active === document.body && form.classList.contains('reply-viewport-active'));
         if (!phone.matches || !userEditing || !editing || viewport.scale !== 1 || !form.getClientRects().length) {
           form.classList.remove('reply-viewport-active');
           for (const key of ['top', 'left', 'width', 'space', 'writing-height', 'menu-height']) {
@@ -51,7 +53,8 @@
       }
       window.addEventListener('pointerup', endInteraction);
       window.addEventListener('pointercancel', endInteraction);
-      form.addEventListener('focusin', schedule);
+      if (menu) menu.addEventListener('toggle', schedule);
+      document.addEventListener('focusin', schedule);
       form.addEventListener('focusout', schedule);
       viewport.addEventListener('resize', schedule);
       viewport.addEventListener('scroll', schedule);
