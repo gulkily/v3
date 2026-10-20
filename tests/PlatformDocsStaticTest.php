@@ -44,6 +44,32 @@ final class PlatformDocsStaticTest
                 $staticRoot,
                 $publicRoot,
             );
+            // Every browse page is prebuilt and matches a live render of the same query.
+            $application = new \ForumRewrite\Application(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $databasePath, $publicRoot, $staticRoot);
+            $results = static fn (string $html): string => (string) preg_replace('/\s+/', ' ', explode('<nav class="docs-pages"', (string) strstr($html, '<p role="status"'), 2)[0]);
+            $browseQueries = PlatformDocsCatalog::browseQueries(PlatformDocsCatalog::inventory(dirname(__DIR__)), PlatformDocsCatalog::PAGE_SIZE);
+            assertTrue(count($browseQueries) > 300);
+            foreach ($browseQueries as $browseQuery) {
+                $file = $releaseRoot . PlatformDocsCatalog::browsePath($browseQuery);
+                assertTrue(is_file($file), $file);
+                ob_start();
+                $application->handle('GET', '/docs/?' . http_build_query($browseQuery));
+                assertSame($results((string) ob_get_clean()), $results((string) file_get_contents($file)), http_build_query($browseQuery));
+            }
+            $workflowPage = $this->render($controller, '/docs/?q=&folder=&category=&group=Workflow&page=');
+            assertStringContains('route-source: static-html', $workflowPage);
+            assertStringContains('href="/docs/?group=Workflow" aria-current="page"', $workflowPage);
+            assertStringContains('<code class="docs-result__path">docs/railspike/RAILSPIKE.md</code>', $workflowPage);
+            assertStringContains('<span aria-current="page">Page 2 of', $this->render($controller, '/docs/?group=Plans+and+history&page=2'));
+            assertStringContains('href="/docs/?category=architecture" aria-current="page"><span>Architecture</span>', $this->render($controller, '/docs/?category=Architecture'));
+            assertStringContains('href="/docs/?folder=docs%2Fplans%2Farchive" aria-current="page"', $this->render($controller, '/docs/?folder=docs%2Fplans%2Farchive'));
+            foreach (['/docs/?q=recovery', '/docs/?group=Workflow&category=railspike', '/docs/?page=999', '/docs/?folder=docs%2Fnot-a-folder'] as $shellRoute) {
+                $shell = $this->render($controller, $shellRoute);
+                assertStringContains('route-source: static-html', $shell);
+                assertStringContains('Searching this copy of the docs needs JavaScript.', $shell);
+                assertStringContains('<ol class="docs-results" data-docs-results> </ol>', (string) preg_replace('/\s+/', ' ', $shell));
+            }
+            assertTrue(!str_contains($this->render($controller, '/docs/'), 'needs JavaScript'));
             $index = $this->render($controller, '/docs/');
             $document = $this->render($controller, '/docs/examples/extension_improvement_cookbook.md');
             $invalid = $this->render($controller, '/docs/%2e%2e/README.md');

@@ -476,20 +476,21 @@
   font-size: 1rem;
 }
 
-.docs-filter-list {
+.docs-filter-list,
+.docs-filter-tree {
   margin: 0;
   padding: 0;
   list-style: none;
   font-family: var(--ui-font);
 }
 
-.docs-filter-list--tree .docs-filter-list--tree {
+.docs-filter-tree .docs-filter-tree {
   padding-inline-start: 1rem;
 }
 
 /* Flex summaries lose the native marker; draw one so open/closed state stays visible. */
 .docs-filters > summary::before,
-.docs-filter-list summary::before {
+.docs-filter-tree summary::before {
   content: "▸";
   content: "▸" / "";
   display: inline-block;
@@ -498,12 +499,12 @@
 }
 
 .docs-filters[open] > summary::before,
-.docs-filter-list details[open] > summary::before {
+.docs-filter-tree details[open] > summary::before {
   content: "▾";
   content: "▾" / "";
 }
 
-.docs-filter-list summary {
+.docs-filter-tree summary {
   display: flex;
   align-items: center;
   gap: 0 0.5rem;
@@ -512,7 +513,9 @@
   cursor: pointer;
 }
 
-.docs-filter-list__link {
+/* Filter links: name, then count; markup stays minimal because every browse page repeats it. */
+.docs-filter-list a,
+.docs-filter-tree a {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -523,18 +526,21 @@
   overflow-wrap: anywhere;
 }
 
-.docs-filter-list__link[aria-current] {
+.docs-filter-list a[aria-current],
+.docs-filter-tree a[aria-current] {
   border-inline-start-color: var(--active-line);
   background: var(--active-bg);
   color: var(--active-ink);
   font-weight: 700;
 }
 
-.docs-filter-list__count {
+.docs-filter-list a > span + span,
+.docs-filter-tree a > span + span,
+.docs-filter-tree summary > span {
   font-variant-numeric: tabular-nums;
 }
 
-.docs-filter-list summary .docs-filter-list__count {
+.docs-filter-tree summary > span {
   margin-inline-start: auto;
 }
 
@@ -606,6 +612,12 @@
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
+}
+
+.docs-notice {
+  padding: 0.75rem;
+  border: 2px solid var(--ink);
+  background: var(--input-bg);
 }
 
 .docs-empty p {

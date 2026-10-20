@@ -122,7 +122,9 @@ final class StaticArtifactBuilder
 
         $this->reportProgress('Fingerprinting and copying assets referenced by rendered pages...');
         $this->copyOfflineRuntimeFiles();
-        $totalSharedPages = 11 + count(PlatformDocsCatalog::inventory($this->projectRoot));
+        $docsInventory = PlatformDocsCatalog::inventory($this->projectRoot);
+        $browseQueries = PlatformDocsCatalog::browseQueries($docsInventory, PlatformDocsCatalog::PAGE_SIZE);
+        $totalSharedPages = 11 + count($docsInventory) + count($browseQueries);
         $this->reportProgress("Rendering shared pages (0/{$totalSharedPages}).");
         $this->reportProgress("Rendering shared pages (1/{$totalSharedPages}): /.");
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
@@ -172,6 +174,15 @@ final class StaticArtifactBuilder
             $this->writeRouteArtifact($application, $route, $this->artifactRoot . $entry['href'] . '.html');
         }
         $this->writeRouteArtifact($application, '/docs/_missing.html', $this->artifactRoot . '/docs/_missing.html');
+        // Browse pages let readers without JavaScript filter and page the static library;
+        // anything else (search text, combined filters) is served the browser search shell.
+        $this->writeRouteArtifact($application, '/docs/_search.html', $this->artifactRoot . '/docs/_search.html');
+        foreach ($browseQueries as $index => $browseQuery) {
+            $route = '/docs/?' . http_build_query($browseQuery);
+            $completed = 12 + count($docsInventory) + $index;
+            $this->reportProgress("Rendering shared pages ({$completed}/{$totalSharedPages}): {$route}.");
+            $this->writeRouteArtifact($application, $route, $this->artifactRoot . PlatformDocsCatalog::browsePath($browseQuery));
+        }
         foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $entry) {
             $source = PlatformDocsCatalog::resolveSource($this->projectRoot, $entry['path']);
             $destination = $this->artifactRoot . '/docs/_download/' . $entry['path'] . '.bin';

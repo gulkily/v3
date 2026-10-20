@@ -602,6 +602,11 @@ final class Application
             return;
         }
 
+        if ($path === '/docs/_search.html') {
+            $this->sendHtml($this->platformDocsController()->index([], true), 200);
+            return;
+        }
+
         if ($path === '/docs/_search.json') {
             $this->sendJson(['entries' => \ForumRewrite\Docs\PlatformDocsCatalog::inventory($this->projectRoot)], 200);
             return;

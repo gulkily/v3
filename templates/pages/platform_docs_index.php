@@ -34,7 +34,9 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
     <p class="docs-intro__home" data-docs-results-only<?= $isResults ? '' : ' hidden' ?>><a href="/docs/"><span aria-hidden="true">←</span> Docs home</a></p>
     <p class="docs-intro__browse" data-docs-landing<?= $isResults ? ' hidden' : '' ?>><a href="/docs/?page=1">Browse all docs <span aria-hidden="true">→</span></a></p>
   </article>
-  <article class="card docs-transparency" data-docs-landing<?= $isResults ? ' hidden' : '' ?>>
+<?php if (!$isResults): ?>
+<?php /* Results pages load without the landing sections; the browser only switches views in place from the landing page. */ ?>
+  <article class="card docs-transparency" data-docs-landing>
     <h2>How it works</h2>
     <ol class="docs-flow" aria-label="<?= $e($platformDocsBrand['architectureTitle']) ?>">
       <li class="docs-flow__node">
@@ -75,7 +77,7 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
     <p>Full details: <a href="/docs/architecture/public_architecture_and_trust.md">Public Architecture and Trust Model</a></p>
   </article>
 
-  <div class="docs-topics" data-docs-landing<?= $isResults ? ' hidden' : '' ?>>
+  <div class="docs-topics" data-docs-landing>
 <?php foreach ($categories as $topic => $entries): ?>
     <section class="card docs-topic<?= count($entries) > 1 ? ' docs-topic--wide' : '' ?>" aria-labelledby="docs-topic-<?= $e(\ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($topic)) ?>">
       <h2 id="docs-topic-<?= $e(\ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($topic)) ?>"><?= $e($topic) ?></h2>
@@ -91,7 +93,7 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
     </section>
 <?php endforeach; ?>
   </div>
-  <section class="card docs-overview" aria-labelledby="docs-overview-heading" data-docs-landing<?= $isResults ? ' hidden' : '' ?>>
+  <section class="card docs-overview" aria-labelledby="docs-overview-heading" data-docs-landing>
     <h2 id="docs-overview-heading">All documents</h2>
     <p><?= $e(number_format($documentCount)) ?> documents across architecture, specs, runbooks, plans, and more. <a href="/docs/?page=1">Browse all</a></p>
     <ul class="docs-quick-links">
@@ -100,6 +102,7 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
 <?php endforeach; ?>
     </ul>
   </section>
+<?php endif; ?>
 <section class="card docs-library" aria-labelledby="docs-library-heading" data-docs-library<?= $isResults ? '' : ' hidden' ?>>
   <h2 id="docs-library-heading" tabindex="-1">Documents</h2>
   <ul class="docs-chips" aria-label="Active filters" data-docs-chips<?= $active === [] ? ' hidden' : '' ?>>
@@ -108,7 +111,10 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
 <?php endforeach; ?>
     <li><a href="<?= $e($resultsUrl([])) ?>">Clear all</a></li>
   </ul>
-  <p role="status" data-docs-count><?= $e(number_format($total)) ?> <?= $total === 1 ? 'document' : 'documents' ?></p>
+  <p role="status" data-docs-count><?= $searchShell ? '' : $e(number_format($total)) . ($total === 1 ? ' document' : ' documents') ?></p>
+<?php if ($searchShell): ?>
+  <noscript><p class="docs-notice">Searching this copy of the docs needs JavaScript. You can still browse by collection, category or folder under Filters.</p></noscript>
+<?php endif; ?>
   <p data-docs-error hidden>Search unavailable. <button type="button" data-docs-retry>Retry</button> or <a href="/docs/">refresh the library</a>.</p>
   <details class="docs-filters">
     <summary>Filters</summary>
@@ -117,7 +123,7 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
         <h3>Collection</h3>
         <ul class="docs-filter-list">
 <?php foreach ($counts['group'] as $group => $count): ?>
-          <li><a class="docs-filter-list__link" data-docs-filter="group" data-docs-value="<?= $e($group) ?>" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'group' => $group])) ?>"<?= ($active['group'] ?? null) === $group ? ' aria-current="page"' : '' ?>><span><?= $e($group) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($count)) ?></span></a></li>
+          <li><a href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'group' => $group])) ?>"<?= ($active['group'] ?? null) === $group ? ' aria-current="page"' : '' ?>><span><?= $e($group) ?></span> <span><?= $e(number_format($count)) ?></span></a></li>
 <?php endforeach; ?>
         </ul>
       </section>
@@ -125,7 +131,7 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
         <h3>Category</h3>
         <ul class="docs-filter-list">
 <?php foreach ($counts['category'] as $slug => $category): ?>
-          <li><a class="docs-filter-list__link" data-docs-filter="category" data-docs-value="<?= $e((string) $slug) ?>" data-docs-label="<?= $e($category['label']) ?>" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'category' => (string) $slug])) ?>"<?= ($active['category'] ?? null) === (string) $slug ? ' aria-current="page"' : '' ?>><span><?= $e($category['label']) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($category['count'])) ?></span></a></li>
+          <li><a href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'category' => (string) $slug])) ?>"<?= ($active['category'] ?? null) === (string) $slug ? ' aria-current="page"' : '' ?>><span><?= $e($category['label']) ?></span> <span><?= $e(number_format($category['count'])) ?></span></a></li>
 <?php endforeach; ?>
         </ul>
       </section>
@@ -139,8 +145,8 @@ $folderItems = static function (string $parent) use (&$folderItems, $counts, $e,
             continue;
         }
         $name = $parent === '' ? $folder : basename($folder);
-        $link = static fn (string $label): string => '<a class="docs-filter-list__link" data-docs-filter="folder" data-docs-value="' . $e($folder) . '" href="' . $e($resultsUrl(['q' => $active['q'] ?? '', 'folder' => $folder])) . '"'
-            . (($active['folder'] ?? null) === $folder ? ' aria-current="page"' : '') . '><span>' . $e($label) . '</span> <span class="docs-filter-list__count">' . $e(number_format($counts['folder'][$folder])) . '</span></a>';
+        $link = static fn (string $label): string => '<a href="' . $e($resultsUrl(['q' => $active['q'] ?? '', 'folder' => $folder])) . '"'
+            . (($active['folder'] ?? null) === $folder ? ' aria-current="page"' : '') . '><span>' . $e($label) . '</span> <span>' . $e(number_format($counts['folder'][$folder])) . '</span></a>';
         $nested = $folderItems($folder);
         if ($nested === '') {
             $html .= '<li>' . $link($name) . '</li>';
@@ -148,13 +154,13 @@ $folderItems = static function (string $parent) use (&$folderItems, $counts, $e,
         }
         // Summaries can't hold links, so each branch starts with a link to the whole folder.
         $open = isset($active['folder']) && ($active['folder'] === $folder || str_starts_with($active['folder'], $folder . '/')) ? ' open' : '';
-        $html .= '<li><details data-docs-folder-branch="' . $e($folder) . '"' . $open . '><summary>' . $e($name) . ' <span class="docs-filter-list__count">' . $e(number_format($counts['folder'][$folder])) . '</span></summary>'
-            . '<ul class="docs-filter-list docs-filter-list--tree"><li>' . $link('All in ' . $name) . '</li>' . $nested . '</ul></details></li>';
+        $html .= '<li><details data-docs-folder-branch="' . $e($folder) . '"' . $open . '><summary>' . $e($name) . ' <span>' . $e(number_format($counts['folder'][$folder])) . '</span></summary>'
+            . '<ul class="docs-filter-tree"><li>' . $link('All in ' . $name) . '</li>' . $nested . '</ul></details></li>';
     }
     return $html;
 };
 ?>
-        <ul class="docs-filter-list docs-filter-list--tree"><?= $folderItems('') ?></ul>
+        <ul class="docs-filter-tree"><?= $folderItems('') ?></ul>
 
       </section>
     </nav>
@@ -170,12 +176,12 @@ $folderItems = static function (string $parent) use (&$folderItems, $counts, $e,
     </li>
 <?php endforeach; ?>
   </ol>
-  <div class="docs-empty" data-docs-empty<?= $total > 0 ? ' hidden' : '' ?>>
+  <div class="docs-empty" data-docs-empty<?= $total > 0 || $searchShell ? ' hidden' : '' ?>>
     <p>No documents found.</p>
     <p><a href="<?= $e($resultsUrl([])) ?>">Clear filters</a> · <a href="/docs/">Docs home</a></p>
   </div>
-<?php $pageCount = max(1, (int) ceil($total / 40)); ?>
-  <nav class="docs-pages" aria-label="Document pages" data-docs-pages<?= $pageCount > 1 ? '' : ' hidden' ?>>
+<?php $pageCount = max(1, (int) ceil($total / \ForumRewrite\Docs\PlatformDocsCatalog::PAGE_SIZE)); ?>
+  <nav class="docs-pages" aria-label="Document pages" data-docs-pages<?= $pageCount > 1 && !$searchShell ? '' : ' hidden' ?>>
 <?php if ($page > 1): ?>
     <a href="<?= $e($resultsUrl($active + ['page' => $page - 1])) ?>"><span aria-hidden="true">←</span> Previous</a>
 <?php endif; ?>

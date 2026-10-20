@@ -38,7 +38,8 @@ final class PlatformDocsPageTest
         assertTrue((bool) preg_match('/placeholder="Search all [0-9,]+ docs…"/', $html));
         $results = $this->render('/docs/?group=Workflow');
         assertTrue(str_contains($results, 'data-docs-library>'));
-        assertTrue(str_contains($results, 'docs-topics" data-docs-landing hidden'));
+        assertTrue(!str_contains($results, 'docs-topics'));
+        assertTrue(!str_contains($results, 'docs-flow'));
         assertTrue(str_contains($this->render('/docs/?q=retraction'), 'value="retraction"'));
         assertTrue(str_contains($html, '<ol class="docs-flow" aria-label="zenmemes public architecture">'));
         assertSame(4, substr_count($diagram, 'class="docs-flow__node'));

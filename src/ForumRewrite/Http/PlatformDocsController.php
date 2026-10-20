@@ -17,7 +17,8 @@ final class PlatformDocsController
     ) {
     }
 
-    public function index(array $query = []): string
+    /** $searchShell renders the static release's empty results view, filled by the browser. */
+    public function index(array $query = [], bool $searchShell = false): string
     {
         $categories = array_map(fn (array $entries): array => array_map(
             fn (array $entry): array => $entry + ['href' => $this->documentHref($entry['path'])],
@@ -26,15 +27,15 @@ final class PlatformDocsController
 
         $inventory = PlatformDocsCatalog::inventory($this->projectRoot);
         $matches = PlatformDocsCatalog::search($inventory, $query);
-        $page = max(1, min((int) ($query['page'] ?? 1), max(1, (int) ceil(count($matches) / 40))));
-        $isResults = array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])) !== [];
+        $page = max(1, min((int) ($query['page'] ?? 1), max(1, (int) ceil(count($matches) / PlatformDocsCatalog::PAGE_SIZE))));
+        $isResults = $searchShell || array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])) !== [];
         // The landing view carries an empty results shell for the browser to fill.
-        $library = $isResults ? array_slice($matches, ($page - 1) * 40, 40) : [];
+        $library = $isResults && !$searchShell ? array_slice($matches, ($page - 1) * PlatformDocsCatalog::PAGE_SIZE, PlatformDocsCatalog::PAGE_SIZE) : [];
         $counts = PlatformDocsCatalog::counts($inventory);
         $total = count($matches);
         return $this->routeServices->renderPageTemplate(
             'platform_docs_index.php',
-            ['library' => $library, 'counts' => $counts, 'isResults' => $isResults, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
+            ['library' => $library, 'counts' => $counts, 'isResults' => $isResults, 'searchShell' => $searchShell, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
             'Platform Docs',
             'docs',
             ['/assets/platform_docs.js'],

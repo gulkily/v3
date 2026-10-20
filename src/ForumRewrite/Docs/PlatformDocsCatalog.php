@@ -11,6 +11,7 @@ final class PlatformDocsCatalog
     public const DOCUMENT_ROOT = 'docs';
     public const MAX_DOCUMENT_BYTES = 1048576;
     public const ROOT_DOCUMENTS = ['README.md', 'CONTRIBUTING.md', 'AGENTS.md', 'BLESSING.md'];
+    public const PAGE_SIZE = 40;
 
     /**
      * The catalog improves discovery; it does not determine which safe
@@ -139,6 +140,52 @@ final class PlatformDocsCatalog
             (($a['group'] === 'Current guidance' ? 0 : 1) <=> ($b['group'] === 'Current guidance' ? 0 : 1))
             ?: strnatcasecmp($a['path'], $b['path']));
         return $entries;
+    }
+
+    /**
+     * Published file for a browse query (no search text, at most one filter), relative to the
+     * artifact root, or null when the query needs the browser search shell.
+     */
+    public static function browsePath(array $query): ?string
+    {
+        $values = [];
+        foreach (['q', 'folder', 'category', 'group', 'page'] as $key) {
+            $value = is_string($query[$key] ?? null) ? trim($query[$key]) : '';
+            if ($value !== '') {
+                $values[$key] = $key === 'category' ? self::categorySlug($value) : $value;
+            }
+        }
+        $page = $values['page'] ?? '1';
+        unset($values['page']);
+        if (isset($values['q']) || count($values) > 1 || preg_match('/^[1-9][0-9]{0,4}$/', $page) !== 1) {
+            return null;
+        }
+        $filter = $values === [] ? 'all' : array_key_first($values) . '/' . rawurlencode((string) reset($values));
+        return '/docs/_browse/' . $filter . '/' . $page . '.html';
+    }
+
+    /**
+     * Every browse query a static release prebuilds: all documents, then each collection,
+     * category and folder, one query per results page.
+     *
+     * @return list<array<string, string>>
+     */
+    public static function browseQueries(array $inventory, int $pageSize): array
+    {
+        $counts = self::counts($inventory);
+        $filters = [[[], count($inventory)]];
+        foreach (['group' => $counts['group'], 'category' => array_map(static fn (array $category): int => $category['count'], $counts['category']), 'folder' => $counts['folder']] as $key => $values) {
+            foreach ($values as $value => $count) {
+                $filters[] = [[$key => (string) $value], $count];
+            }
+        }
+        $queries = [];
+        foreach ($filters as [$filter, $count]) {
+            for ($page = 1; $page <= max(1, (int) ceil($count / $pageSize)); $page++) {
+                $queries[] = $filter + ['page' => (string) $page];
+            }
+        }
+        return $queries;
     }
 
     /** First prose sentence of a Markdown body, as plain text, for result rows. */

@@ -96,3 +96,22 @@ Follow-up cycle: predecessor [docs_discovery](../docs_discovery/docs_discovery_s
 - Notes:
   - Rendering logic is duplicated between PHP and JS. The parity test is the guard, and Stage 8 runs it on the static host too.
   - The predecessor harness `tests/browser/docs_discovery.mjs` still drives the removed select form and `data-docs-clear`. Stage 8 updates it.
+
+## Stage 6 - Static prebuilt browse pages
+- Changes:
+  - `PlatformDocsCatalog::browsePath(query)` maps a query with no search text and at most one filter (empty parameters ignored, category matched by slug, page 1–99999) to `/docs/_browse/{all|group/…|category/…|folder/…}/{page}.html`. `browseQueries(inventory, pageSize)` lists every such page. `PAGE_SIZE` replaces the hard-coded 40.
+  - `StaticArtifactBuilder` writes all browse pages (390 for the current inventory: all, 3 collections, 14 categories, 204 folders, by page), plus `/docs/_search.html`, a results shell rendered with no rows. Its `<noscript>` notice says search needs JavaScript in this copy and points to the filters.
+  - `FrontController` (static release path): `/docs/` with any results parameter serves the matching browse page, otherwise the search shell (search text, combined filters, out-of-range pages, unknown folders). `/docs/` without parameters still serves the landing page. `Application` serves `/docs/_search.html` like `/docs/_missing.html`.
+  - Size work: server-rendered results pages no longer include the hidden landing sections (the browser only switches views in place from the landing page). Filter links carry their filter only in the `href` (no per-link classes or data attributes), and the JS reads it from there.
+- Verification:
+  - `php tests/run.php PlatformDocsStaticTest`: passed 2/2 (183.5 s). It covers every browse page existing and matching a live `Application` render of the same query, real `FrontController` routing for collection, legacy-case category, nested folder and page 2, and the shell with its notice for search, combined filters, page 999 and an unknown folder. The landing page has no notice.
+  - Real HTTP against a built release (isolated host on port 8192, fixture repository so the image flag matches): routes above confirmed over HTTP.
+  - `tests/browser/docs_landing.mjs` with `DOCS_CLIENT_BASE_URL` on the static host: all six JS-vs-server parity cases, landing → results focus and Back, and index failure/Retry passed.
+  - `php tests/run.php PlatformDocsCatalogTest PlatformDocsPageTest ProfilePresentationContentTest`: passed 29/29. `node --check`, `git diff --check`: passed.
+- Measurements (fixture build, scratch directory):
+  - Full build 80.7 s (the predecessor recorded 77.93 s for 1,314 files).
+  - Release 87.9 MB against the predecessor's ~58 MB. Browse pages account for 27.4 MB (390 pages at ~70 KB; ~15 KB gzipped). Before trimming they were 43.5 MB at ~115 KB each.
+  - Search index 8.7 MB.
+- Notes:
+  - Decision for the user: folder pages are 241 of 390 and about 17 MB, mostly the plans tree repeated on every page. Dropping folder prebuilds would send static no-JS folder links to the search shell instead.
+  - The static test now takes about 3 minutes (it was about 2.6 minutes in the predecessor) because of the per-page live comparison.

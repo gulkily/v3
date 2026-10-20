@@ -370,6 +370,12 @@ final class FrontController
         }
 
         if ($path === '/docs/' || $path === '/docs') {
+            parse_str($query, $docsQuery);
+            if (array_intersect_key($docsQuery, array_flip(['q', 'folder', 'category', 'group', 'page'])) !== []) {
+                $browsePath = PlatformDocsCatalog::browsePath($docsQuery);
+                return ($browsePath === null ? null : $this->firstExistingPath([$this->staticHtmlRoot . $browsePath]))
+                    ?? $this->firstExistingPath([$this->staticHtmlRoot . '/docs/_search.html']);
+            }
             return $this->firstExistingPath([
                 $this->publicRoot . '/docs.html',
                 $this->publicRoot . '/docs/index.html',

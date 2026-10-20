@@ -3,6 +3,8 @@ import { chromium } from 'playwright-core';
 
 // Docs landing/results acceptance. Stage 5: browser rendering matches the server's.
 const base = process.env.DOCS_DYNAMIC_BASE_URL || 'http://127.0.0.1:8191';
+// The browser side may run on the static release host; the JS-off reference is always the dynamic host.
+const clientBase = process.env.DOCS_CLIENT_BASE_URL || base;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/google-chrome', args: ['--no-sandbox'] });
 const queries = ['?group=Plans+and+history&page=2', '?category=Architecture&q=trust', '?folder=docs%2Fplans%2Farchive', '?q=no-such-doc-7aa32', '?page=1', '?q=retraction'];
 // Compare what a reader sees and what assistive technology gets, ignoring whitespace.
@@ -24,7 +26,7 @@ const snapshot = page => page.evaluate(() => {
 try {
   const server = await (await browser.newContext({ javaScriptEnabled: false })).newPage();
   const client = await (await browser.newContext()).newPage();
-  await client.goto(base + '/docs/');
+  await client.goto(clientBase + '/docs/');
   for (const query of queries) {
     await server.goto(base + '/docs/' + query);
     // Navigate in place from the landing view, as the static host would.
@@ -35,7 +37,7 @@ try {
     console.log('parity', query);
   }
   // Landing quick link → results in place, with focus on the results heading and a live count.
-  await client.goto(base + '/docs/');
+  await client.goto(clientBase + '/docs/');
   await client.click('.docs-quick-links a >> nth=2');
   await client.waitForFunction(() => document.querySelector('[data-docs-library]').dataset.docsReady === 'true');
   assert.equal(await client.evaluate(() => document.activeElement.id), 'docs-library-heading');
@@ -48,7 +50,7 @@ try {
   const failing = await (await browser.newContext()).newPage();
   let fail = true;
   await failing.route('**/docs/_search.json', route => fail ? route.abort() : route.continue());
-  await failing.goto(base + '/docs/');
+  await failing.goto(clientBase + '/docs/');
   await failing.evaluate(() => { history.pushState(null, '', '/docs/?q=retraction'); dispatchEvent(new PopStateEvent('popstate')); });
   await failing.waitForSelector('[data-docs-error]:not([hidden])');
   fail = false;

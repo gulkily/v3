@@ -65,9 +65,14 @@
     }
     return active;
   }
+  // Filter links carry their filter only in the href, to keep repeated browse pages small.
+  const filterLinks = () => [...root.querySelectorAll('.docs-filter-list a, .docs-filter-tree a')].map(link => {
+    const query = new URL(link.href).searchParams, key = ['group', 'category', 'folder'].find(name => query.has(name));
+    return {link, key, value: query.get(key)};
+  });
   function categoryLabel(slug) {
-    const link = root.querySelector(`[data-docs-filter="category"][data-docs-value="${CSS.escape(slug)}"]`);
-    return link ? link.dataset.docsLabel : slug;
+    const match = filterLinks().find(({key, value}) => key === 'category' && value === slug);
+    return match ? match.link.firstElementChild.textContent : slug;
   }
   function renderControls(active) {
     form.querySelectorAll('[data-docs-filter-input]').forEach(input => input.remove());
@@ -81,8 +86,7 @@
       chips.append(element('li', {}, element('a', {class: 'docs-chip', href: resultsUrl(rest), 'aria-label': 'Remove ' + label}, label + ' ', decorative('×'))));
     }
     chips.append(element('li', {}, element('a', {href: resultsUrl({})}, 'Clear all')));
-    root.querySelectorAll('[data-docs-filter]').forEach(link => {
-      const key = link.dataset.docsFilter, value = link.dataset.docsValue;
+    filterLinks().forEach(({link, key, value}) => {
       link.href = resultsUrl({q: active.q, [key]: value});
       if (active[key] === value) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
     });
