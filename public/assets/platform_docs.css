@@ -419,25 +419,195 @@
   margin-bottom: 1rem;
 }
 
-.docs-library form {
+.docs-intro__home {
+  margin-bottom: 0;
+}
+
+/* Active filters: removable chips, identified by text and the × rather than color. */
+.docs-chips {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
-  gap: .75rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+  font-family: var(--ui-font);
 }
-.docs-library label {
-  display: grid;
-  gap: .25rem;
-  min-width: 0;
-  max-width: 100%;
+
+.docs-chips a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
 }
-.docs-library select,
-.docs-library input {
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-.docs-library code {
+
+.docs-chip {
+  gap: 0.4rem;
+  padding: 0 0.75rem;
+  border: 2px solid var(--active-line);
+  border-radius: 1.4rem;
+  background: var(--active-bg);
+  color: var(--active-ink);
   overflow-wrap: anywhere;
 }
-.docs-library nav a + a { margin-inline-start: 1rem; }
+
+/* Filters: link lists with counts; the current one is bold with a bar, not color alone. */
+.docs-filters {
+  margin: 0.75rem 0 1rem;
+}
+
+.docs-filters > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-family: var(--ui-font);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.docs-filters__groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.docs-filters__groups h3 {
+  margin: 0 0 0.25rem;
+  font-family: var(--ui-font);
+  font-size: 1rem;
+}
+
+.docs-filter-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--ui-font);
+}
+
+.docs-filter-list--tree .docs-filter-list--tree {
+  padding-inline-start: 1rem;
+}
+
+/* Flex summaries lose the native marker; draw one so open/closed state stays visible. */
+.docs-filters > summary::before,
+.docs-filter-list summary::before {
+  content: "▸";
+  content: "▸" / "";
+  display: inline-block;
+  width: 1em;
+  margin-inline-end: 0.35rem;
+}
+
+.docs-filters[open] > summary::before,
+.docs-filter-list details[open] > summary::before {
+  content: "▾";
+  content: "▾" / "";
+}
+
+.docs-filter-list summary {
+  display: flex;
+  align-items: center;
+  gap: 0 0.5rem;
+  padding-inline: 0.5rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.docs-filter-list__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding-inline: 0.5rem;
+  border-inline-start: 4px solid transparent;
+  overflow-wrap: anywhere;
+}
+
+.docs-filter-list__link[aria-current] {
+  border-inline-start-color: var(--active-line);
+  background: var(--active-bg);
+  color: var(--active-ink);
+  font-weight: 700;
+}
+
+.docs-filter-list__count {
+  font-variant-numeric: tabular-nums;
+}
+
+.docs-filter-list summary .docs-filter-list__count {
+  margin-inline-start: auto;
+}
+
+/* Result rows: one compact block per document, separated by a divider rather than boxes. */
+.docs-results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.docs-result {
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.docs-result:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.docs-result__title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-family: var(--body-font);
+  font-size: 1.05rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.docs-result__summary,
+.docs-result__meta {
+  margin: 0.1rem 0 0;
+}
+
+.docs-result__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+
+.docs-result__path {
+  color: var(--ink-soft);
+  font-family: var(--code-font);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.docs-badge {
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 0.875rem;
+}
+
+.docs-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+  font-family: var(--ui-font);
+}
+
+.docs-pages a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.docs-empty p {
+  margin: 0.5rem 0;
+}

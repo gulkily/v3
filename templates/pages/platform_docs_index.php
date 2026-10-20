@@ -1,5 +1,18 @@
 <?php
 $documentCount = array_sum($counts['group']);
+$filterLabels = ['q' => 'Search', 'group' => 'Collection', 'category' => 'Category', 'folder' => 'Folder'];
+$active = [];
+foreach (array_keys($filterLabels) as $key) {
+    $value = is_string($query[$key] ?? null) ? trim($query[$key]) : '';
+    if ($value !== '') {
+        $active[$key] = $key === 'category' ? \ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($value) : $value;
+    }
+}
+$activeLabel = static fn (string $key, string $value): string => $key === 'category' ? ($counts['category'][$value]['label'] ?? $value) : $value;
+// Results URLs always carry a parameter, so an empty filter set still shows the results view.
+$resultsUrl = static fn (array $params): string => '/docs/?' . http_build_query(array_filter($params, static fn ($value): bool => $value !== '' && $value !== null) ?: ['page' => 1]);
+$returnQuery = array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar');
+$docHref = static fn (string $href): string => $href . ($returnQuery === [] ? '' : '?' . http_build_query($returnQuery));
 ?>
 <section class="stack docs-page">
   <article class="card docs-intro">
@@ -14,7 +27,11 @@ $documentCount = array_sum($counts['group']);
         <input id="docs-search-input" name="q" type="search" value="<?= $e(is_string($query['q'] ?? null) ? $query['q'] : '') ?>" placeholder="Search all <?= $e(number_format($documentCount)) ?> docs…">
         <button type="submit">Search</button>
       </div>
+<?php foreach (array_diff_key($active, ['q' => true]) as $key => $value): ?>
+      <input type="hidden" name="<?= $e($key) ?>" value="<?= $e($value) ?>" data-docs-filter-input>
+<?php endforeach; ?>
     </form>
+    <p class="docs-intro__home" data-docs-results-only<?= $isResults ? '' : ' hidden' ?>><a href="/docs/"><span aria-hidden="true">←</span> Docs home</a></p>
     <p class="docs-intro__browse" data-docs-landing<?= $isResults ? ' hidden' : '' ?>><a href="/docs/?page=1">Browse all docs <span aria-hidden="true">→</span></a></p>
   </article>
   <article class="card docs-transparency" data-docs-landing<?= $isResults ? ' hidden' : '' ?>>
@@ -83,40 +100,91 @@ $documentCount = array_sum($counts['group']);
 <?php endforeach; ?>
     </ul>
   </section>
-<?php
-$filterValue = static fn (string $key): string => is_string($query[$key] ?? null) ? $query[$key] : '';
-$returnQuery = array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar');
-$docHref = static fn (string $href): string => $href . ($returnQuery === [] ? '' : '?' . http_build_query($returnQuery));
-?>
 <section class="card docs-library" aria-labelledby="docs-library-heading" data-docs-library<?= $isResults ? '' : ' hidden' ?>>
-  <h2 id="docs-library-heading">All documents</h2>
-  <form action="/docs/" method="get" data-docs-form>
-    <label>Search <input name="q" type="search" value="<?= $e($filterValue('q')) ?>"></label>
-<?php foreach (['folder' => ['Folder', array_combine($folders, $folders)], 'category' => ['Category', array_map(static fn (array $category): string => $category['label'], $counts['category'])], 'group' => ['Collection', array_combine(array_keys($counts['group']), array_keys($counts['group']))]] as $key => [$label, $options]): ?>
-    <label><?= $e($label) ?> <select name="<?= $e($key) ?>">
-      <option value="">All</option>
-<?php foreach ($options as $item => $optionLabel): ?>
-      <option value="<?= $e((string) $item) ?>"<?= ($key === 'category' ? \ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($filterValue($key)) : $filterValue($key)) === (string) $item ? ' selected' : '' ?>><?= $e($optionLabel) ?></option>
+  <h2 id="docs-library-heading">Documents</h2>
+<?php if ($active !== []): ?>
+  <ul class="docs-chips" aria-label="Active filters">
+<?php foreach ($active as $key => $value): ?>
+    <li><a class="docs-chip" href="<?= $e($resultsUrl(array_diff_key($active, [$key => true]))) ?>" aria-label="Remove <?= $e($filterLabels[$key] . ': ' . $activeLabel($key, $value)) ?>"><?= $e($filterLabels[$key]) ?>: <?= $e($activeLabel($key, $value)) ?> <span aria-hidden="true">×</span></a></li>
 <?php endforeach; ?>
-    </select></label>
-<?php endforeach; ?>
-    <button type="submit">Search</button>
-    <a href="/docs/#docs-library-heading" data-docs-clear>Clear filters</a>
-  </form>
-  <p role="status" data-docs-count><?= $e((string) $total) ?> documents</p>
-  <p data-docs-error hidden>Search unavailable. <button type="button" data-docs-retry>Retry</button> or <a href="/docs/">refresh the library</a>.</p>
-  <ul class="docs-entry-list" data-docs-results>
-<?php foreach ($library as $entry): ?>
-    <li><a href="<?= $e($docHref($entry['href'])) ?>"><?= $e($entry['title']) ?></a><br><code><?= $e($entry['path']) ?></code> · <?= $e($entry['group']) ?></li>
-<?php endforeach; ?>
+    <li><a href="<?= $e($resultsUrl([])) ?>">Clear all</a></li>
   </ul>
-  <p data-docs-empty<?= $total > 0 ? ' hidden' : '' ?>>No documents found.</p>
-  <nav aria-label="Document pages" data-docs-pages>
-<?php foreach (['Previous' => $page - 1, 'Next' => $page + 1] as $label => $target): ?>
-<?php if ($target >= 1 && ($target - 1) * 40 < $total): ?>
-    <a href="?<?= $e(http_build_query(array_merge($returnQuery, ['page' => $target]))) ?>#docs-library-heading"><?= $e($label) ?></a>
 <?php endif; ?>
+  <p role="status" data-docs-count><?= $e(number_format($total)) ?> <?= $total === 1 ? 'document' : 'documents' ?></p>
+  <p data-docs-error hidden>Search unavailable. <button type="button" data-docs-retry>Retry</button> or <a href="/docs/">refresh the library</a>.</p>
+  <details class="docs-filters">
+    <summary>Filters</summary>
+    <nav aria-label="Filters" class="docs-filters__groups">
+      <section>
+        <h3>Collection</h3>
+        <ul class="docs-filter-list">
+<?php foreach ($counts['group'] as $group => $count): ?>
+          <li><a class="docs-filter-list__link" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'group' => $group])) ?>"<?= ($active['group'] ?? null) === $group ? ' aria-current="page"' : '' ?>><span><?= $e($group) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($count)) ?></span></a></li>
 <?php endforeach; ?>
+        </ul>
+      </section>
+      <section>
+        <h3>Category</h3>
+        <ul class="docs-filter-list">
+<?php foreach ($counts['category'] as $slug => $category): ?>
+          <li><a class="docs-filter-list__link" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'category' => (string) $slug])) ?>"<?= ($active['category'] ?? null) === (string) $slug ? ' aria-current="page"' : '' ?>><span><?= $e($category['label']) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($category['count'])) ?></span></a></li>
+<?php endforeach; ?>
+        </ul>
+      </section>
+      <section>
+        <h3>Folder</h3>
+<?php
+$folderItems = static function (string $parent) use (&$folderItems, $counts, $e, $resultsUrl, $active): string {
+    $html = '';
+    foreach (array_keys($counts['folder']) as $folder) {
+        if ($parent === '' ? !in_array($folder, ['Project', 'docs'], true) : dirname($folder) !== $parent) {
+            continue;
+        }
+        $name = $parent === '' ? $folder : basename($folder);
+        $link = static fn (string $label): string => '<a class="docs-filter-list__link" href="' . $e($resultsUrl(['q' => $active['q'] ?? '', 'folder' => $folder])) . '"'
+            . (($active['folder'] ?? null) === $folder ? ' aria-current="page"' : '') . '><span>' . $e($label) . '</span> <span class="docs-filter-list__count">' . $e(number_format($counts['folder'][$folder])) . '</span></a>';
+        $nested = $folderItems($folder);
+        if ($nested === '') {
+            $html .= '<li>' . $link($name) . '</li>';
+            continue;
+        }
+        // Summaries can't hold links, so each branch starts with a link to the whole folder.
+        $open = isset($active['folder']) && ($active['folder'] === $folder || str_starts_with($active['folder'], $folder . '/')) ? ' open' : '';
+        $html .= '<li><details' . $open . '><summary>' . $e($name) . ' <span class="docs-filter-list__count">' . $e(number_format($counts['folder'][$folder])) . '</span></summary>'
+            . '<ul class="docs-filter-list docs-filter-list--tree"><li>' . $link('All in ' . $name) . '</li>' . $nested . '</ul></details></li>';
+    }
+    return $html;
+};
+?>
+        <ul class="docs-filter-list docs-filter-list--tree"><?= $folderItems('') ?></ul>
+
+      </section>
+    </nav>
+  </details>
+  <ol class="docs-results" data-docs-results>
+<?php foreach ($library as $entry): ?>
+    <li class="docs-result">
+      <a class="docs-result__title" href="<?= $e($docHref($entry['href'])) ?>"><?= $e($entry['title']) ?></a>
+<?php if ($entry['summary'] !== ''): ?>
+      <p class="docs-result__summary"><?= $e($entry['summary']) ?></p>
+<?php endif; ?>
+      <p class="docs-result__meta"><code class="docs-result__path"><?= $e($entry['path']) ?></code> <span class="docs-badge"><?= $e($entry['categoryLabel']) ?></span><?php if (!isset($active['group']) && $entry['group'] !== 'Current guidance'): ?> <span class="docs-badge"><?= $e($entry['group']) ?></span><?php endif; ?></p>
+    </li>
+<?php endforeach; ?>
+  </ol>
+  <div class="docs-empty" data-docs-empty<?= $total > 0 ? ' hidden' : '' ?>>
+    <p>No documents found.</p>
+    <p><a href="<?= $e($resultsUrl([])) ?>">Clear filters</a> · <a href="/docs/">Docs home</a></p>
+  </div>
+<?php $pageCount = max(1, (int) ceil($total / 40)); ?>
+  <nav class="docs-pages" aria-label="Document pages" data-docs-pages<?= $pageCount > 1 ? '' : ' hidden' ?>>
+<?php if ($page > 1): ?>
+    <a href="<?= $e($resultsUrl($active + ['page' => $page - 1])) ?>"><span aria-hidden="true">←</span> Previous</a>
+<?php endif; ?>
+    <span aria-current="page">Page <?= $e((string) $page) ?> of <?= $e((string) $pageCount) ?></span>
+<?php if ($page < $pageCount): ?>
+    <a href="<?= $e($resultsUrl($active + ['page' => $page + 1])) ?>">Next <span aria-hidden="true">→</span></a>
+<?php endif; ?>
   </nav>
 </section>
 

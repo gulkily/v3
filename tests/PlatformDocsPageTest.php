@@ -55,10 +55,47 @@ final class PlatformDocsPageTest
         assertTrue(str_contains($html, 'docs/examples/extension_improvement_cookbook.md'));
     }
 
+    public function testResultsViewFiltersWithLinksChipsAndPages(): void
+    {
+        $html = $this->render('/docs/?group=Plans+and+history&page=2');
+        assertStringContains('<span aria-current="page">Page 2 of ', $html);
+        assertStringContains('href="/docs/?group=Plans+and+history&amp;page=1"><span aria-hidden="true">←</span> Previous</a>', $html);
+        assertStringContains('href="/docs/?group=Plans+and+history&amp;page=3">Next', $html);
+        assertStringContains('href="/docs/?group=Plans+and+history" aria-current="page"', $html);
+        assertStringContains('aria-label="Remove Collection: Plans and history"', $html);
+        assertStringContains('href="/docs/?page=1">Clear all</a>', $html);
+        assertStringContains('<details class="docs-filters">', $html);
+        assertTrue(!str_contains($html, '?>'));
+        // Collection is the active filter, so rows never repeat it.
+        $rows = (string) strstr($html, 'data-docs-results');
+        assertTrue(!str_contains(explode('</ol>', $rows)[0], '<span class="docs-badge">Plans and history</span>'));
+        assertSame(1, substr_count($html, '<a href="/docs/"><span aria-hidden="true">←</span> Docs home</a>'));
+
+        $legacy = $this->render('/docs/?category=Architecture&q=trust');
+        assertStringContains('href="/docs/?q=trust&amp;category=architecture" aria-current="page"', $legacy);
+        assertStringContains('Category: Architecture', $legacy);
+        assertStringContains('<input type="hidden" name="category" value="architecture" data-docs-filter-input>', $legacy);
+        assertStringContains('value="trust"', $legacy);
+        assertStringContains('How the Git records, the views built from them', $legacy);
+        assertStringContains('<span class="docs-badge">Architecture</span>', $legacy);
+        assertTrue(!str_contains($legacy, '<span class="docs-badge">Current guidance</span>'));
+
+        $folder = $this->render('/docs/?folder=docs%2Fplans%2Farchive');
+        assertStringContains('<details open><summary>plans', $folder);
+        assertStringContains('<span>All in plans</span>', $folder);
+        assertStringContains('href="/docs/?folder=docs%2Fplans%2Farchive" aria-current="page"', $folder);
+        assertSame(1, substr_count($folder, 'href="/docs/?folder=docs"><span>All in docs</span>'));
+        assertStringContains('href="/docs/?folder=docs%2Frailspike%2Fdocs"><span>All in docs</span>', $folder);
+
+        $empty = $this->render('/docs/?q=no-such-doc-7aa32');
+        assertStringContains('<a href="/docs/?page=1">Clear filters</a> · <a href="/docs/">Docs home</a>', $empty);
+        assertStringContains('data-docs-pages hidden', $empty);
+    }
+
     public function testLibraryBrowsesRepositoryFoldersAndRootDocuments(): void
     {
         $html = $this->render('/docs/?folder=docs%2Fresearch');
-        assertStringContains('All documents', $html);
+        assertStringContains('Documents</h2>', $html);
         assertStringContains('docs/research/', $html);
         $root = $this->render('/docs/_project/README.md');
         assertStringContains('Repository source: <code>README.md</code>', $root);

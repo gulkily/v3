@@ -30,7 +30,7 @@
     if (search) search.value = params().get('q') || '';
     return results;
   }
-  const form = root.querySelector('form'), results = root.querySelector('[data-docs-results]');
+  const form = document.querySelector('.docs-search'), results = root.querySelector('[data-docs-results]');
   const pages = root.querySelector('[data-docs-pages]'), error = root.querySelector('[data-docs-error]');
   let inventory, pending;
   async function load() {
@@ -44,7 +44,7 @@
   let generation = 0;
   async function render() {
     const current = ++generation, query = params();
-    for (const key of keys.slice(0, 4)) form.elements[key].value = query.get(key) || '';
+    form.elements.q.value = query.get('q') || '';
     try {
       const entries = await load();
       if (current !== generation) return;
@@ -81,7 +81,6 @@
     for (const [key, value] of [...query]) if (!value) query.delete(key);
     navigate('/docs/?' + query + '#docs-library-heading');
   });
-  root.querySelector('[data-docs-clear]').addEventListener('click', event => { event.preventDefault(); navigate('/docs/#docs-library-heading'); });
   root.querySelector('[data-docs-retry]').addEventListener('click', render);
   window.addEventListener('popstate', () => { if (showView()) render(); });
   if (showView()) render();

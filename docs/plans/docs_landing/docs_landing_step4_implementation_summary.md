@@ -62,3 +62,24 @@ Follow-up cycle: predecessor [docs_discovery](../docs_discovery/docs_discovery_s
 - Notes:
   - Departure: the brief allowed either an SVG with `<title>`/`<desc>` or HTML/CSS. HTML/CSS was chosen because a fixed SVG can only shrink or scroll, not stack.
   - Inside the 760px shell the diagram is always vertical. A horizontal layout would have to break code paths mid-word to fit.
+
+## Stage 4 - Results view (server-rendered)
+- Changes:
+  - Removed the select-based library form. The intro card's search now serves both views: prefilled with `q`, carrying active non-search filters as hidden inputs, with "← Docs home" shown only in the results view.
+  - Results section ("Documents"):
+    - Removable chips for each active filter (accessible names like "Remove Category: Architecture"), plus Clear all.
+    - A polite status count and the existing index-error/Retry.
+    - A closed "Filters" `<details>` holding Collection and Category link lists with server counts, and a nested `<details>` folder tree. Branches open along the active folder, and each branch starts with an "All in …" link because a summary can't contain a link. The active link carries `aria-current="page"`, bold text and a bar (`--active-*` tokens), so state doesn't rely on color.
+  - Choosing a filter replaces the other filters and keeps the search, so every filter link is a single-filter URL that Stage 6 can prebuild. Legacy combined URLs still work.
+  - Result rows are an ordered list with 1px `--line` dividers. Each row shows the title, a one-line summary (curated description, otherwise the first prose sentence via `PlatformDocsCatalog::summary()`; 409 mostly list-only plans have none), the path, and a category badge. The collection badge appears only when no collection filter is active and the row isn't Current guidance.
+  - Pagination reads "← Previous · Page N of M · Next →", with `aria-current` on the page indicator and the active filters kept. The empty state offers Clear filters and Docs home.
+  - The landing view sends an empty results shell (no rows), and the controller no longer builds the unused folder option list.
+  - `platform_docs.js` got the minimum needed to keep working against the new markup. Rendering parity is Stage 5.
+- Verification:
+  - `php tests/run.php PlatformDocsCatalogTest PlatformDocsPageTest ProfilePresentationContentTest`: passed 29/29. The new `testResultsViewFiltersWithLinksChipsAndPages` covers pagination links and the page indicator, filter `aria-current`, chip names, Clear all, no repeated collection badge, the legacy mixed-case category URL, hidden filter inputs, summaries, folder-tree open state and nested "All in" links, and the empty state.
+  - `node --check`, `git diff --check`: passed.
+  - Chromium with JS disabled: results at 1280px, 320px, and 200% zoom (320 CSS px), with filters opened by clicking the summary. No horizontal overflow; the active filter and tree markers are visible.
+- Notes:
+  - Measured the search index at 8,692,028 bytes uncompressed with summaries (+~0.2 MB versus Stage 4 of the predecessor cycle).
+  - Filter counts are library-wide, not narrowed by the current search. This keeps prebuilt pages identical to their dynamic versions.
+  - Departure: the brief's sidebar on wide screens isn't used, because the shared 760px shell (kept per Step 3) leaves no room. Filters stay in the `<details>` at every width.

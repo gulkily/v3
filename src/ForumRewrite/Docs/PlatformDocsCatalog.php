@@ -125,6 +125,7 @@ final class PlatformDocsCatalog
                 'category' => $category,
                 'categoryLabel' => $labels[$category] ?? ucfirst(str_replace('-', ' ', $category)),
                 'description' => $curated[$path]['description'] ?? '',
+                'summary' => $curated[$path]['description'] ?? (in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), ['md', 'markdown'], true) ? self::summary($text) : ''),
                 'folder' => dirname($path) === '.' ? 'Project' : dirname($path),
                 'group' => $group,
                 'href' => self::routeForPath($path),
@@ -138,6 +139,28 @@ final class PlatformDocsCatalog
             (($a['group'] === 'Current guidance' ? 0 : 1) <=> ($b['group'] === 'Current guidance' ? 0 : 1))
             ?: strnatcasecmp($a['path'], $b['path']));
         return $entries;
+    }
+
+    /** First prose sentence of a Markdown body, as plain text, for result rows. */
+    public static function summary(string $markdown): string
+    {
+        $fenced = false;
+        foreach (preg_split('/\R/', $markdown) ?: [] as $line) {
+            $line = trim($line);
+            if (str_starts_with($line, '```') || str_starts_with($line, '~~~')) {
+                $fenced = !$fenced;
+                continue;
+            }
+            // Skip structure (headings, quotes, lists, tables, rules) and short "Key: value" status lines.
+            if ($fenced || $line === '' || preg_match('/^([#>|*+-]|\d+[.)]\s|<|---|===)/', $line)
+                || (strlen($line) < 48 && preg_match('/^[A-Z][\w ]*:\s+\S/', $line))) {
+                continue;
+            }
+            $text = preg_replace(['/!?\[([^\]]*)\]\([^)]*\)/', '/[*_`]+/'], ['$1', ''], $line) ?? $line;
+            $sentence = preg_match('/^.+?[.!?](?=\s|$)/u', $text, $match) ? $match[0] : $text;
+            return mb_strlen($sentence) > 160 ? rtrim(mb_substr($sentence, 0, 159)) . '…' : $sentence;
+        }
+        return '';
     }
 
     /** Case-insensitive category key, so folder and curated names share one filter value. */
