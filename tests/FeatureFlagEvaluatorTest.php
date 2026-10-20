@@ -166,6 +166,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED,
             FeatureFlagRegistry::FAST_SCORING_ENABLED,
             FeatureFlagRegistry::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
+            FeatureFlagRegistry::FASTMOD_AUTOMATIC_TAGGING_ENABLED,
         ], $keys);
     }
 
