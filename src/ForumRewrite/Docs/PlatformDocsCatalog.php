@@ -40,6 +40,12 @@ final class PlatformDocsCatalog
                 'description' => 'The file that records a new identity: its OpenPGP public key, fingerprint, and username.',
             ],
             [
+                'title' => 'v3 CLI Reference',
+                'category' => 'CLI Reference',
+                'path' => 'docs/reference/v3_cli.md',
+                'description' => 'Commands, options, and error handling for the v3 CLI.',
+            ],
+            [
                 'title' => 'Extension and Improvement Cookbook',
                 'category' => 'Extending the Platform',
                 'path' => 'docs/examples/extension_improvement_cookbook.md',
@@ -56,12 +62,6 @@ final class PlatformDocsCatalog
                 'category' => 'Architecture',
                 'path' => 'docs/runbooks/theme_development_guide.md',
                 'description' => 'How themes work and how to add one.',
-            ],
-            [
-                'title' => 'v3 CLI Reference',
-                'category' => 'CLI Reference',
-                'path' => 'docs/reference/v3_cli.md',
-                'description' => 'Commands, options, and error handling for the v3 CLI.',
             ],
             [
                 'title' => 'Post Retraction: Complete Workflow',
@@ -147,7 +147,8 @@ final class PlatformDocsCatalog
     }
 
     /**
-     * Curated guides grouped by topic, in first-listed order.
+     * Curated guides grouped by topic, in first-listed order. Single-guide topics
+     * listed next to each other share a row on wide screens.
      *
      * @return array<string, list<array{title:string,category:string,path:string,description:string}>>
      */

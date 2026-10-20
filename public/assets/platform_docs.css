@@ -2,6 +2,11 @@
   max-width: 76rem;
 }
 
+/* Author display rules must not override hidden landing/results views. */
+.docs-page [hidden] {
+  display: none !important;
+}
+
 .docs-entry-list {
   display: grid;
   gap: 1rem;
@@ -12,6 +17,127 @@
 .docs-entry-list code {
   display: block;
   margin: 0.3rem 0 0;
+}
+
+/* Compact search: label above, input and button sharing a row that wraps on narrow screens. */
+.docs-search {
+  margin-top: 1rem;
+}
+
+.docs-search label {
+  font-family: var(--ui-font);
+  font-weight: 700;
+}
+
+.docs-search__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.docs-search__row input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+}
+
+.docs-search__row button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.docs-intro__browse {
+  margin-bottom: 0;
+}
+
+/* Curated topics: guides with several entries span the row; single-guide topics pair up. */
+.docs-topics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+
+.stack > .docs-topics > * + * {
+  margin-top: 0;
+}
+
+.docs-topic {
+  min-width: 0;
+}
+
+.docs-topic--wide {
+  grid-column: 1 / -1;
+}
+
+.docs-topic h2 {
+  margin-top: 0;
+}
+
+.docs-entry-list:has(> .docs-entry) {
+  padding-left: 0;
+  list-style: none;
+  gap: 1.25rem;
+}
+
+.docs-entry {
+  min-width: 0;
+}
+
+.docs-entry__title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-family: var(--body-font);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration-color: var(--line);
+  text-underline-offset: 0.2em;
+}
+
+.docs-entry__title:hover,
+.docs-entry__title:focus-visible {
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+}
+
+.docs-entry-list .docs-entry__description {
+  margin: 0;
+  font-family: var(--body-font);
+}
+
+.docs-entry-list .docs-entry__path {
+  margin-top: 0.25rem;
+  color: var(--ink-soft);
+  font-family: var(--code-font);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+/* Collection quick links read as an inline list with visual separators. */
+.docs-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--ui-font);
+}
+
+.docs-quick-links li:not(:last-child)::after {
+  content: "·";
+  margin-inline-start: 0.25rem;
+  color: var(--ink-soft);
+}
+
+.docs-quick-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
 }
 
 .docs-transparency-grid {

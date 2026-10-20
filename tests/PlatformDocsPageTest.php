@@ -23,8 +23,23 @@ final class PlatformDocsPageTest
 
         assertTrue(str_contains($html, '<h1>zenmemes Platform Docs</h1>'));
         assertTrue(str_contains($html, 'Extending the Platform'));
-        assertTrue(str_contains($html, '<summary>How it works</summary>'));
-        assertTrue(strpos($html, 'data-docs-library') < strpos($html, 'docs-transparency'));
+        assertTrue(str_contains($html, '<h2>How it works</h2>'));
+        assertTrue(strpos($html, 'docs-transparency') < strpos($html, 'docs-topics'));
+        assertTrue(strpos($html, 'docs-topics') < strpos($html, 'docs-overview-heading'));
+        assertTrue(str_contains($html, 'data-docs-library hidden'));
+        assertTrue(!str_contains($html, 'Starting guides'));
+        assertTrue(str_contains($html, 'Each entry below shows the path of the file it is rendered from'));
+        foreach (\ForumRewrite\Docs\PlatformDocsCatalog::entries() as $entry) {
+            assertTrue(str_contains($html, htmlspecialchars($entry['description'], ENT_QUOTES)), $entry['path']);
+            assertTrue(str_contains($html, '<code class="docs-entry__path">' . $entry['path'] . '</code>'), $entry['path']);
+        }
+        assertTrue(str_contains($html, 'href="/docs/?group=Plans+and+history">Plans and history ('));
+        assertTrue(str_contains($html, 'href="/docs/?page=1">Browse all docs'));
+        assertTrue((bool) preg_match('/placeholder="Search all [0-9,]+ docs…"/', $html));
+        $results = $this->render('/docs/?group=Workflow');
+        assertTrue(str_contains($results, 'data-docs-library>'));
+        assertTrue(str_contains($results, 'docs-topics" data-docs-landing hidden'));
+        assertTrue(str_contains($this->render('/docs/?q=retraction'), 'value="retraction"'));
         assertTrue(str_contains($html, '<title id="docs-diagram-title">zenmemes public architecture</title>'));
         assertTrue(str_contains($diagram, "Member's browser"));
         assertTrue(str_contains($diagram, 'signed write'));

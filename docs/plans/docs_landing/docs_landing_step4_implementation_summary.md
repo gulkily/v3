@@ -30,3 +30,20 @@ Follow-up cycle: predecessor [docs_discovery](../docs_discovery/docs_discovery_s
   - Audit limits: it reads CSS custom properties only. Image or gradient backgrounds (for example chicago's) and theme-scoped selector overrides are not modeled, and chicago inherits the default `--active-*` tokens. Browser measurement in Stage 8 confirms the actual results.
   - The existing `paned_users_filter_list` partial is a JS listbox, not a link list, so it can't serve the no-JS filters. Stage 4 needs a new link-list component.
   - The inventory count includes this cycle's new planning files (1,317+), so the count is not hard-coded anywhere.
+
+## Stage 2 - Landing view
+- Changes:
+  - `/docs/` with no parameters renders the landing view. Any of `q`, `folder`, `category`, `group` or `page` (even empty) renders the results view. Both views are in the same document, with server-side `hidden`, so the static `index.html` can switch views with JS (`showView()` in `platform_docs.js`). The search index is fetched only when results are shown.
+  - The intro card holds the H1 and the restored intro paragraphs from `main` (including the source-path note), a compact labeled search (placeholder uses the live count, prefilled with `q`) and "Browse all docs →" (`?page=1`).
+  - "How it works" is an open section again (Stage 3 re-lays it). The "Starting guides" `<details>` is removed.
+  - Curated topic sections use the `.docs-entry` blocks: a title link in `--body-font` with a quiet `--line` underline that becomes solid on hover or focus, the description, and the path in `--code-font`/`--ink-soft` on `--panel`. Topics with several guides span the row, and adjacent single-guide topics pair up (`auto-fit`, `minmax(min(100%, 20rem), 1fr)`). The curated list order now puts CLI Reference after Trust and Identity so pairs read left to right in source order, without dense reordering.
+  - "All documents" panel: live count sentence, Browse all, and collection quick links with counts (`?group=…`) as a list with non-announced separators.
+  - Links and controls have at least 2.75rem targets. `.docs-page [hidden]` overrides author `display` rules.
+- Verification:
+  - `php tests/run.php PlatformDocsCatalogTest PlatformDocsPageTest`: passed 25/25. The landing test now checks section order, every curated description and path, quick-link and browse URLs, the live-count placeholder, the hidden library on landing, the hidden landing on results, and the prefilled query.
+  - `node --check`, `php -l` and `git diff --check`: passed.
+  - Chromium on an isolated dev server (port 8191): landing at 1280 and 320px in default, 1280 in Word97, and 320 CSS px at 200% in Midnight, all with no horizontal page overflow. No-JS `?group=Workflow` renders the server results.
+- Notes:
+  - Restoring the path note and descriptions reverses the earlier UI-copy cleanup at the user's approved request. A new UI-copy checklist entry records this, with verification pending Stage 8.
+  - The local server on port 8004 runs from this checkout and no longer shows `main`. Port 8007 serves the `v3-codex-3` checkout. Both were left running and untouched.
+  - Known interim state: the results view still contains the Stage 1 select form, so it shows two search inputs. Stage 4 replaces it. The diagram still scrolls horizontally inside its frame on narrow screens (Stage 3).

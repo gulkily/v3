@@ -33,7 +33,7 @@ final class PlatformDocsController
         $total = count($matches);
         return $this->routeServices->renderPageTemplate(
             'platform_docs_index.php',
-            ['library' => $library, 'folders' => $folders, 'counts' => $counts, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
+            ['library' => $library, 'folders' => $folders, 'counts' => $counts, 'isResults' => array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])) !== [], 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
             'Platform Docs',
             'docs',
             ['/assets/platform_docs.js'],

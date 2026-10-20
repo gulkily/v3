@@ -21,6 +21,15 @@
   if (retry) retry.addEventListener('click', () => location.reload());
   const root = document.querySelector('[data-docs-library]');
   if (!root) return;
+  // Static releases serve one page for every query; show the view the URL asks for.
+  function showView() {
+    const results = [...new URLSearchParams(location.search).keys()].some(key => keys.includes(key));
+    document.querySelectorAll('[data-docs-landing]').forEach(element => { element.hidden = results; });
+    root.hidden = !results;
+    const search = document.getElementById('docs-search-input');
+    if (search) search.value = params().get('q') || '';
+    return results;
+  }
   const form = root.querySelector('form'), results = root.querySelector('[data-docs-results]');
   const pages = root.querySelector('[data-docs-pages]'), error = root.querySelector('[data-docs-error]');
   let inventory, pending;
@@ -65,7 +74,7 @@
       }
     } catch (_) { if (current === generation) error.hidden = false; }
   }
-  function navigate(url) { history.pushState(null, '', url); render(); }
+  function navigate(url) { history.pushState(null, '', url); if (showView()) render(); }
   form.addEventListener('submit', event => {
     event.preventDefault();
     const query = new URLSearchParams(new FormData(form));
@@ -74,6 +83,6 @@
   });
   root.querySelector('[data-docs-clear]').addEventListener('click', event => { event.preventDefault(); navigate('/docs/#docs-library-heading'); });
   root.querySelector('[data-docs-retry]').addEventListener('click', render);
-  window.addEventListener('popstate', render);
-  render();
+  window.addEventListener('popstate', () => { if (showView()) render(); });
+  if (showView()) render();
 })();

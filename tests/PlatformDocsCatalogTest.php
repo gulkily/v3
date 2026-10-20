@@ -127,7 +127,7 @@ final class PlatformDocsCatalogTest
             assertSame($counts['category']['architecture']['count'], count(PlatformDocsCatalog::search($entries, ['category' => $legacy])), $legacy);
         }
         assertSame(2, count(PlatformDocsCatalog::search($entries, ['category' => 'Extending the Platform'])));
-        assertSame(['Architecture', 'Trust and Identity', 'Extending the Platform', 'CLI Reference', 'Operations'], array_keys(PlatformDocsCatalog::topics()));
+        assertSame(['Architecture', 'Trust and Identity', 'CLI Reference', 'Extending the Platform', 'Operations'], array_keys(PlatformDocsCatalog::topics()));
     }
 
     public function testSupportingFormatsAndRootLinksShareTheBoundary(): void
