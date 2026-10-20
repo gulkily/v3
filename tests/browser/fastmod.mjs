@@ -26,10 +26,10 @@ try {
   const keys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'fastmod-browser' }], format: 'armored' });
   const fingerprint = (await globalThis.openpgp.readKey({ armoredKey: keys.publicKey })).getFingerprint().toUpperCase();
   const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', FORUM_SECRETS_PATH: join(root, 'secrets.php'),
-    SIGNED_REACTION_TEST_ROOT: root, FORUM_TASK_QUEUE_DATABASE_PATH: join(root, 'tasks.sqlite3'),
+    SIGNED_REACTION_TEST_ROOT: root, FORUM_REPOSITORY_ROOT:join(root,'repository'), FORUM_TASK_QUEUE_DATABASE_PATH: join(root, 'tasks.sqlite3'),
     FORUM_PUBLIC_ARTIFACT_ROOT: join(root,'public'), FORUM_STATIC_HTML_ROOT: join(root,'static'), FORUM_DATABASE_PATH: join(root,'read.sqlite3'),
     VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') };
-  const settings = { FASTMOD_META_TAGGING_ENABLED: true, FAST_SCORING_ENABLED: true, FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED: true,
+  const settings = { FASTMOD_META_TAGGING_ENABLED: false, FAST_SCORING_ENABLED: true, FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED: true,
     FAST_SCORING_DATABASE_PATH: join(root, 'scores.sqlite3'), LLM_PROVIDER: 'openai', LLM_API_KEY: 'local-test-key',
     LLM_API_BASE_URL: `http://127.0.0.1:${provider.address().port}`, LLM_MODEL: 'test', LLM_CONVERSATION_RECORDING_ENABLED: false };
   await writeFile(env.FORUM_SECRETS_PATH, '<?php return ' + '[' + Object.entries(settings).map(([k,v]) => JSON.stringify(k) + ' => ' + JSON.stringify(v)).join(',') + '];');
@@ -48,6 +48,41 @@ try {
     for (const [key, value] of Object.entries({ private_key: keys.privateKey, public_key: keys.publicKey, fingerprint, published_fingerprint: fingerprint, username: 'fastmod-browser' })) localStorage.setItem('forum_pki_' + key, value);
   }, { keys, fingerprint });
   const page = await context.newPage();
+  const flagKey='FASTMOD_AUTOMATIC_TAGGING_ENABLED';
+  const flagRow=()=>page.locator('#flag-'+flagKey);
+  async function setTagging(on) {
+    await page.goto(base+'/tools/feature-flags/');
+    await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
+    const control=flagRow().getByRole('switch',{name:'Automatic Fastmod tagging',exact:true});
+    if ((await control.getAttribute('aria-checked')) !== String(on)) {
+      await control.focus();await page.keyboard.press('Space');
+      try { await page.waitForFunction(({key,on})=>document.querySelector('#flag-'+key+' [role="switch"]').getAttribute('aria-checked')===String(on),{key:flagKey,on}); }
+      catch(error) { throw new Error(error.message+' Row: '+await flagRow().innerText()); }
+    }
+  }
+  await page.goto(base+'/tools/feature-flags/');
+  await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
+  assert.equal(await flagRow().getByRole('switch').getAttribute('aria-checked'),'false');
+  const anonymous=await browser.newContext();
+  const denied=await anonymous.request.post(base+'/api/prepare_feature_flag_change',{form:{key:flagKey,value:'true'}});
+  assert.ok(denied.status()>=400);await anonymous.close();
+  await page.route('**/api/finalize_feature_flag_change',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({status:'error',error:'Temporary save failure. Try again.'})}));
+  await flagRow().getByRole('switch').click();
+  await flagRow().locator('[data-role="feature-flag-status"]').filter({hasText:'Temporary save failure'}).waitFor();
+  assert.equal(await flagRow().getByRole('switch').getAttribute('aria-checked'),'false');
+  await page.unroute('**/api/finalize_feature_flag_change');
+  await setTagging(true);
+  assert.equal(calls.length,0,'Signed flag saves do not score');
+  for (const width of [390,1280]) {
+    await page.setViewportSize({width,height:900});
+    await page.getByRole('searchbox',{name:'Search flags'}).fill('Automatic Fastmod tagging');
+    for (const theme of ['light','dark','console','word97','chicago','midnight']) {
+      await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${theme}/${width} flag overflow`);
+      assert.equal(await flagRow().getByRole('switch').isVisible(),true);
+      await page.screenshot({path:`/tmp/fastmod-flag-${theme}-${width}.png`,fullPage:true});
+    }
+  }
   await page.goto(base + '/tools/fastmod/');
   await page.waitForFunction(() => !document.querySelector('[data-public-auth-resume="true"]'));
   assert.equal(await page.locator('dialog').count(), 0);
@@ -146,10 +181,19 @@ try {
   const replyResponse=await context.request.post(base+'/api/create_reply',{form:{thread_id:postId,parent_id:postId,body:'Another application support question.'}});
   const replyId=/^post_id=(.+)$/m.exec(await replyResponse.text())?.[1];assert.ok(replyId);
   await worker();assert.ok(!cli('meta-status').items.some(row=>row.post_id===replyId),'Replies never receive machine meta tags');
+  settings.FASTMOD_META_TAGGING_ENABLED=true;
+  await writeFile(env.FORUM_SECRETS_PATH,'<?php return ['+Object.entries(settings).map(([k,v])=>JSON.stringify(k)+' => '+JSON.stringify(v)).join(',')+'];');
+  await setTagging(false);
+  assert.equal(cli('meta-status').items.find(row=>row.post_id===prepared.post_id).active,1,'Disabling keeps existing tags');
+  const callsBeforeOff=calls.length;
+  const offResponse=await context.request.post(base+'/api/create_thread',{form:{board_tags:'general',subject:'Support while tagging off',body:'Help with the interface.'}});
+  const offId=/^post_id=(.+)$/m.exec(await offResponse.text())?.[1];assert.ok(offId);
+  await worker();assert.equal(calls.length,callsBeforeOff+1,'Scoring continues independently');
+  assert.ok(!cli('meta-status').items.some(row=>row.post_id===offId),'Site off blocks new tagging');
   cli('meta-rollback');
   assert.ok(cli('meta-status').items.every(row=>row.active===0));
 
-  console.log(JSON.stringify({ status: 'passed', checks: ['inline controls and rubric prompts', 'empty selection rejected', 'signed meta-only save', 'save does not score', 'publication queues work', 'one text provider call', 'disabled rubric omitted', 'named score recorded and displayed', 'two scores still one call', 'malformed output recorded without partial scores', 'explicit retry recovers','root meta discovery across phone/desktop/themes','static/offline labels without private scores','CLI suppression and rollback','signed root tags without Git writes','replies excluded'] }));
+  console.log(JSON.stringify({ status: 'passed', checks: ['inline controls and rubric prompts', 'empty selection rejected', 'signed meta-only save', 'save does not score', 'publication queues work', 'one text provider call', 'disabled rubric omitted', 'named score recorded and displayed', 'two scores still one call', 'malformed output recorded without partial scores', 'explicit retry recovers','root meta discovery across phone/desktop/themes','static/offline labels without private scores','CLI suppression and rollback','signed root tags without Git writes','replies excluded','shared signed tagging flag with failed-save recovery','flag phone/desktop/themes','site off preserves tags and independent scoring'] }));
 } finally {
   if (browser) await browser.close();
   if (server) { server.kill(); await once(server, 'exit'); }

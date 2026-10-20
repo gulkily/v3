@@ -32,12 +32,12 @@ final class FastmodMetaRuntime
 
     public function retain(array $work, array $result): void
     {
-        if ($this->enabled && $this->config->enabled) $this->store->retainOrdinaryResult($work,$result,FastmodMetaConfig::identity($this->config));
+        if ($this->config->enabled) $this->store->retainOrdinaryResult($work,$result,FastmodMetaConfig::identity($this->config));
     }
 
     public function retainOn(PDO $connection,array $work,array $result): void
     {
-        if ($this->enabled && $this->config->enabled) {
+        if ($this->config->enabled) {
             (new FastmodMetaStore($connection))->retainOrdinaryResult($work,$result,FastmodMetaConfig::identity($this->config));
         }
     }
@@ -45,7 +45,8 @@ final class FastmodMetaRuntime
     public function recover(PDO $read, string $revision): int
     {
         $this->flush();
-        if (!$this->enabled || !$this->config->enabled || ($this->enabledNow !== null && !($this->enabledNow)())) return 0;
+        $taggingEnabled=$this->enabledNow !== null ? ($this->enabledNow)() : $this->enabled;
+        if (!$taggingEnabled || !$this->config->enabled) return 0;
         $count=0;
         $fetch=static function(string $id) use ($read): ?array {
             $q=$read->prepare('SELECT post_id,thread_id,parent_id,subject,body FROM posts WHERE post_id=? AND is_hidden=0 AND retracted_at IS NULL');

@@ -34,6 +34,15 @@ final class FastmodTaggingFlagTest
             assertSame(1,$runtime->recover($read,'r'));
             $write(false);assertSame(1,(int)$runtime->store->find('root')['active']);
             $runtime->store->removeAndSuppress('root');$runtime->flush();assertSame(1,(int)$runtime->store->find('root')['suppressed']);
+            // Worker started off must honor a later site-on for newly eligible publication.
+            $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$private,$root.'/static',$repo);
+            $write(true);$read->exec("INSERT INTO posts VALUES('later','later',NULL,'Help','Later support',0,NULL)");
+            $post['post_id']=$post['thread_id']='later';$post['body']='Later support';
+            $hash=(new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null))->contentHashForPost($post);
+            $runtime->store->recordEligibleRoot('later',$hash,'r',\ForumRewrite\Scoring\FastmodMetaConfig::identity($config),0.9);
+            $runtime->retain(['post_id'=>'later','content_hash'=>$hash,'rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]]);
+            assertSame(1,$runtime->recover($read,'r'));
+
         } finally {
             foreach($old as $n=>$v)putenv($v===false?$n:$n.'='.$v);
             $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
@@ -49,6 +58,7 @@ final class FastmodTaggingFlagTest
         try {
             $base=[Registry::FAST_SCORING_ENABLED=>true];
             assertSame(false,(new Evaluator(privateConfigValues:$base))->isEnabled($key));
+            assertSame(true,(new Evaluator(privateConfigValues:$base))->withSiteValues([$key=>true])->isEnabled($key));
             foreach([false,true] as $legacy) {
                 $private=$base+['FASTMOD_META_TAGGING_ENABLED'=>$legacy];
                 $state=(new Evaluator(privateConfigValues:$private))->evaluate($key);

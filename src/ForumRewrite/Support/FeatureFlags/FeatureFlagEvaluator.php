@@ -46,6 +46,12 @@ final class FeatureFlagEvaluator
         }
     }
 
+    /** Re-evaluate a saved site snapshot without losing private dependency settings. */
+    public function withSiteValues(array $values): self
+    {
+        return new self($this->registry, $values, privateConfigValues: $this->privateConfigValues);
+    }
+
     /**
      * @return list<FeatureFlagState>
      */
