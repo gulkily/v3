@@ -56,6 +56,23 @@ Branch: `feat/agent-api-docs`, from `origin/main` at `c6fe21b4` (which adds the 
   - The script needs python3 to read JSON. No jq is installed here, and python3 is more common in agent sandboxes.
   - Step 1 called gpg's default key "Ed25519". gpg 2.2 defaults to RSA, so the script names `ed25519` explicitly and the reference no longer calls it the default.
 
+## Stage 5 - Invisible discovery
+- Changes:
+  - `<link rel="alternate" type="text/plain" href="/llms.txt" title="Agent guide">` in the head of `templates/layout.php`, outside the members-only manifest block, and of `templates/standalone_layout.php`.
+  - No visible copy, navigation or icon changes. `docs/plans/ui_copy_audit_checklist.md` and `theme-nav-icons.css` are unaffected.
+- Verification:
+  - `php tests/run.php LlmsTxtRendererTest`: 7 passed. The new test checks that `/`, `/account/key/` and `/forte/users/` (standalone layout) have the link in `<head>` and nowhere else, and that the members-only lobby page has it too.
+  - Full suite, `php tests/run.php`: 1394 run, 1389 passed, 5 failed. All 5 are long-standing per the runner's history (failing since 2026-10-16 to 2026-10-19, before this branch): `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts`, two `LocalAppSmokeTest` static-build tests, and `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`.
+- Notes:
+  - None.
+
+## Completion Contract status
+- Normal entry (`/llms.txt`, from `/api/` or the page head): passed, by tests, including members-only instances.
+- End-to-end outcome (gpg+curl script publishes a signed thread using only documented routes): passed, `AgentApiWorkedExampleTest`.
+- Recovery (documented errors with next actions; retry guidance): passed; error text checked against the code.
+- Deployment check on zenmemes (`/llms.txt` and `/api/` facts match its flags): pending. The branch is not merged or deployed.
+- Release condition (new tests pass; full suite has no new failures): passed.
+
 ## Enhancement Requests
 
 - **Request:** commit the onboarding checklist to `main` and push it, so the user can work on other cycles elsewhere. / **Disposition:** separate work, done outside this branch (`c6fe21b4` on `origin/main`); this branch is based on it. / **Approval:** requested by the user. / **Outcome:** pushed.

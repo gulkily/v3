@@ -88,6 +88,25 @@ final class LlmsTxtRendererTest
         assertStringContains('Repository source: <code>docs/reference/agent_api.md</code>', $page);
     }
 
+    public function testPagesAdvertiseLlmsTxtWithoutVisibleCopy(): void
+    {
+        $repositoryRoot = __DIR__ . '/fixtures/parity_minimal_v1';
+        $databasePath = sys_get_temp_dir() . '/llms-discovery-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+            foreach (['/', '/account/key/', '/forte/users/'] as $path) {
+                ob_start();
+                (new Application(dirname(__DIR__), $repositoryRoot, $databasePath))->handle('GET', $path);
+                $page = (string) ob_get_clean();
+                $head = strstr($page, '</head>', true);
+                assertTrue($head !== false && str_contains($head, '<link rel="alternate" type="text/plain" href="/llms.txt"'), 'No llms.txt link in head of ' . $path);
+                assertTrue(substr_count($page, 'href="/llms.txt"') === 1, 'Unexpected visible llms.txt link on ' . $path);
+            }
+        } finally {
+            @unlink($databasePath);
+        }
+    }
+
     public function testMembersOnlyInstanceServesAgentDocsButNotContent(): void
     {
         $root = sys_get_temp_dir() . '/llms-members-only-' . bin2hex(random_bytes(6));
@@ -107,6 +126,7 @@ final class LlmsTxtRendererTest
             assertStringContains('Posting: members only.', $get('/llms.txt'));
             assertStringContains('Plain-text API. Agents start at /llms.txt.', $get('/api/'));
             assertStringNotContains('root-001', $get('/api/list_index'));
+            assertStringContains('<link rel="alternate" type="text/plain" href="/llms.txt"', $get('/'));
         } finally {
             exec('rm -rf ' . escapeshellarg($root));
         }
