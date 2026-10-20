@@ -14,6 +14,7 @@ final class FastmodMetaRuntime
         private readonly FastScoringConfig $config,
         private readonly bool $enabled,
         private readonly ?\Closure $flushArtifacts = null,
+        private readonly ?\Closure $enabledNow = null,
     ) {}
 
     public static function open(string $root, array $private, ?string $staticRoot = null): self
@@ -23,7 +24,8 @@ final class FastmodMetaRuntime
         $pdo=new PDO('sqlite:'.$path);$pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
         $store=new FastmodMetaStore($pdo);
         return new self($store,new SqliteFastScoreStore($pdo),FastScoringConfig::fromPrivateConfig($private),FastmodMetaConfig::enabled($private),
-            static fn()=>FastmodMetaArtifacts::flush($store,$path,$root,$staticRoot));
+            static fn()=>FastmodMetaArtifacts::flush($store,$path,$root,$staticRoot),
+            static fn()=>FastmodMetaConfig::enabled(\ForumRewrite\Support\PrivateConfig::load($root)));
     }
 
     public function flush(): void { if ($this->flushArtifacts !== null) ($this->flushArtifacts)(); }
@@ -33,10 +35,17 @@ final class FastmodMetaRuntime
         if ($this->enabled && $this->config->enabled) $this->store->retainOrdinaryResult($work,$result,FastmodMetaConfig::identity($this->config));
     }
 
+    public function retainOn(PDO $connection,array $work,array $result): void
+    {
+        if ($this->enabled && $this->config->enabled) {
+            (new FastmodMetaStore($connection))->retainOrdinaryResult($work,$result,FastmodMetaConfig::identity($this->config));
+        }
+    }
+
     public function recover(PDO $read, string $revision): int
     {
         $this->flush();
-        if (!$this->enabled || !$this->config->enabled) return 0;
+        if (!$this->enabled || !$this->config->enabled || ($this->enabledNow !== null && !($this->enabledNow)())) return 0;
         $count=0;
         $fetch=static function(string $id) use ($read): ?array {
             $q=$read->prepare('SELECT post_id,thread_id,parent_id,subject,body FROM posts WHERE post_id=? AND is_hidden=0 AND retracted_at IS NULL');

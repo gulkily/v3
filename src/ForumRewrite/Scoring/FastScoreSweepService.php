@@ -111,8 +111,8 @@ final class FastScoreSweepService
                 ];
             }
 
-            $this->scoreStore->completeWork($work, $result);
-            $this->meta?->retain($work,$result);
+            $this->scoreStore->completeWork($work, $result, $this->meta === null ? null
+                : fn(PDO $connection) => $this->meta->retainOn($connection,$work,$result));
             if (!isset($work['backfill_batch_id'])) {
                 $this->meta?->recover($this->pdo, $this->rubricRevision);
             }

@@ -95,7 +95,7 @@ final class FastmodMetaStore
 
     public function pending(): array
     {
-        return $this->pdo->query("SELECT * FROM fastmod_meta WHERE state='pending' AND suppressed=0")->fetchAll();
+        return $this->pdo->query("SELECT * FROM fastmod_meta WHERE state='pending' AND suppressed=0 AND evidence_json IS NOT NULL")->fetchAll();
     }
 
     public function generation(): int { return (int)$this->pdo->query('SELECT generation FROM fastmod_meta_generation WHERE singleton=1')->fetchColumn(); }

@@ -34,11 +34,13 @@ final class FastmodMetaTest
         $post=$read->query('SELECT * FROM posts')->fetch(PDO::FETCH_ASSOC);
         $hash=(new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null))->contentHashForPost($post);
         $meta->recordEligibleRoot('root',$hash,'r',\ForumRewrite\Scoring\FastmodMetaConfig::identity($config),0.9);
-        $runtime=new \ForumRewrite\Scoring\FastmodMetaRuntime($meta,$scores,$config,true);
+        $allowed=false;
+        $runtime=new \ForumRewrite\Scoring\FastmodMetaRuntime($meta,$scores,$config,true,null,function () use (&$allowed): bool {return $allowed;});
         $work=['post_id'=>'root','content_hash'=>$hash,'rubric_revision'=>'r'];
         $runtime->retain($work+['backfill_batch_id'=>1],['status'=>'scored','scores'=>['meta'=>1]]);
         assertSame(0,$runtime->recover($read,'r'));
         $runtime->retain($work,['status'=>'scored','scores'=>['meta'=>0.95]]);
+        assertSame(0,$runtime->recover($read,'r'));$allowed=true;
         assertSame(1,$runtime->recover($read,'r'));assertSame(0,$runtime->recover($read,'r'));
         $meta->removeAndSuppress('root');assertSame(0,$runtime->recover($read,'r'));
     }
@@ -98,6 +100,19 @@ final class FastmodMetaTest
             try {\ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact($new,$dir.'/artifact');throw new LogicException('Old release accepted');}
             catch(RuntimeException $e){assertStringContains('older Fastmod',$e->getMessage());}
         } finally {foreach(glob($dir.'/*') as $f)unlink($f);rmdir($dir);}
+    }
+
+    public function testScoreAndApplicationEvidenceCommitTogether(): void
+    {
+        $pdo=new PDO('sqlite::memory:');$scores=new SqliteFastScoreStore($pdo);$meta=new FastmodMetaStore($pdo);
+        $meta->recordEligibleRoot('root','h','r','m',0.9);$scores->enqueueWork('root','h','r');
+        $work=$scores->claimPendingWork(1)[0];$result=['status'=>'scored','source'=>'llm','scores'=>['meta'=>0.95]];
+        try {$scores->completeWork($work,$result,static function(PDO $p): void {throw new RuntimeException('simulated interruption');});throw new LogicException('Failure accepted');}
+        catch(RuntimeException $e){assertSame('simulated interruption',$e->getMessage());}
+        assertSame(null,$scores->find('root','h','r'));assertSame(null,$meta->find('root')['evidence_json']);
+        $scores->completeWork($work,$result,static fn(PDO $p)=>(new FastmodMetaStore($p))->retainOrdinaryResult($work,$result,'m'));
+        assertSame('scored',$scores->find('root','h','r')['status']);
+        assertSame(0.95,json_decode($meta->find('root')['evidence_json'],true)['scores']['meta']);
     }
 
     public function testIneligibleEvidenceCannotCreateTags(): void
