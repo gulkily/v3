@@ -233,7 +233,7 @@ try {
                         emitTaskQueue($quiet, "  {$message}\n");
                     },
                 ),
-                static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit, $quiet, $verbose): array {
+                static function () use ($projectRoot, $repositoryRoot, $databasePath, $providerCallLimit, $workLimit, $quiet, $verbose, $staticHtmlRoot): array {
                     if (!is_file($databasePath)) {
                         throw new RuntimeException('Read model database not found: ' . $databasePath);
                     }
@@ -269,7 +269,7 @@ try {
                         $workflow,
                         $scoreStore,
                         FastScoringRubricRevision::fromConfig($config, $projectRoot),
-                        \ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig),
+                        \ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig,$staticHtmlRoot),
                     ))->run(
                         $providerCallLimit,
                         $workLimit,

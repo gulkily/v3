@@ -23,7 +23,11 @@ final class FastmodMetaStore
         }
         $pdo->exec('CREATE INDEX IF NOT EXISTS fastmod_meta_active ON fastmod_meta(active,post_id)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS fastmod_meta_generation (singleton INTEGER PRIMARY KEY CHECK(singleton=1), generation INTEGER NOT NULL, published INTEGER NOT NULL)');
-        $pdo->exec('INSERT OR IGNORE INTO fastmod_meta_generation VALUES (1,0,0)');
+        if (!in_array('epoch',array_column($pdo->query('PRAGMA table_info(fastmod_meta_generation)')->fetchAll(),'name'),true)) {
+            $pdo->exec("ALTER TABLE fastmod_meta_generation ADD COLUMN epoch TEXT NOT NULL DEFAULT ''");
+        }
+        $pdo->exec('INSERT OR IGNORE INTO fastmod_meta_generation(singleton,generation,published,epoch) VALUES (1,0,0,lower(hex(randomblob(16))))');
+        $pdo->exec("UPDATE fastmod_meta_generation SET epoch=lower(hex(randomblob(16))) WHERE epoch=''");
     }
 
     public function recordEligibleRoot(string $id, string $hash, string $revision, string $model, float $threshold): void
@@ -103,8 +107,12 @@ final class FastmodMetaStore
     private function advance(): void { $this->pdo->exec('UPDATE fastmod_meta_generation SET generation=generation+1 WHERE singleton=1'); }
     private function transaction(callable $fn): mixed
     {
-        $this->pdo->exec('BEGIN IMMEDIATE');
-        try { $result=$fn(); $this->pdo->exec('COMMIT'); return $result; }
-        catch (\Throwable $e) { $this->pdo->exec('ROLLBACK'); throw $e; }
+        $run=function () use ($fn): mixed {
+            $this->pdo->exec('BEGIN IMMEDIATE');
+            try { $result=$fn(); $this->pdo->exec('COMMIT'); return $result; }
+            catch (\Throwable $e) { $this->pdo->exec('ROLLBACK'); throw $e; }
+        };
+        $path=(string)($this->pdo->query('PRAGMA database_list')->fetch()['file'] ?? '');
+        return $path === '' ? $run() : (new \ForumRewrite\Support\ExecutionLock($path.'.publication.lock'))->withExclusiveLock($run);
     }
 }

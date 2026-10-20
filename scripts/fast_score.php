@@ -51,6 +51,7 @@ try {
             $config=FastScoringConfig::fromPrivateConfig($privateConfig);
             $runtime->recover(new PDO('sqlite:'.$path), FastScoringRubricRevision::fromConfig($config,$projectRoot));
         }
+        if ($command !== 'meta-status') $runtime->flush();
         fwrite(STDOUT,json_encode($runtime->store->status(),JSON_THROW_ON_ERROR)."\n");
         exit(0);
     }

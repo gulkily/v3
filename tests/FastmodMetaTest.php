@@ -68,14 +68,35 @@ final class FastmodMetaTest
         try {
             $path=$dir.'/scores.sqlite3';$m=new FastmodMetaStore(new PDO('sqlite:'.$path));
             $m->recordEligibleRoot('root','h','r','m',0.9);$m->apply(['post_id'=>'root','content_hash'=>'h','rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]],'m');
-            file_put_contents($dir.'/secrets.php','<?php return '.var_export(['FAST_SCORING_DATABASE_PATH'=>$path],true).';');
+            file_put_contents($dir.'/secrets.php','<?php return '.var_export(['FAST_SCORING_DATABASE_PATH'=>$path,'TASK_QUEUE_DATABASE_PATH'=>$dir.'/tasks.sqlite3'],true).';');
             $run=static function(string $args) use ($dir): array {
-                $cmd='FORUM_SECRETS_PATH='.escapeshellarg($dir.'/secrets.php').' php '.escapeshellarg(dirname(__DIR__).'/scripts/fast_score.php').' '.$args;
+                $cmd='FORUM_PUBLIC_ARTIFACT_ROOT='.escapeshellarg($dir.'/public').' FORUM_STATIC_HTML_ROOT='.escapeshellarg($dir.'/static').' FORUM_TASK_QUEUE_DATABASE_PATH='.escapeshellarg($dir.'/tasks.sqlite3').' FORUM_SECRETS_PATH='.escapeshellarg($dir.'/secrets.php').' php '.escapeshellarg(dirname(__DIR__).'/scripts/fast_score.php').' '.$args;
                 exec($cmd,$output,$exit);assertSame(0,$exit);return json_decode(implode("\n",$output),true,512,JSON_THROW_ON_ERROR);
             };
             assertSame(1,(int)$run('meta-status')['items'][0]['active']);
             assertSame(1,(int)$run('meta-remove --post-id=root')['items'][0]['suppressed']);
             assertSame(1,(int)$run('meta-rollback')['items'][0]['suppressed']);
+        } finally {foreach(glob($dir.'/*') as $f) { if(is_file($f))unlink($f); } rmdir($dir);}
+    }
+
+    public function testArtifactGuardRejectsConcurrentCorrectionAndOldRelease(): void
+    {
+        $dir=sys_get_temp_dir().'/meta-publication-'.bin2hex(random_bytes(5));mkdir($dir);
+        try {
+            $path=$dir.'/private.sqlite3';$m=new FastmodMetaStore(new PDO('sqlite:'.$path));
+            $m->recordEligibleRoot('root','h','r','m',0.9);
+            $token=['path'=>$path,'generation'=>\ForumRewrite\Scoring\FastmodMetaPublication::generation($path)];
+            $m->apply(['post_id'=>'root','content_hash'=>'h','rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]],'m');
+            try { \ForumRewrite\Scoring\FastmodMetaPublication::publish($token,$dir.'/artifact',static fn()=>file_put_contents($dir.'/artifact','stale'));throw new LogicException('Stale build accepted'); }
+            catch(RuntimeException $e) {assertStringContains('changed during',$e->getMessage());}
+            assertSame(false,is_file($dir.'/artifact'));
+            $token=['path'=>$path,'generation'=>\ForumRewrite\Scoring\FastmodMetaPublication::generation($path)];
+            \ForumRewrite\Scoring\FastmodMetaPublication::publish($token,$dir.'/artifact',static fn()=>file_put_contents($dir.'/artifact','current'));
+            \ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact($token,$dir.'/artifact');
+            $m->removeAndSuppress('root');
+            $new=['path'=>$path,'generation'=>\ForumRewrite\Scoring\FastmodMetaPublication::generation($path)];
+            try {\ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact($new,$dir.'/artifact');throw new LogicException('Old release accepted');}
+            catch(RuntimeException $e){assertStringContains('older Fastmod',$e->getMessage());}
         } finally {foreach(glob($dir.'/*') as $f)unlink($f);rmdir($dir);}
     }
 

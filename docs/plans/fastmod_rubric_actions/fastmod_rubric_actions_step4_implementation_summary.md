@@ -87,3 +87,9 @@ Revised Steps 2 and 3 approved. New branch `feat/fastmod-root-meta`, revised pla
 - Changes: added meta-status, meta-remove --post-id, meta-rollback and meta-retry; registered default-off configuration and threshold environment/template keys. CLI uses existing operator shell trust; no browser controls. Missing initial private state does not break ordinary reading; operator logs identify initialization/restore action.
 - Verification: 10 meta/private-config checks passed, including real CLI subprocess status/remove/rollback and persistent suppression. Existing score store/read model remain separate.
 - Notes: explicit command status includes generation/dirty state; artifact flush wiring is Stage 5. Restore workflow remains excluded.
+
+## Stage 5 - Artifact freshness guard (v3)
+
+- Changes: private classification generation/epoch and publication lock serialize decisions against static/snapshot publication. Full/shared builds, release activation, per-route files and QDB aliases reject stale generation. Serving falls back from stale HTML; offline snapshots regenerate. Dirty decisions invalidate presentation and enqueue offline regeneration; acknowledgment occurs only after success, including CLI correction/retry.
+- Verification: 12 focused meta/static/offline/private-isolation tests passed. New guard test rejects correction-during-build and older release activation; syntax checks passed. CLI queue isolation corrected to use FORUM_TASK_QUEUE_DATABASE_PATH; verified the existing workspace offline task remained the preexisting queued task, with no new task to undo.
+- Notes: default/zero generation preserves legacy static behavior. Existing retraction guard and lock order retained. Snapshot root labels are wired in Stage 6.

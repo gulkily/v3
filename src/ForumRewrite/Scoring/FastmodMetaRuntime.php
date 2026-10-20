@@ -13,15 +13,20 @@ final class FastmodMetaRuntime
         private readonly SqliteFastScoreStore $scores,
         private readonly FastScoringConfig $config,
         private readonly bool $enabled,
+        private readonly ?\Closure $flushArtifacts = null,
     ) {}
 
-    public static function open(string $root, array $private): self
+    public static function open(string $root, array $private, ?string $staticRoot = null): self
     {
         $path=FastScoreDatabaseConfig::path($root,$private);
         if (!is_dir(dirname($path)) && !mkdir(dirname($path),0700,true) && !is_dir(dirname($path))) throw new \RuntimeException('Cannot open private Fastmod state.');
         $pdo=new PDO('sqlite:'.$path);$pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
-        return new self(new FastmodMetaStore($pdo),new SqliteFastScoreStore($pdo),FastScoringConfig::fromPrivateConfig($private),FastmodMetaConfig::enabled($private));
+        $store=new FastmodMetaStore($pdo);
+        return new self($store,new SqliteFastScoreStore($pdo),FastScoringConfig::fromPrivateConfig($private),FastmodMetaConfig::enabled($private),
+            static fn()=>FastmodMetaArtifacts::flush($store,$path,$root,$staticRoot));
     }
+
+    public function flush(): void { if ($this->flushArtifacts !== null) ($this->flushArtifacts)(); }
 
     public function retain(array $work, array $result): void
     {
@@ -30,6 +35,7 @@ final class FastmodMetaRuntime
 
     public function recover(PDO $read, string $revision): int
     {
+        $this->flush();
         if (!$this->enabled || !$this->config->enabled) return 0;
         $count=0;
         $fetch=static function(string $id) use ($read): ?array {
@@ -45,6 +51,7 @@ final class FastmodMetaRuntime
             $result=isset($receipt['evidence_json']) ? json_decode($receipt['evidence_json'],true,512,JSON_THROW_ON_ERROR) : null;
             if ($result !== null && $this->store->apply($receipt,$result,FastmodMetaConfig::identity($this->config))) $count++;
         }
+        $this->flush();
         return $count;
     }
 }
