@@ -66,7 +66,9 @@ final class PresentationProfileMatrixTest
                 $codebase = $this->render($application, '/tools/codebase/');
                 preg_match_all('/data-query-sql="([^"]+)"/', $codebase, $queries);
                 assertTrue(count($queries[1]) >= 16);
-                assertStringNotContains('<code>SELECT ', $codebase);
+                assertStringContains('<code>SELECT ', $codebase);
+                assertStringContains('class="codebase-query-action"', $codebase);
+                assertStringContains('aria-label="View query: Instance admins"', $codebase);
                 foreach ($queries[1] as $sql) {
                     assertTrue(str_starts_with(html_entity_decode($sql, ENT_QUOTES), 'SELECT '));
                 }

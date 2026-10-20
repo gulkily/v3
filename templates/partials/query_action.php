@@ -1,1 +1,4 @@
-<button type="button" data-view-query data-query-key="<?= $e($queryKey) ?>" data-query-label="<?= $e($queryLabel) ?>" data-query-sql="<?= $e($querySql) ?>">View query<span class="meta">: <?= $e($queryLabel) ?></span></button>
+<?php if (!empty($queryCompact)): ?><div class="codebase-source"><code><?= $e($querySql) ?></code>
+<?php endif; ?>
+<button type="button"<?php if (!empty($queryCompact)): ?> class="codebase-query-action" title="<?= $e('View query: ' . $queryLabel) ?>" aria-label="<?= $e('View query: ' . $queryLabel) ?>"<?php endif; ?> data-view-query data-query-key="<?= $e($queryKey) ?>" data-query-label="<?= $e($queryLabel) ?>" data-query-sql="<?= $e($querySql) ?>"><?php if (!empty($queryCompact)): ?><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg><?php else: ?>View query<span class="meta">: <?= $e($queryLabel) ?></span><?php endif; ?></button>
+<?php if (!empty($queryCompact)): ?></div><?php endif; ?>

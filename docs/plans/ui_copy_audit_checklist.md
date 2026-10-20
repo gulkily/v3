@@ -149,3 +149,9 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 - [x] Removed the obsolete Fastmod explanation “Scores do not trigger actions” and shortened its existing Feature Flags link to the shared tagging control. Reused the existing flag row, signed save/failure feedback and tag presentation; no new styling or navigation destination.
 - Verification: real-browser signed toggle, simulated failed-save/retry, anonymous refusal, no model call on save, root tagging and site-off behavior passed. At 390px/1280px, checked light/dark/console/Word97/Chicago/Midnight flag and tag discovery without page overflow; inspected phone Midnight and desktop Word97 screenshots. Existing Feature Flags toolbar browser checks passed for filtering, empty/read-only states, keyboard and failed-save preservation. No unresolved layout issue introduced by this row was observed.
+
+## System State query controls
+
+- [x] Restored visible inline SQL on System State, with compact magnifying-glass buttons opening the query viewers. Accessible names and tooltips retain the query context; other pages keep their existing controls. PHP syntax and existing query coverage checks passed.
+
+- System State follow-up: query viewer icons use flat, transparent buttons without borders or shadows, including hover/pressed theme states; keyboard focus remains visible. CSS diff check passed.
