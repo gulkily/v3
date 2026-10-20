@@ -49,3 +49,22 @@
 
 ### Uncertain assessments
 - "Stages ≤1 hour or ≤50 lines" vs "≤ about eight stages": a UI rework of this breadth cannot satisfy both; Stages 4, 6 and 8 likely exceed 50 lines. The instructions give no tie-break besides rescoping in Step 2.
+
+## 2026-10-20T08:30Z — Step 4 (implementation)
+
+### Necessary/useful instructions
+- step4_before "Planning Docs Commit Gate" and "organization rule": produced a clean planning commit (`93e98f89`) with only Steps 1–3, the debug log and the plan index entry; the summary followed afterwards. Retain.
+- step4_do "Stage Boundary Protocol": one commit per stage (8 stage commits) with summary updates kept the audit trail diffable against Step 3. Retain.
+- step4_after item 7 "A focused pass is never reported as a full-suite or user-outcome result": forced an honest partial-suite record and a baseline-worktree comparison separating 5 pre-existing failures from 2 non-reproducing ones. Retain.
+- RAILSPIKE "Enhancement Requests": the skip-link deferral (todo.txt) stayed visible in the summary instead of being silently dropped. Retain.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Experimental Effort Estimation: cycle not selected.
+- Documentation-only verification rules: application change.
+
+### Uncertain assessments
+- Stage sizing (≤1 hour / ≤50 lines): Stages 4, 6 and 8 exceeded it substantially; the guidance offers no way to keep a UI rework within eight stages and this size. Consider explicit guidance for verification-heavy stages.
+- Resource guidance: nothing addresses running heavy suites/builds concurrently; overlapping full-suite, baseline and browser runs loaded a shared machine until the user intervened. Suggest a note to run long verification serially and stop helper servers after use.
