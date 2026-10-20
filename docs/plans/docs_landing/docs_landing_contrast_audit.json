@@ -511,14 +511,14 @@
   {
    "pair": "--ink-soft on --panel",
    "required": 4.5,
-   "ratio": 3.66,
-   "pass": false
+   "ratio": 5.32,
+   "pass": true
   },
   {
    "pair": "--ink-soft on --page-bg",
    "required": 4.5,
-   "ratio": 3.66,
-   "pass": false
+   "ratio": 5.32,
+   "pass": true
   },
   {
    "pair": "--ink on --input-bg",
@@ -969,8 +969,8 @@
   {
    "pair": "--active-ink on --active-bg",
    "required": 4.5,
-   "ratio": 3.85,
-   "pass": false
+   "ratio": 4.69,
+   "pass": true
   },
   {
    "pair": "--line on --panel",

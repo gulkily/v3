@@ -1,0 +1,2466 @@
+{
+ "light": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 5.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 9.26,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 6.06,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 9.26,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 9.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 9.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 5.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 8.85,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "dark": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 8.57,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 14.32,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 8.93,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 14.32,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 11,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 11,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 8.57,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 13.73,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "console": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 9.23,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 15.28,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 9.1,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 15.28,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 11.91,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 11.91,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 9.23,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 15.5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "lcd": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 4.62,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 10.49,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 5,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 10.49,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 9.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 8.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 8.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 4.62,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 9.68,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "chicago": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 6.94,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 18.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 12.63,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 18.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 9.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 9.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 6.94,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 10.38,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "vapor": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 9.78,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 15.91,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 10.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 15.91,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 14.72,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 9.9,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 9.9,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 9.78,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 15.05,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "forge": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 5.77,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 15.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 5.98,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 15.88,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 11.18,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 11.18,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 5.77,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 15.34,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "sticker": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 12.63,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 12.63,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 12.63,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 19.8,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "arena": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 5.32,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 19.78,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 5.01,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 19.78,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 5.32,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "thermal": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 6.44,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 15.66,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 6.75,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 15.66,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 12.48,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 12.48,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 6.44,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 14.95,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "whitehot": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 5.96,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 5.96,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 7.58,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 7.58,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 5.96,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 17.29,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "word97": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 11.54,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 11.54,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 4.72,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 11.54,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 5.7,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 10.37,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 11.54,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 4.72,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 16.01,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 11.54,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 4.72,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 16.01,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 4.72,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 11.54,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 5.7,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 11.54,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 4.72,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "midnight": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 8.46,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 8.46,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 5.98,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 8.46,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 5.03,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 11.2,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 6.66,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 11.2,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 8.46,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 5.98,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 8.86,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 8.46,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 5.98,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 8.86,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 5.98,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 8.46,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 5.03,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 8.46,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 5.98,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "chouse": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 7.06,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 15.04,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 8.21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 15.04,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 5.36,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 5.36,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 7.06,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 12.92,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "qdb": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 18.43,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 18.43,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 2.91,
+   "required": 4.5,
+   "pass": false,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 18.43,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 11.09,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 12.63,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 21,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 18.43,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 2.91,
+   "required": 4.5,
+   "pass": false,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 6.33,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 18.43,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 2.91,
+   "required": 4.5,
+   "pass": false,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 6.33,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 2.91,
+   "required": 4.5,
+   "pass": false,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 18.43,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 11.09,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 18.43,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 2.91,
+   "required": 4.5,
+   "pass": false,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ],
+ "mitrapclub": [
+  {
+   "selector": ".docs-intro p",
+   "ratio": 14.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-search label",
+   "ratio": 14.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__title",
+   "ratio": 6.55,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "17.6px"
+  },
+  {
+   "selector": ".docs-entry__description",
+   "ratio": 14.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-entry__path",
+   "ratio": 7.58,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node strong",
+   "ratio": 16.94,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-flow__node span",
+   "ratio": 8.67,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__node code",
+   "ratio": 16.94,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-flow__edge",
+   "ratio": 14.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-quick-links a",
+   "ratio": 6.55,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-chip",
+   "ratio": 4.69,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filters > summary",
+   "ratio": 14.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a",
+   "ratio": 6.55,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-filter-list a[aria-current]",
+   "ratio": 4.69,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__title",
+   "ratio": 6.55,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16.8px"
+  },
+  {
+   "selector": ".docs-result__summary",
+   "ratio": 14.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  },
+  {
+   "selector": ".docs-result__path",
+   "ratio": 7.58,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-badge",
+   "ratio": 14.79,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "14px"
+  },
+  {
+   "selector": ".docs-intro__home a",
+   "ratio": 6.55,
+   "required": 4.5,
+   "pass": true,
+   "backgroundImage": false,
+   "fontSize": "16px"
+  }
+ ]
+}

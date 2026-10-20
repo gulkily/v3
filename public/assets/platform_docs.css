@@ -54,6 +54,15 @@
   margin-bottom: 0;
 }
 
+/* Standalone links (not inside a sentence) get full-size targets. */
+.docs-intro__browse a,
+.docs-intro__home a,
+.docs-empty a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
 /* Curated topics: guides with several entries span the row; single-guide topics pair up. */
 .docs-topics {
   display: grid;
@@ -441,7 +450,8 @@
   min-height: 2.75rem;
 }
 
-.docs-chip {
+/* Scoped above themes' `:root[data-theme] a` link colors so chips keep the active pair. */
+.docs-page .docs-chips a.docs-chip {
   gap: 0.4rem;
   padding: 0 0.75rem;
   border: 2px solid var(--active-line);
@@ -526,8 +536,8 @@
   overflow-wrap: anywhere;
 }
 
-.docs-filter-list a[aria-current],
-.docs-filter-tree a[aria-current] {
+.docs-page .docs-filter-list a[aria-current],
+.docs-page .docs-filter-tree a[aria-current] {
   border-inline-start-color: var(--active-line);
   background: var(--active-bg);
   color: var(--active-ink);
@@ -622,4 +632,38 @@
 
 .docs-empty p {
   margin: 0.5rem 0;
+}
+
+/* Keyboard focus: a thick ring in the theme's ink, offset so it never hides in a border. */
+.docs-page :is(a, button, input, summary):focus-visible,
+.docs-page [tabindex="-1"]:focus {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.docs-page [tabindex="-1"]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-contrast: more) {
+  .docs-entry__title,
+  .docs-result__title {
+    text-decoration-color: currentColor;
+    text-decoration-thickness: 2px;
+  }
+
+  .docs-entry-list .docs-entry__path,
+  .docs-result__path,
+  .docs-flow__node span,
+  .docs-quick-links li:not(:last-child)::after {
+    color: var(--ink);
+  }
+
+  .docs-result,
+  .docs-result:last-child,
+  .docs-flow,
+  .docs-flow__node,
+  .docs-badge {
+    border-color: var(--ink);
+  }
 }

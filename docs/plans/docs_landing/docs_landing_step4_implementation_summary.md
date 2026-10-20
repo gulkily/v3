@@ -115,3 +115,24 @@ Follow-up cycle: predecessor [docs_discovery](../docs_discovery/docs_discovery_s
 - Notes:
   - Decision for the user: folder pages are 241 of 390 and about 17 MB, mostly the plans tree repeated on every page. Dropping folder prebuilds would send static no-JS folder links to the search shell instead.
   - The static test now takes about 3 minutes (it was about 2.6 minutes in the predecessor) because of the per-page live comparison.
+
+## Stage 7 - Accessibility and theme hardening
+- Changes:
+  - New `tests/browser/docs_landing_contrast.mjs` measures rendered text contrast for each docs component in every registered theme. It swaps the theme in its own `<link>` so the real cascade order is kept, and composites backgrounds up the ancestor chain. It caught failures the token audit can't see (theme link-color rules).
+  - Theme link rules (`:root[data-theme] a`) were overriding the chip and active-filter colors in word97 (1.86:1), midnight (3.74) and mitrapclub (1.59). The component selectors are now scoped above them.
+  - Token fixes (contrast improves, same hue):
+    - arena `--ink-soft` #666666 → #808080 (3.66 → 5.32 on black).
+    - mitrapclub `--active-bg` #d94f2b → #c4441f (3.85 → 4.69 with `--active-ink`). The swatch keeps its own literal color.
+  - A 3px `--ink` focus ring (2px offset) on every docs link, button, input and summary, plus the programmatically focused results heading.
+  - `prefers-contrast: more`: solid title underlines, and paths, captions, dividers, diagram boxes and badges switch to `--ink`.
+  - Standalone links (Browse all docs, Docs home, empty-state links) get 2.75rem targets. Remaining smaller targets are links inside sentences, which the 24px inline-link exception covers.
+- Verification:
+  - Rendered contrast: [report](./docs_landing_rendered_contrast.json). All docs components pass AA in 15 of 16 themes. qdb still fails (below).
+  - Token audit rerun: [report](./docs_landing_contrast_audit.json). arena and mitrapclub text pairs now pass.
+  - Target-size check (Chromium, 1280 and 320px, landing, filtered, empty and paged results, all filters and tree branches open): no non-inline target under 44px tall, and no inline link under 24px.
+  - `php tests/run.php PlatformDocsCatalogTest PlatformDocsPageTest ProfilePresentationContentTest`: passed 29/29. `git diff --check`: passed.
+- Notes:
+  - **Reported, not fixed: qdb.** The theme colors every link `var(--line)` (2.91:1 on its panel), which fails AA on every page. Changing it alters the theme's site-wide link identity, so it is left for the user to decide.
+  - **Reported, not fixed: `--line` below 3:1** in 14 themes. This page uses `--line` only for decorative dividers and the quiet underline (state and identity come from text, weight and the active pair). Site-wide input borders still rely on it, which is outside this cycle.
+  - `prefers-reduced-motion`: the docs page has no animation or smooth scrolling, and focus moves without animated scrolling, so no rule was needed.
+  - The skip link remains deferred to `todo.txt`.
