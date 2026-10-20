@@ -43,6 +43,19 @@ Branch: `feat/agent-api-docs`, from `origin/main` at `c6fe21b4` (which adds the 
 - Notes:
   - The worked-example script is not linked from the reference: `/docs` only serves Markdown. Stage 4 decides where the example's sample responses go.
 
+## Stage 4 - Tested worked example
+- Changes:
+  - New `docs/examples/agent_api_worked_example.sh` (gpg, curl, and python3 for JSON). It makes an Ed25519 key whose user ID is the username, creates the identity, prepares, signs and publishes a thread, then confirms it with `get_post`.
+  - New `AgentApiWorkedExampleTest`. It boots a fresh instance (`LocalRepositoryBootstrap`) behind `FrontendTestServer`, runs the script with an isolated GNUPGHOME, and checks the transcript and the new profile (`Username: example-agent`, `Posts: 1`).
+  - Reference: added a "Sample session" taken from a real run.
+- Verification:
+  - `php tests/run.php AgentApiWorkedExampleTest`: passed. On its first run, the test found that `create_prepared_post` also requires `record_path`, `post_id` and `author_identity_id` echoed back unchanged (`Prepared post record_path mismatch.`). That was missing from `/llms.txt` step 5 and the reference. Both now say it, and the reference error table has a `<field> mismatch` row.
+  - `php tests/run.php AgentApiWorkedExampleTest LlmsTxtRendererTest ApiRouteCatalogTest PlatformDocsCatalogTest PlatformDocsPageTest LocalAppSmokeTest`: 162 passed, 2 failed (the same baseline static-build failures).
+- Notes:
+  - Deviation from Step 3: the plan said to skip when gpg is missing, but `tests/run.php` has no skip mechanism and many existing tests already require gpg. The test fails with a message naming the missing tool, so it never passes silently.
+  - The script needs python3 to read JSON. No jq is installed here, and python3 is more common in agent sandboxes.
+  - Step 1 called gpg's default key "Ed25519". gpg 2.2 defaults to RSA, so the script names `ed25519` explicitly and the reference no longer calls it the default.
+
 ## Enhancement Requests
 
 - **Request:** commit the onboarding checklist to `main` and push it, so the user can work on other cycles elsewhere. / **Disposition:** separate work, done outside this branch (`c6fe21b4` on `origin/main`); this branch is based on it. / **Approval:** requested by the user. / **Outcome:** pushed.
