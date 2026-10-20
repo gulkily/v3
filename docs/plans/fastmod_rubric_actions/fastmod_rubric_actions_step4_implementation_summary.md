@@ -75,3 +75,9 @@ Revised Steps 2 and 3 approved. New branch `feat/fastmod-root-meta`, revised pla
 - Changes: new-local-post receipt marks eligibility only when meta tagging is configured on; captures threshold/model/rubric/content identity. Ordinary worker results retain private application evidence and recover independently of provider work. Replies, old queues and backfill lack eligible receipts; backfill cannot supply application evidence.
 - Verification: 13 focused meta/sweep tests passed; prior workflow tests also passed. New recovery test uses retained ordinary evidence without score rows and confirms backfill exclusion and suppression. PHP syntax check passed.
 - Notes: no automatic reclassification; successful scoring survives application failure. Tag presentation and artifact invalidation follow in later stages.
+
+## Stage 3 - Live tag discovery (v3)
+
+- Changes: shared root-label reads use a request-local indexed public-ID join. Private state is read in bulk through a separate read-only connection; only IDs enter temporary request state, keeping private evidence inaccessible to user-entered SQL. Shared existing thread/card/tag/Forte/profile queries inherit merged labels. No persistent main schema/data copy or new styling.
+- Verification: 4 meta tests passed, including effective labels, unchanged main human labels/scores and absence of private tables/attachments from the live connection. Joins precede filtering/counts. No core read-model schema/column dependency change.
+- Notes: chose the approved bulk-read alternative to attaching private tables to programmable query connections. Generated artifacts are handled in Stages 5–6; CLI unavailable-state recovery follows.

@@ -43,6 +43,25 @@ final class FastmodMetaTest
         $meta->removeAndSuppress('root');assertSame(0,$runtime->recover($read,'r'));
     }
 
+    public function testLiveJoinPreservesHumanTagsAndDoesNotExposePrivateTables(): void
+    {
+        $path=tempnam(sys_get_temp_dir(),'meta-read-');
+        try {
+            $m=new FastmodMetaStore(new PDO('sqlite:'.$path));
+            $m->recordEligibleRoot('root','h','r','m',0.9);$m->apply(['post_id'=>'root','content_hash'=>'h','rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]],'m');
+            $read=new PDO('sqlite::memory:');
+            $read->exec("CREATE TABLE threads(root_post_id TEXT PRIMARY KEY,thread_labels_json TEXT,score_total INTEGER); INSERT INTO threads VALUES('root','[\"human\"]',7),('other','[\"meta\"]',3)");
+            \ForumRewrite\Scoring\FastmodMetaRead::decorate($read,$path);
+            assertSame(['human','meta'],json_decode($read->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root'")->fetchColumn(),true));
+            assertSame('["human"]',$read->query("SELECT thread_labels_json FROM main.threads WHERE root_post_id='root'")->fetchColumn());
+            assertSame(7,(int)$read->query("SELECT score_total FROM threads WHERE root_post_id='root'")->fetchColumn());
+            assertSame(false,$read->query("SELECT name FROM sqlite_master WHERE name='fastmod_meta'")->fetchColumn());
+            assertSame(2,count($read->query('PRAGMA database_list')->fetchAll()));
+            $m->removeAndSuppress('root');
+            assertSame([],\ForumRewrite\Scoring\FastmodMetaRead::activeIds($path));
+        } finally {unlink($path);}
+    }
+
     public function testIneligibleEvidenceCannotCreateTags(): void
     {
         $m=new FastmodMetaStore(new PDO('sqlite::memory:'));$m->recordEligibleRoot('root','h','r','m',0.9);

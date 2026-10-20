@@ -51,6 +51,7 @@ use RuntimeException;
  */
 final class RouteServices
 {
+    private ?PDO $tagReadConnection = null;
     private bool $viewerProfileResolved = false;
     private ?array $resolvedViewerProfile = null;
     private bool $lenientViewerProfileResolved = false;
@@ -89,7 +90,8 @@ final class RouteServices
 
     public function pdo(): PDO
     {
-        return (new ReadModelConnection($this->databasePath))->open();
+        return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
+            (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot);
     }
 
     public function databasePath(): string
