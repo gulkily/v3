@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Agent API docs and discovery](agent_api_docs/) · [Onboarding checklist](agent_api_onboarding_checklist.md)
 - [Shared Fastmod automatic-tagging flag](fastmod_tagging_flag/)
 
 - [Fastmod rubric actions — automatic meta tagging](fastmod_rubric_actions/)
