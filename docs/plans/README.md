@@ -11,6 +11,7 @@ checklists, and proposals remain at the top level or in the collections below.
 ## Feature folders
 
 - [Documentation discovery](docs_discovery/)
+- [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 
 - [Markdown renderer](markdown_renderer/)
 
