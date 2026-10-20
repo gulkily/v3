@@ -81,7 +81,7 @@ final class PlatformDocsPageTest
         assertTrue(!str_contains($legacy, '<span class="docs-badge">Current guidance</span>'));
 
         $folder = $this->render('/docs/?folder=docs%2Fplans%2Farchive');
-        assertStringContains('<details open><summary>plans', $folder);
+        assertStringContains('<details data-docs-folder-branch="docs/plans" open><summary>plans', $folder);
         assertStringContains('<span>All in plans</span>', $folder);
         assertStringContains('href="/docs/?folder=docs%2Fplans%2Farchive" aria-current="page"', $folder);
         assertSame(1, substr_count($folder, 'href="/docs/?folder=docs"><span>All in docs</span>'));

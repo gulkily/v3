@@ -101,15 +101,13 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
     </ul>
   </section>
 <section class="card docs-library" aria-labelledby="docs-library-heading" data-docs-library<?= $isResults ? '' : ' hidden' ?>>
-  <h2 id="docs-library-heading">Documents</h2>
-<?php if ($active !== []): ?>
-  <ul class="docs-chips" aria-label="Active filters">
+  <h2 id="docs-library-heading" tabindex="-1">Documents</h2>
+  <ul class="docs-chips" aria-label="Active filters" data-docs-chips<?= $active === [] ? ' hidden' : '' ?>>
 <?php foreach ($active as $key => $value): ?>
     <li><a class="docs-chip" href="<?= $e($resultsUrl(array_diff_key($active, [$key => true]))) ?>" aria-label="Remove <?= $e($filterLabels[$key] . ': ' . $activeLabel($key, $value)) ?>"><?= $e($filterLabels[$key]) ?>: <?= $e($activeLabel($key, $value)) ?> <span aria-hidden="true">×</span></a></li>
 <?php endforeach; ?>
     <li><a href="<?= $e($resultsUrl([])) ?>">Clear all</a></li>
   </ul>
-<?php endif; ?>
   <p role="status" data-docs-count><?= $e(number_format($total)) ?> <?= $total === 1 ? 'document' : 'documents' ?></p>
   <p data-docs-error hidden>Search unavailable. <button type="button" data-docs-retry>Retry</button> or <a href="/docs/">refresh the library</a>.</p>
   <details class="docs-filters">
@@ -119,7 +117,7 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
         <h3>Collection</h3>
         <ul class="docs-filter-list">
 <?php foreach ($counts['group'] as $group => $count): ?>
-          <li><a class="docs-filter-list__link" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'group' => $group])) ?>"<?= ($active['group'] ?? null) === $group ? ' aria-current="page"' : '' ?>><span><?= $e($group) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($count)) ?></span></a></li>
+          <li><a class="docs-filter-list__link" data-docs-filter="group" data-docs-value="<?= $e($group) ?>" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'group' => $group])) ?>"<?= ($active['group'] ?? null) === $group ? ' aria-current="page"' : '' ?>><span><?= $e($group) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($count)) ?></span></a></li>
 <?php endforeach; ?>
         </ul>
       </section>
@@ -127,7 +125,7 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
         <h3>Category</h3>
         <ul class="docs-filter-list">
 <?php foreach ($counts['category'] as $slug => $category): ?>
-          <li><a class="docs-filter-list__link" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'category' => (string) $slug])) ?>"<?= ($active['category'] ?? null) === (string) $slug ? ' aria-current="page"' : '' ?>><span><?= $e($category['label']) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($category['count'])) ?></span></a></li>
+          <li><a class="docs-filter-list__link" data-docs-filter="category" data-docs-value="<?= $e((string) $slug) ?>" data-docs-label="<?= $e($category['label']) ?>" href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'category' => (string) $slug])) ?>"<?= ($active['category'] ?? null) === (string) $slug ? ' aria-current="page"' : '' ?>><span><?= $e($category['label']) ?></span> <span class="docs-filter-list__count"><?= $e(number_format($category['count'])) ?></span></a></li>
 <?php endforeach; ?>
         </ul>
       </section>
@@ -141,7 +139,7 @@ $folderItems = static function (string $parent) use (&$folderItems, $counts, $e,
             continue;
         }
         $name = $parent === '' ? $folder : basename($folder);
-        $link = static fn (string $label): string => '<a class="docs-filter-list__link" href="' . $e($resultsUrl(['q' => $active['q'] ?? '', 'folder' => $folder])) . '"'
+        $link = static fn (string $label): string => '<a class="docs-filter-list__link" data-docs-filter="folder" data-docs-value="' . $e($folder) . '" href="' . $e($resultsUrl(['q' => $active['q'] ?? '', 'folder' => $folder])) . '"'
             . (($active['folder'] ?? null) === $folder ? ' aria-current="page"' : '') . '><span>' . $e($label) . '</span> <span class="docs-filter-list__count">' . $e(number_format($counts['folder'][$folder])) . '</span></a>';
         $nested = $folderItems($folder);
         if ($nested === '') {
@@ -150,7 +148,7 @@ $folderItems = static function (string $parent) use (&$folderItems, $counts, $e,
         }
         // Summaries can't hold links, so each branch starts with a link to the whole folder.
         $open = isset($active['folder']) && ($active['folder'] === $folder || str_starts_with($active['folder'], $folder . '/')) ? ' open' : '';
-        $html .= '<li><details' . $open . '><summary>' . $e($name) . ' <span class="docs-filter-list__count">' . $e(number_format($counts['folder'][$folder])) . '</span></summary>'
+        $html .= '<li><details data-docs-folder-branch="' . $e($folder) . '"' . $open . '><summary>' . $e($name) . ' <span class="docs-filter-list__count">' . $e(number_format($counts['folder'][$folder])) . '</span></summary>'
             . '<ul class="docs-filter-list docs-filter-list--tree"><li>' . $link('All in ' . $name) . '</li>' . $nested . '</ul></details></li>';
     }
     return $html;

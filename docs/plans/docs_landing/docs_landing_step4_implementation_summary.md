@@ -83,3 +83,16 @@ Follow-up cycle: predecessor [docs_discovery](../docs_discovery/docs_discovery_s
   - Measured the search index at 8,692,028 bytes uncompressed with summaries (+~0.2 MB versus Stage 4 of the predecessor cycle).
   - Filter counts are library-wide, not narrowed by the current search. This keeps prebuilt pages identical to their dynamic versions.
   - Departure: the brief's sidebar on wide screens isn't used, because the shared 760px shell (kept per Step 3) leaves no room. Filters stay in the `<details>` at every width.
+
+## Stage 5 - JS enhancement parity
+- Changes:
+  - `platform_docs.js` renders the same chips, hidden filter inputs, filter `aria-current` and links (keeping the search), folder-tree open state, rows (summary, path, category badge, collection badge rule), page indicator and Previous/Next, empty state and count as the server does. The count stays in the server's `role="status"` element, so changes are announced politely.
+  - Same-page `/docs/?…` links (landing quick links, Browse all, filters, chips, pages) and the search form update in place with history entries. After a link navigation, focus moves to the "Documents" heading (`tabindex="-1"`). Back and forward switch between the landing and results views.
+  - Return-link parameters keep the URL's own order, matching the server.
+  - Template data hooks: `data-docs-chips` (always rendered, hidden when empty), `data-docs-filter`/`-value`/`-label` on filter links, `data-docs-folder-branch` on tree branches.
+- Verification:
+  - New `tests/browser/docs_landing.mjs` (Chromium, isolated dev server): for 6 queries (paged collection, legacy mixed-case category with search, nested folder, empty search, browse all, search) it navigates in place from the landing page, as the static host does, and compares the result with the JS-off server render (chips, count, rows HTML, page text, empty state, `aria-current` targets, open branches, hidden inputs, search value): all identical. Also passed: a landing quick link moves to results with focus on the heading, Back restores the landing view, and an injected index failure shows Retry and recovers.
+  - `php tests/run.php PlatformDocsCatalogTest PlatformDocsPageTest ProfilePresentationContentTest`: passed 29/29. `node --check`, `git diff --check`: passed.
+- Notes:
+  - Rendering logic is duplicated between PHP and JS. The parity test is the guard, and Stage 8 runs it on the static host too.
+  - The predecessor harness `tests/browser/docs_discovery.mjs` still drives the removed select form and `data-docs-clear`. Stage 8 updates it.
