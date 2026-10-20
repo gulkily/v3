@@ -1,0 +1,357 @@
+{
+  "source": "Stage 4 commit 4ddb6812 plus Stage 5 acceptance fixes",
+  "browserScenarios": [
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "default",
+      "launcher": null,
+      "subnav": null,
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "passed",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "word97",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "chicago",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "midnight",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "default",
+      "launcher": null,
+      "subnav": null,
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "word97",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "chicago",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "midnight",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 1280,
+      "theme": "default",
+      "launcher": null,
+      "subnav": null,
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 1280,
+      "theme": "word97",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 1280,
+      "theme": "chicago",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 1280,
+      "theme": "midnight",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 390,
+      "theme": "default",
+      "launcher": null,
+      "subnav": null,
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 390,
+      "theme": "word97",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 390,
+      "theme": "chicago",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "static",
+      "width": 390,
+      "theme": "midnight",
+      "launcher": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "subnav": {
+        "svgVerified": true,
+        "width": "16px",
+        "height": "16px"
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    }
+  ],
+  "markdownReaderScenarios": 8,
+  "releaseRecovery": {
+    "sharedRefreshSeconds": 71.64,
+    "failedRefreshRetainsActiveRelease": "passed",
+    "rollbackAndRestore": "passed",
+    "activeRelease": "/tmp/docs-discovery-acceptance/static/releases/release-20261019235153-ce027634"
+  },
+  "staticInventoryAtBuild": 1314,
+  "fullBuildSeconds": 77.93,
+  "fullBuildAndRefreshRegressionSeconds": 156.59,
+  "staticBytesAtBuild": 57924528,
+  "searchJsonBytesAtBuild": 8471559,
+  "screenshotsRoot": "/tmp/docs-discovery-acceptance",
+  "checks": {
+    "fullInventoryAndDownloadHashes": "passed",
+    "staticSearchReadReturnReset": "passed",
+    "searchIndexRetry": "passed",
+    "anonymousStaticCookieIsolation": "preference cookie writes disabled in static harness; existing personalized fallback preserved",
+    "visualIcons": "Word97, Chicago and Midnight launcher and subnavigation reviewed",
+    "productionDeployment": "inapplicable",
+    "fullRepositorySuite": "not run; focused suites and browser/release checks only"
+  },
+  "finalFullBuildAndRefreshRegressionSeconds": 129.19,
+  "finalEligibleFiles": 1315,
+  "finalChecks": {
+    "rootTitles": "passed",
+    "hiddenSymlinkAliases": "rejected",
+    "invalidTextEncoding": "search index remains valid UTF-8",
+    "assetPreviewKeyboardFocus": "passed",
+    "onDemandRootAndWorkflowReaders": "passed",
+    "unrelatedRouteInventoryScan": "removed"
+  }
+}

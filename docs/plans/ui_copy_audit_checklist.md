@@ -65,6 +65,9 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 ## Other cleanup
 
+- [x] **Platform Docs discovery** — Removed the repeated source-path explanation and guide descriptions; retained paths, starting guides and the architecture disclosure. Library controls precede the explainer. Desktop/mobile search, recovery and both theme-icon surfaces passed across dynamic/static delivery; recorded in [Docs Discovery](docs_discovery/docs_discovery_step4_implementation_summary.md).
+- [x] **Platform Docs landing** — Reverses part of the entry above by explicit, approved request: the landing view again shows the source-path note and one-line guide descriptions, because readers need them to choose a guide and the interface can't show that otherwise. The explainer is open again, ahead of the topic guides; the library moves to the results view. New results copy is limited to the filter, chip and page labels, plus one static no-JavaScript search notice. Verified across dynamic/static, JS on/off, 1280px/200%/320px and four themes; recorded in [Docs Landing](docs_landing/docs_landing_step4_implementation_summary.md).
+
 - [x] **SQLite query prerequisite message** — Removed the initial database-loading explanation; retained the live status element for query feedback. PHP syntax and diff checks passed.
 - [x] **Testing self-approval** — Added one conditional Account Key action, “Approve current account,” without setup explanations or a confirmation dialog. Reused existing feedback for failure/repair; recovery points back to the button. Desktop/mobile browser checks cover the action, overflow, marker removal, and persisted-failure/repair/retry. See [implementation summary](testing_self_approval/testing_self_approval_step4_implementation_summary.md).
 
@@ -138,3 +141,6 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Verification: PHP/JavaScript syntax and diff checks passed; all six targeted SQLite smoke checks passed after updating copy assertions and one stale preset-selection assertion. Existing listing-query browser suite passed, including standalone/dialog use, pagination/sorting, storage denial, invalid queries, and load recovery. Live 390px/1280px checks covered initial/loaded/success/invalid-query states; desktop had no overflow. The loaded mobile page initially had horizontal overflow, also reproduced using the prior JavaScript (397px document at 390px viewport); resolved in the follow-up below.
 
 - [x] **SQLite mobile overflow follow-up** — Constrained the query pagination flex item to its output width so its controls wrap on narrow screens. Added standalone browser coverage at 320px, 390px, and 1280px for page/container overflow and working Previous/Next controls; the full listing-query browser suite passed. Live 320px/390px checks also verified horizontal table scrolling and expanded effective-query details without page overflow. Diff checks passed.
+
+## Markdown reader
+- [x] Keep existing document/source navigation. Added only code-language captions, collapsed metadata, and unavailable-source/image labels where formatting alone cannot communicate the fallback. Table/code scroll regions have accessible names; no extra reading instructions or controls. Verified desktop/mobile and keyboard with JavaScript disabled.

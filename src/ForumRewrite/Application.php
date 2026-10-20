@@ -589,15 +589,54 @@ final class Application
             return;
         }
 
+        if (str_starts_with($path, '/docs/_download/')) {
+            $sourcePath = \ForumRewrite\Docs\PlatformDocsCatalog::normalizePath(substr($path, strlen('/docs/_download/')));
+            $file = $sourcePath === null ? null : \ForumRewrite\Docs\PlatformDocsCatalog::resolveSource($this->projectRoot, $sourcePath);
+            if ($file === null) {
+                $this->sendHtml($this->platformDocsController()->missing(), 404);
+                return;
+            }
+            header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: no-store');
+            $this->routeServices()->sendDownload($file, 'application/octet-stream', basename($sourcePath));
+            return;
+        }
+
+        if ($path === '/docs/_missing.html') {
+            $this->sendHtml($this->platformDocsController()->missing(), 200);
+            return;
+        }
+
+        if ($path === '/docs/_search.html') {
+            $this->sendHtml($this->platformDocsController()->index([], true), 200);
+            return;
+        }
+
+        if ($path === '/docs/_search.json') {
+            $this->sendJson(['entries' => \ForumRewrite\Docs\PlatformDocsCatalog::inventory($this->projectRoot)], 200);
+            return;
+        }
+
         if ($path === '/docs/' || $path === '/docs') {
-            $this->sendHtml($this->platformDocsController()->index(), 200);
+            $this->sendHtml($this->platformDocsController()->index($query), 200);
             return;
         }
 
         if (preg_match('#^/docs/(.+)$#', $path, $matches) === 1) {
-            $document = $this->platformDocsController()->document($matches[1]);
+            try {
+                $document = $this->platformDocsController()->document($matches[1], $query);
+            } catch (\ForumRewrite\Docs\MarkdownRenderingUnavailable $error) {
+                error_log($error->getMessage() . ' ' . $error->getPrevious()?->getMessage());
+                $this->sendHtml($this->routeServices()->renderMessagePage(
+                    'Documentation unavailable',
+                    'Documentation unavailable',
+                    'The document could not be rendered. Retry after the operator restores the complete application package.',
+                    'docs',
+                ), 503, ['Retry-After' => '60']);
+                return;
+            }
             if ($document === null) {
-                $this->notFound();
+                $this->sendHtml($this->platformDocsController()->missing(), 404);
                 return;
             }
 

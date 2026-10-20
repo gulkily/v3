@@ -1,0 +1,994 @@
+{
+ "light": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 9.26,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 8.85,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 5.79,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 6.06,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 9.26,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 8.85,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 9.88,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.59,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 1.66,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 3.98,
+   "pass": true
+  }
+ ],
+ "dark": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 15.0,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 13.73,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 8.57,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 9.36,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 14.32,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 12.54,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 11.0,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.94,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 2.02,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 7.23,
+   "pass": true
+  }
+ ],
+ "console": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 15.59,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 15.5,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 9.23,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 9.28,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 15.28,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 14.56,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 11.91,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 2.07,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 2.04,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 11.01,
+   "pass": true
+  }
+ ],
+ "lcd": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 8.33,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 9.68,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 4.62,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 3.97,
+   "pass": false
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 10.49,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 9.45,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 8.05,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 3.12,
+   "pass": true
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 3.39,
+   "pass": true
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 4.91,
+   "pass": true
+  }
+ ],
+ "chicago": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 3.96,
+   "pass": false
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 10.38,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 6.94,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 2.65,
+   "pass": false
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 18.88,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 10.38,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 9.88,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 2.33,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 4.23,
+   "pass": true
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 2.29,
+   "pass": false
+  }
+ ],
+ "vapor": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 16.41,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 15.05,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 9.78,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 10.66,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 16.06,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 13.01,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 11.11,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 7.44,
+   "pass": true
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 7.95,
+   "pass": true
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 15.05,
+   "pass": true
+  }
+ ],
+ "forge": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 16.39,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 15.34,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 5.77,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 6.17,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 15.88,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 13.43,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 12.19,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.28,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 1.33,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 5.3,
+   "pass": true
+  }
+ ],
+ "sticker": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 4.89,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 19.8,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 12.63,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 3.12,
+   "pass": false
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 19.8,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 19.8,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 19.8,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 19.8,
+   "pass": true
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 19.8,
+   "pass": true
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 19.8,
+   "pass": true
+  }
+ ],
+ "arena": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 21.0,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 21.0,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 5.32,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 5.32,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 19.78,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 19.78,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 21.0,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.54,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 1.64,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 21.0,
+   "pass": true
+  }
+ ],
+ "thermal": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 15.92,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 14.95,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 6.44,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 6.86,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 15.66,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 14.17,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 12.48,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.25,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 1.31,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 4.24,
+   "pass": true
+  }
+ ],
+ "whitehot": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 15.98,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 17.29,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 5.96,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 5.51,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 17.29,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 14.64,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 7.58,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.49,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 1.49,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 3.21,
+   "pass": true
+  }
+ ],
+ "word97": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 5.32,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 11.54,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 5.7,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 2.63,
+   "pass": false
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 21.0,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 11.54,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 16.01,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 2.17,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 3.95,
+   "pass": true
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 8.8,
+   "pass": true
+  }
+ ],
+ "midnight": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 7.5,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 8.46,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 5.03,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 4.46,
+   "pass": false
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 11.2,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 8.46,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 8.86,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 2.05,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 2.72,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 4.1,
+   "pass": true
+  }
+ ],
+ "chouse": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 14.61,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 12.92,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 7.06,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 7.98,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 15.04,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 11.66,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 5.36,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.71,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 1.99,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 7.49,
+   "pass": true
+  }
+ ],
+ "qdb": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 21.0,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 18.43,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 11.09,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 12.63,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 21.0,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 6.33,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 6.33,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 2.91,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 3.32,
+   "pass": true
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 2.91,
+   "pass": false
+  }
+ ],
+ "mitrapclub": [
+  {
+   "pair": "--ink on --page-bg",
+   "required": 4.5,
+   "ratio": 16.29,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --panel",
+   "required": 4.5,
+   "ratio": 14.79,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --panel",
+   "required": 4.5,
+   "ratio": 7.58,
+   "pass": true
+  },
+  {
+   "pair": "--ink-soft on --page-bg",
+   "required": 4.5,
+   "ratio": 8.35,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --input-bg",
+   "required": 4.5,
+   "ratio": 16.94,
+   "pass": true
+  },
+  {
+   "pair": "--ink on --button-bg",
+   "required": 4.5,
+   "ratio": 13.24,
+   "pass": true
+  },
+  {
+   "pair": "--active-ink on --active-bg",
+   "required": 4.5,
+   "ratio": 4.69,
+   "pass": true
+  },
+  {
+   "pair": "--line on --panel",
+   "required": 3.0,
+   "ratio": 1.68,
+   "pass": false
+  },
+  {
+   "pair": "--line on --input-bg",
+   "required": 3.0,
+   "ratio": 1.92,
+   "pass": false
+  },
+  {
+   "pair": "--active-line on --panel",
+   "required": 3.0,
+   "ratio": 6.55,
+   "pass": true
+  }
+ ]
+}

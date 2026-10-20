@@ -87,6 +87,10 @@ final class FrontController
             return;
         }
 
+        if (!$approvedMembersOnly && $cookies === [] && $this->sendStaticDocsResource($method, $requestUri)) {
+            return;
+        }
+
         $offlineSnapshot = $approvedMembersOnly ? null : $this->resolveOfflineSnapshotPath($method, $requestUri, $cookies);
         if ($offlineSnapshot !== null) {
             $this->sendOfflineSnapshot($offlineSnapshot, $method);
@@ -137,6 +141,53 @@ final class FrontController
 
             $this->sendHtml($this->renderUnexpectedError(), 503);
         }
+    }
+
+    /** Serve the active documentation snapshot without consulting newer source files. */
+    private function sendStaticDocsResource(string $method, string $requestUri): bool
+    {
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $release = $this->activeStaticReleaseRoot();
+        if (!in_array($method, ['GET', 'HEAD'], true) || !str_starts_with($path, '/docs/')
+            || $release === null || !is_file($release . '/docs/_search.json')) {
+            return false;
+        }
+        if ($path === '/docs/_search.json') {
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+            header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: no-cache, must-revalidate');
+            if ($method !== 'HEAD') { readfile($release . '/docs/_search.json'); }
+            return true;
+        }
+        if (str_starts_with($path, '/docs/_download/')) {
+            $source = PlatformDocsCatalog::normalizePath(substr($path, strlen('/docs/_download/')));
+            $file = $source === null ? null : $release . '/docs/_download/' . $source . '.bin';
+            if ($file !== null && is_file($file)) {
+                http_response_code(200);
+                header('Content-Type: application/octet-stream');
+                header('Content-Disposition: attachment; filename="' . str_replace('"', '', basename($source)) . '"');
+                header('X-Content-Type-Options: nosniff');
+                header('Cache-Control: no-cache, must-revalidate');
+                header('Content-Length: ' . filesize($file));
+                if ($method !== 'HEAD') { readfile($file); }
+                return true;
+            }
+        } elseif ($path === '/docs/') {
+            return false;
+        } else {
+            $source = PlatformDocsCatalog::sourceForRoute(substr($path, strlen('/docs/')));
+            if ($source !== null && is_file($release . PlatformDocsCatalog::routeForPath($source) . '.html')) {
+                return false;
+            }
+        }
+        $missing = $release . '/docs/_missing.html';
+        if (!is_file($missing)) { return false; }
+        http_response_code(404);
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-cache, must-revalidate');
+        if ($method !== 'HEAD') { readfile($missing); }
+        return true;
     }
 
     private function requestReadModelSchemaRecovery(Throwable $throwable): ?string
@@ -295,7 +346,7 @@ final class FrontController
 
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $query = (string) (parse_url($requestUri, PHP_URL_QUERY) ?? '');
-        if ($query !== '') {
+        if ($query !== '' && !($path === '/docs' || str_starts_with($path, '/docs/'))) {
             return null;
         }
 
@@ -328,6 +379,12 @@ final class FrontController
         }
 
         if ($path === '/docs/' || $path === '/docs') {
+            parse_str($query, $docsQuery);
+            if (array_intersect_key($docsQuery, array_flip(['q', 'folder', 'category', 'group', 'page'])) !== []) {
+                $browsePath = PlatformDocsCatalog::browsePath($docsQuery);
+                return ($browsePath === null ? null : $this->firstExistingPath([$this->staticHtmlRoot . $browsePath]))
+                    ?? $this->firstExistingPath([$this->staticHtmlRoot . '/docs/_search.html']);
+            }
             return $this->firstExistingPath([
                 $this->publicRoot . '/docs.html',
                 $this->publicRoot . '/docs/index.html',
@@ -336,14 +393,14 @@ final class FrontController
         }
 
         if (str_starts_with($path, '/docs/')) {
-            $sourcePath = PlatformDocsCatalog::normalizePath('docs/' . substr($path, strlen('/docs/')));
+            $sourcePath = PlatformDocsCatalog::sourceForRoute(substr($path, strlen('/docs/')));
             if ($sourcePath === null) {
                 return null;
             }
 
             return $this->firstExistingPath([
-                $this->publicRoot . '/' . $sourcePath . '.html',
-                $this->staticHtmlRoot . '/' . $sourcePath . '.html',
+                $this->publicRoot . PlatformDocsCatalog::routeForPath($sourcePath) . '.html',
+                $this->staticHtmlRoot . PlatformDocsCatalog::routeForPath($sourcePath) . '.html',
             ]);
         }
 

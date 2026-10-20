@@ -1,0 +1,14 @@
+{
+  "baselineRevision": "3726c1e7",
+  "fullSuite": "Summary: 1366 run, 1359 passed, 7 failed",
+  "newFailures": [],
+  "reproducedBaselineFailures": [
+    "ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest - Failed asserting that output contains: This is your profile.",
+    "AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts - Failed asserting that output contains: Visible username:</strong> reply-agent",
+    "LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary - Failed asserting that output contains: [2/4] Rendering shared pages (1/20): /.",
+    "LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel - Failed asserting that output contains: [1/2] Rendering shared pages (10/20): /tags/.",
+    "LocalAppSmokeTest::testSqliteViewerIncludesPresetReadOnlyQueryContract - Failed asserting that output contains: querySelect.value = \"0\"",
+    "ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts - Failed asserting that values are identical. Expected true but got false.",
+    "WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence - ForumRewrite\\Security\\ApprovalAcceptance::path(): Argument #1 ($postId) must be of type string, null given, called in <checkout>/tests/WriteApiSmokeTest.php on line 4822"
+  ]
+}

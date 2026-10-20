@@ -50,7 +50,7 @@ final class ProfilePresentationContentTest
 
                 assertStringContains('<h1>About ' . $profile['displayName'] . '</h1>', $about);
                 assertStringContains('<h1>' . $profile['displayName'] . ' Platform Docs</h1>', $docs);
-                assertStringContains('<title id="docs-diagram-title">' . $profile['displayName'] . ' public architecture</title>', $docs);
+                assertStringContains('<ol class="docs-flow" aria-label="' . htmlspecialchars($profile['displayName'], ENT_QUOTES) . ' public architecture">', $docs);
                 assertSame($profileId === 'chouse', str_contains($about, 'Hackable by design'));
             } finally {
                 putenv('FORUM_SITE_ID');

@@ -105,10 +105,26 @@ final class StaticArtifactBuilder
 
     private function buildSharedPages(Application $application): void
     {
+        PlatformDocsCatalog::withSnapshot($this->projectRoot, fn () => $this->renderSharedPages($application));
+    }
+
+    private function renderSharedPages(Application $application): void
+    {
+        // Shared refreshes are built in a seeded candidate release; remove stale docs there.
+        $docsDirectory = $this->artifactRoot . '/docs';
+        if (is_dir($docsDirectory)) {
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($docsDirectory, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($files as $file) {
+                if ($file->isDir() && !$file->isLink()) { rmdir($file->getPathname()); }
+                else { unlink($file->getPathname()); }
+            }
+        }
 
         $this->reportProgress('Fingerprinting and copying assets referenced by rendered pages...');
         $this->copyOfflineRuntimeFiles();
-        $totalSharedPages = 11 + count(PlatformDocsCatalog::entries());
+        $docsInventory = PlatformDocsCatalog::inventory($this->projectRoot);
+        $browseQueries = PlatformDocsCatalog::browseQueries($docsInventory, PlatformDocsCatalog::PAGE_SIZE);
+        $totalSharedPages = 11 + count($docsInventory) + count($browseQueries);
         $this->reportProgress("Rendering shared pages (0/{$totalSharedPages}).");
         $this->reportProgress("Rendering shared pages (1/{$totalSharedPages}): /.");
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
@@ -147,7 +163,7 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/docs.html',
             $this->artifactRoot . '/docs/index.html',
         ]);
-        foreach (PlatformDocsCatalog::entries() as $index => $entry) {
+        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $index => $entry) {
             $route = PlatformDocsCatalog::routeForPath($entry['path']);
             if ($route === null) {
                 throw new RuntimeException('Unable to resolve platform docs route: ' . $entry['path']);
@@ -155,7 +171,30 @@ final class StaticArtifactBuilder
 
             $completed = $index + 12;
             $this->reportProgress("Rendering shared pages ({$completed}/{$totalSharedPages}): {$route}.");
-            $this->writeRouteArtifact($application, $route, $this->artifactRoot . '/' . $entry['path'] . '.html');
+            $this->writeRouteArtifact($application, $route, $this->artifactRoot . $entry['href'] . '.html');
+        }
+        $this->writeRouteArtifact($application, '/docs/_missing.html', $this->artifactRoot . '/docs/_missing.html');
+        // Browse pages let readers without JavaScript filter and page the static library;
+        // anything else (search text, combined filters) is served the browser search shell.
+        $this->writeRouteArtifact($application, '/docs/_search.html', $this->artifactRoot . '/docs/_search.html');
+        foreach ($browseQueries as $index => $browseQuery) {
+            $route = '/docs/?' . http_build_query($browseQuery);
+            $completed = 12 + count($docsInventory) + $index;
+            $this->reportProgress("Rendering shared pages ({$completed}/{$totalSharedPages}): {$route}.");
+            $this->writeRouteArtifact($application, $route, $this->artifactRoot . PlatformDocsCatalog::browsePath($browseQuery));
+        }
+        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $entry) {
+            $source = PlatformDocsCatalog::resolveSource($this->projectRoot, $entry['path']);
+            $destination = $this->artifactRoot . '/docs/_download/' . $entry['path'] . '.bin';
+            if (!is_dir(dirname($destination))) { mkdir(dirname($destination), 0777, true); }
+            if ($source === null || !copy($source, $destination) || hash_file('sha256', $source) !== $entry['hash']
+                || hash_file('sha256', $destination) !== $entry['hash']) {
+                throw new RuntimeException('Documentation changed during publication; retry the build: ' . $entry['path']);
+            }
+        }
+        $index = json_encode(['entries' => PlatformDocsCatalog::inventory($this->projectRoot)], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+        if (file_put_contents($this->artifactRoot . '/docs/_search.json', $index) === false) {
+            throw new RuntimeException('Unable to publish documentation search index.');
         }
         $this->reportProgress("Rendering shared pages complete ({$totalSharedPages}/{$totalSharedPages}).");
     }
@@ -301,8 +340,15 @@ final class StaticArtifactBuilder
         }
 
         ob_start();
-        $application->handle('GET', $route);
-        $contents = (string) ob_get_clean();
+        try {
+            $application->handle('GET', $route);
+            $contents = (string) ob_get_contents();
+        } finally {
+            ob_end_clean();
+        }
+        if (str_starts_with($route, '/docs/') && http_response_code() >= 400) {
+            throw new RuntimeException('Documentation rendering failed for ' . $route . '; retain the prior complete release and restore the application package.');
+        }
         $this->copyReferencedAssets($contents);
         $this->assertFingerprintReferencesAvailable($contents);
         $temporaryPath = tempnam($directory, 'artifact-');
@@ -379,9 +425,17 @@ final class StaticArtifactBuilder
         }
     }
 
+    private function assetReferenceMarkup(string $contents): string
+    {
+        // Prose/code examples may name nonexistent hashes. Only markup and runtime
+        // script configuration reference assets that the release must actually ship.
+        preg_match_all('~<script\b[^>]*>.*?</script>|<[a-z][^>]*>~is', $contents, $markup);
+        return implode(' ', $markup[0]);
+    }
+
     private function assertFingerprintReferencesAvailable(string $contents): void
     {
-        if (preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $contents, $matches) === false) {
+        if (preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $this->assetReferenceMarkup($contents), $matches) === false) {
             return;
         }
 
@@ -394,7 +448,7 @@ final class StaticArtifactBuilder
 
     private function copyReferencedAssets(string $contents): void
     {
-        if (preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $contents, $matches) === false) {
+        if (preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', $this->assetReferenceMarkup($contents), $matches) === false) {
             return;
         }
 
@@ -486,11 +540,10 @@ final class StaticArtifactBuilder
             return '/docs/';
         }
 
-        foreach (PlatformDocsCatalog::entries() as $entry) {
-            $route = PlatformDocsCatalog::routeForPath($entry['path']);
-            if ($route === $path || $route . '/' === $path) {
-                return $route;
-            }
+        if (str_starts_with($path, '/docs/')) {
+            $source = PlatformDocsCatalog::sourceForRoute(rtrim(substr($path, 6), '/'));
+            return $source !== null && PlatformDocsCatalog::resolveSource($this->projectRoot, $source) !== null
+                ? PlatformDocsCatalog::routeForPath($source) : null;
         }
 
         if ($path === '/instance' || $path === '/instance/' || $path === '/backup' || $path === '/backup/' || $path === '/tools/backup' || $path === '/tools/backup/') {
@@ -580,10 +633,10 @@ final class StaticArtifactBuilder
             ];
         }
 
-        foreach (PlatformDocsCatalog::entries() as $entry) {
-            if (PlatformDocsCatalog::routeForPath($entry['path']) === $route) {
-                return [$this->artifactRoot . '/' . $entry['path'] . '.html'];
-            }
+        if (str_starts_with($route, '/docs/')) {
+            $source = PlatformDocsCatalog::sourceForRoute(substr($route, 6));
+            return $source !== null && PlatformDocsCatalog::resolveSource($this->projectRoot, $source) !== null
+                ? [$this->artifactRoot . PlatformDocsCatalog::routeForPath($source) . '.html'] : [];
         }
 
         if ($route === '/instance/') {

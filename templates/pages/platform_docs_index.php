@@ -1,51 +1,65 @@
+<?php
+$documentCount = array_sum($counts['group']);
+$filterLabels = ['q' => 'Search', 'group' => 'Collection', 'category' => 'Category', 'folder' => 'Folder'];
+$active = [];
+foreach (array_keys($filterLabels) as $key) {
+    $value = is_string($query[$key] ?? null) ? trim($query[$key]) : '';
+    if ($value !== '') {
+        $active[$key] = $key === 'category' ? \ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($value) : $value;
+    }
+}
+$activeLabel = static fn (string $key, string $value): string => $key === 'category' ? ($counts['category'][$value]['label'] ?? $value) : $value;
+// Results URLs always carry a parameter, so an empty filter set still shows the results view.
+$resultsUrl = static fn (array $params): string => '/docs/?' . http_build_query(array_filter($params, static fn ($value): bool => $value !== '' && $value !== null) ?: ['page' => 1]);
+$returnQuery = array_filter(array_intersect_key($query, array_flip(['q', 'folder', 'category', 'group', 'page'])), 'is_scalar');
+$docHref = static fn (string $href): string => $href . ($returnQuery === [] ? '' : '?' . http_build_query($returnQuery));
+?>
 <section class="stack docs-page">
-  <article class="card">
+  <article class="card docs-intro">
     <h1><?= $e($platformDocsBrand['heading']) ?></h1>
-    <p><?= $e($platformDocsBrand['introduction']) ?></p>
-    <p>Each entry below shows the path of the file it is rendered from, so you can read the source and propose changes.</p>
-  </article>
-  <article class="card docs-transparency">
-    <h2>How it works</h2>
-    <div class="docs-architecture-diagram">
-      <svg viewBox="0 0 740 250" role="img" aria-labelledby="docs-diagram-title docs-diagram-description">
-        <title id="docs-diagram-title"><?= $e($platformDocsBrand['architectureTitle']) ?></title>
-        <desc id="docs-diagram-description"><?= $e($platformDocsBrand['architectureDescription']) ?></desc>
-        <defs>
-          <marker id="docs-diagram-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-            <path d="M0,0 L8,4 L0,8 z" class="docs-diagram-arrowhead" />
-          </marker>
-        </defs>
-
-        <rect x="20" y="45" width="145" height="125" rx="4" class="docs-diagram-box" />
-        <text x="92" y="76" text-anchor="middle" class="docs-diagram-title">Member's browser</text>
-        <path d="M79 98 v33 M63 113 h32 M67 105 l24 24 M91 105 l-24 24" class="docs-diagram-key" />
-        <text x="92" y="153" text-anchor="middle" class="docs-diagram-caption">private key (never leaves)</text>
-
-        <path d="M165 110 H220" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <text x="192" y="96" text-anchor="middle" class="docs-diagram-caption">signed write</text>
-
-        <rect x="220" y="30" width="150" height="160" rx="4" class="docs-diagram-records" />
-        <text x="295" y="70" text-anchor="middle" class="docs-diagram-title">records/ in Git</text>
-        <text x="295" y="110" text-anchor="middle" class="docs-diagram-code">records/posts/</text>
-        <text x="295" y="140" text-anchor="middle" class="docs-diagram-code">records/identity/</text>
-        <text x="295" y="170" text-anchor="middle" class="docs-diagram-caption">source of truth</text>
-
-        <path d="M370 80 H470" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <rect x="470" y="42" width="130" height="70" rx="4" class="docs-diagram-box" />
-        <text x="535" y="84" text-anchor="middle" class="docs-diagram-title">SQLite</text>
-
-        <path d="M370 150 H470" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <rect x="470" y="128" width="130" height="70" rx="4" class="docs-diagram-box" />
-        <text x="535" y="170" text-anchor="middle" class="docs-diagram-title">static HTML</text>
-        <text x="535" y="220" text-anchor="middle" class="docs-diagram-caption">built from records, can be rebuilt</text>
-
-        <path d="M600 77 H620 V110 H640" class="docs-diagram-arrow" marker-end="url(#docs-diagram-arrow)" />
-        <path d="M600 163 H620 V110" class="docs-diagram-arrow" />
-        <rect x="640" y="75" width="80" height="70" rx="4" class="docs-diagram-box" />
-        <text x="680" y="117" text-anchor="middle" class="docs-diagram-title">Readers</text>
-
-      </svg>
+    <div data-docs-landing<?= $isResults ? ' hidden' : '' ?>>
+      <p><?= $e($platformDocsBrand['introduction']) ?></p>
+      <p>Each entry below shows the path of the file it is rendered from, so you can read the source and propose changes.</p>
     </div>
+    <form class="docs-search" action="/docs/" method="get" role="search">
+      <label for="docs-search-input">Search</label>
+      <div class="docs-search__row">
+        <input id="docs-search-input" name="q" type="search" value="<?= $e(is_string($query['q'] ?? null) ? $query['q'] : '') ?>" placeholder="Search all <?= $e(number_format($documentCount)) ?> docs…">
+        <button type="submit">Search</button>
+      </div>
+<?php foreach (array_diff_key($active, ['q' => true]) as $key => $value): ?>
+      <input type="hidden" name="<?= $e($key) ?>" value="<?= $e($value) ?>" data-docs-filter-input>
+<?php endforeach; ?>
+    </form>
+    <p class="docs-intro__home" data-docs-results-only<?= $isResults ? '' : ' hidden' ?>><a href="/docs/"><span aria-hidden="true">←</span> Docs home</a></p>
+    <p class="docs-intro__browse" data-docs-landing<?= $isResults ? ' hidden' : '' ?>><a href="/docs/?page=1">Browse all docs <span aria-hidden="true">→</span></a></p>
+  </article>
+<?php if (!$isResults): ?>
+<?php /* Results pages load without the landing sections; the browser only switches views in place from the landing page. */ ?>
+  <article class="card docs-transparency" data-docs-landing>
+    <h2>How it works</h2>
+    <ol class="docs-flow" aria-label="<?= $e($platformDocsBrand['architectureTitle']) ?>">
+      <li class="docs-flow__node">
+        <svg class="docs-flow__key" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M20 4 v32 M4 20 h32 M8 8 l24 24 M32 8 l-24 24" /></svg>
+        <strong>Member's browser</strong>
+        <span>private key (never leaves)</span>
+      </li>
+      <li class="docs-flow__edge"><span class="docs-flow__arrow" aria-hidden="true"></span><span>signed write</span></li>
+      <li class="docs-flow__node docs-flow__node--source">
+        <strong>records/ in Git</strong>
+        <code>records/posts/</code>
+        <code>records/identity/</code>
+        <span>source of truth</span>
+      </li>
+      <li class="docs-flow__edge"><span class="docs-flow__arrow" aria-hidden="true"></span><span>builds</span></li>
+      <li class="docs-flow__node docs-flow__node--views">
+        <strong>SQLite</strong>
+        <strong>static HTML</strong>
+        <span>built from records, can be rebuilt</span>
+      </li>
+      <li class="docs-flow__edge"><span class="docs-flow__arrow" aria-hidden="true"></span><span>serves</span></li>
+      <li class="docs-flow__node"><strong>Readers</strong></li>
+    </ol>
     <div class="docs-transparency-grid">
       <section>
         <h3>Public records live in Git</h3>
@@ -62,18 +76,120 @@
     </div>
     <p>Full details: <a href="/docs/architecture/public_architecture_and_trust.md">Public Architecture and Trust Model</a></p>
   </article>
-<?php foreach ($categories as $category => $entries): ?>
-  <article class="card docs-category">
-    <h2><?= $e($category) ?></h2>
-    <ul class="docs-entry-list">
+
+  <div class="docs-topics" data-docs-landing>
+<?php foreach ($categories as $topic => $entries): ?>
+    <section class="card docs-topic<?= count($entries) > 1 ? ' docs-topic--wide' : '' ?>" aria-labelledby="docs-topic-<?= $e(\ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($topic)) ?>">
+      <h2 id="docs-topic-<?= $e(\ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($topic)) ?>"><?= $e($topic) ?></h2>
+      <ul class="docs-entry-list">
 <?php foreach ($entries as $entry): ?>
-      <li>
-        <a href="<?= $e($entry['href']) ?>"><?= $e($entry['title']) ?></a>
-        <p><?= $e($entry['description']) ?></p>
-        <code><?= $e($entry['path']) ?></code>
-      </li>
+        <li class="docs-entry">
+          <a class="docs-entry__title" href="<?= $e($entry['href']) ?>"><?= $e($entry['title']) ?></a>
+          <p class="docs-entry__description"><?= $e($entry['description']) ?></p>
+          <code class="docs-entry__path"><?= $e($entry['path']) ?></code>
+        </li>
+<?php endforeach; ?>
+      </ul>
+    </section>
+<?php endforeach; ?>
+  </div>
+  <section class="card docs-overview" aria-labelledby="docs-overview-heading" data-docs-landing>
+    <h2 id="docs-overview-heading">All documents</h2>
+    <p><?= $e(number_format($documentCount)) ?> documents across architecture, specs, runbooks, plans, and more. <a href="/docs/?page=1">Browse all</a></p>
+    <ul class="docs-quick-links">
+<?php foreach ($counts['group'] as $group => $count): ?>
+      <li><a href="/docs/?<?= $e(http_build_query(['group' => $group])) ?>"><?= $e($group) ?> (<?= $e(number_format($count)) ?>)</a></li>
 <?php endforeach; ?>
     </ul>
-  </article>
+  </section>
+<?php endif; ?>
+<section class="card docs-library" aria-labelledby="docs-library-heading" data-docs-library<?= $isResults ? '' : ' hidden' ?>>
+  <h2 id="docs-library-heading" tabindex="-1">Documents</h2>
+  <ul class="docs-chips" aria-label="Active filters" data-docs-chips<?= $active === [] ? ' hidden' : '' ?>>
+<?php foreach ($active as $key => $value): ?>
+    <li><a class="docs-chip" href="<?= $e($resultsUrl(array_diff_key($active, [$key => true]))) ?>" aria-label="Remove <?= $e($filterLabels[$key] . ': ' . $activeLabel($key, $value)) ?>"><?= $e($filterLabels[$key]) ?>: <?= $e($activeLabel($key, $value)) ?> <span aria-hidden="true">×</span></a></li>
 <?php endforeach; ?>
+    <li><a href="<?= $e($resultsUrl([])) ?>">Clear all</a></li>
+  </ul>
+  <p role="status" data-docs-count><?= $searchShell ? '' : $e(number_format($total)) . ($total === 1 ? ' document' : ' documents') ?></p>
+<?php if ($searchShell): ?>
+  <noscript><p class="docs-notice">Searching this copy of the docs needs JavaScript. You can still browse by collection, category or folder under Filters.</p></noscript>
+<?php endif; ?>
+  <p data-docs-error hidden>Search unavailable. <button type="button" data-docs-retry>Retry</button> or <a href="/docs/">refresh the library</a>.</p>
+  <details class="docs-filters">
+    <summary>Filters</summary>
+    <nav aria-label="Filters" class="docs-filters__groups">
+      <section>
+        <h3>Collection</h3>
+        <ul class="docs-filter-list">
+<?php foreach ($counts['group'] as $group => $count): ?>
+          <li><a href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'group' => $group])) ?>"<?= ($active['group'] ?? null) === $group ? ' aria-current="page"' : '' ?>><span><?= $e($group) ?></span> <span><?= $e(number_format($count)) ?></span></a></li>
+<?php endforeach; ?>
+        </ul>
+      </section>
+      <section>
+        <h3>Category</h3>
+        <ul class="docs-filter-list">
+<?php foreach ($counts['category'] as $slug => $category): ?>
+          <li><a href="<?= $e($resultsUrl(['q' => $active['q'] ?? '', 'category' => (string) $slug])) ?>"<?= ($active['category'] ?? null) === (string) $slug ? ' aria-current="page"' : '' ?>><span><?= $e($category['label']) ?></span> <span><?= $e(number_format($category['count'])) ?></span></a></li>
+<?php endforeach; ?>
+        </ul>
+      </section>
+      <section>
+        <h3>Folder</h3>
+<?php
+$folderItems = static function (string $parent) use (&$folderItems, $counts, $e, $resultsUrl, $active): string {
+    $html = '';
+    foreach (array_keys($counts['folder']) as $folder) {
+        if ($parent === '' ? !in_array($folder, ['Project', 'docs'], true) : dirname($folder) !== $parent) {
+            continue;
+        }
+        $name = $parent === '' ? $folder : basename($folder);
+        $link = static fn (string $label): string => '<a href="' . $e($resultsUrl(['q' => $active['q'] ?? '', 'folder' => $folder])) . '"'
+            . (($active['folder'] ?? null) === $folder ? ' aria-current="page"' : '') . '><span>' . $e($label) . '</span> <span>' . $e(number_format($counts['folder'][$folder])) . '</span></a>';
+        $nested = $folderItems($folder);
+        if ($nested === '') {
+            $html .= '<li>' . $link($name) . '</li>';
+            continue;
+        }
+        // Summaries can't hold links, so each branch starts with a link to the whole folder.
+        $open = isset($active['folder']) && ($active['folder'] === $folder || str_starts_with($active['folder'], $folder . '/')) ? ' open' : '';
+        $html .= '<li><details data-docs-folder-branch="' . $e($folder) . '"' . $open . '><summary>' . $e($name) . ' <span>' . $e(number_format($counts['folder'][$folder])) . '</span></summary>'
+            . '<ul class="docs-filter-tree"><li>' . $link('All in ' . $name) . '</li>' . $nested . '</ul></details></li>';
+    }
+    return $html;
+};
+?>
+        <ul class="docs-filter-tree"><?= $folderItems('') ?></ul>
+
+      </section>
+    </nav>
+  </details>
+  <ol class="docs-results" data-docs-results>
+<?php foreach ($library as $entry): ?>
+    <li class="docs-result">
+      <a class="docs-result__title" href="<?= $e($docHref($entry['href'])) ?>"><?= $e($entry['title']) ?></a>
+<?php if ($entry['summary'] !== ''): ?>
+      <p class="docs-result__summary"><?= $e($entry['summary']) ?></p>
+<?php endif; ?>
+      <p class="docs-result__meta"><code class="docs-result__path"><?= $e($entry['path']) ?></code> <span class="docs-badge"><?= $e($entry['categoryLabel']) ?></span><?php if (!isset($active['group']) && $entry['group'] !== 'Current guidance'): ?> <span class="docs-badge"><?= $e($entry['group']) ?></span><?php endif; ?></p>
+    </li>
+<?php endforeach; ?>
+  </ol>
+  <div class="docs-empty" data-docs-empty<?= $total > 0 || $searchShell ? ' hidden' : '' ?>>
+    <p>No documents found.</p>
+    <p><a href="<?= $e($resultsUrl([])) ?>">Clear filters</a> · <a href="/docs/">Docs home</a></p>
+  </div>
+<?php $pageCount = max(1, (int) ceil($total / \ForumRewrite\Docs\PlatformDocsCatalog::PAGE_SIZE)); ?>
+  <nav class="docs-pages" aria-label="Document pages" data-docs-pages<?= $pageCount > 1 && !$searchShell ? '' : ' hidden' ?>>
+<?php if ($page > 1): ?>
+    <a href="<?= $e($resultsUrl($active + ['page' => $page - 1])) ?>"><span aria-hidden="true">←</span> Previous</a>
+<?php endif; ?>
+    <span aria-current="page">Page <?= $e((string) $page) ?> of <?= $e((string) $pageCount) ?></span>
+<?php if ($page < $pageCount): ?>
+    <a href="<?= $e($resultsUrl($active + ['page' => $page + 1])) ?>">Next <span aria-hidden="true">→</span></a>
+<?php endif; ?>
+  </nav>
+</section>
+
 </section>
