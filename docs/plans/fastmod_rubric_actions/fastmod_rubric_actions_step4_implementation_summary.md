@@ -93,3 +93,9 @@ Revised Steps 2 and 3 approved. New branch `feat/fastmod-root-meta`, revised pla
 - Changes: private classification generation/epoch and publication lock serialize decisions against static/snapshot publication. Full/shared builds, release activation, per-route files and QDB aliases reject stale generation. Serving falls back from stale HTML; offline snapshots regenerate. Dirty decisions invalidate presentation and enqueue offline regeneration; acknowledgment occurs only after success, including CLI correction/retry.
 - Verification: 12 focused meta/static/offline/private-isolation tests passed. New guard test rejects correction-during-build and older release activation; syntax checks passed. CLI queue isolation corrected to use FORUM_TASK_QUEUE_DATABASE_PATH; verified the existing workspace offline task remained the preexisting queued task, with no new task to undo.
 - Notes: default/zero generation preserves legacy static behavior. Existing retraction guard and lock order retained. Snapshot root labels are wired in Stage 6.
+
+## Stage 6 - Generated root tags (v3)
+
+- Changes: static tag-route enumeration and offline snapshot/update extraction use shared effective root labels. Existing snapshot schema/version and offline presentation remain valid; no main read-model writes, new client format, scores or private evidence in public artifacts.
+- Verification: 10 meta/static/offline/private-isolation checks passed. New real-snapshot regression verifies meta discovery labels, absence of private tables, unchanged source human labels and removal after correction.
+- Notes: artifact generation tokens span extraction and publication. Existing schema is reused; core schema version/migration rules are inapplicable to these temporary read views.

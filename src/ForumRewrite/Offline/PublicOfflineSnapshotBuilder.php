@@ -59,6 +59,7 @@ final class PublicOfflineSnapshotBuilder
         $this->sourcePostColumns = null;
         $source = new PDO('sqlite:' . $sourcePath);
         $source->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        \ForumRewrite\Scoring\FastmodMetaRead::forApplication($source,$this->projectRoot ?? dirname(__DIR__,3));
         $snapshot = new PDO('sqlite:' . $temporaryPath);
         $snapshot->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
