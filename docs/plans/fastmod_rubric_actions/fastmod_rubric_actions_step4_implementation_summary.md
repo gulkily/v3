@@ -45,3 +45,27 @@ The approved plan's Stage 7 combines all of: offline snapshot schema/version and
 ## Pending requests and approvals
 
 All accepted refinements remain: meta alone; no human-labeled accuracy gate; private SQLite scores/decisions; live read-only joins/bulk lookup; generation-time public artifacts; no per-tag canonical files. Stage 3 approval authorized Stage 1 investigation with its stop condition, not bypass of the gate. Await decision on revised scope or stage budget. Trial ledger changes remain uncommitted and reserved for authorized closeout.
+
+## Scope revision requested after Stage 1
+
+- Request: retain automatic meta tagging of scored top-level posts; explicitly omit reply tagging, browser controls and automatic reclassification. Disposition: user accepted the narrower direction; return to Step 2/3 for revised scope and fresh approval before application implementation. Outcome: pending replanning; original v2/A2 requirements and 1.20 discovery estimate remain historical, not overwritten.
+- Public backup clarification: scores/private audit evidence are excluded, as already intended. Only effective tags/origin belong in public presentation/artifacts. Private database backup remains an operational concern, not a new public export feature.
+- Further trims proposed, not yet approved: fixed `meta` mapping and initial 0.90 configuration; no generic action/rule engine, evidence viewer, restore command or automatic retry dashboard; use one CLI remove-and-suppress operation plus disable and machine-only rollback. Reuse existing worker retry/status and tag presentation. Retain minimal provenance, human-tag preservation, idempotence, durable suppression, signed-byte preservation, public/private separation and artifact freshness.
+- Revised numeric scope estimate is pending a coherent Step 2/3 scope. Do not reuse the old 0.95 estimate as if it rated this reduced outcome; preserve original study scope and identify any approved replacement explicitly.
+
+
+## Accepted scope reduction — replanning at Step 2
+
+- User accepted all further trims, explicitly clarifying that new tag styling was never intended. The evidence-viewer/restore/dashboard/generic-rule proposals are deferred, not implemented. Current [Step 2 v3](./fastmod_rubric_actions_step2_feature_description.md) is the root-only replacement awaiting renewed approval. Previous scope/estimates and Stage 1 investigation remain intact.
+- Revised projected total **0.85 Railspike units**, scope v3, R1, Codex single exposed rater, UTC 2026-10-20, including prior cycle work and replanning; the 1.20 discovery estimate still describes the original broader v2. No new implementation work or commits authorized by agreement to the trims alone.
+
+
+## Root-only v3 implementation entry
+
+Revised Steps 2 and 3 approved. New branch `feat/fastmod-root-meta`, revised planning commit `fe9578f9`; prior investigation retained. E07 Step 4 entry, scope v3, R1, Codex exposed single rater, UTC 2026-10-20: **0.85 total reaffirmed**, including prior investigation/replanning. The numbered stages below refer to v3, not the historical stopped plan.
+
+## Stage 1 - Root classification storage (v3)
+
+- Changes: added private SQLite root eligibility/classification/suppression store with minimal retained evidence, serialized decisions and dirty generation; fixed meta configuration contract. Independent from transient score pruning.
+- Verification: FastmodMetaTest — 2 passed, covering inclusive threshold, replay, suppression, rollback, pruning and invalid/stale/backfill evidence. No core read-model change.
+- Notes: no live tags or publication policy enabled; integration follows. Ledger remains uncommitted until closeout.
