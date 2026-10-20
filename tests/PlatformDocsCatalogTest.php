@@ -112,6 +112,24 @@ final class PlatformDocsCatalogTest
         assertSame('Current guidance', $entries[0]['group']);
     }
 
+    public function testCategoriesMergeCaseVariantsAndCountsMatchInventory(): void
+    {
+        $entries = PlatformDocsCatalog::inventory($this->projectRoot);
+        $counts = PlatformDocsCatalog::counts($entries);
+        $labels = array_map(static fn (array $category): string => mb_strtolower($category['label']), $counts['category']);
+        assertSame(count($labels), count(array_unique($labels)));
+        assertSame('Architecture', $counts['category']['architecture']['label']);
+        assertSame(count($entries), array_sum(array_column($counts['category'], 'count')));
+        assertSame(count($entries), array_sum($counts['group']));
+        assertSame(count($entries), $counts['folder']['docs'] + $counts['folder']['Project']);
+        assertSame($counts['folder']['docs/plans'], $counts['group']['Plans and history']);
+        foreach (['Architecture', 'architecture', 'ARCHITECTURE'] as $legacy) {
+            assertSame($counts['category']['architecture']['count'], count(PlatformDocsCatalog::search($entries, ['category' => $legacy])), $legacy);
+        }
+        assertSame(2, count(PlatformDocsCatalog::search($entries, ['category' => 'Extending the Platform'])));
+        assertSame(['Architecture', 'Trust and Identity', 'Extending the Platform', 'CLI Reference', 'Operations'], array_keys(PlatformDocsCatalog::topics()));
+    }
+
     public function testSupportingFormatsAndRootLinksShareTheBoundary(): void
     {
         $entries = array_column(PlatformDocsCatalog::inventory($this->projectRoot), null, 'path');

@@ -6,6 +6,8 @@
     for (const key of keys) if (source.has(key)) result.set(key, source.get(key));
     return result;
   };
+  // Mirrors PlatformDocsCatalog::categorySlug so mixed-case category URLs keep matching.
+  const categorySlug = value => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const returnLink = document.querySelector('[data-docs-return]');
   if (returnLink) returnLink.href = '/docs/?' + params() + '#docs-library-heading';
   // Carry return state through related local document links, including anchors.
@@ -39,7 +41,8 @@
       if (current !== generation) return;
       error.hidden = true;
       const terms = (query.get('q') || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-      const matches = entries.filter(entry => ['folder', 'category', 'group'].every(key => !query.get(key) || query.get(key) === entry[key] || (key === 'folder' && entry.folder.startsWith(query.get(key) + '/')))
+      const filters = {folder: query.get('folder'), category: categorySlug(query.get('category') || ''), group: query.get('group')};
+      const matches = entries.filter(entry => Object.entries(filters).every(([key, value]) => !value || value === entry[key] || (key === 'folder' && entry.folder.startsWith(value + '/')))
         && terms.every(term => (entry.title + ' ' + entry.path + ' ' + entry.text).toLowerCase().includes(term)));
       const page = Math.max(1, Math.min(parseInt(query.get('page'), 10) || 1, Math.ceil(matches.length / 40) || 1));
       results.replaceChildren(); pages.replaceChildren();

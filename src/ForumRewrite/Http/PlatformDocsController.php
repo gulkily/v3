@@ -19,30 +19,21 @@ final class PlatformDocsController
 
     public function index(array $query = []): string
     {
-        $categories = [];
-        foreach (PlatformDocsCatalog::entries() as $entry) {
-            $entry['href'] = $this->documentHref($entry['path']);
-            $categories[$entry['category']][] = $entry;
-        }
+        $categories = array_map(fn (array $entries): array => array_map(
+            fn (array $entry): array => $entry + ['href' => $this->documentHref($entry['path'])],
+            $entries,
+        ), PlatformDocsCatalog::topics());
 
         $inventory = PlatformDocsCatalog::inventory($this->projectRoot);
         $matches = PlatformDocsCatalog::search($inventory, $query);
         $page = max(1, min((int) ($query['page'] ?? 1), max(1, (int) ceil(count($matches) / 40))));
         $library = array_slice($matches, ($page - 1) * 40, 40);
-        $folders = ['Project', 'docs'];
-        foreach ($inventory as $entry) {
-            $folderPath = $entry['folder'];
-            while ($folderPath !== '.' && $folderPath !== 'Project') {
-                $folders[] = $folderPath;
-                $folderPath = dirname($folderPath);
-            }
-        }
-        $folders = array_values(array_unique($folders));
-        sort($folders);
+        $counts = PlatformDocsCatalog::counts($inventory);
+        $folders = array_keys($counts['folder']);
         $total = count($matches);
         return $this->routeServices->renderPageTemplate(
             'platform_docs_index.php',
-            ['library' => $library, 'folders' => $folders, 'inventory' => $inventory, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
+            ['library' => $library, 'folders' => $folders, 'counts' => $counts, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
             'Platform Docs',
             'docs',
             ['/assets/platform_docs.js'],

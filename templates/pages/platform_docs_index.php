@@ -22,11 +22,11 @@ $docHref = static fn (string $href): string => $href . ($returnQuery === [] ? ''
   <h2 id="docs-library-heading">All documents</h2>
   <form action="/docs/" method="get" data-docs-form>
     <label>Search <input name="q" type="search" value="<?= $e($filterValue('q')) ?>"></label>
-<?php foreach (['folder' => ['Folder', $folders], 'category' => ['Category', array_values(array_unique(array_column($inventory, 'category')))], 'group' => ['Collection', ['Current guidance', 'Plans and history', 'Workflow']]] as $key => [$label, $options]): ?>
+<?php foreach (['folder' => ['Folder', array_combine($folders, $folders)], 'category' => ['Category', array_map(static fn (array $category): string => $category['label'], $counts['category'])], 'group' => ['Collection', array_combine(array_keys($counts['group']), array_keys($counts['group']))]] as $key => [$label, $options]): ?>
     <label><?= $e($label) ?> <select name="<?= $e($key) ?>">
       <option value="">All</option>
-<?php foreach ($options as $item): ?>
-      <option value="<?= $e($item) ?>"<?= $filterValue($key) === $item ? ' selected' : '' ?>><?= $e($item) ?></option>
+<?php foreach ($options as $item => $optionLabel): ?>
+      <option value="<?= $e((string) $item) ?>"<?= ($key === 'category' ? \ForumRewrite\Docs\PlatformDocsCatalog::categorySlug($filterValue($key)) : $filterValue($key)) === (string) $item ? ' selected' : '' ?>><?= $e($optionLabel) ?></option>
 <?php endforeach; ?>
     </select></label>
 <?php endforeach; ?>

@@ -101,6 +101,10 @@ final class PlatformDocsCatalog
             }
         }
         $curated = array_column(self::entries(), null, 'path');
+        $labels = [];
+        foreach (self::entries() as $entry) {
+            $labels[self::categorySlug($entry['category'])] = $entry['category'];
+        }
         $entries = [];
         foreach ($paths as $path) {
             $resolved = self::resolveSource($projectRoot, $path);
@@ -114,10 +118,12 @@ final class PlatformDocsCatalog
             preg_match('/^#\s+(.+)$/m', $text, $heading);
             $group = str_starts_with($path, 'docs/plans/') ? 'Plans and history'
                 : (str_starts_with($path, 'docs/railspike/') ? 'Workflow' : 'Current guidance');
+            $category = self::categorySlug($curated[$path]['category'] ?? (str_contains($path, '/') ? explode('/', $path)[1] : 'Project'));
             $entries[] = [
                 'path' => $path,
                 'title' => $curated[$path]['title'] ?? trim($heading[1] ?? basename($path)),
-                'category' => $curated[$path]['category'] ?? (str_contains($path, '/') ? explode('/', $path)[1] : 'Project'),
+                'category' => $category,
+                'categoryLabel' => $labels[$category] ?? ucfirst(str_replace('-', ' ', $category)),
                 'description' => $curated[$path]['description'] ?? '',
                 'folder' => dirname($path) === '.' ? 'Project' : dirname($path),
                 'group' => $group,
@@ -132,6 +138,47 @@ final class PlatformDocsCatalog
             (($a['group'] === 'Current guidance' ? 0 : 1) <=> ($b['group'] === 'Current guidance' ? 0 : 1))
             ?: strnatcasecmp($a['path'], $b['path']));
         return $entries;
+    }
+
+    /** Case-insensitive category key, so folder and curated names share one filter value. */
+    public static function categorySlug(string $category): string
+    {
+        return trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($category)), '-');
+    }
+
+    /**
+     * Curated guides grouped by topic, in first-listed order.
+     *
+     * @return array<string, list<array{title:string,category:string,path:string,description:string}>>
+     */
+    public static function topics(): array
+    {
+        $topics = [];
+        foreach (self::entries() as $entry) {
+            $topics[$entry['category']][] = $entry;
+        }
+        return $topics;
+    }
+
+    /**
+     * Document counts per collection, category and folder (folders include subfolders).
+     *
+     * @return array{group: array<string, int>, category: array<string, array{label:string,count:int}>, folder: array<string, int>}
+     */
+    public static function counts(array $inventory): array
+    {
+        $counts = ['group' => [], 'category' => [], 'folder' => []];
+        foreach ($inventory as $entry) {
+            $counts['group'][$entry['group']] = ($counts['group'][$entry['group']] ?? 0) + 1;
+            $counts['category'][$entry['category']] ??= ['label' => $entry['categoryLabel'], 'count' => 0];
+            $counts['category'][$entry['category']]['count']++;
+            for ($folder = $entry['folder']; $folder !== '.'; $folder = $folder === 'Project' ? '.' : dirname($folder)) {
+                $counts['folder'][$folder] = ($counts['folder'][$folder] ?? 0) + 1;
+            }
+        }
+        ksort($counts['folder'], SORT_NATURAL | SORT_FLAG_CASE);
+        uasort($counts['category'], static fn (array $a, array $b): int => strnatcasecmp($a['label'], $b['label']));
+        return $counts;
     }
 
     /** Scope one build's metadata/search reads to the same source inventory. */
@@ -156,7 +203,7 @@ final class PlatformDocsCatalog
         $terms = preg_split('/\s+/u', mb_strtolower(trim($value('q')), 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         return array_values(array_filter($inventory, static function (array $entry) use ($value, $terms): bool {
             if (($value('folder') !== '' && $entry['folder'] !== $value('folder') && !str_starts_with($entry['folder'], $value('folder') . '/'))
-                || ($value('category') !== '' && $entry['category'] !== $value('category'))
+                || ($value('category') !== '' && $entry['category'] !== self::categorySlug($value('category')))
                 || ($value('group') !== '' && $entry['group'] !== $value('group'))) {
                 return false;
             }
