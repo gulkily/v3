@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Fastmod rubric actions — automatic meta tagging](fastmod_rubric_actions/)
+
 - [Theme-specific selected nav styling](nav_active_theme_override/)
 - [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)
 - [Testing self-approval](testing_self_approval/)
