@@ -4,7 +4,11 @@ Debug mode: enabled
 
 Effort study: E07 — [trial ledger](../effort_estimation_trial.md#e07--fastmod-rubric-actions)
 
-## Status
+## Current status — root-only v3
+
+Implemented on `feat/fastmod-root-meta`; all eight reduced-scope stages complete. Default off; no deployment or live-instance activation performed. Historical v2 investigation and approvals below remain records, not the active completion boundary. Full PHP suite has eight reproduced baseline/environment failures; focused final tests and browser journey passed. Maintainer study acceptance remains pending.
+
+## Historical status — original v2 investigation
 
 Branch `feat/fastmod-rubric-actions`; planning commit `766deab1`. Stage 1 investigation complete; stage-atomicity gate failed. Stages 2–8 have not started. No application code, tag state, policy or provider calls changed. This cycle is not complete and does not count as an accepted study outcome.
 
@@ -105,3 +109,27 @@ Revised Steps 2 and 3 approved. New branch `feat/fastmod-root-meta`, revised pla
 - Changes: extended real-browser harness with isolated writable public/static roots, ordinary/signed root tagging, exact meta discovery, reply exclusion, CLI suppression/recovery/rollback and static/offline inspection. Closed crash window by committing successful score and retained ordinary application evidence together; runtime rechecks current enablement before applying tags.
 - Verification: browser flow passed after final fixes, with deterministic local HTTP provider and real OpenPGP signed publication. At 390/1280 widths, light/dark/console/Word97/Chicago/Midnight discovery remained visible without overflow; screenshots saved under /tmp/fastmod-meta-*.png and phone Midnight/desktop Word97 inspected. No new styles/navigation. 68 focused tests passed before the final atomic evidence change; final 27 meta/sweep/store checks passed afterward, including rollback-on-failed evidence transaction and disabled-at-application behavior. Successful score/tagging left canonical repository HEAD unchanged.
 - Notes: initial browser artifact fixture lacked service_worker.js; fixed isolated fixture copying and reran successfully. Broader PHP run is ongoing for closeout; four observed failures reproduced on preimplementation commit 79bc519f (approval/profile copy and old static-page progress expectations). No live external model/deployment claims.
+
+
+## Stage 8 - Operations and study closeout (v3)
+
+- Changes: added [meta-tagging runbook](../../runbooks/fastmod_meta_tagging.md), updated Fastmod reference and historical-backfill boundary. Documented default-off enablement, inclusive threshold, root-only eligibility, stable classifications, CLI correction/retry/rollback, private backup, public score exclusion and artifact recovery. Added explicit real-browser rebuild assertion; no provider call and tag remains discoverable after rebuilding canonical-derived state.
+- Verification: final browser run passed after rebuild assertion. Final focused meta/sweep/store run: **27 passed**; earlier broader focused selection: **68 passed**. Changed PHP/JavaScript syntax, document/plan links and `git diff --check` passed. Full suite: **1,380 run, 1,372 passed, 8 failed**; all eight reproduced on preimplementation commit `79bc519f`, using the same canonical instance for ambient members-only diagnostics. Full run began before the final atomic evidence/enablement fixes; final focused tests and browser cover that final production code. No unqualified green full-suite claim.
+- Notes: no core read-model schema/table/column changes, so schema-version/prior-schema migration requirements are inapplicable; real read-model rebuild preservation is verified in the browser fixture. External deployment/live-model accuracy are outside scope. `todo.txt` unchanged.
+
+### Reproduced baseline failures
+
+- ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest — old profile copy expectation.
+- AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts — old username copy expectation.
+- LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary and ::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel — old static route/progress counts.
+- OfflineReadingDiagnosticCommandTest (three methods) — this existing instance has approved-members-only enabled; baseline reproduces all three when pointed at the same instance. Default empty baseline instance passes, which is not equivalent environment evidence. No instance setting changed.
+- ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts — reproduced unchanged on baseline and final checkout.
+
+Raw local verification logs: `/tmp/fastmod-root-meta-full-tests.log`, `/tmp/fastmod-meta-final-focused.log`, `/tmp/fastmod-meta-baseline-tests.log`, `/tmp/fastmod-meta-baseline-offline-same-instance.log`, `/tmp/fastmod-meta-baseline-timing.log`. Baseline worktree removed after checks. Browser screenshots are local temporary evidence, not published repository artifacts.
+
+### Commits and study outcome
+
+- Revised planning: `fe9578f9`; Stage 1 `cd8507b0`; Stage 2 `41216a6f`; Stage 3 `1ae0e711`; Stage 4 `11e22f32`; Stage 5 `a325ae9c`; Stage 6 `9b612b34`; Stage 7 `d1da4d40`; Stage 8 is the operations/closeout commit containing this record (see Git history). Original planning/investigation commits `766deab1` / `79bc519f` remain separate. No stage history amended.
+- Final production-code revision: `d1da4d40`; Stage 8 adds documentation and a further rebuild test assertion. Outcome v3 delivers root-only tags, existing discovery/presentation, CLI suppression/rollback and generated-label freshness. Original roots/replies/browser/reclassification outcome remains superseded/deferred, not completed.
+- E07 closeout, UTC 2026-10-20; R1; Codex single exposed rater; original start `4c521b743575979b8fefc66b38271551a57a08ef`, reduced implementation baseline `79bc519f`. **Retrospective scope assessment: 0.90**, distinct from preserved projected total **0.85**. Private persistence/atomic evidence, safe live tag composition and concurrent artifact publication required substantive integration and corrective verification; root-only existing formats and omitted browser/reclassification work bounded the result below the provisional 1.0 reference. This is an exposed scope judgment, not hours, measured labor or a rewritten projection.
+- Maintainer comfortable-fit judgment and acceptance: **pending**. No accepted-study outcome is counted yet; the reduced v3 replacement must not be compared as completion of original v2 or counted as an independent child. Corrective work: isolated browser artifact fixture, atomic score/evidence capture, fresh enablement check. New requested scope: none after revised approval.

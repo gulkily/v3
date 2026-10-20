@@ -1,8 +1,9 @@
 # Fastmod
 
 Fastmod records independent 0–1 rubric scores from one LLM call per evaluation,
-without running full post analysis. It is disabled by default and is intended for approved operators
-or internal workflows.
+without running full post analysis. Optional [root meta tagging](../runbooks/fastmod_meta_tagging.md)
+can apply the meta result to existing tag discovery; other scores remain advisory.
+Fastmod is disabled by default and intended for approved operators or internal workflows.
 
 ## Configuration
 
@@ -154,7 +155,9 @@ Model exchanges use the existing private LLM-exchanges audit surface. Each recor
 score is labeled independently on its public
 `/posts/{id}` detail page; the page reads it from the private score database
 while rendering, with legacy/earlier-revision markers where applicable. Scores are not added to thread cards, APIs, canonical records,
-or the read model, and do not make an automated moderation decision.
+or the read model, and do not make an automated moderation decision. Optional meta
+tagging publishes only the resulting root label using existing presentation;
+probabilities and evidence remain in private storage and are excluded from public backups.
 
 
 ## Deployment, recovery, and rollback
@@ -184,3 +187,18 @@ check uses temporary private state and a deterministic local HTTP provider to
 exercise signed selection, normal publication, worker evaluation, omission,
 multiple scores, malformed output, and explicit retry. It makes no external
 provider requests. Real-model rubric accuracy remains an operator evaluation.
+
+
+## Automatic root meta tagging
+
+Set `FASTMOD_META_TAGGING_ENABLED=true` with scoring/ordinary enqueue enabled
+and the meta rubric selected. `FASTMOD_META_THRESHOLD` defaults to 0.90, inclusive.
+Only newly published local roots qualify; replies, imports, old work and backfill
+do not. Existing tags are stable across configuration/model/rubric changes.
+
+Use `./v3 fast-score meta-status`, `meta-remove --post-id=ID`, `meta-retry`
+and `meta-rollback` for shell-based operation. Removal suppresses reapplication;
+rollback preserves human tags. Disabling stops additions without removing tags.
+No browser controls, tag styling, restore workflow or automatic reclassification
+is added. See the [runbook](../runbooks/fastmod_meta_tagging.md) for backup, artifact
+freshness and interrupted recovery.

@@ -92,6 +92,10 @@ try {
       await page.screenshot({ path: `/tmp/fastmod-meta-${theme}-${width}.png`, fullPage: true });
     }
   }
+  assert.equal((await worker('rebuild')).rebuilt,true);
+  await page.goto(base+'/tags/meta');
+  assert.equal(await page.getByRole('link',{name:'Support',exact:true}).isVisible(),true,'Tags survive read-model rebuild');
+  assert.equal(calls.length,1,'Rebuild makes no provider calls');
   const artifacts = await worker('artifacts');
   assert.ok(artifacts.labels.find(row => row.root_post_id === postId).thread_labels_json.includes('meta'));
   assert.deepEqual(artifacts.private_tables, []);

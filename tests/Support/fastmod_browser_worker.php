@@ -4,6 +4,10 @@ declare(strict_types=1);
 require dirname(__DIR__, 2) . '/autoload.php';
 if (PHP_SAPI !== 'cli') exit(1);
 $root = $argv[1];
+if (($argv[2] ?? '') === 'rebuild') {
+    (new \ForumRewrite\ReadModel\ReadModelBuilder($root.'/repository',$root.'/read.sqlite3',new \ForumRewrite\Canonical\CanonicalRecordRepository($root.'/repository')))->rebuild();
+    echo json_encode(['rebuilt'=>true]);exit;
+}
 if (($argv[2] ?? '') === 'artifacts') {
     (new \ForumRewrite\Host\StaticArtifactBuilder($root,$root.'/repository',$root.'/read.sqlite3',$root.'/static'))->buildFromReadModel();
     $snapshot=new PDO('sqlite:'.$root.'/static/offline/snapshot.sqlite3');
