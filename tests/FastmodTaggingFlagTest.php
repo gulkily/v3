@@ -7,6 +7,40 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator as Evaluator;
 
 final class FastmodTaggingFlagTest
 {
+    public function testRuntimeUsesExplicitRepositoryAndFreshSiteDecision(): void
+    {
+        $root=sys_get_temp_dir().'/tagging-policy-'.bin2hex(random_bytes(5));
+        $repo=$root.'/selected-instance';mkdir($repo.'/records/instance',0700,true);
+        $env=['FORUM_SECRETS_PATH'=>$root.'/secrets.php','FORUM_REPOSITORY_ROOT'=>$root.'/wrong-instance',
+            'FORUM_TASK_QUEUE_DATABASE_PATH'=>$root.'/tasks.sqlite3','FORUM_PUBLIC_ARTIFACT_ROOT'=>$root.'/public'];
+        $old=[];foreach($env as $n=>$v){$old[$n]=getenv($n);putenv($n.'='.$v);}
+        foreach([Registry::FASTMOD_AUTOMATIC_TAGGING_ENABLED,'FASTMOD_META_TAGGING_ENABLED',Registry::FAST_SCORING_ENABLED] as $n){$old[$n]=getenv($n);putenv($n);}
+        try {
+            $private=['FAST_SCORING_ENABLED'=>true,'FASTMOD_META_TAGGING_ENABLED'=>false,'FAST_SCORING_DATABASE_PATH'=>$root.'/scores.sqlite3'];
+            file_put_contents($root.'/secrets.php','<?php return '.var_export($private,true).';');
+            $write=static fn(bool $on)=>file_put_contents($repo.'/records/instance/feature-flags.txt',"Schema: site-feature-flags-v1\n\nFASTMOD_AUTOMATIC_TAGGING_ENABLED: ".($on?'true':'false')."\n");
+            $write(true);
+            assertSame(true,\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($root,$repo));
+            assertSame(false,\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($root));
+            $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$private,$root.'/static',$repo);
+            $config=\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig($private);
+            $read=new PDO('sqlite::memory:');$read->exec("CREATE TABLE posts(post_id TEXT,thread_id TEXT,parent_id TEXT,subject TEXT,body TEXT,is_hidden INTEGER,retracted_at TEXT); INSERT INTO posts VALUES('root','root',NULL,'Help','Support',0,NULL)");
+            $post=$read->query('SELECT * FROM posts')->fetch(PDO::FETCH_ASSOC);
+            $hash=(new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null))->contentHashForPost($post);
+            $runtime->store->recordEligibleRoot('root',$hash,'r',\ForumRewrite\Scoring\FastmodMetaConfig::identity($config),0.9);
+            $runtime->retain(['post_id'=>'root','content_hash'=>$hash,'rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]]);
+            $write(false);assertSame(0,$runtime->recover($read,'r'));
+            $write(true);$runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$private,$root.'/static',$repo);
+            assertSame(1,$runtime->recover($read,'r'));
+            $write(false);assertSame(1,(int)$runtime->store->find('root')['active']);
+            $runtime->store->removeAndSuppress('root');$runtime->flush();assertSame(1,(int)$runtime->store->find('root')['suppressed']);
+        } finally {
+            foreach($old as $n=>$v)putenv($v===false?$n:$n.'='.$v);
+            $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
+            foreach($it as $f){if($f->isDir())rmdir($f->getPathname());else unlink($f->getPathname());}rmdir($root);
+        }
+    }
+
     public function testSharedPrecedenceAndDependency(): void
     {
         $key=Registry::FASTMOD_AUTOMATIC_TAGGING_ENABLED;

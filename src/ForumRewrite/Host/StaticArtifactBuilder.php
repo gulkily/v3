@@ -264,7 +264,7 @@ final class StaticArtifactBuilder
      */
     private function fetchIds(string $sql): array
     {
-        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot);
+        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot,$this->repositoryRoot);
         /** @var list<string> $rows */
         $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_COLUMN);
 
@@ -276,7 +276,7 @@ final class StaticArtifactBuilder
      */
     private function fetchVisibleThreadIds(): array
     {
-        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot);
+        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot,$this->repositoryRoot);
         $rows = $pdo->query('SELECT root_post_id, board_tags_json FROM threads ORDER BY root_post_id')->fetchAll();
 
         return array_values(array_map(
@@ -290,7 +290,7 @@ final class StaticArtifactBuilder
      */
     private function fetchVisiblePostIds(): array
     {
-        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot);
+        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot,$this->repositoryRoot);
         $rows = $pdo->query('SELECT post_id, board_tags_json FROM posts ORDER BY post_id')->fetchAll();
 
         return array_values(array_map(
@@ -660,7 +660,7 @@ final class StaticArtifactBuilder
      */
     private function fetchVisibleTagRoutes(): array
     {
-        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot);
+        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot,$this->repositoryRoot);
         $rows = $pdo->query('SELECT board_tags_json, thread_labels_json FROM threads ORDER BY root_post_id')->fetchAll();
         $routes = [];
 
@@ -702,7 +702,7 @@ final class StaticArtifactBuilder
 
     private function rowExists(string $sql, string $value): bool
     {
-        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot);
+        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication((new ReadModelConnection($this->databasePath))->open(),$this->projectRoot,$this->repositoryRoot);
         $statement = $pdo->prepare($sql);
         if ($statement === false) {
             throw new RuntimeException('Unable to prepare existence query.');

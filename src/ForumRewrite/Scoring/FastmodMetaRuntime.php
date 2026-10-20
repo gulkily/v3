@@ -17,15 +17,15 @@ final class FastmodMetaRuntime
         private readonly ?\Closure $enabledNow = null,
     ) {}
 
-    public static function open(string $root, array $private, ?string $staticRoot = null): self
+    public static function open(string $root, array $private, ?string $staticRoot = null, ?string $repositoryRoot = null): self
     {
         $path=FastScoreDatabaseConfig::path($root,$private);
         if (!is_dir(dirname($path)) && !mkdir(dirname($path),0700,true) && !is_dir(dirname($path))) throw new \RuntimeException('Cannot open private Fastmod state.');
         $pdo=new PDO('sqlite:'.$path);$pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
         $store=new FastmodMetaStore($pdo);
-        return new self($store,new SqliteFastScoreStore($pdo),FastScoringConfig::fromPrivateConfig($private),FastmodMetaConfig::enabled($private),
+        return new self($store,new SqliteFastScoreStore($pdo),FastScoringConfig::fromPrivateConfig($private),FastmodTaggingPolicy::enabled($root,$repositoryRoot),
             static fn()=>FastmodMetaArtifacts::flush($store,$path,$root,$staticRoot),
-            static fn()=>FastmodMetaConfig::enabled(\ForumRewrite\Support\PrivateConfig::load($root)));
+            static fn()=>FastmodTaggingPolicy::enabled($root,$repositoryRoot));
     }
 
     public function flush(): void { if ($this->flushArtifacts !== null) ($this->flushArtifacts)(); }

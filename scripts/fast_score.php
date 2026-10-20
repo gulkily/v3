@@ -38,7 +38,8 @@ try {
     $privateConfig = PrivateConfig::load($projectRoot);
     $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
     if (str_starts_with($command, 'meta-')) {
-        $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig);
+        $repositoryRoot=(string)($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $projectRoot.'/state/local_repository'));
+        $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig,null,$repositoryRoot);
         if ($command === 'meta-remove') {
             $id=trim((string)($options['post-id'] ?? ''));
             if ($id === '') throw new InvalidArgumentException('--post-id is required.');
@@ -242,7 +243,7 @@ try {
                         $store->retryWork($postId, $contentHash, $rubricRevision);
                     }
                     $workflow = FastScoreWorkflowFactory::fromPrivateConfig($privateConfig, $projectRoot, $fetch, fastScoreRecorder($projectRoot, $repositoryRoot, $privateConfig));
-                    return (new \ForumRewrite\Scoring\FastScoreSweepService($readPdo, $factory, $workflow, $store, $rubricRevision, \ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig)))->run(1, 1, null,
+                    return (new \ForumRewrite\Scoring\FastScoreSweepService($readPdo, $factory, $workflow, $store, $rubricRevision, \ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig,null,$repositoryRoot)))->run(1, 1, null,
                         ['post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
                 }
             );
@@ -326,10 +327,10 @@ try {
 function fastScoreOptions(string $command, array $arguments): array
 {
     $definitions = [
-        'meta-status' => [],
-        'meta-remove' => ['post-id'=>true],
-        'meta-rollback' => [],
-        'meta-retry' => ['database-path'=>true],
+        'meta-status' => ['repository-root'=>true],
+        'meta-remove' => ['post-id'=>true,'repository-root'=>true],
+        'meta-rollback' => ['repository-root'=>true],
+        'meta-retry' => ['database-path'=>true,'repository-root'=>true],
         'status' => [
             'limit' => true,
             'verbose' => false,

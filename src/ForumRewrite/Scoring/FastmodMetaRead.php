@@ -8,11 +8,11 @@ use PDO;
 /** Request-local public tag join; the private database is never attached to user SQL. */
 final class FastmodMetaRead
 {
-    public static function forApplication(PDO $read, string $root): PDO
+    public static function forApplication(PDO $read, string $root, ?string $repositoryRoot = null): PDO
     {
         $private=\ForumRewrite\Support\PrivateConfig::load($root);
         $path=FastScoreDatabaseConfig::path($root,$private);
-        return self::decorate($read,$path,FastmodMetaConfig::enabled($private));
+        return self::decorate($read,$path,FastmodTaggingPolicy::enabled($root,$repositoryRoot));
     }
 
     public static function activeIds(string $path, bool $required=false): array

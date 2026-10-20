@@ -5,11 +5,6 @@ namespace ForumRewrite\Scoring;
 
 final class FastmodMetaConfig
 {
-    public static function enabled(array $config): bool
-    {
-        return filter_var($config['FASTMOD_META_TAGGING_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN);
-    }
-
     public static function threshold(array $config): float
     {
         $value = $config['FASTMOD_META_THRESHOLD'] ?? 0.90;

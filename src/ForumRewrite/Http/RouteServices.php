@@ -91,7 +91,7 @@ final class RouteServices
     public function pdo(): PDO
     {
         return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
-            (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot);
+            (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
     }
 
     public function databasePath(): string
@@ -256,7 +256,7 @@ final class RouteServices
             throw new RuntimeException('Fastmod database directory is not writable.');
         }
         if ($newLocalPost && $post['post_id'] === $post['thread_id']
-            && \ForumRewrite\Scoring\FastmodMetaConfig::enabled($privateConfig)
+            && \ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($this->projectRoot,$this->repositoryRoot)
             && in_array('meta', (new \ForumRewrite\Scoring\FastmodSelection($this->projectRoot))->enabled($config), true)) {
             (new \ForumRewrite\Scoring\FastmodMetaStore(new PDO('sqlite:' . $scorePath)))->recordEligibleRoot(
                 $postId, (string)$context['content_hash'], FastScoringRubricRevision::fromConfig($config,$this->projectRoot),

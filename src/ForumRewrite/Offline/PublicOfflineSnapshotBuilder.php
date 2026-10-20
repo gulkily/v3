@@ -59,7 +59,9 @@ final class PublicOfflineSnapshotBuilder
         $this->sourcePostColumns = null;
         $source = new PDO('sqlite:' . $sourcePath);
         $source->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        \ForumRewrite\Scoring\FastmodMetaRead::forApplication($source,$this->projectRoot ?? dirname(__DIR__,3));
+        try { $metaRepository=\ForumRewrite\ReadModel\ReadModelMetadata::readMetadata($source)['repository_root'] ?? null; }
+        catch (\Throwable) { $metaRepository=null; } // Legacy standalone sources have no metadata.
+        \ForumRewrite\Scoring\FastmodMetaRead::forApplication($source,$this->projectRoot ?? dirname(__DIR__,3),$metaRepository);
         $snapshot = new PDO('sqlite:' . $temporaryPath);
         $snapshot->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 

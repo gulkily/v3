@@ -34,5 +34,5 @@ if (($argv[2] ?? '') === 'retry') {
     }
 }
 $sweep = new \ForumRewrite\Scoring\FastScoreSweepService($pdo, new \ForumRewrite\Scoring\FastScoreContextFactory($fetch), $workflow, $store,
-    \ForumRewrite\Scoring\FastScoringRubricRevision::fromConfig(\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig($config), $root), \ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$config,$root.'/static'));
+    \ForumRewrite\Scoring\FastScoringRubricRevision::fromConfig(\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig($config), $root), \ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$config,$root.'/static',$root.'/repository'));
 echo json_encode(['summary' => $sweep->run(1), 'work' => $store->recentWork()]);
