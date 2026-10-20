@@ -136,3 +136,41 @@ Follow-up cycle: predecessor [docs_discovery](../docs_discovery/docs_discovery_s
   - **Reported, not fixed: `--line` below 3:1** in 14 themes. This page uses `--line` only for decorative dividers and the quiet underline (state and identity come from text, weight and the active pair). Site-wide input borders still rely on it, which is outside this cycle.
   - `prefers-reduced-motion`: the docs page has no animation or smooth scrolling, and focus moves without animated scrolling, so no rule was needed.
   - The skip link remains deferred to `todo.txt`.
+
+## Stage 8 - Known-user acceptance and docs
+- Changes:
+  - `tests/browser/docs_landing.mjs` now runs the maintainer's matrix: dynamic and static hosts × JS on/off × (1280px, 1280px at 200% zoom, 320px) × default/Word97/Chicago/Midnight. Each run covers the landing, a browse page (`?group=Workflow`) and a search (`?q=recovery`). It asserts:
+    - no page-wide horizontal scroll
+    - diagram text of at least 13.6px
+    - expected rows
+    - the static no-JS search notice appearing only there
+    - a ring of at least 2px on every docs control reached by tabbing
+    - no page errors
+  - The matrix caught Word97's and Midnight's 1px dotted focus styles overriding the docs ring. The docs focus ring is now `!important`, on this page only.
+  - Updated the predecessor harnesses for the new UI. `docs_discovery.mjs` starts on the landing view, then searches, filters with links and clears with the chip or empty-state link. `platform_docs.mjs` no longer opens the removed "Starting guides" disclosure.
+  - Updated `docs/runbooks/markdown_renderer.md` (curation, landing/results URLs, slugs, static browse pages and search shell, new checks) and marked the UI-copy checklist entry done.
+- Verification:
+  - `docs_landing.mjs` (dynamic 8191, static release 8192): 6/6 JS-vs-server parity cases, landing navigation and focus, index failure/Retry, and **48/48 acceptance scenarios passed**. 145 screenshots plus `evidence.json` are kept locally in the session scratchpad (not committed).
+  - `docs_discovery.mjs`: 16/16 dynamic/static × 1280/390 × four themes passed, including the Tools launcher and subnavigation Docs icons in Word97, Chicago and Midnight (destination unchanged, no icon mapping change needed).
+  - `platform_docs.mjs`: 8/8 no-JS reader scenarios passed.
+  - `python3 tests/platform_docs_release_test.py`: passed, including complete-package rollback and regeneration and 8 static browser scenarios.
+  - Focused PHP suites (catalog, page, profile content, static): passed as recorded in Stages 1–7.
+  - Full repository PHP suite: **partial**. It was stopped after ~38 minutes, near the end of `LocalAppSmokeTest`, at the user's request because concurrent runs were loading the machine. Tests after that point did not run. Seven failures among the tests that ran:
+    - Five also fail on the pre-cycle baseline (`76761678`, separate worktree), so they are pre-existing. These are `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts` and three in `LocalAppSmokeTest`: `testBuildStaticCommandReportsProgressAndArtifactSummary` and `testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel` (both expect a stale hard-coded "/20" shared-page total, which the browse pages change further), and `testSqliteViewerIncludesPresetReadOnlyQueryContract`.
+    - Two did not reproduce when run alone: `LegacyTimestampImportTest::testLegacyBootstrapPublishesAndDatesSurviveRebuildAndAnotherArchive` (the build had detected a planning doc being edited mid-run) and `LocalAppSmokeTest::testStartAcceptsPortShorthand` (timing under load). Both passed.
+- Departures from the reviewer brief:
+  1. **Static host, no JavaScript, search text:** shows a notice and the browsable filters instead of results. Every browse, filter and page URL is prebuilt. Search text can't be prebuilt, and serving it live would bypass the release snapshot (Step 1, Option B).
+  2. **No results sidebar or wider page:** the shared 760px `.shell` was kept so Board and the rest of the site are unaffected. Filters stay in a "Filters" `<details>` at every width. The concept blurbs stack, because three 18rem columns never fit. Single-guide topics still pair up.
+  3. **Diagram:** HTML/CSS ordered list instead of an SVG with `<title>`/`<desc>`. The visible text is the text equivalent, it stacks instead of shrinking, and it stays vertical inside the 760px shell.
+  4. **Curation:** kept in the existing single list in `PlatformDocsCatalog::entries()` rather than front matter or a new file. CLI Reference moved after Trust and Identity so the paired topics read in source order.
+  5. **Folder filter:** a nested `<details>` tree with an "All in …" link per branch (a summary can't contain a link). No combobox.
+  6. **Choosing a filter replaces other filters** (keeping the search). Combined-filter URLs still work, but filter links don't build them, so each is a prebuildable page.
+  7. **Counts are library-wide**, not narrowed by the current search, so prebuilt and live pages match.
+  8. **Skip link:** not added. It changes shared layout on every page, so it's deferred to `todo.txt` at the user's request.
+  9. **Theme fixes limited to tokens that only gained contrast** (arena `--ink-soft`, mitrapclub `--active-bg`). qdb's site-wide link color (2.91:1) and `--line` below 3:1 in 14 themes are reported, not changed.
+  10. **The docs focus ring overrides themes' own focus styles** on this page (`!important`), at the cost of theme fidelity.
+  11. **Results heading is "Documents"** (an h2 under the shared H1). The live count reuses the server's `role="status"` element.
+  12. **The live count is 1,321** (it grows with this cycle's own planning files), not the brief's 1,315. It is never hard-coded.
+- Notes:
+  - Not run: production deployment (out of scope) and screen-reader software. Accessible names, landmarks, heading order and the live region are checked structurally only.
+  - Static no-JS search can't prefill the reader's query in the shell, because the static page doesn't see it. The notice explains this.

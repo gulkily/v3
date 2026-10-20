@@ -36,7 +36,10 @@ scroll regions; JavaScript is unnecessary for reading or following links.
 Tools → Platform Docs follows the deployed repository folders automatically;
 there is no separately maintained folder catalog. Deploy the complete `docs/`
 tree and root `README.md`, `CONTRIBUTING.md`, `AGENTS.md` and `BLESSING.md`.
-The existing curated entries supply starting guides and metadata, not eligibility.
+The curated entries in `PlatformDocsCatalog::entries()` supply the landing page's
+topic sections (title, topic, one-line description), not eligibility. To feature a
+guide, add an entry there; topics appear in first-listed order, and adjacent
+single-guide topics share a row on wide screens. No template edit is needed.
 
 The library includes Markdown, TXT, CSV, JSON, HTML and PDF under `docs/`,
 configuration/example files under `docs/examples/`, and `docs/railspike/LICENSE`.
@@ -49,14 +52,24 @@ responses with `application/octet-stream` and `nosniff`; examples never execute.
 PDF and files above the 1 MiB preview limit offer downloads. PDF binary contents
 and oversized file bodies are not indexed; their titles and paths remain searchable.
 
-Search covers titles, paths, headings and available document text, with folder,
-category and collection filters and 40-result pages. Folder filtering includes
+`/docs/` without query parameters is the curated landing page (intro, How it
+works, topics, collection quick links). Any of `q`, `folder`, `category`, `group`
+or `page` opens the results view at the same URL. Search covers titles, paths,
+headings and available document text, with folder, category and collection
+filters and 40-result pages. Categories are case-insensitive slugs (legacy
+`category=Architecture` URLs still match); filter counts are library-wide.
+Choosing a filter replaces other filters and keeps the search text. Folder filtering includes
 subfolders. Current guidance ranks before plans/history and vendored workflow;
 being listed under plans does not assert that a plan is obsolete. Search includes
 all collections unless filtered. Query URLs preserve results when returning from
 a reader; JavaScript also carries them through related-document links. Dynamic
-search/browsing works without JavaScript; static filtering uses JavaScript and
-`/docs/_search.json`. Index failures expose Retry and a library refresh link.
+search/browsing works without JavaScript. Static releases prebuild every browse
+page (all documents, each collection, category and folder, every page) under
+`/docs/_browse/`, so browsing and filtering work there without JavaScript too;
+search text and combined filters are served `/docs/_search.html`, which
+JavaScript fills from `/docs/_search.json` and which explains, without
+JavaScript, that search needs it. Index failures expose Retry and a library
+refresh link.
 
 One inventory snapshot drives each static build, including all readers, inert
 assets and byte-verified downloads. No document registration is needed: add or
@@ -120,6 +133,9 @@ retrying. Existing atomic publication remains responsible for activation.
 php tests/run.php PlatformDocsPageTest PlatformDocsCatalogTest PlatformDocsStaticTest
 node tests/browser/platform_docs.mjs
 node tests/browser/docs_discovery.mjs
+node tests/browser/docs_landing.mjs
+node tests/browser/docs_landing_contrast.mjs [report.json]
+python3 -I tests/theme_contrast_audit.py . report.json
 python3 tests/platform_docs_release_test.py
 ```
 
@@ -144,3 +160,13 @@ HTTP download headers, missing/retry recovery and both Docs icon surfaces.
 Static scenarios suppress preference-cookie writes to exercise the anonymous
 fast path; theme CSS is
 applied directly. Screenshots and machine-readable evidence are saved locally.
+
+The landing check (`docs_landing.mjs`) compares browser-rendered results with
+the JavaScript-off server render for representative queries, then runs the
+known-user matrix: dynamic and static hosts (`DOCS_DYNAMIC_BASE_URL`,
+`DOCS_CLIENT_BASE_URL`), JavaScript on/off, 1280px, 1280px at 200% zoom and
+320px, in default, Word97, Chicago and Midnight. It asserts no page-wide
+horizontal scrolling, readable diagram text, a visible focus ring while
+tabbing, and the static no-JavaScript search notice. The contrast check measures
+rendered text contrast for every docs component in every registered theme, with
+the theme stylesheet kept in its real cascade position.

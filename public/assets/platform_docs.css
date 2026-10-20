@@ -634,15 +634,18 @@
   margin: 0.5rem 0;
 }
 
-/* Keyboard focus: a thick ring in the theme's ink, offset so it never hides in a border. */
+/*
+ * Keyboard focus: a thick ring in the theme's ink, offset so it never hides in a border.
+ * !important outranks themes' thin retro rings (Word97, Midnight: 1px dotted) on this page only.
+ */
 .docs-page :is(a, button, input, summary):focus-visible,
 .docs-page [tabindex="-1"]:focus {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
+  outline: 3px solid var(--ink) !important;
+  outline-offset: 2px !important;
 }
 
 .docs-page [tabindex="-1"]:focus:not(:focus-visible) {
-  outline: none;
+  outline: none !important;
 }
 
 @media (prefers-contrast: more) {

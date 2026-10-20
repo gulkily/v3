@@ -17,7 +17,6 @@ try {
       if (width === 1280 && theme === 'default') {
         await page.goto(base + '/tools/');
         await page.locator('a[href="/docs/"]').first().click();
-        await page.getByText('Starting guides', { exact: true }).click();
         await page.locator('a[href="/docs/reference/author_post_retraction.md"]').first().click();
       } else {
         await page.goto(base + '/docs/reference/author_post_retraction.md');

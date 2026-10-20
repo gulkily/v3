@@ -13,6 +13,16 @@ const evidence = [];
 async function libraryReady(page) {
   await page.waitForFunction(() => { const root = document.querySelector('[data-docs-library]'); return root?.dataset.docsReady === 'true' && root.dataset.docsQuery === location.search; });
 }
+// Filters are link lists inside a closed <details>; folder links may sit in collapsed branches.
+async function chooseFilter(page, key, value) {
+  await page.locator('.docs-filters').evaluate(details => { details.open = true; });
+  const link = page.locator(`.docs-filters a[href*="${key}=${encodeURIComponent(value).replace(/%20/g, '+')}"]`).first();
+  await link.evaluate(node => { for (let parent = node.closest('details'); parent; parent = parent.parentElement.closest('details')) parent.open = true; });
+  await link.click(); await libraryReady(page);
+}
+async function clearAll(page) {
+  await page.locator('[data-docs-chips] a', { hasText: 'Clear all' }).click(); await libraryReady(page);
+}
 async function applyTheme(page, theme) {
   if (theme === 'default') return;
   await page.evaluate(theme => { document.getElementById('theme-stylesheet')?.remove(); document.documentElement.dataset.theme = theme; }, theme);
@@ -50,14 +60,16 @@ try {
       return route.continue();
     });
     await page.locator('.tool-launcher-button[href="/docs/"]').click();
-    if (retryIndex) { await page.locator('[data-docs-error]').waitFor(); await page.locator('[data-docs-retry]').click(); }
-    await libraryReady(page);
+    // Tools opens the curated landing view; the search index loads only for results.
+    await page.locator('.docs-topics').waitFor();
     if (mode === 'static') assert.ok((await page.content()).includes('route-source: static-html'), page.url());
     await applyTheme(page, theme);
     const search = page.locator('[name=q]');
     await search.focus(); await page.keyboard.type('SCHEMA_VERSION');
-    await page.locator('[name=folder]').selectOption('Project');
-    await search.press('Enter'); await libraryReady(page);
+    await search.press('Enter');
+    if (retryIndex) { await page.locator('[data-docs-error]').waitFor(); await page.locator('[data-docs-retry]').click(); }
+    await libraryReady(page);
+    await chooseFilter(page, 'folder', 'Project');
     const contributing = page.locator('[data-docs-results] a[href*="CONTRIBUTING.md"]');
     await contributing.waitFor(); await contributing.focus();
     await Promise.all([page.waitForURL('**/docs/_project/CONTRIBUTING.md?**'), page.keyboard.press('Enter')]);
@@ -66,16 +78,16 @@ try {
     if (mode === 'static') assert.ok((await page.content()).includes('route-source: static-html'));
     await page.locator('[data-docs-return]').click(); await libraryReady(page);
     assert.equal(await page.locator('[name=q]').inputValue(), 'SCHEMA_VERSION');
-    await page.locator('[data-docs-clear]').click(); await libraryReady(page);
-    await page.locator('[name=group]').selectOption('Plans and history');
+    await clearAll(page);
+    await chooseFilter(page, 'group', 'Plans and history');
     await page.locator('[name=q]').fill('docs_discovery'); await page.locator('[name=q]').press('Enter'); await libraryReady(page);
     await page.locator('[data-docs-results] a').first().waitFor();
     assert.ok((await page.locator('[data-docs-results]').innerText()).includes('docs/plans/'));
-    await page.locator('[data-docs-clear]').click(); await libraryReady(page);
+    await clearAll(page);
     await page.locator('[name=q]').fill('no-such-doc-7aa32'); await page.locator('[name=q]').press('Enter'); await libraryReady(page);
     await page.locator('[data-docs-empty]').waitFor();
     assert.equal(await page.locator('[data-docs-count]').innerText(), '0 documents');
-    await page.locator('[data-docs-clear]').click(); await libraryReady(page);
+    await page.locator('[data-docs-empty] a', { hasText: 'Clear filters' }).click(); await libraryReady(page);
     await applyTheme(page, theme);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Page-wide overflow');
     await page.screenshot({ path: `${output}/${mode}-${theme}-${width}-library.png` });
