@@ -69,3 +69,9 @@ Revised Steps 2 and 3 approved. New branch `feat/fastmod-root-meta`, revised pla
 - Changes: added private SQLite root eligibility/classification/suppression store with minimal retained evidence, serialized decisions and dirty generation; fixed meta configuration contract. Independent from transient score pruning.
 - Verification: FastmodMetaTest — 2 passed, covering inclusive threshold, replay, suppression, rollback, pruning and invalid/stale/backfill evidence. No core read-model change.
 - Notes: no live tags or publication policy enabled; integration follows. Ledger remains uncommitted until closeout.
+
+## Stage 2 - Publication and worker integration (v3)
+
+- Changes: new-local-post receipt marks eligibility only when meta tagging is configured on; captures threshold/model/rubric/content identity. Ordinary worker results retain private application evidence and recover independently of provider work. Replies, old queues and backfill lack eligible receipts; backfill cannot supply application evidence.
+- Verification: 13 focused meta/sweep tests passed; prior workflow tests also passed. New recovery test uses retained ordinary evidence without score rows and confirms backfill exclusion and suppression. PHP syntax check passed.
+- Notes: no automatic reclassification; successful scoring survives application failure. Tag presentation and artifact invalidation follow in later stages.

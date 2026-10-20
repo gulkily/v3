@@ -143,6 +143,7 @@ class LocalWriteService
                 'status' => 'ok',
                 'post_id' => $postId,
                 'thread_id' => $postId,
+                'fastmod_new_post' => true,
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
@@ -465,6 +466,7 @@ class LocalWriteService
                 'thread_id' => $threadId,
                 'record_path' => $recordPath,
                 'signature_path' => $recordPath . '.asc',
+                'fastmod_new_post' => true,
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];

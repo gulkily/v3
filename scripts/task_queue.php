@@ -269,6 +269,7 @@ try {
                         $workflow,
                         $scoreStore,
                         FastScoringRubricRevision::fromConfig($config, $projectRoot),
+                        \ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig),
                     ))->run(
                         $providerCallLimit,
                         $workLimit,

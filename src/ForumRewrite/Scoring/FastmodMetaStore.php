@@ -18,6 +18,9 @@ final class FastmodMetaStore
             model_identity TEXT NOT NULL, threshold REAL NOT NULL, probability REAL,
             state TEXT NOT NULL DEFAULT 'pending', active INTEGER NOT NULL DEFAULT 0,
             suppressed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+        if (!in_array('evidence_json',array_column($pdo->query('PRAGMA table_info(fastmod_meta)')->fetchAll(),'name'),true)) {
+            $pdo->exec('ALTER TABLE fastmod_meta ADD COLUMN evidence_json TEXT');
+        }
         $pdo->exec('CREATE INDEX IF NOT EXISTS fastmod_meta_active ON fastmod_meta(active,post_id)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS fastmod_meta_generation (singleton INTEGER PRIMARY KEY CHECK(singleton=1), generation INTEGER NOT NULL, published INTEGER NOT NULL)');
         $pdo->exec('INSERT OR IGNORE INTO fastmod_meta_generation VALUES (1,0,0)');
@@ -36,6 +39,13 @@ final class FastmodMetaStore
     {
         $q=$this->pdo->prepare('SELECT * FROM fastmod_meta WHERE post_id=?'); $q->execute([$id]);
         return $q->fetch() ?: null;
+    }
+
+    public function retainOrdinaryResult(array $work, array $result, string $model): void
+    {
+        if (isset($work['backfill_batch_id']) || ($result['status'] ?? '') !== 'scored') return;
+        $q=$this->pdo->prepare("UPDATE fastmod_meta SET evidence_json=? WHERE post_id=? AND content_hash=? AND rubric_revision=? AND model_identity=? AND state='pending' AND suppressed=0 AND evidence_json IS NULL");
+        $q->execute([json_encode($result,JSON_THROW_ON_ERROR),$work['post_id'],$work['content_hash'],$work['rubric_revision'],$model]);
     }
 
     public function apply(array $work, array $result, string $model): bool
