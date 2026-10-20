@@ -38,3 +38,27 @@ No supported findings.
 ### Uncertain assessments
 
 - A compact four-stage plan with required risk/contract records is longer than a literal printed page; prioritizes required reviewable fields without duplicating implementation details.
+
+
+## 2026-10-20T06:53:45.197300+00:00 — Step 4 complete
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: planning `a9a009eb` followed by four stage commits (`28b5246e`, `7ac693f3`, `bb2dca18`, `437f03f5`), each with its summary; preserved predecessor history and kept pending predecessor disposition out of the planning commit. Retain.
+- `step4_implementation_after.md`, normal-flow verification: signed browser toggling exposed the existing response recomputation dropping private scoring dependency settings. Retaining evaluator configuration fixed actual switch state, not just registry markup. Browser failed-save/retry, site-off/legacy-true, root tagging, independent scoring and CLI recovery passed. Retain.
+- `RAILSPIKE.md`, shared contracts/explicit scope: one general capability flag reuses existing signed Feature Flags UI and leaves threshold/mapping configuration independent; no speculative rule-builder or per-rubric flag introduced. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Experimental effort-study snapshots: this follow-up remains unselected; E07 history and pending acceptance were not rewritten or counted as a new observation.
+- Core-schema migration and external deployment/live-model checks: no schema change or deployment in this slice; deterministic provider used in isolated browser tests.
+
+### Uncertain assessments
+
+- Full suite was not rerun for the focused follow-up. Final 68 targeted PHP checks and real signed Fastmod/Feature Flags toolbar browser suites passed; predecessor baseline failures remain historical, not an unqualified full-suite pass.
+
+Final Stage 4 closeout commit: `437f03f5`. Flag/tag views checked on phone/desktop in six themes; screenshot inspection recorded in implementation summary and UI audit checklist. Legacy compatibility does not create a second flag. Instance setting unchanged, no new styling/navigation, no todo edits. This report is committed separately after the final stage, without amendments.
