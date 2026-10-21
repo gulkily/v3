@@ -44,6 +44,7 @@ if (!is_dir($repositoryRoot . '/.git')) {
 
 $metadata = loadRecordMetadata($repositoryRoot, $relativePath);
 
+\ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");
 $gitRm = runCommand(
     sprintf(
         'git -C %s rm -- %s',

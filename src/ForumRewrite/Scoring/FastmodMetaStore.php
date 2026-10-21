@@ -104,7 +104,10 @@ final class FastmodMetaStore
     {
         $q=$this->pdo->prepare('UPDATE fastmod_meta_generation SET published=? WHERE singleton=1 AND generation=?'); $q->execute([$generation,$generation]);
     }
-    private function advance(): void { $this->pdo->exec('UPDATE fastmod_meta_generation SET generation=generation+1 WHERE singleton=1'); }
+    private function advance(): void {
+        \ForumRewrite\Host\HighTrafficSafety::detach(getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: dirname(__DIR__,3) . '/public');
+        $this->pdo->exec('UPDATE fastmod_meta_generation SET generation=generation+1 WHERE singleton=1');
+    }
     private function transaction(callable $fn): mixed
     {
         $run=function () use ($fn): mixed {

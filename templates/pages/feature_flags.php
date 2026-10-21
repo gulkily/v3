@@ -10,6 +10,17 @@ foreach ($flags as $flag) {
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
+<?php if ($canManageFeatureFlags && isset($highTraffic)): ?>
+  <article class="card">
+    <h2>High-traffic mode</h2>
+    <p class="meta">Public pages may be about two minutes old.</p>
+<?php $highTrafficEnabled = ($highTraffic['effective_mode'] ?? '') === 'high-traffic'; ?>
+    <form data-high-traffic-control>
+      <button type="submit" role="switch" aria-checked="<?= $highTrafficEnabled ? 'true' : 'false' ?>" data-enabled="<?= $highTrafficEnabled ? 'true' : 'false' ?>"><?= $highTrafficEnabled ? 'Disable' : 'Enable' ?> high-traffic mode</button>
+      <p role="status" aria-live="polite" data-high-traffic-status<?= empty($highTraffic['error']) ? ' hidden' : '' ?>><?= $e($highTraffic['error'] ?? '') ?></p>
+    </form>
+  </article>
+<?php endif; ?>
   <article class="card">
     <h1>Feature Flags</h1>
 <?php if ($canManageFeatureFlags): ?>

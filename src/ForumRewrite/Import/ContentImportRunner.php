@@ -38,6 +38,7 @@ final class ContentImportRunner
                     }
                     return $this->report((new ContentImportPlanner())->plan($source, $this->repositoryRoot), $sourceLabel, $archiveExclusions, true);
                 }
+                \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, "records/post-retractions/import.txt");
                 if (is_file($pending)) {
                     if ($source !== null) {
                         throw new RuntimeException('An interrupted import needs recovery. Run import-instance --resume with the same destination options first.');
