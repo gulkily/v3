@@ -14,6 +14,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 
 - [Markdown renderer](markdown_renderer/)
+- [Same-author collapse toggle](same_author_collapse_toggle/)
 
 - [Shared Fastmod automatic-tagging flag](fastmod_tagging_flag/)
 

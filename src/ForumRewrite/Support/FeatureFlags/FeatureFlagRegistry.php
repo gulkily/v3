@@ -6,6 +6,7 @@ namespace ForumRewrite\Support\FeatureFlags;
 
 final class FeatureFlagRegistry
 {
+    public const COLLAPSE_SAME_AUTHOR_POSTS_ENABLED = 'FORUM_COLLAPSE_SAME_AUTHOR_POSTS_ENABLED';
     public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
     public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
@@ -35,6 +36,15 @@ final class FeatureFlagRegistry
     public function all(): array
     {
         return [
+            new FeatureFlagDefinition(
+                self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
+                'Collapse posts from same author',
+                'Group consecutive posts by the same author within 15 minutes in thread views.',
+                true,
+                self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
+                siteMutable: true,
+                group: 'RENDERING',
+            ),
             new FeatureFlagDefinition(
                 self::IMAGE_CONTENT_ENABLED,
                 'Image attachments',

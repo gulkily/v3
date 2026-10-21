@@ -10,6 +10,13 @@
 
 - [x] Removed unconditional `--resume` advice from import failures; show recovery guidance only when the selected destination has a pending journal. Replaced generic public-download wording with HTTP status, bounded sanitized source detail, and source retry guidance.
 - Verification: Actual CLI/HTTP tests cover initial preview/import success, source failure without a journal, failure with an independently pending journal, interrupted publication, and successful resume. Full suite: 1372/1377 passed; all five failures reproduced on unchanged `main` and are listed in the [implementation summary](legacy_backup_compatibility/legacy_backup_compatibility_step4_implementation_summary.md). Browser layout/theme checks are inapplicable: this change affects terminal output only. Production source and user WSL verification remain pending.
+## Same-author collapse toggle — 2026-10-21
+
+- [x] Added the concise “Collapse posts from same author” control using the existing Feature Flags UI and recovery feedback. No new explanatory panel or navigation destination.
+- [x] Isolated Chromium acceptance: real signed disable/enable/reset, reload persistence, anonymous read-only/rejected writes, environment lock/rejected writes, and failed-save retry.
+- [x] Loaded root/later continuation runs, agent/other author boundaries, separate metadata/actions/counts, empty replies, expanded reply composer and long prose at 390/1280 px across light, dark, console, Word97, Chicago, Midnight, Arena, Sticker, and Whitehot. No page overflow; reviewed phone Midnight and desktop Word97 screenshots.
+- Evidence: `node tests/browser/same_author_collapse.mjs`; screenshots `/tmp/collapse-{theme}-{width}-{state}.png`. Synthetic author labels are seeded only in the isolated fixture read model. Production deployment and non-Chromium browsers were not tested.
+
 
 ## Next audit — candidates to verify
 

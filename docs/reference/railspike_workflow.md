@@ -109,3 +109,7 @@ behavior are unchanged.
 ## Phone intake deployment
 
 The operator-only phone workflow uses the instance task queue and a separate read-only Codex assessment checkout. See [deployment, Codex configuration, acceptance, and recovery](../runbooks/phone_site_development.md). It stops after revision-bound Step 1 approval; legacy localhost handoffs remain separate.
+
+## Continuing collection update — 2026-10-21
+
+Standing enrollment under [protocol P2](../plans/effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2) supersedes the individual-selection-only wording above for future cycles. All future Railspike cycles join the same `railspike-effort` study; R1 and historical records are preserved. The installed experiment contract now recognizes standing enrollment and worktree deduplication. This remains a local patch pending the next minor upstream beta; upstream Ref/Commit metadata has not changed. There was no subtree sync, upload or application change.
