@@ -1,0 +1,90 @@
+{
+  "status": "preliminary, not complete cleanup scope",
+  "origin": "https://github.com/gulkily/v3",
+  "local_starting_main": "02512b8e2b1b44dabb3966eac21295bea9626412",
+  "observed_origin_main": "269b44ac310f0f844771148c8ff891b216b9e03b",
+  "advertised_entries": [
+    {
+      "ref": "refs/heads/account-key-redesign",
+      "object": "9ea852850cbdbf6f509554e7559cc66141dfa6db"
+    },
+    {
+      "ref": "refs/heads/chore/repository-directory-cleanup",
+      "object": "eeff9a9a048e7d61417013a0a30b8cdfdd86ec0f"
+    },
+    {
+      "ref": "refs/heads/docs/ephemeral-testing-plans",
+      "object": "1c80da2ddc4b933b6a878f4602c76c7c794cb6c7"
+    },
+    {
+      "ref": "refs/heads/docs/private-messaging-diagrams",
+      "object": "d78e83fe5279804b096ffb45aed53e75ef3d44a8"
+    },
+    {
+      "ref": "refs/heads/feat/agent-personality-context",
+      "object": "58011b47688978c3cea8f9a556bf47e66317b72a"
+    },
+    {
+      "ref": "refs/heads/feature/docs-discovery",
+      "object": "c34edb4645e791271a6863a1ca2e74ffba09a126"
+    },
+    {
+      "ref": "refs/heads/feature/listing-query-dialog",
+      "object": "daa67f4d199b5177328cff72331236bacce7b5b8"
+    },
+    {
+      "ref": "refs/heads/feature/mitrapclub-events-experience",
+      "object": "f7a15188e30b7d85e6a01a33759464d81def5a5b"
+    },
+    {
+      "ref": "refs/heads/feature/operator-privilege-delegation",
+      "object": "9f3f9563561105850293c662bfdf6914ea9fe12e"
+    },
+    {
+      "ref": "refs/heads/feature/scripture-response-reliability-revision",
+      "object": "8a1f712f54a00304f8c2d30da075fc2cb0285bd4"
+    },
+    {
+      "ref": "refs/heads/fix-word97-nav-active-override",
+      "object": "db2e9fd8ed5c896bfccc015c95c076779abe5d2c"
+    },
+    {
+      "ref": "refs/heads/main",
+      "object": "269b44ac310f0f844771148c8ff891b216b9e03b"
+    },
+    {
+      "ref": "refs/heads/merge-origin-main-fdp-debug-log",
+      "object": "394322ce1638aee192a222cf81817b9e26697aaa"
+    },
+    {
+      "ref": "refs/heads/qdb-strip-timestamps",
+      "object": "27060502b394ceafbd58c54bae31e9af5dbd2d1e"
+    },
+    {
+      "ref": "refs/tags/fdp-before-2026-10-02",
+      "object": "e0450ecd19485de4fefd92fe8d0a09b22e0eb46f"
+    },
+    {
+      "ref": "refs/tags/fdp-before-2026-10-02^{}",
+      "object": "8a496959c97f842faed9ed825f00eb1ef43defc4"
+    }
+  ],
+  "note": "14 branches plus one annotated tag and its peeled target. Remote main advanced beyond this checkout; preserve newer viewport/backup/import commits in any replacement. This is an observation, not a freeze or publication authorization.",
+  "shared_local_git": "/home/wsl/agent/v3-codex/.git",
+  "local_worktrees": [
+    "/home/wsl/agent/v3-codex",
+    "/home/wsl/.codex/worktrees/39c4/v3-codex",
+    "/home/wsl/.codex/worktrees/7bff/v3-codex",
+    "/home/wsl/.codex/worktrees/d69d/v3-codex",
+    "/tmp/forum-image-baseline (prunable registration, not removed)"
+  ],
+  "unresolved": [
+    "Cleanup coordinator and collaborator freeze",
+    "Other clones/forks/deployment checkouts/backups/release archives and access/ownership",
+    "Hosting retained refs/objects/cache cleanup and verification boundary"
+  ],
+  "temporary_inspection_copy": "/tmp/markdown-removal-remote-inventory-l1fe93em (disposed; no additional contaminated inspection copy retained)",
+  "existing_history_rewritten": false,
+  "remote_refs_updated": false,
+  "local_feature_branch_commits_created": true
+}

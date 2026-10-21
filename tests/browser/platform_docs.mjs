@@ -26,17 +26,19 @@ try {
         await page.evaluate(theme => (document.getElementById('theme-stylesheet')?.remove(), document.documentElement.setAttribute('data-theme', theme)), theme);
         await page.evaluate(css => { const style = document.createElement('style'); style.textContent = css; document.head.append(style); }, await readFile('public/assets/theme-' + theme + '.css', 'utf8'));
       }
-      assert.equal(await page.locator('.docs-content table').count(), 4);
-      assert.equal(await page.locator('.docs-content ol').count(), 1);
+      assert.equal(await page.locator('.docs-content table').count(), 0);
+      assert.equal(await page.locator('.docs-table-source').count(), 4);
+      assert.equal(await page.locator('.docs-content ol').count(), 6);
+      assert.deepEqual(await page.locator('.docs-content ol').evaluateAll(nodes => nodes.map(e => e.start)), [1, 2, 3, 4, 5, 6]);
       assert.equal(await page.locator('.docs-content ol > li').count(), 6);
       assert.ok(await page.locator('.docs-content strong').count() > 0);
       const dimensions = await page.evaluate(() => ({
         width: innerWidth,
         scroll: document.documentElement.scrollWidth,
-        tables: [...document.querySelectorAll('.docs-table-scroll')].map(e => ({ client: e.clientWidth, scroll: e.scrollWidth })),
+        tables: [...document.querySelectorAll('.docs-table-source')].map(e => ({ client: e.clientWidth, scroll: e.scrollWidth })),
       }));
       assert.ok(dimensions.scroll <= width + 1, JSON.stringify({ width, theme, dimensions }));
-      const region = page.locator('.docs-table-scroll').first();
+      const region = page.locator('.docs-table-source').first();
       await region.focus();
       assert.equal(await region.evaluate(e => document.activeElement === e), true);
       if (width === 390) {
@@ -44,7 +46,7 @@ try {
         await page.waitForTimeout(200);
         assert.ok(await region.evaluate(e => e.scrollLeft) > 0);
       }
-      const code = page.locator('.docs-content pre[tabindex="0"]').first();
+      const code = page.locator('.docs-content pre[aria-label="Code"]').first();
       await code.focus();
       assert.equal(await code.evaluate(e => document.activeElement === e), true);
       assert.equal(await code.evaluate(e => getComputedStyle(e).whiteSpace), 'pre');
@@ -60,7 +62,7 @@ try {
       let tabReachedRegion = false;
       for (let n = 0; n < 90; n++) {
         await page.keyboard.press('Tab');
-        if (await page.evaluate(() => document.activeElement?.matches('.docs-table-scroll, .docs-content pre[tabindex="0"]'))) {
+        if (await page.evaluate(() => document.activeElement?.matches('.docs-table-source, .docs-content pre[aria-label="Code"]'))) {
           tabReachedRegion = true;
           break;
         }
@@ -76,7 +78,7 @@ try {
       assert.equal(await page.locator('#delete-a-canonical-record').count(), 1);
       assert.ok(await page.locator('#delete-a-canonical-record').evaluate(e => Math.abs(e.getBoundingClientRect().top) < 180));
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'CLI overflow');
-      evidence.push({ width, theme, javaScript: false, tables: 4, procedureItems: 6, keyboard: 'passed', cliFragment: 'passed', dimensions });
+      evidence.push({ width, theme, javaScript: false, tables: 0, tableSources: 4, procedureItems: 6, keyboard: 'passed', cliFragment: 'passed', dimensions });
       await context.close();
     }
   }

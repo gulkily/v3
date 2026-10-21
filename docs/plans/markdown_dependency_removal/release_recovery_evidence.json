@@ -1,0 +1,13 @@
+{
+  "php": "8.1.2-1ubuntu2.27",
+  "composerAtRuntime": false,
+  "dynamicStaticParity": "passed",
+  "staleSharedRefreshRetry": "passed",
+  "rendererFailure503": "passed",
+  "markdownVendorAbsent": true,
+  "failedBuildRetainsActiveRelease": "passed",
+  "completePackageRollbackAndRegeneration": "passed",
+  "staticBrowserScenarios": 8,
+  "staticDiscoveryScenarios": 8,
+  "root": "/tmp/markdown-release-fhmtnymk"
+}

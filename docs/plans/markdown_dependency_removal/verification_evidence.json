@@ -1,0 +1,100 @@
+{
+  "recorded_at": "2026-10-21T12:26:58.832038+00:00",
+  "command": "php tests/run.php",
+  "full_suite_exit": 1,
+  "full_suite": {
+    "run": 1398,
+    "passed": 1388,
+    "failed": 10,
+    "unqualified_pass": false
+  },
+  "failures": [
+    {
+      "test": "UserAccessTest::testHostServesRegeneratedMemberPagesAndNeverCachesAccessViews",
+      "message": "Documentation changed during publication; retry the build: docs/runbooks/production_deploy.md",
+      "classification": "concurrent documentation edit during verification",
+      "rerun": "passed with stable documentation",
+      "reason": "Publication snapshot guard detected production_deploy.md changing during the test; source documentation was then held stable."
+    },
+    {
+      "test": "ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest",
+      "message": "Failed asserting that output contains: This is your profile.",
+      "classification": "reproduced baseline",
+      "baseline_revision": "02512b8e",
+      "baseline_message": "Failed asserting that output contains: This is your profile."
+    },
+    {
+      "test": "AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts",
+      "message": "Failed asserting that output contains: Visible username:</strong> reply-agent",
+      "classification": "reproduced baseline",
+      "baseline_revision": "02512b8e",
+      "baseline_message": "Failed asserting that output contains: Visible username:</strong> reply-agent"
+    },
+    {
+      "test": "LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary",
+      "message": "Failed asserting that output contains: [2/4] Rendering shared pages (1/20): /.",
+      "classification": "reproduced baseline",
+      "baseline_revision": "02512b8e",
+      "baseline_message": "Failed asserting that output contains: [2/4] Rendering shared pages (1/20): /."
+    },
+    {
+      "test": "LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel",
+      "message": "Failed asserting that output contains: [1/2] Rendering shared pages (10/20): /tags/.",
+      "classification": "reproduced baseline",
+      "baseline_revision": "02512b8e",
+      "baseline_message": "Failed asserting that output contains: [1/2] Rendering shared pages (10/20): /tags/."
+    },
+    {
+      "test": "PrivateMessageReleaseIsolationTest::testStaticReleaseAndOfflineSnapshotExcludePrivateMailboxArtifacts",
+      "message": "Failed asserting that output does not contain: private_message_reader",
+      "classification": "reproduced baseline",
+      "baseline_revision": "02512b8e",
+      "baseline_message": "Failed asserting that output does not contain: private_message_reader"
+    },
+    {
+      "test": "OfflineReadingDiagnosticCommandTest::testDiagnoseReportsValidCliSnapshotAndBuildCommand",
+      "message": "Failed asserting that values are identical. Expected 0 but got 2.",
+      "classification": "workspace environment",
+      "rerun": "passed with explicit public fixture and absent private config",
+      "reason": "Workspace default access settings intentionally disable anonymous offline reading; clean baseline and explicit public fixture pass. No local privacy settings were changed."
+    },
+    {
+      "test": "OfflineReadingDiagnosticCommandTest::testDiagnosePrefersIndependentPublishedSnapshot",
+      "message": "Failed asserting that values are identical. Expected 0 but got 2.",
+      "classification": "workspace environment",
+      "rerun": "passed with explicit public fixture and absent private config",
+      "reason": "Workspace default access settings intentionally disable anonymous offline reading; clean baseline and explicit public fixture pass. No local privacy settings were changed."
+    },
+    {
+      "test": "OfflineReadingDiagnosticCommandTest::testDiagnoseHonorsEnvironmentStaticRootForSelectedProfile",
+      "message": "Failed asserting that values are identical. Expected 0 but got 2.",
+      "classification": "workspace environment",
+      "rerun": "passed with explicit public fixture and absent private config",
+      "reason": "Workspace default access settings intentionally disable anonymous offline reading; clean baseline and explicit public fixture pass. No local privacy settings were changed."
+    },
+    {
+      "test": "ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts",
+      "message": "Failed asserting that values are identical. Expected true but got false.",
+      "classification": "reproduced baseline",
+      "baseline_revision": "02512b8e",
+      "baseline_message": "Failed asserting that values are identical. Expected true but got false."
+    }
+  ],
+  "unclassified_failures": [],
+  "focused_docs": "28 passed (26 page/catalog plus 2 static); full suite also passed these checks",
+  "browser_scenarios": {
+    "dynamic_reader": 8,
+    "dynamic_discovery": 8,
+    "static_reader": 8,
+    "static_discovery": 8
+  },
+  "release_recovery": "passed: full/shared publication, actual dynamic/static parity, stale refresh, controlled renderer failure/503, failed-build retention, restored dependency-free package and regeneration",
+  "source_log_sha256": "ae15dcad0163d44e9e8b24be645132451eb10d1410fabcdff61a100c9adbe886",
+  "raw_log": "/tmp/markdown-stage3-full-suite.log",
+  "baseline_scope": "Clean starting revision 02512b8e in isolated temporary repository; exact assertion messages matched. Historical bundle reconstructed only in temporary baseline, not the current project tree; temporary repository disposed after verification.",
+  "limits": [
+    "No production activation or shared-history publication.",
+    "Shared-history/copy cleanup remains pending.",
+    "Current restored formatting has the limitations documented in render_comparison.md."
+  ]
+}

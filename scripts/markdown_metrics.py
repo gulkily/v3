@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Frozen-corpus Markdown syntax candidates plus actual renderer/optional reference AST metrics.
+"""Frozen-corpus Markdown syntax candidates plus actual renderer metrics; archived reference AST counts.
 
 No dependencies. Candidate counts are NOT a Markdown conformance parser: source and
 AST totals are reported independently, with ambiguity explicit. Git freezes source
@@ -109,9 +109,11 @@ def php(args, data=None):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--baseline', type=Path, help='Reuse frozen source corpus/revision from a previous report')
-    ap.add_argument('--reference', action='store_true', help='Count AST nodes with the existing pre-removal bundle')
+    ap.add_argument('--reference', action='store_true', help='Historical option; reference results were archived before removal')
     ap.add_argument('--output', type=Path, required=True)
     args = ap.parse_args()
+    if args.reference:
+        ap.error('Reference runtime removed; use the archived render_baseline.json evidence. No dependency installation is supported.')
     before = json.loads(args.baseline.read_text()) if args.baseline else None
     revision = before['corpus_revision'] if before else subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     if before:

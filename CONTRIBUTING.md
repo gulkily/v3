@@ -48,3 +48,33 @@ When making a read-model schema change, the same change set must:
 
 Do not rely on a repository-head change to rebuild deployed read models: the
 canonical-record repository and application code can be deployed separately.
+
+## Third-party dependencies and copied code
+
+Prefer existing project code and supported platform facilities. Before adding or
+updating any external library, framework, plugin, asset, copied source, generated
+vendor tree, package-manager manifest/lock or externally hosted runtime component,
+disclose the exact proposed change and obtain explicit user approval for that
+dependency change. This covers runtime, build and development dependencies, direct
+and transitive packages, and delivery through downloads, CDNs, subtrees or submodules.
+
+Present component names, versions, full resolved transitive additions/changes,
+purpose, origin, licenses, delivery method, affected paths, approximate size/file
+count, maintenance obligations, and a dependency-free alternative or reduced scope.
+A formatting/functionality request, generic Approved Step N, successful tests,
+permissive license or instruction to reuse components does not substitute for this
+approval. Explicit dependency approval may accompany a step approval; record its
+scope in the plan and carry it forward without asking again for the same approved
+action. A changed dependency tree or delivery method requires renewed approval for
+that change. Existing approved dependencies may be used within their approved scope;
+their presence does not authorize additional packages or upgrades.
+
+Research may inspect metadata and run disposable evaluations outside the repository
+using existing approved tools. Do not copy or install an evaluated component into
+the repository, load it into the application, commit it or publish it until approved.
+Temporary evaluations must not alter project manifests, locks or generated artifacts.
+
+Before completion, compare actual file/manifest/lock changes against the approved
+inventory and report the dependency delta, including zero. With Railspike, include
+the inventory and explicit approval record in the approved planning artifact; do not
+leave the decision solely in linked evaluation notes.

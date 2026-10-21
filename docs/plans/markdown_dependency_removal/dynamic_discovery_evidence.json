@@ -1,0 +1,186 @@
+{
+  "targets": [
+    [
+      "dynamic",
+      "http://127.0.0.1:47265"
+    ],
+    [
+      "static",
+      "http://127.0.0.1:8185"
+    ]
+  ],
+  "evidence": [
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "default",
+      "launcher": null,
+      "subnav": null,
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "passed",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "word97",
+      "launcher": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "subnav": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "chicago",
+      "launcher": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "subnav": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 1280,
+      "theme": "midnight",
+      "launcher": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "subnav": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "default",
+      "launcher": null,
+      "subnav": null,
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "word97",
+      "launcher": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "subnav": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "chicago",
+      "launcher": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "subnav": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    },
+    {
+      "mode": "dynamic",
+      "width": 390,
+      "theme": "midnight",
+      "launcher": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "subnav": {
+        "image": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='10' height='14' fill='%23000080'/><rect x='4' y='2' width='8' height='12' fill='%23ffffff'/><rect x='5' y='4' width='6' height='1' fill='%23808080'/><rect x='5' y='6' width='6' height='1' fill='%23808080'/><rect x='5' y='8' width='6' height='1' fill='%23808080'/><rect x='5' y='10' width='4' height='1' fill='%23808080'/><rect x='11' y='1' width='2' height='2' fill='%23c0c0c0'/></svg>\")",
+        "width": "16px",
+        "height": "16px",
+        "content": "\"\""
+      },
+      "keyboardSearchReturn": "passed",
+      "historyEmptyReset": "passed",
+      "inertAssets": "passed",
+      "headers": "passed",
+      "missingRetry": "passed",
+      "searchIndexRetry": "shared path",
+      "overflow": "passed"
+    }
+  ]
+}

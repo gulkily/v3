@@ -1,13 +1,13 @@
 # Markdown render measurement baseline
 
-Corpus: 1,312 tracked, eligible Markdown documents at `c3f3653a199997a1e2fc7bbcac7da21d95ce3649`. Only tracked eligible files from the catalog are included; untracked notes and non-Markdown formats are excluded. No render errors. Source is frozen through Git, identified by path/hash; reports retain no source or rendered HTML. Rerun before dependency removal:
+Corpus: 1,312 tracked, eligible Markdown documents at `c3f3653a199997a1e2fc7bbcac7da21d95ce3649`. Only tracked eligible files from the catalog are included; untracked notes and non-Markdown formats are excluded. No render errors. Source is frozen through Git, identified by path/hash; reports retain no source or rendered HTML. Historical command used before dependency removal (reference mode is now retired):
 
 ```sh
 python3 scripts/markdown_metrics.py --reference --output /tmp/render-baseline.json
 python3 -B tests/markdown_metrics_test.py
 ```
 
-After restoration, use `--baseline docs/plans/markdown_dependency_removal/render_baseline.json` and omit `--reference`. This reuses the original source bytes, not newly edited documents. The probe's optional reference mode requires the pre-removal bundle and is not part of the application. Archived baseline evidence remains readable without it.
+After restoration, use `--baseline docs/plans/markdown_dependency_removal/render_baseline.json` and omit `--reference`. This reuses the original source bytes, not newly edited documents. The archived Stage 1 probe captured the reference AST before removal; current tooling rejects reference mode and never reinstalls the bundle. Archived baseline evidence remains readable without it. Historical rewriting must carry the old/new corpus revision mapping so frozen source can still be located after commit IDs change.
 
 ## Count interpretation and validation
 
@@ -17,31 +17,31 @@ The mixed hand-counted fixture in `tests/markdown_metrics_test.py` validates rep
 
 ## Semantic reference counts
 
-| Parser node type | Uses |
-| --- | ---: |
-| BlockQuote | 657 |
-| Code | 31151 |
-| Document | 1312 |
-| Emphasis | 314 |
-| FencedCode | 323 |
-| Heading | 10750 |
-| HtmlBlock | 15 |
-| HtmlInline | 6 |
-| IndentedCode | 1 |
-| Link | 3972 |
-| ListBlock | 12541 |
-| ListItem | 41482 |
-| Newline | 8766 |
-| Paragraph | 49556 |
-| Strikethrough | 1 |
-| Strong | 4926 |
-| Table | 93 |
-| TableCell | 2555 |
-| TableRow | 759 |
-| TableSection | 185 |
-| TaskListItemMarker | 1012 |
-| Text | 106506 |
-| ThematicBreak | 18 |
+| Parser node type | Uses | Documents |
+| --- | ---: | ---: |
+| BlockQuote | 657 | 630 |
+| Code | 31151 | 1171 |
+| Document | 1312 | 1312 |
+| Emphasis | 314 | 90 |
+| FencedCode | 323 | 85 |
+| Heading | 10750 | 1311 |
+| HtmlBlock | 15 | 4 |
+| HtmlInline | 6 | 6 |
+| IndentedCode | 1 | 1 |
+| Link | 3972 | 727 |
+| ListBlock | 12541 | 1294 |
+| ListItem | 41482 | 1294 |
+| Newline | 8766 | 191 |
+| Paragraph | 49556 | 1312 |
+| Strikethrough | 1 | 1 |
+| Strong | 4926 | 884 |
+| Table | 93 | 55 |
+| TableCell | 2555 | 55 |
+| TableRow | 759 | 55 |
+| TableSection | 185 | 55 |
+| TaskListItemMarker | 1012 | 44 |
+| Text | 106506 | 1312 |
+| ThematicBreak | 18 | 4 |
 
 ## Source syntax candidates
 
