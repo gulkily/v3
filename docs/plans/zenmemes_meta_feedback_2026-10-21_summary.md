@@ -30,7 +30,7 @@ These reports have no verified resolution in this compilation.
 | --- | --- | --- | --- | --- |
 | 01 | Investigate the multiple causes of the home-page post form intermittently jumping up and down; use a rubber-duck root-cause review. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.75 | Open — resolution not verified |
 | 02 | Keep the textarea’s top, left, and right edges fixed when the composer expands. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.25 | Open — resolution not verified |
-| 03 | Keep the composer collapsed on page load, even when the textarea contains saved text. | [reply-20261021180138-eddd96a4](https://zenmemes.com/posts/reply-20261021180138-eddd96a4) | 0.15 | Open — resolution not verified |
+| 03 | Keep the composer collapsed on page load, even when the textarea contains saved text. | [reply-20261021180138-eddd96a4](https://zenmemes.com/posts/reply-20261021180138-eddd96a4) | 0.15 | Home-page fix implemented and locally verified — [checks and limits](ui_copy_audit_checklist.md#saved-home-page-draft-stays-collapsed--october-21-2026); deployment pending |
 | 04 | Investigate and reduce the many-second delay before a posted reply produces a visible response on the live site. | [reply-20261021175854-431cbb06](https://zenmemes.com/posts/reply-20261021175854-431cbb06) | 1.5 | Open — resolution not verified |
 | 05 | Investigate and fix QDB returning “temporarily busy.” | [reply-20261021180434-90201f38](https://zenmemes.com/posts/reply-20261021180434-90201f38) | 0.75 | Open — resolution not verified |
 

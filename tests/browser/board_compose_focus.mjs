@@ -66,12 +66,21 @@ try {
  for (const width of [390,1280]) {
   await page.setViewportSize({width,height:844});
   for(const theme of ['light','word97','chicago','midnight']) {
+   const restoredDraft='Saved draft '+theme+' '+width+' '+('long draft content '.repeat(30));
+   await page.evaluate(text=>localStorage.setItem('forum_compose_draft:thread',JSON.stringify({fields:{body:text}})),restoredDraft);
    await page.goto(base+'/');
    await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
    await page.addStyleTag({content:readFileSync(join(project,'public/assets/theme-'+theme+'.css'),'utf8')});
    const composer=page.locator('[data-inline-thread-compose]');
    const body=composer.locator('textarea[name="body"]');
    const actions=composer.locator('.compose-form-actions');
+   await page.waitForFunction(text=>document.querySelector('[data-inline-thread-compose] textarea[name="body"]').value===text,restoredDraft);
+   assert.equal(await body.inputValue(),restoredDraft);
+   await page.evaluate(()=>{
+    window.dispatchEvent(new PageTransitionEvent('pageshow'));
+    document.querySelector('[data-inline-thread-compose] [data-role="compose-identity-status"]').dataset.kind='ok';
+   });
+   await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='0');
    assert.equal(await composer.locator('textarea').count(),1);
    assert.equal(await composer.locator('summary').count(),1,'only the secondary-action menu summary remains');
    assert.equal(await page.locator('[data-inline-reply-trigger]').count(),0);
@@ -87,6 +96,7 @@ try {
    await body.click();
    await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='1');
    assert.equal(await actions.isVisible(),true);
+   assert.equal(await body.inputValue(),restoredDraft,'opening preserves the entire restored draft');
    assert.ok((await body.boundingBox()).height>collapsedHeight+4,'the prompt expands into a taller editor');
    if(process.env.BOARD_SCREENSHOTS) await page.screenshot({path:process.env.BOARD_SCREENSHOTS+'/'+theme+'-'+width+'-expanded.png'});
    assert.deepEqual(await page.evaluate(()=>({same:editor===document.activeElement,focus:focusCalls,scroll:scrollCalls,events:focusEvents.length})),{same:true,focus:0,scroll:0,events:1});
@@ -101,7 +111,7 @@ try {
    await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='0');
    assert.equal(await actions.isVisible(),false);
    assert.equal((await body.boundingBox()).height,collapsedHeight,'empty focus exit restores the compact editor');
-   console.log('PASS single board editor, direct first focus, no scripted scroll, draft/selection, empty collapse: '+theme+' '+width);
+   console.log('PASS restored draft stays collapsed, direct first focus, no scripted scroll, draft/selection, empty collapse: '+theme+' '+width);
   }
  }
  await page.setViewportSize({width:390,height:844});

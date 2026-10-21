@@ -141,12 +141,14 @@
     const form = composer.querySelector('[data-compose-form]');
     const body = form && form.querySelector('textarea[name="body"]');
     if (!body) return;
+    let engaged = false;
 
     function sync() {
       const editing = composer.contains(document.activeElement);
+      if (editing) engaged = true;
       const attached = form.__imagePickerOpen || window.ForumImageUpload?.has(form);
       const warning = composer.querySelector('[data-kind="error"], [data-role="compose-field-normalization-status"]:not([hidden])');
-      composer.dataset.inlineThreadExpanded = editing || hasReplyBody(composer) || attached || warning ? '1' : '0';
+      composer.dataset.inlineThreadExpanded = editing || (engaged && hasReplyBody(composer)) || attached || warning ? '1' : '0';
     }
 
     // The browser focuses the actual editor directly. Never transfer focus or

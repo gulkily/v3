@@ -179,3 +179,9 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Removed routine “Browser identity ready” copy and hid empty status containers. Pending, failure, technical-details recovery, and explicit Account outcomes remain visible when needed.
 - Verification: 88 browser-signing, lazy-compose, and identity-diagnostics checks passed. Chromium checks passed for 24 standalone composer route/theme/viewport/permission cases and 32 shared board, expanded inline-reply, paned New Thread, and QDB Add Quote cases at 390px/1280px across Light, Word97, Chicago, and Midnight. Checked empty/loaded readiness, focus, preserved drafts, pending/failure-to-ready transitions, stale technical-details cleanup, action geometry, and page overflow. Explicit Account feedback, both Outbox saves, and real signed thread/reply publication passed. Inspected the expanded Midnight phone screenshot. Syntax and diff checks passed.
 - Limitations: browser checks use local fixtures and emulated viewports; physical phones and production were not checked. Deployment and the source-comment closeout remain pending. Separate composer focus/jumping requests are not resolved by this change.
+
+## Saved home-page draft stays collapsed — October 21, 2026
+
+- [x] Bug 03: restored home-page drafts stay compact until focused. Text, selection, empty-collapse, warning, and attachment behavior are preserved. No UI text or controls added; inline reply behavior is unchanged.
+- Verification: 85 signing/lazy-compose checks and Chromium/Firefox/WebKit at 390px/1280px across Light, Word97, Chicago, and Midnight passed. Covered long restored drafts, background status/pageshow, focus, overflow, failure/retry, signed publication, and no-script controls. Inspected phone collapsed and desktop expanded screenshots; syntax/diff checks passed.
+- Pending: physical-phone and production checks, deployment, source-comment reply. Other composer-jumping reports remain separate.
