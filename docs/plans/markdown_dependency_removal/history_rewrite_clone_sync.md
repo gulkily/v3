@@ -38,6 +38,84 @@ fresh remote/local ref snapshot and resolves every local-only branch, stash and
 detached commit with the user. Confirm the scope of other deployment clones,
 forks, backups and hosted retention before declaring historical removal complete.
 
+## Preservation checklist before the rewrite
+
+Based on the recorded inventory, not a fresh audit. Check an item only after
+confirming where its work is preserved. Keep private files and unapproved planning
+drafts outside Git when appropriate; a stash alone is not a durable handoff.
+No deletion, reset or rewrite is authorized by this checklist.
+
+### `~/v3`
+
+- [ ] Review all 149 local branches; integrate or push every commit to retain and verify it exists on GitHub.
+- [ ] Recheck tracked and untracked working files; primary checkout was clean at inventory time.
+- [ ] Review all 4 stashes, including any untracked content; apply and preserve needed changes or record an explicit discard decision.
+- [ ] Inspect linked worktree `/home/wsl/.codex/worktrees/1ee8/v3` for modified/untracked files and detached commits; preserve needed work in reviewed files or a pushed branch.
+- [ ] Bring retained work up to current main, push it, and verify the resulting remote commits.
+
+### `~/agent/v3-claude`
+
+- [ ] Review all 103 local branches; integrate or push every commit to retain and verify it exists on GitHub.
+- [ ] Preserve working files: `M docs/plans/effort_estimation_trial.md`.
+- [ ] Preserve working files: `?? docs/plans/instance_content_push_debug_log.md`.
+- [ ] Preserve working files: `?? docs/plans/instance_content_push_step1_solution_assessment.md`.
+- [ ] Review all 2 stashes, including any untracked content; apply and preserve needed changes or record an explicit discard decision.
+- [ ] Bring retained work up to current main, push it, and verify the resulting remote commits.
+
+### `~/agent/v3-claude-2`
+
+- [ ] Review all 20 local branches; integrate or push every commit to retain and verify it exists on GitHub.
+- [ ] Recheck tracked and untracked working files; primary checkout was clean at inventory time.
+- [ ] Confirm no new stashes have been created (none recorded).
+- [ ] Bring retained work up to current main, push it, and verify the resulting remote commits.
+
+### `~/agent/v3-codex`
+
+- [ ] Review all 43 local branches; integrate or push every commit to retain and verify it exists on GitHub.
+- [ ] Preserve working files: `?? docs/plans/markdown_renderer_extension_debug_log.md`.
+- [ ] Preserve working files: `?? docs/plans/markdown_renderer_extension_step1_solution_assessment.md`.
+- [ ] Review all 1 stashes, including any untracked content; apply and preserve needed changes or record an explicit discard decision.
+- [ ] Inspect linked worktree `/home/wsl/.codex/worktrees/39c4/v3-codex` for modified/untracked files and detached commits; preserve needed work in reviewed files or a pushed branch.
+- [ ] Inspect linked worktree `/home/wsl/.codex/worktrees/7bff/v3-codex` for modified/untracked files and detached commits; preserve needed work in reviewed files or a pushed branch.
+- [ ] Inspect linked worktree `/home/wsl/.codex/worktrees/d69d/v3-codex` for modified/untracked files and detached commits; preserve needed work in reviewed files or a pushed branch.
+- [ ] Confirm missing worktree `/tmp/forum-image-baseline` has no recoverable work; record disposition of its stale registration.
+- [ ] Bring retained work up to current main, push it, and verify the resulting remote commits.
+
+### `~/agent/v3-codex-2`
+
+- [ ] Review all 24 local branches; integrate or push every commit to retain and verify it exists on GitHub.
+- [ ] Recheck tracked and untracked working files; primary checkout was clean at inventory time.
+- [ ] Confirm no new stashes have been created (none recorded).
+- [ ] Confirm missing worktree `/tmp/case-tags-baseline` has no recoverable work; record disposition of its stale registration.
+- [ ] Bring retained work up to current main, push it, and verify the resulting remote commits.
+
+### `~/agent/v3-codex-3`
+
+- [ ] Review all 13 local branches; integrate or push every commit to retain and verify it exists on GitHub.
+- [ ] Preserve working files: `M docs/plans/effort_estimation_trial.md`.
+- [ ] Preserve working files: `?? docs/plans/feature_flags_security_review_cleanup_debug_log.md`.
+- [ ] Preserve working files: `?? docs/plans/feature_flags_security_review_cleanup_step1_solution_assessment.md`.
+- [ ] Confirm no new stashes have been created (none recorded).
+- [ ] Bring retained work up to current main, push it, and verify the resulting remote commits.
+
+### `~/agent/v3-codex-4`
+
+- [ ] Review all 1 local branches; integrate or push every commit to retain and verify it exists on GitHub.
+- [ ] Preserve working files: `?? docs/plans/lcd_color_choices_debug_log.md`.
+- [ ] Preserve working files: `?? docs/plans/lcd_color_choices_mockups/`.
+- [ ] Preserve working files: `?? docs/plans/lcd_color_choices_step1_solution_assessment.md`.
+- [ ] Confirm no new stashes have been created (none recorded).
+- [ ] Inspect linked worktree `/home/wsl/.codex/worktrees/36b7/v3-codex-4` for modified/untracked files and detached commits; preserve needed work in reviewed files or a pushed branch.
+- [ ] Bring retained work up to current main, push it, and verify the resulting remote commits.
+
+### Final handoff
+
+- [ ] Verify required private configuration and runtime data are preserved locally without committing secrets.
+- [ ] Account for every retained branch, stash, untracked file and detached worktree across all seven repositories.
+- [ ] Confirm all intended pushes are complete and pause agents, scheduled Git jobs and collaborator writes.
+- [ ] Tell the assistant consolidation is complete; request a fresh inventory to confirm nothing was missed.
+- [ ] Review the synchronization procedure and give OK before the rewrite begins.
+
 ## Rewrite and publication
 
 Use an isolated repository to rehearse removal without modifying these working

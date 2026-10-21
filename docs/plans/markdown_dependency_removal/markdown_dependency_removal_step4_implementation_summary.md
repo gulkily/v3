@@ -47,3 +47,11 @@ Debug mode: enabled
 - Changes: [clone synchronization runbook](./history_rewrite_clone_sync.md) and refreshed [local inventory](./history_cleanup_inventory.json). Actual clone pattern is `~/agent/v3-*`; `~/agents/v3-*` matched nothing. Stage 3 commit: `957e786a`. Preserved subsequent external commit `eb5d49da` and the two untracked deferred extension plans.
 - Verification: read-only status/branch/stash/shared-Git/worktree inventories of seven repositories; document links and `git diff --check`. Runtime/UI tests inapplicable to this coordination-only update. Linked-worktree contents and local branch reachability require a fresh audit at the freeze; stale tracking refs do not establish that work is pushed.
 - Outcome: waiting for user consolidation and OK. Rewrite rehearsal, concrete replacement-ref review, publication and clone cleanup remain pending; this preparation does not complete Stage 4.
+
+## Stage 4 preparation - Preservation checklist refinement
+
+- Request: turn the consolidation/push prerequisites into a checklist.
+- Disposition: in-scope documentation refinement; authorized by the user's request.
+- Changes: added unchecked per-clone working-file, stash, branch and linked-worktree preservation items and final freeze/OK handoff to the synchronization runbook, using the recorded inventory without claiming a fresh audit. Previous preparation commit: `e6686747`.
+- Verification: checklist covers all seven recorded primary repositories, all recorded working-file entries, stashes and linked worktrees; `git diff --check`. Runtime tests inapplicable to this documentation-only refinement.
+- Outcome: checklist saved; no preservation items marked complete and no clone/history mutations performed. Rewrite remains pending user OK.
