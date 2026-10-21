@@ -304,6 +304,8 @@ pre {
 }
 [data-palette-chip="green"] { --lcd-chip: #a2b578; }
 [data-palette-chip="amber"], :root[data-lcd-palette="amber"] { --lcd-chip: #b6ab8b; }
+[data-palette-chip="purple"], :root[data-lcd-palette="purple"] { --lcd-chip: #aaa1b7; }
+[data-palette-chip="gray"], :root[data-lcd-palette="gray"] { --lcd-chip: #acb5aa; }
 .lcd-palette__trigger:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;

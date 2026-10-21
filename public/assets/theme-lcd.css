@@ -2,13 +2,20 @@
 :root[data-theme="lcd"],
 .theme-menu__option[data-theme-option="lcd"] {
   color-scheme: light;
+  --lcd-detail: rgba(39, 50, 32, 0.08);
+  --lcd-header-line: rgba(39, 50, 32, 0.18);
+  --lcd-header-tint: rgba(197, 209, 164, 0.1);
+  --lcd-swatch-light: #dce6b8;
+  --lcd-swatch-dark: #ced9ac;
+  --lcd-swatch-line: #59684b;
+  --lcd-swatch-inset: #bcc99a;
   --page-bg: #c5d1a4;
   --body-background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(108, 125, 80, 0.08) 100%),
     #c5d1a4;
   --ink: #273220;
-  --ink-soft: #56634a;
-  --line: #6e7f59;
+  --ink-soft: #424f38;
+  --line: #61724d;
   --panel: rgba(215, 225, 181, 0.92);
   --input-bg: #dfe8bc;
   --button-bg: #d4ddb0;
@@ -17,7 +24,7 @@
   --feedback-error-bg: #e4d3b1;
   --status-error: #5f3d1c;
   --status-ok: #284d28;
-  --status-warning: #745110;
+  --status-warning: #6d4b10;
   --active-bg: #b6c38f;
   --active-ink: #1f2919;
   --active-line: #4f6040;
@@ -31,11 +38,11 @@
   background:
     repeating-linear-gradient(
       180deg,
-      #dce6b8 0 3px,
-      #ced9ac 3px 6px
+      var(--lcd-swatch-light) 0 3px,
+      var(--lcd-swatch-dark) 3px 6px
     );
-  border-color: #59684b;
-  box-shadow: inset 0 0 0 0.22rem #bcc99a;
+  border-color: var(--lcd-swatch-line);
+  box-shadow: inset 0 0 0 0.22rem var(--lcd-swatch-inset);
 }
 
 :root[data-theme="lcd"] body {
@@ -56,14 +63,14 @@
 :root[data-theme="lcd"] textarea,
 :root[data-theme="lcd"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
   border-radius: 2px;
-  box-shadow: inset 0 0 0 1px rgba(39, 50, 32, 0.08);
+  box-shadow: inset 0 0 0 1px var(--lcd-detail);
 }
 
 :root[data-theme="lcd"] .site-header {
   padding: 0.6rem 0.7rem 1rem;
-  border: 1px solid rgba(39, 50, 32, 0.18);
+  border: 1px solid var(--lcd-header-line);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(197, 209, 164, 0.1) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, var(--lcd-header-tint) 100%);
 }
 
 :root[data-theme="lcd"] .eyebrow {
@@ -75,11 +82,18 @@
 }
 
 :root[data-theme="lcd"][data-lcd-palette="amber"] {
+  --lcd-detail: #332f2414;
+  --lcd-header-line: #332f242e;
+  --lcd-header-tint: #cdc5ae1a;
+  --lcd-swatch-light: #e2dcc7;
+  --lcd-swatch-dark: #d1c9b0;
+  --lcd-swatch-line: #62583b;
+  --lcd-swatch-inset: #c5ba9b;
   --page-bg: #cdc5ae;
   --body-background: linear-gradient(180deg, #ffffff38, #7d755014), #cdc5ae;
   --ink: #332f24;
-  --ink-soft: #5c5646;
-  --line: #79715d;
+  --ink-soft: #494335;
+  --line: #6b634f;
   --panel: #ded7c3;
   --input-bg: #e8e2d0;
   --button-bg: #dcd4bd;
@@ -98,3 +112,73 @@
 :root[data-theme="lcd"] .theme-menu { margin-left: 2.5rem; }
 
 :root[data-theme="lcd"] .lcd-palette { display: block; }
+
+:root[data-theme="lcd"][data-lcd-palette="purple"] {
+  --lcd-detail: #322d3a14;
+  --lcd-header-line: #322d3a2e;
+  --lcd-header-tint: #cac4d11a;
+  --lcd-swatch-light: #dfd9e5;
+  --lcd-swatch-dark: #cec7d6;
+  --lcd-swatch-line: #695e78;
+  --lcd-swatch-inset: #bdb3c8;
+  --page-bg: #cac4d1;
+  --body-background: linear-gradient(180deg, #ffffff38, #75658014), #cac4d1;
+  --ink: #322d3a;
+  --ink-soft: #494052;
+  --line: #6e627a;
+  --panel: #ddd7e3;
+  --input-bg: #e9e3ee;
+  --button-bg: #dad2e1;
+  --button-alt-bg: #cdc3d6;
+  --feedback-ok-bg: #dadfcf;
+  --feedback-error-bg: #e5d2dc;
+  --status-error: #68334d;
+  --status-ok: #354b31;
+  --status-warning: #654817;
+  --active-bg: #bab0c6;
+  --active-ink: #2e2738;
+  --active-line: #655474;
+  --active-ring: #322d3a29;
+}
+
+:root[data-theme="lcd"][data-lcd-palette="gray"] {
+  --lcd-detail: #2d332e14;
+  --lcd-header-line: #2d332e2e;
+  --lcd-header-tint: #c5c8c41a;
+  --lcd-swatch-light: #dce0d9;
+  --lcd-swatch-dark: #cdd2ca;
+  --lcd-swatch-line: #616b61;
+  --lcd-swatch-inset: #b8c0b5;
+  --page-bg: #c5c8c4;
+  --body-background: linear-gradient(180deg, #ffffff38, #68766814), #c5c8c4;
+  --ink: #2d332e;
+  --ink-soft: #424c43;
+  --line: #647065;
+  --panel: #d7dbd6;
+  --input-bg: #e7eae5;
+  --button-bg: #d4dad3;
+  --button-alt-bg: #c6cec5;
+  --feedback-ok-bg: #d9e2d4;
+  --feedback-error-bg: #e3d4d0;
+  --status-error: #643a32;
+  --status-ok: #304c32;
+  --status-warning: #614817;
+  --active-bg: #b2bcb1;
+  --active-ink: #293229;
+  --active-line: #586658;
+  --active-ring: #2d332e29;
+}
+
+:root[data-theme="lcd"] :is(input, textarea, button, a, summary):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+:root[data-theme="lcd"] .theme-menu__option:focus-visible {
+  outline-offset: -2px;
+}
+
+:root[data-theme="lcd"] :is(input, textarea)::placeholder {
+  color: var(--ink-soft);
+  opacity: 1;
+}
