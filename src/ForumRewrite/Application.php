@@ -437,6 +437,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_high_traffic' || $path === '/api/finalize_high_traffic') {
+            $this->toolsPageController()->highTrafficApi($method,$query,$path === '/api/finalize_high_traffic');
+            return;
+        }
+
         if ($path === '/api/prepare_fastmod_rubrics' || $path === '/api/finalize_fastmod_rubrics') {
             $this->toolsPageController()->fastmodChangeApi($method, $query, $path === '/api/finalize_fastmod_rubrics');
             return;

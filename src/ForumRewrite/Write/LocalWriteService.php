@@ -2179,6 +2179,37 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    /** Signed instance-local routing action; never replicated as a canonical site flag. */
+    public function changeHighTraffic(array $input, string $operatorIdentityId, string $projectRoot, bool $finalize): array
+    {
+        return $this->withTimedWriteLock(function () use ($input,$operatorIdentityId,$projectRoot,$finalize): array {
+            $operatorIdentityId=$this->requireOpenPgpIdentityId($operatorIdentityId,'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot,$operatorIdentityId)) throw new RuntimeException('High-traffic changes require an approved operator identity.');
+            $cache=new \ForumRewrite\Host\HighTrafficCache($projectRoot,$this->repositoryRoot,$this->databasePath,getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $projectRoot . '/public');
+            $mode=new \ForumRewrite\Host\HighTrafficMode($cache);
+            if (!$finalize) {
+                $enabled=$this->requireBooleanValue($input['enabled'] ?? null,'enabled');
+                $record=json_encode(['action'=>'high-traffic','operator'=>$operatorIdentityId,'enabled'=>$enabled,
+                    'generation'=>$cache->state()['generation'],'nonce'=>bin2hex(random_bytes(16))],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
+                return $this->storePreparedPost('private/high-traffic',$record,['kind'=>'high-traffic','operator_identity_id'=>$operatorIdentityId])
+                    + ['status'=>'ok','canonical_record'=>$record];
+            }
+            $token=$this->requireHexToken((string)($input['prepare_token'] ?? ''),'prepare_token');
+            $prepared=$this->loadPreparedPost($token);$record=(string)($input['canonical_record'] ?? '');
+            if (($prepared['kind'] ?? '')!=='high-traffic' || ($prepared['operator_identity_id'] ?? '')!==$operatorIdentityId
+                || strtotime((string)($prepared['expires_at'] ?? ''))<time() || $record===''
+                || !hash_equals((string)$prepared['canonical_sha256'],hash('sha256',$record))) throw new RuntimeException('Prepared mode change is invalid or expired.');
+            [$key,$fingerprint]=$this->publicKeyForIdentity($operatorIdentityId);
+            $signature=$this->normalizeAsciiBody((string)($input['detached_signature'] ?? ''),'detached_signature');
+            if (!$this->signatureVerifier->verifyDetached($key,$record,$signature,$fingerprint)['ok']) throw new RuntimeException('Detached signature verification failed.');
+            $action=json_decode($record,true,512,JSON_THROW_ON_ERROR);
+            if ($action['generation']!==$cache->state()['generation']) throw new RuntimeException('Mode state changed. Reload and retry.');
+            $result=$mode->change($action['enabled'],'Signed operator action by ' . $operatorIdentityId);
+            $this->deletePreparedPost($token);
+            return ['status'=>'ok']+$result;
+        });
+    }
+
     public function prepareFeatureFlagChange(array $input, string $operatorIdentityId): array
     {
         return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
@@ -3147,7 +3178,7 @@ class LocalWriteService
     {
         $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
             $this->recoverSignedReactionWrites();
-            return \ForumRewrite\Retraction\PublicationGuard::lock($this->repositoryRoot)->withExclusiveLock($callback);
+            return \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot,$callback);
         });
         $result = $locked['result'];
         if (($result['commit_sha'] ?? null) !== null && $this->enqueueOfflineSnapshotPublication !== null) {
