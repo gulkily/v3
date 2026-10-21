@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [LCD color choices](lcd_color_choices/)
+
 - [Documentation discovery](docs_discovery/)
 - [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 
