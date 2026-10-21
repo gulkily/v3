@@ -7,6 +7,7 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . "/AccessHistoryPresenterTest.php",
     __DIR__ . "/FastmodTaggingFlagTest.php",
     __DIR__ . "/FastmodMetaTest.php",
     __DIR__ . '/RetractionSweepTest.php',

@@ -24,7 +24,7 @@ try {
   const base = `http://127.0.0.1:${port}`;
   server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/invite_browser_router.php')], {
     env: { ...process.env, INVITE_TEST_ROOT: root, FORUM_SECRETS_PATH: join(root, 'unused.php'), FORUM_APPROVED_MEMBERS_ONLY: 'false',
-      FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL: 'false', PRIVATE_MESSAGE_DATABASE_PATH: join(root, 'private/messages.sqlite3'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') }, stdio: ['ignore', 'ignore', 'pipe'] });
+      PRIVATE_MESSAGE_DATABASE_PATH: join(root, 'private/messages.sqlite3'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') }, stdio: ['ignore', 'ignore', 'pipe'] });
   server.stderr.on('data', data => { logs += data; });
   for (let i = 0; i < 60; i++) { try { await fetch(base + '/api/version'); break; } catch { await new Promise(resolve => setTimeout(resolve, 100)); } }
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', args: ['--no-sandbox'] });
@@ -37,6 +37,8 @@ try {
   page.on('request', request => { if (request.url().includes('forte_activity_')) activityDebug.push(request.url()); });
   await page.goto(base + '/account/key/');
   await page.waitForFunction(() => document.querySelector('[data-private-site-auth-state]').dataset.authenticatedIdentityId !== '');
+  await page.goto(base+'/tools/user-access/');
+  await page.getByText('No access changes recorded yet.').waitFor();
   const security = '/activity/?view=security';
   await context.clearCookies();
   await context.addCookies([{name:'identity_hint', value:'openpgp:'+fingerprint, url:base}]);
@@ -66,7 +68,25 @@ try {
   await outside.getByText('Restore or choose an operator account, then return here and try again.').waitFor();
   assert.equal(new URL(outside.url()).origin,base);
   await outsider.close();
-  console.log('PASS access history: hint-only denial/no-store, sign-in failure/retry, real signed authentication, expiry recovery, keyless and unsafe-return handling');
+  const privateKey = await pgp.readPrivateKey({armoredKey:operator.privateKey});
+  async function changePolicy(value) {
+    const prepared=await (await context.request.post(base+'/api/prepare_feature_flag_change',{form:{key:'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL',value:String(value)}})).json();
+    assert.equal(prepared.status,'ok',JSON.stringify(prepared));
+    const signature=await pgp.sign({message:await pgp.createMessage({text:prepared.canonical_record}),signingKeys:privateKey,detached:true});
+    const result=await (await context.request.post(base+'/api/finalize_feature_flag_change',{form:{prepare_token:prepared.prepare_token,record_id:prepared.record_id,record_path:prepared.record_path,canonical_record:prepared.canonical_record,detached_signature:signature}})).json();
+    assert.equal(result.status,'ok',JSON.stringify(result));
+  }
+  for(let i=0;i<5;i++) await changePolicy(i%2===1);
+  await page.goto(base+'/tools/user-access/');
+  assert.equal(await page.locator('.access-history-event').count(),5);
+  assert.equal(await page.getByRole('link',{name:'View all',exact:true}).count(),0);
+  await changePolicy(true); await page.reload();
+  assert.equal(await page.locator('.access-history-event').count(),5);
+  await page.getByRole('link',{name:'View all',exact:true}).waitFor();
+  await page.locator('.access-history-event > summary').first().click();
+  await page.locator('.access-history-source > summary').first().click();
+  assert.equal(await page.locator('.access-history-source').first().getByRole('link').first().isVisible(),true);
+  console.log('PASS access history: five recent events, conditional View all, expandable source evidence and operator recovery');
 } finally {
   await browser?.close();
   if(server){const stopped=once(server,'exit');server.kill();await stopped;}

@@ -6883,6 +6883,9 @@ NODE;
             $_POST = [];
             $operator = $this->extractValue($response, 'identity_id');
             $this->seedApprovedIdentity($root, $operator);
+            $_SESSION = ['authenticated_identity_id' => $operator];
+            assertStringContains('No access changes recorded yet.', $this->renderMethod($app, 'GET', '/tools/user-access/'));
+            $_SESSION = [];
             $target = $this->linkGeneratedIdentity($app, 'security-target');
             $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
             $change = function (bool $value) use ($writer, $operator, $key): void {
@@ -6914,7 +6917,17 @@ NODE;
             }
             $_SESSION = ['authenticated_identity_id' => $operator];
             $_COOKIE = [];
-            assertStringContains('<a href="/activity/?view=security">Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
+            $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
+            assertStringContains('<h2>Access history</h2>', $recent);
+            assertStringContains('Account key approved for security-target', $recent);
+            assertStringContains('Acceptance receipt', $recent);
+            assertSame(4, substr_count($recent, 'class="access-history-event"'));
+            assertStringNotContains('>View all</a>', $recent);
+            $change(true); $change(false); $change(true);
+            $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
+            assertSame(5, substr_count($recent, 'class="access-history-event"'));
+            assertStringContains('>View all</a>', $recent);
+            assertStringNotContains('Review account key grants', $this->renderMethod($app, 'GET', '/tools/feature-flags/'));
             foreach (['/activity/', '/forte/activity/'] as $path) {
                 $page = $this->renderMethod($app, 'GET', $path);
                 assertStringNotContains('Operator security review', $page);
