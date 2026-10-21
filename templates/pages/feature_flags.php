@@ -12,9 +12,6 @@ foreach ($flags as $flag) {
   </article>
   <article class="card">
     <h1>Feature Flags</h1>
-<?php if ($canManageFeatureFlags): ?>
-    <p><a href="/activity/?view=security">Review account key grants and approval-policy changes</a> (authenticated operator session required).</p>
-<?php endif; ?>
     <p class="feature-flags-notice meta">These settings apply to the whole site for all users as soon as you change them.</p>
 <?php if ($siteError !== null): ?>
     <div class="feedback feedback-error"><?= $e($siteError) ?></div>

@@ -6903,7 +6903,12 @@ NODE;
                 foreach ($paths as $path) {
                     $denied = $this->renderMethod($app, 'GET', $path);
                     assertSame(403, http_response_code());
-                    assertStringContains('Authenticated root-approved operator access required', $denied);
+                    if ($viewer === null && !str_starts_with($path, '/api/') && !str_contains($path, 'format=rss')) {
+                        assertStringContains('Sign in with your operator account', $denied);
+                        assertStringContains('data-auth-return-to="', $denied);
+                    } else {
+                        assertStringContains('Authenticated root-approved operator access required', $denied);
+                    }
                     assertStringNotContains('Acceptance receipt', $denied);
                 }
             }
