@@ -2,6 +2,10 @@
 
 _Open only after completing Step 4 Before._
 
+## Effort estimation
+
+For selected cycles, preserve the entry projection and append total-cycle revisions when discoveries warrant them, before dependent work where possible. Keep changed-scope approval gates; include snapshot updates with the authorized stage summary commit. Follow [Experimental Effort Estimation](../../RAILSPIKE.md#experimental-effort-estimation).
+
 ## Objective
 Execute the plan in atomic stages on a dedicated feature branch, documenting progress and verification as you go.
 
@@ -13,6 +17,8 @@ Execute the plan in atomic stages on a dedicated feature branch, documenting pro
 - Complete the Step 3 Contract—not just a subsystem, direct route, or preparatory asset. For documentation-only scope, complete the approved document outcome without leaving the allowed file scope.
 - Require one stage-scoped commit per completed stage; do not batch multiple stages into one commit
 - Commit the stage artifact plus the Step 4 summary update for that stage in the same commit before beginning the next stage
+
+Apply [Enhancement Requests](../../RAILSPIKE.md#enhancement-requests) before incorporating new requests. Keep dispositions and pending outcomes in the summary, restore them on resumption, and record implemented refinements with verification and stage-commit references.
 
 ## Stage Boundary Protocol (Required)
 At every stage boundary (including Stage 1), complete this sequence before starting the next stage:
@@ -47,6 +53,8 @@ _Template_
 ```
 
 Prefer this header-plus-bullets structure over prose paragraphs so the implementation summary stays easy to diff against the Step 3 plan and easy to review at stage boundaries.
+
+For selected study cycles, complete the retrospective assessment and authorized ledger closeout update in the final stage before its commit; record unavailable maintainer judgment as pending.
 
 ## Next
 After all planned stages are implemented and committed, continue with `docs/workflow/step4_implementation_after.md`.

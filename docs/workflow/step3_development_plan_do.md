@@ -4,6 +4,10 @@ _Open only after completing Step 3 Before._
 
 On resumption, restore the current artifact’s state using [Railspike Debug Mode](../../RAILSPIKE.md#railspike-debug-mode). This phase does not trigger a diagnostic report.
 
+## Effort estimation
+
+For selected cycles, capture the Step 3 projected-total snapshot after the plan accounts for required verification and recovery. Keep it in the plan and link from the authorized ledger; retain prior values and approval context on revision. Follow [Experimental Effort Estimation](../../RAILSPIKE.md#experimental-effort-estimation).
+
 ## Objective
 Break the feature into atomic implementation stages, identify dependencies, and define verification expectations before coding starts.
 
@@ -44,6 +48,7 @@ For each stage include:
 - For documentation-only work, keep every expected change within the approved documentation file scope and identify the evidence and document-integrity checks for that stage
 
 Additional requirements:
+- When Step 2 states a known user or environment recovery condition, include a stage that replays each reported failure as acceptance evidence. A pass only on the installer or another supported platform does not complete it; actionable manual guidance can satisfy it when automatic support is out of scope
 - Stages should be about <=1 hour or <=50 lines of change; split anything larger before implementation
 - Document database changes conceptually (no SQL)
 - Include planned function signatures when relevant, without code
