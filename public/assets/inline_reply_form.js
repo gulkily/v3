@@ -137,7 +137,31 @@
     syncOpenState();
   }
 
+  function bindInlineThread(composer) {
+    const form = composer.querySelector('[data-compose-form]');
+    const body = form && form.querySelector('textarea[name="body"]');
+    if (!body) return;
+
+    function sync() {
+      const editing = composer.contains(document.activeElement);
+      const attached = form.__imagePickerOpen || window.ForumImageUpload?.has(form);
+      const warning = composer.querySelector('[data-kind="error"], [data-role="compose-field-normalization-status"]:not([hidden])');
+      composer.dataset.inlineThreadExpanded = editing || hasReplyBody(composer) || attached || warning ? '1' : '0';
+    }
+
+    // The browser focuses the actual editor directly. Never transfer focus or
+    // scroll the container while the software keyboard is opening.
+    composer.addEventListener('focusin', sync);
+    composer.addEventListener('focusout', function () { window.setTimeout(sync, 0); });
+    composer.addEventListener('input', sync);
+    composer.addEventListener('change', sync);
+    new MutationObserver(sync).observe(composer, {subtree: true, attributes: true, attributeFilter: ['hidden', 'data-kind']});
+    window.addEventListener('pageshow', sync);
+    sync();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("[data-inline-reply-details]").forEach(bindInlineReply);
+    document.querySelectorAll("[data-inline-thread-compose]").forEach(bindInlineThread);
   });
 })();

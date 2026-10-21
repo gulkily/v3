@@ -202,3 +202,21 @@
 .reply-viewport-active .compose-action-menu-list > button {
   white-space: normal;
 }
+
+/* Collapse before first paint, with native focus expanding the same editor even
+   before deferred scripts run. No-script forms retain their complete layout. */
+@media (scripting: enabled) {
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) {
+    padding: 0.8rem 0.9rem;
+  }
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) > .inline-reply-identity-status,
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) form > :not(textarea) {
+    display: none;
+  }
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) textarea[name="body"] {
+    height: 4.75rem;
+    min-height: 4.75rem;
+    margin: 0;
+    resize: none;
+  }
+}

@@ -160,3 +160,10 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Restored visible inline SQL on System State, with compact magnifying-glass buttons opening the query viewers. Accessible names and tooltips retain the query context; other pages keep their existing controls. PHP syntax and existing query coverage checks passed.
 
 - System State follow-up: query viewer icons use flat, transparent buttons without borders or shadows, including hover/pressed theme states; keyboard focus remains visible. CSS diff check passed.
+
+## Board composer first focus — October 21, 2026
+
+- [x] Removed the redundant readonly prompt textarea and its disclosure arrow; one editable textarea uses the existing board prompt and expands actions in place. No extra instructions or repeated controls.
+- Verification: Real-board Chromium/Firefox/WebKit checks at 390px/1280px across Light, Word97, Chicago and Midnight; first focus without scripted scroll/transfer, draft/selection, empty collapse, failure/retry, successful publication, native image chooser and no-script controls passed. Inspected phone Word97 collapsed and Midnight expanded screenshots. Physical iPhone keyboard acceptance remains pending; inline-reply focus and floating-action overlap are separate work.
+
+- Board composer correction: Restored the compact prompt and full expanded controls while retaining one editor and no disclosure arrow. Initial CSS applies before deferred scripts, preventing Post flashing and relocating after paint. Chromium/Firefox/WebKit first-paint geometry, true height expansion/empty collapse, drafts, selection, retry, attachments and no-script checks pass across phone/desktop and four themes; refreshed Light phone screenshots inspected. Actual iPhone keyboard acceptance remains pending. Reply-form Railspike remains paused.
