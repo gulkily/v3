@@ -117,7 +117,7 @@ final class HighTrafficCache
             do {
                 $body .= stream_get_contents($pipes[1]); $errors .= stream_get_contents($pipes[2]);
                 $status=proc_get_status($proc);
-                if (strlen($body)>$this->limits['page_bytes'] || strlen($errors)>65536 || microtime(true)-$start>30) { proc_terminate($proc,9); throw new RuntimeException('Shared render exceeded limits.'); }
+                if (strlen($body)>$this->limits['page_bytes'] || strlen($errors)>65536 || microtime(true)-$start>($this->limits['render_seconds'] ?? 30)) { proc_terminate($proc,9); throw new RuntimeException('Shared render exceeded limits.'); }
                 if (!$status['running']) { $exit=$status['exitcode']; break; }
                 usleep(10000);
             } while (true);

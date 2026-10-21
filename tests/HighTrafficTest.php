@@ -59,6 +59,21 @@ final class HighTrafficTest
         }
     }
 
+    public function testRecentLogSamplingIsBoundedAndRanked(): void
+    {
+        $tmp=sys_get_temp_dir() . '/v3-log-' . bin2hex(random_bytes(6));mkdir($tmp);
+        $cache=new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__),$tmp,$tmp . '/db',$tmp . '/public');
+        $cache->limits['lines']=5;
+        $line=static fn ($route) => '127.0.0.1 - - [now] "GET ' . $route . ' HTTP/1.1" 200 100 "-" "browser"' . "\n";
+        $log=$tmp . '/access.log';
+        file_put_contents($log,str_repeat($line('/'),10) . $line('/about/') . $line('/threads') . $line('/about/') . $line('/api/version') . $line('/?q=x'));
+        $refresh=new \ForumRewrite\Host\HighTrafficRefresh($cache);
+        assertSame(['/about/','/threads/'],$refresh->popular($log));
+        $cache->limits['read_bytes']=strlen($line('/about/'))*2;
+        file_put_contents($log,str_repeat($line('/'),100) . $line('/about/') . $line('/about/'));
+        assertSame(['/about/'],$refresh->popular($log));
+    }
+
     public function testRouteAndIsolatedRender(): void
     {
         assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/threads/../'));

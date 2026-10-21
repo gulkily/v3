@@ -60,6 +60,15 @@ try:
     status,headers,body=request('/about/',headers={'Cookie':'PHPSESSID=client-one'})
     assert status==200,(status,body[:300],(root/'error.log').read_text())
     assert b'v3-generated-at' in body,body[:200]
+    cache_pages=(public/'.high-traffic').resolve()
+    logfile=root/'access.log'
+    logfile.write_text('127.0.0.1 - - [now] "GET /about/ HTTP/1.1" 200 100 "-" "browser"\n')
+    (cache_pages/'about/index.html').write_text(body.decode().replace('</head>','<!-- OLD REFRESH COPY --></head>'))
+    os.utime(cache_pages/'about/index.html',(1,1))
+    result=json.loads(cli('cron',str(logfile)))
+    assert result['rendered']==1,result
+    assert b'OLD REFRESH COPY' not in (cache_pages/'about/index.html').read_bytes()
+    status,headers,body=request('/about/')
     before=count()
     for cookie in ['client-one','client-two']:
         status,headers,warm=request('/about/',headers={'Cookie':'PHPSESSID='+cookie})

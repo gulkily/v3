@@ -14,13 +14,14 @@ $mode=new HighTrafficMode($cache);
 try {
     $command=$argv[1] ?? 'status';
     $result=match($command) {
+        'cron'=>(new \ForumRewrite\Host\HighTrafficRefresh($cache))->run($argv[2] ?? (getenv('FORUM_HIGH_TRAFFIC_ACCESS_LOG') ?: '')),
         'enable'=>$mode->change(true,'Operator CLI enable'),
         'disable'=>$mode->change(false,'Operator CLI disable'),
         'restore'=>$mode->restore(),
         'status'=>$mode->status(),
         'purge'=>(function () use ($mode) { $mode->purge();return $mode->status(); })(),
         'refresh'=>(function () use ($cache,$argv) { $html=$cache->generate($argv[2] ?? '/',true);if ($html===null) throw new RuntimeException('No generation capacity or inactive mode.');return ['refreshed'=>$argv[2] ?? '/']; })(),
-        default=>throw new RuntimeException('Usage: ./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]'),
+        default=>throw new RuntimeException('Usage: ./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]|cron [access.log]'),
     };
     echo json_encode($result,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR) . "\n";
 } catch (Throwable $error) { fwrite(STDERR,$error->getMessage() . "\n");exit(1); }

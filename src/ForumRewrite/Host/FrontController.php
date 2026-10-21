@@ -61,6 +61,13 @@ final class FrontController
             ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
         $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
+        if (!$approvedMembersOnly && in_array($method,['GET','HEAD'],true) && empty($_SERVER['HTTP_AUTHORIZATION'])
+            && !str_contains($requestUri,'?') && HighTrafficRoute::canonical($requestUri) === null
+            && HighTrafficRoute::canonical(rtrim($requestUri,'/') . '/') !== null && $highTraffic->enabled()) {
+            header('Location: ' . rtrim($requestUri,'/') . '/',true,301);
+            header('Cache-Control: no-cache');
+            return;
+        }
         if (!$approvedMembersOnly && in_array($method, ['GET', 'HEAD'], true)
             && empty($_SERVER['HTTP_AUTHORIZATION']) && HighTrafficRoute::canonical($requestUri) !== null && $highTraffic->enabled()) {
             try {
