@@ -55,12 +55,12 @@ try {
   assert.equal(await page.getByRole('button',{name:'Sign in',exact:true}).isEnabled(),true);
   await page.unroute('**/api/auth_challenge');
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
-  await page.getByRole('heading',{name:'Security review',exact:true}).waitFor();
+  await page.locator('.activity-security-notice').waitFor();
   assert.equal((await context.request.get(base+security)).status(),200);
   // Expire again and verify automatic canonical authentication also resumes.
   await context.clearCookies();
   await page.goto(base+security);
-  await page.getByRole('heading',{name:'Security review',exact:true}).waitFor();
+  await page.locator('.activity-security-notice').waitFor();
   const outsider=await browser.newContext();
   const outside=await outsider.newPage();
   await outside.goto(base+security+'&return_to=https://example.invalid/');
@@ -86,7 +86,46 @@ try {
   await page.locator('.access-history-event > summary').first().click();
   await page.locator('.access-history-source > summary').first().click();
   assert.equal(await page.locator('.access-history-source').first().getByRole('link').first().isVisible(),true);
-  console.log('PASS access history: five recent events, conditional View all, expandable source evidence and operator recovery');
+  const recentIds=await page.locator('.access-history-event').evaluateAll(nodes=>nodes.map(n=>n.dataset.accessHistoryId));
+  await page.getByRole('link',{name:'View all',exact:true}).click();
+  await page.getByRole('heading',{name:'Access history',exact:true}).waitFor();
+  const fullIds=await page.locator('.access-history-event').evaluateAll(nodes=>nodes.map(n=>n.dataset.accessHistoryId));
+  assert.equal(fullIds.length,6);assert.deepEqual(fullIds.slice(0,5),recentIds);
+  await page.getByRole('link',{name:'User Access',exact:true}).click();
+  await page.getByRole('heading',{name:'User Access',exact:true}).waitFor();
+  // Canonical legacy fixtures exercise shared-date cursor boundaries without fabricating receipts.
+  for(let i=0;i<105;i++) {
+    const id='legacy-access-'+String(i).padStart(3,'0');
+    await writeFile(join(root,'repository/records/posts',id+'.txt'),`Post-ID: ${id}\nCreated-At: 2026-01-01T12:00:00Z\nBoard-Tags: identity approval\nAuthor-Identity-ID: openpgp:${fingerprint}\n\nHistorical approval fixture.\n`);
+  }
+  for(const [command,args] of [['git',['-C',join(root,'repository'),'add','records/posts']],['git',['-C',join(root,'repository'),'commit','-qm','Add isolated legacy access history']],['php',[join(project,'scripts/rebuild_read_model.php'),join(root,'repository'),join(root,'read.sqlite3')]]]) {
+    const result=spawnSync(command,args,{encoding:'utf8'});assert.equal(result.status,0,result.stdout+result.stderr);
+  }
+  await page.goto(base+security);
+  const firstPage=await page.locator('.access-history-event').evaluateAll(nodes=>nodes.map(n=>n.dataset.accessHistoryId));
+  assert.equal(firstPage.length,100);
+  await page.getByRole('link',{name:'Older events',exact:true}).click();
+  const secondPage=await page.locator('.access-history-event').evaluateAll(nodes=>nodes.map(n=>n.dataset.accessHistoryId));
+  assert.equal(secondPage.length,11);assert.equal(new Set([...firstPage,...secondPage]).size,111);
+  await page.locator('.access-history-event > summary').first().click();
+  await page.getByText('Historical acceptance classification, count, authority, and policy are unknown.',{exact:false}).first().waitFor();
+  await page.getByRole('link',{name:'Recent events',exact:true}).click();
+  assert.equal(await page.locator('.access-history-event').count(),100);
+  await page.goto(base+security+'&cursor=invalid');
+  await page.getByRole('link',{name:'Open recent events',exact:true}).click();
+  await page.goto(base+'/forte/activity/?view=security');
+  const firstRow=page.locator('[data-paned-activity-id]:visible').first();
+  const firstId=await firstRow.getAttribute('data-paned-activity-id');
+  const detail=await (await context.request.get(base+'/api/forte_activity_detail?view=security&id='+firstId)).json();
+  assert.match(detail.html,/access-history-event/);
+  assert.match(detail.html,/Source evidence/);
+  const more=page.locator('[data-paned-activity-load-more][data-paned-activity-view="security"]');
+  await more.click();
+  await page.waitForFunction(()=>document.querySelectorAll('[data-paned-activity-id]:not([hidden])').length>40);
+  const forteIds=await page.locator('[data-paned-activity-id]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.panedActivityId));
+  assert.equal(new Set(forteIds).size,forteIds.length);
+  await page.getByRole('link',{name:'User Access',exact:true}).click();
+  console.log('PASS access history: signed recovery, recent/full agreement, 111-event tied-date pagination, legacy evidence, Forte parity and return');
 } finally {
   await browser?.close();
   if(server){const stopped=once(server,'exit');server.kill();await stopped;}

@@ -26,15 +26,31 @@ final class ActivityPageController
     ) {
     }
 
-    public function board(string $view): string
+    public function board(string $view, array $query = []): string
     {
         $activityService = $this->routeServices->activityService();
         $view = $activityService->normalizeActivityView($view);
+        $cursor = null;
+        if ($view === 'security' && isset($query['cursor'])) {
+            $cursor = is_string($query['cursor']) ? json_decode($query['cursor'], true) : null;
+            if (!is_array($cursor) || !is_string($cursor['sort_value'] ?? null)
+                || !is_string($cursor['action_key'] ?? null) || !is_int($cursor['id'] ?? null)) {
+                return $this->routeServices->renderPageTemplate('access_history_invalid.php', [], 'Access history', 'tools');
+            }
+        }
+        $result = $activityService->fetchActivity($view, 'date', 'desc', $cursor);
+        $last = $result['items'][count($result['items']) - 1] ?? null;
+        $next = $view === 'security' && $result['has_more'] && $last !== null ? '/activity/?view=security&cursor=' . rawurlencode(json_encode([
+            'sort_value' => $activityService->activitySortValueFromItem($last, 'date'),
+            'action_key' => (string) $last['action_key'], 'id' => (int) $last['id'],
+        ], JSON_THROW_ON_ERROR)) : null;
 
         return $this->routeServices->renderPageTemplate(
             'activity.php',
             [
                 'view' => $view,
+                'historyNextHref' => $next,
+                'historyHasCursor' => $cursor !== null,
                 'approvalPolicyEnabled' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL),
                 'viewOptions' => [
                     [
@@ -70,10 +86,10 @@ final class ActivityPageController
                 ],
                 'items' => array_map(
                     static fn (array $item): array => $item + ['link' => $activityService->activityItemLink($item)],
-                    $activityService->fetchActivity($view, 'date', 'desc')['items'],
+                    $result['items'],
                 ),
             ],
-            'Activity',
+            $view === 'security' ? 'Access history' : 'Activity',
             'activity',
             ['/assets/openpgp_loader.js','/assets/browser_signing.js','/assets/private_site_auth.js','/assets/railspike_workflow.js'],
         );

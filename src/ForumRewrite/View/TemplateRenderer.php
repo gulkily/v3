@@ -22,8 +22,7 @@ final class TemplateRenderer
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
-        'activity.php' => ['/assets/activity.css'],
-        'user_access.php' => ['/assets/access-history.css'],
+        'activity.php' => ['/assets/activity.css', '/assets/access-history.css'],
         'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
@@ -53,7 +52,7 @@ final class TemplateRenderer
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
-        'user_access.php' => ['/assets/tools.css'],
+        'user_access.php' => ['/assets/tools.css', '/assets/access-history.css'],
         'user_access_account.php' => ['/assets/tools.css', '/assets/identity.css'],
         'user_access_profile.php' => ['/assets/tools.css', '/assets/identity.css'],
         'users_pending.php' => ['/assets/pending-approvals.css'],

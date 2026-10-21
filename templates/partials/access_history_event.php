@@ -7,6 +7,9 @@
     <span class="access-history-chevron" aria-hidden="true">›</span>
   </summary>
   <div class="access-history-evidence">
+<?php if (($item['kind'] ?? '') === 'site_feature_flag'): ?>
+    <p><?= $e($item['label']) ?></p>
+<?php endif; ?>
 <?= $partial('partials/approval_security_review.php', ['item' => $item]) ?>
     <details class="access-history-source">
       <summary>Source evidence</summary>

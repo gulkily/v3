@@ -720,7 +720,7 @@ final class Application
                 return;
             }
 
-            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all')), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
+            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all'), $query), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
             return;
         }
 
