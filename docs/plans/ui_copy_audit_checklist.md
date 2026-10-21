@@ -1,5 +1,11 @@
 # UI copy audit checklist
 
+## Browser identity ready notice — October 21, 2026 triage
+
+- [ ] Remove the routine “Browser identity ready” notice and hide its empty status element; retain necessary pending/failure/recovery feedback and explicit Account results. [Triage and acceptance](browser_identity_ready_triage_2026-10-21.md).
+- Verification so far: source inspection only; the message and compose initialization path remain in `public/assets/browser_signing.js`. Implementation, phone/desktop shared-view and theme checks, and relevant regression checks are pending. This item is not resolved.
+- [ ] After verified completion, reply under the original feedback comment as requested by the user; distinguish this fix from the other composer issues in that comment.
+
 ## Import CLI recovery guidance — October 20, 2026
 
 - [x] Removed unconditional `--resume` advice from import failures; show recovery guidance only when the selected destination has a pending journal. Replaced generic public-download wording with HTTP status, bounded sanitized source detail, and source retry guidance.
