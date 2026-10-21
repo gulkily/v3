@@ -37,7 +37,7 @@ try {
             $archivePaths = archivePaths($componentPaths, $supportingPublicKeyPaths);
             $manifest = buildManifest($repositoryRoot, $threadId, $archivePaths, $componentPaths, $supportingPublicKeyPaths);
             writeArchive($repositoryRoot, $archivePath, $archivePaths, $manifest);
-\ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");
+            \ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");
             removeArchivedComponents($repositoryRoot, $componentPaths);
             $archiveCommit = commitArchiveRemoval($repositoryRoot, $threadId, $componentPaths);
             $removedArtifactPaths = removeStaleStaticArtifacts($artifactRoot, $threadId, $componentPaths);

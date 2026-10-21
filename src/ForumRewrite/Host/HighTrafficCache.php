@@ -38,7 +38,7 @@ final class HighTrafficCache
         if (!is_array($value)) throw new RuntimeException('Invalid high-traffic state.');
         return $value;
     }
-    public function enabled(): bool { return ($this->state()['enabled'] ?? false) === true && is_link($this->publicRoot . '/.high-traffic') && realpath($this->publicRoot . '/.high-traffic') === realpath($this->root . '/pages'); }
+    public function enabled(): bool { $state=$this->state(); return ($state['enabled'] ?? false) === true && ($state['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])===\ForumRewrite\SiteProfileRegistry::active()['name'] && ($state['public_root'] ?? $this->publicRoot)===(realpath($this->publicRoot) ?: $this->publicRoot) && is_link($this->publicRoot . '/.high-traffic') && realpath($this->publicRoot . '/.high-traffic') === realpath($this->root . '/pages'); }
     public function fresh(string $route): bool
     {
         $path = $this->path($route); clearstatcache(true, $path);
@@ -68,7 +68,7 @@ final class HighTrafficCache
         $this->initialize();
         $page = fopen($this->root . '/locks/' . substr(hash('sha256',$route),0,3) . '.lock','c');
         if ($page === false) throw new RuntimeException('Cannot open page lock.');
-        $slot = null; $deadline = microtime(true) + $this->limits['wait_ms']/1000;
+        $slot = null; $renderAssets = null; $deadline = microtime(true) + $this->limits['wait_ms']/1000;
         try {
             while (!flock($page, LOCK_EX | LOCK_NB)) {
                 if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
@@ -84,32 +84,48 @@ final class HighTrafficCache
                 if (is_resource($candidate)) fclose($candidate);
             }
             if ($slot === null) return null;
+            if (!is_file($this->path($route))) {
+                $pageCount=0;
+                foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages',\FilesystemIterator::SKIP_DOTS)) as $existing) if ($existing->isFile() && $existing->getExtension()==='html') $pageCount++;
+                if ($pageCount >= $this->limits['pages']) return null;
+            }
             $retraction = \ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot);
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-            $html = $this->render($route);
+            $renderAssets=$this->root . '/.render-' . bin2hex(random_bytes(8));
+            $html = $this->render($route,$renderAssets);
             $html = str_replace('</head>', '<meta name="v3-refresh-after" content="' . $this->limits['fresh_seconds'] . '"><meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
             if (strlen($html) > $this->limits['page_bytes']) throw new RuntimeException('Generated HTML exceeds page size limit.');
-            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$retraction,$meta): void {
+            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$retraction,$meta,$renderAssets): void {
             if (\ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot) !== $retraction) throw new RuntimeException('Retraction changed during rendering.');
             \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath,$this->repositoryRoot);
-            \ForumRewrite\Scoring\FastmodMetaPublication::publish($meta,$this->path($route),function () use ($route,$html,$token): void {
-            $this->locked(function () use ($route,$html,$token): void {
+            \ForumRewrite\Scoring\FastmodMetaPublication::publish($meta,$this->path($route),function () use ($route,$html,$token,$renderAssets): void {
+            $this->locked(function () use ($route,$html,$token,$renderAssets): void {
                 if (!$this->enabled() || $this->state() !== $token) throw new RuntimeException('Mode changed during generation.');
                 $count=0; $bytes=0;
                 $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages', \FilesystemIterator::SKIP_DOTS));
                 foreach ($files as $file) { if ($file->isFile() && $file->getExtension() === 'html') { $count++; $bytes += $file->getSize(); } }
+                $assetBytes=0;$pendingAssets=[];
+                if (is_dir($this->root . '/assets')) foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/assets',\FilesystemIterator::SKIP_DOTS)) as $asset) if ($asset->isFile()) $assetBytes+=$asset->getSize();
+                foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($renderAssets,\FilesystemIterator::SKIP_DOTS)) as $asset) {
+                    if ($asset->isLink()) throw new RuntimeException('Unexpected rendered asset symlink.');
+                    if (!$asset->isFile()) continue;
+                    $destination=$this->root . '/assets/' . substr($asset->getPathname(),strlen($renderAssets)+1);
+                    if (!is_file($destination)) { $pendingAssets[$destination]=$asset->getPathname();$assetBytes+=$asset->getSize(); }
+                }
+                $bytes+=$assetBytes;
                 $target=$this->path($route); $old=is_file($target) ? filesize($target) : 0;
                 if ((!is_file($target) && $count >= $this->limits['pages']) || $bytes-$old+strlen($html)>$this->limits['bytes']) throw new RuntimeException('High-traffic cache capacity reached; purge unused pages.');
+                foreach ($pendingAssets as $destination=>$source) $this->atomic($destination,(string)file_get_contents($source));
                 $this->atomic($target,$html);
             });
             });
             });
             return $html;
-        } finally { if (is_resource($slot)) { flock($slot,LOCK_UN); fclose($slot); } flock($page,LOCK_UN); fclose($page); }
+        } finally { if ($renderAssets!==null) self::removeTemporaryTree($renderAssets); if (is_resource($slot)) { flock($slot,LOCK_UN); fclose($slot); } flock($page,LOCK_UN); fclose($page); }
     }
-    public function render(string $route): string
+    public function render(string $route, string $assets): string
     {
-        $proc=proc_open([(getenv('FORUM_PHP_CLI') ?: PHP_BINDIR . '/php'), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->root . '/assets', $route], [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
+        $proc=proc_open([(getenv('FORUM_PHP_CLI') ?: PHP_BINDIR . '/php'), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route], [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
         if (!is_resource($proc)) throw new RuntimeException('Cannot start shared renderer.');
         fclose($pipes[0]); stream_set_blocking($pipes[1],false); stream_set_blocking($pipes[2],false);
         $body='';$errors='';$start=microtime(true);$exit=-1;
@@ -122,9 +138,18 @@ final class HighTrafficCache
                 usleep(10000);
             } while (true);
             $body .= stream_get_contents($pipes[1]); $errors .= stream_get_contents($pipes[2]);
+            if ($exit===4) throw new HighTrafficNotFound('Page not found.');
             if ($exit!==0) throw new RuntimeException('Shared render failed: ' . substr($errors,0,1000));
             return $body;
         } finally { fclose($pipes[1]);fclose($pipes[2]);proc_close($proc); }
+    }
+    public static function removeTemporaryTree(string $path): void
+    {
+        if (!is_dir($path) || is_link($path)) return;
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path,\FilesystemIterator::SKIP_DOTS),\RecursiveIteratorIterator::CHILD_FIRST) as $file) {
+            if ($file->isDir() && !$file->isLink()) @rmdir($file->getPathname());else @unlink($file->getPathname());
+        }
+        @rmdir($path);
     }
     public function report(\Throwable $error): void { error_log('High-traffic mode: ' . $error->getMessage()); }
 }

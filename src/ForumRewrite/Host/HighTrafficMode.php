@@ -18,23 +18,32 @@ final class HighTrafficMode
     {
         $state=$this->cache->state();
         $rules=@file_get_contents($this->cache->publicRoot . '/.htaccess') ?: '';
-        $effective=($state['enabled'] ?? false) && is_link($this->cache->publicRoot . '/.high-traffic')
+        $effective=($state['enabled'] ?? false)
+            && ($state['public_root'] ?? $this->cache->publicRoot)===(realpath($this->cache->publicRoot) ?: $this->cache->publicRoot)
+            && ($state['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])===\ForumRewrite\SiteProfileRegistry::active()['name'] && is_link($this->cache->publicRoot . '/.high-traffic')
             && realpath($this->cache->publicRoot . '/.high-traffic') === realpath($this->cache->root . '/pages')
             && str_starts_with($rules,self::BEGIN . "\n");
-        return $state + ['effective_mode'=>$effective ? 'high-traffic' : 'normal'];
+        return array_merge($state,['effective_mode'=>$effective ? 'high-traffic' : 'normal']);
     }
     public function change(bool $enable, string $reason): array
     {
-        return PublicationGuard::withLock($this->cache->repositoryRoot, fn () => $this->cache->locked(function () use ($enable,$reason): array {
+        return PublicationGuard::withLock($this->cache->repositoryRoot, function () use ($enable,$reason): array {
+            $meta=\ForumRewrite\Scoring\FastmodMetaPublication::token($this->cache->projectRoot);
+            return (new \ForumRewrite\Support\ExecutionLock($meta['path'] . '.publication.lock'))->withExclusiveLock(fn () => $this->cache->locked(function () use ($enable,$reason): array {
             $path=$this->cache->publicRoot . '/.htaccess';
             if (is_link($path) || !is_file($path)) throw new RuntimeException('A regular managed .htaccess file is required.');
+            $savedState=$this->cache->state();
+            if (($savedState['enabled'] ?? false) && isset($savedState['public_root']) && $savedState['public_root']!==(realpath($this->cache->publicRoot) ?: $this->cache->publicRoot)) throw new RuntimeException('Use the saved public root from high-traffic status to disable or restore routing first.');
             $current=(string)file_get_contents($path);
             $normal=$this->normalRules($current);
             if (!str_contains($normal,'RewriteRule ^ index.php [L]')) throw new RuntimeException('Unsupported routing layout; restore the project front-controller rules first.');
             if ($enable) {
+                $previous=$this->cache->state();
+                if (($previous['enabled'] ?? false) && (($previous['public_root'] ?? $this->cache->publicRoot)!==(realpath($this->cache->publicRoot) ?: $this->cache->publicRoot) || ($previous['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])!==\ForumRewrite\SiteProfileRegistry::active()['name'])) throw new RuntimeException('Disable high-traffic mode for the previous public root/profile first.');
                 if (FeatureFlagEvaluator::forApplication($this->cache->repositoryRoot,$this->cache->projectRoot)->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)) throw new RuntimeException('Private instances cannot enable high-traffic mode.');
                 if (($this->status()['effective_mode'] ?? '') === 'high-traffic') return $this->status();
                 $this->cache->atomic($this->cache->root . '/normal.htaccess',$normal);
+                $this->cache->atomic($this->cache->root . '/normal-context.json',json_encode(['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot],JSON_THROW_ON_ERROR));
                 $this->clearPages();
                 $this->cache->atomic($this->cache->root . '/pages/.htaccess',"Options -Indexes\n<IfModule mod_headers.c>\nHeader set Cache-Control \"public, no-cache, must-revalidate\"\nHeader set X-Content-Type-Options \"nosniff\"\nHeader set X-V3-High-Traffic \"hit\"\n</IfModule>\n");
                 $link=$this->cache->publicRoot . '/.high-traffic';
@@ -46,17 +55,20 @@ final class HighTrafficMode
                 HighTrafficSafety::detach($this->cache->publicRoot);
                 $this->cache->atomic($path,$normal);
             }
-            $state=['enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c')];
+            $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c')];
             try { $this->cache->atomic($this->cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR)); }
             catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot); throw $error; }
             return $this->status();
         }));
+        });
     }
     public function restore(): array
     {
         return PublicationGuard::withLock($this->cache->repositoryRoot, fn () => $this->cache->locked(function (): array {
             $saved=$this->cache->root . '/normal.htaccess';
             if (!is_file($saved)) throw new RuntimeException('No saved normal routing exists. Restore public/.htaccess from the application package.');
+            $context=json_decode((string)file_get_contents($this->cache->root . '/normal-context.json'),true,512,JSON_THROW_ON_ERROR);
+            if (($context['public_root'] ?? null)!==(realpath($this->cache->publicRoot) ?: $this->cache->publicRoot)) throw new RuntimeException('Restore requires the original public root.');
             HighTrafficSafety::detach($this->cache->publicRoot);
             $this->cache->atomic($this->cache->publicRoot . '/.htaccess',(string)file_get_contents($saved));
             $this->cache->atomic($this->cache->root . '/state.json',json_encode(['enabled'=>false,'generation'=>bin2hex(random_bytes(16)),'reason'=>'CLI routing recovery'],JSON_THROW_ON_ERROR));

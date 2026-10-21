@@ -90,6 +90,12 @@ final class FrontController
                     if ($method !== 'HEAD') echo $html;
                     return;
                 }
+            } catch (HighTrafficNotFound) {
+                header('Content-Type: text/html; charset=utf-8');
+                header('Cache-Control: no-store');
+                http_response_code(404);
+                if ($method !== 'HEAD') echo '<!doctype html><title>Not found</title><h1>Not found</h1>';
+                return;
             } catch (Throwable $error) { $highTraffic->report($error); }
             header('Retry-After: 5');
             header('Cache-Control: no-store');

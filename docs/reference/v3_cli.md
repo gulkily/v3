@@ -893,3 +893,11 @@ changing generation settings; follow the verified scripture operations guide.
 Do not silently downgrade pending verified requests to unverified generation.
 
 Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inherits `LLM_MODEL`). OpenAI scripture requests and Expand may select `gpt-5-mini` or `gpt-5.6-sol`; other response modes and structured moderation retain the shared model. Sol explicit reasoning is currently restricted to the evaluated `low` setting. This prepares isolated comparison; it does not activate verified guidance or establish release acceptance.
+
+## High-traffic mode
+
+`./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]`
+switches and manages instance-local Apache HTML caching. Run
+`./v3 high-traffic cron /path/to/access.log` every minute for popularity-driven
+atomic refresh. See [host setup, limits, verification and recovery](../runbooks/high_traffic_mode.md).
+Automatic traffic/load activation is deferred.

@@ -3021,7 +3021,7 @@ class LocalWriteService
 
     private function writeFile(string $relativePath, string $contents): void
     {
-        \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $relativePath);
+        \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $relativePath, $contents);
         $path = $this->repositoryRoot . '/' . $relativePath;
         $directory = dirname($path);
         if (!is_dir($directory)) {
@@ -3304,7 +3304,7 @@ class LocalWriteService
 
     private function writeSignedReactionPair(array $signed): void
     {
-        \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $signed[0]);
+        \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $signed[0], $signed[1]);
         // Publish the signature first: a crash must never leave a new apparently unsigned vote.
         foreach ([$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]] as $relative => $bytes) {
             $path = $this->repositoryRoot . '/' . $relative;

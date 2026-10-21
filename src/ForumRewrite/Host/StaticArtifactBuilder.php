@@ -130,6 +130,15 @@ final class StaticArtifactBuilder
         }
         $script = AssetFingerprint::fingerprintedPath($this->projectRoot . '/public', '/assets/high_traffic.js');
         $html = str_replace('</head>', '<script defer src="' . htmlspecialchars($script, ENT_QUOTES) . '"></script></head>', $html);
+        preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#',$this->assetReferenceMarkup($html),$references);
+        $assetBytes=0;
+        foreach (array_unique($references[0]) as $reference) {
+            $source=AssetFingerprint::sourcePathForFingerprint($this->projectRoot . '/public',$reference);
+            if ($source!==null) $assetBytes+=filesize($source);
+        }
+        $configuredBytes=getenv('FORUM_HIGH_TRAFFIC_BYTES');
+        $assetLimit=$configuredBytes!==false && ctype_digit($configuredBytes) && (int)$configuredBytes>0 ? min(2684354560,(int)$configuredBytes) : 268435456;
+        if ($assetBytes>$assetLimit) throw new RuntimeException('Referenced assets exceed cache capacity.');
         $this->copyReferencedAssets($html);
         $this->assertFingerprintReferencesAvailable($html);
         $stamp = '<meta name="v3-generated-at" content="' . gmdate('Y-m-d\TH:i:s\Z') . '">';
