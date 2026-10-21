@@ -54,6 +54,7 @@ Branch: `feature/high-traffic-mode`. Planning commit: `78732a6a`.
 
 ## Requests and verification limits
 
+- TODO: integrate the high-traffic control into the standard Feature Flags switch rows, preserving instance-local applied state, signed authorization, pending/error feedback and CLI recovery. The user chose to retain the separate button for this release and defer this UI refinement; no UI change was made.
 - Request: automatic traffic/load activation soon. Disposition: shared policy-neutral switch service delivered; measurement/activation/cooldown/override policy remains a separate proposed cycle, unapproved.
 - Request: separate broader failure management. Disposition: minimum recovery delivered; dashboards/alerts/automated repair deferred, unapproved.
 - In-scope acceptance refinements: prevent classification/activation races, count retained assets in storage admission, bind mode to saved public root/profile, bound log-reader memory, distinguish positive votes from moderation, avoid public authentication reload loops, and prevent routine writes from starving refresh. These enforce approved access/capacity requirements rather than adding features.
