@@ -22,6 +22,7 @@
           event.preventDefault();
           // A Reply link explicitly navigates to this editor; let native focus
           // reveal it once rather than adding another scrolling animation.
+          body.dispatchEvent(new Event('compose-editing-intent', {bubbles: true}));
           body.focus();
         });
       });

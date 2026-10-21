@@ -34,6 +34,11 @@ try {
  for(let i=0;i<100;i++){try{await fetch(base+'/api/version');break;}catch{await new Promise(r=>setTimeout(r,50));}}
  browser=process.env.REPLY_BROWSER==='webkit' ? await webkit.launch({headless:true}) : process.env.REPLY_BROWSER==='firefox' ? await firefox.launch({headless:true}) : await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/opt/google/chrome/chrome',headless:true,args:['--no-sandbox']});
  const context=await browser.newContext({serviceWorkers:'block',hasTouch:true,viewport:{width:390,height:844}});
+ await context.addInitScript(()=>{
+  window.replyTestViewport=new EventTarget();
+  Object.assign(replyTestViewport,{width:390,height:420,offsetTop:0,offsetLeft:0,scale:1});
+  Object.defineProperty(window,'visualViewport',{value:replyTestViewport});
+ });
  await context.addInitScript(({keys,fingerprint})=>{
   localStorage.setItem('forum_pki_public_key',keys.publicKey);localStorage.setItem('forum_pki_private_key',keys.privateKey);
   localStorage.setItem('forum_pki_fingerprint',fingerprint);localStorage.setItem('forum_pki_published_fingerprint',fingerprint);
@@ -44,7 +49,7 @@ try {
  const initialSignature = await openpgp.sign({message:await openpgp.createMessage({text:initialChallenge}),signingKeys:await openpgp.readPrivateKey({armoredKey:keys.privateKey}),detached:true});
  const initialAuth = await context.request.post(base+'/api/authenticate_identity',{data:{challenge:initialChallenge,detached_signature:initialSignature,identity_id:'openpgp:'+fingerprint}});
  assert.equal(initialAuth.status(),200,await initialAuth.text());
- const page=await context.newPage();page.setDefaultTimeout(15000);const errors=[],expectedNavigationErrors=[];page.on('pageerror',e=>{if(process.env.REPLY_BROWSER==='webkit' && e.message.includes('due to access control checks.')) expectedNavigationErrors.push(e.message);else errors.push(e.message);});
+ const page=await context.newPage();page.setDefaultTimeout(15000);page.setDefaultNavigationTimeout(60000);const errors=[],expectedNavigationErrors=[];page.on('pageerror',e=>{if(process.env.REPLY_BROWSER==='webkit' && e.message.includes('due to access control checks.')) expectedNavigationErrors.push(e.message);else errors.push(e.message);});
 
  await setFlags({images:false});
  await page.goto(base+'/compose/thread');
@@ -54,20 +59,65 @@ try {
  const threadId=new URL(page.url()).pathname.split('/').pop();
  for(const entry of ['dedicated','inline']) {
   await page.goto(base+(entry==='dedicated' ? '/compose/reply?thread_id='+threadId+'&parent_id='+threadId : '/threads/'+threadId));
-  if(entry==='inline') await page.locator('[data-inline-reply-compose] textarea').click();
   const form=page.locator('[data-phone-reply]');
   const body=form.locator('[name="body"]');
   const button=form.locator('.compose-form-actions > button');
+  if(entry==='inline') {
+   // The mocked VisualViewport does not resize browser hit testing. Use native
+   // keyboard link activation here; inline_reply_link.mjs covers real clicks.
+   await page.locator('[data-inline-reply-link]').first().focus();
+   await page.keyboard.press('Enter');
+   await page.waitForFunction(()=>document.querySelector('[data-phone-reply]').classList.contains('reply-viewport-active'));
+  }
   const draft='Verified '+entry+' phone reply';
   await body.fill(draft);
   await page.waitForFunction(()=>document.querySelector('[data-phone-reply]').classList.contains('reply-viewport-active'));
+  async function checkSeparation() {
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const rectangles=await page.locator('[data-reply-panel]').evaluate(panel=>{
+    const rect=node=>{const r=node.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};};
+    return {panel:rect(panel),active:panel.classList.contains('reply-panel-active'),body:rect(panel.querySelector('textarea')),actions:rect(panel.querySelector('.compose-form-actions')),
+     feedback:[...panel.querySelectorAll('[data-kind="error"],.feedback-error')].filter(el=>el.getClientRects().length).map(rect)};
+   });
+   assert.equal(rectangles.active,true,entry+': sufficient space uses the bounded panel');
+   assert.ok(rectangles.body.bottom<=rectangles.actions.top,entry+': editor clear of actions');
+   const height=await page.evaluate(()=>replyTestViewport.height);
+   assert.ok(rectangles.actions.bottom<=height,entry+': Post above simulated keyboard');
+   assert.ok(rectangles.panel.top>=8 && rectangles.panel.bottom<=height-8,entry+': entire panel stays inside the visible viewport');
+   for(const error of rectangles.feedback) {
+    assert.ok(error.bottom<=rectangles.body.top || error.top>=rectangles.body.bottom,'error clear of editor');
+    assert.ok(error.bottom<=rectangles.actions.top || error.top>=rectangles.actions.bottom,'error clear of Post');
+   }
+  }
+  await checkSeparation();
+  await body.fill(draft+'\n'.repeat(30)+'Long draft tail');
+  await body.evaluate(el=>el.setSelectionRange(3,8));
+  await page.evaluate(()=>{replyTestViewport.height=280;replyTestViewport.dispatchEvent(new Event('resize'));});
+  await checkSeparation();assert.deepEqual(await body.evaluate(el=>[el.selectionStart,el.selectionEnd]),[3,8]);
+  await page.evaluate(()=>{replyTestViewport.height=420;replyTestViewport.dispatchEvent(new Event('resize'));});
+  // Real normalization warning and its recovery action must have their own space.
+  await body.fill(draft+'\u202e');
+  const remove=form.locator('[data-action="remove-unsupported-compose-characters"][data-compose-field-remove-for="body"]');
+  await remove.waitFor({state:'visible'});await checkSeparation();
+  await remove.click();assert.equal(await body.inputValue(),draft);
+  await body.focus();await checkSeparation();
+  {
+   for(const theme of ['light','word97','chicago','midnight']) {
+    await page.addStyleTag({content:readFileSync(join(project,'public/assets/theme-'+theme+'.css'),'utf8')});
+    await page.evaluate(theme=>{document.documentElement.dataset.theme=theme;replyTestViewport.dispatchEvent(new Event('resize'));},theme);
+    await checkSeparation();
+    if(process.env.REPLY_FLOW_SCREENSHOTS) await page.screenshot({path:process.env.REPLY_FLOW_SCREENSHOTS+'/'+entry+'-'+theme+'.png'});
+   }
+   await page.evaluate(()=>{document.documentElement.dataset.theme='light';replyTestViewport.dispatchEvent(new Event('resize'));});
+  }
+
   // A failed request must expose retry and preserve the draft on the real page.
   await page.route('**/api/prepare_reply',route=>route.abort(),{times:1});
   await button.click();
   await page.locator('[data-role="compose-identity-status"][data-kind="error"]').waitFor();
   assert.equal(await body.inputValue(),draft);
   assert.equal(await button.isEnabled(),true);
-  await body.focus();
+  await body.focus();await checkSeparation();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   // Hold the preparation request, then repeat submit: only one publication may result.
   let release;const gate=new Promise(resolve=>{release=resolve;});
@@ -84,11 +134,11 @@ try {
   await page.reload();
   assert.equal(await page.locator('.post-card').filter({hasText:draft}).count(),1,'exactly one persisted reply after retry');
   await page.unroute('**/api/prepare_reply');
-  console.log('PASS '+entry+': real phone route, failed request, preserved draft, retry, duplicate pending submit suppressed, exactly one persisted reply');
+  console.log('PASS '+entry+': simulated keyboard separation, validation recovery, long draft/selection, real phone route, failed request, preserved draft, retry, duplicate pending submit suppressed, exactly one persisted reply');
  }
  assert.deepEqual(errors,[]);
  console.log('Navigation-cancelled WebKit background requests:',expectedNavigationErrors.length);
-} finally {
+} catch(error) {console.error(error);throw error;} finally {
  if(browser) await browser.close();
  server.kill();await once(server,'exit');await rm(root,{recursive:true,force:true});
 }

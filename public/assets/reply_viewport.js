@@ -67,6 +67,7 @@
       for (const event of ['pointerdown', 'keydown', 'input']) {
         body.addEventListener(event, function () { userEditing = true; schedule(); });
       }
+      panel.addEventListener('compose-editing-intent', function () { userEditing = true; schedule(); });
       panel.addEventListener('pointerdown', function () { interacting = true; });
       function endInteraction() {
         window.setTimeout(function () { interacting = false; schedule(); }, 0);

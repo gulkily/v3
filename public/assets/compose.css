@@ -170,8 +170,10 @@
 }
 
 /* A phone reply is one bounded panel: editor, feedback and actions participate
-   in the same layout. No independent submit overlay can cover the textarea. */
-:root [data-reply-panel].reply-panel-active {
+   in the same layout. No independent submit overlay can cover the textarea.
+   The repeated attribute keeps theme card padding/stack margins from overriding
+   the composing panel geometry. */
+:root [data-reply-panel][data-reply-panel].reply-panel-active {
   position: fixed;
   z-index: 100;
   top: var(--reply-panel-top);
@@ -188,11 +190,11 @@
   background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
   box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 }
-:root [data-reply-panel].reply-panel-active > * {
+:root [data-reply-panel][data-reply-panel].reply-panel-active > * {
   flex: 0 0 auto;
   margin: 0;
 }
-:root [data-reply-panel].reply-panel-active > form {
+:root [data-reply-panel][data-reply-panel].reply-panel-active > form {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -200,31 +202,31 @@
   min-height: 0;
   min-width: 0;
 }
-:root [data-reply-panel].reply-panel-active form > * {
+:root [data-reply-panel][data-reply-panel].reply-panel-active form > * {
   flex: 0 0 auto;
   margin: 0;
 }
-:root [data-reply-panel].reply-panel-active form > :is(textarea[name="body"], label:has(textarea[name="body"])) {
+:root [data-reply-panel][data-reply-panel].reply-panel-active form > :is(textarea[name="body"], label:has(textarea[name="body"])) {
   flex: 1 1 0;
   min-height: 80px;
   min-width: 0;
   height: auto;
   max-height: none;
 }
-:root [data-reply-panel].reply-panel-active form > label:has(textarea[name="body"]) {
+:root [data-reply-panel][data-reply-panel].reply-panel-active form > label:has(textarea[name="body"]) {
   display: flex;
   flex-direction: column;
 }
-:root [data-reply-panel].reply-panel-active textarea[name="body"] {
+:root [data-reply-panel][data-reply-panel].reply-panel-active textarea[name="body"] {
   min-height: 80px;
   flex: 1 1 0;
   resize: none;
   overscroll-behavior: contain;
 }
-:root [data-reply-panel].reply-panel-active .image-compose-fields[hidden] {
+:root [data-reply-panel][data-reply-panel].reply-panel-active .image-compose-fields[hidden] {
   display: none !important;
 }
-:root [data-reply-panel].reply-panel-active .compose-form-actions {
+:root [data-reply-panel][data-reply-panel].reply-panel-active .compose-form-actions {
   margin-top: var(--reply-panel-menu-space, 0px);
 }
 .reply-panel-active .compose-action-menu-list {
