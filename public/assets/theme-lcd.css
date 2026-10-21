@@ -73,3 +73,28 @@
 :root[data-theme="lcd"] a {
   text-decoration-thickness: 1px;
 }
+
+:root[data-theme="lcd"][data-lcd-palette="amber"] {
+  --page-bg: #cdc5ae;
+  --body-background: linear-gradient(180deg, #ffffff38, #7d755014), #cdc5ae;
+  --ink: #332f24;
+  --ink-soft: #5c5646;
+  --line: #79715d;
+  --panel: #ded7c3;
+  --input-bg: #e8e2d0;
+  --button-bg: #dcd4bd;
+  --button-alt-bg: #d1c7aa;
+  --feedback-ok-bg: #e2dfc9;
+  --feedback-error-bg: #e4d1c2;
+  --status-error: #64372d;
+  --status-ok: #3d4d2a;
+  --status-warning: #654a19;
+  --active-bg: #c2b695;
+  --active-ink: #302b1e;
+  --active-line: #62583b;
+  --active-ring: #332f2429;
+}
+
+:root[data-theme="lcd"] .theme-menu { margin-left: 2.5rem; }
+
+:root[data-theme="lcd"] .lcd-palette { display: block; }

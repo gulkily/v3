@@ -12,6 +12,13 @@
       var themeHintCookieName = <?= json_encode($themeHintCookieName, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var themeLegacyAliases = <?= json_encode($themeLegacyAliases, JSON_HEX_TAG | JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR) ?>;
       var browserRuntime = <?= json_encode($browserRuntime, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
+      var lcdPalettes = <?= json_encode(array_keys($lcdPalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var palette = 'green';
+      try {
+        var savedPalette = localStorage.getItem(browserRuntime.themeStorageKey + '-lcd-palette');
+        if (lcdPalettes.indexOf(savedPalette) !== -1) palette = savedPalette;
+      } catch (error) {}
+      document.documentElement.setAttribute('data-lcd-palette', palette);
       var theme = null;
       window.forumBrowserRuntime = browserRuntime;
 

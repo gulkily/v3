@@ -8,6 +8,8 @@ final class ThemeRegistry
 {
     public const THEME_HINT_COOKIE = 'theme-hint';
 
+    public const LCD_PALETTES = ['green' => 'Green', 'amber' => 'Amber'];
+
     /** Retired theme names mapped to their replacements, for saved preferences. */
     public const LEGACY_ALIASES = ['windark' => 'midnight'];
 
