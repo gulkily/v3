@@ -4,94 +4,214 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Docs;
 
-use League\CommonMark\Environment\Environment;
-use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
-use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
-use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
-use League\CommonMark\MarkdownConverter;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
-use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
-use League\CommonMark\Node\Inline\Text;
-use League\CommonMark\Extension\Table\Table;
-use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
-use League\CommonMark\Extension\CommonMark\Node\Block\IndentedCode;
-use League\CommonMark\Extension\CommonMark\Node\Block\HtmlBlock;
-use League\CommonMark\Extension\CommonMark\Node\Inline\HtmlInline;
-
 final class PublicMarkdownRenderer
 {
     public static function render(string $markdown, ?string $sourcePath = null, ?string $projectRoot = null): string
     {
         try {
-            return self::convert($markdown, $sourcePath, $projectRoot);
+            return self::convert($markdown, $sourcePath, $projectRoot ?? dirname(__DIR__, 3));
         } catch (\Throwable $error) {
             throw new MarkdownRenderingUnavailable('Markdown rendering unavailable; restore the complete application package.', 0, $error);
         }
     }
 
-    private static function convert(string $markdown, ?string $sourcePath, ?string $projectRoot): string
+    private static function convert(string $markdown, ?string $sourcePath, string $projectRoot): string
     {
-        $autoload = dirname(__DIR__, 3) . '/third_party/markdown/vendor/autoload.php';
-        if (!is_file($autoload)) {
-            throw new \RuntimeException('Markdown runtime missing; restore the complete third_party/markdown package.');
-        }
-        require_once $autoload;
-
-        // Build a fresh environment so duplicate heading counters are document scoped.
-        $environment = new Environment([
-            'html_input' => 'escape',
-            'allow_unsafe_links' => false,
-            'max_nesting_level' => 100,
-            'max_delimiters_per_line' => 1000,
-            'heading_permalink' => [
-                'insert' => 'none',
-                'id_prefix' => '',
-                'fragment_prefix' => '',
-                'apply_id_to_heading' => true,
-            ],
-            'slug_normalizer' => ['unique' => 'document'],
-        ]);
-        $environment->addExtension(new CommonMarkCoreExtension());
-        $environment->addExtension(new GithubFlavoredMarkdownExtension());
-        $environment->addExtension(new HeadingPermalinkExtension());
-        $environment->addRenderer(FencedCode::class, new DocsCodeRenderer(), 10);
-        $environment->addRenderer(IndentedCode::class, new DocsCodeRenderer(), 10);
-        $environment->addRenderer(Table::class, new DocsTableRenderer(), 10);
-        $environment->addRenderer(HtmlBlock::class, new DocsHtmlRenderer(), 100);
-        $environment->addRenderer(HtmlInline::class, new DocsHtmlRenderer(), 100);
-
-        $projectRoot ??= dirname(__DIR__, 3);
-        $environment->addEventListener(DocumentParsedEvent::class, static function (DocumentParsedEvent $event) use ($sourcePath, $projectRoot): void {
-            $resources = [];
-            foreach ($event->getDocument()->iterator() as $node) {
-                if ($node instanceof Link || $node instanceof Image) {
-                    $resources[] = $node;
-                }
-            }
-            foreach ($resources as $node) {
-                $url = $node instanceof Image ? null : PlatformDocsCatalog::resolveLink($node->getUrl(), $sourcePath, $projectRoot);
-                if ($url !== null) {
-                    $node->setUrl($url);
-                    continue;
-                }
-                // Preserve formatted labels without emitting a clickable unsupported source.
-                while ($child = $node->firstChild()) {
-                    $node->insertBefore($child);
-                }
-                $node->insertBefore(new Text($node instanceof Image ? ' (image unavailable)' : ' (source unavailable)'));
-                $node->detach();
-            }
-        });
-
+        // Preserve the current metadata boundary; never apply embedded presentation CSS.
         $metadata = '';
         if (preg_match('/\A(?:\xEF\xBB\xBF)?---\r?\n(.*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/s', $markdown, $match) === 1) {
-            $metadata = '<details class="docs-metadata"><summary>Document metadata</summary>' . "\n" . '<pre tabindex="0" role="region" aria-label="Document metadata"><code>'
-                . htmlspecialchars($match[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-                . "</code></pre>\n</details>" . "\n";
+            $metadata = '<details class="docs-metadata"><summary>Document metadata</summary>'
+                . "\n" . '<pre tabindex="0" role="region" aria-label="Document metadata"><code>'
+                . self::escape($match[1]) . '</code></pre></details>';
             $markdown = substr($markdown, strlen($match[0]));
         }
+        $lines = preg_split('/\r\n|\r|\n/', $markdown) ?: [];
+        $html = [];
+        $paragraph = [];
+        $listType = null;
+        $inCodeBlock = false;
+        $codeLines = [];
+        $codeLanguage = '';
+        $headings = [];
+        $tableLines = [];
+        $inComment = false;
 
-        return $metadata . (string) (new MarkdownConverter($environment))->convert($markdown);
+        $flushParagraph = static function () use (&$html, &$paragraph, $sourcePath, $projectRoot): void {
+            if ($paragraph !== []) {
+                $html[] = '<p>' . self::inline(implode("\n", $paragraph), $sourcePath, $projectRoot) . '</p>';
+                $paragraph = [];
+            }
+        };
+        $flushList = static function () use (&$html, &$listType): void {
+            if ($listType !== null) {
+                $html[] = '</' . $listType . '>';
+                $listType = null;
+            }
+        };
+
+        $flushTable = static function () use (&$html, &$tableLines): void {
+            if ($tableLines !== []) {
+                // Readable source fallback, not an implementation of Markdown tables.
+                $html[] = '<pre class="docs-table-source" tabindex="0" role="region" aria-label="Table source"><code>'
+                    . self::escape(implode("\n", $tableLines)) . '</code></pre>';
+                $tableLines = [];
+            }
+        };
+        foreach ($lines as $line) {
+            if (preg_match('/^\s*```([^`]*)$/', $line, $fence) === 1) {
+                $flushParagraph();
+                $flushList();
+                $flushTable();
+                if ($inCodeBlock) {
+                    $html[] = self::codeBlock($codeLines, $codeLanguage);
+                    $codeLines = [];
+                }
+                if (!$inCodeBlock) {
+                    $codeLanguage = explode(' ', trim($fence[1]))[0];
+                }
+                $inCodeBlock = !$inCodeBlock;
+                continue;
+            }
+
+            if ($inCodeBlock) {
+                $codeLines[] = $line;
+                continue;
+            }
+
+            // Hide comments in prose only; fenced examples remain verbatim.
+            if ($inComment) {
+                $end = strpos($line, '-->');
+                if ($end === false) { continue; }
+                $line = substr($line, $end + 3);
+                $inComment = false;
+            }
+            $line = preg_replace('/<!--.*?-->/', '', $line) ?? $line;
+            $start = strpos($line, '<!--');
+            if ($start !== false) {
+                $line = substr($line, 0, $start);
+                $inComment = true;
+            }
+            if (preg_match('/^\s*<img\b[^>]*>\s*$/i', $line) === 1
+                && preg_match('/\balt\s*=\s*(["\'])(.*?)\1/is', $line, $alt) === 1) {
+                $flushParagraph(); $flushList(); $flushTable();
+                $html[] = '<p>' . self::escape(html_entity_decode($alt[2], ENT_QUOTES | ENT_HTML5, 'UTF-8') . ' (image unavailable)') . '</p>';
+                continue;
+            }
+            if (str_starts_with(ltrim($line), '|')) {
+                $flushParagraph(); $flushList();
+                $tableLines[] = $line;
+                continue;
+            }
+            $flushTable();
+            if (trim($line) === '') {
+                $flushParagraph();
+                $flushList();
+                continue;
+            }
+
+            if (preg_match('/^(#{1,6})\s+(.+?)\s*#*\s*$/', $line, $matches) === 1) {
+                $flushParagraph();
+                $flushList();
+                $level = strlen($matches[1]);
+                // Keep existing document-fragment navigation when restoring the parser.
+                $slug = mb_strtolower(strip_tags(html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                $slug = preg_replace('/[^\pL\pN _-]/u', '', $slug) ?? '';
+                $slug = preg_replace('/[\s]+/u', '-', trim($slug)) ?: 'section';
+                $id = $slug;
+                for ($n = 1; isset($headings[$id]); $n++) { $id = $slug . '-' . $n; }
+                $headings[$id] = true;
+                $html[] = "<h{$level} id=\"" . self::escape($id) . '">' . self::inline($matches[2], $sourcePath, $projectRoot) . "</h{$level}>";
+                continue;
+            }
+
+            if (preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) === 1) {
+                $flushParagraph();
+                $flushList();
+                $html[] = '<hr>';
+                continue;
+            }
+
+            if (preg_match('/^\s*([-*+])\s+(.+)$/', $line, $matches) === 1) {
+                $flushParagraph();
+                if ($listType !== 'ul') {
+                    $flushList();
+                    $html[] = '<ul>';
+                    $listType = 'ul';
+                }
+                $html[] = '<li>' . self::inline($matches[2], $sourcePath, $projectRoot) . '</li>';
+                continue;
+            }
+
+            if (preg_match('/^\s*(\d+)[.)]\s+(.+)$/', $line, $matches) === 1) {
+                $flushParagraph();
+                if ($listType !== 'ol') {
+                    $flushList();
+                    $html[] = '<ol start="' . (int) $matches[1] . '">';
+                    $listType = 'ol';
+                }
+                $html[] = '<li>' . self::inline($matches[2], $sourcePath, $projectRoot) . '</li>';
+                continue;
+            }
+
+            if (preg_match('/^>\s?(.*)$/', $line, $matches) === 1) {
+                $flushParagraph();
+                $flushList();
+                $html[] = '<blockquote><p>' . self::inline($matches[1], $sourcePath, $projectRoot) . '</p></blockquote>';
+                continue;
+            }
+
+            $flushList();
+            $paragraph[] = $line;
+        }
+
+        $flushParagraph();
+        $flushList();
+        $flushTable();
+
+        if ($inCodeBlock) {
+            $html[] = self::codeBlock($codeLines, $codeLanguage);
+        }
+
+        return $metadata . implode("\n", $html);
+    }
+
+    private static function codeBlock(array $lines, string $language): string
+    {
+        $code = '<pre tabindex="0" role="region" aria-label="Code"><code'
+            . ($language === '' ? '' : ' class="language-' . self::escape($language) . '"') . '>'
+            . self::escape(implode("\n", $lines)) . '</code></pre>';
+        return $language === '' ? $code : '<figure class="docs-code"><figcaption>'
+            . self::escape($language === 'mermaid' ? 'Mermaid source' : $language) . '</figcaption>' . "\n" . $code . "\n</figure>";
+    }
+
+    private static function inline(string $text, ?string $sourcePath, string $projectRoot): string
+    {
+        // Protect generated markup from later emphasis replacements and input token collisions.
+        $text = str_replace("\x1A", '', $text);
+        $tokens = [];
+        $store = static function (string $html) use (&$tokens): string {
+            $key = "\x1A" . count($tokens) . "\x1A";
+            $tokens[$key] = $html;
+            return $key;
+        };
+        $escaped = self::escape($text);
+        $escaped = preg_replace_callback('/`([^`]+)`/', static fn (array $m): string => $store('<code>' . $m[1] . '</code>'), $escaped) ?? $escaped;
+        $escaped = preg_replace_callback('/(!?)\[([^\]]+)\]\(([^\s)]+)(?:\s+&quot;[^)]*&quot;)?\)/',
+            static function (array $m) use ($store, &$tokens, $sourcePath, $projectRoot): string {
+                $label = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $m[2]) ?? $m[2];
+                $label = preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $label) ?? $label;
+                $label = strtr($label, $tokens);
+                $url = $m[1] === '!' ? null : PlatformDocsCatalog::resolveLink(html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5, 'UTF-8'), $sourcePath, $projectRoot);
+                return $store($url === null ? $label . ($m[1] === '!' ? ' (image unavailable)' : ' (source unavailable)')
+                    : '<a href="' . self::escape($url) . '">' . $label . '</a>');
+            }, $escaped) ?? $escaped;
+        $escaped = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
+        $escaped = preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $escaped) ?? $escaped;
+        return strtr($escaped, $tokens);
+    }
+
+    private static function escape(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 }

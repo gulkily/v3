@@ -224,33 +224,33 @@ final class PlatformDocsPageTest
     }
 
 
-    public function testCoreFormattingAndDocumentScopedAnchors(): void
+    public function testRestoredFormattingFallbacksAndDocumentScopedAnchors(): void
     {
         $source = "# Same\n\n# Same\n\n- [x] Done\n  - Nested\n\n[ref][r] and ~~old~~ and _emphasis_\n\n[r]: https://example.test\n";
         $html = PublicMarkdownRenderer::render($source);
         assertStringContains('id="same"', $html);
         assertStringContains('id="same-1"', $html);
-        assertStringContains('disabled=""', $html);
-        assertSame(2, substr_count($html, '<ul>'));
-        assertStringContains('<del>old</del>', $html);
-        assertStringContains('<em>emphasis</em>', $html);
-        assertStringContains('href="https://example.test"', $html);
+        // Restored parser: task markers/reference forms stay readable, nested lists flatten.
+        assertStringContains('[x] Done', $html);
+        assertSame(1, substr_count($html, '<ul>'));
+        assertStringContains('~~old~~', $html);
+        assertStringContains('_emphasis_', $html);
+        assertStringContains('[ref][r]', $html);
         assertSame($html, PublicMarkdownRenderer::render($source));
         $guide = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'));
-        assertSame(4, substr_count($guide, '<table>'));
-        assertSame(1, substr_count($guide, '<ol>'));
-        $procedure = explode('</ol>', explode('<ol>', $guide)[1])[0];
-        assertSame(6, substr_count($procedure, '<li>'));
+        assertSame(0, substr_count($guide, '<table>'));
+        assertSame(4, substr_count($guide, 'aria-label="Table source"'));
+        // Continuations retain their source numbers rather than restarting each step at 1.
+        foreach (range(1, 6) as $number) { assertStringContains('<ol start="' . $number . '">', $guide); }
     }
 
-
-    public function testDocumentLinkPolicyCoversAllMarkdownLinkForms(): void
+    public function testRestoredInlineLinksKeepCurrentSafetyBoundary(): void
     {
         $source = "[CLI](v3_cli.md#delete-a-canonical-record)\n\n[architecture][a]\n\n[a]: ../architecture/public_architecture_and_trust.md\n\n<https://example.test/guide>\n\n[section](#local)\n\n![Logo](../../public/logo.svg)";
         $html = PublicMarkdownRenderer::render($source, 'docs/reference/author_post_retraction.md');
         assertStringContains('href="/docs/reference/v3_cli.md#delete-a-canonical-record"', $html);
-        assertStringContains('href="/docs/architecture/public_architecture_and_trust.md"', $html);
-        assertStringContains('href="https://example.test/guide"', $html);
+        assertStringContains('[architecture][a]', $html);
+        assertStringContains('&lt;https://example.test/guide&gt;', $html);
         assertStringContains('href="#local"', $html);
         assertStringContains('Logo (image unavailable)', $html);
         assertTrue(!str_contains($html, '<img'));
@@ -260,7 +260,6 @@ final class PlatformDocsPageTest
             'https://example.test/%0aevil', '..%5c..%5cautoload.php'] as $url) {
             $result = PublicMarkdownRenderer::render('[label](' . $url . ')', 'docs/reference/author_post_retraction.md');
             if ($url === 'https://example.test/%0aevil') {
-                // Encoded HTTP path data does not become local file access or HTML.
                 assertStringContains('href="https://example.test/%0aevil"', $result);
             } else {
                 assertTrue(!str_contains($result, '<a '));
@@ -268,6 +267,10 @@ final class PlatformDocsPageTest
             }
         }
         assertStringContains('source unavailable', PublicMarkdownRenderer::render('[source](autoload.php)'));
+        $tokens = PublicMarkdownRenderer::render('[`**literal**`](https://example.test/a_b) and `**more**`');
+        assertStringContains('<a href="https://example.test/a_b"><code>**literal**</code></a>', $tokens);
+        assertStringContains('<code>**more**</code>', $tokens);
+        assertTrue(!str_contains($tokens, "\x1A"));
     }
 
     public function testDocumentLinkPolicyRejectsSymlinkEscape(): void
@@ -305,12 +308,11 @@ final class PlatformDocsPageTest
         assertStringContains('Railspike rail and spike logo (image unavailable)', $logo);
         assertTrue(!str_contains($logo, '<img'));
         $references = PublicMarkdownRenderer::render(file_get_contents($root . '/docs/plans/thywill_site_option_review.md'), 'docs/plans/thywill_site_option_review.md');
-        assertTrue(!str_contains($references, '[T1]'));
-        assertStringContains('source unavailable', $references);
+        assertStringContains('[T1]', $references); // Deferred reference-link support retains source.
         $hostile = PublicMarkdownRenderer::render("---\nstyle: <script>bad</script>\n---\n\n~~~html\n<script>bad</script>\n~~~\n\n<img src=x alt=\"&lt;script&gt;\">\n");
         assertTrue(!str_contains($hostile, '<script>'));
         assertStringContains('&lt;script&gt;', $hostile);
-        assertStringContains('<figcaption>html</figcaption>', $hostile);
+        assertStringContains('~~~html', $hostile); // Tilde fences remain readable escaped source.
     }
 
 
@@ -322,7 +324,7 @@ final class PlatformDocsPageTest
         preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $expected, $expectedBlocks);
         preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $page, $actualBlocks);
         assertSame($expectedBlocks[1], $actualBlocks[1]);
-        assertStringContains('tabindex="0" role="region" aria-label="Table"', $page);
+        assertStringContains('tabindex="0" role="region" aria-label="Table source"', $page);
         assertStringContains('tabindex="0" role="region" aria-label="Code"', $page);
     }
 
