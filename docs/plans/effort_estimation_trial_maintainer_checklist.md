@@ -1,5 +1,7 @@
 # Effort estimation study — your checklist
 
+> Current status (2026-10-21): E07 reduced v3 is technically complete, with study acceptance pending; E01–E06 remain proposed. Every future cycle is enrolled under P2. The setup checklist below is historical; see the dated update at the end.
+
 Current position: setup is complete on `feat/effort-estimation-trial`. Review the [study ledger and six proposals](./effort_estimation_trial.md), confirm the provisional anchor and choose the first candidate. No feature has been selected or implemented for the study. The agent maintains estimates, evidence, plans and the ledger.
 
 ## Finish setup
@@ -25,3 +27,7 @@ Current position: setup is complete on `feat/effort-estimation-trial`. Review th
 - [ ] Review its conclusions and limitations, then decide whether to retain or revise the reference scale for a future batch.
 
 You do not need to manage hashes, Git commits, estimate tables or evidence collection yourself. The agent handles those within the approved scopes. You also do not need to supply a second independent rating unless you choose to participate as a rater.
+
+## Update — 2026-10-21
+
+The opening status is historical: E07 was selected and its reduced v3 scope is technically complete; comfortable-fit judgment and acceptance remain pending. Six other candidates remain proposed. The maintainer has authorized provisional beta use and [standing enrollment](./effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2) of every future cycle. No repeated study selection is needed. Feature approvals and individual acceptance still apply; six accepted outcomes are a review checkpoint and collection continues afterward.
