@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runInThisContext } from 'node:vm';
@@ -7,7 +7,6 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
-import { checkRootApprovalPages } from './root_approval_checks.mjs';
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(await readFile(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
 const pgp = globalThis.openpgp;
@@ -40,6 +39,7 @@ try {
   await page.goto(base+'/tools/user-access/');
   await page.getByText('No access changes recorded yet.').waitFor();
   const security = '/activity/?view=security';
+  await page.goto(base+security);await page.getByText('No access changes recorded yet.').waitFor();
   await context.clearCookies();
   await context.addCookies([{name:'identity_hint', value:'openpgp:'+fingerprint, url:base}]);
   const denied = await context.request.get(base+security);
@@ -96,7 +96,9 @@ try {
   // Canonical legacy fixtures exercise shared-date cursor boundaries without fabricating receipts.
   for(let i=0;i<105;i++) {
     const id='legacy-access-'+String(i).padStart(3,'0');
-    await writeFile(join(root,'repository/records/posts',id+'.txt'),`Post-ID: ${id}\nCreated-At: 2026-01-01T12:00:00Z\nBoard-Tags: identity approval\nAuthor-Identity-ID: openpgp:${fingerprint}\n\nHistorical approval fixture.\n`);
+    const tags=i===104?'identity invitation':'identity approval';
+    const body=i===104?'Invitation-Action: redeem\nVerification-Hash: sha256:'+ 'a'.repeat(64):'Historical approval fixture.';
+    await writeFile(join(root,'repository/records/posts',id+'.txt'),`Post-ID: ${id}\nCreated-At: 2026-01-01T12:00:00Z\nBoard-Tags: ${tags}\nAuthor-Identity-ID: openpgp:${fingerprint}\n\n${body}\n`);
   }
   for(const [command,args] of [['git',['-C',join(root,'repository'),'add','records/posts']],['git',['-C',join(root,'repository'),'commit','-qm','Add isolated legacy access history']],['php',[join(project,'scripts/rebuild_read_model.php'),join(root,'repository'),join(root,'read.sqlite3')]]]) {
     const result=spawnSync(command,args,{encoding:'utf8'});assert.equal(result.status,0,result.stdout+result.stderr);
@@ -104,6 +106,7 @@ try {
   await page.goto(base+security);
   const firstPage=await page.locator('.access-history-event').evaluateAll(nodes=>nodes.map(n=>n.dataset.accessHistoryId));
   assert.equal(firstPage.length,100);
+  assert.equal(await page.getByText('Invitation accepted by browser-inviter',{exact:true}).count(),1);
   await page.getByRole('link',{name:'Older events',exact:true}).click();
   const secondPage=await page.locator('.access-history-event').evaluateAll(nodes=>nodes.map(n=>n.dataset.accessHistoryId));
   assert.equal(secondPage.length,11);assert.equal(new Set([...firstPage,...secondPage]).size,111);
@@ -125,7 +128,66 @@ try {
   const forteIds=await page.locator('[data-paned-activity-id]:visible').evaluateAll(nodes=>nodes.map(n=>n.dataset.panedActivityId));
   assert.equal(new Set(forteIds).size,forteIds.length);
   await page.getByRole('link',{name:'User Access',exact:true}).click();
-  console.log('PASS access history: signed recovery, recent/full agreement, 111-event tied-date pagination, legacy evidence, Forte parity and return');
+  // Exercise a real member session, including a forged operator identity hint.
+  const memberKeys=await keys('history-member');
+  const memberFingerprint=(await pgp.readKey({armoredKey:memberKeys.publicKey})).getFingerprint();
+  const linkedText=await (await context.request.post(base+'/api/link_identity',{form:{public_key:memberKeys.publicKey}})).text();
+  const memberSlug=/^profile_slug=(.+)$/m.exec(linkedText)[1];
+  await page.goto(base+'/tools/user-access/profiles/'+memberSlug);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('[data-signed-approval-form] button').click();
+  await page.waitForURL(/approval=success/);
+  const member=await browser.newContext();
+  await member.addInitScript(({keys,fingerprint})=>{
+    for(const [key,value] of Object.entries({username:'history-member',private_key:keys.privateKey,public_key:keys.publicKey,fingerprint,published_fingerprint:fingerprint.toUpperCase()}))localStorage.setItem('forum_pki_'+key,value);
+  },{keys:memberKeys,fingerprint:memberFingerprint});
+  const memberPage=await member.newPage();await memberPage.goto(base+'/account/key/');
+  await memberPage.waitForFunction(()=>document.querySelector('[data-private-site-auth-state]').dataset.authenticatedIdentityId!=='');
+  await member.addCookies([{name:'identity_hint',value:'openpgp:'+fingerprint,url:base}]);
+  await memberPage.goto(base+'/tools/user-access/');
+  assert.equal(await memberPage.locator('#access-history').count(),0);
+  const memberDenied=await member.request.get(base+security);
+  assert.equal(memberDenied.status(),403);assert.doesNotMatch(await memberDenied.text(),/data-access-history-id/);
+  await member.close();
+  await context.clearCookies();await context.addCookies([{name:'identity_hint',value:'openpgp:'+fingerprint,url:base}]);
+  const resume=await context.request.get(base+'/tools/user-access/');
+  assert.match(await resume.text(),/Sign in with your operator account/);
+  assert.doesNotMatch(await resume.text(),/data-access-history-id/);
+  await page.goto(base+'/tools/user-access/');await page.locator('.access-history-event').first().waitFor();
+  const screenshotDir=process.env.ACCESS_HISTORY_SCREENSHOT_DIR || '/tmp';
+  const themes=(await readdir(join(project,'public/assets'))).map(f=>f.match(/^theme-([a-z0-9]+)\.css$/)?.[1]).filter(Boolean);
+  async function theme(name){await page.evaluate(async name=>{
+    if(!document.querySelector('[data-history-theme="'+name+'"]')) {
+      const link=document.createElement('link');link.rel='stylesheet';link.href='/assets/theme-'+name+'.css';link.dataset.historyTheme=name;
+      const loaded=new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject;});document.head.append(link);await loaded;
+    }document.documentElement.dataset.theme=name;
+  },name);}
+  for(const width of [390,1280]){
+    await page.setViewportSize({width,height:900});
+    await page.goto(base+'/tools/user-access/');
+    const summary=page.locator('.access-history-event > summary').first();
+    await summary.focus();await page.keyboard.press('Enter');
+    assert.equal(await page.locator('.access-history-event').first().getAttribute('open'),'');
+    for(const name of themes){await theme(name);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`User Access ${name}/${width}`);
+      assert.equal(await page.getByRole('link',{name:'View all',exact:true}).isVisible(),true);
+      if(['word97','chicago','midnight'].includes(name)) {
+        const icon=await page.locator('.tools-nav a[href="/tools/user-access/"]').evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
+        assert.notEqual(icon,'none',`User Access icon ${name}`);
+      }
+      await page.screenshot({path:join(screenshotDir,`access-history-${name}-${width}.png`),fullPage:true});
+    }
+    await page.getByRole('link',{name:'View all',exact:true}).click();
+    await page.locator('.access-history-event > summary').first().click();
+    await page.locator('.access-history-source > summary').first().click();
+    for(const name of themes){await theme(name);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`Full history ${name}/${width}`);}
+    await page.getByRole('link',{name:'User Access',exact:true}).click();
+    await page.getByRole('link',{name:'Pending approvals',exact:true}).click();
+    await page.getByRole('heading',{name:'Users Awaiting Approval',exact:true}).waitFor();
+    await page.goto(base+'/tools/');
+    for(const name of ['word97','chicago','midnight']){await theme(name);assert.notEqual(await page.locator('.tool-launcher-button[href="/tools/user-access/"]').evaluate(el=>getComputedStyle(el,'::before').backgroundImage),'none');}
+  }
+  console.log(`PASS access history: recovery/roles, recent/full evidence, 111-event tied-date pagination, Forte and ${themes.length} themes at phone/desktop widths`);
 } finally {
   await browser?.close();
   if(server){const stopped=once(server,'exit');server.kill();await stopped;}

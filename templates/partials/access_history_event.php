@@ -16,6 +16,14 @@
 <?php if (($item['link']['href'] ?? '') !== ''): ?>
       <p><a href="<?= $e($item['link']['href']) ?>"><?= $e($item['link']['label']) ?></a></p>
 <?php endif; ?>
+<?php if (($item['relevant_files'] ?? []) !== []): ?>
+<?= $partial('partials/activity_commit_manifest.php', [
+    'files' => $item['relevant_files'],
+    'commit_sha' => $item['source_commit_sha'] ?? '',
+    'commit_href' => $item['source_commit_href'] ?? '',
+    'heading' => 'Relevant files',
+]) ?>
+<?php else: ?>
 <?= $partial('partials/source_metadata.php', [
     'source_path' => $item['source_path'] ?? '',
     'source_commit_sha' => $item['source_commit_sha'] ?? '',
@@ -25,6 +33,7 @@
     'source_signature_href' => $item['source_signature_href'] ?? '',
     'source_signature_status' => $item['source_signature_status'] ?? '',
 ]) ?>
+<?php endif; ?>
     </details>
   </div>
 </details>

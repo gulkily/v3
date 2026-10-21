@@ -1,5 +1,14 @@
 # UI copy audit checklist
 
+## Access history in User Access — October 21, 2026
+
+- [x] Removed the detached Feature Flags paragraph and loose User Access audit link. Show five recent events in User Access, with concise summaries, expandable canonical evidence and conditional View all.
+- [x] Keep legacy uncertainty and authentication failure/retry feedback; protect history with authenticated operator authorization and no-store. Hint-only operators get recovery; authenticated members (including forged operator hints) receive no protected history.
+- [x] Actual Chromium flow: Tools/User Access → event evidence → full history/older page → return; empty history, grant/invitation/policy/legacy events, 111-event shared-date paging, expired-session signing/retry, invalid cursor, keyboard expansion, pending approvals and source links. Existing Forte retry/parity harness passes.
+- [x] Loaded phone/desktop at 390/1280 px across all 16 themes, recent and expanded full history; no page overflow. Reviewed `/tmp/access-history-light-1280.png` and `/tmp/access-history-midnight-390.png`. Existing User Access launcher/subnav icons verified in Word97, Chicago and Midnight; no destination/icon mapping was added or renamed.
+- Evidence: `node tests/browser/access_history.mjs`, `node tests/browser/forte_activity_parity.mjs`, 47 focused PHP tests. The original user's browser session was not inspected; isolated tests reproduce hint-only one-line 403 and empty authorized history separately. Non-Chromium browsers, production deployment and the full test suite were not run in this cycle.
+
+
 ## Browser identity ready notice — October 21, 2026 triage
 
 - [ ] Remove the routine “Browser identity ready” notice and hide its empty status element; retain necessary pending/failure/recovery feedback and explicit Account results. [Triage and acceptance](browser_identity_ready_triage_2026-10-21.md).
