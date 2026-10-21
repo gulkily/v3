@@ -34,3 +34,13 @@ Debug mode: enabled
 - All three approved stages are complete with verification and stage-scoped commits. The four-palette flow and required palette recovery pass locally; the separately reproduced composer limitation above remains.
 - Planning commit precedes the implementation summary and application edits; approved plans retain their historical content. Supporting mockups remain outside commits.
 - Ready for user review on `feat/lcd-color-choices`; no merge or deployment performed.
+
+## Stage 3 - Recovery and regression coverage
+
+- Changes: Added the integrated `lcd_palettes.mjs` regression suite; fixed failed-stylesheet retry without applying an unavailable theme, disambiguated theme/palette popovers, aligned DOM and visual control order, restored predictable Tab focus, and kept the palette popover above page content. Stage 2 commit: `ed31277c`.
+- Verification: passed `node tests/browser/lcd_palettes.mjs`, `node tests/browser/theme_cycle.cjs`, all 23 theme/profile PHP checks, the core-route smoke check, PHP/JS syntax, and diff checks. Chromium covered all four palettes at 390px/1280px, 34 contrast pairs per palette/viewport, fixed header anchors, real board/thread/Tools navigation, keyboard/Tab/Escape, selection/cycling, reload, first paint, missing/invalid/foreign preferences, throwing storage, other themes, standalone compatibility, failed/initially failed/delayed stylesheets, retry, and rapid theme changes. Inspected Purple phone and muted Amber desktop captures under `/tmp/lcd-palettes-uKgZYc`.
+- Limits: focused checks, not a full-suite pass. Fully blocked storage reads reproduce two existing board-composer errors from unchanged browser-signing code; palette interaction recovers without additional errors. Physical phones and production were not checked. Standalone pages retain their existing light/dark scheme. Deployment/merge remain outside this cycle.
+
+## Completion
+
+All three approved stages are implemented and locally verified. UI adds only the requested palette control and short palette names; no explanatory copy or settings page. Source-feedback status and UI audit updated. Stage commits accompany their summaries; the final diagnostic report follows in a separate log-only handoff commit. Supporting mockups remain untracked as specified by the approved plan.

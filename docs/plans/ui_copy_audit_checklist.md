@@ -185,3 +185,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Bug 03: restored home-page drafts stay compact until focused. Text, selection, empty-collapse, warning, and attachment behavior are preserved. No UI text or controls added; inline reply behavior is unchanged.
 - Verification: 85 signing/lazy-compose checks and Chromium/Firefox/WebKit at 390px/1280px across Light, Word97, Chicago, and Midnight passed. Covered long restored drafts, background status/pageshow, focus, overflow, failure/retry, signed publication, and no-script controls. Inspected phone collapsed and desktop expanded screenshots; syntax/diff checks passed.
 - Pending: physical-phone and production checks, deployment, source-comment reply. Other composer-jumping reports remain separate.
+
+## LCD palette selector — October 21, 2026
+
+- [x] Added Green, muted Amber, grayish Purple, and Gray choices to one LCD-only control left of the theme selector. No explanatory copy or settings page. Theme selector top/right offsets remain stable.
+- Verified pointer/keyboard, phone/desktop rendering, text/control contrast, saved preferences/first paint, fallback and stylesheet recovery. See the [implementation summary](lcd_color_choices/lcd_color_choices_step4_implementation_summary.md) for commands, coverage, and the existing blocked-storage composer limitation. Physical-phone and production checks remain pending.
