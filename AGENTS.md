@@ -25,3 +25,7 @@ Railspike is already installed as a Git subtree at `docs/railspike/`. Keep proje
 ## Repository guidance
 
 Follow `CONTRIBUTING.md`, including its requirements for read-model schema changes.
+
+## Continuing Railspike effort study
+
+Every future Railspike cycle participates in the same `railspike-effort` study under protocol P2. Follow [standing enrollment and checkpoint collection](docs/plans/effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2); do not ask to select each cycle again. Keep snapshots in that cycle's artifacts and index them in the host ledger. Preserve R1, stable IDs, score revisions and incomplete outcomes; deduplicate worktree copies. Existing cycles join at their next checkpoint without invented earlier scores. Collection does not approve implementation, bypass normal approvals, require debug mode or authorize uploads.
