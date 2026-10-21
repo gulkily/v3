@@ -61,6 +61,17 @@ final class FrontController
             ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
         $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
+        if ($requestUri === '/internal/high-traffic/refresh') {
+            header('Cache-Control: no-store');
+            if ($approvedMembersOnly || $method !== 'POST' || (int)($_SERVER['CONTENT_LENGTH'] ?? 0)>2048
+                || (isset($_SERVER['HTTP_SEC_FETCH_SITE']) && $_SERVER['HTTP_SEC_FETCH_SITE'] !== 'same-origin')
+                || (isset($_SERVER['HTTP_ORIGIN']) && ($_SERVER['HTTP_ORIGIN'] !== ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? ''))))) {
+                http_response_code(403);return;
+            }
+            try { (new HighTrafficRefresh($highTraffic))->hint(is_string($_POST['route'] ?? null) ? $_POST['route'] : ''); }
+            catch (Throwable $error) { $highTraffic->report($error);http_response_code(503);return; }
+            http_response_code(204);return;
+        }
         if (!$approvedMembersOnly && in_array($method,['GET','HEAD'],true) && empty($_SERVER['HTTP_AUTHORIZATION'])
             && !str_contains($requestUri,'?') && HighTrafficRoute::canonical($requestUri) === null
             && HighTrafficRoute::canonical(rtrim($requestUri,'/') . '/') !== null && $highTraffic->enabled()) {

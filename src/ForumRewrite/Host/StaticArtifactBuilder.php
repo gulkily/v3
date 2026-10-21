@@ -128,6 +128,8 @@ final class StaticArtifactBuilder
         foreach (headers_list() as $header) {
             if (preg_match('/^(set-cookie|location):/i', $header)) throw new RuntimeException('Shared render emitted session or redirect headers.');
         }
+        $script = AssetFingerprint::fingerprintedPath($this->projectRoot . '/public', '/assets/high_traffic.js');
+        $html = str_replace('</head>', '<script defer src="' . htmlspecialchars($script, ENT_QUOTES) . '"></script></head>', $html);
         $this->copyReferencedAssets($html);
         $this->assertFingerprintReferencesAvailable($html);
         $stamp = '<meta name="v3-generated-at" content="' . gmdate('Y-m-d\TH:i:s\Z') . '">';

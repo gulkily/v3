@@ -19,6 +19,15 @@ final class HighTrafficTest
             $html = $cache->generate('/about/');
             assertStringContains('v3-generated-at', (string)$html);
             assertSame($html, file_get_contents($cache->path('/about/')));
+            $refresh=new \ForumRewrite\Host\HighTrafficRefresh($cache);
+            assertSame(false,$refresh->hint('/about/'));
+            touch($cache->path('/about/'),1); clearstatcache();
+            assertSame(true,$refresh->hint('/about/'));
+            assertSame(false,$refresh->hint('/about/'));
+            assertSame(['/about/'],$refresh->hints());
+            touch($cache->path('/about/')); clearstatcache();
+            assertSame(false,$refresh->hint('/about/'));
+            assertSame(false,$refresh->hint('/tools/feature-flags/'));
             $cache->limits['generators']=1;
             $slot=fopen($cache->root . '/locks/slot-0','c'); flock($slot, LOCK_EX);
             assertSame(null, $cache->generate('/'));

@@ -87,7 +87,7 @@ final class HighTrafficCache
             $retraction = \ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot);
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             $html = $this->render($route);
-            $html = str_replace('</head>', '<meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
+            $html = str_replace('</head>', '<meta name="v3-refresh-after" content="' . $this->limits['fresh_seconds'] . '"><meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
             if (strlen($html) > $this->limits['page_bytes']) throw new RuntimeException('Generated HTML exceeds page size limit.');
             \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$retraction,$meta): void {
             if (\ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot) !== $retraction) throw new RuntimeException('Retraction changed during rendering.');

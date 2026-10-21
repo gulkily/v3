@@ -33,3 +33,9 @@ Branch: `feature/high-traffic-mode`. Planning commit: `78732a6a`.
 - Changes: bounded end-of-file access-log sampling (no cursor/rotation management), eligible route popularity ranking, fresh-page skips, deduplicated bounded cron with reserved low-priority capacity, atomic refresh and abandoned-temp cleanup. Active-mode aliases redirect to canonical cache URLs. CLI `high-traffic cron [access.log]` is the refresh entry point.
 - Verification: focused PHP tests passed 4 cases including recent-line/byte caps and popularity ranking. Isolated Apache acceptance passed with a forced-stale page refreshed by the real cron command, preserving direct warm serving. Larger 20-page/timing and concurrency evidence follows in Stage 8.
 - Notes: sysop owns cron scheduling and log operations; missing logs are reported while pending low-priority work can continue. Freshness is load-dependent. Stage 4 commit: `92993126`.
+
+## Stage 6 - Timestamp refresh hints
+
+- Changes: fingerprinted deferred client checks embedded UTC age and sends one low-priority hint without identity dependencies or polling; live no-store endpoint admits only canonical stale existing pages, rejects cross-site requests, deduplicates and bounds queue growth. Cron verifies server freshness before work.
+- Verification: JS syntax and PHP lint passed. HighTraffic tests passed 4 cases including fresh/stale/duplicate/ineligible hints and refreshed-file suppression; isolated Apache regression passed. Existing two-session warm-hit behavior remains verified; signed-action browser acceptance remains Stage 8.
+- Notes: page-local sessionStorage suppresses repeated hints for a minute; server age/admission is authoritative. No new identity-specific UI was introduced. Stage 5 commit: `6d7204b3`.

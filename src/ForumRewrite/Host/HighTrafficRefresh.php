@@ -67,6 +67,18 @@ final class HighTrafficRefresh
             return $report;
         } finally { flock($lock,LOCK_UN);fclose($lock); }
     }
+    public function hint(string $route): bool
+    {
+        if (HighTrafficRoute::canonical($route)===null || !$this->cache->enabled()) return false;
+        return $this->cache->locked(function () use ($route): bool {
+            if (!$this->cache->enabled() || !is_file($this->cache->path($route)) || $this->cache->fresh($route)) return false;
+            $path=$this->cache->root . '/hints/' . hash('sha256',$route) . '.json';
+            if (is_file($path)) return false;
+            if (count(glob($this->cache->root . '/hints/*.json') ?: []) >= $this->cache->limits['queue']) return false;
+            $this->cache->atomic($path,json_encode(['route'=>$route,'queued_at'=>time()],JSON_THROW_ON_ERROR));
+            return true;
+        });
+    }
     public function hints(): array
     {
         $routes=[];
