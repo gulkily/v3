@@ -60,6 +60,25 @@ final class FrontController
         $approvedMembersOnly = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
             ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
+        $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
+        if (!$approvedMembersOnly && in_array($method, ['GET', 'HEAD'], true)
+            && empty($_SERVER['HTTP_AUTHORIZATION']) && HighTrafficRoute::canonical($requestUri) !== null && $highTraffic->enabled()) {
+            try {
+                $html = $highTraffic->generate($requestUri);
+                if ($html !== null) {
+                    header('Content-Type: text/html; charset=utf-8');
+                    header('Cache-Control: public, no-cache, must-revalidate');
+                    http_response_code(200);
+                    if ($method !== 'HEAD') echo $html;
+                    return;
+                }
+            } catch (Throwable $error) { $highTraffic->report($error); }
+            header('Retry-After: 5');
+            header('Cache-Control: no-store');
+            $this->sendHtml($this->renderBusyError(), 503);
+            return;
+        }
+
         $browserRuntimeAsset = $this->browserRuntimeAsset($method, $requestUri);
         if ($browserRuntimeAsset !== null) {
             $this->sendBrowserRuntimeAsset($browserRuntimeAsset['contents'], $browserRuntimeAsset['contentType'], $method);
