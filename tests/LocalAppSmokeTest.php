@@ -2322,6 +2322,24 @@ PHP;
         );
         assertStringContains('2 replies', $metaMatch[1]);
 
+        $flagPath = $repositoryRoot . '/records/instance/feature-flags.txt';
+        if (!is_dir(dirname($flagPath))) { mkdir(dirname($flagPath), 0777, true); }
+        file_put_contents($flagPath, "Schema: site-feature-flags-v1\n\nFORUM_COLLAPSE_SAME_AUTHOR_POSTS_ENABLED: false\n");
+        $separate = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/cont-merge-root');
+        assertStringNotContains(' continuation', $separate);
+        assertStringNotContains('meta-deferred', $separate);
+        assertStringContains('4 replies', $separate);
+        foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
+            assertSame(1, preg_match('/<article id="post-cont-merge-' . $suffix . '"[^>]*>(.*?)<\/article>/s', $separate, $card));
+            assertStringContains('<p class="meta">', $card[1]);
+            assertStringContains('post-card-actions', $card[1]);
+        }
+        unlink($flagPath);
+        $restored = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/cont-merge-root');
+        assertStringContains(' continuation', $restored);
+        assertStringContains('2 replies', $restored);
+
+
         exec('rm -rf ' . escapeshellarg($repositoryRoot));
         @unlink($databasePath);
     }

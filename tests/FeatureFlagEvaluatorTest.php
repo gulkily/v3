@@ -9,6 +9,21 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 
 final class FeatureFlagEvaluatorTest
 {
+    public function testSameAuthorCollapseDefaultsAndOverrides(): void
+    {
+        $key = FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED;
+        $this->withEnvironment([], function () use ($key): void {
+            assertSame(true, (new FeatureFlagEvaluator())->isEnabled($key));
+            assertSame(true, (new FeatureFlagEvaluator())->evaluate($key)->canChangeFromSite());
+            assertSame(false, (new FeatureFlagEvaluator(siteValues: [$key => false]))->isEnabled($key));
+        });
+        $this->withEnvironment([$key => 'false'], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => true]))->evaluate($key);
+            assertSame(false, $state->effectiveValue);
+            assertSame(true, $state->isLocked());
+        });
+    }
+
     public function testMessagingFlagDefaultsAndOverrides(): void
     {
         $key = FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED;
@@ -145,6 +160,7 @@ final class FeatureFlagEvaluatorTest
         );
 
         assertSame([
+            FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
@@ -438,6 +454,7 @@ PHP);
     private function withEnvironment(array $values, callable $callback): void
     {
         $keys = [
+            FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,

@@ -126,6 +126,9 @@ final class ThreadAndPostPageController
         return $this->routeServices->renderPageTemplate(
             'thread.php',
             [
+                'collapseSameAuthorPostsEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
+                ),
                 'thread' => $threadRow,
                 'posts' => $posts,
                 'title' => $title,

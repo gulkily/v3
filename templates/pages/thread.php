@@ -38,7 +38,7 @@ $replyContinuationFlags = [];
 $previousPost = $rootPost;
 $trueReplyCount = 0;
 foreach ($replyPosts as $post) {
-    $isContinuation = $previousPost !== null && $isThreadPostContinuation($previousPost, $post, $continuationWindowSeconds);
+    $isContinuation = ($collapseSameAuthorPostsEnabled ?? true) && $previousPost !== null && $isThreadPostContinuation($previousPost, $post, $continuationWindowSeconds);
     $replyContinuationFlags[] = $isContinuation;
     if (!$isContinuation) {
         $trueReplyCount++;
