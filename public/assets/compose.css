@@ -203,12 +203,20 @@
   white-space: normal;
 }
 
-/* The board editor remains the same focusable node in both states. Without
-   JavaScript the complete form stays visible and usable. */
-[data-inline-thread-ready][data-inline-thread-expanded="0"] .compose-form-actions {
-  display: none;
-}
-[data-inline-thread-ready][data-inline-thread-expanded="0"] textarea[name="body"] {
-  min-height: 4.75rem;
-  resize: none;
+/* Collapse before first paint, with native focus expanding the same editor even
+   before deferred scripts run. No-script forms retain their complete layout. */
+@media (scripting: enabled) {
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) {
+    padding: 0.8rem 0.9rem;
+  }
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) > .inline-reply-identity-status,
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) form > :not(textarea) {
+    display: none;
+  }
+  [data-inline-thread-compose][data-inline-thread-expanded="0"]:not(:focus-within) textarea[name="body"] {
+    height: 4.75rem;
+    min-height: 4.75rem;
+    margin: 0;
+    resize: none;
+  }
 }

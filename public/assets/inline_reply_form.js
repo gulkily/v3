@@ -157,7 +157,6 @@
     composer.addEventListener('change', sync);
     new MutationObserver(sync).observe(composer, {subtree: true, attributes: true, attributeFilter: ['hidden', 'data-kind']});
     window.addEventListener('pageshow', sync);
-    composer.dataset.inlineThreadReady = '1';
     sync();
   }
 

@@ -19,7 +19,7 @@
 <?= $indent($partial('partials/board_pagination_nav.php', ['pagination' => $pagination]), 0) ?>
 <?php endif; ?>
   <article class="card inline-reply-composer compact-thread-compose" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
-    <div class="inline-reply-expanded" data-inline-thread-compose>
+    <div class="inline-reply-expanded" data-inline-thread-compose data-inline-thread-expanded="0">
         <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/thread_compose_form.php', [
     'boardTags' => 'general',

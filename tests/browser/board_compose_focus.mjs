@@ -48,6 +48,21 @@ try {
 
 
  await setFlags({images:false});
+ // Freeze deferred scripts to verify the server-rendered first paint.
+ let releaseScripts;const scriptsReady=new Promise(resolve=>{releaseScripts=resolve;});
+ await page.route('**/assets/*.js*',async route=>{await scriptsReady;await route.continue();});
+ try {
+  await page.goto(base+'/',{waitUntil:'commit'});
+  const editor=page.locator('[data-inline-thread-compose] textarea');
+  await editor.waitFor();
+  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+  const before=await editor.boundingBox();
+  assert.equal(await page.locator('[data-inline-thread-compose] .compose-form-actions').isVisible(),false,'Post is collapsed before deferred scripts execute');
+  releaseScripts();await page.waitForLoadState('networkidle');
+  assert.deepEqual(await editor.boundingBox(),before,'initialization must not move or resize the collapsed editor');
+  assert.equal(await page.locator('[data-inline-thread-compose] .compose-form-actions').isVisible(),false);
+  console.log('PASS collapsed first paint and unchanged editor geometry after initialization');
+ } finally {releaseScripts();await page.unroute('**/assets/*.js*');}
  for (const width of [390,1280]) {
   await page.setViewportSize({width,height:844});
   for(const theme of ['light','word97','chicago','midnight']) {
@@ -67,10 +82,12 @@ try {
     Element.prototype.scrollIntoView=function(){scrollCalls++;};
    });
    assert.equal(await actions.isVisible(),false);
+   const collapsedHeight=(await body.boundingBox()).height;
    if(process.env.BOARD_SCREENSHOTS) await page.screenshot({path:process.env.BOARD_SCREENSHOTS+'/'+theme+'-'+width+'-collapsed.png'});
    await body.click();
    await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='1');
    assert.equal(await actions.isVisible(),true);
+   assert.ok((await body.boundingBox()).height>collapsedHeight+4,'the prompt expands into a taller editor');
    if(process.env.BOARD_SCREENSHOTS) await page.screenshot({path:process.env.BOARD_SCREENSHOTS+'/'+theme+'-'+width+'-expanded.png'});
    assert.deepEqual(await page.evaluate(()=>({same:editor===document.activeElement,focus:focusCalls,scroll:scrollCalls,events:focusEvents.length})),{same:true,focus:0,scroll:0,events:1});
    const draft='Board draft '+theme+' '+width;
@@ -83,6 +100,7 @@ try {
    await page.locator('.board-controls-nav a').first().focus();
    await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='0');
    assert.equal(await actions.isVisible(),false);
+   assert.equal((await body.boundingBox()).height,collapsedHeight,'empty focus exit restores the compact editor');
    console.log('PASS single board editor, direct first focus, no scripted scroll, draft/selection, empty collapse: '+theme+' '+width);
   }
  }
