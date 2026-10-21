@@ -2,6 +2,8 @@
 
 [Setup plans](./effort_estimation_trial/) · [Your checklist](./effort_estimation_trial_maintainer_checklist.md)
 
+> Current enrollment: [protocol P2](#continuing-enrollment--2026-10-21-protocol-p2) enrolls every future cycle from 2026-10-21. Earlier individual-selection rules are historical; R1 and candidate histories remain unchanged.
+
 ## Current state
 
 Setup complete; maintainer acceptance of the provisional R1 anchor remains pending. E07 reduced scope v3 is technically complete on `feat/fastmod-root-meta`; maintainer comfortable-fit judgment and acceptance are pending. Original v2 was superseded after its Stage 1 sizing gate. Completed accepted outcomes: **0 / 6**. The setup cycle is not a study outcome; E01–E06 remain proposed, and the additional selected E07 scope/score history is preserved below.
@@ -12,8 +14,8 @@ Recorded 2026-10-19T03:20:46.805149+00:00. Definition: **1.0 is the largest well
 
 | Source | SHA-256 |
 | --- | --- |
-| [Calibration report](../../../../railspike-dev/docs/research/effort_estimation/report.md) | `d3a30b6400b83bb25283b4234b41ba07515df9a696ea44de59c10186103771b0` |
-| [Implementation diff review](../../../../railspike-dev/docs/research/effort_estimation/diff_review.md) | `068b3519326e08a939df40b5abe0106ddcbab80bd796616c76b5084a21462b84` |
+| [Calibration report](../../../railspike-dev/docs/research/effort_estimation/report.md) | `d3a30b6400b83bb25283b4234b41ba07515df9a696ea44de59c10186103771b0` |
+| [Implementation diff review](../../../railspike-dev/docs/research/effort_estimation/diff_review.md) | `068b3519326e08a939df40b5abe0106ddcbab80bd796616c76b5084a21462b84` |
 | [User feedback](./zenmemes_meta_feedback_2026-10-18_summary.md) | `ef335604ecd5b51e5c04067d88e4d6f01cb4fdb21b8f4d7dba7b5b90e4012bfc` |
 
 Reference documents live in an external checkout. If unavailable, restore these exact sources and verify hashes before rating; do not silently use changed anchors. Explicitly version any accepted replacement as R2, retaining R1 and affected score histories. The same frozen reference set applies across a batch. Local path relocation may repair links without changing content identity.
@@ -170,6 +172,21 @@ Synthetic walkthrough evidence lives in the [setup summary](./effort_estimation_
 - E07 v3 closeout (2026-10-20): [canonical implementation/outcome record](./fastmod_rubric_actions/fastmod_rubric_actions_step4_implementation_summary.md#commits-and-study-outcome). Reduced implementation start `79bc519f`; original cycle start `4c521b743575979b8fefc66b38271551a57a08ef`; final production code `d1da4d40`; revised planning `fe9578f9`, then eight stage commits including closeout. Projected total **0.85 preserved**; **retrospective scope assessment 0.90**, Codex single exposed rater, R1. Outcome: root-only meta tags, existing presentation/live lookup/public artifact labels, CLI correction/retry/rollback and private retained evidence. Final focused 27 passed; broader focused 68 passed; real browser/rebuild passed. Full suite 1,380 / 1,372 passed / 8 reproduced baseline/environment failures; started before final atomic-evidence/enablement fixes, with final focused/browser coverage of those changes. No deployment or live-model accuracy test. Maintainer comfortable-fit/acceptance **pending**, accepted outcomes remain **0 / 6**. v3 is an explicit reduced replacement, not completion of original v2 and not an independent child observation.
 
 - E07 closeout commit: `1f35e6be` (Stage 8), completing the eight-stage v3 sequence after planning `fe9578f9`. Current-state text corrected in a separate closeout follow-up; no application changes or history rewrites. Maintainer study acceptance remains pending.
+
+## Continuing enrollment — 2026-10-21 (protocol P2)
+
+Maintainer request: “I want every future railspike to be part of the same data collection.” This is standing enrollment of every new Railspike cycle in this project, including documentation, research and maintenance cycles. It supersedes individual-selection-only guidance above from this date; earlier text and candidate histories remain historical. R1 and all prior scores remain unchanged. The maintainer authorized provisional beta use of the scale; this does not supply E07's pending comfortable-fit judgment or accept an individual outcome.
+
+- Continuing study ID: `railspike-effort`; reference R1; collection protocol P2. New cycle ID: `v3/<unique feature prefix>`; retain E01–E07 as legacy candidate IDs. Reuse the same ID across worktrees for the same cycle. A distinct follow-up gets its own prefix and parent link; check existing plans/ledger before allocating it.
+- Every new cycle records intake, applicable Step 1/2/3 handoffs, Step 4 entry, material revisions and closeout using the existing rating protocol and outcome template. Include this ledger's bookkeeping in the cycle's documentation scope. Canonical snapshots stay in feature artifacts; append a ledger index row with ID, status, scope/reference version, current score, checkpoint/artifact link and parent/replacement relationship. Preserve all earlier values. Initial inspection exposure and missing checkpoints must be explicit.
+- Record new cycles at their first artifact, including work that pauses, is abandoned or never reaches implementation. Work already underway joins at its next checkpoint with its earlier estimates marked missing unless evidence exists; do not invent intake history. Ordinary tasks that do not invoke Railspike are outside the cycle population. E01–E06 remain proposals until actually started; automatic collection is not implementation approval.
+- Keep projections, retrospective scope assessment, verification and maintainer comfortable-fit/acceptance separate. Record stage counts, corrections versus new requests, omissions, revisions/diffs and splits. Unknown active work and absent independent ratings remain unknown. Technical completion does not increment accepted outcomes.
+- Six accepted outcomes now trigger a review checkpoint, not the end of collection or a size quota. Freeze R1 until an explicit reference revision; protocol P2 changes enrollment only. Retain every scope/version and related child cycle; no extra independent outcomes from cloned files or split children.
+- This checkout's ledger and artifacts are local copies of one dataset. Integrate updates through normal Git review; merge by stable cycle ID/checkpoint and retain conflicting snapshots, rather than overwriting or summing checkouts. Collection is local; no automatic upload is authorized. Repair source paths by recorded content hash/Git revision, never by silently changing references.
+
+### Enrollment index after P2
+
+E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 
 
 ## Cycle v3/reply_composer_focus_layout
