@@ -197,3 +197,12 @@ E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically c
 | `v3/reply_composer_focus_layout` | Implementation handoff; device acceptance pending | v1 / R1 / P2 | 0.65 reaffirmed | [Step 4 discovery/enrollment](./reply_composer_focus_layout/reply_composer_focus_layout_step4_implementation_summary.md#effort-study-enrollment-and-step-4-discovery-snapshot); [closeout](./reply_composer_focus_layout/reply_composer_focus_layout_step4_implementation_summary.md#study-closeout) | `iphone_reply_submit` pre-study predecessor; maintainer comfortable-fit/acceptance pending |
 
 This existing cycle joined under standing enrollment during Step 4. Intake, Steps 1–3 and Step 4 entry projections are missing, not backfilled. R1 source hashes were verified; earlier source exposure is disclosed in the canonical snapshot. Retrospective scope assessment **0.65** is separate from the preserved **0.65** projected total. Baseline `bc42277b`, three planned/delivered stages; committed scope and verification/omissions are recorded in the summary and final handoff log. Physical iPhone acceptance, full-suite evidence and maintainer acceptance are not claimed. No accepted-outcome count is incremented. This is one cycle regardless of checkout/worktree copies; no split or new independent outcome.
+
+
+## Cycle v3/composer_anchor_exit
+
+| Stable cycle ID | Status | Scope / reference / protocol | Total projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | ---: | --- | --- |
+| `v3/composer_anchor_exit` | Step 1 awaiting review; implementation not authorized | v1 / R1 / P2 | 0.50 intake; 0.50 reaffirmed at Step 1 | [Intake and Step 1 snapshots](./composer_anchor_exit_step1_solution_assessment.md#effort-snapshots) | `v3/reply_composer_focus_layout`; maintainer fit/acceptance pending |
+
+Enrolled under standing P2 policy. Initial lifecycle/style/template inspection and prior-cycle exposure preceded the recorded intake and are disclosed; no pristine prospective intake is claimed. Scope includes anchored inline thread/reply expansion, spacing, usable exit/resume, dedicated New Thread label/prompt polish, keyboard reachability and submission/recovery checks. No implementation, measured effort, retrospective outcome or accepted-count increment is claimed. This stable ID identifies the same cycle across worktrees; the original parent record remains intact. The user explicitly requested committing and pushing these Step 1 planning updates before the usual planning-commit gate; this does not approve implementation.
