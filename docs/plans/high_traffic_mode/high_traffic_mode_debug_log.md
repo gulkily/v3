@@ -56,3 +56,24 @@ No supported findings.
 ### Uncertain assessments
 
 - Source: `docs/workflow/step3_development_plan_do.md`, one-page limit versus mandatory stage fields, signatures where relevant, risks and completion evidence. The plan exceeds one page to retain eight stages, explicit limits and access/recovery acceptance criteria. Consider allowing a short overview plus a bounded stage checklist for cross-cutting features; no implementation approval is inferred from document length.
+
+## 2026-10-21 12:00:57 UTC — Step 4
+
+### Necessary/useful instructions
+
+- Source: `docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol. Each of eight stages has its own verified summary/commit, following planning commit `78732a6a`; final stage is `4a69ae16`. Retain the stage evidence and commit boundary.
+- Source: `docs/workflow/step4_implementation_after.md`, Completion Contract and scoped verification. Actual Apache/browser acceptance exposed shared-page authentication reloads and routine-write refresh starvation; both were corrected and verified before closeout. Retain end-to-end and recovery evidence requirements.
+- Source: `docs/workflow/step4_implementation_after.md`, verification status reporting. The full-project repeated import recovery matrix was interrupted after 770 seconds, while its unchanged matrix passed using a bounded documentation fixture and a separate full-project static-build/access regression passed. Retain the distinction between focused evidence and a full-suite result.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Source: `RAILSPIKE.md`, Experimental Effort Estimation. No study selected this cycle; no score or study ledger write applies.
+- Source: `RAILSPIKE.md`, Documentation-only scope. This cycle delivers application changes; documentation-only runtime exclusions do not apply.
+
+### Uncertain assessments
+
+- Source: `docs/workflow/step4_implementation_do.md`, applicable verification. An existing import recovery test repeatedly rebuilt the entire 1,355-document catalog for unchanged documentation discovery behavior. Consider an explicit suggestion to keep unrelated fixture inventories bounded while retaining the same recovery sequence and recording evidence limits; the committed harness makes this check repeatable without claiming a full-project repeated matrix pass.
