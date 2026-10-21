@@ -76,7 +76,7 @@ final class HighTrafficCache
                 usleep(10000);
             }
             if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
-            $token = $this->state();
+            $token = \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, fn () => $this->state());
             if (!($token['enabled'] ?? false)) return null;
             for ($i=0;$i<$this->limits['generators'];$i++) {
                 $candidate = fopen($this->root . '/locks/slot-' . $i,'c');
@@ -84,16 +84,25 @@ final class HighTrafficCache
                 if (is_resource($candidate)) fclose($candidate);
             }
             if ($slot === null) return null;
+            $retraction = \ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot);
+            $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             $html = $this->render($route);
+            $html = str_replace('</head>', '<meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
             if (strlen($html) > $this->limits['page_bytes']) throw new RuntimeException('Generated HTML exceeds page size limit.');
+            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$retraction,$meta): void {
+            if (\ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot) !== $retraction) throw new RuntimeException('Retraction changed during rendering.');
+            \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath,$this->repositoryRoot);
+            \ForumRewrite\Scoring\FastmodMetaPublication::publish($meta,$this->path($route),function () use ($route,$html,$token): void {
             $this->locked(function () use ($route,$html,$token): void {
                 if ($this->state() !== $token) throw new RuntimeException('Mode changed during generation.');
                 $count=0; $bytes=0;
                 $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages', \FilesystemIterator::SKIP_DOTS));
-                foreach ($files as $file) { if ($file->isFile()) { $count++; $bytes += $file->getSize(); } }
+                foreach ($files as $file) { if ($file->isFile() && $file->getExtension() === 'html') { $count++; $bytes += $file->getSize(); } }
                 $target=$this->path($route); $old=is_file($target) ? filesize($target) : 0;
                 if ((!is_file($target) && $count >= $this->limits['pages']) || $bytes-$old+strlen($html)>$this->limits['bytes']) throw new RuntimeException('High-traffic cache capacity reached; purge unused pages.');
                 $this->atomic($target,$html);
+            });
+            });
             });
             return $html;
         } finally { if (is_resource($slot)) { flock($slot,LOCK_UN); fclose($slot); } flock($page,LOCK_UN); fclose($page); }

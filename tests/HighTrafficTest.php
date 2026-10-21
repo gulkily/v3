@@ -33,6 +33,30 @@ final class HighTrafficTest
         }
     }
 
+    public function testCanonicalSafetyRetainsRoutinePagesAndWithdrawsBeforeRestrictions(): void
+    {
+        $tmp=sys_get_temp_dir() . '/v3-safety-' . bin2hex(random_bytes(6));
+        mkdir($tmp . '/public',0755,true); mkdir($tmp . '/repo');
+        $cache=new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__),$tmp . '/repo',$tmp . '/db',$tmp . '/public');
+        $cache->initialize();
+        $cache->atomic($cache->root . '/state.json',json_encode(['enabled'=>true,'generation'=>'initial']));
+        $cache->atomic($cache->path('/'),'old HTML');
+        symlink($cache->root . '/pages',$tmp . '/public/.high-traffic');
+        $old=getenv('FORUM_PUBLIC_ARTIFACT_ROOT');putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $tmp . '/public');
+        try {
+            \ForumRewrite\Host\HighTrafficSafety::beforeWrite($tmp . '/repo',$tmp . '/db','records/posts/new.txt');
+            assertSame('old HTML',file_get_contents($cache->path('/')));
+            assertTrue(is_link($tmp . '/public/.high-traffic'));
+            assertTrue($cache->state()['generation'] !== 'initial');
+            \ForumRewrite\Host\HighTrafficSafety::beforeWrite($tmp . '/repo',$tmp . '/db','records/instance/feature-flags.txt');
+            assertSame(false,is_link($tmp . '/public/.high-traffic'));
+            assertSame(false,$cache->enabled());
+        } finally {
+            putenv($old===false ? 'FORUM_PUBLIC_ARTIFACT_ROOT' : 'FORUM_PUBLIC_ARTIFACT_ROOT=' . $old);
+            exec('rm -rf ' . escapeshellarg($cache->root));
+        }
+    }
+
     public function testRouteAndIsolatedRender(): void
     {
         assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/threads/../'));
