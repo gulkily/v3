@@ -2,7 +2,7 @@
 
 Feedback from one imported todo thread, including its opening post and 13 actionable replies (14 posts total). The replies were posted on October 21, 2026, from 17:57 through 18:12 UTC (1:57–2:12 p.m. America/New_York). All imported posts in the approximately two-hour window preceding 18:17 UTC were reviewed without filtering by meta tag; the included posts carry the `general` board tag. Combined requests are split into 16 trackable items below.
 
-Scope is the locally available Zenmemes content accepted or already present in the latest import. That import was partial, so rejected or conflicting source content and posts after the imported snapshot are not covered. Reported behavior is user feedback, not a fresh reproduction. No implementation or production audit was performed for this compilation; all items remain open.
+Scope is the locally available Zenmemes content accepted or already present in the latest import. That import was partial, so rejected or conflicting source content and posts after the imported snapshot are not covered. Reported behavior is user feedback, not a fresh reproduction. No implementation or production audit was performed for the original compilation. Subsequent local implementation is tracked below; production resolution remains unverified.
 
 Format follows [Zenmemes meta feedback summary](zenmemes_meta_feedback_2026-10-18_summary.md). Railspike cycle estimates use an uncapped scale from 0 upward, including decimals. These are provisional estimates based on the feedback alone, not approved plans or commitments. Brainstorming and tentative suggestions retain their original uncertainty.
 
@@ -11,7 +11,7 @@ Format follows [Zenmemes meta feedback summary](zenmemes_meta_feedback_2026-10-1
 | Item | Request | Sources | Railspike cycles | Status |
 | --- | --- | --- | --- | --- |
 | 01 | Keep the reply entry field focused after posting, ready for another reply. | [reply-20261021175726-73beca3d](https://zenmemes.com/posts/reply-20261021175726-73beca3d) | 0.15 | Open — resolution not verified |
-| 02 | Remove the “browser identity ready” message. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.03 | Triaged — selected quick win; [source findings and acceptance](browser_identity_ready_triage_2026-10-21.md); implementation pending |
+| 02 | Remove the “browser identity ready” message. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.03 | Implemented and locally verified — [checks and limitations](browser_identity_ready_triage_2026-10-21.md#implementation-closeout--october-21-2026); deployment and source-comment reply pending |
 | 03 | Brainstorm text-entry macros for prompts, the current date, the current commit, and similar insertions. | [reply-20261021180225-ffc44b89](https://zenmemes.com/posts/reply-20261021180225-ffc44b89) | 0.5 | Open — resolution not verified |
 | 04 | Provide a simple, nontechnical “most recent activity” page. | [reply-20261021180354-1a31022c](https://zenmemes.com/posts/reply-20261021180354-1a31022c) | 0.5 | Open — resolution not verified |
 | 05 | Make QR codes stand out slightly while matching the site theme; explore a background roughly 20% lighter than the page background (prefer lighter over darker). | [reply-20261021180542-57b8fc3f](https://zenmemes.com/posts/reply-20261021180542-57b8fc3f) | 0.25 | Open — resolution not verified |
@@ -48,6 +48,10 @@ The earlier summary already records slow reply submission (Feature 09 and Bug 04
 Earlier same-day composer reports about saved text remaining after successful submission, preferring an inline home-page update, and focusing the text field after a redirect fall outside this time window and are not folded into these requests.
 
 ## Source inventory
+
+### Triage estimation follow-up
+
+Feature 02 now has a [source-informed estimation snapshot](browser_identity_ready_triage_2026-10-21.md#railspike-estimation-snapshot): **0.10 projected total**, compared with its preserved **0.03 feedback-only estimate**. The snapshot records scope, baseline, R1 calibration, exposure, verification burden, uncertainty, and revision triggers. It does not approve implementation or enroll the item in the effort trial.
 
 Each count includes the opening post. Sources link to the imported instance; corresponding raw records remain under `state/local_repository/records/posts`. The external Codex feedback above is contextual and excluded from this count.
 

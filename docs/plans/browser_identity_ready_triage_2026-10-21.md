@@ -10,6 +10,26 @@ Take this as the next quick win: low severity, high confidence, very small expec
 
 Reply focus (Feature 01) also benefits a frequent action but needs submission, navigation, and phone-keyboard checks. Composer expansion touches layout and restored drafts. Reply latency and QDB availability have greater potential impact but uncertain causes and substantially higher investigation costs. Removing this notice offers the clearest benefit for the smallest bounded change.
 
+## Railspike estimation snapshot
+
+| Field | Record |
+| --- | --- |
+| Candidate / scope | `browser_identity_ready`, v1: suppress routine preparation-ready copy and its empty space across affected shared surfaces; preserve pending, failure, recovery, and explicit Account outcomes |
+| Checkpoint / UTC | Post-source triage, 2026-10-21T18:37:37Z; not a Step 1–4 approval checkpoint |
+| Inherited estimate | **0.03**, from the feedback inventory; retained as the original feedback-only judgment |
+| Scoped projected total | **0.10 Railspike cycles**, including inspection already performed, necessary planning, implementation, required verification, documentation, ordinary correction, and the requested source-comment closeout reply |
+| Rater / exposure | Codex, single exposed rater; feedback scores, prior source inspection, this triage, the trial ledger and calibration examples were visible. No independent or pre-inspection rating is claimed |
+| Starting revision | Initial triage inspected `bc42277b46f95807e1ce9966707eca0620766a9b`; estimate recorded with checkout at `e950427e44a0f64d085468dc650391f299a2f002`. Recheck affected source before implementation; no intervening-diff audit is claimed |
+| Reference | R1 from the [effort-estimation ledger](effort_estimation_trial.md#frozen-reference-set-r1); report and diff-review SHA-256 hashes verified against the ledger. Frozen feedback hash verified using Git revision `4f6cfe2b436fae8d939b1349fe724a3879ee0a0e` |
+| Confidence | Moderate for total effort; high that the reported string remains in source. Runtime reproduction and shared Account interaction remain unverified |
+| Study / approval | Estimation data only; not selected into the six-outcome trial. No implementation approval or completed outcome is recorded |
+
+**Scale:** 1.0 is the largest well-scoped, releasable slice comfortably approvable for one Railspike cycle, including verification and documentation. Scores are relative judgments, not hours, priority, measured labor, or additive forecasts. R1 remains provisional pending maintainer acceptance.
+
+**Rationale:** Comparable to R1's duplicate-preview suppression (0.10): a narrow shared-presentation change with preserved behavior to verify. Below toolbar identity (0.35), which required server seeding and cross-tab state. The inherited 0.03 captures the apparent text removal; 0.10 allows for empty-element handling, asynchronous ready transitions, shared Account interactions, and phone/desktop checks across affected views and themes. This is a new source-informed total for the same v1 outcome, not an overwrite of the original estimate or a claim of measured overrun.
+
+**Dependencies and revision triggers:** Existing local browser fixtures, test tooling, and controllable saved/pending/failed identity states must support the acceptance checks below. Raise or revisit the total if reproducing those states requires substantial new infrastructure, if Account needs separate state handling, or if a race changes signing/submission behavior. Broader composer movement or reply latency work is separate scope. No schema migration, new navigation, or production deployment is included. Preserve draft and failure/retry recovery throughout. If ordinary Railspike planning is later chosen, carry this snapshot forward and append estimates at applicable handoffs; do not invent missing intake or approval checkpoints. Closeout should record actual verification, omissions, corrective work versus new scope, and a separate retrospective scope/maintainer-fit judgment.
+
 ## Evidence and likely scope
 
 - `public/assets/browser_signing.js`: `identityStateMessage("ready")` still returns the exact reported message. `renderIdentityPreparationState()` sends it to shared compose/account status nodes.
