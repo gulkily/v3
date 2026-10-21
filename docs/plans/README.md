@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Access history in User Access](feature_flags_security_review_cleanup/)
+
 - [Documentation discovery](docs_discovery/)
 - [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 
