@@ -30,3 +30,20 @@ No supported findings.
 
 ### Uncertain assessments
 - Browser fixture support for the complete signed operator save/failure/retry flow remains to be established during implementation; the plan explicitly blocks completion claims until verified.
+
+## 2026-10-21 UTC — Step 4
+
+### Necessary/useful instructions
+- `step4_implementation_do.md`, canonical component reuse: the registry and continuation decision supplied the toggle without separate flag controls, new navigation, or duplicated card markup. Retain.
+- `step4_implementation_do.md`, stage boundary protocol: implementation and browser acceptance each have a summary-bearing commit (`c1c26f67`, `18c059a1`) following planning commit `fc79dc71`. Retain.
+- `step4_implementation_after.md`, verification status: distinguishes passing focused/browser acceptance from an interrupted broader run and a reproduced baseline static-page-count failure. Retain.
+
+### Redundant/unnecessary instructions
+No supported findings.
+
+### Inapplicable instructions
+- Effort-study reporting: this cycle was not selected.
+- Schema and navigation icon requirements: no schema or navigation destination changed.
+
+### Uncertain assessments
+- Broader static-publication regressions were not all rerun on baseline. The implementation summary records exact failures, the one reproduced baseline case, documentation-edit interference, and interruption without claiming a full-suite pass.
