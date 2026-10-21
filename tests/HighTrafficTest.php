@@ -12,6 +12,8 @@ final class HighTrafficTest
         symlink(__DIR__ . '/fixtures/parity_minimal_v1/records', $tmp . '/repo/records');
         $cache = new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__), $tmp . '/repo', $tmp . '/read.sqlite3', $tmp . '/public');
         $cache->initialize();
+        mkdir($tmp . '/public');
+        symlink($cache->root . '/pages', $tmp . '/public/.high-traffic');
         $cache->atomic($cache->root . '/state.json', json_encode(['enabled'=>true,'generation'=>'test']));
         try {
             $html = $cache->generate('/about/');

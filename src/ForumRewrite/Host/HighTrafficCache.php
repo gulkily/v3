@@ -38,7 +38,7 @@ final class HighTrafficCache
         if (!is_array($value)) throw new RuntimeException('Invalid high-traffic state.');
         return $value;
     }
-    public function enabled(): bool { return ($this->state()['enabled'] ?? false) === true; }
+    public function enabled(): bool { return ($this->state()['enabled'] ?? false) === true && is_link($this->publicRoot . '/.high-traffic') && realpath($this->publicRoot . '/.high-traffic') === realpath($this->root . '/pages'); }
     public function fresh(string $route): bool
     {
         $path = $this->path($route); clearstatcache(true, $path);
@@ -77,7 +77,7 @@ final class HighTrafficCache
             }
             if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
             $token = \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, fn () => $this->state());
-            if (!($token['enabled'] ?? false)) return null;
+            if (!$this->enabled()) return null;
             for ($i=0;$i<$this->limits['generators'];$i++) {
                 $candidate = fopen($this->root . '/locks/slot-' . $i,'c');
                 if ($candidate !== false && flock($candidate,LOCK_EX | LOCK_NB)) { $slot=$candidate; break; }
@@ -94,7 +94,7 @@ final class HighTrafficCache
             \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath,$this->repositoryRoot);
             \ForumRewrite\Scoring\FastmodMetaPublication::publish($meta,$this->path($route),function () use ($route,$html,$token): void {
             $this->locked(function () use ($route,$html,$token): void {
-                if ($this->state() !== $token) throw new RuntimeException('Mode changed during generation.');
+                if (!$this->enabled() || $this->state() !== $token) throw new RuntimeException('Mode changed during generation.');
                 $count=0; $bytes=0;
                 $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages', \FilesystemIterator::SKIP_DOTS));
                 foreach ($files as $file) { if ($file->isFile() && $file->getExtension() === 'html') { $count++; $bytes += $file->getSize(); } }

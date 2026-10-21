@@ -269,6 +269,11 @@ final class FrontController
 
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
 
+        if (preg_match('~^/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+$~D', $path) && !str_contains($path, '..')) {
+            $cache = new HighTrafficCache($this->projectRoot,$this->repositoryRoot,$this->databasePath,$this->publicRoot);
+            $retained = $cache->root . '/assets' . $path;
+            if (is_file($retained)) return $retained;
+        }
         return AssetFingerprint::sourcePathForFingerprint($this->publicRoot, $path);
     }
 
