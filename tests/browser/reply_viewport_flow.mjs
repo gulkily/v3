@@ -54,7 +54,7 @@ try {
  const threadId=new URL(page.url()).pathname.split('/').pop();
  for(const entry of ['dedicated','inline']) {
   await page.goto(base+(entry==='dedicated' ? '/compose/reply?thread_id='+threadId+'&parent_id='+threadId : '/threads/'+threadId));
-  if(entry==='inline') await page.locator('[data-inline-reply-trigger]').click();
+  if(entry==='inline') await page.locator('[data-inline-reply-compose] textarea').click();
   const form=page.locator('[data-phone-reply]');
   const body=form.locator('[name="body"]');
   const button=form.locator('.compose-form-actions > button');
