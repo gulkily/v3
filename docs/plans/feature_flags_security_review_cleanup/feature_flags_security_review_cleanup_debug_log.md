@@ -59,3 +59,24 @@ No supported findings.
 
 ### Uncertain assessments
 - Exact user-session reproduction remains pending, and source inspection cannot establish browser session recovery or full-history parity. Stage 1 and final acceptance require that evidence.
+
+## 2026-10-21T20:58:23Z — Step 4
+
+### Necessary/useful instructions
+- `step4_implementation_do.md`, Stage Boundary Protocol: planning commit `e563a057` preceded implementation; each of four stages includes its summary and checks (`3df2e156`, `b37e11af`, `2c367f7d`, `ea69bfa9`). Retain: the recovery gate was verified before private history wiring.
+- `step4_implementation_after.md`, Completion Contract: required actual signed operator recovery and recent/full/Forte parity beyond the approved static mockup. Found and corrected the existing private-category fallback and stylesheet mapping issues before closeout. Retain.
+- `RAILSPIKE.md`, effort closeout: retained v1/0.18 and v2/0.45 projections separately from retrospective 0.45; technical completion is not maintainer acceptance. Retain.
+
+### Redundant/unnecessary instructions
+No supported findings.
+
+### Inapplicable instructions
+- Schema migration/rebuild acceptance: no schema or existing SQL query changed; history uses existing query/limit/cursor methods.
+- Navigation mapping changes: Access history is an embedded section and existing protected view, not a new launcher/subnavigation destination. Existing User Access icons were checked in all three icon themes.
+
+### Uncertain assessments
+- The exact user's earlier session was not inspected. Isolated application/browser evidence reproduces hint-only one-line HTTP 403 and empty authorized history separately, then completes the proposed recovery and populated-history paths.
+- No non-Chromium, full-suite or production-deployment result is claimed. Focused PHP (47) and real signed/browser role/history/theme checks passed. Maintainer fit/acceptance remains pending.
+
+### Outcome reference
+Final implementation/acceptance commit: `ea69bfa9`; branch `feature/access-history`, starting application revision `0b9f5f8baba58b31251b6a6a6b228412784328fe`. Four stages complete; no merge/push/deployment performed for this cycle. Full evidence and stable study ID remain in the implementation summary/ledger.
