@@ -102,6 +102,31 @@ No supported new findings; the earlier repeated-approval-wording observation rem
 
 - **Source:** `step3_development_plan_do.md`, approximate stage sizing and one-page deliverable. **Observation:** Three stages keep review manageable; integrated UI/failure verification may reveal a need to split before dependent work. Literal print pagination depends on rendering. **Suggestion:** Retain the stage-size check; consider a word budget for predictable document length.
 
+## 2026-10-21T20:58:01Z — Step 4: Implementation
+
+Debug mode: enabled, inherited from approved Step 3 and retained in the implementation summary. User-approved edits select muted Amber, grayish Purple/Gray, and left-hand placement while preserving the theme selector anchor. No effort-study selection applies.
+
+### Necessary/useful instructions
+
+- **Source:** `step4_implementation_before.md`, Planning Docs Commit Gate; `RAILSPIKE.md`, Planning Artifacts. **Contribution:** Planning commit `c10c305b` contains only organized approved plans, the existing log, and the feature index/reference fixes. The summary and application changes appear afterward on `feat/lcd-color-choices`. **Suggestion:** Retain the explicit file gate.
+- **Source:** `step4_implementation_do.md`, Stage Boundary Protocol. **Contribution:** `201b472e`, `ed31277c`, and `96a6293c` each include their stage's summary update and changes, with verification before the next stage. **Suggestion:** Retain the audit trail.
+- **Source:** `step4_implementation_after.md`, normal flow/recovery and baseline failures. **Contribution:** Real route checks caught palette-menu stacking and stylesheet error/retry issues that source assertions missed. A separate pre-feature checkout reproduced the composer storage-read error, allowing it to be recorded without expanding this palette cycle into identity handling. **Suggestion:** Retain failure injection and the distinction between focused passes and baseline limitations.
+- **Source:** `RAILSPIKE.md`, Enhancement Requests. **Contribution:** The summary records the user's Step 3 palette/placement refinements as the approved implementation direction while preserving earlier plans as historical artifacts. **Suggestion:** Retain durable request/approval records.
+
+### Redundant/unnecessary instructions
+
+No supported new findings; the earlier repeated-approval wording finding remains unchanged.
+
+### Inapplicable instructions
+
+- **Source:** `RAILSPIKE.md`, Experimental Effort Estimation; `step4_implementation_after.md`, deployment/migrations. **Reason:** This cycle is unselected for the study and excludes deployment, database changes, and new navigation. No scores, schema updates, or icon changes were needed. **Suggestion:** Retain conditional applicability.
+
+### Uncertain assessments
+
+- **Source:** `step4_implementation_after.md`, release evidence. **Observation:** Chromium phone/desktop and 25 targeted PHP checks pass, with the documented baseline composer exception under blocked storage; Firefox/WebKit and the full suite were not run. This evidence supports the scoped palette outcome, not broader browser or identity-storage claims. **Suggestion:** Retain explicit limitations in the implementation handoff.
+
+Final integrity: all local plan/mockup links resolve, scoped diff whitespace checks pass, and the planning-plus-three-stage commit cadence is satisfied. Supporting mockups remain untracked by the approved boundary. Temporary baseline server/worktree were removed after reproduction; rendered evidence remains in the temporary directories named in the implementation summary.
+
 ## 2026-10-21T19:58:35Z — Step 1 revision: Purple and stable selector position
 
 Debug mode: enabled, inherited. Step 1 approval remains pending; only assessment and mockup artifacts changed.
