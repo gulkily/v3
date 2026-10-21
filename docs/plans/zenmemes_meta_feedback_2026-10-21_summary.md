@@ -6,33 +6,35 @@ Scope is the locally available Zenmemes content accepted or already present in t
 
 Format follows [Zenmemes meta feedback summary](zenmemes_meta_feedback_2026-10-18_summary.md). Railspike cycle estimates use an uncapped scale from 0 upward, including decimals. These are provisional estimates based on the feedback alone, not approved plans or commitments. Brainstorming and tentative suggestions retain their original uncertainty.
 
+Workflow recommendations and completion checks: [mini-triage of all 16 items](zenmemes_meta_feedback_2026-10-21_mini_triage.md). Recommendations do not approve implementation; completed items retain their original workflow.
+
 ## Feature requests
 
-| Item | Request | Sources | Railspike cycles | Status |
-| --- | --- | --- | --- | --- |
-| 01 | Keep the reply entry field focused after posting, ready for another reply. | [reply-20261021175726-73beca3d](https://zenmemes.com/posts/reply-20261021175726-73beca3d) | 0.15 | Open — resolution not verified |
-| 02 | Remove the “browser identity ready” message. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.03 | Implemented and locally verified — [checks and limitations](browser_identity_ready_triage_2026-10-21.md#implementation-closeout--october-21-2026); deployment and source-comment reply pending |
-| 03 | Brainstorm text-entry macros for prompts, the current date, the current commit, and similar insertions. | [reply-20261021180225-ffc44b89](https://zenmemes.com/posts/reply-20261021180225-ffc44b89) | 0.5 | Open — resolution not verified |
-| 04 | Provide a simple, nontechnical “most recent activity” page. | [reply-20261021180354-1a31022c](https://zenmemes.com/posts/reply-20261021180354-1a31022c) | 0.5 | Open — resolution not verified |
-| 05 | Make QR codes stand out slightly while matching the site theme; explore a background roughly 20% lighter than the page background (prefer lighter over darker). | [reply-20261021180542-57b8fc3f](https://zenmemes.com/posts/reply-20261021180542-57b8fc3f) | 0.25 | Open — resolution not verified |
-| 06 | Explore adding a few color choices to the LCD theme. | [reply-20261021181124-47b0956c](https://zenmemes.com/posts/reply-20261021181124-47b0956c) | 0.4 | Open — resolution not verified |
-| 07 | Make local `./v3 start` try a few successive ports after 8000 before giving up by default. | [reply-20261021180905-9bf88f1f](https://zenmemes.com/posts/reply-20261021180905-9bf88f1f) | 0.2 | Open — resolution not verified |
-| 08 | Expand “View query” availability to more pages; assess coverage for every page that includes database data. | [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5) | 0.6 | Open — resolution not verified |
-| 09 | Use the same small square “View query” button as `/tools/codebase`. | [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5) | 0.15 | Open — resolution not verified |
-| 10 | Improve the “View query” dialog; review its current problems before defining the changes. | [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5) | 0.75 | Open — resolution not verified |
-| 11 | Make it easy to discover how to enable “easy-op” via its flag file, including the button that elevates the operator to approved. | [reply-20261021181246-675f949e](https://zenmemes.com/posts/reply-20261021181246-675f949e) | 0.25 | Open — resolution not verified |
+| Item | Request | Sources | Railspike cycles | Workflow | Status |
+| --- | --- | --- | --- | --- | --- |
+| 01 | Keep the reply entry field focused after posting, ready for another reply. | [reply-20261021175726-73beca3d](https://zenmemes.com/posts/reply-20261021175726-73beca3d) | 0.15 | Railspike | Open — resolution not verified |
+| 02 | Remove the “browser identity ready” message. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.03 | One-shot | Implemented and locally verified — [checks and limitations](browser_identity_ready_triage_2026-10-21.md#implementation-closeout--october-21-2026); deployment and source-comment reply pending |
+| 03 | Brainstorm text-entry macros for prompts, the current date, the current commit, and similar insertions. | [reply-20261021180225-ffc44b89](https://zenmemes.com/posts/reply-20261021180225-ffc44b89) | 0.5 | Railspike | Open — resolution not verified |
+| 04 | Provide a simple, nontechnical “most recent activity” page. | [reply-20261021180354-1a31022c](https://zenmemes.com/posts/reply-20261021180354-1a31022c) | 0.5 | Railspike | Open — resolution not verified |
+| 05 | Make QR codes stand out slightly while matching the site theme; explore a background roughly 20% lighter than the page background (prefer lighter over darker). | [reply-20261021180542-57b8fc3f](https://zenmemes.com/posts/reply-20261021180542-57b8fc3f) | 0.25 | One-shot | Open — resolution not verified |
+| 06 | Explore adding a few color choices to the LCD theme. | [reply-20261021181124-47b0956c](https://zenmemes.com/posts/reply-20261021181124-47b0956c) | 0.4 | Railspike | Open — resolution not verified |
+| 07 | Make local `./v3 start` try a few successive ports after 8000 before giving up by default. | [reply-20261021180905-9bf88f1f](https://zenmemes.com/posts/reply-20261021180905-9bf88f1f) | 0.2 | One-shot | Open — resolution not verified |
+| 08 | Expand “View query” availability to more pages; assess coverage for every page that includes database data. | [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5) | 0.6 | Railspike | Open — resolution not verified |
+| 09 | Use the same small square “View query” button as `/tools/codebase`. | [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5) | 0.15 | One-shot | Open — resolution not verified |
+| 10 | Improve the “View query” dialog; review its current problems before defining the changes. | [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5) | 0.75 | Railspike | Open — resolution not verified |
+| 11 | Make it easy to discover how to enable “easy-op” via its flag file, including the button that elevates the operator to approved. | [reply-20261021181246-675f949e](https://zenmemes.com/posts/reply-20261021181246-675f949e) | 0.25 | Railspike | Open — resolution not verified |
 
 ## Bug reports
 
-These reports have no verified resolution in this compilation.
+Local fixes and remaining production verification are tracked separately below.
 
-| Item | Report | Sources | Railspike cycles | Status |
-| --- | --- | --- | --- | --- |
-| 01 | Investigate the multiple causes of the home-page post form intermittently jumping up and down; use a rubber-duck root-cause review. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.75 | Open — resolution not verified |
-| 02 | Keep the textarea’s top, left, and right edges fixed when the composer expands. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.25 | Open — resolution not verified |
-| 03 | Keep the composer collapsed on page load, even when the textarea contains saved text. | [reply-20261021180138-eddd96a4](https://zenmemes.com/posts/reply-20261021180138-eddd96a4) | 0.15 | Home-page fix implemented and locally verified — [checks and limits](ui_copy_audit_checklist.md#saved-home-page-draft-stays-collapsed--october-21-2026); deployment pending |
-| 04 | Investigate and reduce the many-second delay before a posted reply produces a visible response on the live site. | [reply-20261021175854-431cbb06](https://zenmemes.com/posts/reply-20261021175854-431cbb06) | 1.5 | Open — resolution not verified |
-| 05 | Investigate and fix QDB returning “temporarily busy.” | [reply-20261021180434-90201f38](https://zenmemes.com/posts/reply-20261021180434-90201f38) | 0.75 | Open — resolution not verified |
+| Item | Report | Sources | Railspike cycles | Workflow | Status |
+| --- | --- | --- | --- | --- | --- |
+| 01 | Investigate the multiple causes of the home-page post form intermittently jumping up and down; use a rubber-duck root-cause review. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.75 | Railspike | Open — resolution not verified |
+| 02 | Keep the textarea’s top, left, and right edges fixed when the composer expands. | [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145) | 0.25 | One-shot | Open — resolution not verified |
+| 03 | Keep the composer collapsed on page load, even when the textarea contains saved text. | [reply-20261021180138-eddd96a4](https://zenmemes.com/posts/reply-20261021180138-eddd96a4) | 0.15 | One-shot | Home-page fix implemented and locally verified — [checks and limits](ui_copy_audit_checklist.md#saved-home-page-draft-stays-collapsed--october-21-2026); deployment pending |
+| 04 | Investigate and reduce the many-second delay before a posted reply produces a visible response on the live site. | [reply-20261021175854-431cbb06](https://zenmemes.com/posts/reply-20261021175854-431cbb06) | 1.5 | Railspike | Open — resolution not verified |
+| 05 | Investigate and fix QDB returning “temporarily busy.” | [reply-20261021180434-90201f38](https://zenmemes.com/posts/reply-20261021180434-90201f38) | 0.75 | Railspike | Open — resolution not verified |
 
 ## Other
 
