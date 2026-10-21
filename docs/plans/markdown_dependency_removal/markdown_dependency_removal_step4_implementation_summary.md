@@ -6,7 +6,7 @@ Debug mode: enabled
 
 - Approved Step 3 received; Option C and five-document rarity threshold accepted. Extension cycle stays deferred with its own pending approvals.
 - Branch: `feature/markdown-dependency-removal`. Planning commit: `c3f3653a`.
-- External cleanup owner, copies, freeze and hosting retention remain unresolved. Stages 4–5 cannot claim complete removal or publish shared history without these prerequisites. No destructive cleanup is authorized by silence.
+- User and assistant coordinate GitHub cleanup. User will consolidate/push work from other clones before the freeze; explicit user OK is required before rewriting. Remaining copies and hosting retention still need reconciliation. Stages 4–5 remain incomplete.
 - Initial planning commit contains only approved plans, existing debug log and plan-index organization. Incident findings are included with Stage 3 remediation; the separately deferred extension Step 1/debug log remain uncommitted under that cycle’s planning gate.
 
 ## Stage 1 - Freeze and measure the current reading flow
@@ -35,6 +35,15 @@ Debug mode: enabled
 ## Stages 4–5 - Pending prerequisites; not executed
 
 - Read-only inventory found live origin main `269b44ac` ahead of local starting main `02512b8e`. Newer reply-viewport and backup/import changes must be preserved in any replacement; no refs were updated here or on origin. [Preliminary inventory](./history_cleanup_inventory.json) records advertised refs and known shared worktrees, not a complete cleanup boundary.
-- Cleanup coordinator, collaborator freeze, other clones/forks/deployments/backups/archives, ownership/access and host-retained data boundaries remain unresolved. Obtain that information before dependent rewrite/publication work. Stage 5 still requires review/authorization of the concrete replacement refs; generic Step 3 approval did not authorize shared publication.
+- Initial handoff left coordinator and copies unresolved; the preparation update below identifies the coordinators and seven local repositories. Collaborator freeze, remaining copies, preservation audit and host-retained boundaries still require reconciliation. Stage 5 requires review/authorization of the concrete replacement refs; generic Step 3 approval did not authorize shared publication.
 - The temporary remote-inspection/baseline Git repository and its reconstructed historical bundle were disposed of after verification. Original shared Git storage/worktrees and remote history remain intact; no expiration, pruning, force push or production activation occurred. Current-tree deletion does not constitute historical erasure.
 - When rewriting, preserve the corpus old/new revision mapping so the frozen source can still be located after commit IDs change; retain per-file hashes and original incident/measurement evidence without restoring third-party source. No removal-complete claim until every agreed target is verified.
+
+## Stage 4 preparation - Coordinated rewrite and clone synchronization
+
+- Request: coordinate the GitHub rewrite together; user brings other clones up to main and pushes their work first; prepare synchronization instructions and wait for OK. Other clone updates may follow publication.
+- Disposition: in-scope refinement of the history-cleanup stage. Recommend an isolated rewrite after consolidation, followed by sequential clone synchronization; defer mutation of existing clones while writes are frozen. An immediate in-place rewrite is unsuitable for the observed uncommitted files, stashes, many local branches and linked worktrees.
+- Approval status: inventory and instructions authorized; user explicitly reserves OK before rewrite. No force push, history rewrite, reset, stash deletion, worktree removal or object pruning performed.
+- Changes: [clone synchronization runbook](./history_rewrite_clone_sync.md) and refreshed [local inventory](./history_cleanup_inventory.json). Actual clone pattern is `~/agent/v3-*`; `~/agents/v3-*` matched nothing. Stage 3 commit: `957e786a`. Preserved subsequent external commit `eb5d49da` and the two untracked deferred extension plans.
+- Verification: read-only status/branch/stash/shared-Git/worktree inventories of seven repositories; document links and `git diff --check`. Runtime/UI tests inapplicable to this coordination-only update. Linked-worktree contents and local branch reachability require a fresh audit at the freeze; stale tracking refs do not establish that work is pushed.
+- Outcome: waiting for user consolidation and OK. Rewrite rehearsal, concrete replacement-ref review, publication and clone cleanup remain pending; this preparation does not complete Stage 4.

@@ -79,12 +79,107 @@
     "/tmp/forum-image-baseline (prunable registration, not removed)"
   ],
   "unresolved": [
-    "Cleanup coordinator and collaborator freeze",
-    "Other clones/forks/deployment checkouts/backups/release archives and access/ownership",
+    "User completion of consolidation/push and explicit freeze/OK",
+    "Linked worktree, stash and local-only branch disposition before clone cleanup",
+    "Other forks/deployment checkouts/backups/release archives and access/ownership",
     "Hosting retained refs/objects/cache cleanup and verification boundary"
   ],
   "temporary_inspection_copy": "/tmp/markdown-removal-remote-inventory-l1fe93em (disposed; no additional contaminated inspection copy retained)",
   "existing_history_rewritten": false,
   "remote_refs_updated": false,
-  "local_feature_branch_commits_created": true
+  "local_feature_branch_commits_created": true,
+  "coordination_update": {
+    "observed_utc": "2026-10-21T19:39:11.679373+00:00",
+    "coordinators": "User and assistant coordinate GitHub rewrite",
+    "gate": "User consolidates and pushes all work, then confirms freeze and gives OK; no rewrite or publication yet",
+    "path_resolution": "~/agents/v3-* matched nothing; discovered ~/agent/v3-* instead",
+    "clones": [
+      {
+        "path": "/home/wsl/v3",
+        "common_dir": "/home/wsl/v3/.git",
+        "head": "61a618644630a00fe44d9fa9dd80d474c7edef33",
+        "branch": "feat/reply-composer-focus-layout",
+        "status": [],
+        "local_branch_count": 149,
+        "stash_count": 4,
+        "worktrees_porcelain": "worktree /home/wsl/v3\nHEAD 61a618644630a00fe44d9fa9dd80d474c7edef33\nbranch refs/heads/feat/reply-composer-focus-layout\n\nworktree /home/wsl/.codex/worktrees/1ee8/v3\nHEAD 8a2548740edf28cff261cc301633c26dd4daa925\ndetached"
+      },
+      {
+        "path": "/home/wsl/agent/v3-claude",
+        "common_dir": "/home/wsl/agent/v3-claude/.git",
+        "head": "5968848887a0ea741ea36c2c79cd89899f875a63",
+        "branch": "todo/test-runner-stall-report",
+        "status": [
+          "M docs/plans/effort_estimation_trial.md",
+          "?? docs/plans/instance_content_push_debug_log.md",
+          "?? docs/plans/instance_content_push_step1_solution_assessment.md"
+        ],
+        "local_branch_count": 103,
+        "stash_count": 2,
+        "worktrees_porcelain": "worktree /home/wsl/agent/v3-claude\nHEAD 5968848887a0ea741ea36c2c79cd89899f875a63\nbranch refs/heads/todo/test-runner-stall-report"
+      },
+      {
+        "path": "/home/wsl/agent/v3-claude-2",
+        "common_dir": "/home/wsl/agent/v3-claude-2/.git",
+        "head": "26ce503c52e71f53be7b828cc90e24992e8c02c9",
+        "branch": "feat/agent-api-docs",
+        "status": [],
+        "local_branch_count": 20,
+        "stash_count": 0,
+        "worktrees_porcelain": "worktree /home/wsl/agent/v3-claude-2\nHEAD 26ce503c52e71f53be7b828cc90e24992e8c02c9\nbranch refs/heads/feat/agent-api-docs"
+      },
+      {
+        "path": "/home/wsl/agent/v3-codex",
+        "common_dir": "/home/wsl/agent/v3-codex/.git",
+        "head": "eb5d49da8fc400b1964a6b6d09081f9701d9e9a2",
+        "branch": "feature/markdown-dependency-removal",
+        "status": [
+          "?? docs/plans/markdown_renderer_extension_debug_log.md",
+          "?? docs/plans/markdown_renderer_extension_step1_solution_assessment.md"
+        ],
+        "local_branch_count": 43,
+        "stash_count": 1,
+        "worktrees_porcelain": "worktree /home/wsl/agent/v3-codex\nHEAD eb5d49da8fc400b1964a6b6d09081f9701d9e9a2\nbranch refs/heads/feature/markdown-dependency-removal\n\nworktree /home/wsl/.codex/worktrees/39c4/v3-codex\nHEAD 9ce9b0b9c78cb134367aa98aec5034d81e55e831\ndetached\n\nworktree /home/wsl/.codex/worktrees/7bff/v3-codex\nHEAD 9ce9b0b9c78cb134367aa98aec5034d81e55e831\ndetached\n\nworktree /home/wsl/.codex/worktrees/d69d/v3-codex\nHEAD 22fe0964409307bef8cd16f25d6cc7a8569437ec\ndetached\n\nworktree /tmp/forum-image-baseline\nHEAD 530acbe036a1b21120a9c452c49e88efb52fa1db\ndetached\nprunable gitdir file points to non-existent location"
+      },
+      {
+        "path": "/home/wsl/agent/v3-codex-2",
+        "common_dir": "/home/wsl/agent/v3-codex-2/.git",
+        "head": "be2be9d4ad4c172db33147239ecca6d2ca860d4a",
+        "branch": "main",
+        "status": [],
+        "local_branch_count": 24,
+        "stash_count": 0,
+        "worktrees_porcelain": "worktree /home/wsl/agent/v3-codex-2\nHEAD be2be9d4ad4c172db33147239ecca6d2ca860d4a\nbranch refs/heads/main\n\nworktree /tmp/case-tags-baseline\nHEAD da3af89db277d8b637178e93773baf70b1931c58\ndetached\nprunable gitdir file points to non-existent location"
+      },
+      {
+        "path": "/home/wsl/agent/v3-codex-3",
+        "common_dir": "/home/wsl/agent/v3-codex-3/.git",
+        "head": "0b9f5f8baba58b31251b6a6a6b228412784328fe",
+        "branch": "main",
+        "status": [
+          "M docs/plans/effort_estimation_trial.md",
+          "?? docs/plans/feature_flags_security_review_cleanup_debug_log.md",
+          "?? docs/plans/feature_flags_security_review_cleanup_step1_solution_assessment.md"
+        ],
+        "local_branch_count": 13,
+        "stash_count": 0,
+        "worktrees_porcelain": "worktree /home/wsl/agent/v3-codex-3\nHEAD 0b9f5f8baba58b31251b6a6a6b228412784328fe\nbranch refs/heads/main"
+      },
+      {
+        "path": "/home/wsl/agent/v3-codex-4",
+        "common_dir": "/home/wsl/agent/v3-codex-4/.git",
+        "head": "f7285e11136ab78595daf96d9233f5dc98319540",
+        "branch": "main",
+        "status": [
+          "?? docs/plans/lcd_color_choices_debug_log.md",
+          "?? docs/plans/lcd_color_choices_mockups/",
+          "?? docs/plans/lcd_color_choices_step1_solution_assessment.md"
+        ],
+        "local_branch_count": 1,
+        "stash_count": 0,
+        "worktrees_porcelain": "worktree /home/wsl/agent/v3-codex-4\nHEAD f7285e11136ab78595daf96d9233f5dc98319540\nbranch refs/heads/main\n\nworktree /home/wsl/.codex/worktrees/36b7/v3-codex-4\nHEAD e592a5b7e62d9b4ca52f71ffee77880f3eb81b64\ndetached"
+      }
+    ],
+    "limitations": "Read-only snapshot; upstream comparisons may be stale. Linked-worktree working files and stashes have not yet been audited for recoverable work. Reinventory at freeze."
+  }
 }
