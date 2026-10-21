@@ -52,7 +52,7 @@ try {
    [actions, ...actions.querySelectorAll(':scope > button, :scope > details > summary')]
      .map(node => { const {x,y,width,height}=node.getBoundingClientRect(); return {x,y,width,height}; }));
  let cases=0;
- for (const width of [390, 1280]) {
+ for (const width of (process.argv.includes('--shared-only') ? [] : [390, 1280])) {
    await page.setViewportSize({width,height:1000});
    for (const [theme, images, approved] of [
      ['light',true,true], ['word97',true,true], ['chicago',true,true], ['midnight',true,true],
@@ -93,10 +93,32 @@ try {
          } else assert.equal(await page.locator('.image-compose-fields').count(),0);
          assert.deepEqual(await geometry(),before,`${path}: ${theme}, ${width}px, images=${images}, approved=${approved}`);
          assert.equal(await page.locator('[data-action="save-compose-outbox"]').isEnabled(),true);
-         // Keep the status visible, but outside the region that moves the actions.
+         // Routine readiness leaves no visible status or reserved layout space.
          const status=page.locator('[data-role="compose-identity-status"]');
+         assert.equal(await status.isVisible(),false);
+         assert.equal(await status.textContent(),'');
+         assert.equal(await status.boundingBox(),null);
+         await page.locator('[name="body"]').focus();
+         assert.equal(await status.isVisible(),false);
+         // Exercise shared pending/failure/recovery rendering in the real DOM.
+         await page.evaluate(() => {
+           const root=document.querySelector('[data-compose-root]');
+           window.__forumBrowserIdentity.renderIdentityPreparationState(root,'publishing');
+         });
          assert.equal(await status.isVisible(),true);
-         assert.ok((await status.boundingBox()).y >= before[0].y+before[0].height);
+         assert.match(await status.textContent(),/Publishing/);
+         await page.evaluate(() => window.__forumBrowserIdentity.renderIdentityPreparationState(
+           document.querySelector('[data-compose-root]'),'failed',
+           {message:'Retry identity preparation.',technicalDetails:'Test publication failure'}));
+         assert.equal(await status.isVisible(),true);
+         await status.locator('[data-role="browser-key-status-technical-toggle"]').click();
+         assert.equal(await status.locator('[data-role="browser-key-status-technical-details"]').isVisible(),true);
+         await page.evaluate(() => window.__forumBrowserIdentity.renderIdentityPreparationState(
+           document.querySelector('[data-compose-root]'),'ready'));
+         assert.equal(await status.isVisible(),false);
+         assert.doesNotMatch(await status.textContent(),/Test publication failure/);
+         assert.deepEqual(await geometry(),before);
+         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),`${theme} ${width}px: no page overflow`);
          cases++;
          console.log(`PASS ${path} ${theme} ${width}px images=${images} approved=${approved}`);
        } finally {
@@ -108,7 +130,7 @@ try {
    }
  }
  // Exercise the server-rendered buttons with their actual Outbox bindings.
- for (const path of ['/compose/thread','/compose/reply']) {
+ for (const path of (process.argv.includes('--shared-only') ? [] : ['/compose/thread','/compose/reply'])) {
    await page.goto(base+path);
    await page.locator('[name="body"]').fill('Layout regression draft');
    if(path.endsWith('reply')) await page.locator('[name="thread_id"]').evaluate(input => {input.value='layout-test-thread';});
@@ -117,8 +139,50 @@ try {
    await page.locator('[data-action="save-compose-outbox"]').click();
    await page.waitForFunction(() => document.querySelector('[data-role="outbox-compose-status"]').textContent.includes('draft saved'));
  }
+ // A real signed post supplies the shared thread/inline-reply fixture.
+ await page.goto(base+'/compose/thread');
+ await page.locator('[name="body"]').fill('Identity readiness verification thread');
+ await page.locator('.compose-form-actions > button').click();
+ await page.waitForURL(/\/threads\//);
+ const threadPath=new URL(page.url()).pathname;
+ for (const width of [390,1280]) {
+   await page.setViewportSize({width,height:1000});
+   for (const theme of ['light','word97','chicago','midnight']) {
+     await page.addInitScript(theme => {
+       localStorage.setItem('zenmemes-theme',theme);
+       for(const key of Object.keys(localStorage)) if(key.endsWith('-theme')) localStorage.setItem(key,theme);
+     },theme);
+     for (const [site,path] of [['zenmemes','/'],['zenmemes',threadPath],['zenmemes','/forte'],['qdb','/add']]) {
+       await setFlags({site});
+       await page.goto(base+path);
+       if(path===threadPath && await page.locator('[data-inline-reply-trigger]').isVisible())
+         await page.locator('[data-inline-reply-trigger]').click();
+       if(path==='/forte') await page.locator('[data-paned-board-new]').click();
+       const editor=page.locator('[data-compose-root] textarea[name="body"]:visible').first();
+       await editor.fill('Draft remains intact');
+       await page.waitForFunction(() => window.__forumBrowserIdentity &&
+         [...document.querySelectorAll('[data-role="compose-identity-status"]')].length > 0 &&
+         [...document.querySelectorAll('[data-role="compose-identity-status"]')].every(node=>node.hidden && node.textContent===''));
+       assert.equal(await editor.inputValue(),'Draft remains intact');
+       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),`${site}${path} ${theme} ${width}px: no overflow`);
+       if(process.env.IDENTITY_SCREENSHOT_DIR && width===390 && theme==='midnight' && path===threadPath)
+         await page.screenshot({path:join(process.env.IDENTITY_SCREENSHOT_DIR,'identity-ready-thread-phone.png'),fullPage:true});
+       console.log(`PASS shared readiness ${site}${path} ${theme} ${width}px`);
+     }
+   }
+ }
+ await setFlags({site:'zenmemes'});
+ await page.goto(base+'/account/key/');
+ await page.locator('[data-action="load-browser-key"]').evaluate(button=>button.click());
+ await page.waitForFunction(() => document.querySelector('[data-role="browser-key-status-message"]').textContent.includes('Loaded the saved browser public key'));
+ assert.equal(await page.locator('#simple-status').isVisible(),true,'Explicit Account result stays visible');
+ await page.goto(base+threadPath);
+ if(await page.locator('[data-inline-reply-trigger]').isVisible()) await page.locator('[data-inline-reply-trigger]').click();
+ await page.locator('[data-compose-root] textarea[name="body"]').fill('Signed reply after readiness cleanup');
+ await page.locator('[data-compose-root] button[type="submit"]').first().click();
+ await page.getByText('Signed reply after readiness cleanup',{exact:true}).first().waitFor();
  assert.deepEqual(errors,[]);
- console.log(`PASS compose first-paint geometry: ${cases} route/theme/viewport/permission cases; both Outbox saves`);
+ console.log(`PASS ${cases} standalone layout cases; 32 shared readiness cases; explicit Account outcome; signed thread and reply`);
 } finally {
  if(browser) await browser.close();
  server.kill();

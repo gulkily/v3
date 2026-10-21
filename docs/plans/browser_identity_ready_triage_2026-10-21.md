@@ -1,6 +1,6 @@
 # Triage: remove “Browser identity ready”
 
-Date: October 21, 2026. Status: triaged; implementation and rendered verification pending.
+Date: October 21, 2026. Status: implemented and locally verified; deployment and source-comment closeout pending.
 
 Selected from [October 21 feedback, Feature 02](zenmemes_meta_feedback_2026-10-21_summary.md). Original comment: [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145).
 
@@ -35,3 +35,11 @@ This is a small, straightforward cleanup eligible for the repository's direct-ch
 
 - Keep Feature 02 open until implementation and verification are complete.
 - User requested a reply under the original comment when the work is done. After verified completion, post a concise result under `reply-20261021175826-902c5145`; report only verified behavior and identify any remaining limitations. Do not claim that the other composer-jumping requests in that same comment are resolved.
+
+## Implementation closeout — October 21, 2026
+
+Implemented on user approval (“Please go ahead”). Routine readiness now produces no message; the shared status helper hides empty messages and clears stale technical details while preserving pending/error and explicit Account results.
+
+Verification: 88 targeted PHP/Node checks, 24 standalone Chromium composer cases, and 32 shared board/thread/paned/QDB cases passed at phone/desktop widths across Light, Word97, Chicago, and Midnight. Explicit Account feedback, Outbox saves, and signed thread/reply publication passed. See the [UI copy audit checklist](ui_copy_audit_checklist.md#browser-identity-ready--october-21-2026) for coverage and limitations. Test-harness corrections handled collapsed versus draft-expanded inline reply editors; no extra product behavior was added.
+
+Local implementation and verification are complete. Production deployment, production verification, and the source-comment reply remain pending; Feature 02 should not be represented as deployed. Retrospective scope fit: the shared presentation-only fix stayed within the triaged scope; verification covered the expected shared surfaces. No measured effort or trial outcome is claimed.

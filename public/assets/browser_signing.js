@@ -1686,7 +1686,7 @@
       return;
     }
 
-    node.hidden = false;
+    node.hidden = message.trim() === "" && technicalDetails === "";
     const messageNode = typeof node.querySelector === "function"
       ? node.querySelector('[data-role="browser-key-status-message"]')
       : null;
@@ -2038,7 +2038,7 @@
       case "publishing":
         return "Publishing your public key in the background...";
       case "ready":
-        return "Browser identity ready.";
+        return "";
       case "failed":
         return "Unable to prepare your browser identity.";
       case "idle":
