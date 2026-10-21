@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Same-author collapse toggle](same_author_collapse_toggle/)
+
 - [Shared Fastmod automatic-tagging flag](fastmod_tagging_flag/)
 
 - [Fastmod rubric actions — automatic meta tagging](fastmod_rubric_actions/)
