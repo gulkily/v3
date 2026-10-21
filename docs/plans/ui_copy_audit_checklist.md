@@ -1,5 +1,13 @@
 # UI copy audit checklist
 
+## Same-author collapse toggle — 2026-10-21
+
+- [x] Added the concise “Collapse posts from same author” control using the existing Feature Flags UI and recovery feedback. No new explanatory panel or navigation destination.
+- [x] Isolated Chromium acceptance: real signed disable/enable/reset, reload persistence, anonymous read-only/rejected writes, environment lock/rejected writes, and failed-save retry.
+- [x] Loaded root/later continuation runs, agent/other author boundaries, separate metadata/actions/counts, empty replies, expanded reply composer and long prose at 390/1280 px across light, dark, console, Word97, Chicago, Midnight, Arena, Sticker, and Whitehot. No page overflow; reviewed phone Midnight and desktop Word97 screenshots.
+- Evidence: `node tests/browser/same_author_collapse.mjs`; screenshots `/tmp/collapse-{theme}-{width}-{state}.png`. Synthetic author labels are seeded only in the isolated fixture read model. Production deployment and non-Chromium browsers were not tested.
+
+
 ## Next audit — candidates to verify
 
 These source-review candidates are not confirmed removal decisions. Review the

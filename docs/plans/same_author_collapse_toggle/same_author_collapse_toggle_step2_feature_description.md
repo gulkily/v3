@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 2](./same_author_collapse_toggle_step2_feature_description.md) · [Step 3](./same_author_collapse_toggle_step3_development_plan.md) · Step 4 pending
+> **Feature plan:** [Step 2](./same_author_collapse_toggle_step2_feature_description.md) · [Step 3](./same_author_collapse_toggle_step3_development_plan.md) · [Step 4](./same_author_collapse_toggle_step4_implementation_summary.md)
 
 Debug mode: enabled
 
