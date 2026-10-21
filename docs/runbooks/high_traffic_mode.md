@@ -64,7 +64,7 @@ page. If these checks fail, disable and correct host configuration before use.
 Configure cron every minute, using the deployment's normal environment:
 
 ```cron
-* * * * * cd /path/to/application && ./v3 high-traffic cron /path/to/access.log >> /path/to/private/high-traffic-cron.log 2>&1
+* * * * * cd /path/to/application && ./v3 high-traffic run /path/to/access.log >> /path/to/private/high-traffic-cron.log 2>&1
 ```
 
 The sysop owns log location, permissions, rotation, retention and cron monitoring.
@@ -197,3 +197,9 @@ responses and renderer jobs are excluded from visitor counts.
 The publication recovery harness replays the existing import crash/retry matrix
 with real implementation/templates/assets and a two-document inventory. The
 full-project repeated documentation-build matrix is intentionally not its claim.
+
+CLI output is readable by default; use `--json` for automation.
+`./v3 high-traffic cron /path/to/access.log` prints the installation instructions
+and crontab line; `run` executes one refresh. Existing schedules using `cron`
+as the worker must change to `run`. Enable/status also report the cron line;
+they do not install or verify a schedule. Use the web app's environment and user.

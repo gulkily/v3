@@ -30,6 +30,14 @@ Before marking a UI change complete:
   implementation document for other UI work. Distinguish completed cleanup
   from unresolved layout or behavior issues.
 
+## Operator CLI
+
+Inspect comparable `v3` commands before designing a command. Use readable output
+by default and `--json` for automation. Include actionable setup/recovery guidance,
+keep top-level help current, and follow existing subcommand meanings: `cron`
+prints installation instructions; `run` executes the scheduled worker. Verify
+help, output modes and required next steps in the relevant implementation plan.
+
 ## Read-model schema changes
 
 `state/cache/post_index.sqlite3` is a disposable derived read model, rebuilt

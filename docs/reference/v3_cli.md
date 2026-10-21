@@ -898,6 +898,12 @@ Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inher
 
 `./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]`
 switches and manages instance-local Apache HTML caching. Run
-`./v3 high-traffic cron /path/to/access.log` every minute for popularity-driven
+`./v3 high-traffic run /path/to/access.log` every minute for popularity-driven
 atomic refresh. See [host setup, limits, verification and recovery](../runbooks/high_traffic_mode.md).
 Automatic traffic/load activation is deferred.
+
+CLI output is readable by default; use `--json` for automation.
+`./v3 high-traffic cron /path/to/access.log` prints the installation instructions
+and crontab line; `run` executes one refresh. Existing schedules using `cron`
+as the worker must change to `run`. Enable/status also report the cron line;
+they do not install or verify a schedule. Use the web app's environment and user.
