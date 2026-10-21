@@ -85,13 +85,23 @@ final class ImageBackup
     {
         $refs = [];
         if (!is_dir($root . '/records/posts')) { return $refs; }
+        $paths = [];
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root . '/records/posts', \FilesystemIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
             if ($file->isLink()) { throw new RuntimeException('Symlink in canonical post records.'); }
             if ($file->isFile() && $file->getExtension() === 'txt') {
-                $record = (new \ForumRewrite\Canonical\PostRecordParser())->parse((string) file_get_contents($file->getPathname()));
+                $paths[] = substr($file->getPathname(), strlen(rtrim($root, '/')) + 1);
+            }
+        }
+        $repository = new \ForumRewrite\Canonical\CanonicalRecordRepository($root, allowLegacyFilesystemTimestamp: false);
+        $repository->preloadLegacyPostCreatedAts($paths);
+        foreach ($paths as $path) {
+            try {
+                $record = $repository->loadPost($path);
                 $ref = ImageReference::fromBody($record->body);
                 if ($ref !== null) { $refs[ImageReference::filename($ref)] = $ref; }
+            } catch (RuntimeException $error) {
+                throw new RuntimeException($path . ': ' . $error->getMessage(), 0, $error);
             }
         }
         return $refs;

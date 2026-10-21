@@ -214,6 +214,11 @@ php scripts/build_static_artifacts.php "$FORUM_REPOSITORY_ROOT" "$FORUM_DATABASE
 
 ## Interrupted remote content import
 
+First distinguish a failed source download from an interrupted merge. A source
+HTTP failure before merging needs source diagnosis and retry; `--resume` requires
+an existing `.git/instance-import/pending.json`. See
+[source download diagnosis](instance_content_import.md#source-download-failures).
+
 Use `./v3 import-instance --resume` with the failed run's repository, database,
 static-root, and site-profile settings. It uses saved payloads and retries
 publication without redownloading or duplicating an already-created commit.

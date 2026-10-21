@@ -26,6 +26,7 @@ final class CanonicalRecordRepository
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
         private readonly bool $requireLegacyTimestampMetadata = false,
         private readonly ?string $signatureKeyFallbackRoot = null,
+        private readonly bool $allowLegacyFilesystemTimestamp = true,
     ) {
     }
 
@@ -297,6 +298,10 @@ final class CanonicalRecordRepository
         $gitCreatedAt = $this->resolveLegacyPostCreatedAtFromGit($relativePath);
         if ($gitCreatedAt !== null) {
             return $gitCreatedAt;
+        }
+
+        if (!$this->allowLegacyFilesystemTimestamp) {
+            return null;
         }
 
         $path = $this->repositoryRoot . '/' . ltrim($relativePath, '/');
