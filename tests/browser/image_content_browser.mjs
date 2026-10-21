@@ -61,8 +61,8 @@ try {
    const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC','base64');
    for(const [path,body] of [['/',''],['/','Photo and text'],['/compose/thread',''],['/compose/thread','Photo and text']]) {
      await page.goto(base+path);
-     const details=page.locator('[data-inline-reply-details]').first();
-     if(path==='/') await details.locator('[data-inline-reply-trigger]').click();
+     const details=page.locator('[data-inline-thread-compose]').first();
+     if(path==='/') await details.locator('textarea[name="body"]').click();
      const form=page.locator('[data-compose-form]').first();
      await form.locator('.image-compose-fields:not([hidden])').waitFor();
      await page.setViewportSize({width:1000,height:800});
@@ -75,8 +75,8 @@ try {
        const cancelChooser=page.waitForEvent('filechooser');await (await attachEntry(form)).click();
        await (await cancelChooser).setFiles([]);await form.locator('[name="image"]').dispatchEvent('cancel');
        await page.evaluate(()=>{const button=document.createElement('button');button.textContent='outside composer';document.body.append(button);button.focus();});
-       await page.waitForFunction(()=>!document.querySelector('[data-inline-reply-details]').open);
-       await details.locator('[data-inline-reply-trigger]').click();
+       await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='0');
+       await details.locator('textarea[name="body"]').click();
      }
      if(body) await form.locator('[name="body"]').fill(body);
      // Hold the focus-triggered approval request until after the chooser returns.
@@ -87,11 +87,11 @@ try {
        await (await attachEntry(form)).click();const chooser=await chooserPromise;
        await page.evaluate(()=>{document.activeElement.blur();window.dispatchEvent(new Event('focus'));});
        await started;
-       if(path==='/') assert.equal(await details.evaluate(e=>e.open),true,'Composer must stay open while the picker owns focus');
+       if(path==='/') assert.equal(await details.evaluate(e=>e.dataset.inlineThreadExpanded==='1'),true,'Composer must stay open while the picker owns focus');
        // An OS picker returns focus before its change event in affected browsers.
        await chooser.setFiles({name:'picker.png',mimeType:'image/png',buffer:png});
        await form.locator('.image-upload-preview img').waitFor({timeout:3000});
-       if(path==='/') assert.equal(await details.evaluate(e=>e.open),true,'Image-only home composer must stay expanded');
+       if(path==='/') assert.equal(await details.evaluate(e=>e.dataset.inlineThreadExpanded==='1'),true,'Image-only home composer must stay expanded');
        assert.equal(await form.locator('[name="image"]').isDisabled(),false,'Refresh must not disable the active file picker');
      } finally {release();await page.unrouteAll({behavior:'wait'});}
      await form.evaluate(form=>ForumImageUpload.assertEligible(form));

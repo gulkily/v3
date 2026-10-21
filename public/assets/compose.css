@@ -202,3 +202,13 @@
 .reply-viewport-active .compose-action-menu-list > button {
   white-space: normal;
 }
+
+/* The board editor remains the same focusable node in both states. Without
+   JavaScript the complete form stays visible and usable. */
+[data-inline-thread-ready][data-inline-thread-expanded="0"] .compose-form-actions {
+  display: none;
+}
+[data-inline-thread-ready][data-inline-thread-expanded="0"] textarea[name="body"] {
+  min-height: 4.75rem;
+  resize: none;
+}
