@@ -279,6 +279,7 @@ pre {
 .lcd-palette { display: none; }
 .lcd-palette {
   position: absolute;
+  z-index: 31;
   right: calc(100% + 0.5rem);
   top: 50%;
   transform: translateY(-50%);

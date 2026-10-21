@@ -13,7 +13,7 @@
     var menu = document.querySelector("[data-role='theme-menu']");
     var cycleButton = menu ? menu.querySelector("[data-action='theme-cycle']") : null;
     var button = menu ? menu.querySelector("[data-action='theme-toggle']") : null;
-    var popover = menu ? menu.querySelector(".theme-menu__popover") : null;
+    var popover = menu ? menu.querySelector("#theme-menu-popover") : null;
     var options = popover
       ? Array.prototype.slice.call(popover.querySelectorAll("[data-theme-option]"))
       : [];
@@ -82,10 +82,19 @@
       }
     }
 
+    function hasThemeStyles(link) {
+      try {
+        // A failed initial request can leave a non-null, unreadable sheet.
+        return Boolean(link.sheet && link.sheet.cssRules.length);
+      } catch (error) {
+        return false;
+      }
+    }
+
     function ensureThemeStylesheet(theme, highPriority) {
       var path = themeStylesheetPaths[theme];
       if (!path) {
-        return { ready: true, promise: Promise.resolve() };
+        return { ready: true, promise: Promise.resolve(true) };
       }
       if (themeLoadStates[theme]) {
         if (highPriority) {
@@ -94,7 +103,7 @@
         return themeLoadStates[theme];
       }
 
-      var link = themeStylesheet && themeStylesheet.getAttribute("href") === path
+      var link = themeStylesheet && themeStylesheet.getAttribute("href") === path && hasThemeStyles(themeStylesheet)
         ? themeStylesheet
         : document.createElement("link");
       if (link !== themeStylesheet) {
@@ -105,17 +114,19 @@
       }
       link.setAttribute("fetchpriority", highPriority ? "high" : "low");
 
-      var state = { link: link, ready: Boolean(link.sheet), promise: null };
+      var state = { link: link, ready: hasThemeStyles(link), promise: null };
       state.promise = state.ready
-        ? Promise.resolve()
+        ? Promise.resolve(true)
         : new Promise(function (resolve) {
             link.addEventListener("load", function () {
               state.ready = true;
-              resolve();
+              resolve(true);
             }, { once: true });
             link.addEventListener("error", function () {
-              state.ready = true;
-              resolve();
+              // Keep the current theme usable and let the next selection retry.
+              delete themeLoadStates[theme];
+              link.remove();
+              resolve(false);
             }, { once: true });
           });
       themeLoadStates[theme] = state;
@@ -250,7 +261,7 @@
         event.stopPropagation();
         if (event.key === 'Escape') { event.preventDefault(); closePalette(true); return; }
         var index = paletteOptions.indexOf(document.activeElement);
-        if (event.key === 'Tab') { closePalette(false); return; }
+        if (event.key === 'Tab') { closePalette(true); return; }
         if (['ArrowDown', 'ArrowUp', 'Home', 'End'].indexOf(event.key) === -1) return;
         event.preventDefault();
         index = event.key === 'Home' ? 0 : event.key === 'End' ? paletteOptions.length - 1
@@ -280,12 +291,12 @@
       var state = ensureThemeStylesheet(resolvedTheme(theme), true);
       if (!state.ready) {
         document.documentElement.setAttribute("data-theme-loading", "true");
-        state.promise.then(function () {
+        state.promise.then(function (ready) {
           if (pendingTheme !== theme) {
             return;
           }
           document.documentElement.removeAttribute("data-theme-loading");
-          commitSelection(theme);
+          if (ready) commitSelection(theme);
         });
         return;
       }
@@ -300,7 +311,7 @@
       syncResolvedTheme(currentTheme);
       syncButton(currentTheme);
       syncOptions(currentTheme);
-    syncPalette();
+      syncPalette();
 
       try {
         localStorage.setItem(storageKey, currentTheme);

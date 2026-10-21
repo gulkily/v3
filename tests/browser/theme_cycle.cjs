@@ -24,7 +24,7 @@ function setup(systemDark, storedTheme, names = ['auto', 'light', 'dark', 'word9
   menu.querySelector = selector => ({
     "[data-action='theme-cycle']": cycle,
     "[data-action='theme-toggle']": toggle,
-    '.theme-menu__popover': popover
+    '#theme-menu-popover': popover
   })[selector];
   let saved = storedTheme;
   vm.runInNewContext(source, {
