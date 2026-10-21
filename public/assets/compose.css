@@ -168,3 +168,37 @@
   display: block !important;
   visibility: hidden;
 }
+
+/* Opted-in standard replies only; Forte and no-script forms retain normal flow. */
+.reply-viewport-active {
+  padding-bottom: var(--reply-viewport-space);
+  scroll-padding-bottom: var(--reply-viewport-space);
+}
+.reply-viewport-active textarea[name="body"] {
+  max-height: var(--reply-viewport-writing-height);
+  min-height: 60px;
+  scroll-margin-bottom: var(--reply-viewport-space);
+}
+:root .reply-viewport-active[data-phone-reply] > .compose-form-actions {
+  position: fixed;
+  z-index: 100;
+  top: var(--reply-viewport-top);
+  left: var(--reply-viewport-left);
+  width: var(--reply-viewport-width);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+  box-shadow: 0 -2px 8px rgb(0 0 0 / 15%);
+}
+.reply-viewport-active .compose-action-menu-list {
+  max-height: var(--reply-viewport-menu-height);
+  max-width: calc(var(--reply-viewport-width) - 14px);
+  width: max-content;
+  min-width: min(12rem, calc(var(--reply-viewport-width) - 14px));
+  overflow-y: auto;
+}
+.reply-viewport-active .compose-action-menu-list > button {
+  white-space: normal;
+}

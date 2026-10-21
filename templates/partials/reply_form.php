@@ -7,7 +7,7 @@ if ($bodyRows < 1) {
 }
 $showBodyLabel = (bool) ($showBodyLabel ?? true);
 ?>
-<form method="post" action="/compose/reply" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply">
+<form method="post" action="/compose/reply" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply"<?= ($phoneReplyEnabled ?? false) ? ' data-phone-reply' : '' ?>>
 <?php if ($showBodyLabel): ?>
   <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="Reply body"><?= $e($body) ?></textarea></label>
 <?php else: ?>

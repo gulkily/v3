@@ -223,6 +223,7 @@ final class TemplateRenderer
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
+            'replyViewportScriptPath' => $this->assetPath('/assets/reply_viewport.js'),
             'composeDisclosureScriptPath' => $this->assetPath('/assets/compose_disclosure.js'),
             'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
