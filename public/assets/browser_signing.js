@@ -855,7 +855,7 @@
   }
 
   function isInlineReplyComposer(root) {
-    return Boolean(root && typeof root.querySelector === "function" && root.querySelector("[data-inline-reply-details]"));
+    return Boolean(root && typeof root.querySelector === "function" && (root.querySelector("[data-inline-reply-compose]") || root.querySelector("[data-inline-reply-details]")));
   }
 
   function canonicalReplyUrl(result, returnTo) {

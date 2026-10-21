@@ -13,10 +13,10 @@ eval('?>' . $matches[0]);
 $partial = function($name, $vars = []) {
   extract($vars); ob_start(); include 'templates/'.$name; return ob_get_clean();
 };
-echo '<div style="height:1800px"></div><article data-compose-root><details data-inline-reply-details><summary class="inline-reply-summary">Write a reply</summary>';
+echo '<div style="height:1800px"></div><article data-compose-root><div data-inline-reply-compose data-inline-reply-expanded="0">';
 $body = ''; $threadId = 'test'; $parentId = 'test'; $boardTags = 'general';
 include 'templates/partials/reply_form.php';
-echo '</details></article>';
+echo '</div></article>';
 `], { encoding: 'utf8' });
 const script = readFileSync('public/assets/inline_reply_form.js', 'utf8');
 const server = createServer((request, response) => {
@@ -45,7 +45,7 @@ try {
       return rect.top >= 0 && rect.bottom <= innerHeight;
     });
     assert.equal(page.url(), url);
-    assert.equal(await page.locator('[data-inline-reply-details]').getAttribute('open'), '');
+    assert.equal(await page.locator('[data-inline-reply-compose]').getAttribute('data-inline-reply-expanded'), '1');
     await page.locator('textarea[name="body"]').fill('Keep my draft');
     await page.locator('[data-inline-reply-link]').click();
     await page.waitForFunction(() => document.activeElement?.matches('textarea[name="body"]'));

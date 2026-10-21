@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [High-traffic mode](high_traffic_mode/)
 
+- [Reply composer focus and layout](reply_composer_focus_layout/)
+
 - [Documentation discovery](docs_discovery/)
 - [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 

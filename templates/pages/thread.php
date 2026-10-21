@@ -79,18 +79,7 @@ $showRootMetaExtras = $index === $rootRunTailIndex;
 ]), 1) ?>
 <?php endforeach; ?>
   <article class="card inline-reply-composer" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
-    <details class="inline-reply-details" data-inline-reply-details>
-      <summary class="inline-reply-summary">
-        <textarea
-          class="inline-reply-prompt"
-          rows="2"
-          placeholder="Write a reply..."
-          aria-label="Write a reply"
-          data-inline-reply-trigger
-          readonly
-        ></textarea>
-      </summary>
-      <div class="inline-reply-expanded">
+    <div class="inline-reply-expanded" data-inline-reply-compose data-inline-reply-expanded="0" data-reply-panel>
         <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/reply_form.php', [
     'threadId' => $thread['root_post_id'],
@@ -100,8 +89,8 @@ $showRootMetaExtras = $index === $rootRunTailIndex;
     'submitLabel' => 'Post reply',
     'phoneReplyEnabled' => true,
     'showBodyLabel' => false,
+    'bodyPlaceholder' => 'Write a reply...',
 ]), 2) ?>
-      </div>
-    </details>
+    </div>
   </article>
 </section>
