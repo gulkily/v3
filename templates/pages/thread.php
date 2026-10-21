@@ -79,7 +79,7 @@ $showRootMetaExtras = $index === $rootRunTailIndex;
 ]), 1) ?>
 <?php endforeach; ?>
   <article class="card inline-reply-composer" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
-    <div class="inline-reply-expanded" data-inline-reply-compose data-inline-reply-expanded="0">
+    <div class="inline-reply-expanded" data-inline-reply-compose data-inline-reply-expanded="0" data-reply-panel>
         <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/reply_form.php', [
     'threadId' => $thread['root_post_id'],

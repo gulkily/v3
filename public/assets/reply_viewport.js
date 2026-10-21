@@ -1,45 +1,65 @@
 (function () {
-  // Keep the canonical controls inside their form: signing and submitter handling
-  // continue to use the original buttons, including anonymous submission.
   const viewport = window.visualViewport;
   if (!viewport) return;
   const phone = window.matchMedia('(max-width: 1024px) and (pointer: coarse)');
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-phone-reply]').forEach(function (form) {
+      const panel = form.closest('[data-reply-panel]');
       const body = form.querySelector('textarea[name="body"]');
       const actions = form.querySelector('.compose-form-actions');
-      const menu = actions && actions.querySelector('.compose-action-menu');
-      if (!body || !actions) return;
+      if (!panel || !body || !actions) return;
+      const menu = actions.querySelector('.compose-action-menu');
+      const spacer = document.createElement('div');
+      spacer.setAttribute('aria-hidden', 'true');
       let frame = 0;
       let interacting = false;
       let userEditing = false;
+      function restore() {
+        panel.classList.remove('reply-panel-active');
+        form.classList.remove('reply-viewport-active');
+        for (const key of ['top', 'left', 'width', 'height', 'menu-space', 'menu-height']) {
+          panel.style.removeProperty('--reply-panel-' + key);
+        }
+        spacer.remove();
+      }
       function update() {
         frame = 0;
         const active = document.activeElement;
-        const editing = interacting || active === body || actions.contains(active) ||
-          (menu && menu.open && active === document.body && form.classList.contains('reply-viewport-active'));
-        if (!phone.matches || !userEditing || !editing || viewport.scale !== 1 || !form.getClientRects().length) {
-          form.classList.remove('reply-viewport-active');
-          for (const key of ['top', 'left', 'width', 'space', 'writing-height', 'menu-height']) {
-            form.style.removeProperty('--reply-viewport-' + key);
-          }
+        const editing = interacting || panel.contains(active) || form.__imagePickerOpen ||
+          (menu && menu.open && active === document.body && panel.classList.contains('reply-panel-active'));
+        if (!phone.matches || !userEditing || !editing || viewport.scale !== 1 ||
+            viewport.height < 200 || !form.getClientRects().length) {
+          restore();
           return;
         }
-        const rect = form.getBoundingClientRect();
+        const rect = (spacer.isConnected ? spacer : panel).getBoundingClientRect();
         const left = Math.max(viewport.offsetLeft + 8, rect.left);
         const right = Math.min(viewport.offsetLeft + viewport.width - 8, rect.right);
-        if (right <= left || viewport.height < 150) {
-          form.classList.remove('reply-viewport-active');
-          return;
+        if (right - left < 200) { restore(); return; }
+        if (!spacer.isConnected) {
+          spacer.style.height = rect.height + 'px';
+          panel.before(spacer);
         }
-        form.style.setProperty('--reply-viewport-left', left + 'px');
-        form.style.setProperty('--reply-viewport-width', (right - left) + 'px');
+        panel.style.setProperty('--reply-panel-top', (viewport.offsetTop + 8) + 'px');
+        panel.style.setProperty('--reply-panel-left', left + 'px');
+        panel.style.setProperty('--reply-panel-width', (right - left) + 'px');
+        panel.style.setProperty('--reply-panel-height', (viewport.height - 16) + 'px');
+        panel.style.setProperty('--reply-panel-menu-height', Math.max(44, Math.min(200, viewport.height - 240)) + 'px');
+        panel.classList.add('reply-panel-active');
         form.classList.add('reply-viewport-active');
-        const height = actions.getBoundingClientRect().height;
-        form.style.setProperty('--reply-viewport-top', (viewport.offsetTop + viewport.height - height - 8) + 'px');
-        form.style.setProperty('--reply-viewport-space', (height + 16) + 'px');
-        form.style.setProperty('--reply-viewport-writing-height', Math.max(60, viewport.height - height - 64) + 'px');
-        form.style.setProperty('--reply-viewport-menu-height', Math.max(44, viewport.height - height - 24) + 'px');
+        // The existing menu stays in the form. Reserve its open footprint above
+        // the action row instead of letting it obscure the editor or feedback.
+        const list = menu && menu.open && menu.querySelector('.compose-action-menu-list');
+        panel.style.setProperty('--reply-panel-menu-space', list ? (list.getBoundingClientRect().height + 4) + 'px' : '0px');
+        const editorRect = body.getBoundingClientRect();
+        const actionRect = actions.getBoundingClientRect();
+        const panelRect = panel.getBoundingClientRect();
+        const menuTop = list ? list.getBoundingClientRect().top : actionRect.top;
+        // Large feedback, attachments, zoom or a small viewport must remain
+        // reachable through normal page flow rather than an overflowing panel.
+        if (editorRect.height < 79 || editorRect.bottom > menuTop + 1 ||
+            editorRect.top < panelRect.top || actionRect.bottom > panelRect.bottom ||
+            panel.scrollHeight > panel.clientHeight + 1) restore();
       }
       function schedule() {
         if (!frame) frame = window.requestAnimationFrame(update);
@@ -47,21 +67,25 @@
       for (const event of ['pointerdown', 'keydown', 'input']) {
         body.addEventListener(event, function () { userEditing = true; schedule(); });
       }
-      actions.addEventListener('pointerdown', function () { interacting = true; });
+      panel.addEventListener('pointerdown', function () { interacting = true; });
       function endInteraction() {
         window.setTimeout(function () { interacting = false; schedule(); }, 0);
       }
       window.addEventListener('pointerup', endInteraction);
       window.addEventListener('pointercancel', endInteraction);
-      if (menu) menu.addEventListener('toggle', schedule);
       document.addEventListener('focusin', schedule);
-      form.addEventListener('focusout', schedule);
+      panel.addEventListener('focusout', schedule);
+      panel.addEventListener('input', schedule);
+      if (menu) menu.addEventListener('toggle', schedule);
+      new MutationObserver(schedule).observe(panel, {
+        subtree: true, childList: true, characterData: true,
+        attributes: true, attributeFilter: ['hidden', 'data-kind', 'open']
+      });
       viewport.addEventListener('resize', schedule);
       viewport.addEventListener('scroll', schedule);
       window.addEventListener('resize', schedule);
       window.addEventListener('scroll', schedule, {passive: true});
       phone.addEventListener('change', schedule);
-      if (window.ResizeObserver) new ResizeObserver(schedule).observe(actions);
       schedule();
     });
   });
