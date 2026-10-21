@@ -61,3 +61,26 @@ No supported findings.
 
 - Viewport layout may prove too constrained in landscape/zoom. The plan requires early short-viewport checks and usable ordinary-flow fallback rather than claiming every viewport can support the reserved layout.
 - Stage sizes are intended to fit about one hour each. If inspection reveals scope beyond the approved requirements, return to planning instead of silently widening the cycle.
+
+## 2026-10-21T18:12:57.350109+00:00 — Step 4
+
+### Necessary/useful instructions
+
+- Source: `step4_implementation_before.md`, planning commit gate; `RAILSPIKE.md`, stage cadence. Approved plans/debug history were organized and committed as `e690c0d2` before implementation. Stages `30846b00`, `cc7eb3bc`, and **`4bf09de6` (final production revision)** each contain their corresponding summary update. Retain separate reviewable checkpoints and do not amend completed stages.
+- Source: `step4_implementation_do.md`, complete the normal-entry contract and preserve canonical components. The implementation keeps one canonical form/editor and submission lifecycle for both reply routes, retaining collapse/expansion, anonymous/image behavior, pending protection and retry. Real-route checks found issues that isolated action visibility did not cover. Retain end-to-end recovery requirements.
+- Source: `step4_implementation_after.md`, qualified evidence and known-environment recovery. The summary leaves physical iPhone Safari/Firefox acceptance and maintainer study acceptance pending, distinguishes 93 focused PHP checks from a full-suite result, and supplies a first-tap/keyboard/rotation/selection/retry checklist. Retain the explicit omission record.
+- Source: `RAILSPIKE.md`, shared-consumer and verification contract. The board lesson prevented loss of real height transitions and first-paint stability. Real-theme screenshots exposed Midnight spacing overriding panel geometry; explicit panel/editor/error/action/menu separation checks now guard against the prior false confidence from action visibility alone. Retain measurable behavior assertions and rendered review.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only, schema migration and production deployment checks: this is a presentation/lifecycle change with no schema changes or authorized deployment. The existing isolated image suite exercised rebuild/restore as regression coverage without implying a production operation.
+
+### Uncertain assessments
+
+- Physical keyboard/chrome/caret behavior remains pending user acceptance. Desktop engines and simulated visible viewports cannot establish an iPhone pass. The approved workflow permits implementation handoff without upfront device infrastructure.
+- Step 4 adopted P2 standing study enrollment when AGENTS/host policy changed concurrently. Earlier estimates remain missing; the exposed total projection and separate retrospective assessment are both 0.65 under verified R1. One stable cycle is indexed in the host ledger; no accepted-outcome count or measured effort is claimed. The feature-only ledger patch excluded unrelated concurrent policy edits from this cycle's stage commit.
+- Synthetic VisualViewport geometry does not resize browser pointer hit testing. Real pointer Reply-link coverage remains in the native-viewport test; the real-flow simulated-keyboard test uses native keyboard activation before typing. This division is documented rather than forcing an occluded synthetic pointer click.
