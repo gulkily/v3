@@ -35,3 +35,12 @@ Debug mode: enabled
 - All three approved stages are complete with verification and stage-scoped commits. The four-palette flow and required palette recovery pass locally; the separately reproduced composer limitation above remains.
 - Planning commit precedes the implementation summary and application edits; approved plans retain their historical content. Supporting mockups remain outside commits.
 - Ready for user review on `feat/lcd-color-choices`; no merge or deployment performed. Implementation stage commits: `201b472e`, `ed31277c`, `96a6293c`; diagnostic handoff: `45398cfa`.
+
+## Additional enhancement request — palette rotation
+
+- Request: retain one LCD dropdown entry while rotating through every LCD color, in the current release.
+- Disposition: [one-shot enhancement](../lcd_palette_rotation_step2_feature_description.md) on the existing branch; user explicitly overrode staged follow-up gates with “Please just add it as a one-shot.” Completed original stages remain intact.
+- Approval: explicit one-shot implementation authorization received on 2026-10-22.
+- Changes: the dropdown still has exactly one LCD entry and restores its saved palette. Rotation enters LCD Green, visits Amber/Purple/Gray, then advances to the next theme; direct palette selection sets the current rotation stop. Each stop persists normally, and current/next accessible labels and tooltips include the palette. Palette updates wait for stylesheet success; newer selections supersede pending rotation, including a dropdown request for the same LCD theme.
+- Verification: passed `node tests/browser/lcd_palettes.mjs` in Chromium at 390px/1280px, including the full rotation sequence, Enter/Space activation, one LCD dropdown entry, accurate next-stop labels/tooltips, persistence/reload, direct palette selection, blocked storage, and a delayed rotation superseded by dropdown selection. Existing contrast/layout/recovery regressions also passed (with the separately recorded composer baseline exception). Evidence: `/tmp/lcd-palettes-nOMuIg/`. Passed `node tests/browser/theme_cycle.cjs`, 24 targeted PHP theme/profile/loading checks, JavaScript syntax, and `git diff --check`. No layout/style or navigation changes; no UI copy cleanup.
+- Limitations: the previously documented baseline composer errors under globally blocked storage remain outside this enhancement. No merge/deployment.

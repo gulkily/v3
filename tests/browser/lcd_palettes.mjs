@@ -141,6 +141,24 @@ try {
     await theme(page, 'console'); await page.locator('[data-action="theme-cycle"]').click();
     await page.waitForFunction(() => document.documentElement.dataset.theme === 'lcd');
     assert.equal(await page.locator(paletteToggle).isVisible(), true);
+    assert.equal(await page.locator(themeOption('lcd')).count(), 1);
+    const cycle = page.locator('[data-action="theme-cycle"]');
+    for (const [value, next] of [['green', 'LCD Amber'], ['amber', 'LCD Purple'], ['purple', 'LCD Gray'], ['gray', 'Chicago']]) {
+      assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), value);
+      assert.equal(await page.evaluate(key => localStorage.getItem(key), paletteKey), value);
+      assert.ok((await cycle.getAttribute('aria-label')).includes('switch to ' + next));
+      assert.ok((await cycle.getAttribute('title')).includes('switch to ' + next));
+      await cycle.focus(); await page.keyboard.press('Enter');
+    }
+    await page.waitForFunction(() => document.documentElement.dataset.theme === 'chicago');
+    await theme(page, 'lcd');
+    assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'gray', 'dropdown restores remembered palette');
+    await palette(page, 'amber'); await cycle.click();
+    assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'purple', 'direct selection sets rotation stop');
+    await page.reload();
+    assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'purple');
+    await cycle.focus(); await page.keyboard.press('Space');
+    assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'gray');
     // All permitted non-LCD themes retain their ordinary selection and hide palettes.
     const themes = await page.locator('[data-theme-option]').evaluateAll(es => es.map(e => e.dataset.themeOption).filter(t => !['lcd', 'auto'].includes(t)));
     for (const name of themes) { await theme(page, name); assert.equal(await page.locator(paletteToggle).isVisible(), false); }
@@ -167,6 +185,8 @@ try {
     assert.equal(await blocked.page.locator('html').getAttribute('data-lcd-palette'), 'purple');
     await theme(blocked.page, 'light'); await theme(blocked.page, 'lcd');
     assert.equal(await blocked.page.locator('html').getAttribute('data-lcd-palette'), 'purple');
+    await blocked.page.locator('[data-action="theme-cycle"]').click();
+    assert.equal(await blocked.page.locator('html').getAttribute('data-lcd-palette'), 'gray');
     await blocked.context.close();
   }
   assert.ok(baselineComposeErrors.length <= 2, 'unexpected additional baseline composer errors');
@@ -222,6 +242,25 @@ try {
   assert.equal(await delayedPage.locator('html').getAttribute('data-lcd-palette'), 'purple');
   await delayed.close();
   console.log('PASS delayed stylesheet, rapid switching, and saved palette after load');
+
+  const replaced = await browser.newContext({ serviceWorkers: 'block' });
+  await replaced.addInitScript(({ paletteKey }) => { window.requestIdleCallback = () => 0; localStorage.setItem(paletteKey, 'purple'); }, { paletteKey });
+  const replacedPage = await replaced.newPage(); replacedPage.setDefaultTimeout(6000);
+  replacedPage.on('pageerror', error => errors.push(error.stack || error.message));
+  await replacedPage.goto(base + '/'); await theme(replacedPage, 'console');
+  let finishRotation;
+  const rotationGate = new Promise(resolve => { finishRotation = resolve; });
+  await replacedPage.route(lcdCss, async route => { await rotationGate; await route.continue(); });
+  await replacedPage.locator('[data-action="theme-cycle"]').click();
+  await replacedPage.waitForFunction(() => document.documentElement.hasAttribute('data-theme-loading'));
+  assert.equal(await replacedPage.locator('html').getAttribute('data-lcd-palette'), 'purple', 'pending rotation does not change saved palette');
+  await replacedPage.locator('[data-action="theme-toggle"]').click();
+  await replacedPage.locator(themeOption('lcd')).click();
+  finishRotation();
+  await replacedPage.waitForFunction(() => document.documentElement.dataset.theme === 'lcd');
+  assert.equal(await replacedPage.locator('html').getAttribute('data-lcd-palette'), 'purple', 'later dropdown selection cancels pending Green rotation');
+  await replaced.close();
+  console.log('PASS dropdown supersedes pending LCD rotation without resetting its saved palette');
 
   const initialFailure = await savedContext('gray');
   await initialFailure.context.addInitScript(() => { window.requestIdleCallback = () => 0; });
