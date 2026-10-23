@@ -132,8 +132,9 @@ final class StaticArtifactInvalidator
     /**
      * Retires every generated presentation file and served snapshot copy, failing loudly so
      * callers can report a partial result. Used when content must stop being served anywhere.
+     * Imports exclude documentation even when a legacy library is incomplete.
      */
-    public function invalidateAllGeneratedPresentation(): void
+    public function invalidateAllGeneratedPresentation(bool $includeDocumentation = true): void
     {
         foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::detach($root);
         $paths = [];
@@ -148,10 +149,12 @@ final class StaticArtifactInvalidator
             $docs->preserveLegacy();
             $legacy = $docs->legacy();
             foreach (glob($root . '/*.html') ?: [] as $path) {
+                if (!$includeDocumentation && basename($path) === 'docs.html') continue;
                 if ($legacy !== null && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($legacy['root'], realpath($root) . substr($path, strlen($root)))) continue;
                 $paths[] = substr($path, strlen($root));
             }
             foreach (['threads', 'posts', 'profiles', 'users', 'tags', 'activity', 'instance', 'tools', 'about', 'docs', 'latest', 'top', 'leetness', 'qdb'] as $family) {
+                if (!$includeDocumentation && $family === 'docs') continue;
                 $directory = $root . '/' . $family;
                 if ($legacy !== null && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($legacy['root'], realpath($root) . '/' . $family)) continue;
                 if (is_link($directory)) {

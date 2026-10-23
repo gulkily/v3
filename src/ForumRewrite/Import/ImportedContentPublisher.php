@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Import;
 
 use Closure;
-use ForumRewrite\Host\StaticArtifactReleasePublisher;
+use ForumRewrite\Write\StaticArtifactInvalidator;
 use ForumRewrite\Offline\OfflineSnapshotPublisher;
 use ForumRewrite\ReadModel\ReadModelCandidateBuilder;
 use ForumRewrite\ReadModel\ReadModelCandidatePromoter;
@@ -29,29 +29,26 @@ final class ImportedContentPublisher
     {
         $candidate = null;
         try {
+            // Withdraw stale presentation before refreshing data, including on old-journal resumes.
+            (new StaticArtifactInvalidator($this->staticHtmlRoot))->invalidateAllGeneratedPresentation(includeDocumentation: false);
             $this->at('before_build');
             $candidate = (new ReadModelCandidateBuilder($this->repositoryRoot, $this->databasePath, 'instance_import', $this->progress))->build();
             $private = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
                 ->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)->effectiveValue;
-            $release = null;
-            $publisher = new StaticArtifactReleasePublisher($this->projectRoot, $this->repositoryRoot, $this->staticHtmlRoot);
-            if (!$private) {
-                $release = $publisher->build($candidate, $this->progress);
-            }
             $this->at('built');
             (new ReadModelCandidatePromoter($this->repositoryRoot, $this->databasePath, $this->progress))->promoteWhileLocked($candidate);
             $candidate = null;
             $this->at('promoted');
-            if ($release !== null) {
-                $publisher->activate($release);
-                $this->at('activated');
-                // Standalone snapshots take precedence over release snapshots on the host.
+            // Preserve checkpoint names for callers replaying publication failures.
+            $this->at('activated');
+            if (!$private) {
+                // Refresh offline data without rendering HTML or copying presentation assets.
                 $offline = new OfflineSnapshotPublisher($this->staticHtmlRoot);
                 $offline->publish($this->databasePath);
                 $this->at('offline_snapshot');
                 $offline->publishUpdate($this->databasePath);
             } elseif ($this->progress !== null) {
-                ($this->progress)('Private destination: public static/offline publication skipped; access gates remain in force.');
+                ($this->progress)('Private destination: public offline publication skipped; access gates remain in force.');
             }
             $this->at('complete');
         } finally {

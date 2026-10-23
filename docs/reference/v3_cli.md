@@ -407,8 +407,11 @@ controlled operator workflow.
 ```
 
 Downloads the source's public repository archive, merges supported public forum
-content while preserving destination settings/approval authority, and publishes
-local views. Hostnames use HTTPS; short names require a JSON object mapping names
+content while preserving destination settings/approval authority, refreshes the
+read model and public offline data, and withdraws stale static HTML. Import and
+`--resume` never render pages or fingerprint/copy presentation assets. PHP serves
+imported content; run `./v3 build-static` separately when static output is needed.
+Hostnames use HTTPS; short names require a JSON object mapping names
 to URLs in `--sources`. URLs may include an instance base path. Conflicts retain
 local records. Legacy creation dates are recovered from isolated source history
 and retained as hash-bound metadata without changing signed post bytes. See the

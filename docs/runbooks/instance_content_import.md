@@ -2,7 +2,8 @@
 
 Use `./v3 import-instance` to download a public instance's repository archive,
 merge its supported forum content into this instance, and refresh the local
-read model, static pages, and offline snapshots. This is an on-demand command;
+read model and applicable offline snapshots. Import does not render pages or
+fingerprint/copy presentation assets. This is an on-demand command;
 there is no schedule or web UI in this release.
 
 ## Run an import
@@ -221,10 +222,12 @@ unrecoverable divergence requires operator review of the recorded base commit
 and owned files. The generic [operator recovery guide](operator_recovery.md)
 covers database sidecars and publication failures.
 
-Public destinations publish complete static releases plus the standalone
-snapshot/update files served ahead of release snapshots. Private destinations
-refresh the read model and retain their existing access gates without publishing
-public static/offline artifacts. Resume is retry-based recovery, not rollback of
+Imports and resumes withdraw stale forum HTML and refresh the read model. Public
+destinations also refresh standalone offline snapshot/update data. Requests use
+PHP until an operator explicitly runs `./v3 build-static` with the matching
+repository/database/static-root settings. Static-only hosts require that explicit
+build before deploying imported content. Private destinations retain their access
+gates and publish no public offline data. Resume is retry-based recovery, not rollback of
 a committed import. Old run directories retain review data; remove completed
 runs only after reviewing their reports and confirming no pending journal
 references them.
@@ -273,7 +276,7 @@ this release; exceeding them is a reported failure, not a truncated import.
 For a production smoke check, preview a compatible source first and inspect the
 resolved source/destination and exclusions. Import into a disposable destination
 with the production runtime/configuration; check an imported thread/tag page,
-its attribution/reactions, the active static release, and the served offline
+its attribution/reactions through PHP, absence of a stale static pointer, and the served offline
 snapshot. Repeat the command and confirm zero additions. On the actual target,
 follow the same reviewed command and inspect its report and ordinary site views.
 No cron entry is needed. Production-host validation is separate from the local

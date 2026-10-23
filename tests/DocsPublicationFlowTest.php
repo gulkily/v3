@@ -36,15 +36,15 @@ final class DocsPublicationFlowTest
             $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
             $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
             $options = ['--repository-root=' . $target, '--database-path=' . $database, '--static-html-root=' . $static];
-            $template = $project . '/templates/pages/tag.php';
-            $original = file_get_contents($template);
-            file_put_contents($template, '<?php throw new RuntimeException("Injected forum publication failure");');
+            (new DocsReleaseLocator($static))->preserveLegacy();
+            if (is_link($static . '/current')) unlink($static . '/current');
+            $w->put($static . '/current', 'Blocked stale pointer retirement');
             [$code, $out] = $w->command([$project . '/v3', 'import-instance', $server->url, ...$options]);
             assertSame(1, $code, $out);
             assertStringContains('--resume', $out);
             assertTrue(is_file($target . '/.git/instance-import/pending.json'));
             $head = trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
-            file_put_contents($template, $original);
+            unlink($static . '/current');
             $this->trapDocsBulkWork($w, $project);
             $w->put($project . '/docs/guide.md', '# Source changed before resume');
             unset($server);
@@ -55,7 +55,7 @@ final class DocsPublicationFlowTest
             assertSame($head, trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]));
             assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
             assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
-            assertStringContains('Imported resumed', file_get_contents($static . '/current/tags/general.html'));
+            assertTrue(!file_exists($static . '/current'));
             assertTrue(!is_dir($static . '/current/docs'));
             assertSame($beforeDocs, $locator->active());
         }
@@ -106,7 +106,7 @@ final class DocsPublicationFlowTest
                 assertSame($failDocs ? 1 : 0, $exit, file_get_contents($result));
                 assertSame($forum, realpath($static . '/current'));
                 assertSame($databaseHash, hash_file('sha256', $database));
-                assertStringContains('Imported concurrent', file_get_contents($static . '/current/tags/general.html'));
+                assertSame('Imported concurrent', (new PDO('sqlite:' . $database))->query("SELECT subject FROM posts WHERE post_id='concurrent'")->fetchColumn());
                 if ($failDocs) assertSame($beforeDocs, $locator->active());
                 else assertTrue($beforeDocs['version'] !== $locator->active()['version']);
             } finally {
@@ -135,6 +135,12 @@ final class DocsPublicationFlowTest
         $static = $w->root . '/static';
         $w->put($static . '-docs', 'unavailable docs storage');
         $this->trapDocsBulkWork($w, $project);
+        $builder = $project . '/src/ForumRewrite/Host/StaticArtifactBuilder.php';
+        $code = file_get_contents($builder);
+        $entry = "public function buildFromReadModel(): void\n    {";
+        assertTrue(str_contains($code, $entry));
+        file_put_contents($builder, str_replace($entry, $entry . "throw new \\RuntimeException('Import invoked static rendering');", $code));
+        $w->put($project . '/templates/pages/tag.php', '<?php throw new RuntimeException("Broken forum template");');
         $command = [$project . '/v3', 'import-instance', $server->url,
             '--repository-root=' . $target, '--database-path=' . $database, '--static-html-root=' . $static];
         foreach (['cold', 'new-record', 'duplicate'] as $case) {
@@ -145,12 +151,14 @@ final class DocsPublicationFlowTest
             [$code, $out] = $w->command($command);
             assertSame(0, $code, $out);
             $this->assertNoDocsWork($out);
-            assertStringContains('./v3 docs publish', $out);
+            assertStringNotContains('Rendering ', $out);
+            assertStringNotContains('Fingerprinting and copying assets', $out);
             clearstatcache(true);
             assertTrue(!is_dir($static . '/current/docs'));
             assertTrue(!is_file($static . '/current/.docs-publication.json'));
             assertSame('unavailable docs storage', file_get_contents($static . '-docs'));
-            assertStringContains('Imported ' . ($case === 'cold' ? 'first' : 'second'), file_get_contents($static . '/current/tags/general.html'));
+            assertTrue(!file_exists($static . '/current'));
+            assertSame($case === 'cold' ? 1 : 2, (int) (new PDO('sqlite:' . $database))->query("SELECT count(*) FROM posts WHERE post_id IN ('first', 'second')")->fetchColumn());
             if ($case === 'duplicate') assertStringContains('import: 0', $out);
         }
         assertSame('3', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
@@ -204,7 +212,7 @@ final class DocsPublicationFlowTest
             [$code, $out] = $w->command([$project . '/v3', 'import-instance', $server->url,
                 '--repository-root=' . $target, '--database-path=' . $database, '--static-html-root=' . $static]);
             assertSame(0, $code, $out);
-            assertStringContains('Private destination: public static/offline publication skipped', $out);
+            assertStringContains('Private destination: public offline publication skipped', $out);
             assertTrue(is_file($target . '/records/posts/private.txt'));
             assertTrue(!file_exists($static . '/current'));
             assertTrue(!file_exists($static . '/offline/snapshot.sqlite3'));
