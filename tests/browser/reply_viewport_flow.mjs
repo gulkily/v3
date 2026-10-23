@@ -111,27 +111,25 @@ try {
    await page.evaluate(()=>{document.documentElement.dataset.theme='light';replyTestViewport.dispatchEvent(new Event('resize'));});
   }
 
-  // A failed request must expose retry and preserve the draft on the real page.
+  // A captured failure retains its own content without blocking the next draft.
   await page.route('**/api/prepare_reply',route=>route.abort(),{times:1});
-  await button.click();
-  await page.locator('[data-role="compose-identity-status"][data-kind="error"]').waitFor();
-  assert.equal(await body.inputValue(),draft);
-  assert.equal(await button.isEnabled(),true);
-  await body.focus();await checkSeparation();
+  await form.evaluate(f=>f.requestSubmit(f.querySelector('button[type="submit"]')));
+  const failed=page.locator('[data-reply-state="failed"]').last();await failed.waitFor();
+  assert.equal(await body.inputValue(),'');assert.match(await failed.textContent(),new RegExp(draft));
+  await body.focus();await body.fill('Newer phone draft');await checkSeparation();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  // Hold the preparation request, then repeat submit: only one publication may result.
+  // Hold preparation, then repeat Retry: only one captured operation can publish.
   let release;const gate=new Promise(resolve=>{release=resolve;});
   let started;const pending=new Promise(resolve=>{started=resolve;});let requests=0;
   await page.route('**/api/prepare_reply',async route=>{requests++;started();await gate;await route.continue();});
   try {
-   await button.click();await pending;
-   assert.equal(await button.isDisabled(),true);
-   await form.evaluate(f=>f.requestSubmit(f.querySelector('button[type="submit"]')));
+   await failed.locator('button').evaluate(el=>el.click());await pending;
+   await failed.locator('button').evaluate(el=>el.click());
    await page.waitForTimeout(100);assert.equal(requests,1);
   } finally {release();}
-  await page.waitForURL(/\/threads\/.*#post-/);
-  assert.equal(await page.locator('.post-card').filter({hasText:draft}).count(),1);
-  await page.reload();
+  await page.waitForFunction(()=>!document.querySelector('[data-reply-state="failed"]'));
+  assert.equal(await body.inputValue(),'Newer phone draft');
+  await page.goto(base+'/threads/'+threadId);
   assert.equal(await page.locator('.post-card').filter({hasText:draft}).count(),1,'exactly one persisted reply after retry');
   await page.unroute('**/api/prepare_reply');
   console.log('PASS '+entry+': simulated keyboard separation, validation recovery, long draft/selection, real phone route, failed request, preserved draft, retry, duplicate pending submit suppressed, exactly one persisted reply');

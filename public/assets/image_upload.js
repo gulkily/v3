@@ -17,7 +17,7 @@
     if (form.__imageBusy) return;
     clear(form);
     if (!file) return;
-    const state = {file:null,error:null,promise:null,url:null};
+    const state = {file:null,sourceFile:file,error:null,promise:null,url:null};
     form.__imageState = state;
     state.promise = window.ForumImagePrepare.prepare(file).then(prepared => {
       if (form.__imageState !== state) return;

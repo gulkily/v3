@@ -2,6 +2,8 @@
 
 Use this format to select an actionable feedback item with high user benefit and low total effort. Keep the triage short enough to review at a glance; link supporting investigation rather than reproducing it.
 
+For migrated requests, start with the [production feedback register](../plans/production_feedback_register.md) and [management guide](production_feedback_management.md). Keep current workflow state, delivery evidence and next actions there; separate triage documents retain investigation/estimate provenance. A triage recommendation is not approval. All future Railspike cycles follow the project’s standing P2 study enrollment; ordinary one-shot triage does not itself create a cycle.
+
 ## Process
 
 1. Read the feedback inventory and compare likely benefit, effort, uncertainty, and overlap with completed work. Briefly inspect relevant source to establish whether the reported behavior still has a plausible code path. Distinguish source evidence from runtime reproduction.
@@ -25,7 +27,7 @@ Report: [comment](...) · [parent post](...) · [full thread](...).
 [Source and estimation evidence](<optional supporting document>)
 ```
 
-Railspike scores are relative judgments: **1.0** is the largest well-scoped, releasable slice comfortably approvable for one cycle, including verification and documentation. They are not hours, priority, or approval. Note uncertainty briefly and retain calibration/provenance details in linked evidence when available; formal effort-study participation requires explicit selection.
+Railspike scores are relative judgments: **1.0** is the largest well-scoped, releasable slice comfortably approvable for one cycle, including verification and documentation. They are not hours, priority, or approval. Note uncertainty briefly and retain calibration/provenance details in linked evidence when available; formal effort-study participation follows the project’s standing P2 enrollment for Railspike cycles.
 
 Choose **One-shot** for a small, straightforward change with clear acceptance checks; **Checklist** for a clear approach with several bounded checks or surfaces to track; **Railspike** when alternatives, uncertainty, dependencies, or work across sessions warrant staged planning. A checklist does not bypass repository requirements to use Railspike. Workflow recommendations do not approve implementation or later Railspike steps.
 

@@ -223,7 +223,8 @@ try {
  const replyResponse=page.waitForResponse(r=>r.url().endsWith('/api/create_prepared_post')).then(r=>webkitRun?r.json():outcomes.at(-1));
  await page.locator('[data-compose-form] button[type="submit"]').first().click();
  const reply=await replyResponse;assert.equal(reply.status,'ok',JSON.stringify(reply));
- await page.waitForURL(/\/threads\//);
+ await page.locator('[data-reply-state="accepted"]').waitFor();
+ await page.goto(base+'/threads/'+reply.thread_id);
  await page.setViewportSize({width:1280,height:900});
  await page.goto(base+'/tools/backup/');
  let imagesHref=await page.locator('a[href^="/downloads/images.tar"]').getAttribute('href');
