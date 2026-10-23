@@ -28,6 +28,24 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
   - With the planned rule, about 57% of attributed posts and 95% of votes would become unverified, nearly all from the instance's own long-standing identities and the reply agent rather than impersonation.
   - Review gate: the maintainer reviews these counts before Stage 2.
 
+## Stage 2 - The flag and its cutoff
+
+- Changes:
+  - `FORUM_VERIFIED_ATTRIBUTION` flag (Verified attribution; default off, site-mutable, Access group). It changes no counts yet; Stages 3–5 add the rule in the same release.
+  - The cutoff comes from signed records, resolved by `Security/AttributionCutoff`: the latest operator-signed move in `records/attribution-cutoffs/`, else the `Created-At` of the earliest operator-signed feature flag change that turned the flag on, else none (everything counts). Off/on keeps it; two concurrent switch-ons resolve to the earlier.
+  - Moving the cutoff: `/api/prepare_attribution_cutoff` and `/api/finalize_attribution_cutoff` (operator, browser-signed like flag changes); future cutoffs refused. Spec: `docs/specs/attribution_cutoff_record_v1.md`; parser, path, source-path and import exclusion follow the feature flag change records.
+  - Feature Flags page: the cutoff beside the flag ("Cutoff: … UTC") and, for operators, a "Move to (UTC)" field with a "Move cutoff" button. Shown once a cutoff exists or the flag is on. Flag finalize responses include `attribution_cutoff_at`, so the first switch-on shows the cutoff without reloading.
+- Deviation from Step 3 (implementation detail, same requirement): Step 3 named a server-written `records/instance/attribution-cutoff.txt`. Flag changes turned out to be operator-signed records with a server `Created-At`, so the automatic cutoff is taken from that signed switch-on record, and only moves need a new record family. This keeps the cutoff signed rather than adding an unsigned server write.
+- Verification:
+  - `php tests/run.php WriteApiSmokeTest::testVerifiedAttributionCutoffIsSetBySwitchOnKeptByToggleAndMovable`: real signed switch-on, off/on, move, future refusal, unauthorized refusal, commit contents, page rendering, unsigned move ignored.
+  - `CanonicalRecordParsersTest` 48/48, `FeatureFlagEvaluatorTest` 18/18 (registry list updated), `FeatureFlagsBehaviorTest`, `FeatureFlagChangePageTest`, `ContentImportPlannerTest`, `PrivateMessageFeatureFlagTest`, `ApiRouteCatalogTest` pass.
+  - `WriteApiSmokeTest`: 186 of 188 on the first run. `testHistoricalReactionSignaturesAreVerifiedOnRebuildAndImport` fails identically with the Stage 2 changes stashed (pre-existing). `testUnicodeAuthoredTextSurvivesWriteRenderRssAndStaticArtifacts` failed because a plan doc was edited during its docs build, and passed on rerun.
+  - Browser: `node tests/browser/attribution_cutoff.mjs` (Chromium, production template fixture): display, move success and failure (entry and cutoff kept), first switch-on revealing the cutoff, read-only viewer without the form, no-JS display; Light, Word97, Chicago and Midnight at 375 and 1150 px without overflow or clipped controls; screenshots reviewed.
+- Notes and limitations:
+  - Cutoff moves add no Activity row: a rebuild replays only feature flag changes, so an incremental-only row would break parity. The signed record is visible in the source browser.
+  - Layout: the move field and button stack full width at desktop; usable, could be compacted later.
+  - Moving the cutoff only advances read-model metadata for now; Stage 3 recomputes verified totals on a cutoff change.
+
 ## Enhancement Requests
 
 - **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** pending renewed Approved Step 2 and Approved Step 3. / **Outcome:** pending.

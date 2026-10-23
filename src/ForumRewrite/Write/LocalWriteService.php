@@ -6,6 +6,7 @@ namespace ForumRewrite\Write;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\AttributionCutoffRecordParser;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
@@ -34,6 +35,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\ApprovalPolicy;
+use ForumRewrite\Security\AttributionCutoff;
 use ForumRewrite\Security\ApprovalAcceptance;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
@@ -2355,6 +2357,93 @@ class LocalWriteService
                 'wrote_record' => 'yes', 'record_id' => $recordId, 'record_path' => $recordPath,
                 'signature_path' => $recordPath . '.asc', 'operator_identity_id' => $operatorIdentityId,
                 'commit_sha' => $commitSha, 'timings' => $commitResult['timings'],
+            ] + ($action->flagKey === FeatureFlagRegistry::VERIFIED_ATTRIBUTION
+                ? ['attribution_cutoff_at' => AttributionCutoff::resolve($this->repositoryRoot)['cutoff_at'] ?? '']
+                : []);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareAttributionCutoff(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
+                throw new RuntimeException('Moving the attribution cutoff requires an approved operator identity.');
+            }
+            $cutoffAt = $this->requireAttributionCutoffAt((string) ($input['cutoff_at'] ?? ''));
+            $recordId = $this->generateRecordId('attribution-cutoff');
+            $canonicalRecord = $this->buildAttributionCutoffRecord($recordId, $this->canonicalTimestampNow(), $cutoffAt, $operatorIdentityId);
+            $recordPath = CanonicalPathResolver::attributionCutoff($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $canonicalRecord, [
+                'kind' => 'attribution-cutoff', 'record_id' => $recordId, 'operator_identity_id' => $operatorIdentityId,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok', 'record_id' => $recordId,
+                'record_path' => $recordPath, 'canonical_record' => $canonicalRecord,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedAttributionCutoff(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'attribution-cutoff' || strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared attribution cutoff is invalid or expired.');
+            }
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')
+                || !$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
+                throw new RuntimeException('Moving the attribution cutoff requires an approved operator identity.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) ($prepared['canonical_sha256'] ?? '')) {
+                throw new RuntimeException('Prepared attribution cutoff canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $recordId = $this->requirePreparedMatch($input, $prepared, 'record_id');
+            $record = (new AttributionCutoffRecordParser())->parse($canonicalRecord);
+            if ($record->recordId !== $recordId || CanonicalPathResolver::attributionCutoff($recordId) !== $recordPath
+                || $record->operatorIdentityId !== $operatorIdentityId) {
+                throw new RuntimeException('Prepared attribution cutoff does not match its canonical record.');
+            }
+            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                throw new RuntimeException('Attribution cutoff record already exists.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $commitResult = $this->commitCanonicalWrite(
+                [$recordPath, $recordPath . '.asc'],
+                'Move attribution cutoff to ' . $record->cutoffAt . ' by ' . $operatorIdentityId
+            );
+            $this->syncReadModelAfterAttributionCutoffWrite($commitResult['commit_sha']);
+            $this->invalidator()->invalidateFeatureFlags();
+            $this->deletePreparedPost($prepareToken);
+
+            return [
+                'status' => 'ok', 'attribution_cutoff_at' => $record->cutoffAt,
+                'record_id' => $recordId, 'record_path' => $recordPath, 'signature_path' => $recordPath . '.asc',
+                'operator_identity_id' => $operatorIdentityId, 'commit_sha' => $commitResult['commit_sha'],
+                'timings' => $commitResult['timings'],
             ];
         });
     }
@@ -2795,6 +2884,30 @@ class LocalWriteService
     private function readModelPdo(): \PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();
+    }
+
+    private function syncReadModelAfterAttributionCutoffWrite(string $commitSha): void
+    {
+        if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->refreshDerivedStateAfterCommit($commitSha);
+
+            return;
+        }
+
+        $pdo = $this->readModelPdo();
+        $pdo->beginTransaction();
+        try {
+            $this->incrementalReadModelUpdater()->writeMetadata($pdo, $commitSha);
+            $pdo->commit();
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+
+        $this->staleMarker()->clear();
     }
 
     private function syncReadModelAfterFeatureFlagWrite(
@@ -3601,6 +3714,36 @@ class LocalWriteService
         (new FeatureFlagChangeRecordParser())->parse($contents);
 
         return $contents;
+    }
+
+    private function buildAttributionCutoffRecord(string $recordId, string $createdAt, string $cutoffAt, string $operatorIdentityId): string
+    {
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Cutoff-At: {$cutoffAt}\n"
+            . "Operator-Identity-ID: {$operatorIdentityId}\n\n";
+        (new AttributionCutoffRecordParser())->parse($contents);
+
+        return $contents;
+    }
+
+    /** Accepts RFC 3339 UTC or a browser datetime-local value read as UTC; a cutoff in the future is refused. */
+    private function requireAttributionCutoffAt(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $value) === 1) {
+            $value .= ':00Z';
+        }
+        try {
+            $cutoffAt = AttributionCutoffRecordParser::parseTimestamp($value, 'cutoff_at');
+        } catch (\ForumRewrite\Canonical\CanonicalRecordParseException $exception) {
+            throw new RuntimeException($exception->getMessage());
+        }
+        if ($cutoffAt > $this->canonicalTimestampNow()) {
+            throw new RuntimeException('The attribution cutoff cannot be in the future.');
+        }
+
+        return $cutoffAt;
     }
 
     private function isApprovedIdentity(string $identityId): bool

@@ -130,3 +130,18 @@
 ### Uncertain assessments
 
 - Two scope changes arrived in quick succession at the same gate. Each got its own revision and effort snapshot; Railspike does not say whether back-to-back revisions before re-approval need separate snapshots.
+
+## 2026-10-23T16:10Z · Step 4 Stage 2 (flag and cutoff)
+
+### Necessary/useful instructions
+
+- `CONTRIBUTING.md` UI verification (phone and desktop, themes, failure states): the browser fixture checked the move failure path keeps both the entry and the displayed cutoff, and the first switch-on reveals the cutoff without reload. Retain.
+- `PRINCIPLES.md` "signatures are the authority": reading the existing flag-change write path showed switch-ons are already operator-signed, so the cutoff came from that record instead of the unsigned server file Step 3 named. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Railspike does not say whether a plan's named file path, replaced by an equivalent signed source meeting the same Step 2 requirement, needs renewed Step 3 approval. Treated as an implementation detail and recorded as a deviation in the Step 4 summary.

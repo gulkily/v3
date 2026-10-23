@@ -5,6 +5,7 @@ declare(strict_types=1);
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\AttributionCutoffRecordParser;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\ApprovalSeedRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
@@ -550,6 +551,24 @@ final class CanonicalRecordParsersTest
         assertThrows(
             static fn () => (new FeatureFlagChangeRecordParser())->parse("Record-ID: feature-flag-change-001\nCreated-At: 2026-10-09T12:00:00Z\nFlag-Key: FORUM_APP_VERSION_NOTIFICATION\nValue: no\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"),
             'Feature-flag change Value must be true or false.'
+        );
+    }
+
+    public function testParsesAndRejectsAttributionCutoffRecords(): void
+    {
+        $record = (new AttributionCutoffRecordParser())->parse("Record-ID: attribution-cutoff-20261023150000-ab12cd34\nCreated-At: 2026-10-23T15:00:00Z\nCutoff-At: 2026-10-01T00:00:00Z\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n");
+
+        assertSame('attribution-cutoff-20261023150000-ab12cd34', $record->recordId);
+        assertSame('2026-10-23T15:00:00Z', $record->createdAt);
+        assertSame('2026-10-01T00:00:00Z', $record->cutoffAt);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->operatorIdentityId);
+        assertThrows(
+            static fn () => (new AttributionCutoffRecordParser())->parse("Record-ID: attribution-cutoff-001\nCreated-At: 2026-10-23T15:00:00Z\nCutoff-At: 2026-10-01\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"),
+            'Attribution cutoff Cutoff-At must use RFC 3339 UTC format.'
+        );
+        assertThrows(
+            static fn () => (new AttributionCutoffRecordParser())->parse("Record-ID: cutoff-001\nCreated-At: 2026-10-23T15:00:00Z\nCutoff-At: 2026-10-01T00:00:00Z\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"),
+            'Attribution cutoff Record-ID is invalid.'
         );
     }
 

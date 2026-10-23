@@ -472,6 +472,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_attribution_cutoff' || $path === '/api/finalize_attribution_cutoff') {
+            $this->toolsPageController()->attributionCutoffApi($method, $query, $path === '/api/finalize_attribution_cutoff');
+            return;
+        }
+
         if ($path === '/api/link_identity') {
             $this->composeAndAccountKeyController()->linkIdentityApi($method, $query);
             return;
@@ -2051,7 +2056,7 @@ final class Application
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
+            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {

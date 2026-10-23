@@ -22,6 +22,7 @@ final class CanonicalRecordRepository
         private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
         private readonly PostRetractionRecordParser $postRetractionParser = new PostRetractionRecordParser(),
         private readonly FeatureFlagChangeRecordParser $featureFlagChangeParser = new FeatureFlagChangeRecordParser(),
+        private readonly AttributionCutoffRecordParser $attributionCutoffParser = new AttributionCutoffRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
         private readonly bool $requireLegacyTimestampMetadata = false,
@@ -277,6 +278,18 @@ final class CanonicalRecordRepository
 
         if ($relativePath !== CanonicalPathResolver::featureFlagChange($record->recordId)) {
             throw new CanonicalRecordParseException('Feature-flag change record path must match Record-ID.');
+        }
+
+        return $record;
+    }
+
+    public function loadAttributionCutoff(string $relativePath): AttributionCutoffRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/attribution-cutoffs/');
+        $record = $this->attributionCutoffParser->parse($this->read($relativePath));
+
+        if ($relativePath !== CanonicalPathResolver::attributionCutoff($record->recordId)) {
+            throw new CanonicalRecordParseException('Attribution cutoff record path must match Record-ID.');
         }
 
         return $record;

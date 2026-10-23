@@ -167,6 +167,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::USERNAME_CHANGES_ENABLED,
+            FeatureFlagRegistry::VERIFIED_ATTRIBUTION,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::EVENT_SUPPORT_ENABLED,

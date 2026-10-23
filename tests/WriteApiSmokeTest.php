@@ -10,6 +10,7 @@ use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Security\AttributionCutoff;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
@@ -4888,6 +4889,74 @@ NODE;
             $rebuiltActivity = $this->renderMethod($rebuiltApplication, 'GET', '/activity/');
             assertStringContains($identityId, $rebuiltActivity);
             assertStringContains($prepared['record_path'], $rebuiltActivity);
+        } finally {
+            $_POST = [];
+            $_COOKIE = [];
+            $this->deleteTree($signingKey['home']);
+        }
+    }
+
+    public function testVerifiedAttributionCutoffIsSetBySwitchOnKeptByToggleAndMovable(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $signingKey = $this->createSigningKey('attribution-cutoff-signer');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            assertSame(null, AttributionCutoff::resolve($repositoryRoot));
+            $unauthorized = json_decode($this->renderMethod($application, 'POST', '/api/prepare_attribution_cutoff?cutoff_at=2026-01-01T00:00'), true, 512, JSON_THROW_ON_ERROR);
+            assertSame('error', $unauthorized['status']);
+
+            $_POST = ['public_key' => $signingKey['public_key']];
+            $identityId = $this->extractValue($this->renderMethod($application, 'POST', '/api/link_identity'), 'identity_id');
+            $_POST = [];
+            $this->seedApprovedIdentity($repositoryRoot, $identityId);
+            $this->renderMethod($application, 'GET', '/');
+            $_COOKIE = ['identity_hint' => $identityId];
+
+            $signedChange = function (string $prepareRoute, string $finalizeRoute) use ($application, $signingKey): array {
+                $prepared = json_decode($this->renderMethod($application, 'POST', $prepareRoute), true, 512, JSON_THROW_ON_ERROR);
+                assertSame('ok', $prepared['status']);
+                $_POST = [
+                    'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                    'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                    'detached_signature' => $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']),
+                ];
+                $result = json_decode($this->renderMethod($application, 'POST', $finalizeRoute), true, 512, JSON_THROW_ON_ERROR);
+                $_POST = [];
+                assertSame('ok', $result['status']);
+
+                return $prepared + ['result' => $result];
+            };
+            $flagChange = fn (string $value): array => $signedChange(
+                '/api/prepare_feature_flag_change?key=FORUM_VERIFIED_ATTRIBUTION&value=' . $value,
+                '/api/finalize_feature_flag_change'
+            );
+
+            $switchOn = $flagChange('true');
+            preg_match('/^Created-At: (\S+)$/m', $switchOn['canonical_record'], $createdAt);
+            assertSame($createdAt[1], $switchOn['result']['attribution_cutoff_at']);
+            assertSame(['cutoff_at' => $createdAt[1], 'source' => 'switch-on', 'source_path' => $switchOn['record_path']], AttributionCutoff::resolve($repositoryRoot));
+            assertStringContains('Cutoff: <time data-attribution-cutoff-at datetime="' . $createdAt[1] . '"', $this->renderMethod($application, 'GET', '/tools/feature-flags/'));
+
+            sleep(1);
+            $flagChange('false');
+            $flagChange('true');
+            assertSame($createdAt[1], AttributionCutoff::resolve($repositoryRoot)['cutoff_at']);
+
+            $future = json_decode($this->renderMethod($application, 'POST', '/api/prepare_attribution_cutoff?cutoff_at=2999-01-01T00:00'), true, 512, JSON_THROW_ON_ERROR);
+            assertSame('The attribution cutoff cannot be in the future.', $future['error']);
+
+            $moved = $signedChange('/api/prepare_attribution_cutoff?cutoff_at=2026-01-01T00:00', '/api/finalize_attribution_cutoff');
+            assertSame('2026-01-01T00:00:00Z', $moved['result']['attribution_cutoff_at']);
+            assertSame(['cutoff_at' => '2026-01-01T00:00:00Z', 'source' => 'moved', 'source_path' => $moved['record_path']], AttributionCutoff::resolve($repositoryRoot));
+            $committedFiles = preg_split('/\R/', trim($this->gitOutput($repositoryRoot, 'show --name-only --format= HEAD')));
+            sort($committedFiles);
+            assertSame([$moved['record_path'], $moved['record_path'] . '.asc'], $committedFiles);
+            assertStringContains('2026-01-01 00:00:00 UTC', $this->renderMethod($application, 'GET', '/tools/feature-flags/'));
+
+            unlink($repositoryRoot . '/' . $moved['record_path'] . '.asc');
+            assertSame('switch-on', AttributionCutoff::resolve($repositoryRoot)['source']);
         } finally {
             $_POST = [];
             $_COOKIE = [];

@@ -128,6 +128,12 @@ final class RouteServices
      * calls one page render makes into it - see
      * docs/plans/activity_subsystem_extraction_plan_v1.md.
      */
+    /** @return array{cutoff_at:string,source:string,source_path:string}|null */
+    public function attributionCutoff(): ?array
+    {
+        return \ForumRewrite\Security\AttributionCutoff::resolve($this->repositoryRoot);
+    }
+
     public function securityReviewAllowed(): bool
     {
         $id = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));

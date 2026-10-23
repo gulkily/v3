@@ -97,6 +97,8 @@ final class ApiRouteCatalog
             // Operator tools
             ['POST', '/api/prepare_feature_flag_change', 'operator', 'json', 'Prepare a signed feature flag change.'],
             ['POST', '/api/finalize_feature_flag_change', 'operator', 'json', 'Publish a signed feature flag change.'],
+            ['POST', '/api/prepare_attribution_cutoff', 'operator', 'json', 'Prepare a signed move of the verified attribution cutoff.'],
+            ['POST', '/api/finalize_attribution_cutoff', 'operator', 'json', 'Publish a signed move of the verified attribution cutoff.'],
             ['POST', '/api/set_feature_flag', 'retired', 'text', 'Replaced by prepare_feature_flag_change.'],
             ['POST', '/api/prepare_high_traffic', 'operator', 'json', 'Prepare a signed high-traffic mode change.'],
             ['POST', '/api/finalize_high_traffic', 'operator', 'json', 'Publish a signed high-traffic mode change.'],

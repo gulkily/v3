@@ -289,6 +289,7 @@
           status.textContent = "Saved.";
         }
         refreshFilters();
+        if (result.attribution_cutoff_at !== undefined) showAttributionCutoff(result.attribution_cutoff_at, result.effective_value === 'true');
         if (fields.key === 'FORUM_PRIVATE_MESSAGES_ENABLED') return refreshNavigation(result, status);
       }).catch(function (error) {
         if (status) {
@@ -308,8 +309,59 @@
     });
   }
 
+  function showAttributionCutoff(cutoffAt, enabled) {
+    var block = document.querySelector('[data-attribution-cutoff]');
+    if (!block) return;
+    var time = block.querySelector('[data-attribution-cutoff-at]');
+    if (cutoffAt) {
+      time.setAttribute('datetime', cutoffAt);
+      time.textContent = cutoffAt.replace('T', ' ').replace('Z', ' UTC');
+      var input = block.querySelector('input[name="cutoff_at"]');
+      if (input) input.value = cutoffAt.slice(0, 16);
+    }
+    block.hidden = !cutoffAt && !enabled;
+  }
+
+  function bindAttributionCutoffForm(form) {
+    var status = form.querySelector('[data-attribution-cutoff-status]');
+    var button = form.querySelector('button');
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (button.disabled) return;
+      button.disabled = true;
+      status.textContent = 'Saving...';
+      var fields = { cutoff_at: form.querySelector('input[name="cutoff_at"]').value };
+      Promise.resolve().then(function () {
+        if (!window.ForumBrowserSigning || !window.ForumBrowserSigning.ensureActionIdentity || !window.ForumBrowserSigning.signCanonicalRecord) {
+          throw new Error('Browser signing is unavailable. Reload the page and try again.');
+        }
+        return window.ForumBrowserSigning.ensureActionIdentity(null, null);
+      }).then(function () {
+        return requestJson('/api/prepare_attribution_cutoff', fields);
+      }).then(function (prepared) {
+        return window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record).then(function (signature) {
+          return requestJson('/api/finalize_attribution_cutoff', {
+            prepare_token: prepared.prepare_token,
+            record_id: prepared.record_id,
+            record_path: prepared.record_path,
+            canonical_record: prepared.canonical_record,
+            detached_signature: signature
+          });
+        });
+      }).then(function (result) {
+        showAttributionCutoff(result.attribution_cutoff_at, true);
+        status.textContent = 'Saved.';
+      }).catch(function (error) {
+        status.textContent = error.message;
+      }).finally(function () {
+        button.disabled = false;
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     refreshFilters = bindFilters() || refreshFilters;
     document.querySelectorAll("[data-feature-flag-form]").forEach(bindForm);
+    document.querySelectorAll("[data-attribution-cutoff-form]").forEach(bindAttributionCutoffForm);
   });
 })();
