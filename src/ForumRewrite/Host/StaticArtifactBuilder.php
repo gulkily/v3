@@ -603,6 +603,7 @@ final class StaticArtifactBuilder
             $this->databasePath,
             null,
             routeSource: 'static-html',
+            separateDocsVersion: false,
         );
     }
 

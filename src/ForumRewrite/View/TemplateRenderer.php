@@ -214,7 +214,8 @@ final class TemplateRenderer
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'navIconsCssPath' => $this->assetPath('/assets/theme-nav-icons.css'),
-            'faviconPath' => FaviconRegistry::resolve($profile),
+            'faviconPath' => $this->versionEndpoint === '/api/docs-version'
+                ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),

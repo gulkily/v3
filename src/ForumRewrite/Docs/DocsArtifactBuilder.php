@@ -65,6 +65,7 @@ final class DocsArtifactBuilder
                 if (!copy($this->projectRoot . '/public' . $path, $this->artifactRoot . $path)) {
                     throw new RuntimeException('Cannot publish docs favicon.');
                 }
+                $this->write('docs/_assets/' . basename($path), (string) file_get_contents($this->projectRoot . '/public' . $path));
             }
         }
         $this->write('service_worker.js', BrowserRuntimeAssetRenderer::serviceWorker(

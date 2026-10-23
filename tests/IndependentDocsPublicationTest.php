@@ -10,6 +10,51 @@ use ForumRewrite\Docs\DocsReleasePublisher;
 
 final class IndependentDocsPublicationTest
 {
+    public function testPublishedReadersAssetsAndVersionAreIndependentOfForumAndDatabase(): void
+    {
+        [$w, $project, $repo, $static] = $this->workspace();
+        $publisher = new DocsReleasePublisher($project, $repo, $static);
+        $release = $publisher->publish();
+        $version = (new DocsReleaseLocator($static))->active()['version'];
+        $controller = new \ForumRewrite\Host\FrontController($project, $repo, $w->root . '/missing/read.sqlite3', $static, $project . '/public');
+        $render = static function (string $path, string $method = 'GET') use ($controller): string {
+            ob_start();
+            $controller->handle($method, $path, ['theme-hint' => 'word97']);
+            return (string) ob_get_clean();
+        };
+        $html = $render('/docs/guide.md');
+        assertStringContains('route-source: static-html', $html);
+        assertStringContains('content="' . $version . '"', $html);
+        assertSame($version, trim($render('/api/docs-version')));
+        assertSame('', $render('/api/docs-version', 'HEAD'));
+        assertSame(file_get_contents($project . '/docs/guide.md'), $render('/docs/_download/docs/guide.md'));
+        assertSame(2, count(json_decode($render('/docs/_search.json'), true)['entries']));
+        assertStringContains('Guide', $render('/docs/?page=1'));
+        assertStringContains('data-docs-document-retry', $render('/docs/missing.md'));
+        assertSame(404, http_response_code());
+        assertStringNotContains('read model sentinel', $render('/docs/_download/%2e%2e/forum.sqlite3'));
+        assertSame(404, http_response_code());
+        preg_match('#/assets/platform_docs\.[a-f0-9]{12}\.css#', $html, $asset);
+        $before = $render($asset[0]);
+        file_put_contents($project . '/public/assets/platform_docs.css', "\n/* new application asset */", FILE_APPEND);
+        unlink($project . '/docs/guide.md');
+        $w->put($repo . '/records/posts/imported.txt', $w->post('imported'));
+        $w->git($repo);
+        assertSame(hash('sha256', $before), hash('sha256', $render($asset[0])));
+        assertSame($html, $render('/docs/guide.md'));
+        assertSame($version, trim($render('/api/docs-version')));
+        assertSame(file_get_contents($release . '/docs/_assets/favicon.ico'), $render('/docs/_assets/favicon.ico'));
+        assertTrue(!is_file($w->root . '/missing/read.sqlite3'));
+        $old = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        try {
+            assertSame($html, $render('/docs/guide.md'));
+        } finally {
+            putenv($old === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $old);
+        }
+        $this->assertForumUnchanged($w, $static);
+    }
+
     public function testPublicationAndRepeatDoNotTouchForumStateOrFollowRecordVersions(): void
     {
         [$w, $project, $repo, $static] = $this->workspace();

@@ -172,6 +172,13 @@ final class DocsPublication
             $html[] = ltrim(PlatformDocsCatalog::browsePath($query), '/');
         }
         $required = array_fill_keys(array_merge($html, $required), true);
+        if ($this->independent) {
+            foreach (array_unique(['/favicon.ico', '/favicon.gif', FaviconRegistry::resolve(SiteProfileRegistry::active())]) as $favicon) {
+                if (is_file($this->projectRoot . '/public' . $favicon)) {
+                    $required['docs/_assets/' . basename($favicon)] = true;
+                }
+            }
+        }
         $allowed = $required;
         foreach ($html as $path) {
             $allowed[$path . '.retraction-generation'] = true;
@@ -209,7 +216,7 @@ final class DocsPublication
         }
         foreach (array_unique(['/favicon.ico', '/favicon.gif', FaviconRegistry::resolve(SiteProfileRegistry::active())]) as $favicon) {
             if (is_file($this->projectRoot . '/public' . $favicon)) {
-                $assets[ltrim($favicon, '/')] = hash_file('sha256', $this->projectRoot . '/public' . $favicon);
+                $assets[$this->independent ? 'docs/_assets/' . basename($favicon) : ltrim($favicon, '/')] = hash_file('sha256', $this->projectRoot . '/public' . $favicon);
             }
         }
         if ($this->independent) {
