@@ -10,7 +10,13 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Cached checkout overview](checkout_overview/)
+
+- [Concurrent checkout synchronization](concurrent_checkouts/)
+
 - [Markdown dependency removal](markdown_dependency_removal/)
+- [Markdown renderer tables](markdown_renderer_extension/)
+- [Markdown list structure](markdown_list_structure/)
 
 - [Standard Activity and shared pagination](activity_feed_pagination/)
 

@@ -1,0 +1,61 @@
+$ ./v3 checkouts
+CHECKOUT                  BRANCH                          ACTION              HINT
+clone                     main                            current
+v3-claude                 main                            current
+v3-claude-2               main                            current
+v3-codex                  main                            current
+v3-codex-2                main                            current
+v3-codex-3                main                            current
+v3-codex-4                main                            current
+v3-test-kris              [test]                          excluded            not selected
+7 current · 1 excluded
+Checked 2s ago · fresh · cached observations
+$ ./v3 checkouts preview
+CHECKOUT                  BRANCH                          ACTION              HINT
+clone                     main                            fast-forward
+v3-claude                 main                            fast-forward
+v3-claude-2               main                            fast-forward
+v3-codex                  main                            fast-forward
+v3-codex-2                main                            fast-forward
+v3-codex-3                main                            fast-forward
+v3-codex-4                main                            fast-forward
+v3-test-kris              [test]                          excluded            not selected
+7 fast-forward · 1 excluded
+Fetched refs; no checked-out files changed. Pause sessions before apply.
+Apply: ./v3 checkouts apply 21ef328a4829d48974a48b89 --sessions-paused --registry='$FIXTURE/config/checkouts.json' --state-dir='$FIXTURE/state'
+$ ./v3 checkouts apply <preview-id> --sessions-paused
+CHECKOUT                  BRANCH                          ACTION              HINT
+clone                     main                            updated
+v3-claude                 main                            updated
+v3-claude-2               main                            updated
+v3-codex                  main                            updated
+v3-codex-2                main                            updated
+v3-codex-3                main                            updated
+v3-codex-4                main                            updated
+v3-test-kris              [test]                          excluded            not selected
+7 updated · 1 excluded
+Other branches, stashes and linked worktrees unchanged. Preview again after recovery.
+$ ./v3 checkouts refresh
+CHECKOUT                  BRANCH                          ACTION              HINT
+clone                     main                            current
+v3-claude                 main                            current
+v3-claude-2               main                            current
+v3-codex                  main                            current
+v3-codex-2                main                            current
+v3-codex-3                main                            current
+v3-codex-4                main                            current
+v3-test-kris              [test]                          excluded            not selected
+7 current · 1 excluded
+Observations refreshed; use preview for an actionable update plan.
+$ ./v3 checkouts
+CHECKOUT                  BRANCH                          ACTION              HINT
+clone                     main                            current
+v3-claude                 main                            current
+v3-claude-2               main                            current
+v3-codex                  main                            current
+v3-codex-2                main                            current
+v3-codex-3                main                            current
+v3-codex-4                main                            current
+v3-test-kris              [test]                          excluded            not selected
+7 current · 1 excluded
+Checked 2s ago · fresh · cached observations
