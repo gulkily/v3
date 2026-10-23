@@ -89,6 +89,15 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
   - The public offline snapshot copies the cleared profile link but has no `(unsigned)` mark.
   - Same-author collapsing and the reply-agent card style still key on the author name, so an unsigned post naming the reply agent's identity gets agent styling, and one naming a member collapses with that member's posts. Recorded for the follow-up.
 
+## Stage 6 - Tell unsigned writers
+
+- Changes:
+  - `create_thread`, `create_quote`, `create_reply`, `apply_thread_tag` and `apply_post_tag`: when the flag is on, a cutoff exists, and the write names an identity without a signature, the `key=value` response adds `attribution=unsigned` and an `attribution_notice` saying it does not count and how to sign (prepare and `create_prepared_post` for posts; `canonical_record` and `detached_signature` for votes). Anonymous and signed writes get nothing new.
+  - Docs corrected: `/llms.txt`, the `/api/` catalog and `agent_api.md` said the unsigned create routes were "anonymous only"; the code has always accepted `author_identity_id` there and attributed the post. They now say the routes are unsigned and anonymous unless an identity is named, and `/llms.txt` reports an "Attribution" setting. `agent_api.md` gains an Attribution section and documents the vote record format, since votes have no prepare route.
+- Verification:
+  - Parity test extended: with the flag on, a named `create_reply` returns the notice, an anonymous one does not, an unsigned thread tag returns it, a signed post tag does not.
+  - `LlmsTxtRendererTest` (Attribution fact follows the flag) and `ApiRouteCatalogTest` updated and passing.
+
 ## Enhancement Requests
 
 - **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** pending renewed Approved Step 2 and Approved Step 3. / **Outcome:** pending.

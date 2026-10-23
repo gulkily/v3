@@ -5071,6 +5071,26 @@ NODE;
             assertSame([0, -100, 0, 0, 1, 0], $post);
             assertSame($rebuilt(), $columns($database));
 
+            // Unsigned writes naming the member say so and how to sign; anonymous and signed writes do not.
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $_POST = ['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Named', 'author_identity_id' => $identity];
+            $named = $this->renderMethod($app, 'POST', '/api/create_reply');
+            assertStringContains("attribution=unsigned\n", $named);
+            assertStringContains('/api/prepare_reply, then /api/create_prepared_post', $named);
+            $_POST = ['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Anonymous'];
+            assertStringNotContains('attribution=', $this->renderMethod($app, 'POST', '/api/create_reply'));
+            $_COOKIE = ['identity_hint' => $identity];
+            $_POST = ['thread_id' => 'root-001', 'tag' => 'like'];
+            assertStringContains('attribution_notice=Recorded as unsigned', $this->renderMethod($app, 'POST', '/api/apply_thread_tag'));
+            $created = gmdate('Y-m-d\TH:i:s\Z');
+            $record = "Record-ID: post-reaction-verified-like\nCreated-At: {$created}\nPost-ID: root-001\nOperation: add\nTags: like\nAuthor-Identity-ID: {$identity}\n\n";
+            $_POST = ['post_id' => 'root-001', 'tag' => 'like', 'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
+            $signedTag = $this->renderMethod($app, 'POST', '/api/apply_post_tag');
+            assertStringContains('wrote_record=yes', $signedTag);
+            assertStringNotContains('attribution=', $signedTag);
+            $_POST = [];
+            $_COOKIE = [];
+
             // An environment override is applied on the next request without a rebuild.
             putenv('FORUM_VERIFIED_ATTRIBUTION=false');
             $this->renderMethod(new Application(dirname(__DIR__), $root, $database, $artifacts), 'GET', '/');
