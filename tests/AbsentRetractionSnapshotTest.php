@@ -101,6 +101,20 @@ final class AbsentRetractionSnapshotTest
     {
         foreach (['target', 'root-001'] as $target) {
             [$root, $database] = $this->publicationFixture($target);
+            if ($target === 'target') {
+                $source = new PDO('sqlite:' . $database);
+                $original = $source->query("SELECT * FROM posts WHERE post_id='target'")->fetch(PDO::FETCH_ASSOC);
+                $initial = array_replace($original, ['post_id' => 'initial', 'parent_id' => 'target', 'body' => 'Initial analysis',
+                    'author_label' => 'reply-agent', 'sequence_number' => 4, 'agent_response_json' => null]);
+                $expansion = array_replace($initial, ['post_id' => 'expansion', 'parent_id' => 'initial', 'body' => 'DEPENDENT-EXPANSION-SECRET', 'sequence_number' => 5,
+                    'agent_response_json' => json_encode(['type' => 'scripture_expansion', 'source_post_id' => 'target', 'expansion_of' => 'initial',
+                        'source_hash' => \ForumRewrite\Canonical\AgentResponseMetadata::postHash($original),
+                        'initial_hash' => \ForumRewrite\Canonical\AgentResponseMetadata::postHash($initial)])]);
+                foreach ([$initial, $expansion] as $row) {
+                    $columns = array_keys($row);
+                    $source->prepare('INSERT INTO posts (' . implode(',', $columns) . ') VALUES (' . implode(',', array_fill(0, count($row), '?')) . ')')->execute(array_values($row));
+                }
+            }
             $record = $root . '/records/post-retractions/post-retraction-' . $target . '.txt';
             rename($record, $record . '.bak');
             $builder = new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder();
@@ -109,6 +123,10 @@ final class AbsentRetractionSnapshotTest
             $builder->buildUpdate($database, $root . '/update.sqlite3');
             $update = new PDO('sqlite:' . $root . '/update.sqlite3');
             assertSame([$target], $update->query('SELECT post_id FROM excluded_posts')->fetchAll(PDO::FETCH_COLUMN));
+            if ($target === 'target') {
+                assertSame(['expansion'], $update->query('SELECT post_id FROM unavailable_expansions')->fetchAll(PDO::FETCH_COLUMN));
+                assertSame(false, str_contains(file_get_contents($root . '/update.sqlite3'), 'DEPENDENT-EXPANSION-SECRET'));
+            }
             // Exercise the bounded-window gap: no replacement of this base thread.
             $update->exec("DELETE FROM threads WHERE root_post_id='root-001'; DELETE FROM posts WHERE thread_id='root-001'");
             $script = <<<'JS'
@@ -122,7 +140,7 @@ require(project + '/public/assets/sql-wasm.js')({locateFile: f => project + '/pu
   window.forumOfflineSnapshot.applyUpdate(base, update);
   window.forumOfflineSnapshot.applyUpdate(base, update);
   const count = id => base.exec('SELECT COUNT(*) FROM posts WHERE post_id = ?', [id])[0].values[0][0];
-  if (count(target) !== 0 || count('reply-001') !== 1) throw Error('exclusion or surviving reply failed');
+  if (count(target) !== 0 || count('expansion') !== 0 || count('reply-001') !== 1) throw Error('exclusion or surviving reply failed');
   const thread = base.exec("SELECT subject, body_preview FROM threads WHERE root_post_id='root-001'")[0].values[0];
   if (target === 'root-001' && (thread[0] !== null || thread[1] !== '')) throw Error('stale root presentation');
   update.run('DROP TABLE excluded_posts');

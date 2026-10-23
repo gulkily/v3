@@ -456,13 +456,14 @@
         }
         return true;
       });
-      rows.forEach(function (row, index) {
+      rows.forEach(function (row) {
+        var isRoot = String(row[0]) === String(options.threadId);
         var post = document.createElement("article");
-        post.className = index === 0 ? "card post-card thread-root-card" : "card post-card";
+        post.className = isRoot ? "card post-card thread-root-card" : "card post-card";
         post.id = "post-" + String(row[0] || "");
         post.dataset.postId = String(row[0] || "");
         post.dataset.author = String(row[4] || "guest");
-        if (index === 0) {
+        if (isRoot) {
           var heading = document.createElement("h1");
           heading.textContent = snapshotPresentation.threadTitle(row[2], row[3]);
           post.appendChild(heading);
@@ -476,7 +477,7 @@
         var body = document.createElement("div");
         body.className = "body";
         var postBody = String(row[3] || "");
-        if (index === 0) {
+        if (isRoot) {
           var firstLineBreak = /\r\n|\r|\n/.exec(postBody);
           var firstLine = firstLineBreak ? postBody.slice(0, firstLineBreak.index) : postBody;
           var remainder = firstLineBreak ? postBody.slice(firstLineBreak.index + firstLineBreak[0].length) : "";
@@ -488,7 +489,7 @@
         meta.className = "meta";
         meta.textContent = "by " + String(row[4] || "guest") + (row[5] ? " on " + String(row[5]) : "");
         body.innerHTML = nl2br(postBody);
-        if (index === 0) {
+        if (isRoot) {
           post.appendChild(body);
           post.appendChild(meta);
         } else {
@@ -516,7 +517,7 @@
         post.appendChild(permalink);
         if (options.onQueueReaction) {
           var actions = document.createElement("div");
-          actions.className = "button-row button-row-natural post-card-actions" + (index === 0 ? " thread-root-actions" : "");
+          actions.className = "button-row button-row-natural post-card-actions" + (isRoot ? " thread-root-actions" : "");
           var queueLike = document.createElement("button");
           queueLike.type = "button";
           queueLike.className = "thread-reaction-button";
@@ -538,7 +539,7 @@
                 button.disabled = false;
               });
             };
-          })(String(row[0] || ""), index === 0, index === 0 ? snapshotPresentation.threadTitle(row[2], row[3]) : "comment", queueLike));
+          })(String(row[0] || ""), isRoot, isRoot ? snapshotPresentation.threadTitle(row[2], row[3]) : "comment", queueLike));
           actions.appendChild(queueLike);
           post.appendChild(actions);
         }
