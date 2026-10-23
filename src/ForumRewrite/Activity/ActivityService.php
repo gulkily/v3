@@ -85,6 +85,43 @@ final class ActivityService
     }
 
     /**
+     * Standard Activity paging. Existing Forte/RSS contracts stay independent.
+     * @param array<string,string>|null $position
+     * @return array{items:list<array<string,mixed>>,previous:?array,next:?array}
+     */
+    public function fetchActivityPage(string $view, ?array $position = null, string $direction = 'next', int $limit = 100): array
+    {
+        $view = $this->normalizeActivityView($view);
+        [$where, $parameters] = $this->activityViewSql($view);
+        $keySql = "COALESCE(activity.action_key, 'local:' || activity.id)";
+        $limit = max(1, min(100, $limit));
+        if ($direction !== 'next') throw new \InvalidArgumentException('This page position is invalid.');
+        if ($position !== null) {
+            if (array_keys($position) !== ['created_at', 'action_key'] || $position['created_at'] === '' || $position['action_key'] === '') {
+                throw new \InvalidArgumentException('This page position is invalid.');
+            }
+            $where .= ' AND (activity.created_at < :page_time OR (activity.created_at = :page_time AND ' . $keySql . ' < :page_key))';
+            $parameters['page_time'] = $position['created_at'];
+            $parameters['page_key'] = $position['action_key'];
+        }
+        $statement = $this->pdo()->prepare('SELECT activity.*, ' . $keySql . ' AS page_key FROM activity
+            LEFT JOIN posts ON posts.post_id = activity.post_id WHERE 1=1 ' . $where . '
+            ORDER BY activity.created_at DESC, ' . $keySql . ' DESC LIMIT :page_limit');
+        foreach ($parameters as $key => $value) $statement->bindValue($key, $value);
+        $statement->bindValue('page_limit', $limit + 1, PDO::PARAM_INT);
+        $statement->execute();
+        $rows = $statement->fetchAll();
+        $hasMore = count($rows) > $limit;
+        $rows = array_slice($rows, 0, $limit);
+        $last = $rows[count($rows) - 1] ?? null;
+        return [
+            'items' => array_map(fn (array $row): array => $this->enrichActivityItem($row), $rows),
+            'previous' => null,
+            'next' => $hasMore && $last !== null ? ['created_at' => $last['created_at'], 'action_key' => $last['page_key']] : null,
+        ];
+    }
+
+    /**
      * Returns an Activity list page without source, signature, or commit
      * manifest enrichment. Forte uses this for rows that are not selected;
      * classic Activity continues to use fetchActivity() above.

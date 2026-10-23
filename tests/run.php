@@ -84,6 +84,7 @@ $testFiles = [
     __DIR__ . '/ImportedQuoteSeedScoringTest.php',
     __DIR__ . '/InvitationIssuanceTest.php',
     __DIR__ . '/ActivityItemLinkTest.php',
+    __DIR__ . '/StandardActivityPaginationTest.php',
     __DIR__ . '/FeatureFlagChangePageTest.php',
     __DIR__ . '/BackupPageTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',

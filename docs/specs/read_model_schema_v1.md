@@ -377,3 +377,11 @@ eligibility are unchanged. Each item retains its canonical action key, actor,
 record timestamp and per-path source commit; unavailable history stays unknown.
 Normal startup rebuilds version-23 models before serving Activity. Canonical
 records are unchanged; `./v3 rebuild` also recovers previously omitted items.
+
+### Standard Activity page queries (schema version 25)
+
+Table shape is unchanged. Standard Activity gains bounded page queries ordered
+by original activity time and canonical action key, independent of disposable
+SQLite row IDs. Version 25 rebuilds prior models at normal startup before the
+new query contract runs. Existing Forte and RSS queries/return shapes remain
+unchanged; canonical records and Activity membership are unaffected.

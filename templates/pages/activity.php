@@ -13,6 +13,9 @@
 <?= $partial('partials/activity_security_notice.php', ['approvalPolicyEnabled' => $approvalPolicyEnabled]) ?>
 <?php endif; ?>
   </article>
+<?php if ($paginationError !== null): ?>
+  <p role="alert"><?= $e($paginationError) ?></p>
+<?php endif; ?>
 <?php foreach ($items as $item): ?>
 <?php $href = $item['link']['href']; ?>
 <?php $linkLabel = $item['link']['label']; ?>
@@ -46,4 +49,5 @@
     <p class="meta"><?= $contentMeta($item, 'created_at', '') ?></p>
   </article>
 <?php endforeach; ?>
+<?= $partial('partials/page_navigation.php', ['pagination' => $pagination]) ?>
 </section>

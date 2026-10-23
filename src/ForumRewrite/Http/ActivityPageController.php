@@ -26,15 +26,28 @@ final class ActivityPageController
     ) {
     }
 
-    public function board(string $view): string
+    public function board(string $view, mixed $position = null): string
     {
         $activityService = $this->routeServices->activityService();
         $view = $activityService->normalizeActivityView($view);
+        $context = 'activity:' . $view . ':date:desc';
+        $error = null;
+        try {
+            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
+            $cursor = $position === null ? null : \ForumRewrite\Pagination\PageNavigation::decode($position, $context);
+            $page = $activityService->fetchActivityPage($view, $cursor['boundary'] ?? null, $cursor['direction'] ?? 'next');
+        } catch (\InvalidArgumentException $exception) {
+            $error = $exception->getMessage();
+            $page = ['items' => [], 'previous' => null, 'next' => null];
+        }
+        $pagination = \ForumRewrite\Pagination\PageNavigation::links('/activity/', ['view' => $view], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
 
         return $this->routeServices->renderPageTemplate(
             'activity.php',
             [
                 'view' => $view,
+                'pagination' => $pagination,
+                'paginationError' => $error,
                 'approvalPolicyEnabled' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL),
                 'viewOptions' => [
                     [
@@ -70,7 +83,7 @@ final class ActivityPageController
                 ],
                 'items' => array_map(
                     static fn (array $item): array => $item + ['link' => $activityService->activityItemLink($item)],
-                    $activityService->fetchActivity($view, 'date', 'desc')['items'],
+                    $page['items'],
                 ),
             ],
             'Activity',

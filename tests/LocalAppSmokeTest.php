@@ -80,6 +80,22 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion24StartupRebuildsBeforeServingStandardActivityPages(): void
+    {
+        $database = sys_get_temp_dir() . '/activity-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='24' WHERE key='schema_version'");
+            $pdo->exec("UPDATE activity SET label='stale activity'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            $html = $this->render($app, '/activity/');
+            assertStringContains('Hello world', $html);
+            assertStringNotContains('stale activity', $html);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
+
     public function testVersion22StartupRebuildsBeforeServingLabelRemovalQueries(): void
     {
         $database = sys_get_temp_dir() . '/label-startup-' . bin2hex(random_bytes(6)) . '.sqlite3';
