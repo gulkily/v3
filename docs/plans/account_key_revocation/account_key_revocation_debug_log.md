@@ -54,3 +54,34 @@ No supported findings.
 ### Redundant/unnecessary instructions
 
 No supported findings.
+
+## 2026-10-23T18:28:17.234539+00:00 — Completed Step 4
+
+Scope v2, debug enabled inherited from approved Step 3. Planning `11e7f26fd`;
+eight summary-bearing stages end at `309494cf47b50aa5078c700122dd81d9ca8ae911`.
+Local implementation/verification complete; production, physical-device/full-suite
+acceptance and maintainer study fit remain unverified/pending.
+
+### Necessary/useful instructions
+
+- Source: Step 4 Before “Planning Docs Commit Gate” and RAILSPIKE.md “Commit cadence”. Keeping the initial commit limited to approved plans separated implementation, user-requested todo follow-ups and concurrent reference-cache repairs. Eight subsequent stage commits each include their summary; retain the explicit boundary.
+- Source: Step 3 “Resolve each material risk before dependent work” and Step 4 “Complete the Contract”. Historical/current approval separation prevented sponsor revocation from cascading. End-to-end acceptance exposed exact-retry blob newline handling, history-only author queries, stale-review and uncertain-response UI issues that component tests alone missed. Retain normal-entry/recovery verification.
+- Source: Step 4 After “A focused pass is never reported as a full-suite or user-outcome result”. The summary separates 54 focused passes, subsequent correction checks, actual browser/restore/CLI evidence and unverified production/physical/full-suite outcomes. Retain.
+- Source: RAILSPIKE.md “Experimental Effort Estimation” reference recovery. All three exact R1 sources became available during implementation; hash verification enabled a dated late total 1.00 without inventing missing earlier estimates. Retain provenance and missing-checkpoint rules.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- Source: Step 4 stage sizing and experimental comfortable-fit judgment. The cycle reused substantial signing/approval/history machinery but crossed many security surfaces. Retrospective scope assessment is 1.00 and maintainer fit remains pending; commit count and successful focused tests alone cannot establish that this was a comfortable cycle. Retain the distinction rather than infer measured labor or accepted outcome.
+
+### Handoff record
+
+Requested explicit signed cutoff, existing-post preservation and HTML-only mockup
+are delivered. Owner/non-operator cross-user revocation stays in todo follow-ups.
+No dependencies, production changes, push or merge. Concurrent exact-reference-cache
+files and their ledger-link repair are left uncommitted; only this cycle's ledger
+appendix was staged in Stage 8. Final diagnostic is a separate log-only commit,
+as required; stage history is not amended.
