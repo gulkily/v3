@@ -1,0 +1,19 @@
+> **Feature plan:** [Step 1](./docs_independent_publication_step1_solution_assessment.md) · [Step 2](./docs_independent_publication_step2_feature_description.md) · [Step 3](./docs_independent_publication_step3_development_plan.md) · [Step 4](./docs_independent_publication_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+Effort study: `railspike-effort / v3/docs_independent_publication`, standing enrollment P2; [host ledger](../effort_estimation_trial.md#enrollment-index-after-p2).
+
+## Execution State
+
+Step 3 approved; fresh branch `feat/docs-independent-publication`, planning-only commit `f2d718a0`. Stage 1 ownership/rendering proof in progress; Stages 2–8 pending. No dependency additions or scope change.
+
+## Step 4 Entry Snapshot
+
+UTC 2026-10-23T14:24:04Z; scope v1 clarified / R1 / P2, same stable cycle and start `ddc9d2c020addbc41b19f543d0247b83259c6f69`. **0.85 projected total reaffirmed** before application implementation. Prior 0.75 intake/Step 1/Step 2 retained; exact R1 hashes verified at Step 3. Codex single exposed rater, prior source/score exposure and non-pristine intake disclosed. Unknown active-work measurements remain unknown; no independent/accepted outcome. Predecessor is existing infrastructure, not work forecast again.
+
+## Stage 1 - Ownership, rendering seam and frozen baseline
+
+- Changes: Proved the canonical PlatformDocsController/RouteServices/TemplateRenderer path can render anonymously without constructing or replacing a read model. Docs storage will be a profile/destination-specific sibling of the forum static root, with its own publication lock/current pointer. Legacy retention is a bounded reference to the previous forum release, serving only canonical docs/public assets; only those resources receive an ownership exemption during forum cleanup. A prototype retained a 1,002-file docs subtree while retiring old forum HTML after examining seven entries. No bulk docs copying is required to pin that reference.
+- Verification: `/tmp/docs-independent-proof.php` confirms isolated canonical rendering creates no database while Application::handle does; prototype cleanup retains only docs. `/tmp/docs-independent-context-proof.php` renders default/QDB/private profiles without database creation. Frozen source `f2d718a0`, **1,465 docs**, digest `41302ba5246b76d17202badb6bed4de02850a2ed4861772279cf4d2207665c5e`: cold publication **91.811 s**, changed-tree new-record CLI import **62.267 s** with **1,896 docs progress messages**, unchanged duplicate **7.177 s**, shared refresh **6.085 s**. Changed input was rendering-source whitespace; docs inventory stays identical. README differs only by forum version marker. [Evidence](./stage1_boundary_evidence.json).
+- Notes: Prototypes/fixture data are isolated temporary work; application source is unchanged. Implementation must validate reference roots and each served path, skip protected docs on resumed sweep frames as well as new traversal, and keep all forum HTML/offline cleanup active. Docs notifications require an independent endpoint and pending-version storage; legacy HTML can adapt bounded metadata on request, while explicit docs publication completes static migration. Cold static-only setup remains the documented separate publication operation. 0.85 total reaffirmed; Stage 2 may begin after this commit.
