@@ -3555,7 +3555,7 @@ PHP;
         assertStringContains('Not checked while offline', $healthScript);
         assertStringContains('Different from current reader — refresh and recheck', $healthScript);
         assertStringContains('offline-reader-refreshed', $healthScript);
-        assertStringContains('Saved reader refreshed and rechecked.', $healthScript);
+        assertStringNotContains('Saved reader refreshed and rechecked.', $healthScript);
         assertStringContains('setHealthStatus("ready", "READY")', $healthScript);
         assertStringContains('navigator.serviceWorker.getRegistrations()', $healthScript);
         assertStringContains('cache.match(absoluteUrl(url), { ignoreVary: true })', $healthScript);

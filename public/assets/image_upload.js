@@ -17,7 +17,7 @@
     if (form.__imageBusy) return;
     clear(form);
     if (!file) return;
-    const state = {file:null,error:null,promise:null,url:null};
+    const state = {file:null,sourceFile:file,error:null,promise:null,url:null};
     form.__imageState = state;
     state.promise = window.ForumImagePrepare.prepare(file).then(prepared => {
       if (form.__imageState !== state) return;
@@ -89,18 +89,18 @@
     const state = form.__imageState, busy = Boolean(form.__imageBusy);
     const preview = fields.querySelector('.image-upload-preview');
     const img = preview.querySelector('img');
-    preview.hidden = !state?.url;
+    preview.hidden = !state;
+    img.hidden = !state?.url;
     if (state?.url) { if (img.getAttribute('src') !== state.url) img.src = state.url; }
     else img.removeAttribute('src');
     const status = fields.querySelector('.image-upload-status');
-    status.textContent = form.__imageInputNotice || state?.error?.message || (state ? (state.file ? `${state.width} × ${state.height} · ${Math.ceil(state.file.size / 1024)} KiB. ${state.note}` : 'Preparing image on your device…') : '');
+    status.textContent = form.__imageInputNotice || state?.error?.message || (state ? (state.file ? `${state.width} × ${state.height} · ${Math.ceil(state.file.size / 1024)} KiB` : 'Preparing image on your device…') : '');
     status.dataset.error = String(Boolean(form.__imageInputNotice || state?.error));
     const choose = form.querySelector('.image-upload-choose');
     choose.textContent = state ? 'Replace image' : 'Attach image';
     choose.hidden = form.__imageEligible !== true;
     choose.disabled = busy || form.__imageEligible === false;
     const remove = fields.querySelector('.image-upload-remove');remove.hidden = !state;
-    const description = fields.querySelector('.image-upload-description');if (description) description.hidden = !state;
     fields.querySelectorAll('button').forEach(button=>{button.disabled=busy || form.__imageEligible===false;});
     const recovery = form.querySelector('.image-upload-recovery');
     if (recovery) { recovery.hidden = !state || form.__imageEligible !== false; recovery.querySelector('button').disabled = busy; }

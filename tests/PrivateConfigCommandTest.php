@@ -131,6 +131,46 @@ final class PrivateConfigCommandTest
         }
     }
 
+    public function testGeneratedAndRefreshedConfigIncludesEverySchemaTemplateSetting(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        $defaults = \ForumRewrite\Support\PrivateConfigSchema::templateDefaults();
+
+        try {
+            $this->runCommand(dirname(__DIR__), './v3 private-config --path=' . escapeshellarg($secretsPath));
+            $generated = require $secretsPath;
+            foreach ($defaults as $key => $value) {
+                assertTrue(array_key_exists($key, $generated), 'Missing generated setting: ' . $key);
+                assertSame($value, $generated[$key]);
+            }
+
+            $saved = [];
+            foreach ($defaults as $key => $value) {
+                $saved[$key] = match (true) {
+                    is_bool($value) => !$value,
+                    is_int($value) => $value + 7,
+                    is_float($value) => $value + 0.01,
+                    is_array($value) => ['X-Fixture' => 'saved-header'],
+                    default => 'saved-' . $key,
+                };
+            }
+            $saved['FORUM_STATUS_URL'] = 'https://saved.example.test/forum/';
+            $saved['CUSTOM_SETTING'] = 'keep-custom';
+            file_put_contents($secretsPath, '<?php return ' . var_export($saved, true) . ';');
+            $this->runCommand(dirname(__DIR__), 'FORUM_STATUS_URL=https://environment.example.test/ ./v3 private-config refresh-template --path=' . escapeshellarg($secretsPath));
+            $refreshed = require $secretsPath;
+            foreach ($saved as $key => $value) {
+                assertTrue(array_key_exists($key, $refreshed), 'Missing refreshed setting: ' . $key);
+                assertSame($value, $refreshed[$key]);
+            }
+            assertSame(count($saved), count($refreshed));
+            assertStringContains('Status frontend URL', (string) file_get_contents($secretsPath));
+        } finally {
+            @unlink($secretsPath);
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
     public function testPrivateConfigEditUsesConfiguredEditorWithoutPrintingConfigValues(): void
     {
         $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
@@ -155,7 +195,7 @@ final class PrivateConfigCommandTest
     {
         $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
         mkdir(dirname($secretsPath), 0700, true);
-        file_put_contents($secretsPath, "<?php\n\nreturn ['CUSTOM_SETTING' => 'kept', 'LLM_API_KEY' => 'old-secret'];\n");
+        file_put_contents($secretsPath, "<?php\n\nreturn ['CUSTOM_SETTING' => 'kept', 'LLM_API_KEY' => 'old-secret', 'FORUM_STATUS_URL' => 'https://saved.example.test/', 'SCRIPTURE_SOURCE_PATH' => '/private/scripture'];\n");
         $request = json_encode(['values' => [
             'LLM_PROVIDER' => 'openai', 'LLM_API_KEY' => 'new-secret', 'LLM_API_BASE_URL' => 'https://api.openai.com', 'LLM_MODEL' => 'gpt-5-nano', 'LLM_TIMEOUT_SECONDS' => 30,
         ]], JSON_THROW_ON_ERROR);
@@ -166,6 +206,8 @@ final class PrivateConfigCommandTest
             assertStringContains('Updated private config', $output);
             assertStringNotContains('new-secret', $output);
             assertSame('new-secret', $config['LLM_API_KEY']);
+            assertSame('https://saved.example.test/', $config['FORUM_STATUS_URL']);
+            assertSame('/private/scripture', $config['SCRIPTURE_SOURCE_PATH']);
             assertSame('kept', $config['CUSTOM_SETTING']);
         } finally {
             @unlink($secretsPath);

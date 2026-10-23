@@ -6,11 +6,10 @@
 <?php if ($settingsError !== null): ?>
     <p role="alert"><?= $e($settingsError) ?></p>
 <?php else: ?>
-    <p>Enabled: <?= $e(implode(', ', $enabledRubrics)) ?></p>
     <h2>Introductory prompt</h2>
     <p id="fastmod-introduction"><?= nl2br($e($introduction)) ?></p>
     <h2>Fastmod rubrics</h2>
-    <p>Enable at least one. Each evaluation records the selected scores together.</p>
+    <p>Enable at least one.</p>
     <form<?= $canManageFastmod ? ' data-fastmod-form' : '' ?>>
 <?php foreach ($rubrics as $id => $prompt): ?>
       <div class="stack">
@@ -19,7 +18,7 @@
       </div>
 <?php endforeach; ?>
 <?php if ($canManageFastmod): ?>
-      <p role="status" aria-live="polite" data-fastmod-status></p>
+      <p role="status" aria-live="polite" data-fastmod-status hidden></p>
       <button type="submit">Save</button>
       <noscript>JavaScript and a root-approved browser identity are required to save settings.</noscript>
 <?php else: ?>

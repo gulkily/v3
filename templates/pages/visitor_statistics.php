@@ -8,7 +8,7 @@
 <?php if ($dashboard['status'] === 'unavailable'): ?>
     <div class="feedback feedback-error">Visitor statistics are currently unavailable. Check the private statistics-state path and try again.</div>
 <?php elseif ($dashboard['status'] === 'initializing'): ?>
-    <p>Visitor statistics are initializing. Counts will appear after eligible page visits are observed.</p>
+    <p>Visitor statistics are initializing.</p>
 <?php else: ?>
 <?php $totals = $dashboard['totals']; ?>
 <?php $buckets = $dashboard['buckets']; ?>
@@ -30,9 +30,6 @@
       <div><dt>Estimated clients</dt><dd><?= $e(number_format($totals['clients'])) ?></dd></div>
       <div><dt>Authenticated users</dt><dd><?= $e(number_format($totals['authenticated_users'])) ?></dd></div>
     </dl>
-<?php if ($buckets === []): ?>
-    <p class="meta">No eligible requests were observed in this period.</p>
-<?php endif; ?>
 <?php $maxVisits = $buckets === [] ? 0 : max(array_map(static fn (array $bucket): int => $bucket['visits'], $buckets)); ?>
 <?php $plotWidth = 700; $plotHeight = 160; $barWidth = max(2, min(18, (int) floor($plotWidth / max(1, count($buckets))))); ?>
 <?php $periodStartTimestamp = (new \DateTimeImmutable($dashboard['period_start']))->getTimestamp(); ?>

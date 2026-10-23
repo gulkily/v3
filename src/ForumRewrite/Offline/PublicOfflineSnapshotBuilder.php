@@ -14,9 +14,10 @@ use RuntimeException;
  */
 final class PublicOfflineSnapshotBuilder
 {
-    public const SNAPSHOT_VERSION = '4';
+    public const SNAPSHOT_VERSION = '5';
     private ?array $sourcePostColumns = null;
     private array $metaToken = [];
+    private array $excluded = [];
     public function __construct(private readonly ?string $projectRoot = null) {}
 
     public const DEFAULT_THREAD_LIMIT = 200;
@@ -33,9 +34,10 @@ final class PublicOfflineSnapshotBuilder
     ): array {
         if (!is_file($sourcePath)) throw new RuntimeException('Offline snapshot source database does not exist.');
         $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot ?? dirname(__DIR__,3));
-        $token = \ForumRewrite\Retraction\PublicationGuard::begin($sourcePath);
+        $token = \ForumRewrite\Retraction\PublicationGuard::beginSnapshot($sourcePath);
+        $this->excluded = $token['excluded'] ?? [];
         $build = function () use ($sourcePath, $targetPath, $threadLimit, $maxBytes, $token): array {
-            if ($token !== null && \ForumRewrite\Retraction\PublicationGuard::generation($token['root']) !== $token['generation']) throw new RuntimeException('Retraction changed before snapshot assembly.');
+            if ($token !== null) \ForumRewrite\Retraction\PublicationGuard::validate($token);
             return $this->buildWhileLocked($sourcePath, $targetPath, $threadLimit, $maxBytes, $token);
         };
         return $token === null ? $build() : \ForumRewrite\Retraction\PublicationGuard::withLock($token['root'], $build);
@@ -67,6 +69,8 @@ final class PublicOfflineSnapshotBuilder
 
         try {
             $this->createSchema($snapshot, $maxBytes);
+            $exclude = $snapshot->prepare('INSERT INTO excluded_posts (post_id) VALUES (?)');
+            foreach (array_keys($this->excluded) as $id) $exclude->execute([$id]);
             $generatedAt = gmdate('Y-m-d\TH:i:s\Z');
             $snapshotThreads = $this->snapshotThreadRows($source, $threadLimit);
             $this->writeMetadata($snapshot, [
@@ -82,10 +86,16 @@ final class PublicOfflineSnapshotBuilder
             foreach ($snapshotThreads as $thread) {
 
                 $posts = $this->visiblePostsForThread($source, (string) $thread['root_post_id']);
-                if ($posts === [] || (string) $posts[0]['post_id'] !== (string) $thread['root_post_id']) {
+                if ($posts === [] || ((string) $posts[0]['post_id'] !== (string) $thread['root_post_id'] && !isset($this->excluded[$thread['root_post_id']]))) {
                     continue;
                 }
 
+                if (isset($this->excluded[$thread['root_post_id']])) {
+                    $thread['subject'] = null; $thread['body_preview'] = '';
+                    $thread['author_label'] = ''; $thread['author_profile_slug'] = null;
+                    $thread['thread_labels_json'] = '[]'; $thread['score_total'] = 0;
+                }
+                $thread['last_activity_at'] = $posts[array_key_last($posts)]['created_at'];
                 try {
                     $snapshot->beginTransaction();
                     $this->insertThread($snapshot, $thread, $posts);
@@ -199,6 +209,7 @@ final class PublicOfflineSnapshotBuilder
             author_profile_slug TEXT NULL,
             sequence_number INTEGER NOT NULL
         )');
+        $pdo->exec('CREATE TABLE excluded_posts (post_id TEXT PRIMARY KEY)');
         $pdo->exec('CREATE TABLE unavailable_expansions (post_id TEXT PRIMARY KEY)');
         $pdo->exec('CREATE TABLE public_keys (
             identity_id TEXT PRIMARY KEY,
@@ -317,6 +328,7 @@ final class PublicOfflineSnapshotBuilder
         $statement->execute(['thread_id' => $threadId]);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
+        $rows = array_values(array_filter($rows, fn (array $row): bool => !isset($this->excluded[$row['post_id']])));
         $byId = array_column($rows, null, 'post_id');
         $rows = array_values(array_filter($rows, static function (array $row) use ($byId): bool {
             if (ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])) { return false; }
@@ -344,7 +356,9 @@ final class PublicOfflineSnapshotBuilder
             $find->execute([$expansion['parent_id']]); $initial = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
             $find->execute([$meta['source_post_id'] ?? '']); $original = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
             $find->execute([$expansion['thread_id']]); $thread = $find->fetch(PDO::FETCH_ASSOC) ?: null; $find->closeCursor();
-            if ($thread === null || !empty($thread['is_hidden']) || ($thread['retracted_at'] ?? null) !== null
+            if (isset($this->excluded[$expansion['post_id']]) || isset($this->excluded[$expansion['parent_id']])
+                || isset($this->excluded[$meta['source_post_id'] ?? '']) || isset($this->excluded[$expansion['thread_id']])
+                || $thread === null || !empty($thread['is_hidden']) || ($thread['retracted_at'] ?? null) !== null
                 || !\ForumRewrite\Canonical\AgentResponseMetadata::validExpansion($expansion, $initial, $original)) {
                 $insert->execute([$expansion['post_id']]);
             }

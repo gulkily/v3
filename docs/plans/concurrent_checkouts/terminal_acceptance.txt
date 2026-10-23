@@ -1,0 +1,37 @@
+$ ./v3 checkouts add $FIXTURE/clone
+$FIXTURE/clone  [development]  origin/main
+  Expected source: $FIXTURE/upstream
+$ ./v3 checkouts list
+$FIXTURE/clone  [development]  origin/main
+  Expected source: $FIXTURE/upstream
+$ ./v3 checkouts preview
+$FIXTURE/clone  main  fast-forward
+  Fast-forward to fetched source.
+  Source: e14c0f010161
+1 fast-forward
+Fetched selected sources; no checked-out files changed. Pause coding/server sessions before apply.
+Apply: ./v3 checkouts apply 2edd26b41c157d4aeda050a3 --sessions-paused --registry='$FIXTURE/config/checkouts.json' --state-dir='$FIXTURE/state'
+Only selected checked-out branches are considered; other branches, stashes and linked worktrees stay untouched.
+$ ./v3 checkouts apply 2edd26b41c157d4aeda050a3 --sessions-paused
+$FIXTURE/clone  main  updated
+  Fast-forward completed; HEAD e14c0f010161.
+  Source: e14c0f010161
+1 updated
+Only selected checked-out branches were considered. Other branches, stashes and linked worktrees stay untouched. Run a fresh preview after recovery.
+$ ./v3 checkouts preview
+$FIXTURE/clone  main  current
+  Already current.
+  Source: e14c0f010161
+1 current
+Fetched selected sources; no checked-out files changed. Pause coding/server sessions before apply.
+Apply: ./v3 checkouts apply 2dd633b0ed4d431b97030ff8 --sessions-paused --registry='$FIXTURE/config/checkouts.json' --state-dir='$FIXTURE/state'
+Only selected checked-out branches are considered; other branches, stashes and linked worktrees stay untouched.
+$ ./v3 checkouts preview
+$FIXTURE/clone  main  dirty
+  Uncommitted or untracked work; preserve or finish it, then preview again.
+  Source: e14c0f010161
+1 dirty
+Fetched selected sources; no checked-out files changed. Pause coding/server sessions before apply.
+Apply: ./v3 checkouts apply 5be092c515c735f93f965643 --sessions-paused --registry='$FIXTURE/config/checkouts.json' --state-dir='$FIXTURE/state'
+Only selected checked-out branches are considered; other branches, stashes and linked worktrees stay untouched.
+Verification: HEAD matches source; unfinished file preserved; no live registry used.

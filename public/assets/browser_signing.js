@@ -838,6 +838,7 @@
 
     if (scope && typeof scope.querySelectorAll === "function") {
       Array.from(scope.querySelectorAll("[data-pending-thread-id], [data-pending-reply-id]")).forEach(function (node) {
+        if (node.dataset && node.dataset.replyOperation) return;
         removeNode(node);
         removed += 1;
       });
@@ -1141,6 +1142,16 @@
     return field && field.files && field.files[0] || null;
   }
 
+  async function imageSignedFields(fields, preparedImage, description) {
+    const file = preparedImage.file, width = preparedImage.width, height = preparedImage.height;
+    if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
+    if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
+    const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
+    return fields;
+  }
+
   async function submitImageCompose(form) {
     if (!navigator.onLine || !window.crypto || !window.crypto.subtle) throw new Error("Image publication requires an online HTTPS connection (or localhost).");
     if (!window.ForumImageUpload) throw new Error("Image preparation is unavailable. Reload and select the image again.");
@@ -1148,14 +1159,8 @@
     try {
     await window.ForumImageUpload.assertEligible(form);
     const preparedImage = await window.ForumImageUpload.ready(form);
-    const file = preparedImage.file, width = preparedImage.width, height = preparedImage.height;
-    const description = composeFormFieldValue(form, "image_description").trim();
-    if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
-    const fields = collectSignedSubmitFields(form);
-    if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
-    const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
-    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
+    const fields = await imageSignedFields(collectSignedSubmitFields(form), preparedImage, composeFormFieldValue(form, "image_description").trim());
+    const file = preparedImage.file;
     const identity = JSON.stringify(fields);
     let pending = form.__pendingImagePost;
     if (!pending || pending.identity !== identity) {
@@ -3626,7 +3631,7 @@
     refreshComposeIdentityFromStorage();
 
     if (hasBrowserKeypair()) {
-      void syncIdentityHint(preferredIdentityHint());
+      void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
 
     if (root.dataset.composeSubmitted === "1") {
@@ -3702,6 +3707,97 @@
 
     form.addEventListener("keydown", submitComposeFromKeyboard);
 
+    let replyRenderDocumentPromise = null;
+    let reconciledReplyDocument = null;
+    function loadReplyRenderDocument(url) {
+      if (!replyRenderDocumentPromise) {
+        replyRenderDocumentPromise = fetch(url, {credentials:'same-origin', cache:'no-store'})
+          .then(async response => {
+            if (!response.ok) throw new Error("Reply posted. Retry loading its full view.");
+            return new DOMParser().parseFromString(await response.text(), 'text/html');
+          }).finally(() => { replyRenderDocumentPromise = null; });
+      }
+      return replyRenderDocumentPromise;
+    }
+    const continuation = isReplyComposeForm(form) && window.ForumReplyContinuation && !window.location.pathname.startsWith('/forte')
+      ? window.ForumReplyContinuation.bind(form, root, {
+        card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
+        prepare: async function (captured, attachment, description) {
+          let fields = Object.assign({}, captured);
+          await ensureActionIdentity(null, null);
+          const identity = currentAuthorIdentityId();
+          if (fields.author_identity_id && fields.author_identity_id !== identity) throw new Error("The signing identity changed. Restore that identity and retry.");
+          fields.author_identity_id = identity;
+          let imageFile;
+          if (attachment) {
+            const image = await window.ForumImagePrepare.prepare(attachment);
+            fields = await imageSignedFields(fields, image, description);
+            imageFile = image.file;
+          }
+          const response = await submitUrlEncoded('/api/prepare_reply', fields);
+          const prepared = parsePreparedPostJsonResponse(response.text, response.serverTiming, "Unable to prepare reply.");
+          if (!prepared.ok) throw new Error(prepared.error);
+          return {fields: Object.assign({}, fields, imageFile ? {imageFile} : {}), prepared};
+        },
+        finalize: async function (delivery) {
+          const result = await finalizeOutboxPost(delivery.fields, delivery.prepared);
+          return result.retryableIdentityMismatch
+            ? Object.assign({}, result, {error:"The signing identity changed. Restore that identity and retry."})
+            : result;
+        },
+        clearImage: function () {
+          window.ForumImageUpload?.clear(form);
+          const description = form.querySelector('[name="image_description"]');
+          if (description) description.value = '';
+        },
+        renderPost: async function (postId, threadId, commitSha) {
+          const url = canonicalReplyUrl({postId, threadId, commitSha:commitSha || ''});
+          let doc = await loadReplyRenderDocument(url);
+          // An in-flight snapshot can predate another reply's confirmation.
+          if (!doc.getElementById('post-' + postId)) doc = await loadReplyRenderDocument(url);
+          const post = doc.getElementById('post-' + postId);
+          if (!post?.matches('.post-card[data-post-id]')) throw new Error("Reply posted. Retry loading its full view.");
+          const catalog = doc.querySelector('[data-agent-response-mode-catalog]');
+          if (catalog && !document.querySelector('[data-agent-response-mode-catalog]')) document.body.append(document.importNode(catalog, true));
+          // Reconcile grouping and bylines of earlier cards as a reload would,
+          // preserving their bound controls and the active composer itself.
+          const editor = form.querySelector('[name="body"]');
+          const editorTop = editor.getBoundingClientRect().top;
+          if (reconciledReplyDocument !== doc) {
+            reconciledReplyDocument = doc;
+            for (const canonical of doc.querySelectorAll('.post-card[data-post-id]')) {
+              const live = document.getElementById(canonical.id);
+              if (!live?.matches('.post-card[data-post-id]')) continue;
+              if (canonical.hasAttribute('data-replies')) live.setAttribute('data-replies', canonical.getAttribute('data-replies'));
+              for (const name of ['continuation', 'meta-deferred']) live.classList.toggle(name, canonical.classList.contains(name));
+              if (canonical.hasAttribute('data-time')) live.setAttribute('data-time', canonical.getAttribute('data-time'));
+              else live.removeAttribute('data-time');
+              const currentByline = live.querySelector(':scope > [data-post-byline]');
+              const byline = canonical.querySelector(':scope > [data-post-byline]');
+              if (currentByline?.outerHTML !== byline?.outerHTML) {
+                currentByline?.remove();
+                if (byline) {
+                  const index = Array.from(canonical.children).indexOf(byline);
+                  live.insertBefore(document.importNode(byline, true), live.children[index] || null);
+                }
+              }
+            }
+          }
+          if (document.activeElement === editor) window.scrollBy(0, editor.getBoundingClientRect().top - editorTop);
+          return document.importNode(post, true);
+        },
+        bindPost: post => window.ForumThreadReactions?.bindWithin(post),
+        confirm: async function (delivery) {
+          const response = await fetch('/api/get_post?post_id=' + encodeURIComponent(delivery.prepared.postId), {credentials:'same-origin', cache:'no-store'});
+          if (response.status === 404) return false;
+          if (!response.ok) throw new Error("Unable to check this reply. Retry when the connection is available.");
+          const text = await response.text();
+          if (!text.includes('Post-ID: ' + delivery.prepared.postId + '\n') || !text.includes('Thread-ID: ' + delivery.fields.thread_id + '\n') || text.slice(text.indexOf('\n\n') + 2).trimEnd() !== delivery.prepared.canonicalRecord.slice(delivery.prepared.canonicalRecord.indexOf('\n\n') + 2).trimEnd()) {
+            throw new Error("The saved reply does not match its server record. Keep this page open and contact the operator.");
+          }
+          return true;
+        }
+      }) : null;
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
@@ -3731,6 +3827,21 @@
           markFirstFeedback(timing);
           completeActionTiming(timing, "submit");
           form.submit();
+          return;
+        }
+
+        if (continuation) {
+          const fields = collectReplySubmitFields(form);
+          const image = form.__imageState;
+          if (image?.error) throw image.error;
+          const attachment = image && (image.file || image.sourceFile);
+          if (!fields.body.trim() && !attachment) throw new Error("Write a reply before posting.");
+          const description = composeFormFieldValue(form, "image_description").trim();
+          if (attachment && (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description))) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
+          continuation.send(fields, attachment, description);
+          setStatus(statusNode, "", "ok");
+          restoreComposeUiState();
+          completeActionTiming(timing, "queued");
           return;
         }
 

@@ -7,6 +7,7 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/AbsentRetractionSnapshotTest.php',
     __DIR__ . "/HighTrafficTest.php",
     __DIR__ . "/AccessHistoryPresenterTest.php",
     __DIR__ . "/FastmodTaggingFlagTest.php",
@@ -114,6 +115,9 @@ $testFiles = [
     __DIR__ . '/AgentApiWorkedExampleTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',
     __DIR__ . '/PlatformDocsPageTest.php',
+    __DIR__ . '/MarkdownPipeTableTest.php',
+    __DIR__ . '/MarkdownListStructureTest.php',
+    __DIR__ . '/MarkdownTaskListTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',
     __DIR__ . '/PrivateMessageDatabaseConfigTest.php',
     __DIR__ . '/PrivateMessageApiRoutingTest.php',
@@ -190,6 +194,7 @@ $testFiles = [
     __DIR__ . '/SqliteLlmExchangeStoreTest.php',
     __DIR__ . '/SqliteFastScoreStoreTest.php',
     __DIR__ . '/StatusCommandTest.php',
+    __DIR__ . '/CheckoutsCommandTest.php',
     __DIR__ . '/FastScoreSweepServiceTest.php',
     __DIR__ . '/FastmodHistoricalAuditServiceTest.php',
     __DIR__ . '/FastmodCostEstimatorTest.php',

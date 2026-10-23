@@ -1,0 +1,175 @@
+{
+  "fixtures": {
+    "target": "/tmp/absent-snapshot-a95321ddbf1f",
+    "root-001": "/tmp/absent-snapshot-8ec4e9c3fcb0"
+  },
+  "scenarios": [
+    {
+      "width": 390,
+      "theme": "default",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "theme": "default",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "theme": "word97",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "theme": "word97",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "theme": "chicago",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "theme": "chicago",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "theme": "midnight",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "theme": "midnight",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "default",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "default",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "word97",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "word97",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "chicago",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "chicago",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "midnight",
+      "target": "target",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    },
+    {
+      "width": 1280,
+      "theme": "midnight",
+      "target": "root-001",
+      "updateOutsideWindow": "passed",
+      "threadAndList": "passed",
+      "freshEmptyFailureRecovery": "passed",
+      "overflow": false,
+      "pageErrors": []
+    }
+  ],
+  "screenshotRoot": "/tmp/absent-snapshot-browser-2BJeDw",
+  "productionHashes": {
+    "public/assets/offline_reader.js": "8c80c60281197bf987441d8270b2a18dbfbfb91a125096b9b30c6f57af067c4d",
+    "src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php": "e49281fddfad3e9008a043edd4885edd015f1a65b5faf9f1f43161bbe34654cb",
+    "src/ForumRewrite/Retraction/PublicationGuard.php": "88d48e337879f0408c8af374058ce727cb4734b6ea0735f54b8f1d4d294f27e6",
+    "src/ForumRewrite/Llm/ExchangeRetractionState.php": "4b02299c458611e804cb514cdd2a03ea84674886024daff02287355dc8e97c21"
+  }
+}

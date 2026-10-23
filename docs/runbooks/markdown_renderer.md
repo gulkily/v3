@@ -7,15 +7,52 @@ has no third-party parser bundle, Composer installation or dependency-download s
 
 ## Rendering boundary
 
-The earlier project parser renders headings, paragraphs, basic asterisk emphasis,
-inline code/links, backtick fences, flat lists, quotes and thematic breaks. Existing
-integration retains duplicate-safe heading IDs, catalog link safety, collapsed
+The project parser renders headings, paragraphs, basic asterisk emphasis,
+inline code/links, backtick fences, quotes, thematic breaks and supported lists.
+Integration retains duplicate-safe heading IDs, catalog link safety, collapsed
 escaped front matter, code language captions and keyboard-accessible code regions.
-Ordered-list source numbers are preserved across continuation paragraphs. Nested
-lists flatten; loose lists and continuations split. Task markers, reference links,
-autolinks, underscore emphasis, strikethrough and unsupported fences remain readable
-source. Pipe tables appear as horizontally scrollable escaped source, not HTML
-tables; cell destinations remain literal source. Mermaid remains labeled source;
+
+Lists support space-indented `-`, `+`, `*`, numbered-dot and numbered-parenthesis
+items, mixed parent/child types and up to eight levels. Root markers start at
+column zero; child markers must reach their parent's content column, while
+siblings/dedents return to established columns. Wrapped and blank-line-separated
+paragraphs aligned with the owning content column stay inside the item. Each
+ordered number is explicit, preserving restarts, repeats and gaps; marker-kind
+changes start sibling lists. Five-to-eight-level lists get a keyboard-scrollable
+region so phone text retains usable width.
+
+Tabs, ambiguous indentation, over-limit depth, more than four marker-padding
+spaces, numeric markers above nine digits and list-contained tables, quotes or
+fenced/indented code retain the complete contiguous list as escaped source in a
+keyboard-scrollable region. Fenced example bytes remain intact; prose comments
+remain hidden. Following standalone headings, tables and code stay outside the
+fallback. An unclosed embedded fence retains the remaining example source through
+end-of-document rather than guessing where it ends.
+
+Supported unordered items beginning with `[ ]`, `[x]` or `[X]` followed by spaces
+and visible task text display native disabled checkboxes. Their first paragraph
+supplies the accessible task name; children and later paragraphs remain separate.
+Repeated tasks require no generated identifiers. Checkboxes cannot be toggled or
+submitted; task links and keyboard access to links/source regions still work.
+Original Markdown and downloads are unchanged. Ordered items, malformed/escaped
+markers, empty/invisible labels, later-paragraph markers, code/table examples and
+unsupported whole-list source regions keep literal task text. No progress counter
+or editing feature is included.
+
+Reference links, autolinks, underscore emphasis, strikethrough and unsupported
+fences remain readable source. Standalone pipe tables render with semantic column
+headers, existing safe inline formatting/links, optional outer pipes, two or more columns and delimiter
+alignment (`:---`, `:---:`, `---:`). Header and body widths must match; empty cells,
+escaped pipes and pipes inside single-backtick inline code are supported. Tables
+scroll horizontally in a keyboard-focusable region without widening the page.
+
+Malformed/uneven tables, uncertain or multi-backtick code spans, and nested/list
+or quote table forms retain readable source. Two-or-more-space-indented pipe
+blocks use the source fallback; multiline/merged cells and nested tables are not
+implemented. A recognized table block falls back as a whole, keeping every cell;
+ordinary prose and fenced examples remain separate. Unrecognized pipe prose is
+not a table. Cell links retain the same unavailable-link alternative and document
+boundaries as prose; images still never load. Mermaid remains labeled source;
 there is no diagram, math, slideshow or syntax-highlighting engine.
 
 Raw HTML is escaped, prose comments are hidden, and standalone image markup has an
@@ -26,8 +63,16 @@ and source ambiguities remain explicit limitations. See the [frozen baseline and
 counting method](../plans/markdown_dependency_removal/render_metrics.md), [restored
 comparison](../plans/markdown_dependency_removal/render_comparison.md), and
 [rare-syntax decision table](../plans/markdown_dependency_removal/rare_syntax_decisions.md).
-Extensions are deferred to a separate reviewed cycle; no external component may be
-added without the dependency-consent policy in CONTRIBUTING.
+The [pipe-table extension](../plans/markdown_renderer_extension/markdown_renderer_extension_step4_implementation_summary.md)
+records its supported/fallback corpus classification and delivery evidence. The
+[list-structure slice](../plans/markdown_list_structure/markdown_list_structure_step4_implementation_summary.md)
+adds list ownership, explicit numbering and source recovery; its audit distinguishes
+structural coverage from representative visual review. Other syntax extensions
+and the wider Docs column follow-up remain deferred. The
+[task-list slice](../plans/markdown_task_lists/markdown_task_lists_step4_implementation_summary.md)
+records disabled state/name/link checks and the displayed-versus-source corpus
+classification. The requested in-page checkbox counter is a separate todo item. No external component may be added without
+the dependency-consent policy in CONTRIBUTING.
 
 ## Library inventory and search
 
@@ -102,9 +147,9 @@ anonymous static host serves the active snapshot; personalized requests retain
 the existing dynamic-response policy.
 
 Reload `/docs/reference/author_post_retraction.md` after refresh. Verify four
-scrollable table-source regions, the six source-numbered procedure steps, emphasis
+rendered, scrollable tables, the six source-numbered procedure steps, emphasis
 and the working `v3_cli.md#delete-a-canonical-record` link. Check at desktop and
-390px widths, Tab to source/code regions and scroll with arrow keys. If a CDN or
+390px widths, Tab to table/source/code regions and scroll with arrow keys. If a CDN or
 browser serves older output, invalidate the affected URL and retry; do not delete
 the active release. Dynamic and generated document content must match.
 

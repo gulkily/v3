@@ -1,6 +1,6 @@
 # Rare-syntax decision table
 
-Threshold approved with Step 3: at most five distinct documents per source syntax/variant, including zero-use rows. Counts below are **source candidates**, not all proven semantic uses; the independent semantic reference totals and counting caveats are in [render metrics](render_metrics.md). Keep full counts and source examples so the threshold can change. No implement/defer/omit choice is made for the user. All extension decisions remain pending in the [separate extension cycle](../markdown_renderer_extension_step1_solution_assessment.md).
+Threshold approved with Step 3: at most five distinct documents per source syntax/variant, including zero-use rows. Counts below are **source candidates**, not all proven semantic uses; the independent semantic reference totals and counting caveats are in [render metrics](render_metrics.md). Keep full counts and source examples so the threshold can change. No implement/defer/omit choice is made for the user. All extension decisions remain pending in the [separate extension cycle](../markdown_renderer_extension/markdown_renderer_extension_step1_solution_assessment.md).
 
 | Syntax/variant | Candidate uses | Documents | Examples (line) | Restored behavior / safe fallback | Importance; effort/risk | Decision |
 | --- | ---: | ---: | --- | --- | --- | --- |
