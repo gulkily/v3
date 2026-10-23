@@ -121,7 +121,7 @@ class LocalWriteService
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($postId, $threadLabels, $authorIdentityId, $createdAt);
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($postId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -200,7 +200,7 @@ class LocalWriteService
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt);
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -430,7 +430,7 @@ class LocalWriteService
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $record->createdAt);
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $record->createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $canonicalRecord));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -3411,7 +3411,7 @@ class LocalWriteService
      * @param list<string> $labels
      * @return array{string,string}
      */
-    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null): array
+    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null, ?string $sourcePostId = null, ?string $sourcePostSha256 = null): array
     {
         $recordId = $this->generateRecordId('thread-label');
         $contents = "Record-ID: {$recordId}\n"
@@ -3422,6 +3422,7 @@ class LocalWriteService
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($actionAt !== null ? "Action-At: {$actionAt}\n" : '')
             . ($intentId !== null ? "Intent-ID: {$intentId}\n" : '')
+            . ($sourcePostId !== null ? "Source-Post-ID: {$sourcePostId}\nSource-Post-SHA256: {$sourcePostSha256}\n" : '')
             . "\n";
 
         (new ThreadLabelRecordParser())->parse($contents);

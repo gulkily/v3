@@ -5164,6 +5164,8 @@ NODE;
 
         $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId)))[0];
         $recordContents = (string) file_get_contents($recordPath);
+        assertStringContains('Source-Post-ID: ' . $threadId, $recordContents);
+        assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect((new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse($recordContents), $repositoryRoot)['status']);
         assertStringContains('Labels: bug needs-review', $recordContents);
         assertStringNotContains('ignored', $recordContents);
     }
@@ -5189,6 +5191,9 @@ NODE;
         assertStringContains('status=ok', $response);
         assertStringContains('Labels: answered, bug, needs-review', $threadPage);
         assertSame(1, count($matchingRecords));
+        $label = (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse((string) file_get_contents($matchingRecords[0]));
+        assertSame($this->extractValue($response, 'post_id'), $label->sourcePostId);
+        assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect($label, $repositoryRoot)['status']);
     }
 
     public function testLabeledWritesUseIncrementalReadModelAndPublishLabelActivityImmediately(): void
