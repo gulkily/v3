@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Standard Activity and shared pagination](activity_feed_pagination/)
+
 - [Thread-like Activity reporting](thread_like_activity/)
 
 - [Retraction effects and source-owned label cleanup](retraction_effects/)
