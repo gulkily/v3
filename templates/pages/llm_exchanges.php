@@ -4,7 +4,7 @@
   </article>
   <article class="card">
     <h1>LLM Exchanges</h1>
-    <p class="meta">Private provider conversations, newest first.</p>
+    <p class="meta">Private provider conversations.</p>
 <?php if ($exchanges === []): ?>
     <p>No recorded LLM exchanges are available.</p>
 <?php else: ?>

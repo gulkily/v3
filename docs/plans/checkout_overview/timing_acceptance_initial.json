@@ -1,0 +1,955 @@
+{
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "python": "3.10.12",
+  "checkouts": 8,
+  "development": 7,
+  "test": 1,
+  "clock": "perf_counter; complete CLI output/process return",
+  "target_seconds": 1,
+  "samples": [
+    {
+      "phase": "cold",
+      "seconds": 0.05799645200022496,
+      "refresh": "queued",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.056355866996455006,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.056354849999479484,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.055263332003960386,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.06431028999941191,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.05499202799546765,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.057326119000208564,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.06980731600197032,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.059403848004876636,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "cold",
+      "seconds": 0.0698618790047476,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.07177374299499206,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.07406550800078548,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.1011757710002712,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.08881119800207671,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.09613587400235701,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.08662599600211252,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.10246223900321638,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.10905484400427667,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.1384306500040111,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "slow-running",
+      "seconds": 0.16561094600183424,
+      "refresh": "running",
+      "actions": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.06883431200549239,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.09202770300180418,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.09217747599905124,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.07741071799682686,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.06577346600533929,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.06629432099725818,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.07067572599771665,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.06080343099893071,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.06835572700219927,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.06670271299663,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.09368856500077527,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.08756595299928449,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.1087755289991037,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.11726666100003058,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.12845331599964993,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.12031539199961117,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.16036716500093462,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.11543612799869152,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.13876226600405062,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "warm",
+      "seconds": 0.10166464899521088,
+      "refresh": "fresh",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.09203337300277781,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.1083255920020747,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.08257066999794915,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.1110541399975773,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.11700535500131082,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.09251120500266552,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.08566316100041149,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.06943890299589839,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.09423241399781546,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "offline",
+      "seconds": 0.09268866400088882,
+      "refresh": "failed",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.12335982699732995,
+      "refresh": "queued",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.12895595200097887,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.09586010999919381,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.0938087850008742,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.08972638699924573,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.0979595579992747,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.06379291600023862,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.08704643500095699,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.09489187700091861,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    },
+    {
+      "phase": "manager-lock-held",
+      "seconds": 0.09768359400186455,
+      "refresh": "deferred",
+      "actions": [
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "current",
+        "excluded"
+      ]
+    }
+  ],
+  "failures": [],
+  "summary": {
+    "cold": {
+      "count": 10,
+      "min": 0.05499202799546765,
+      "median": 0.05766128550021676,
+      "p95": 0.0698618790047476,
+      "max": 0.0698618790047476
+    },
+    "slow-running": {
+      "count": 10,
+      "min": 0.07177374299499206,
+      "median": 0.0986558225013141,
+      "p95": 0.16561094600183424,
+      "max": 0.16561094600183424
+    },
+    "warm": {
+      "count": 20,
+      "min": 0.06080343099893071,
+      "median": 0.09210258950042771,
+      "p95": 0.13876226600405062,
+      "max": 0.16036716500093462
+    },
+    "offline": {
+      "count": 10,
+      "min": 0.06943890299589839,
+      "median": 0.09259993450177717,
+      "p95": 0.11700535500131082,
+      "max": 0.11700535500131082
+    },
+    "manager-lock-held": {
+      "count": 10,
+      "min": 0.06379291600023862,
+      "median": 0.09537599350005621,
+      "p95": 0.12895595200097887,
+      "max": 0.12895595200097887
+    }
+  },
+  "pass": true,
+  "limitations": [
+    "Host terminal, not an interactive IntelliJ UI test",
+    "Scheduling/network-complete preview has no universal subsecond guarantee",
+    "All Git working-tree updates used disposable clones"
+  ]
+}

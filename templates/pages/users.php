@@ -5,7 +5,6 @@
 <?php if ($users === []): ?>
   <article class="card">
     <p>No visible users yet.</p>
-    <p class="meta">Approved users appear here after someone has visible threads or replies.</p>
   </article>
 <?php else: ?>
 <?php foreach ($users as $user): ?>

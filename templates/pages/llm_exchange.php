@@ -50,6 +50,7 @@ $formatBody = static function ($body) {
 
     return $body;
 };
+$providerRequestId = trim((string) ($exchange['provider_request_id'] ?? ''));
 $request = is_array($exchange['request'] ?? null) ? $exchange['request'] : [];
 $response = is_array($exchange['response'] ?? null) ? $exchange['response'] : [];
 $requestPayload = is_array($request['payload'] ?? null) ? $request['payload'] : $request;
@@ -87,7 +88,7 @@ $errorJson = json_encode($exchange['error'] ?? [], JSON_PRETTY_PRINT | JSON_UNES
     <p><a href="/tools/llm-exchanges/">Back to LLM Exchanges</a></p>
     <h1>LLM Exchange <?= (int) $exchange['id'] ?></h1>
     <p class="meta"><?= $e($exchange['occurred_at']) ?> · <?= $e($exchange['call_type']) ?> · <?= $e($exchange['status']) ?></p>
-    <p class="meta">Provider: <?= $e((string) ($exchange['provider'] ?? '')) ?> / <?= $e((string) ($exchange['provider_model'] ?? '')) ?> · Request ID: <?= $e((string) ($exchange['provider_request_id'] ?? 'unavailable')) ?></p>
+    <p class="meta">Provider: <?= $e((string) ($exchange['provider'] ?? '')) ?> / <?= $e((string) ($exchange['provider_model'] ?? '')) ?><?php if ($providerRequestId !== ''): ?> · Request ID: <?= $e($providerRequestId) ?><?php endif; ?></p>
 <?php if (($exchange['related_post_id'] ?? null) !== null): ?>
     <p class="meta">Related post: <a href="/posts/<?= $e($exchange['related_post_id']) ?>"><?= $e($exchange['related_post_id']) ?></a></p>
 <?php endif; ?>

@@ -871,13 +871,24 @@ final class WriteApiSmokeTest
             assertStringNotContains('Post analysis', $anonymousThreadPage);
             assertStringContains('Post analysis', $approvedThreadPage);
             assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
-            assertStringContains('Post summary:', $approvedThreadPage);
+            assertStringNotContains('Post summary:', $approvedThreadPage);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            $_COOKIE = [];
+            assertStringNotContains('Post summary:', $approvedPostPage);
+            assertStringNotContains('Reply to this post', $approvedPostPage);
+            assertStringContains('>Reply</a>', $approvedPostPage);
+            assertStringNotContains('<strong>Question:</strong>', $approvedPostPage);
+            assertStringContains('Moderation summary:', $approvedPostPage);
             assertStringContains('Moderation summary:', $approvedThreadPage);
             assertStringContains('Respondability:', $approvedThreadPage);
-            assertStringContains('Question:', $approvedThreadPage);
+            assertStringNotContains('<strong>Question:</strong>', $approvedThreadPage);
             assertStringContains('Response value:', $approvedThreadPage);
-            assertStringContains('Unicode risk:', $approvedThreadPage);
-            assertStringContains('Unicode scripts:', $approvedThreadPage);
+            assertStringNotContains('Unicode risk:', $approvedThreadPage);
+            assertStringNotContains('Unicode scripts:', $approvedThreadPage);
+            assertStringNotContains('Recommended action:', $approvedThreadPage);
+            assertStringNotContains('Unicode risk:', $approvedPostPage);
+            assertStringNotContains('Unicode scripts:', $approvedPostPage);
             assertStringContains('Suggested response:', $approvedThreadPage);
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {
@@ -1055,6 +1066,11 @@ final class WriteApiSmokeTest
             assertSame('low', $llmReview['review_priority']);
             assertStringContains('Unicode risk:', $approvedPostPage);
             assertStringContains('confusable_identifier_like_text', $approvedPostPage);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_COOKIE = [];
+            assertStringContains('Unicode risk:', $approvedThreadPage);
+            assertStringContains('confusable_identifier_like_text', $approvedThreadPage);
             assertStringNotContains('Unicode risk:', $anonymousPostPage);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
@@ -3744,9 +3760,13 @@ NODE;
                     ['payload' => ['messages' => [['role' => 'user', 'content' => $index === 2 ? 'Unrelated prompt' : 'Exchange private prose']]]],
                     ['body' => 'Exchange response prose'], 'completed', 1, ['message' => 'Exchange error prose']);
             }
-            $rawRows = $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
             $_COOKIE = ['identity_hint' => 'guest'];
-            assertStringContains('Exchange private prose', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]));
+            $withoutRequestId = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]);
+            assertStringContains('Exchange private prose', $withoutRequestId);
+            assertStringNotContains('Request ID:', $withoutRequestId);
+            $pdo->exec("UPDATE llm_exchanges SET provider_request_id = 'req-visible-123' WHERE id = " . (int) $ids[2]);
+            assertStringContains('Request ID: req-visible-123', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[2]));
+            $rawRows = $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
             $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
             $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'], 'record_path' => $prepared['record_path'],
                 'author_identity_id' => $author['identity_id'], 'canonical_record' => $prepared['canonical_record'],
