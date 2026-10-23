@@ -78,6 +78,11 @@ Step 2 runs long, split the worked example into its own cycle (0.4).
   thread-label records written from unsigned bodies.
 - [ ] Add regression tests showing that a forged post neither links to the
   profile nor counts as a vote.
+- [ ] Also check `apply_thread_tag` and `apply_post_tag`: they act on the
+  unsigned identity-hint cookie (marked `hint` in the `/api/` index by
+  Cycle D).
+- [ ] Afterwards, update `/api/` access labels and the reference's
+  "Unsigned routes" section if the unsigned routes' behavior changes.
 
 ## Cycle B: retries and errors
 
@@ -91,6 +96,9 @@ Step 2 runs long, split the worked example into its own cycle (0.4).
   avoid drift.
 - [ ] Keep the text error format of `create_thread` unchanged for existing
   clients.
+- [ ] Afterwards, update the "Retries", "Main errors" and "Current
+  limitations" sections of `docs/reference/agent_api.md` and the retry
+  guidance in `/llms.txt`.
 
 ## Cycle C: verification in the read API
 
@@ -99,21 +107,36 @@ Step 2 runs long, split the worked example into its own cycle (0.4).
 - [ ] Compute these values when the page is requested; do not change the
   read-model schema.
 - [ ] Extend the API tests for signed, unsigned, and invalid posts.
+- [ ] Afterwards, remove the matching "Current limitations" entry from
+  `docs/reference/agent_api.md` and update its sample session.
 
 ## Cycle D: agent docs and discovery
 
-- [ ] Generate `/llms.txt` with the six-step signed flow, links, and current
+Implemented on branch `feat/agent-api-docs` (feature prefix `agent_api_docs`,
+see [plans](agent_api_docs/)); not merged yet. It ran before A-C, so the
+reference ends with a "Current limitations" section for those cycles to
+update.
+
+- [x] Generate `/llms.txt` with the six-step signed flow, links, and current
   instance facts: Unicode/ASCII mode, members-only mode, images, username
   changes.
-- [ ] Complete the `/api/` index and mark each route as signed or unsigned.
+- [x] Complete the `/api/` index and mark each route as signed or unsigned.
   Recommend prepare-then-create for posting as an identity.
-- [ ] Add `docs/reference/agent_api.md` and list it in `PlatformDocsCatalog`.
+- [x] Add `docs/reference/agent_api.md` and list it in `PlatformDocsCatalog`.
   Cover fields, responses (JSON or key=value text), accepted encodings
   (query, form, JSON), signing rules (exact bytes, detached armored signature,
   accepted key types, 10-minute token), usernames, approval, retries, and the
   main errors.
-- [ ] Add a gpg+curl worked example script with sample responses, and run it
+- [x] Add a gpg+curl worked example script with sample responses, and run it
   against a local instance in tests so it stays correct.
-- [ ] Add a `<link rel="alternate">` for discovery; do not add visible copy
+- [x] Add a `<link rel="alternate">` for discovery; do not add visible copy
   to the Account or compose pages.
-- [ ] Publish the agent policy once the operator decides on it.
+- [x] Publish the agent policy once the operator decides on it. Decided:
+  agents are welcome; label them as agent accounts (no "bot" wording) by
+  putting "agent" in the key's user ID. No rate limits are stated.
+- [x] Let `GET /llms.txt` and `GET /api/` through the members-only gate
+  (operator decision during implementation).
+- [x] Document that `create_prepared_post` needs `record_path`, `post_id` and
+  `author_identity_id` echoed back unchanged (found by the worked-example test).
+- [ ] After merge and deploy, check that `/llms.txt` and `/api/` on zenmemes
+  match its feature flags.

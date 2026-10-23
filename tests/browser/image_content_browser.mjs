@@ -61,8 +61,8 @@ try {
    const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC','base64');
    for(const [path,body] of [['/',''],['/','Photo and text'],['/compose/thread',''],['/compose/thread','Photo and text']]) {
      await page.goto(base+path);
-     const details=page.locator('[data-inline-reply-details]').first();
-     if(path==='/') await details.locator('[data-inline-reply-trigger]').click();
+     const details=page.locator('[data-inline-thread-compose]').first();
+     if(path==='/') await details.locator('textarea[name="body"]').click();
      const form=page.locator('[data-compose-form]').first();
      await form.locator('.image-compose-fields:not([hidden])').waitFor();
      await page.setViewportSize({width:1000,height:800});
@@ -75,8 +75,8 @@ try {
        const cancelChooser=page.waitForEvent('filechooser');await (await attachEntry(form)).click();
        await (await cancelChooser).setFiles([]);await form.locator('[name="image"]').dispatchEvent('cancel');
        await page.evaluate(()=>{const button=document.createElement('button');button.textContent='outside composer';document.body.append(button);button.focus();});
-       await page.waitForFunction(()=>!document.querySelector('[data-inline-reply-details]').open);
-       await details.locator('[data-inline-reply-trigger]').click();
+       await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='0');
+       await details.locator('textarea[name="body"]').click();
      }
      if(body) await form.locator('[name="body"]').fill(body);
      // Hold the focus-triggered approval request until after the chooser returns.
@@ -87,11 +87,11 @@ try {
        await (await attachEntry(form)).click();const chooser=await chooserPromise;
        await page.evaluate(()=>{document.activeElement.blur();window.dispatchEvent(new Event('focus'));});
        await started;
-       if(path==='/') assert.equal(await details.evaluate(e=>e.open),true,'Composer must stay open while the picker owns focus');
+       if(path==='/') assert.equal(await details.evaluate(e=>e.dataset.inlineThreadExpanded==='1'),true,'Composer must stay open while the picker owns focus');
        // An OS picker returns focus before its change event in affected browsers.
        await chooser.setFiles({name:'picker.png',mimeType:'image/png',buffer:png});
        await form.locator('.image-upload-preview img').waitFor({timeout:3000});
-       if(path==='/') assert.equal(await details.evaluate(e=>e.open),true,'Image-only home composer must stay expanded');
+       if(path==='/') assert.equal(await details.evaluate(e=>e.dataset.inlineThreadExpanded==='1'),true,'Image-only home composer must stay expanded');
        assert.equal(await form.locator('[name="image"]').isDisabled(),false,'Refresh must not disable the active file picker');
      } finally {release();await page.unrouteAll({behavior:'wait'});}
      await form.evaluate(form=>ForumImageUpload.assertEligible(form));
@@ -206,15 +206,25 @@ try {
  await image.evaluate(e=>e.decode()); assert.equal(await image.evaluate(e=>e.naturalWidth),2048);
  const imageUrl=await image.getAttribute('src');
  const imageResponse=await context.request.get(base+imageUrl);assert.equal(imageResponse.status(),200);assert.match(imageResponse.headers()['cache-control'],/no-store/);assert.equal(imageResponse.headers()['x-content-type-options'],'nosniff');assert.deepEqual(await imageResponse.body(),preparedPng);
+ await page.setViewportSize({width:390,height:844});
  await page.goto(base+`/compose/reply?thread_id=${thread.thread_id}&parent_id=${thread.post_id}`);
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.locator('[name="body"]').fill('Browser image reply');assert.equal(await page.locator('[name="image_description"]').inputValue(),'');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
+ await page.locator('.compose-action-menu-toggle').click();
+ await page.locator('[data-action="submit-anonymous-compose"]').click();
+ await page.getByText('Image attachments require signed publication by an approved member.',{exact:false}).waitFor();
+ assert.equal(await page.locator('[name="body"]').inputValue(),'Browser image reply');
+ assert.equal(await page.locator('.image-upload-preview img').count(),1,'phone reply keeps attachment after anonymous refusal');
+ await page.locator('[name="body"]').focus();
+ await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ assert.equal(await page.evaluate(()=>{const panel=document.querySelector('[data-reply-panel]');const b=panel.querySelector('textarea').getBoundingClientRect();const a=panel.querySelector('.compose-form-actions').getBoundingClientRect();return b.bottom<=a.top;}),true,'phone image reply actions do not overlap the editor');
  const replyResponse=page.waitForResponse(r=>r.url().endsWith('/api/create_prepared_post')).then(r=>webkitRun?r.json():outcomes.at(-1));
  await page.locator('[data-compose-form] button[type="submit"]').first().click();
  const reply=await replyResponse;assert.equal(reply.status,'ok',JSON.stringify(reply));
  await page.waitForURL(/\/threads\//);
+ await page.setViewportSize({width:1280,height:900});
  await page.goto(base+'/tools/backup/');
  let imagesHref=await page.locator('a[href^="/downloads/images.tar"]').getAttribute('href');
  const repoHref=await page.locator('a[href^="/downloads/repository.tar.gz"]').getAttribute('href');

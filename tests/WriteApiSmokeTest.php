@@ -3785,7 +3785,7 @@ NODE;
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $author = $this->createAuthoredThread($application, 'retract-author', 'Retraction marker body');
+        $author = $this->createAuthoredThread($application, 'retract-author', "Retraction marker body\n#pinned");
         $other = $this->linkSigningIdentity($application, 'retract-other');
 
         $_POST = ['author_identity_id' => $other['identity_id'], 'post_id' => $author['thread_id']];
@@ -3825,10 +3825,56 @@ NODE;
         assertSame(false, str_contains($threadPage, 'Retraction marker body'));
         $pdo = new PDO('sqlite:' . $databasePath);
         assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id = '" . $author['thread_id'] . "'")->fetchColumn());
+        assertSame('[]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = '" . $author['thread_id'] . "'")->fetchColumn());
 
         $repeat = $this->prepareRetractionRequest($application, $author['identity_id'], $author['thread_id']);
         assertSame(true, $repeat['already_retracted']);
         assertSame('complete', $repeat['retraction_status']);
+    }
+
+    public function testPhysicallyDeletedRootStillAcceptsRepliesAndPreservesPrivacyState(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $author = $this->createAuthoredThread($app, 'physical-root-reply', "Removed prose\n#pinned");
+        $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+        $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'], 'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        try { $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR); }
+        finally { $_POST = []; }
+        assertSame('ok', $result['status']);
+        \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, $author['thread_id'], false, [], $artifacts);
+        assertSame(true, \ForumRewrite\Llm\ExchangeRetractionState::read($root)[$author['thread_id']] ?? false);
+        $response = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $author['thread_id'] . '&parent_id=' . $author['thread_id'] . '&body=Preserved%20conversation');
+        assertStringContains('status=ok', $response);
+        $page = $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']);
+        assertStringContains('Preserved conversation', $page);
+        assertStringNotContains('Removed prose', $page);
+    }
+
+    public function testLegacyLabelRetractionReportsOperatorReviewWithoutGuessingOwnership(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $author = $this->createAuthoredThread($app, 'legacy-label-retract', "Old source\n#pinned");
+        foreach (glob($root . '/records/thread-labels/*.txt') as $path) {
+            $bytes = file_get_contents($path);
+            if (!str_contains($bytes, 'Thread-ID: ' . $author['thread_id'])) continue;
+            $bytes = preg_replace('/^Source-Post-(?:ID|SHA256):.*\n/m', '', $bytes);
+            file_put_contents($path, $bytes);
+        }
+        $this->gitOutput($root, 'add records'); $this->gitOutput($root, 'commit -m legacy-label-fixture');
+        $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+        $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'], 'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        try { $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR); }
+        finally { $_POST = []; }
+        assertSame('unresolved', $result['label_cleanup_status']);
+        assertSame(1, count($result['unresolved_label_records']));
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame('["pinned"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='" . $author['thread_id'] . "'")->fetchColumn());
     }
 
     public function testRetractedPostProseIsAbsentFromEveryServedSurface(): void
@@ -5164,6 +5210,8 @@ NODE;
 
         $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId)))[0];
         $recordContents = (string) file_get_contents($recordPath);
+        assertStringContains('Source-Post-ID: ' . $threadId, $recordContents);
+        assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect((new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse($recordContents), $repositoryRoot)['status']);
         assertStringContains('Labels: bug needs-review', $recordContents);
         assertStringNotContains('ignored', $recordContents);
     }
@@ -5189,6 +5237,9 @@ NODE;
         assertStringContains('status=ok', $response);
         assertStringContains('Labels: answered, bug, needs-review', $threadPage);
         assertSame(1, count($matchingRecords));
+        $label = (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse((string) file_get_contents($matchingRecords[0]));
+        assertSame($this->extractValue($response, 'post_id'), $label->sourcePostId);
+        assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect($label, $repositoryRoot)['status']);
     }
 
     public function testLabeledWritesUseIncrementalReadModelAndPublishLabelActivityImmediately(): void
@@ -5215,6 +5266,90 @@ NODE;
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: answered', $activity);
         assertStringContains('/threads/root-001', $activity);
+    }
+
+    public function testVersion23StartupRecoversOmittedLikeActivityWithoutNewRecords(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        foreach (['#like', 'Another contribution #like'] as $body) {
+            $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => $body, 'author_identity_id' => $author]);
+        }
+        $pdo = new PDO('sqlite:' . $database);
+        $where = "kind='thread_label_add' AND thread_id='root-001' AND label LIKE '%like%'";
+        assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
+        $recordsBefore = glob($root . '/records/thread-labels/*.txt');
+        $pdo->exec('DELETE FROM activity WHERE id=(SELECT MAX(id) FROM activity WHERE ' . $where . ')');
+        $pdo->exec("UPDATE metadata SET value='23' WHERE key='schema_version'");
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        assertStringContains('Labels added: like', $this->renderMethod($app, 'GET', '/activity/'));
+        assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+        assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
+        $output = [];
+        exec(escapeshellarg(dirname(__DIR__) . '/v3') . ' rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($database) . ' 2>&1', $output, $exitCode);
+        assertSame(0, $exitCode, implode("\n", $output));
+        assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
+        assertSame($recordsBefore, glob($root . '/records/thread-labels/*.txt'));
+    }
+
+    public function testEachAcceptedLikeRecordAppearsOnceWithoutChangingVoteDeduplication(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+        $other = $this->linkGeneratedIdentity($app, 'later-like');
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => '#like', 'author_identity_id' => $author]);
+        $later = $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $other['identity_id']]);
+        assertSame('yes', $later['wrote_record']);
+        $repeat = $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $other['identity_id']]);
+        assertSame('no', $repeat['wrote_record']);
+        $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => '#like #answered #bug', 'author_identity_id' => $author]);
+        $pdo = new PDO('sqlite:' . $database);
+        $query = "SELECT action_key, created_at, source_path, source_commit_sha, author_identity_id, label FROM activity WHERE kind='thread_label_add' AND thread_id='root-001' AND label LIKE '%like%' ORDER BY action_key";
+        $incremental = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+        assertSame(3, count($incremental));
+        assertSame(3, count(array_unique(array_column($incremental, 'source_commit_sha'))));
+        foreach ($incremental as $event) {
+            $history = [];
+            exec('git -C ' . escapeshellarg($root) . ' log -1 --format=%H -- ' . escapeshellarg($event['source_path']), $history, $exitCode);
+            assertSame(0, $exitCode);
+            assertSame($history[0], $event['source_commit_sha']);
+        }
+        assertSame(3, count(array_unique(array_column($incremental, 'action_key'))));
+        assertSame(2, count(array_filter($incremental, static fn (array $row): bool => $row['author_identity_id'] === $author)));
+        assertSame(1, count(array_filter($incremental, static fn (array $row): bool => $row['label'] === 'Labels added: answered, like')));
+        $activity = new ActivityService(static fn (): PDO => $pdo, $root, $database);
+        $keys = [];
+        $cursor = null;
+        do {
+            $page = $activity->fetchActivityRows('all', 'date', 'desc', $cursor, 1);
+            $row = $page['items'][0];
+            $keys[] = $row['action_key'];
+            $cursor = ['sort_value' => $row['created_at'], 'action_key' => $row['action_key'], 'id' => (int) $row['id']];
+        } while ($page['has_more']);
+        assertSame($activity->countActivityViewTotal('all'), count($keys));
+        assertSame(count($keys), count(array_unique($keys)));
+        foreach ($incremental as $event) assertTrue(in_array($event['action_key'], $keys, true));
+        $before = $pdo->query("SELECT score_total, vote_count, thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetch(PDO::FETCH_ASSOC);
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        assertSame($incremental, $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC));
+        assertSame($before, $pdo->query("SELECT score_total, vote_count, thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetch(PDO::FETCH_ASSOC));
+        assertSame('no', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $other['identity_id']])['wrote_record']);
+        assertSame(3, count($pdo->query($query)->fetchAll(PDO::FETCH_ASSOC)));
+        // A restored archive can have canonical records without Git history.
+        rename($root . '/.git', $root . '/saved-git');
+        try {
+            (new IncrementalReadModelUpdater($database, $root))->applyThreadLabelWrite('root-001', str_repeat('a', 40));
+            $withoutHistory = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+            assertSame([null, null, null], array_column($withoutHistory, 'source_commit_sha'));
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame($withoutHistory, $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC));
+        } finally {
+            rename($root . '/saved-git', $root . '/.git');
+        }
     }
 
     public function testApprovedLikeTagAddsScoreAndDoesNotDoubleCountForSameIdentity(): void

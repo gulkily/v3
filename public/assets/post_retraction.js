@@ -77,6 +77,9 @@
       if (result.cleanupStatus === "pending") {
         try { window.sessionStorage.setItem("forum-retraction-cleanup", button.getAttribute("data-post-id") || ""); } catch (_) {}
       }
+      if (result.labelCleanupStatus === "unresolved") {
+        try { window.sessionStorage.setItem("forum-retraction-label-review", button.getAttribute("data-post-id") || ""); } catch (_) {}
+      }
       window.location.reload();
     } catch (error) {
       stopProgress();
@@ -98,6 +101,22 @@
         status.textContent = "Local cleanup queued.";
         notice.appendChild(status);
         window.sessionStorage.removeItem("forum-retraction-cleanup");
+        break;
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const reviewId = window.sessionStorage.getItem("forum-retraction-label-review");
+    if (reviewId && document.querySelectorAll) {
+      for (const notice of document.querySelectorAll("[data-retracted-post-id]")) {
+        if (notice.getAttribute("data-retracted-post-id") !== reviewId) continue;
+        const warning = document.createElement("p");
+        warning.className = "meta";
+        warning.setAttribute("role", "status");
+        warning.textContent = "Some labels need operator review. Ask an operator to inspect this post's label ownership.";
+        notice.appendChild(warning);
+        window.sessionStorage.removeItem("forum-retraction-label-review");
         break;
       }
     }

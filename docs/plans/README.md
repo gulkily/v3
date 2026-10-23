@@ -10,11 +10,23 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Standard Activity and shared pagination](activity_feed_pagination/)
+
+- [Thread-like Activity reporting](thread_like_activity/)
+
+- [Retraction effects and source-owned label cleanup](retraction_effects/)
+
+- [High-traffic mode](high_traffic_mode/)
+
+- [Reply composer focus and layout](reply_composer_focus_layout/)
+
 - [Documentation discovery](docs_discovery/)
 - [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 
 - [Markdown renderer](markdown_renderer/)
+- [Same-author collapse toggle](same_author_collapse_toggle/)
 
+- [Agent API docs and discovery](agent_api_docs/) · [Onboarding checklist](agent_api_onboarding_checklist.md)
 - [Shared Fastmod automatic-tagging flag](fastmod_tagging_flag/)
 
 - [Fastmod rubric actions — automatic meta tagging](fastmod_rubric_actions/)
@@ -240,3 +252,5 @@ and repair its navigation and affected references. See the
 - [GPG agent leak](gpg_agent_leak/)
 
 - [Status frontend target](status_frontend_target/)
+
+- [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.

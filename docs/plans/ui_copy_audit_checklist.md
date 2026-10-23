@@ -1,9 +1,40 @@
 # UI copy audit checklist
 
+## Standard Activity relevant evidence — October 23, 2026
+
+- [x] Replace repeated full-commit file lists with Relevant files for each standard Activity item; keep the complete list behind the existing commit link. Preserve unsigned status, identity/signature/key evidence and recovery controls. Forte copy/behavior stays unchanged.
+- Verified the Git-backed bulk-commit browser fixture with/without JavaScript, all 13 themes at 390px/1280px, historical source/full-commit links, pagination, empty/invalid/error/retry states and long values. Actual local Activity source access, Next/Back and overflow checks passed at both widths. Focused PHP 30/30 plus the core-route regression; signed-reaction and real Forte append/Commits browser regressions passed. [Outline and measured outcome](standard_activity_manifest_size_fix_outline.md).
+- Existing deployed static HTML requires republishing; production rollout and physical devices remain unverified.
+
+## Standard Activity pagination — October 23, 2026
+
+- [x] Add only Previous/Next navigation, an empty state and actionable First page recovery for invalid/expired positions. Use native link and browser retry behavior; no routine success notice or help panel.
+- Verified real standard Activity navigation with JavaScript enabled/disabled, empty/invalid/HTTP-failure/retry states, source evidence, keyboard links and history. All 13 standard themes passed at 390px/1280px with long subjects/paths and no page overflow; Word97 phone and Midnight desktop screenshots inspected. Forte production controls/copy remain unchanged; real append/detail/Commits and existing shared-reader/signed-button checks passed.
+- Physical devices and production deployment remain unverified. [Implementation summary](activity_feed_pagination/activity_feed_pagination_step4_implementation_summary.md).
+
+## Source-owned label removal — October 22, 2026
+
+- [x] Keep legacy label uncertainty actionable after accepted retraction: the existing reload acknowledgment displays operator-review guidance only when ownership candidates remain unresolved. No new navigation, confirmation or routine explanatory panel.
+- Verified real signed author/operator/account and partial-retry browser flows; legacy warning in all 13 themes at 390px/1280px without warning/page overflow. Inspected Word97/Chicago phone and Midnight desktop screenshots; existing menu keyboard/Escape/touch check passed. Fixture also verifies physical root deletion preserves conversation. Screenshots are local `/tmp/retraction-browser-evidence/` evidence, not deployment artifacts.
+- [ ] Production ZenMemes rollout and live legacy ownership resolution remain operator acceptance tasks; missing historical proof is not silently inferred. [Implementation record](retraction_effects/retraction_effects_step4_implementation_summary.md).
+
+## Browser identity ready notice — October 21, 2026 triage
+
+- [ ] Remove the routine “Browser identity ready” notice and hide its empty status element; retain necessary pending/failure/recovery feedback and explicit Account results. [Triage and acceptance](browser_identity_ready_triage_2026-10-21.md).
+- Verification so far: source inspection only; the message and compose initialization path remain in `public/assets/browser_signing.js`. Implementation, phone/desktop shared-view and theme checks, and relevant regression checks are pending. This item is not resolved.
+- [ ] After verified completion, reply under the original feedback comment as requested by the user; distinguish this fix from the other composer issues in that comment.
+
 ## Import CLI recovery guidance — October 20, 2026
 
 - [x] Removed unconditional `--resume` advice from import failures; show recovery guidance only when the selected destination has a pending journal. Replaced generic public-download wording with HTTP status, bounded sanitized source detail, and source retry guidance.
 - Verification: Actual CLI/HTTP tests cover initial preview/import success, source failure without a journal, failure with an independently pending journal, interrupted publication, and successful resume. Full suite: 1372/1377 passed; all five failures reproduced on unchanged `main` and are listed in the [implementation summary](legacy_backup_compatibility/legacy_backup_compatibility_step4_implementation_summary.md). Browser layout/theme checks are inapplicable: this change affects terminal output only. Production source and user WSL verification remain pending.
+## Same-author collapse toggle — 2026-10-21
+
+- [x] Added the concise “Collapse posts from same author” control using the existing Feature Flags UI and recovery feedback. No new explanatory panel or navigation destination.
+- [x] Isolated Chromium acceptance: real signed disable/enable/reset, reload persistence, anonymous read-only/rejected writes, environment lock/rejected writes, and failed-save retry.
+- [x] Loaded root/later continuation runs, agent/other author boundaries, separate metadata/actions/counts, empty replies, expanded reply composer and long prose at 390/1280 px across light, dark, console, Word97, Chicago, Midnight, Arena, Sticker, and Whitehot. No page overflow; reviewed phone Midnight and desktop Word97 screenshots.
+- Evidence: `node tests/browser/same_author_collapse.mjs`; screenshots `/tmp/collapse-{theme}-{width}-{state}.png`. Synthetic author labels are seeded only in the isolated fixture read model. Production deployment and non-Chromium browsers were not tested.
+
 
 ## Next audit — candidates to verify
 
@@ -160,3 +191,28 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Restored visible inline SQL on System State, with compact magnifying-glass buttons opening the query viewers. Accessible names and tooltips retain the query context; other pages keep their existing controls. PHP syntax and existing query coverage checks passed.
 
 - System State follow-up: query viewer icons use flat, transparent buttons without borders or shadows, including hover/pressed theme states; keyboard focus remains visible. CSS diff check passed.
+
+## Board composer first focus — October 21, 2026
+
+- [x] Removed the redundant readonly prompt textarea and its disclosure arrow; one editable textarea uses the existing board prompt and expands actions in place. No extra instructions or repeated controls.
+- Verification: Real-board Chromium/Firefox/WebKit checks at 390px/1280px across Light, Word97, Chicago and Midnight; first focus without scripted scroll/transfer, draft/selection, empty collapse, failure/retry, successful publication, native image chooser and no-script controls passed. Inspected phone Word97 collapsed and Midnight expanded screenshots. Physical iPhone keyboard acceptance remains pending; inline-reply focus and floating-action overlap are separate work.
+
+- Board composer correction: Restored the compact prompt and full expanded controls while retaining one editor and no disclosure arrow. Initial CSS applies before deferred scripts, preventing Post flashing and relocating after paint. Chromium/Firefox/WebKit first-paint geometry, true height expansion/empty collapse, drafts, selection, retry, attachments and no-script checks pass across phone/desktop and four themes; refreshed Light phone screenshots inspected. Actual iPhone keyboard acceptance remains pending. Reply-form Railspike remains paused.
+
+## Browser identity ready — October 21, 2026
+
+- [x] Removed routine “Browser identity ready” copy and hid empty status containers. Pending, failure, technical-details recovery, and explicit Account outcomes remain visible when needed.
+- Verification: 88 browser-signing, lazy-compose, and identity-diagnostics checks passed. Chromium checks passed for 24 standalone composer route/theme/viewport/permission cases and 32 shared board, expanded inline-reply, paned New Thread, and QDB Add Quote cases at 390px/1280px across Light, Word97, Chicago, and Midnight. Checked empty/loaded readiness, focus, preserved drafts, pending/failure-to-ready transitions, stale technical-details cleanup, action geometry, and page overflow. Explicit Account feedback, both Outbox saves, and real signed thread/reply publication passed. Inspected the expanded Midnight phone screenshot. Syntax and diff checks passed.
+- Limitations: browser checks use local fixtures and emulated viewports; physical phones and production were not checked. Deployment and the source-comment closeout remain pending. Separate composer focus/jumping requests are not resolved by this change.
+
+## Reply composer focus and layout — October 21, 2026
+
+- [x] Removed the redundant readonly inline-reply prompt and collapsed disclosure arrow. The canonical editor preserves real compact/expanded behavior from first paint; no extra explanatory copy or repeated submit control.
+- [x] The phone editor, status/validation feedback and original action row share reserved space, including the open menu. Oversized feedback/attachments, tiny viewports or zoom return to usable ordinary flow. Desktop and Forte do not activate the phone panel.
+- Verification: Chromium/WebKit/Firefox matrices cover explicit editor/action/error/menu separation, viewport changes, long draft/selection, rotation, reopening, fallback and restoration. Real inline/dedicated reply checks cover unsupported-character correction, failed prepare/retry, repeated pending activation and one persisted reply; native anonymous/attachment handling and signed image reply pass. Four-theme phone/desktop first-paint and true collapse/expansion checks pass; Light, Word97, Chicago and Midnight phone composing screenshots inspected. Fixed Midnight spacing overriding the panel boundary and added a whole-panel viewport assertion. No-script and the corrected board composer retain behavior. Physical iPhone Safari/Firefox keyboard and browser-chrome acceptance remains pending user testing; browser emulation is supplementary.
+
+## Detached Activity workflow block — October 23, 2026
+
+- [x] Removed the private workflow block above Activity, its client rendering/fetching and Activity workflow script inclusion. Existing thread/post workflow controls and documented APIs remain available; no replacement copy or navigation added.
+- Verification: operator/anonymous, JavaScript enabled/disabled, 390px/1280px Activity matrix passed with ordinary filter navigation and no overflow. Observed zero workflow requests through the former polling interval and visibility refresh. Existing signed start/answer/revise/approve, failure/retry and saved-key resumption journey passed. Standard Activity native pagination, empty filter, invalid-position/HTTP recovery, RSS and opening an entry passed with scripts on/off. All 13 themes passed phone/desktop overflow checks; inspected phone Activity heading/navigation screenshot and Word97 loaded-content/pagination screenshot. Existing Forte append/detail checks also passed.
+- Limitations: local fixtures and emulated viewports; production deployment/reload and physical-device checks pending. This removes one non-repository workflow block; complete repository coverage and script-free private workflow reading are separate proposals. See the [implementation summary](./railspike_workflow_visibility/railspike_workflow_visibility_step4_implementation_summary.md).

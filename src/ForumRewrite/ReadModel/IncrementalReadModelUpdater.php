@@ -184,7 +184,7 @@ class IncrementalReadModelUpdater
             $this->measure(
                 $timings,
                 'refresh_thread_label_activity',
-                fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'], $commitSha)
+                fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'])
             );
             ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot, 'thread-labels');
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
@@ -1310,6 +1310,7 @@ class IncrementalReadModelUpdater
      */
     private function loadThreadLabelRecords(?string $threadId): array
     {
+        $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
@@ -1319,6 +1320,7 @@ class IncrementalReadModelUpdater
                 continue;
             }
 
+            if (isset($inactive[$record->recordId])) continue;
             if ($threadId !== null && $record->threadId !== $threadId) {
                 continue;
             }
@@ -1651,6 +1653,9 @@ class IncrementalReadModelUpdater
                 if (!isset($labels[$label])) {
                     $labels[$label] = true;
                     $labelsAdded[] = $label;
+                } elseif ($label === 'like') {
+                    // Activity records contributions, even when the effective label already exists.
+                    $labelsAdded[] = $label;
                 }
 
                 if ($record->authorIdentityId !== null && $this->countsThreadLabelTowardVoteTotal($label)) {
@@ -1726,7 +1731,7 @@ class IncrementalReadModelUpdater
      * @param array{root_post_id:string,board_tags_json:string} $thread
      * @param list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}> $activityEvents
      */
-    private function refreshThreadLabelActivity(PDO $pdo, array $thread, array $activityEvents, string $commitSha): void
+    private function refreshThreadLabelActivity(PDO $pdo, array $thread, array $activityEvents): void
     {
         $delete = $pdo->prepare('DELETE FROM activity WHERE kind = :kind AND thread_id = :thread_id');
         $delete->execute([
@@ -1748,6 +1753,7 @@ class IncrementalReadModelUpdater
 
         foreach ($activityEvents as $event) {
             $author = $this->resolveActivityAuthor($pdo, $event['author_identity_id']);
+            $sourceCommit = $this->sourceCommitShaForPath($event['source_path']);
             $insert->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'thread_label_add',
@@ -1763,7 +1769,7 @@ class IncrementalReadModelUpdater
                 'author_label' => $author['author_label'],
                 'author_is_approved' => $author['author_is_approved'],
                 'source_path' => $event['source_path'],
-                'source_commit_sha' => $commitSha,
+                'source_commit_sha' => $sourceCommit !== null && preg_match('/^[a-f0-9]{40}$/', $sourceCommit) === 1 ? $sourceCommit : null,
             ]);
         }
     }

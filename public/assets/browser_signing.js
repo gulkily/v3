@@ -855,7 +855,7 @@
   }
 
   function isInlineReplyComposer(root) {
-    return Boolean(root && typeof root.querySelector === "function" && root.querySelector("[data-inline-reply-details]"));
+    return Boolean(root && typeof root.querySelector === "function" && (root.querySelector("[data-inline-reply-compose]") || root.querySelector("[data-inline-reply-details]")));
   }
 
   function canonicalReplyUrl(result, returnTo) {
@@ -1298,6 +1298,7 @@
       alreadyRetracted: data.already_retracted === true,
       retractionStatus: data.retraction_status || "",
       cleanupStatus: data.cleanup_status || "",
+      labelCleanupStatus: data.label_cleanup_status || "",
       failedStep: data.failed_step || "",
       commitSha: data.commit_sha || "",
       serverTiming: serverTiming || {},
@@ -1686,7 +1687,7 @@
       return;
     }
 
-    node.hidden = false;
+    node.hidden = message.trim() === "" && technicalDetails === "";
     const messageNode = typeof node.querySelector === "function"
       ? node.querySelector('[data-role="browser-key-status-message"]')
       : null;
@@ -2038,7 +2039,7 @@
       case "publishing":
         return "Publishing your public key in the background...";
       case "ready":
-        return "Browser identity ready.";
+        return "";
       case "failed":
         return "Unable to prepare your browser identity.";
       case "idle":

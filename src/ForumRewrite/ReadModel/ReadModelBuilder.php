@@ -168,6 +168,7 @@ final class ReadModelBuilder
              VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at, :retraction_class, :retraction_attribution)'
         );
 
+        $removals = \ForumRewrite\Canonical\LabelRemoval::all($this->repositoryRoot);
         $retractions = $this->loadPostRetractions();
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
@@ -176,6 +177,7 @@ final class ReadModelBuilder
 
         foreach ($this->progressItems('parsing_post_records', $paths) as $index => $relativePath) {
             $record = $this->canonicalRepository->loadPost($relativePath);
+            if (($removals[$record->postId]['operation'] ?? null) === 'delete') continue;
             $threadId = $record->threadId ?? $record->postId;
             // An author retraction suppresses prose at index time so no later ingest path can restore it.
             $retractedAt = $this->retractionTimestampFor($record, $retractions);
@@ -203,6 +205,20 @@ final class ReadModelBuilder
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
+            ];
+        }
+
+        foreach ($removals as $id => $removal) {
+            if ($removal['operation'] !== 'delete') continue;
+            $meta = $removal['post'];
+            $parsedPosts[] = [
+                'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
+                'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
+                'retracted_at' => $removal['accepted_at'], 'retraction_class' => 'operator', 'retraction_attribution' => 'operator',
+                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null,
+                'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
+                'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
+                'source_path' => \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
             ];
         }
 
@@ -333,10 +349,12 @@ final class ReadModelBuilder
         }
         $records = [];
 
+        $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $paths = $this->findRelativePaths('records/thread-labels');
         foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
-                $records[] = $this->canonicalRepository->loadThreadLabel($relativePath);
+                $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+                if (!isset($inactive[$record->recordId])) $records[] = $record;
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadLabelRecordCount++;
             }
@@ -377,6 +395,9 @@ final class ReadModelBuilder
             foreach ($record->labels as $label) {
                 if (!isset($labelsByThread[$record->threadId][$label])) {
                     $labelsByThread[$record->threadId][$label] = true;
+                    $labelsAdded[] = $label;
+                } elseif ($label === 'like') {
+                    // Activity records contributions, even when the effective label already exists.
                     $labelsAdded[] = $label;
                 }
 
@@ -1109,6 +1130,7 @@ final class ReadModelBuilder
     {
         $stmt = $pdo->prepare('INSERT INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
+            'source_removal_generation' => \ForumRewrite\Canonical\LabelRemoval::generation($this->repositoryRoot),
             'repository_root' => $this->repositoryRoot,
             'repository_head' => ReadModelMetadata::repositoryHead($this->repositoryRoot),
             'rebuilt_at' => gmdate('c'),

@@ -36,12 +36,12 @@ and the bootstrap flow.
 ## Synchronize Railspike workflow documentation
 
 ```bash
-./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.0-beta.1]
+./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.1-beta.1]
 ./v3 fdp sync ... # deprecated alias; updates Railspike, never FDP
 ```
 
 Updates the vendored `docs/railspike/` subtree to an explicit release tag
-(`--ref`, default the pinned `v0.2.0-beta.1`), creating Git update commits. Branch
+(`--ref`, default the pinned `v0.2.1-beta.1`), creating Git update commits. Branch
 names such as `main` are refused, so a plain sync never moves the installed
 version. The tag must descend from the commit in `docs/railspike/RAILSPIKE_SOURCE.md`,
 which the command updates and commits after a successful merge. The target defaults to this checkout; `--repository-root`
@@ -495,6 +495,39 @@ the site instead; see [Author post retraction](author_post_retraction.md).
 - `database_path` — SQLite file to rebuild after deletion
 - `artifact_root` — static HTML output directory to rebuild after deletion
 
+### Source-post deletion and label repair
+
+Deleting a post also removes its proven generated thread-label records and their
+signatures, retains content-free root/parent placeholders for surviving replies,
+and invalidates generated presentation. Independent label actions remain active.
+Source-owned labels also stop applying after signed browser retraction. When a
+prebuilt static release is required, run `./v3 build-static` with the deployment's
+normal repository/database/artifact settings after deletion.
+
+Source-post operations accept `--inspect`, `--repair-labels`, repeatable
+`--resolve-label=<label-id>`, and `--json`. Inspection is read-only; JSON reports
+acceptance separately from `label_cleanup_status` and unresolved legacy records.
+Repair does not delete a live source. An already deleted source is represented
+by retained structural removal evidence. Example:
+
+```bash
+./v3 delete-record <source-post-id> [repository_root] [database_path] --inspect --json
+./v3 delete-record <source-post-id> [repository_root] [database_path] --repair-labels --resolve-label=<label-record-id> --json
+```
+
+A legacy candidate is **not proof of ownership**. Review the source text, target
+thread and trusted history before explicitly resolving a label. Timestamp/author
+matches and a shared bulk-import commit alone do not establish ownership. Repair
+can use an original source recovered from Git history; if history or necessary
+legacy timestamp evidence is unavailable, restore it before repairing.
+
+Repeat the same command after an interrupted commit or failed refresh. The private
+Git-directory journal resumes accepted work, and already accepted deletions do
+not need another acceptance commit. Changed source/label bytes require inspection
+rather than blind retry. Preserve `records/post-removals/` and trusted Git history
+in backups: copied JSON alone does not establish removal authority. Imports reject
+foreign removal claims and do not restore locally removed sources or labels.
+
 ## Backfill Unicode-risk analysis for posts
 
 ```
@@ -893,3 +926,17 @@ changing generation settings; follow the verified scripture operations guide.
 Do not silently downgrade pending verified requests to unverified generation.
 
 Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inherits `LLM_MODEL`). OpenAI scripture requests and Expand may select `gpt-5-mini` or `gpt-5.6-sol`; other response modes and structured moderation retain the shared model. Sol explicit reasoning is currently restricted to the evaluated `low` setting. This prepares isolated comparison; it does not activate verified guidance or establish release acceptance.
+
+## High-traffic mode
+
+`./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]`
+switches and manages instance-local Apache HTML caching. Run
+`./v3 high-traffic run /path/to/access.log` every minute for popularity-driven
+atomic refresh. See [host setup, limits, verification and recovery](../runbooks/high_traffic_mode.md).
+Automatic traffic/load activation is deferred.
+
+CLI output is readable by default; use `--json` for automation.
+`./v3 high-traffic cron /path/to/access.log` prints the installation instructions
+and crontab line; `run` executes one refresh. Existing schedules using `cron`
+as the worker must change to `run`. Enable/status also report the cron line;
+they do not install or verify a schedule. Use the web app's environment and user.

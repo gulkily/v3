@@ -22,13 +22,18 @@ final class ExchangeRetractionState
                 if (str_ends_with($path, '.txt') && (!is_file($root . '/' . $path) || !is_readable($root . '/' . $path))) return null;
             }
         }
+        $ids = [];
+        try {
+            foreach (\ForumRewrite\Canonical\LabelRemoval::all($root) as $id => $removal) {
+                if ($removal['operation'] === 'delete') $ids[$id] = true;
+            }
+        } catch (\Throwable) { return null; }
         $directory = $root . '/records/post-retractions';
-        if (!file_exists($directory)) return [];
+        if (!file_exists($directory)) return $ids;
         if (!is_dir($directory) || !is_readable($directory) || is_link($directory)) return null;
         $paths = glob($directory . '/*');
         if ($paths === false) return null;
         $repository = new CanonicalRecordRepository($root);
-        $ids = [];
         try {
             foreach ($paths as $path) {
                 if (pathinfo($path, PATHINFO_EXTENSION) !== 'txt') continue;
@@ -41,7 +46,7 @@ final class ExchangeRetractionState
                     if (RetractedPosts::applies($repository->loadPost($postPath), $record)) $ids[$record->postId] = true;
                     break;
                 }
-                if (!$found) return null;
+                if (!$found && !isset($ids[$record->postId])) return null;
             }
         } catch (\Throwable) { return null; }
         return $ids;
