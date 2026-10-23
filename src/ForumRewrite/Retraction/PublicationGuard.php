@@ -56,7 +56,7 @@ final class PublicationGuard
     {
         $current = isset($token['excluded'])
             ? self::snapshotGeneration($token['root'], $token['excluded']) : self::generation($token['root']);
-        if ($current !== $token['generation']) throw new RuntimeException('Retraction changed during publication; rebuild and retry.');
+        if ($current !== ($token['snapshot_generation'] ?? $token['generation'])) throw new RuntimeException('Retraction changed during publication; rebuild and retry.');
     }
 
     public static function beginSnapshot(string $databasePath): ?array
@@ -91,7 +91,12 @@ final class PublicationGuard
             $row = $q->fetch(PDO::FETCH_ASSOC);
             if ($row !== false && ($row['retracted_at'] ?? null) === null) throw new RuntimeException('Read model needs retraction refresh before publication.');
         }
-        return ['root' => $repositoryRoot, 'generation' => $generation] + ($snapshot ? ['excluded' => $state['absent']] : []);
+        $context = $snapshot ? ['excluded' => $state['absent'], 'snapshot_generation' => $generation] : [];
+        if ($snapshot && $state['absent'] === []) {
+            // Ordinary artifacts must remain current to strict cleanup/static consumers.
+            $generation = hash('sha256', json_encode($removals === [] ? array_keys($state['ids']) : [array_keys($state['ids']), $removals], JSON_THROW_ON_ERROR));
+        }
+        return ['root' => $repositoryRoot, 'generation' => $generation] + $context;
     }
 
     public static function publish(?array $token, string $path, callable $publish): void

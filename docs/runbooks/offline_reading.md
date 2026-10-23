@@ -67,8 +67,8 @@ latest offline reading set without rendering every static post page:
 ./v3 offline diagnose --url=https://your-public-domain
 ```
 
-`offline publish` creates only the bounded public SQLite snapshot and atomically
-replaces the independently published copy. It does not rebuild the read model,
+`offline publish` creates the bounded public SQLite base and compact update,
+atomically replacing each independently published copy. It does not rebuild the read model,
 render static HTML, deploy an application release, or refresh any browser
 cache. The reader uses the application’s canonical fingerprinted SQLite runtime
 URL, rather than relying on an unfingerprinted binary path. It preserves the

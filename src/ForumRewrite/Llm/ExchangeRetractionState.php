@@ -24,6 +24,7 @@ final class ExchangeRetractionState
 
     private static function scan(string $root, bool $allowAbsent, array $excluded = []): ?array
     {
+        if ($allowAbsent) clearstatcache();
         if ($allowAbsent && is_link($root . '/records')) return null;
         if (!is_dir($root . '/records') || !is_readable($root . '/records')) return null;
         if (file_exists($root . '/.git')) {
@@ -41,6 +42,7 @@ final class ExchangeRetractionState
             }
         } catch (\Throwable) { return null; }
         $directory = $root . '/records/post-retractions';
+        if ($allowAbsent && is_link($directory)) return null;
         if (!file_exists($directory)) return ['ids' => $ids, 'absent' => [], 'evidence' => []];
         if (!is_dir($directory) || !is_readable($directory) || is_link($directory)) return null;
         $paths = glob($directory . '/*');
