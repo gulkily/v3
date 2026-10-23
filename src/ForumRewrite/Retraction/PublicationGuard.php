@@ -38,7 +38,8 @@ final class PublicationGuard
         $ids = ExchangeRetractionState::read($repositoryRoot);
         if ($ids === null) throw new RuntimeException('Cannot validate retraction state for publication.');
         ksort($ids);
-        return hash('sha256', json_encode(array_keys($ids), JSON_THROW_ON_ERROR));
+        $removals = \ForumRewrite\Canonical\LabelRemoval::all($repositoryRoot);
+        return hash('sha256', json_encode($removals === [] ? array_keys($ids) : [array_keys($ids), $removals], JSON_THROW_ON_ERROR));
     }
 
     public static function begin(string $databasePath, ?string $repositoryRoot = null): ?array
@@ -50,6 +51,10 @@ final class PublicationGuard
         }
         if ($repositoryRoot === null || $repositoryRoot === '') return null;
         $generation = self::generation($repositoryRoot);
+        $removals = \ForumRewrite\Canonical\LabelRemoval::all($repositoryRoot);
+        if ($removals !== [] && (ReadModelMetadata::readMetadata($pdo)['source_removal_generation'] ?? null) !== \ForumRewrite\Canonical\LabelRemoval::generation($repositoryRoot)) {
+            throw new RuntimeException('Read model needs source-removal refresh before publication.');
+        }
         $ids = ExchangeRetractionState::read($repositoryRoot);
         foreach (array_keys($ids ?? []) as $id) {
             $q = $pdo->prepare('SELECT retracted_at FROM posts WHERE post_id=?');

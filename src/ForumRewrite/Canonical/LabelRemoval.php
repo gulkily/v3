@@ -30,6 +30,7 @@ final class LabelRemoval
     {
         $path = self::path($sourceId);
         if (!is_file($root . '/' . $path)) return null;
+        if (is_link($root . '/' . $path) || filesize($root . '/' . $path) > 1048576) throw new RuntimeException('Unsafe removal evidence: ' . $path);
         $bytes = (string) file_get_contents($root . '/' . $path);
         $record = json_decode($bytes, true, 32, JSON_THROW_ON_ERROR);
         if (!is_array($record) || ($record['source_id'] ?? null) !== $sourceId
@@ -95,7 +96,7 @@ final class LabelRemoval
             $post = (new PostRecordParser())->parse(preg_replace('/\n/', "\nCreated-At: {$date}\n", $bytes, 1));
         }
         if ($post->postId !== $id || RetractedPosts::isAuthorityPost($post)) throw new RuntimeException('Protected or mismatched source post.');
-        $proven = []; $unresolved = [];
+        $proven = []; $unresolved = []; $candidates = [];
         $repository = new CanonicalRecordRepository($root);
         foreach (glob($root . '/records/thread-labels/*.txt') ?: [] as $path) {
             $relative = 'records/thread-labels/' . basename($path);
@@ -104,9 +105,16 @@ final class LabelRemoval
             if ($label->sourcePostId === $id && hash_equals($label->sourcePostSha256 ?? '', hash('sha256', $bytes))
                 && $label->authorIdentityId === $post->authorIdentityId) {
                 $proven[$relative] = hash_file('sha256', $path);
-            } elseif ($label->sourcePostId === null) $unresolved[] = $relative;
+            } elseif ($label->sourcePostId === $id || ($label->sourcePostId === null
+                && $label->authorIdentityId === $post->authorIdentityId
+                && preg_match('/(?:^|[^A-Za-z0-9-])#(?:' . implode('|', array_map(static fn (string $tag): string => preg_quote($tag, '/'), $label->labels)) . ')(?:$|[^A-Za-z0-9-])/m', $post->body))) {
+                $candidates[] = $relative;
+            }
+            if ($label->sourcePostId === null || ($label->sourcePostId === $id && !isset($proven[$relative]))) $unresolved[] = $relative;
         }
-        return ['source_path' => $sourcePath, 'source_hash' => hash('sha256', $bytes), 'post' => $post, 'proven' => $proven, 'unresolved' => $unresolved];
+        $accepted = self::read($root, $id);
+        $unresolved = array_values(array_diff($unresolved, array_keys($accepted['labels'] ?? [])));
+        return ['source_path' => $sourcePath, 'source_hash' => hash('sha256', $bytes), 'post' => $post, 'proven' => $proven, 'unresolved' => $unresolved, 'review_candidates' => array_values(array_diff($candidates, array_keys($accepted['labels'] ?? [])))];
     }
     /** Prepare bytes before mutation; caller commits only these paths under its write lock. */
     public static function prepare(string $root, string $id, string $operation, array $explicitLabelIds = []): array
@@ -145,6 +153,13 @@ final class LabelRemoval
                 || !rename($temporary, $root . '/' . $relative)) throw new RuntimeException('Cannot persist removal evidence.');
         } finally { if (is_file($temporary)) unlink($temporary); }
         return $relative;
+    }
+
+    public static function generation(string $root): string
+    {
+        $records = self::all($root);
+        ksort($records);
+        return hash('sha256', json_encode($records, JSON_THROW_ON_ERROR));
     }
 
 }

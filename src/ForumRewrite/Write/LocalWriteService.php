@@ -858,12 +858,18 @@ class LocalWriteService
             catch (\Throwable) { $cleanupStatus = 'failed'; }
         }
 
+        $labelCleanup = [];
+        try { $labelCleanup = \ForumRewrite\Canonical\LabelRemoval::inspect($this->repositoryRoot, $postId)['review_candidates']; }
+        catch (\Throwable) { $labelCleanup = ['Ownership inspection unavailable; operator review required.']; }
+
         $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
 
         return [
             'status' => 'ok',
             'retraction_status' => $failedStep === null ? 'complete' : 'partial',
             'cleanup_status' => $cleanupStatus,
+            'label_cleanup_status' => $labelCleanup === [] ? 'complete' : 'unresolved',
+            'unresolved_label_records' => $labelCleanup,
             'failed_step' => $failedStep,
             'already_retracted' => $alreadyRetracted,
             'post_id' => $postId,
@@ -3129,6 +3135,7 @@ class LocalWriteService
 
     private function postTargetExists(string $postId): bool
     {
+        if ((\ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete') return true;
         foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
             if (is_file($this->repositoryRoot . '/' . $candidate) || is_file($this->repositoryRoot . '/' . $candidate . '.asc')) {
                 return true;

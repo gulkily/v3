@@ -1298,6 +1298,7 @@
       alreadyRetracted: data.already_retracted === true,
       retractionStatus: data.retraction_status || "",
       cleanupStatus: data.cleanup_status || "",
+      labelCleanupStatus: data.label_cleanup_status || "",
       failedStep: data.failed_step || "",
       commitSha: data.commit_sha || "",
       serverTiming: serverTiming || {},
