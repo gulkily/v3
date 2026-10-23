@@ -49,15 +49,13 @@ final class PublicMarkdownRenderer
             }
         };
 
-        $flushTable = static function () use (&$html, &$tableLines): void {
+        $flushTable = static function () use (&$html, &$tableLines, $sourcePath, $projectRoot): void {
             if ($tableLines !== []) {
-                // Readable source fallback, not an implementation of Markdown tables.
-                $html[] = '<pre class="docs-table-source" tabindex="0" role="region" aria-label="Table source"><code>'
-                    . self::escape(implode("\n", $tableLines)) . '</code></pre>';
+                $html[] = self::table($tableLines, $sourcePath, $projectRoot);
                 $tableLines = [];
             }
         };
-        foreach ($lines as $line) {
+        foreach ($lines as $lineNumber => $line) {
             if (preg_match('/^\s*```([^`]*)$/', $line, $fence) === 1) {
                 $flushParagraph();
                 $flushList();
@@ -97,7 +95,11 @@ final class PublicMarkdownRenderer
                 $html[] = '<p>' . self::escape(html_entity_decode($alt[2], ENT_QUOTES | ENT_HTML5, 'UTF-8') . ' (image unavailable)') . '</p>';
                 continue;
             }
-            if (str_starts_with(ltrim($line), '|')) {
+            $nextLine = $lines[$lineNumber + 1] ?? '';
+            $continuesTable = $tableLines !== [] && str_contains($line, '|');
+            $startsTable = str_starts_with(ltrim($line), '|')
+                || (str_contains($line, '|') && preg_match('/^[ \t|:\-]+$/', $nextLine) === 1 && str_contains($nextLine, '|'));
+            if ($continuesTable || $startsTable) {
                 $flushParagraph(); $flushList();
                 $tableLines[] = $line;
                 continue;
@@ -173,6 +175,36 @@ final class PublicMarkdownRenderer
         }
 
         return $metadata . implode("\n", $html);
+    }
+
+    private static function table(array $lines, ?string $sourcePath, string $projectRoot): string
+    {
+        $fallback = static fn (): string => '<pre class="docs-table-source" tabindex="0" role="region" aria-label="Table source"><code>'
+            . self::escape(implode("\n", $lines)) . '</code></pre>';
+        $rows = array_map(static fn (string $line): array => array_map('trim', explode('|', trim(trim($line), '|'))), $lines);
+        if (count($rows) < 2 || count($rows[0]) < 2 || count($rows[1]) !== count($rows[0])) { return $fallback(); }
+        $alignments = [];
+        foreach ($rows[1] as $cell) {
+            if (preg_match('/^:?-{3,}:?$/', $cell) !== 1) { return $fallback(); }
+            $alignments[] = str_starts_with($cell, ':') ? (str_ends_with($cell, ':') ? 'center' : 'left')
+                : (str_ends_with($cell, ':') ? 'right' : null);
+        }
+        foreach ($rows as $row) {
+            if (count($row) !== count($rows[0])) { return $fallback(); }
+        }
+        $renderRow = static function (array $row, string $tag) use ($alignments, $sourcePath, $projectRoot): string {
+            $html = '<tr>';
+            foreach ($row as $i => $cell) {
+                $html .= '<' . $tag . ($tag === 'th' ? ' scope="col"' : '')
+                    . ($alignments[$i] === null ? '' : ' class="docs-align-' . $alignments[$i] . '"') . '>'
+                    . self::inline($cell, $sourcePath, $projectRoot) . '</' . $tag . '>';
+            }
+            return $html . '</tr>';
+        };
+        $html = '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table"><table><thead>'
+            . $renderRow($rows[0], 'th') . '</thead><tbody>';
+        foreach (array_slice($rows, 2) as $row) { $html .= $renderRow($row, 'td'); }
+        return $html . '</tbody></table></div>';
     }
 
     private static function codeBlock(array $lines, string $language): string
