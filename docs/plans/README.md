@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Retraction effects and source-owned label cleanup](retraction_effects/)
+
 - [High-traffic mode](high_traffic_mode/)
 
 - [Reply composer focus and layout](reply_composer_focus_layout/)
