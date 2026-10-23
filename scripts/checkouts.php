@@ -20,12 +20,14 @@ Options:
   --role=development|test|server  Role for add; defaults to development
   --registry=/path/file.json     Shared registry (default: XDG_CONFIG_HOME/v3/checkouts.json)
   --state-dir=/path              Private state (default: XDG_STATE_HOME/v3/checkouts)
-  --path=/checkout               Preview one registered path (required for test/server roles)
+  --path=/checkout               Select a path for overview/refresh/preview (required for test/server)
   --sessions-paused              Assert coding/server sessions are coordinated for apply
   --no-refresh                   Read cached overview without scheduling a worker
   --json                         Machine-readable output
 Exit: 0 completed; 1 command/config error; 2 attention or partial results.
 Defaults: ~/.config/v3/checkouts.json and ~/.local/state/v3/checkouts.
+Default is cached; observations refresh in the background after 30s.
+Use refresh to retry/diagnose, preview for a fresh apply plan.
 Coordinate active sessions before apply. Preview fetches refs; other branches stay untouched.
 HELP;
 

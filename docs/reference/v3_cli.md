@@ -200,13 +200,63 @@ Use this from an IntelliJ terminal in any checkout containing the command:
 ./v3 checkouts add /home/wsl/agent/v3-codex
 ./v3 checkouts list
 ./v3 checkouts
+./v3 checkouts preview
 ./v3 checkouts apply <preview-id> --sessions-paused
 ```
 
-`./v3 checkouts` defaults to preview: one line per checkout with branch, action
-and a compact recovery hint where needed. `preview` remains an explicit alias;
-`list` lists registration without fetching. JSON retains complete reasons/source
-metadata.
+`./v3 checkouts` (or `overview`) immediately displays cached observations in
+aligned CHECKOUT / BRANCH / ACTION / HINT columns. The default does not inspect
+Git in the foreground or wait on a running refresh/apply lock. The footer shows
+observation age and refresh state. Branch/action labels describe the last
+observation; they do not establish the checkout's live state or permission to
+apply. First use, changed registration or invalid cache shows `unchecked` rows
+while refresh is scheduled. No apply ID or command comes from cached output.
+
+Background refresh is scheduled when no matching cache exists or its latest
+attempt is at least 30 seconds old. Repeated calls coalesce into one worker, with
+up to three fetches across independent Git stores. Fetch children never write
+history evidence; the existing manager lock protects coordinator classification
+and publication. Observations publish atomically only for the same registry and
+selection. Fresh `preview` also warms the matching observation cache; an attempted
+apply invalidates affected cached rows. Test/server exclusions still apply.
+
+States include `queued`, `running`, `fresh`, `busy`, `deferred` and `failed`.
+A manager/apply lock can defer a worker; cached output stays available. A queued
+worker that never starts becomes a visible failure after 10 seconds; failed or
+deferred launch attempts use a short retry cooldown. To fetch and diagnose now:
+
+```bash
+./v3 checkouts refresh
+./v3 checkouts --no-refresh --json
+```
+
+`refresh` waits for fresh observations but does not create an apply ID. On an
+offline/failed observation, retain the previous good row and its original timestamp
+with `last_error`/`error_at`; a stale-error hint and failure state distinguish it
+from a successful new observation. A cold failure shows `unavailable`. Correct
+access/state permissions and retry `refresh`; when another command owns the manager
+lock, retry once it finishes. `--no-refresh` deliberately reads cache without
+scheduling a worker. Neither this command nor background refresh moves branches.
+
+Detached background refresh needs `nohup` and CLI PHP's POSIX/pcntl support.
+If unavailable, cached output reports failure and `refresh` remains the synchronous
+recovery route. Worker lifetime is bounded to 120 seconds, each Git child to
+30 seconds; handled cancellation terminates its isolated process group. An
+uncatchable kill may still require process/Git inspection. Worker status is a
+bounded private file, output is detached from the terminal, and only a small
+bounded set of observation-cache generations is retained. Do not clear history
+evidence to force freshness.
+
+`preview` deliberately waits for fresh source inspection and creates a signed
+update plan, so it can still take several seconds. Then pause coding/server
+sessions before `apply`. Cached overview's subsecond target is measured locally;
+network-complete preview has no subsecond promise. `list` remains registry-only.
+
+Rows use unique short path suffixes; full paths/reasons remain in JSON. `COLUMNS`
+controls width (80-column fallback, bounded 20–240); narrow terminals omit HINT
+and abbreviate values with an explicit full-details hint. Control characters are
+sanitized in human output. For abbreviated apply recovery, the printed result-file
+path preserves the complete resolve/abort instructions without replaying an apply.
 
 Register only directories you want to update. `add` validates the existing clone
 and records its absolute root, Git storage identity, expected remote source,
@@ -274,7 +324,8 @@ prove child hooks have stopped or undo changes. Interrupted/attempted preview ID
 cannot be replayed. Inspect the private `<id>.result.json` and Git status, then
 create a new preview. No automatic rollback or whole-batch atomicity is promised.
 
-`--json` returns the same dispositions and per-folder reasons as human output.
+`--json` keeps full paths/reasons, per-row observation timestamps and refresh
+metadata; human output abbreviates for terminal width.
 Exit **0** means completion without attention, **1** means command/configuration
 failure, and **2** means partial results or attention required; inspect every row.
 These results cover selected **checked-out branches**, not every local branch,

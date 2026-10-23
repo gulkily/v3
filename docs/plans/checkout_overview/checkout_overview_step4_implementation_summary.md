@@ -33,3 +33,9 @@ Effort study: `railspike-effort / v3/checkout_overview`; [ledger](../effort_esti
 - Changes: fresh preview populates observations but signs only its fresh raw results; failed inspection cannot promote retained cached rows to apply authority. Apply invalidates affected observations before branch mutation. Empty setup guidance, relative local override normalization and ownership-token checks cover all worker state/history/cache writes; a lost worker cannot overwrite newer status.
 - Verification: complete 50-case checkout suite passed before the additional ownership fixture; 6 targeted integration checks passed afterward, then 2 cancellation/lost-token checks passed with stronger no-history-write assertion. Covered preview/cache authority separation, update invalidation, cached reads under apply lock, offline recovery and relative worker paths.
 - Notes: Stage 4 `5bba5d22d`. Source observations remain explicitly cached; no subsecond guarantee is made for fresh preview.
+
+## Stage 6 - CLI documentation and operator checks
+
+- Changes: help/reference distinguish cached default, 30s background policy, fresh preview authority, synchronous refresh and cache-only JSON diagnosis. Document columns/width, observation ages/errors, launch/busy recovery, worker/child limits and optional POSIX/pcntl/nohup requirements. Top-level help includes overview/refresh.
+- Verification: 3 documented-flow/help tests passed from two project directories; 19/19 existing StatusCommand/RailspikeSync PHP checks passed. Relevant syntax/diff checks passed.
+- Notes: Stage 5 `4d023bfe6`; performance samples and full final acceptance follow Stage 7. Network-complete preview still has no subsecond guarantee.

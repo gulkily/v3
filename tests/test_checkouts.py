@@ -768,6 +768,18 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual('newer status marker', json.loads(status_path.read_text())['reason'])
         self.assertEqual([], list(self.state.glob('history-*.json')))
 
+    def test_overview_help_and_documented_refresh_commands(self):
+        self.add()
+        help_text = self.cli('--help', raw=True)
+        self.assertIn('Default is cached', help_text)
+        self.assertIn('30s', help_text)
+        self.assertIn('--no-refresh', help_text)
+        self.cli('refresh', cwd=self.up)
+        result = self.cli('--no-refresh', cwd=self.clone)
+        self.assertEqual('current', result['checkouts'][0]['action'])
+        self.assertNotIn('preview_id', result)
+        self.cli('refresh', '--no-refresh', code=1)
+
 
 if __name__ == '__main__':
     unittest.main()
