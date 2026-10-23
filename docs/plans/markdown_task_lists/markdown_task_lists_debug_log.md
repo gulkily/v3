@@ -88,3 +88,32 @@ Native disabled contrast and label/link interaction still need real browser evid
 ### Study checkpoint
 
 Stable `v3/markdown_task_lists`, v1 clarified/R1/P2, baseline `682ab5b40179624b86b9c53ad3fd7dba98ccec69`, Codex single exposed rater. Intake/Steps 1–2 0.35 retained; Step 3 **0.35 total reaffirmed** after accounting for four stages including all theme/accessibility/corpus/dynamic-static/copied-publication recovery and documentation. Four planned/zero completed implementation stages. Exact R1 report/diff and feedback from `4f6cfe2b436fae8d939b1349fe724a3879ee0a0e` hashes reverified. The separately requested todo-only commit is not an implementation or accepted study outcome, does not change the application baseline or authorize a counter, and does not expand the projection. No measured labor, independent rating, retrospective completion score, acceptance or accepted-count change.
+
+## Step 4 complete — 2026-10-23T18:28:43.517810+00:00
+
+Debug mode remains enabled, inherited from approved Step 3. Branch `feature/markdown-task-lists`, planning `2dc733152`, stages `a6d2591b6`, `214612173`, `c908ec4aa`, `42178d76c`. Four planned/four completed stages; technical local result complete. Maintainer acceptance, full suite, deployment and physical assistive-technology/devices remain unverified.
+
+### Necessary/useful instructions
+
+- Step 4 Before planning gate: organized approved plans/debug log and index before code, excluding metrics/substantive ledger/summary until stage work. Reconciled newer main while preserving the explicitly requested todo counter note and unrelated untracked research. Retain.
+- Step 4 Do stage gates: each stage has verification and its summary in a separate commit before dependent work. Parsing/naming boundaries preceded browser/contrast, actual publication/recovery and corpus acceptance. Retain.
+- Completion Contract and CONTRIBUTING UI verification: real named checkbox role/state, pointer/Space immutability, Tab skipping, task links, source download equality and four-theme phone screenshots verify presentation instead of inferring usability from source strings. Retain.
+- Stable publication snapshots: isolated source/docs/tests prevented unrelated research edits from invalidating active inventory builds; source hashes establish the tested renderer/CSS match this checkout. Full/shared CLI publication, 503 injection, active-release retention and restoration passed. Retain.
+- Corpus and study contracts: all 47 measured task documents independently account for checked/unchecked candidates; 1,109 native displays plus 73 source candidates. Native semantics and parsed labels are distinguished from actual browser checks and unperformed physical AT review. Entry/projected 0.35 is retained separately from retrospective 0.40 and unknown maintainer fit. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings. The complete static inventory check takes several minutes but covers catalog/download/browse behavior beyond fast renderer fixtures; elapsed test duration is not measured labor or evidence of redundancy.
+
+### Inapplicable instructions
+
+No new component/dependency, ordered-task extension, counter implementation, wider-column expansion, schema/navigation destination change, source rewrite, merge/push, production activation or recovery-storage disposal. Existing aria region labels and native task names add no visible explanatory legend. Full-suite and physical AT/device acceptance were not claimed.
+
+### Uncertain assessments and corrections
+
+- Browse selector initially matched hidden recovery links; narrowed to the visible named Browse all link.
+- Pointer checks initially waited for element stability during Space-driven page scrolling; instant positioning plus real pointer/key attempts removed the harness ambiguity, then the full matrix passed. No production workaround was introduced.
+- Native disabled visual styling remains platform-dependent. Checked/unchecked distinction was inspected in all affected phone themes and desktop samples; no general contrast certification or physical screen-reader claim.
+- Corpus classification is structural and source/state accounting, not exhaustive individual screenshot review. Future ordered/malformed/empty/source-only forms retain the approved literal boundary.
+
+No new feature request or split. Counter remains only the separately authorized todo note `ee0f5b173`, unchanged. Unrelated research hashes remain unchanged; no research artifacts were committed. Exact frozen R1 sources reverified at closeout, same exposed single rater; no independent rating, measured labor, acceptance or accepted-count increment.
