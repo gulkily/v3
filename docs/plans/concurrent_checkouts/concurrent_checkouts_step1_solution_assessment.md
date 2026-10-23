@@ -2,13 +2,69 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort / v3/concurrent_checkouts`; standing [P2 enrollment](./effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2).
+Effort study: `railspike-effort / v3/concurrent_checkouts`; standing [P2 enrollment](../effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2).
 
 ## Original Query
 
 We're running what seems like 7–8 local copies of this repo just so that we can work on stuff concurrently. It's starting to get hard to track. How can we make this easier? I've found workspaces to be confusing in the past.
 
 Clarification: “Worktree is what I meant as confusing.”
+
+## Current Assessment — Scope v4
+
+This assessment supersedes v1–v3 recommendations below; earlier scope and study snapshots are retained as history.
+
+### Problem
+
+Repeatedly bringing independent clones up to date interrupts work in persistent IntelliJ projects; the current branch identifies the task but needs to appear in the operating-system window title.
+
+### Option D: Preview and apply routine updates (recommended)
+
+Keep existing trusted directory paths and IntelliJ sessions. One operator command fetches approved sources, previews each registered checkout's disposition, and explicitly applies eligible updates: fast-forward main and merge fetched main into eligible feature branches.
+
+- Pros: Removes repeated synchronization steps while retaining the user's preferred interface and branch history.
+- Cons: Merges can conflict; active sessions require coordination, and rewritten history must use a separate migration workflow.
+
+### Option E: Fetch and report only
+
+Fetch approved sources and report which checkouts need attention, leaving checked-out branches unchanged.
+
+- Pros: Useful inventory without changing files beneath an active session.
+- Cons: Leaves branch updates as a recurring manual chore.
+
+### Recommendation and First Slice
+
+Choose Option D: explicit checkout registry → fetch and preview → apply → per-checkout outcome and recovery. Use concise default output and JSON; decide exact CLI placement and preview/fetch semantics in later planning. Preview must identify its fetched source revision: fetching changes remote-tracking refs even when checked-out files stay unchanged. Revalidate source, branch, HEAD and working state before applying; changed conditions invalidate that checkout's preview.
+
+- Register directory, expected repository/source, update target and role explicitly. Similar names do not establish eligibility; test/server instances require deliberate inclusion. Linked worktrees share Git storage and must not be processed as independent clones.
+- Report actionable dispositions: fast-forward, merge, already current, locally ahead, dirty/skipped, operation in progress, source unavailable/mismatched, history migration required, or excluded. Preserve local-only commits; a locally ahead branch is not an invitation to reset it.
+- Skip tracked/untracked work and existing Git operations; do not auto-stash. Coordinate with agents and servers before applying: a clean tree does not prove inactivity. Conflicts stop updates in that folder and expose resolution/abort recovery; other independent eligible folders may proceed.
+- Detect rewritten upstream history before ordinary merges. If history is rewritten or the relationship is uncertain, report migration required rather than merging old ancestry back. Fetch transitions matter: rewritten commits can still share an older ancestor, so shared ancestry alone is insufficient. Already-fetched rewrites also need reconciliation evidence; branch divergence alone is not proof of a rewrite.
+- Scope updates to the explicitly selected checked-out branch. Report untouched branches, stashes and linked worktrees; never describe this as full repository migration or historical erasure.
+
+Verify the first slice with real Git repositories covering fast-forward, locally ahead/diverged branches, dirty/untracked files, conflicts, interrupted operations, rewritten and already-fetched upstream histories, source mismatch, changed previews and linked-worktree deduplication. No push, reset, rebase, branch switching, clone creation/deletion, automatic history migration or IDE/trust changes. Branch-title plugin guidance for IntelliJ 2023.3.6 is a separate usability aid; installation and window-switcher behavior remain unverified. Colors and a separate task table are optional, not required deliverables.
+
+### Separate Recovery Workflow: Rewritten History
+
+The one-off trial needed an explicitly authorized migration rather than routine synchronization. Before such a migration: take a fresh inventory, account for local work/refs/stashes/detached worktrees, verify reviewed old-to-new commit mappings and source, create and verify private recovery bundles, recheck cleanliness, and limit branch movement to the authorized copies. Never infer that a clean tree means all work is published. Resetting branches, reconciling other refs/worktrees and deleting old objects are distinct scopes; recovery snapshots preserve old history and must remain private. Follow the [existing rewrite migration instructions](../markdown_dependency_removal/history_rewrite_clone_sync.md). This future command detects and hands off this case; it does not automate migration.
+
+### Trial Evidence and Limits
+
+The authorized manual trial fetched eight GitHub-connected checkouts. Five clean checked-out main branches (`/home/wsl/v3`, plus `v3-claude`, `v3-codex-2`, `v3-codex-3`, `v3-codex-4` under `/home/wsl/agent`) were migrated to `1a358bc9` using verified rewrite mappings and verified recovery bundles; each was clean afterward. `/home/wsl/agent/v3-codex` already contained current main on its rewrite branch. Dirty `/home/wsl/agent/v3-claude-2` and `/home/wsl/v3-test-kris` were left untouched. `/home/wsl/v3-test` had no GitHub remote and was a separate project. Other local branches, stashes and linked worktrees were preserved and remain unreconciled; old branches must be reviewed before reuse.
+
+Private local evidence: `/home/wsl/.local/state/v3-checkout-sync/20261023T074112Z/manifest.json`, per-clone refs/worktree/stash inventories and verified `before.bundle` files. The migration checked mapped-tree changes were confined to the reviewed Markdown removal and mapped heads were ancestors of the target. This established branch alignment and clean working trees, not application/runtime acceptance, complete-history cleanup, or validation of an implemented sync command. No reusable command has been implemented.
+
+### Request Disposition and Study Checkpoint
+
+Request: incorporate lessons from manual synchronization / Disposition: refine the current assessment to routine updates with separate migration recovery / Approval: documentation update authorized; Step 1 advancement and implementation unapproved / Outcome: v4 replaces earlier recommendations, retaining original query and snapshots.
+
+2026-10-23T07:44:54+00:00; stable cycle `v3/concurrent_checkouts`, scope v4, R1/P2, Codex single exposed rater. Original recorded baseline remains `19f1066aac81fe417d88a10efa9c756125199af5`; this checkout now uses rewritten target `1a358bc9be3cdb725277c792625a678e7bc85436`. Manual migration was separately authorized operational work, not completion of the proposed automated slice or a new accepted study outcome. Scope now explicitly excludes automated rewrite migration and requires detection/recovery handoff and precise completion reporting. Preserve prior missing-estimate checkpoints; numeric projected total remains unavailable pending exact frozen feedback recovery recorded in v2. No measured active effort or maintainer acceptance claimed.
+
+**Approved Step 1 (scope v4)** received from the user; recorded 2026-10-23T08:18:05+00:00. Proceed to Step 2; implementation remains unapproved.
+
+## Historical Assessments — v1–v3
+
+The following records preserve prior recommendations and approval context; the current v4 assessment above governs this proposal.
 
 ## Problem Statement
 

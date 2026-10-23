@@ -26,21 +26,23 @@ try {
         await page.evaluate(theme => (document.getElementById('theme-stylesheet')?.remove(), document.documentElement.setAttribute('data-theme', theme)), theme);
         await page.evaluate(css => { const style = document.createElement('style'); style.textContent = css; document.head.append(style); }, await readFile('public/assets/theme-' + theme + '.css', 'utf8'));
       }
-      assert.equal(await page.locator('.docs-content table').count(), 0);
-      assert.equal(await page.locator('.docs-table-source').count(), 4);
-      assert.equal(await page.locator('.docs-content ol').count(), 6);
-      assert.deepEqual(await page.locator('.docs-content ol').evaluateAll(nodes => nodes.map(e => e.start)), [1, 2, 3, 4, 5, 6]);
+      assert.equal(await page.locator('.docs-content table').count(), 4);
+      assert.equal(await page.locator('.docs-table-source').count(), 0);
+      assert.equal(await page.locator('.docs-content ol').count(), 1);
+      assert.deepEqual(await page.locator('.docs-content ol > li').evaluateAll(nodes => nodes.map(e => e.value)), [1, 2, 3, 4, 5, 6]);
+      assert.ok((await page.locator('.docs-content ol > li > p').first().innerText()).includes('retraction record, signs it'));
       assert.equal(await page.locator('.docs-content ol > li').count(), 6);
       assert.ok(await page.locator('.docs-content strong').count() > 0);
       const dimensions = await page.evaluate(() => ({
         width: innerWidth,
         scroll: document.documentElement.scrollWidth,
-        tables: [...document.querySelectorAll('.docs-table-source')].map(e => ({ client: e.clientWidth, scroll: e.scrollWidth })),
+        tables: [...document.querySelectorAll('.docs-table-scroll')].map(e => ({ client: e.clientWidth, scroll: e.scrollWidth })),
       }));
       assert.ok(dimensions.scroll <= width + 1, JSON.stringify({ width, theme, dimensions }));
-      const region = page.locator('.docs-table-source').first();
+      const region = page.locator('.docs-table-scroll').first();
       await region.focus();
       assert.equal(await region.evaluate(e => document.activeElement === e), true);
+      assert.equal(await region.evaluate(e => getComputedStyle(e).outlineStyle), 'solid');
       if (width === 390) {
         await page.keyboard.press('ArrowRight');
         await page.waitForTimeout(200);
@@ -62,7 +64,7 @@ try {
       let tabReachedRegion = false;
       for (let n = 0; n < 90; n++) {
         await page.keyboard.press('Tab');
-        if (await page.evaluate(() => document.activeElement?.matches('.docs-table-source, .docs-content pre[aria-label="Code"]'))) {
+        if (await page.evaluate(() => document.activeElement?.matches('.docs-table-scroll, .docs-content pre[aria-label="Code"]'))) {
           tabReachedRegion = true;
           break;
         }
@@ -78,7 +80,84 @@ try {
       assert.equal(await page.locator('#delete-a-canonical-record').count(), 1);
       assert.ok(await page.locator('#delete-a-canonical-record').evaluate(e => Math.abs(e.getBoundingClientRect().top) < 180));
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'CLI overflow');
-      evidence.push({ width, theme, javaScript: false, tables: 0, tableSources: 4, procedureItems: 6, keyboard: 'passed', cliFragment: 'passed', dimensions });
+      let fixture = null;
+      if (process.env.DOCS_TABLE_FIXTURE_PATH) {
+        await page.goto(base + process.env.DOCS_TABLE_FIXTURE_PATH);
+        if (theme !== 'default') {
+          await page.evaluate(theme => (document.getElementById('theme-stylesheet')?.remove(), document.documentElement.setAttribute('data-theme', theme)), theme);
+          await page.evaluate(css => { const style = document.createElement('style'); style.textContent = css; document.head.append(style); }, await readFile('public/assets/theme-' + theme + '.css', 'utf8'));
+        }
+        assert.deepEqual(await page.locator('table th').evaluateAll(nodes => nodes.slice(0, 3).map(e => getComputedStyle(e).textAlign)), ['left', 'center', 'right']);
+        assert.ok(await page.locator('table th').first().evaluate(e => e.clientWidth >= 100 && e.clientHeight < 80), 'Columns remain readable beside long code');
+        assert.equal(await page.locator('.docs-table-source').count(), 1);
+        assert.ok((await page.locator('table').innerText()).includes('a|b'));
+        assert.ok((await page.locator('table code').first().innerText()).includes('c|d'));
+        assert.equal(await page.locator('table img, table script').count(), 0);
+        assert.ok(await page.locator('table a[href="/docs/reference/v3_cli.md#delete-a-canonical-record"]').count());
+        fixture = await page.evaluate(() => ({width: innerWidth, scroll: document.documentElement.scrollWidth, alignment: [...document.querySelectorAll('table th')].map(e => getComputedStyle(e).textAlign)}));
+        assert.ok(fixture.scroll <= width + 1);
+        await page.screenshot({path: output + '/fixture-' + theme + '-' + width + '.png', fullPage: true});
+        await page.locator('table a[href="/docs/reference/v3_cli.md#delete-a-canonical-record"]').click();
+        assert.ok(page.url().endsWith('/docs/reference/v3_cli.md#delete-a-canonical-record'));
+        assert.equal(await page.locator('#delete-a-canonical-record').count(), 1);
+        fixture.cellLinkNavigation = 'passed';
+      }
+      let listFixture = null;
+      if (process.env.DOCS_LIST_FIXTURE_PATH) {
+        await page.goto(base + process.env.DOCS_LIST_FIXTURE_PATH);
+        if (theme !== 'default') {
+          await page.evaluate(theme => (document.getElementById('theme-stylesheet')?.remove(), document.documentElement.setAttribute('data-theme', theme)), theme);
+          await page.evaluate(css => { const style = document.createElement('style'); style.textContent = css; document.head.append(style); }, await readFile('public/assets/theme-' + theme + '.css', 'utf8'));
+        }
+        const rootList = page.locator('.docs-content > ol').first();
+        assert.deepEqual(await rootList.locator(':scope > li').evaluateAll(nodes => nodes.map(e => e.value)), [3, 3, 8]);
+        assert.equal(await rootList.locator(':scope > li').first().locator(':scope > ul').count(), 1);
+        assert.ok((await rootList.locator(':scope > li').first().innerText()).includes('Parent paragraph after children.'));
+        assert.equal(await page.locator('.docs-list-source').count(), 2);
+        assert.equal(await page.locator('.docs-list-scroll').count(), 1);
+        assert.equal(await page.locator('.docs-content table').count(), 1);
+        const deep = page.locator('.docs-list-scroll');
+        assert.equal(await deep.locator('a').evaluate(e => { let n = 0; for (let p = e.parentElement; p; p = p.parentElement) { if (p.tagName === 'UL') n++; } return n; }), 8);
+        assert.ok(await deep.locator('li p').last().evaluate(e => e.clientWidth > 120));
+        await page.locator('[data-docs-return]').focus();
+        let reached = false;
+        for (let n = 0; n < 100; n++) {
+          await page.keyboard.press('Tab');
+          if (await page.evaluate(() => document.activeElement?.matches('.docs-list-scroll'))) { reached = true; break; }
+        }
+        assert.ok(reached, 'Tab reaches the deep-list region');
+        assert.equal(await deep.evaluate(e => getComputedStyle(e).outlineStyle), 'solid');
+        if (width === 390) {
+          await page.keyboard.press('ArrowRight');
+          await page.waitForTimeout(200);
+          assert.ok(await deep.evaluate(e => e.scrollLeft > 0));
+        }
+        let reachedSource = false;
+        for (let n = 0; n < 100; n++) {
+          await page.keyboard.press('Tab');
+          if (await page.evaluate(() => document.activeElement?.matches('.docs-list-source'))) { reachedSource = true; break; }
+        }
+        assert.ok(reachedSource, 'Tab reaches list-source recovery');
+        const fallback = page.locator('.docs-list-source').last();
+        await fallback.focus();
+        assert.equal(await fallback.evaluate(e => getComputedStyle(e).outlineStyle), 'solid');
+        assert.ok((await fallback.innerText()).includes('<!--example comment-->'));
+        if (width === 390) {
+          await page.keyboard.press('ArrowRight');
+          await page.waitForTimeout(200);
+          assert.ok(await fallback.evaluate(e => e.scrollLeft > 0));
+        }
+        await deep.evaluate(e => e.scrollLeft = 0);
+        await fallback.evaluate(e => e.scrollLeft = 0);
+        listFixture = await page.evaluate(() => ({width: innerWidth, scroll: document.documentElement.scrollWidth, deepWidth: document.querySelector('.docs-list-scroll li p')?.clientWidth}));
+        assert.ok(listFixture.scroll <= width + 1);
+        await page.screenshot({path: output + '/lists-' + theme + '-' + width + '.png', fullPage: true});
+        await rootList.locator('a[href="/docs/reference/v3_cli.md#delete-a-canonical-record"]').click();
+        assert.ok(page.url().endsWith('/docs/reference/v3_cli.md#delete-a-canonical-record'));
+        assert.equal(await page.locator('#delete-a-canonical-record').count(), 1);
+        listFixture.cellLinkNavigation = 'passed';
+      }
+      evidence.push({ width, theme, javaScript: false, tables: 4, tableSources: 0, procedureItems: 6, keyboard: 'passed', cliFragment: 'passed', dimensions, fixture, listFixture });
       await context.close();
     }
   }

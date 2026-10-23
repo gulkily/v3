@@ -4,26 +4,27 @@
   </article>
   <article class="card tool-launcher bookmarklets-page">
     <h1>Bookmarklets</h1>
-    <p class="bookmarklets-lead">Jump into Compose Thread from any page with its URL or your selected text already filled in.</p>
     <p class="bookmarklets-hint meta">Drag a button to your bookmarks bar, then click it while viewing another page.</p>
 <?php
 $bookmarkletSections = [
     [
         'heading' => 'Same window (for iPhone)',
         'mode' => 'same-window',
-        'note' => 'These replace the current page with Compose Thread. iPhone-compatible.',
+        'note' => '',
     ],
     [
         'heading' => 'New window (for anyone)',
         'mode' => 'new-window',
-        'note' => 'These open Compose Thread in a new window and may be affected by popup blockers. iPhone does not support this.',
+        'note' => 'Popup blockers may prevent opening a new window. iPhone does not support this.',
     ],
 ];
 ?>
 <?php foreach ($bookmarkletSections as $section): ?>
     <section class="bookmarklet-group">
     <h2><?= $e($section['heading']) ?></h2>
+<?php if ($section['note'] !== ''): ?>
     <p class="meta bookmarklet-group-note"><?= $e($section['note']) ?></p>
+<?php endif; ?>
     <ul class="tool-launcher-list">
 <?php foreach ($bookmarklets as $bookmarklet): ?>
 <?php if ($bookmarklet['mode'] !== $section['mode']) { continue; } ?>

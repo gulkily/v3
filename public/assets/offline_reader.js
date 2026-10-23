@@ -275,7 +275,7 @@
       navigation.appendChild(boardLink);
       header.appendChild(eyebrow);
       header.appendChild(heading);
-      header.appendChild(count);
+      if (group) header.appendChild(count);
       header.appendChild(navigation);
       options.content.appendChild(header);
       if (!group) {
@@ -431,7 +431,7 @@
       )[0];
       var rows = result && result.values ? result.values : [];
       if (!rows.length) {
-        options.setStatus("That thread is not included in this offline snapshot.", "error");
+        options.setStatus("This thread is not in the saved snapshot. Reconnect to read it online.", "error");
         if (options.onMissing) options.onMissing();
         return false;
       }
@@ -599,7 +599,7 @@
         return;
       }
       status.textContent = message;
-      status.hidden = state !== "error";
+      status.hidden = !message || (state !== "error" && state !== "outcome");
       if (state) {
         status.dataset.state = state;
       } else {
@@ -679,7 +679,7 @@
     function renderOfflineBoard(database) {
       root.dataset.offlineNavigation = "board";
       showOfflineMode();
-      setStatus("Showing saved board content offline.", "ok");
+      setStatus("", "ok");
       var boardPath = snapshotPresentation.boardPathFromPathname(window.location.pathname);
       var parameters = new URLSearchParams(window.location.search);
       var boardState = {
@@ -710,7 +710,7 @@
     function renderOfflineTagsIndex(database) {
       root.dataset.offlineNavigation = "tags";
       showOfflineMode();
-      setStatus("Showing saved tags offline.", "ok");
+      setStatus("", "ok");
       snapshotPresentation.renderTagsIndex({
         content: content,
         database: database,
@@ -720,31 +720,26 @@
     function renderOfflineTag(database, tag) {
       root.dataset.offlineNavigation = "tag";
       showOfflineMode();
-      setStatus("Showing saved #" + tag + " results offline.", "ok");
-      if (!snapshotPresentation.renderTagResult({ content: content, database: database, tag: tag })) {
-        setStatus("That tag is not included in this offline snapshot. Reconnect to browse live results.", "error");
-      }
+      setStatus("", "ok");
+      snapshotPresentation.renderTagResult({ content: content, database: database, tag: tag });
     }
 
     function renderOfflineThread(database, threadId) {
       root.dataset.offlineNavigation = "thread";
       showOfflineMode();
-      setStatus("Showing saved thread content offline.", "ok");
+      setStatus("", "ok");
       snapshotPresentation.renderThreadDetail({
         content: content,
         database: database,
         onMissing: function () {
           clearNode(content);
           content.hidden = false;
-          var unavailable = document.createElement("p");
-          unavailable.className = "meta";
-          unavailable.textContent = "This thread is not in the saved snapshot. Reconnect to read it online.";
-          content.appendChild(unavailable);
+
         },
         setStatus: setStatus,
         onQueueReaction: function (target, summary, payload) {
           return snapshotPresentation.queueSignedReaction(target, summary, payload).then(function () {
-            setStatus("Like queued. Open Tools → Outbox to review it.", "ok");
+            setStatus("Like queued. Open Tools → Outbox to review it.", "outcome");
           }).catch(function (error) {
             setStatus(error && error.message ? error.message : "Unable to queue Like.", "error");
             throw error;
@@ -757,7 +752,7 @@
     window.addEventListener("online", function () {
       if (!window.forumOutboxSender || typeof window.forumOutboxSender.processQueuedOutbox !== "function") return;
       window.forumOutboxSender.processQueuedOutbox().then(function (items) {
-        if (items.length) setStatus("Queued Outbox work was processed after reconnecting.", "ok");
+        if (items.length) setStatus("Queued Outbox work was processed after reconnecting.", "outcome");
       });
     });
 
@@ -796,7 +791,7 @@
           // A missing or invalid update must not prevent reading the saved base.
         }
         var generatedAt = metadataValue(database, "generated_at");
-        setStatus("Offline snapshot is ready.", "ok");
+        setStatus("", "ok");
         root.dispatchEvent(new CustomEvent("forum-offline-reader-ready", {
           detail: { database: database, generatedAt: generatedAt }
         }));

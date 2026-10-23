@@ -14,6 +14,7 @@
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
     if (pending) return;
+    status.hidden = false;
     var selected = Array.from(form.querySelectorAll('input:checked')).map(function (input) { return input.value; });
     if (!selected.length) { status.textContent = 'Enable at least one rubric.'; return; }
     pending = true;
@@ -27,7 +28,6 @@
       var signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
       await request('/api/finalize_fastmod_rubrics', { prepare_token: prepared.prepare_token,
         canonical_record: prepared.canonical_record, detached_signature: signature });
-      status.textContent = 'Saved.';
       window.location.reload();
     } catch (error) {
       status.textContent = error.message || 'Unable to save rubrics.';

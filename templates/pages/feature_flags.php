@@ -62,8 +62,8 @@ foreach ($flags as $flag) {
 <?php endif; ?>
             </div>
             <p class="feature-flag-description meta"><?= $e($definition->description) ?></p>
-<?php if (in_array($definition->key, ['FAST_SCORING_ENABLED', 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED', 'FASTMOD_AUTOMATIC_TAGGING_ENABLED'], true)): ?>
-            <p class="meta"><a href="/tools/fastmod/">Choose Fastmod rubrics and view their prompts</a>.</p>
+<?php if ($definition->key === 'FAST_SCORING_ENABLED'): ?>
+            <p class="meta"><a href="/tools/fastmod/">Fastmod</a></p>
 <?php endif; ?>
             <div class="feature-flag-meta meta">
               <code class="feature-flag-key"><?= $e($definition->key) ?></code>
@@ -104,7 +104,7 @@ foreach ($flags as $flag) {
                 aria-label="<?= $e($definition->label) ?>"
                 class="switch"
               ></button>
-              <div class="meta" data-role="feature-flag-status"></div>
+              <div class="meta" data-role="feature-flag-status" hidden></div>
             </form>
 <?php else: ?>
             <button
