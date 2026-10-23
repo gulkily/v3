@@ -164,3 +164,7 @@ No-JavaScript basic access — plan set aside
 	Plan: docs/plans/nojs_basic_access_step3_development_plan.md
 	Steps 1 and 2 approved; Step 3 draft, implementation not started.
 	Revalidate against current code before resuming plan review.
+
+Markdown checkbox counter
+	show an in-page checked/total count for Markdown checkboxes
+	deferred follow-up to read-only Docs task-list rendering
