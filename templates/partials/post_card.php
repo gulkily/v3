@@ -221,7 +221,7 @@ if (!is_array($postAnalysisLabels)) {
     <div class="stack">
       <p class="meta">Provider: <?= $e(($postAnalysis['provider'] ?? 'unknown') . ' / ' . ($postAnalysis['provider_model'] ?? 'unknown')) ?></p>
       <p><strong>Moderation:</strong> <?= $e($postAnalysisModeration['severity'] ?? 'unknown') ?><?= $postAnalysisLabels !== [] ? ' (' . $e(implode(', ', array_map('strval', $postAnalysisLabels))) . ')' : '' ?></p>
-<?php if (isset($postAnalysisModeration['recommended_action'])): ?>
+<?php if (!in_array(strtolower(trim((string) ($postAnalysisModeration['recommended_action'] ?? ''))), ['', 'none'], true)): ?>
       <p><strong>Recommended action:</strong> <?= $e($postAnalysisModeration['recommended_action']) ?></p>
 <?php endif; ?>
 <?php if (isset($postAnalysisModeration['summary']) && trim((string) $postAnalysisModeration['summary']) !== ''): ?>
@@ -242,7 +242,10 @@ if (!is_array($postAnalysisLabels)) {
 <?php if (isset($postAnalysisEngagement['suggested_response']) && trim((string) $postAnalysisEngagement['suggested_response']) !== ''): ?>
       <p><strong>Suggested response:</strong> <?= $e($postAnalysisEngagement['suggested_response']) ?></p>
 <?php endif; ?>
-<?php if ($postAnalysisUnicodeRisk !== []): ?>
+<?php if ($postAnalysisUnicodeLabels !== [] || $postAnalysisUnicodeCodePoints !== []
+    || ($postAnalysisUnicodeReview['review_priority'] ?? 'none') !== 'none'
+    || ($postAnalysisUnicodeReview['concerns'] ?? []) !== []
+    || !in_array(strtolower(trim((string) ($postAnalysisUnicodeReview['recommended_action'] ?? ''))), ['', 'none'], true)): ?>
       <p><strong>Unicode risk:</strong> <?= $e($postAnalysisUnicodeReview['review_priority'] ?? 'none') ?><?= $postAnalysisUnicodeLabels !== [] ? ' (' . $e(implode(', ', $postAnalysisUnicodeLabels)) . ')' : '' ?></p>
 <?php if ($postAnalysisUnicodeScripts !== []): ?>
       <p><strong>Unicode scripts:</strong> <?= $e(implode('; ', $postAnalysisUnicodeScripts)) ?></p>

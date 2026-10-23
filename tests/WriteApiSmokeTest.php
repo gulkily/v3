@@ -882,8 +882,11 @@ final class WriteApiSmokeTest
             assertStringContains('Respondability:', $approvedThreadPage);
             assertStringNotContains('<strong>Question:</strong>', $approvedThreadPage);
             assertStringContains('Response value:', $approvedThreadPage);
-            assertStringContains('Unicode risk:', $approvedThreadPage);
-            assertStringContains('Unicode scripts:', $approvedThreadPage);
+            assertStringNotContains('Unicode risk:', $approvedThreadPage);
+            assertStringNotContains('Unicode scripts:', $approvedThreadPage);
+            assertStringNotContains('Recommended action:', $approvedThreadPage);
+            assertStringNotContains('Unicode risk:', $approvedPostPage);
+            assertStringNotContains('Unicode scripts:', $approvedPostPage);
             assertStringContains('Suggested response:', $approvedThreadPage);
             assertFalse(is_dir($repositoryRoot . '/records/post-analyses'));
         } finally {
@@ -1061,6 +1064,11 @@ final class WriteApiSmokeTest
             assertSame('low', $llmReview['review_priority']);
             assertStringContains('Unicode risk:', $approvedPostPage);
             assertStringContains('confusable_identifier_like_text', $approvedPostPage);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $_COOKIE = [];
+            assertStringContains('Unicode risk:', $approvedThreadPage);
+            assertStringContains('confusable_identifier_like_text', $approvedThreadPage);
             assertStringNotContains('Unicode risk:', $anonymousPostPage);
         } finally {
             $this->restoreLlmProviderEnv($previousLlmProviderEnv);
