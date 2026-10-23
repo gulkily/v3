@@ -195,7 +195,7 @@ final class WriteApiSmokeTest
         }
     }
 
-    public function testRenameIntoHeldUsernameIsNeverSavedDirectly(): void
+    public function testRenameIntoHeldUsernameBecomesJoinRequest(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
         $holder = $this->createSigningKey('held-name');
@@ -215,18 +215,72 @@ final class WriteApiSmokeTest
 
             [$prepared, $signed] = $rename('Held-Name');
             assertSame(true, $prepared['held']);
-            assertThrowsRuntime(fn () => $writer->finalizePreparedProfileName($signed), 'That username is already in use.');
+            $pending = $writer->finalizePreparedProfileName($signed);
+            assertSame('pending', $pending['status']);
+            assertSame('held-name', $writer->profileNameJoinRequest($identity)['username']);
             assertSame(false, is_file($root . '/' . $prepared['record_path']));
             $pdo = (new ReadModelConnection($db))->open();
             assertSame('mover', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+            assertThrowsRuntime(fn () => $writer->finalizePreparedProfileName($signed), 'Prepared post not found.');
 
             foreach (['guest', 'mover', 'free-name'] as $name) {
                 [$prepared, $signed] = $rename($name);
                 assertSame(false, $prepared['held']);
                 assertSame($name, $writer->finalizePreparedProfileName($signed)['username']);
             }
+            assertSame(null, $writer->profileNameJoinRequest($identity));
         } finally {
             foreach ([$holder, $mover, $guest] as $key) {
+                $this->deleteTree($key['home']);
+            }
+        }
+    }
+
+    public function testJoinRequestIsReplacedCancelledAndExpires(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $holder = $this->createSigningKey('held-name');
+        $other = $this->createSigningKey('other-held');
+        $mover = $this->createSigningKey('mover');
+        $previousSession = $_SESSION ?? null;
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $writer->linkIdentity(['public_key' => $holder['public_key']]);
+            $writer->linkIdentity(['public_key' => $other['public_key']]);
+            $identity = $writer->linkIdentity(['public_key' => $mover['public_key']])['identity_id'];
+            $request = function (string $name) use ($writer, $identity, $mover): array {
+                $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => $name]);
+                return $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity,
+                    'detached_signature' => $this->signCanonicalRecord($mover['home'], $prepared['canonical_record'])]);
+            };
+
+            $first = $request('held-name');
+            assertSame(true, strtotime($first['expires_at']) - time() > 6 * 86400);
+            $request('other-held');
+            assertSame('other-held', $writer->profileNameJoinRequest($identity)['username']);
+
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_SESSION = [];
+            assertStringContains('Authentication is required.', $this->renderMethod($app, 'GET', '/api/profile_name_request'));
+            $_SESSION = ['authenticated_identity_id' => $identity];
+            $status = json_decode($this->renderMethod($app, 'GET', '/api/profile_name_request'), true);
+            assertSame('other-held', $status['request']['username']);
+            assertSame(false, isset($status['request']['canonical_record']));
+            $cancelled = json_decode($this->renderMethod($app, 'POST', '/api/cancel_profile_name_request'), true);
+            assertSame(true, $cancelled['cancelled']);
+            assertSame(null, $writer->profileNameJoinRequest($identity));
+
+            $request('held-name');
+            $path = dirname($db) . '/profile-name-join-requests/' . str_replace(':', '-', $identity) . '.json';
+            $stored = json_decode((string) file_get_contents($path), true);
+            $stored['expires_at'] = gmdate('Y-m-d\TH:i:s\Z', time() - 1);
+            file_put_contents($path, json_encode($stored));
+            assertSame(null, $writer->profileNameJoinRequest($identity));
+            assertSame(false, is_file($path));
+        } finally {
+            $_SESSION = $previousSession ?? [];
+            foreach ([$holder, $other, $mover] as $key) {
                 $this->deleteTree($key['home']);
             }
         }

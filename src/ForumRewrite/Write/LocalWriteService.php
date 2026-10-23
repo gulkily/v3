@@ -1249,6 +1249,81 @@ class LocalWriteService
         return false;
     }
 
+    private const JOIN_REQUEST_TTL_SECONDS = 7 * 86400;
+
+    /** @return array<string, mixed>|null */
+    public function profileNameJoinRequest(string $identityId): ?array
+    {
+        $request = $this->loadJoinRequest($identityId);
+        return $request === null ? null : array_intersect_key($request, array_flip(['identity_id', 'username', 'created_at', 'expires_at']));
+    }
+
+    /** @return array{status:string,cancelled:bool} */
+    public function cancelProfileNameJoinRequest(string $identityId): array
+    {
+        return $this->withTimedWriteLock(fn (): array => ['status' => 'ok', 'cancelled' => $this->deleteJoinRequest($identityId)]);
+    }
+
+    /**
+     * One held rename per key; a newer request replaces it.
+     *
+     * @param array<string, string> $record
+     * @return array<string, mixed>
+     */
+    private function storeJoinRequest(string $identityId, array $record, string $contents, string $path, string $signature): array
+    {
+        $request = [
+            'identity_id' => $identityId,
+            'username' => $record['Username'],
+            'record_path' => $path,
+            'canonical_record' => $contents,
+            'detached_signature' => $signature,
+            'created_at' => gmdate('Y-m-d\TH:i:s\Z'),
+            'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + self::JOIN_REQUEST_TTL_SECONDS),
+        ];
+        $directory = $this->joinRequestDirectory();
+        if (!is_dir($directory)) {
+            mkdir($directory, 0700, true);
+        }
+        if (file_put_contents($this->joinRequestPath($identityId), json_encode($request, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n") === false) {
+            throw new RuntimeException('Unable to store join request.');
+        }
+
+        return $request;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function loadJoinRequest(string $identityId): ?array
+    {
+        $path = $this->joinRequestPath($identityId);
+        if (!is_file($path)) {
+            return null;
+        }
+        $request = json_decode((string) file_get_contents($path), true);
+        if (!is_array($request) || strtotime((string) ($request['expires_at'] ?? '')) < time()) {
+            @unlink($path);
+            return null;
+        }
+
+        return $request;
+    }
+
+    private function deleteJoinRequest(string $identityId): bool
+    {
+        $path = $this->joinRequestPath($identityId);
+        return is_file($path) && unlink($path);
+    }
+
+    private function joinRequestPath(string $identityId): string
+    {
+        return $this->joinRequestDirectory() . '/' . str_replace(':', '-', $this->requireOpenPgpIdentityId($identityId, 'identity_id')) . '.json';
+    }
+
+    private function joinRequestDirectory(): string
+    {
+        return dirname($this->databasePath) . '/profile-name-join-requests';
+    }
+
     /** @param array<string, mixed> $input @return array<string, mixed> */
     public function prepareProfileName(array $input): array
     {
@@ -1301,8 +1376,11 @@ class LocalWriteService
                 throw new RuntimeException('A newer username was saved. Retry to prepare a fresh name change.');
             }
             if ($this->isUsernameHeld($record['Username'], $identity)) {
-                throw new RuntimeException('That username is already in use.');
+                $request = $this->storeJoinRequest($identity, $record, $contents, $path, $signature);
+                $this->deletePreparedPost($token);
+                return ['status' => 'pending', 'identity_id' => $identity, 'username' => $record['Username'], 'expires_at' => $request['expires_at']];
             }
+            $this->deleteJoinRequest($identity);
             $this->writeFile($path, $contents);
             $this->writeFile($path . '.asc', $signature);
             $commit = $this->commitCanonicalWrite([$path, $path . '.asc'], 'Set profile name for ' . $identity);

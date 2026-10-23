@@ -20,3 +20,16 @@ Effort study: `railspike-effort`, cycle `v3/username_rename_collision`; standing
   - `php tests/run.php` for the new test plus the five existing profile-name tests in `WriteApiSmokeTest`: 6/6 passed.
   - `tests/browser/invite_zero_click.mjs` renames only to free names; deferred to the Stage 8 run.
 - Notes: the refusal is temporary; Stage 2 turns a held-name finalize into a pending join request.
+
+## Stage 2 - Store held renames as join requests
+- Changes:
+  - Finalizing a held name verifies the signature, then stores a join request (signed record, signature, 7-day expiry) in private state at `state/.../profile-name-join-requests/<identity>.json`, one per key, and returns `status: pending`. The prepared token is consumed.
+  - A successful free-name rename deletes any pending request for that key.
+  - `LocalWriteService::profileNameJoinRequest()` (public fields only; prunes an expired request on read) and `cancelProfileNameJoinRequest()` (under the write lock).
+  - New `ProfileNameJoinRequestApiController` with `GET /api/profile_name_request` and `POST /api/cancel_profile_name_request`, using the signed-in session key (401 otherwise). Routes are added to the session-start list, the members-only allowlist, the route list and `ApiRouteCatalog`.
+  - Stage 1 test renamed to `testRenameIntoHeldUsernameBecomesJoinRequest`; new `testJoinRequestIsReplacedCancelledAndExpires` (replace, endpoint status and cancel, 401, expiry pruning, private fields not exposed).
+- Verification:
+  - Both new tests, the two existing profile-name tests and `ApiRouteCatalogTest`: 7/7 passed.
+- Notes:
+  - Deviation from the plan wording: requests are stored in their own directory beside `prepared-posts`, not as a kind inside it, so one-per-key lookup and listing don't need to scan short-lived prepared posts. Same private, non-canonical state as planned.
+  - Status and cancel use the signed-in session rather than a signature, the same way the private-message endpoints work.

@@ -49,6 +49,8 @@ final class ApiRouteCatalog
             ['GET', '/api/auth_status', 'session', 'text', 'Current session identity.'],
             ['POST', '/api/prepare_profile_name', 'signed', 'json', 'Prepare a username change (when username changes are enabled).'],
             ['POST', '/api/finalize_profile_name', 'signed', 'json', 'Submit a signed username change.'],
+            ['GET', '/api/profile_name_request', 'member', 'json', 'Your pending request to join a username.'],
+            ['POST', '/api/cancel_profile_name_request', 'member', 'json', 'Cancel your pending request to join a username.'],
             // Posting
             ['POST', '/api/prepare_thread', 'signed', 'json', 'Prepare a signed thread: send author_identity_id and body, receive the bytes to sign.'],
             ['POST', '/api/prepare_reply', 'signed', 'json', 'Prepare a signed reply to thread_id.'],
