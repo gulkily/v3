@@ -27,11 +27,18 @@
     if (unsavedImages.size) { event.preventDefault(); event.returnValue = ''; }
   });
   function bind(form, root, api) {
-    if (!root.querySelector('[data-inline-reply-compose]')) return null;
+    if (!form.hasAttribute('data-phone-reply')) return null;
     const body = form.querySelector('[name="body"]');
     const threadId = form.querySelector('[name="thread_id"]').value;
     const parentId = form.querySelector('[name="parent_id"]').value;
     const views = new Map();
+    const stack = document.createElement('section');
+    stack.className = 'stack reply-continuation-stack';
+    stack.setAttribute('aria-label', 'Your replies');
+    stack.hidden = true;
+    const panel = root.querySelector('[data-reply-panel]');
+    if (root.querySelector('[data-inline-reply-compose]')) root.before(stack);
+    else panel.before(stack);
     function matches(item) { return item?.fields?.thread_id === threadId && item.fields.parent_id === parentId; }
     function render(item) {
       if (views.has(item.id)) { views.get(item.id).update(item); return views.get(item.id); }
@@ -43,7 +50,8 @@
       const retry = document.createElement('button');
       retry.type = 'button'; retry.textContent = 'Retry';
       card.append(retry);
-      api.insert(root, card);
+      stack.hidden = false;
+      stack.append(card);
       let running = false;
       let preview;
       async function showImage() {
@@ -144,12 +152,16 @@
         const item = {id:crypto.randomUUID(), fields, hasImage:Boolean(attachment), description, state:'pending', createdAt:Date.now()};
         save(item);
         if (attachment) unsavedImages.set(item.id, attachment);
+        const editorTop = body.getBoundingClientRect().top;
         const view = render(item);
         if (attachment) api.clearImage();
         body.value = '';
         api.clearDraft(form);
         body.dispatchEvent(new Event('input', {bubbles:true}));
         body.focus({preventScroll:true});
+        stack.scrollTop = stack.scrollHeight;
+        // Keep the editor at its writing position as the local stack appears.
+        window.scrollBy(0, body.getBoundingClientRect().top - editorTop);
         void view.deliver();
       }
     };

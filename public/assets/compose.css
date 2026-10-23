@@ -265,3 +265,16 @@
   height: auto;
   object-fit: contain;
 }
+
+.reply-continuation-stack:not([hidden]) {
+  height: min(42vh, 28rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+  align-content: start;
+}
+.reply-continuation-stack .body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

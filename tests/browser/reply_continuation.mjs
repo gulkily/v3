@@ -159,6 +159,26 @@ try {
  await page.evaluate(()=>{IDBFactory.prototype.open=oldIdbOpen;});
  await page.locator('[data-reply-state="failed"] button').click();await page.locator('[data-reply-state="accepted"]').waitFor();
  assert.equal(await body.inputValue(),'Draft after image storage failure');
+ // Dedicated entry retains its parent and allows consecutive sends in place.
+ const threadId=new URL(threadUrl).pathname.split('/').pop();
+ await page.goto(base+'/compose/reply?thread_id='+threadId+'&parent_id='+threadId);
+ const dedicated=page.locator('[data-phone-reply]');const dedicatedBody=dedicated.locator('[name="body"]');
+ const dedicatedUrl=page.url();
+ const acceptedBefore=await page.locator('[data-reply-state="accepted"]').count();
+ for(let i=0;i<2;i++) {
+  await dedicatedBody.fill('Dedicated continuation '+i);
+  await dedicatedBody.scrollIntoViewIfNeeded();
+  const before=await dedicatedBody.boundingBox();
+  await dedicated.evaluate(el=>el.requestSubmit(el.querySelector('.compose-form-actions > button')));
+  await page.waitForFunction(n=>document.querySelectorAll('[data-reply-state="accepted"]').length===n,acceptedBefore+i+1);
+  assert.equal(await dedicatedBody.inputValue(),'');
+  assert.equal(await dedicatedBody.evaluate(el=>document.activeElement===el),true);
+  assert.equal(await dedicated.locator('[name="parent_id"]').inputValue(),threadId);
+  assert.ok(Math.abs((await dedicatedBody.boundingBox()).y-before.y)<3,'editor retains its desktop writing position');
+ }
+ assert.equal(page.url(),dedicatedUrl);
+ await dedicatedBody.fill('Long newer draft '+('word '.repeat(300)));
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  assert.deepEqual(errors,[]);
  console.log('PASS immediate text reply before network, focus, captured failure/retry, newer draft isolation, storage failure');
 } catch(error){console.error(log);throw error;} finally {await browser?.close();server.kill();await once(server,'exit').catch(()=>{});await rm(root,{recursive:true,force:true});}
