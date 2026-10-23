@@ -390,6 +390,11 @@ Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **Visitor statistics zero-request period** — Review the “No eligible requests” paragraph alongside zero totals and an empty chart/table. Distinguish no traffic from initialization, collection gaps and failures; retain privacy/counting limits. Source: `templates/pages/visitor_statistics.php`.
 
+## Offline health pending feedback — October 23, 2026
+
+- Removed the duplicate checking and refreshing sentences. The existing CHECKING/REFRESHING status remains; the empty summary is hidden while pending and shown again for results or failures. Readiness, storage errors, offline guidance and refresh recovery remain.
+- Verification: existing offline-health route test passed. Chromium controlled service-worker/cache/publication fixtures covered initial and repeat pending checks, ready/missing archives, storage denial, offline and unavailable-publication states, refresh failure and successful retry. Light/Word97/Chicago/Midnight at 390px/1280px passed overflow checks; inspected Midnight phone storage-failure screenshot (`/tmp/copy-health-cycle4-storage.png`). An initial temporary browser script had a brace typo; fixed before the passing run. Physical devices, actual worker/cache lifecycle and deployment unverified. No dependency or navigation changes.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -398,8 +403,12 @@ Work through the unchecked next-phase candidates one at a time, favoring removal
 
 These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
 
-- [ ] **Offline health checking feedback** — Review “CHECKING” alongside “Checking offline reading status…” in initial and repeat checks. Preserve pending feedback, offline readiness, storage failures and actionable recovery. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
+- [x] **Offline health checking feedback** — Review “CHECKING” alongside “Checking offline reading status…” in initial and repeat checks. Preserve pending feedback, offline readiness, storage failures and actionable recovery. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
 
 - [ ] **LLM Exchange missing content** — Review “No prompt content extracted” and “No response body was recorded” alongside raw request/response disclosures and errors. Check empty, non-text, provider-error and transport-error records; retain the distinction between extraction limits and absent provider output. Source: `templates/pages/llm_exchange.php`.
 
 - [ ] **Analysis quality fallbacks** — Review “Quality: unknown” when only good-faith likelihood is present, and other conditional unknown values. Check partially populated historical analyses alongside complete assessments; preserve meaningful quality and moderation evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
+
+- [ ] **Offline reader image-backup notice** — Remove the user-reported unnecessary notice: “Saved snapshots preserve image references but do not include image files. Download the separate image backup from the online Backup page to preserve them.” Reported at the top of board newest/all and apparently every page on another instance. Verify the affected saved views. Source: `templates/pages/offline_reader.php`.
+
+- [ ] **Feature Flags account-key review message** — Remove the user-reported unnecessary message that intermittently appears in Feature Flags: “Review account key grants and approval-policy changes (authenticated operator session required).” Verify when it appears and the affected rendered states.

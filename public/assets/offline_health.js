@@ -58,6 +58,7 @@
   function setHealthStatus(state, text) {
     status.setAttribute("data-status", state);
     status.textContent = text;
+    summary.hidden = state === "checking";
   }
 
   function diagnosticValue(value) {
@@ -328,7 +329,7 @@
     guidance.hidden = true;
     openSavedArchive.hidden = true;
     setHealthStatus("checking", "CHECKING");
-    summary.textContent = "Checking offline reading status…";
+    summary.textContent = "";
 
     try {
       var online = navigator.onLine;
@@ -432,7 +433,7 @@
     refreshing = true;
     refreshReader.disabled = true;
     setHealthStatus("checking", "REFRESHING");
-    summary.textContent = "Refreshing the saved reader…";
+    summary.textContent = "";
     try {
       var worker = await serviceWorkerStatus();
       await requestReaderRefresh(worker.controller || (worker.registration && worker.registration.active));
