@@ -2963,6 +2963,55 @@
       } finally { cancelJoinButton.disabled = false; }
     });
 
+    const joinRequestsNode = root.querySelector('[data-role="join-requests"]');
+    const joinRequestTemplate = root.querySelector('template[data-role="join-request-item"]');
+    const postForm = async function (endpoint, values) {
+      const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
+      const result = await response.json();
+      if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to answer the request.");
+      return result;
+    };
+    const answerJoinRequest = async function (item, request, accept) {
+      const itemStatus = item.querySelector('[data-role="join-request-status"]');
+      item.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
+      try {
+        if (accept) {
+          await ensureActionIdentity(root, statusNode);
+          const identity = currentAuthorIdentityId();
+          const prepared = await postForm("/api/prepare_profile_name_grant", { author_identity_id: identity, grantee_identity_id: request.identity_id });
+          const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
+          await postForm("/api/finalize_profile_name_grant", { prepare_token: prepared.prepare_token, record_path: prepared.record_path,
+            author_identity_id: identity, canonical_record: prepared.canonical_record, detached_signature: signature });
+        } else {
+          await postForm("/api/decline_profile_name_request", { grantee_identity_id: request.identity_id });
+        }
+        item.remove();
+        joinRequestsNode.hidden = joinRequestsNode.querySelector("li") === null;
+      } catch (error) {
+        setStatus(itemStatus, error.message || "Unable to answer the request.", "error");
+        item.querySelectorAll("button").forEach(function (button) { button.disabled = false; });
+      }
+    };
+    const renderJoinRequests = function (requests) {
+      const list = joinRequestsNode.querySelector('[data-role="join-request-list"]');
+      list.replaceChildren();
+      requests.forEach(function (request) {
+        const item = joinRequestTemplate.content.firstElementChild.cloneNode(true);
+        const profile = item.querySelector('[data-role="join-request-profile"]');
+        profile.textContent = request.current_username || request.identity_id;
+        profile.href = "/profiles/" + encodeURIComponent(request.profile_slug);
+        item.querySelectorAll('[data-role="join-request-name"]').forEach(function (node) { node.textContent = request.username; });
+        item.querySelector('[data-action="accept-join-request"]').addEventListener("click", function () { void answerJoinRequest(item, request, true); });
+        item.querySelector('[data-action="decline-join-request"]').addEventListener("click", function () { void answerJoinRequest(item, request, false); });
+        list.appendChild(item);
+      });
+      joinRequestsNode.hidden = requests.length === 0;
+    };
+    if (joinRequestsNode && joinRequestTemplate && root.dataset.usernameChangesEnabled === "1" && root.dataset.authenticatedIdentityId) {
+      void joinRequestJson("/api/profile_name_join_requests", "GET").then(function (result) { renderJoinRequests(result.requests || []); }).catch(function () {});
+    }
+
     const renameButton = root.querySelector('[data-action="rename-profile"]');
     if (renameButton) renameButton.addEventListener("click", async function () {
       if (!hasBrowserKeypair()) {

@@ -49,6 +49,20 @@ $authenticatedIdentityId = is_array($viewerProfile)
         <p class="meta account-key-simple-status" id="simple-status" hidden></p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>
+      <section class="account-key-join-requests stack" data-role="join-requests" aria-labelledby="join-requests-heading" hidden>
+        <h2 id="join-requests-heading">Username requests</h2>
+        <ul class="account-key-join-request-list" data-role="join-request-list"></ul>
+      </section>
+      <template data-role="join-request-item">
+        <li class="stack">
+          <p><a data-role="join-request-profile"></a> asks to use <strong data-role="join-request-name"></strong>. This key will be able to act as <span data-role="join-request-name"></span>.</p>
+          <div class="account-key-simple-actions">
+            <button type="button" data-action="accept-join-request">Accept</button>
+            <button type="button" class="account-key-secondary-button" data-action="decline-join-request">Decline</button>
+          </div>
+          <p class="meta account-key-simple-status" data-role="join-request-status" hidden></p>
+        </li>
+      </template>
       <details class="account-key-advanced" id="key-backup" data-key-backup>
         <summary>Back up or restore</summary>
         <div class="stack">

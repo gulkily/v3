@@ -78,3 +78,18 @@ Effort study: `railspike-effort`, cycle `v3/username_rename_collision`; standing
   - Screenshots reviewed in the light, word97, chicago and midnight themes at both widths. The line wraps with its button on phone, and Cancel matches the existing small-button style. The Word 97/Chicago fixed status bar shows over content in full-page screenshots; that is existing theme chrome, unrelated to this change.
   - `AccountKeyPageHooksTest` and `BrowserSigningNormalizationTest`: 88/88 passed. `tests/browser/invite_zero_click.mjs` (includes Choose username to a free name): all three scenarios passed.
 - Notes: no navigation destination changed, so `theme-nav-icons.css` is unaffected. No CSS added; the line uses existing `meta` and `account-key-viewer-copy` styles.
+
+## Stage 6 - Holder UI
+- Changes:
+  - `account_key.php`: a "Username requests" section below the status card, hidden when empty. Each request comes from a `<template>` and shows "<requester> asks to use <name>. This key will be able to act as <name>." (the consequence beside the decision, matching approval wording), with Accept, Decline, and a status line for that request.
+  - `browser_signing.js`: on load (flag on and signed in), lists `/api/profile_name_join_requests`.
+    - Accept signs the grant (prepare → `signCanonicalRecord` → finalize).
+    - Decline posts the decline.
+    - Success removes the request and hides the section when empty; errors show inside that request and re-enable its buttons.
+  - `identity.css`: list reset, separators between requests, wrapping for long names. Buttons reuse `account-key-simple-actions` and `account-key-secondary-button`.
+  - `tests/browser/username_join_request.mjs` extended for the holder side.
+- Verification:
+  - Browser test passed at desktop and phone. Covers: hidden when empty; two requests (one from an operator key); 77-character requester name with no overflow; operator cancels first, then the holder's Decline shows "This request is no longer pending." in that request; decline leaves the requester's name and clears their pending line; accept hides the section, the requester's Account shows `ilya`, and `ilya`'s recipient keys are exactly the holder's and requester's keys.
+  - Screenshots reviewed (light, word97, chicago, midnight; desktop and phone). The first pass showed full-width Accept/Decline and the error at the bottom of the section; both fixed before commit.
+  - `AccountKeyPageHooksTest`: 6/6 passed.
+- Notes: `/user/ilya` doesn't print profile fingerprints in its main text, so the browser test checks composite membership through the recipient-keys API instead.

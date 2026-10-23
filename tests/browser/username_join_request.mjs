@@ -95,6 +95,72 @@ try {
     await requester.context().close();
   }
   console.log('PASS requester: pending request shown, survives reload, cancel clears it');
+
+  const longName = 'a-very-long-requester-name-' + 'x'.repeat(50);
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    const label = viewport.width < 600 ? 'phone' : 'desktop';
+    const holder = await signedIn(base, holderKey, viewport);
+    const section = holder.locator('[data-role=join-requests]');
+    await holder.waitForLoadState('networkidle');
+    assert.equal(await section.isVisible(), false);
+
+    const requester = await signedIn(base, requesterKey, viewport);
+    if (label === 'desktop') {
+      await requestName(requester, longName);
+      await requester.locator('[data-role=username-field]').filter({ hasText: longName }).waitFor();
+    }
+    await requestName(requester, 'ilya');
+    await requester.locator('[data-role=join-request]').waitFor({ state: 'visible' });
+    const operator = await signedIn(base, operatorKey, viewport);
+    await requestName(operator, 'ilya');
+    await operator.locator('[data-role=join-request]').waitFor({ state: 'visible' });
+
+    await holder.reload();
+    await section.waitFor({ state: 'visible' });
+    const items = section.locator('li');
+    assert.equal(await items.count(), 2);
+    assert.match(await items.first().innerText(), new RegExp(longName + ' asks to use ilya\\. This key will be able to act as ilya\\.'));
+    await assertNoOverflow(holder);
+    await shoot(holder, `holder-requests-${label}`);
+
+    // The operator withdraws before the holder answers: the holder sees why nothing happened.
+    await operator.locator('[data-action=cancel-join-request]').click();
+    await operator.locator('[data-role=join-request]').waitFor({ state: 'hidden' });
+    await items.nth(1).locator('[data-action=decline-join-request]').click();
+    const status = items.nth(1).locator('[data-role=join-request-status]');
+    await status.waitFor({ state: 'visible' });
+    assert.equal(await status.innerText(), 'This request is no longer pending.');
+    await shoot(holder, `holder-error-${label}`);
+
+    if (label === 'desktop') {
+      await requestName(operator, 'ilya');
+      await operator.locator('[data-role=join-request]').waitFor({ state: 'visible' });
+      await holder.reload();
+      await items.nth(1).waitFor();
+      await items.nth(1).locator('[data-action=decline-join-request]').click();
+      await items.nth(1).waitFor({ state: 'detached' });
+      await operator.reload();
+      await operator.waitForLoadState('networkidle');
+      assert.equal(await operator.locator('[data-role=join-request]').isVisible(), false);
+      assert.equal(await operator.locator('[data-role=username-field]').innerText(), 'operator');
+      await requester.locator('[data-action=cancel-join-request]').click();
+      await requester.locator('[data-role=join-request]').waitFor({ state: 'hidden' });
+    } else {
+      await holder.reload();
+      await items.first().locator('[data-action=accept-join-request]').click();
+      await section.waitFor({ state: 'hidden' });
+      await requester.reload();
+      await requester.locator('[data-role=username-field]').filter({ hasText: /^ilya$/ }).waitFor();
+      assert.equal(await requester.locator('[data-role=join-request]').isVisible(), false);
+      const keys = await (await holder.context().request.get(base + '/api/private_messages/recipient_keys?username_token=ilya')).json();
+      assert.deepEqual(keys.keys.map(key => key.identity_id).sort(),
+        [holderKey, requesterKey].map(key => 'openpgp:' + key.fingerprint.toLowerCase()).sort());
+      await holder.goto(base + '/user/ilya');
+      await assertNoOverflow(holder);
+    }
+    for (const page of [holder, requester, operator]) await page.context().close();
+  }
+  console.log('PASS holder: hidden when empty, lists requests, stale-request message, decline, accept joins /user/ilya');
 } catch (error) {
   console.error(logs);
   throw error;
