@@ -678,6 +678,96 @@ class CheckoutsTest(unittest.TestCase):
         self.assertFalse((self.state / ('overview-' + first['cache_key'] + '.json')).exists())
         self.cli('__refresh', first['refresh']['token'], code=2, raw=True)
 
+    def test_fresh_preview_warms_cache_but_only_preview_is_actionable(self):
+        self.add()
+        preview = self.preview()
+        overview = self.cli()
+        self.assertEqual('current', overview['checkouts'][0]['action'])
+        self.assertNotIn('preview_id', overview)
+        self.assertIn('preview_id', preview)
+        self.assertNotIn('Apply:', self.cli(raw=True))
+
+    def test_apply_invalidates_observations_before_branch_change(self):
+        self.add()
+        self.preview()
+        self.commit(self.up, 'new', 'new')
+        preview = self.preview()
+        self.assertEqual('fast-forward', self.cli()['checkouts'][0]['action'])
+        self.apply(preview)
+        overview = self.cli(code=2)
+        self.assertEqual('unchecked', overview['checkouts'][0]['action'])
+        self.assertNotIn('snapshot', overview['checkouts'][0])
+        self.cli('refresh')
+        self.assertEqual('current', self.cli()['checkouts'][0]['action'])
+
+    def test_cached_failure_never_becomes_fresh_preview_authority(self):
+        self.add()
+        self.preview()
+        self.up.rename(self.base / 'offline')
+        preview = self.cli('preview', code=2)
+        self.assertEqual('unavailable', preview['checkouts'][0]['action'])
+        self.assertEqual('current', self.cli(code=2)['checkouts'][0]['action'])
+        result = self.apply(preview, code=2)
+        self.assertEqual('unavailable', result['checkouts'][0]['action'])
+
+    def test_cached_read_during_apply_lock_and_empty_setup_guidance(self):
+        import fcntl
+        self.assertIn('No clones registered', self.cli(raw=True))
+        self.add()
+        self.preview()
+        with (self.state / 'registry.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.assertEqual('current', self.cli()['checkouts'][0]['action'])
+            self.cli('preview', code=1)
+
+    def test_relative_overrides_survive_worker_directory_change(self):
+        import time
+        result = subprocess.run([str(ROOT / 'v3'), 'checkouts', 'add', str(self.clone),
+                                 '--registry=relative/config.json', '--state-dir=relative/state', '--json'],
+                                cwd=self.base, env=self.env, text=True, capture_output=True)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        result = subprocess.run([str(ROOT / 'v3'), 'checkouts', '--registry=relative/config.json',
+                                 '--state-dir=relative/state', '--json'], cwd=self.base,
+                                env=self.env, text=True, capture_output=True)
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        deadline = time.monotonic() + 10
+        status_file = self.base / 'relative' / 'state' / 'refresh.json'
+        while time.monotonic() < deadline:
+            status = json.loads(status_file.read_text())
+            if status['state'] not in ['queued', 'running']:
+                break
+            time.sleep(0.05)
+        self.assertEqual('complete', status['state'], status)
+
+    def test_worker_lost_token_cannot_publish_or_overwrite_new_status(self):
+        import fcntl
+        import time
+        self.add()
+        marker = self.slow_fetch(self.clone, delay=0.4)
+        first = self.cli(code=2, auto_refresh=True)
+        deadline = time.monotonic() + 5
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertTrue(marker.exists())
+        status_path = self.state / 'refresh.json'
+        status = json.loads(status_path.read_text())
+        status['token'] = 'f' * 24
+        status['state'] = 'failed'
+        status['reason'] = 'newer status marker'
+        status_path.write_text(json.dumps(status))
+        with (self.state / 'refresh.lock').open('a') as lock:
+            while time.monotonic() < deadline:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    time.sleep(0.02)
+            else:
+                self.fail('Old worker did not exit')
+        self.assertFalse((self.state / ('overview-' + first['cache_key'] + '.json')).exists())
+        self.assertEqual('newer status marker', json.loads(status_path.read_text())['reason'])
+        self.assertEqual([], list(self.state.glob('history-*.json')))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -27,3 +27,9 @@ Effort study: `railspike-effort / v3/checkout_overview`; [ledger](../effort_esti
 - Changes: shared collector captures pre-fetch snapshots, runs at most three independent fetch-only Git children, and classifies/publishes evidence solely in the manager-lock-owning coordinator. Pool enforces per-child/overall limits and reaps handled cancellations; refresh never creates preview files. Registry generation is rechecked before cache publication.
 - Verification: 6 focused real-Git tests passed: three slow independent fetches overlap, cached foreground remains under 1s during work, manual registry change discards cache, actual SIGTERM cancels the isolated worker group and prevents publication/token replay, observed/externally fetched and already-fetched rewrites remain blocked.
 - Notes: Stage 3 `dc633db4b`. Uncatchable kill cannot guarantee descendant cleanup; future inspection must still revalidate source/Git state. No child writes authoritative history/cache.
+
+## Stage 5 - Fresh authority, invalidation and recovery
+
+- Changes: fresh preview populates observations but signs only its fresh raw results; failed inspection cannot promote retained cached rows to apply authority. Apply invalidates affected observations before branch mutation. Empty setup guidance, relative local override normalization and ownership-token checks cover all worker state/history/cache writes; a lost worker cannot overwrite newer status.
+- Verification: complete 50-case checkout suite passed before the additional ownership fixture; 6 targeted integration checks passed afterward, then 2 cancellation/lost-token checks passed with stronger no-history-write assertion. Covered preview/cache authority separation, update invalidation, cached reads under apply lock, offline recovery and relative worker paths.
+- Notes: Stage 4 `5bba5d22d`. Source observations remain explicitly cached; no subsecond guarantee is made for fresh preview.

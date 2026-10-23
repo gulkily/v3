@@ -82,7 +82,7 @@ try {
         if ($rendered['abridged']) {
             echo isset($result['result_file']) ? 'Full recovery: ' . $result['result_file'] . "\n" : "Full paths/recovery: use --json.\n";
         }
-        if (in_array($command, ['preview', 'apply', 'overview'], true)) {
+        if (($result['checkouts'] ?? []) !== [] && in_array($command, ['preview', 'apply', 'overview', 'refresh'], true)) {
             $counts = [];
             foreach ($result['checkouts'] as $entry) {
                 $counts[$entry['action']] = ($counts[$entry['action']] ?? 0) + 1;
@@ -90,14 +90,16 @@ try {
             echo implode(' · ', array_map(fn ($action, $count) => $count . ' ' . $action, array_keys($counts), array_values($counts))) . "\n";
         }
         if (isset($result['notice'])) {
-            if ($command === 'overview') {
+            if ($command === 'overview' && $result['checkouts'] === []) {
+                echo $result['notice'] . "\n";
+            } elseif ($command === 'overview') {
                 echo ($result['age_seconds'] === null ? 'Unchecked' : 'Checked ' . $result['age_seconds'] . 's ago')
                     . ' · ' . $result['refresh']['state'] . ' · cached observations' . "\n";
                 if (in_array($result['refresh']['state'], ['failed', 'deferred'], true)) {
                     echo $result['refresh']['reason'] . "\n";
                 }
             } else {
-            echo ($command === 'refresh' ? $result['notice'] : ($command === 'preview'
+                echo ($command === 'refresh' ? $result['notice'] : ($command === 'preview'
                 ? 'Fetched refs; no checked-out files changed. Pause sessions before apply.'
                 : 'Other branches, stashes and linked worktrees unchanged. Preview again after recovery.')) . "\n";
             }

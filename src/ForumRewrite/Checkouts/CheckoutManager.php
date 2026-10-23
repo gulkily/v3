@@ -11,6 +11,7 @@ final class CheckoutManager
     private string $registry;
     private string $state;
     private ?float $deadline = null;
+    private ?string $workerToken = null;
 
     public function __construct(?string $registry = null, ?string $state = null)
     {
@@ -20,6 +21,11 @@ final class CheckoutManager
         }
         $this->registry = $registry ?? (getenv('XDG_CONFIG_HOME') ?: "$home/.config") . '/v3/checkouts.json';
         $this->state = $state ?? (getenv('XDG_STATE_HOME') ?: "$home/.local/state") . '/v3/checkouts';
+        foreach (['registry', 'state'] as $property) {
+            if (!str_starts_with($this->$property, '/')) {
+                $this->$property = getcwd() . '/' . $this->$property;
+            }
+        }
     }
 
     public function run(string $command, ?string $argument, array $options): array
@@ -75,6 +81,9 @@ final class CheckoutManager
 
     private function writeJson(string $path, array $data): void
     {
+        if ($this->workerToken !== null && ($this->refreshStatus()['token'] ?? null) !== $this->workerToken) {
+            throw new RuntimeException('Refresh ownership changed; authoritative write rejected.');
+        }
         $this->directory(dirname($path));
         $temp = tempnam(dirname($path), '.checkouts-');
         if ($temp === false) {
@@ -442,7 +451,7 @@ final class CheckoutManager
                 try {
                     $before = $this->snapshot($entry);
                     if ($before['busy']) {
-                        $rows[$index] += ['action' => 'busy', 'reason' => 'Git operation in progress; finish or abort it, then preview again.', 'snapshot' => $before];
+                        $rows[$index] += ['action' => 'busy', 'reason' => 'Git operation in progress; finish or abort it, then preview again.', 'snapshot' => $before, 'observed_at' => time()];
                     } else {
                         $prepared[$index] = $before;
                         $tasks[$index] = ['path' => $entry['path'], 'args' => $this->fetchArguments($entry)];
@@ -461,6 +470,7 @@ final class CheckoutManager
                         : 'Git fetch failed; check remote access/configuration, then retry refresh.');
                 }
                 $rows[$index] += $this->inspect($registry['checkouts'][$index], $before);
+                $rows[$index]['observed_at'] = time();
             } catch (\Throwable $error) {
                 $rows[$index] += ['action' => 'unavailable', 'reason' => $error->getMessage()];
             }
@@ -528,6 +538,13 @@ final class CheckoutManager
         }
     }
 
+    private function writeWorkerStatus(array $status): void
+    {
+        if (($this->refreshStatus()['token'] ?? null) === $this->workerToken) {
+            $this->writeJson($this->state . '/refresh.json', $status);
+        }
+    }
+
     private function backgroundRefresh(?string $token, array $options): array
     {
         if ($token === null || !preg_match('/^[a-f0-9]{24}$/D', $token)
@@ -546,17 +563,18 @@ final class CheckoutManager
             fclose($lock);
             return ['command' => '__refresh', 'exit_code' => 2];
         }
+        $this->workerToken = $token;
         $status['state'] = 'running';
         $status['pid'] = getmypid();
         $status['started_at'] = time();
-        $this->writeJson($this->state . '/refresh.json', $status);
+        $this->writeWorkerStatus($status);
         pcntl_async_signals(true);
         $cancel = function () use (&$status): void {
             $status['state'] = 'failed';
             $status['reason'] = 'Refresh interrupted or timed out; run ./v3 checkouts refresh.';
             $status['requested_at'] = time();
             try {
-                $this->writeJson($this->state . '/refresh.json', $status);
+                $this->writeWorkerStatus($status);
             } finally {
                 // The worker created its own session; never signal the caller's process group.
                 if (posix_getpgrp() === getmypid()) {
@@ -584,7 +602,7 @@ final class CheckoutManager
             pcntl_alarm(0);
             $status['finished_at'] = time();
             $status['requested_at'] = time();
-            $this->writeJson($this->state . '/refresh.json', $status);
+            $this->writeWorkerStatus($status);
             flock($lock, LOCK_UN);
             fclose($lock);
         }
@@ -598,13 +616,23 @@ final class CheckoutManager
         if (isset($options['path'])) {
             $options['path'] = realpath($options['path']) ?: $options['path'];
         }
+        $cache = $this->publishCache($registry, $options, $this->collect($registry, $options));
+        return ['command' => 'refresh', 'checkouts' => $cache['checkouts'], 'observed_at' => $cache['observed_at'],
+            'refresh' => $cache['refresh'], 'notice' => 'Observations refreshed; use preview for an actionable update plan.',
+            'exit_code' => $cache['refresh']['state'] === 'failed' || $this->attention($cache['checkouts']) ? 2 : 0];
+    }
+
+    private function publishCache(array $registry, array $options, array $rows): array
+    {
+        if ($this->workerToken !== null && ($this->refreshStatus()['token'] ?? null) !== $this->workerToken) {
+            throw new RuntimeException('Refresh ownership changed; stale results discarded.');
+        }
         $key = $this->cacheKey($registry, $options);
         $cache = $this->readCache($key);
         $previous = [];
         foreach ($cache['checkouts'] ?? [] as $row) {
             $previous[$row['path']] = $row;
         }
-        $rows = $this->collect($registry, $options);
         $failed = false;
         foreach ($rows as &$row) {
             if (in_array($row['action'], ['unavailable', 'stale'], true)) {
@@ -618,7 +646,7 @@ final class CheckoutManager
                     $row['observed_at'] = null;
                 }
             } else {
-                $row['observed_at'] = $row['action'] === 'excluded' ? null : time();
+                $row['observed_at'] = $row['action'] === 'excluded' ? null : ($row['observed_at'] ?? time());
             }
         }
         unset($row);
@@ -636,19 +664,47 @@ final class CheckoutManager
                 unlink($file);
             }
         }
-        return ['command' => 'refresh', 'checkouts' => $rows, 'observed_at' => $cache['observed_at'],
-            'refresh' => $refresh,
-            'notice' => 'Observations refreshed; use preview for an actionable update plan.',
-            'exit_code' => $failed || $this->attention($rows) ? 2 : 0];
+        return $cache;
+    }
+
+    private function invalidateOverview(string $path): void
+    {
+        foreach (glob($this->state . '/overview-*.json') ?: [] as $file) {
+            try {
+                $cache = $this->readJson($file);
+            } catch (\Throwable) {
+                continue;
+            }
+            $changed = false;
+            foreach ($cache['checkouts'] ?? [] as $index => $row) {
+                if (($row['path'] ?? '') === $path && ($row['action'] ?? '') !== 'excluded') {
+                    $cache['checkouts'][$index]['action'] = 'unchecked';
+                    $cache['checkouts'][$index]['reason'] = 'Update attempted; refresh observations.';
+                    $cache['checkouts'][$index]['observed_at'] = null;
+                    unset($cache['checkouts'][$index]['snapshot'], $cache['checkouts'][$index]['last_error']);
+                    $changed = true;
+                }
+            }
+            if ($changed) {
+                $cache['observed_at'] = null;
+                $cache['refreshed_at'] = 0;
+                $cache['refresh'] = ['state' => 'invalidated', 'reason' => 'Update attempted; refresh observations.'];
+                $this->writeJson($file, $cache);
+            }
+        }
     }
 
     private function preview(array $options): array
     {
+        if (isset($options['path'])) {
+            $options['path'] = realpath($options['path']) ?: $options['path'];
+        }
         $registry = $this->readRegistry();
         if ($registry['checkouts'] === []) {
             throw new RuntimeException('No clones registered; use ./v3 checkouts add <path>.');
         }
         $rows = $this->collect($registry, $options);
+        $this->publishCache($registry, $options, $rows);
         $id = bin2hex(random_bytes(12));
         $plan = ['version' => 1, 'id' => $id, 'registry' => hash('sha256', json_encode($registry, JSON_THROW_ON_ERROR)),
             'created' => gmdate('c'), 'checkouts' => $rows];
@@ -709,6 +765,7 @@ final class CheckoutManager
                 $attempt['reason'] = 'Update started; if interrupted inspect Git status before a fresh preview.';
                 $journal['checkouts'][$index] = $attempt;
                 $this->writeJson($journalPath, $journal);
+                $this->invalidateOverview($row['path']);
                 $mergeArgs = $row['action'] === 'fast-forward'
                     ? ['-c', 'submodule.recurse=false', 'merge', '--ff-only', '--no-overwrite-ignore', '--no-edit', $current['target']]
                     : ['-c', 'submodule.recurse=false', 'merge', '--no-ff', '--no-overwrite-ignore', '--no-edit', $current['target']];
