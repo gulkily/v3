@@ -6,8 +6,8 @@ Updated 2026-10-23. Ordered by current relevance. Checked means the named work i
 
 - [x] Fix barely distinguishable checked/unchecked appearance with hollow outlines versus solid fills and contrasting ticks; retain native disabled checkbox semantics, accessible task names and working links. Initial native-paint acceptance failed user UAT and was corrected.
 - [x] Verify corrected appearance in Chromium across all 16 registered themes, phone/desktop, Auto light/dark, LCD palettes and forced colors: 46 dynamic + 46 generated cases; inspect all state-pair screenshots. Physical-device/AT acceptance remains below.
-- [ ] Complete user UAT of the corrected checkbox slice.
-- [ ] Merge/publish the task-checkbox slice after acceptance; currently on `feature/markdown-task-lists`.
+- [x] Complete user UAT of the corrected checkbox slice: user accepted it and authorized merge on 2026-10-23.
+- [x] Merge the accepted task-checkbox slice into main. Production deployment/refresh remains a separate item below.
 - [x] Implement checked/unchecked display for supported unordered task items, including uppercase X, wrapped task labels and nested items.
 - [x] Keep task display immutable: disabled, skipped by Tab, no source writes, submission or editing controls.
 - [x] Preserve literal markers in ordered items, code/table examples, malformed/empty labels and unsupported whole-list source blocks.

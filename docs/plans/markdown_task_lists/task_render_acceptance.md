@@ -54,3 +54,8 @@ Reproduce the contrast sweep against an isolated host containing `tests/fixtures
 ```bash
 DOCS_BASE_URL=http://127.0.0.1:18087 DOCS_EVIDENCE_ROOT=/tmp/docs-task-contrast node tests/browser/docs_task_contrast.mjs
 ```
+
+
+## Maintainer acceptance — 2026-10-23
+
+User accepted the corrected slice and requested merge into main. This supersedes the pending user-retest status above. Main integration preserves current origin/main work; production deployment, physical AT/devices and full-suite verification remain separate. See the consolidated checklist for current status.
