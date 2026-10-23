@@ -13,3 +13,7 @@ Effort study: `railspike-effort`, `v3/thread_like_activity`; [ledger](../effort_
 ## Stage 1 — completed
 
 Full and incremental derivation now emit one event per eligible like-bearing record, retaining mixed-label grouping and existing score deduplication. Normal signed writes, duplicate retry, distinct same-author comments and rebuild parity passed; existing retraction coverage confirms withdrawn contributions stay excluded. Focused verification: 10 tests passed. No eligibility or vote calculation changed.
+
+## Stage 2 — completed
+
+Incremental refresh resolves each canonical label path's own commit instead of borrowing the triggering write's commit. Unavailable/invalid history is stored as null. Actor, original timestamp and canonical action keys are preserved. Five focused tests passed, including three distinct source commits compared against Git and full rebuild, one-row cursor traversal/count agreement, duplicate retry, and existing link contracts. Existing source/signature enrichment remains shared by consumers.

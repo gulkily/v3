@@ -5282,12 +5282,31 @@ NODE;
         assertSame('no', $repeat['wrote_record']);
         $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => '#like #answered #bug', 'author_identity_id' => $author]);
         $pdo = new PDO('sqlite:' . $database);
-        $query = "SELECT action_key, author_identity_id, label FROM activity WHERE kind='thread_label_add' AND thread_id='root-001' AND label LIKE '%like%' ORDER BY action_key";
+        $query = "SELECT action_key, created_at, source_path, source_commit_sha, author_identity_id, label FROM activity WHERE kind='thread_label_add' AND thread_id='root-001' AND label LIKE '%like%' ORDER BY action_key";
         $incremental = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
         assertSame(3, count($incremental));
+        assertSame(3, count(array_unique(array_column($incremental, 'source_commit_sha'))));
+        foreach ($incremental as $event) {
+            $history = [];
+            exec('git -C ' . escapeshellarg($root) . ' log -1 --format=%H -- ' . escapeshellarg($event['source_path']), $history, $exitCode);
+            assertSame(0, $exitCode);
+            assertSame($history[0], $event['source_commit_sha']);
+        }
         assertSame(3, count(array_unique(array_column($incremental, 'action_key'))));
         assertSame(2, count(array_filter($incremental, static fn (array $row): bool => $row['author_identity_id'] === $author)));
         assertSame(1, count(array_filter($incremental, static fn (array $row): bool => $row['label'] === 'Labels added: answered, like')));
+        $activity = new ActivityService(static fn (): PDO => $pdo, $root, $database);
+        $keys = [];
+        $cursor = null;
+        do {
+            $page = $activity->fetchActivityRows('all', 'date', 'desc', $cursor, 1);
+            $row = $page['items'][0];
+            $keys[] = $row['action_key'];
+            $cursor = ['sort_value' => $row['created_at'], 'action_key' => $row['action_key'], 'id' => (int) $row['id']];
+        } while ($page['has_more']);
+        assertSame($activity->countActivityViewTotal('all'), count($keys));
+        assertSame(count($keys), count(array_unique($keys)));
+        foreach ($incremental as $event) assertTrue(in_array($event['action_key'], $keys, true));
         $before = $pdo->query("SELECT score_total, vote_count, thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetch(PDO::FETCH_ASSOC);
         (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
         assertSame($incremental, $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC));
