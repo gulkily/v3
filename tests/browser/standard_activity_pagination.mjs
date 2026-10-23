@@ -29,6 +29,12 @@ try {
       await page.goto(base + '/activity/?view=all');
       assert.equal(await page.locator(rowLinks).count(), 100);
       const firstKeys = await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));
+      assert.equal(await page.locator('[data-railspike-activity]').count(),0);
+      const rss=await context.request.get(base+'/activity/?view=all&format=rss');
+      assert.equal(rss.status(),200);assert.match(await rss.text(),/<rss/);
+      await page.locator(rowLinks).first().click();await page.waitForLoadState('load');
+      assert.match(new URL(page.url()).pathname,/^\/posts\/page-/);
+      await page.goto(base+'/activity/?view=all');
       const next = page.getByRole('link', { name: 'Next', exact: true });
       await next.focus(); await page.keyboard.press('Enter'); await page.waitForURL(/position=/);
       await page.waitForLoadState('load');
