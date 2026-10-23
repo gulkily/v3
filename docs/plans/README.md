@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Absent retraction snapshot publication](absent_retraction_snapshot/)
+
 - [Cached checkout overview](checkout_overview/)
 
 - [Concurrent checkout synchronization](concurrent_checkouts/)
