@@ -732,6 +732,10 @@ final class CheckoutManager
         if (!($options['sessions-paused'] ?? false)) {
             throw new RuntimeException('Pause coding/server sessions, then apply with --sessions-paused. Clean status does not prove idle sessions.');
         }
+        if ($id === null) {
+            // Build a fresh plan under the same manager lock; never apply cached observations.
+            $id = $this->preview($options)['preview_id'];
+        }
         $plan = $this->loadPreview($id);
         $registry = $this->readRegistry();
         if (!hash_equals($plan['registry'], hash('sha256', json_encode($registry, JSON_THROW_ON_ERROR)))) {

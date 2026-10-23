@@ -286,6 +286,19 @@ credential/access failure does not silently select another remote. Correct acces
 or registration and retry preview. Raw remote/hook errors are suppressed because
 they may include credentials; inspect Git locally when diagnosing failures.
 
+To fetch and apply all eligible development checkouts without copying a preview ID,
+pause their coding/server sessions first, then run:
+
+```bash
+./v3 checkouts apply --sessions-paused
+```
+
+Without an ID, apply creates a **fresh** preview under the same command lock and
+immediately applies eligible rows. It does not use cached observations or a prior
+preview. Dirty/busy/excluded/migration-required folders remain skipped; results can
+be partial. To inspect the changes first, keep using `preview` followed by
+`apply <preview-id> --sessions-paused`.
+
 Before applying, coordinate agents and servers in the selected folders, then pass
 `--sessions-paused`. This is an operator assertion; clean Git status is not proof
 that an agent is idle. Tool locks serialize commands using the **same state
