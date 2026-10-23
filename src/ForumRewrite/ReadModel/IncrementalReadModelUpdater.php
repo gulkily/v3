@@ -173,13 +173,13 @@ class IncrementalReadModelUpdater
             $labelState = $this->measure(
                 $timings,
                 'derive_thread_label_state',
-                fn (): array => $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count'])
+                fn (): array => $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count'], VerifiedAttribution::storedCutoff($pdo))
             );
 
             $this->measure(
                 $timings,
                 'update_thread_labels',
-                fn (): mixed => $this->updateThreadLabels($pdo, $threadId, $labelState['labels'], $labelState['score_total'], $labelState['vote_count'])
+                fn (): mixed => $this->updateThreadLabels($pdo, $threadId, $labelState['labels'], $labelState['score_total'], $labelState['verified_score_total'], $labelState['vote_count'])
             );
             $this->measure(
                 $timings,
@@ -257,7 +257,7 @@ class IncrementalReadModelUpdater
             $state = $this->measure(
                 $timings,
                 'derive_post_reaction_state',
-                fn (): array => $this->derivePostReactionState($postId, $post['author_label'], $records, $approvedIdentityIds)
+                fn (): array => $this->derivePostReactionState($postId, $post['author_label'], $records, $approvedIdentityIds, VerifiedAttribution::storedCutoff($pdo), VerifiedAttribution::storedEnabled($pdo) ?? false)
             );
 
             $this->measure(
@@ -353,7 +353,7 @@ class IncrementalReadModelUpdater
             $stmt->execute([$postId]);
             $author = $stmt->fetchColumn();
             if ($author !== false) {
-                $this->updatePostReactions($pdo, $postId, $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved));
+                $this->updatePostReactions($pdo, $postId, $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved, VerifiedAttribution::storedCutoff($pdo), VerifiedAttribution::storedEnabled($pdo) ?? false));
             }
         }
     }
@@ -1225,8 +1225,8 @@ class IncrementalReadModelUpdater
 
             $records = $recordsByThread[$threadId];
             $rootSeed = $this->loadRootImportedSeed($threadId);
-            $labelState = $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count']);
-            $this->updateThreadScoreTotal($pdo, $threadId, $labelState['score_total']);
+            $labelState = $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count'], VerifiedAttribution::storedCutoff($pdo));
+            $this->updateThreadScoreTotal($pdo, $threadId, $labelState['score_total'], $labelState['verified_score_total']);
         }
     }
 
@@ -1238,15 +1238,19 @@ class IncrementalReadModelUpdater
         return $stmt->fetchColumn() !== false;
     }
 
-    private function updateThreadScoreTotal(PDO $pdo, string $threadId, int $scoreTotal): void
+    private function updateThreadScoreTotal(PDO $pdo, string $threadId, int $scoreTotal, int $verifiedScoreTotal): void
     {
         $stmt = $pdo->prepare(
             'UPDATE threads
-             SET score_total = :score_total
+             SET score_total = :effective_score_total,
+                 claimed_score_total = :score_total,
+                 verified_score_total = :verified_score_total
              WHERE root_post_id = :thread_id'
         );
         $stmt->execute([
+            'effective_score_total' => VerifiedAttribution::storedEnabled($pdo) ? $verifiedScoreTotal : $scoreTotal,
             'score_total' => $scoreTotal,
+            'verified_score_total' => $verifiedScoreTotal,
             'thread_id' => $threadId,
         ]);
     }
@@ -1477,20 +1481,24 @@ class IncrementalReadModelUpdater
     /**
      * @param list<PostReactionRecord> $records
      * @param array<string, true> $approvedIdentityIds
-     * @return array{tags:list<string>,post_score_total:int,approved_flag_count:int,is_hidden:int,hidden_reason:?string}
+     * @return array{tags:list<string>,post_score_total:int,approved_flag_count:int,claimed_post_score_total:int,verified_post_score_total:int,claimed_approved_flag_count:int,verified_approved_flag_count:int,is_hidden:int,hidden_reason:?string}
      */
-    private function derivePostReactionState(string $postId, string $authorLabel, array $records, array $approvedIdentityIds): array
+    private function derivePostReactionState(string $postId, string $authorLabel, array $records, array $approvedIdentityIds, ?string $cutoffAt, bool $verifiedEnabled): array
     {
         $tags = [];
         $scoreTotal = 0;
         $approvedFlaggers = [];
         $countedApprovedScoredTags = [];
+        $verifiedScoreTotal = 0;
+        $verifiedFlaggers = [];
+        $countedVerifiedScoredTags = [];
 
         foreach ($records as $record) {
             if ($record->postId !== $postId) {
                 continue;
             }
 
+            $recordCountsVerified = null;
             foreach ($record->tags as $tag) {
                 $tags[$tag] = true;
 
@@ -1498,8 +1506,12 @@ class IncrementalReadModelUpdater
                     continue;
                 }
 
+                $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $cutoffAt, CanonicalPathResolver::postReaction($record->recordId), $record->authorIdentityId, $record->createdAt);
                 if ($tag === 'flag') {
                     $approvedFlaggers[$record->authorIdentityId] = true;
+                    if ($recordCountsVerified) {
+                        $verifiedFlaggers[$record->authorIdentityId] = true;
+                    }
                 }
 
                 if (!TagScore::isScoredTag($tag)) {
@@ -1507,6 +1519,10 @@ class IncrementalReadModelUpdater
                 }
 
                 $dedupeKey = $record->authorIdentityId . ':' . $tag;
+                if ($recordCountsVerified && !isset($countedVerifiedScoredTags[$dedupeKey])) {
+                    $countedVerifiedScoredTags[$dedupeKey] = true;
+                    $verifiedScoreTotal += TagScore::scoreValueForTag($tag);
+                }
                 if (isset($countedApprovedScoredTags[$dedupeKey])) {
                     continue;
                 }
@@ -1518,20 +1534,26 @@ class IncrementalReadModelUpdater
 
         $tagList = array_keys($tags);
         sort($tagList);
-        $approvedFlagCount = count($approvedFlaggers);
+        $claimedFlagCount = count($approvedFlaggers);
+        $verifiedFlagCount = count($verifiedFlaggers);
+        $approvedFlagCount = $verifiedEnabled ? $verifiedFlagCount : $claimedFlagCount;
         $isHidden = $approvedFlagCount > 0 && $authorLabel === 'reply-agent';
 
         return [
             'tags' => $tagList,
-            'post_score_total' => $scoreTotal,
+            'post_score_total' => $verifiedEnabled ? $verifiedScoreTotal : $scoreTotal,
             'approved_flag_count' => $approvedFlagCount,
+            'claimed_post_score_total' => $scoreTotal,
+            'verified_post_score_total' => $verifiedScoreTotal,
+            'claimed_approved_flag_count' => $claimedFlagCount,
+            'verified_approved_flag_count' => $verifiedFlagCount,
             'is_hidden' => $isHidden ? 1 : 0,
             'hidden_reason' => $isHidden ? 'approved_flagged_reply_agent' : null,
         ];
     }
 
     /**
-     * @param array{tags:list<string>,post_score_total:int,approved_flag_count:int,is_hidden:int,hidden_reason:?string} $state
+     * @param array{tags:list<string>,post_score_total:int,approved_flag_count:int,claimed_post_score_total:int,verified_post_score_total:int,claimed_approved_flag_count:int,verified_approved_flag_count:int,is_hidden:int,hidden_reason:?string} $state
      */
     private function updatePostReactions(PDO $pdo, string $postId, array $state): void
     {
@@ -1540,6 +1562,10 @@ class IncrementalReadModelUpdater
              SET post_tags_json = :post_tags_json,
                  post_score_total = :post_score_total,
                  approved_flag_count = :approved_flag_count,
+                 claimed_post_score_total = :claimed_post_score_total,
+                 verified_post_score_total = :verified_post_score_total,
+                 claimed_approved_flag_count = :claimed_approved_flag_count,
+                 verified_approved_flag_count = :verified_approved_flag_count,
                  is_hidden = :is_hidden,
                  hidden_reason = :hidden_reason
              WHERE post_id = :post_id'
@@ -1548,6 +1574,10 @@ class IncrementalReadModelUpdater
             'post_tags_json' => json_encode($state['tags'], JSON_THROW_ON_ERROR),
             'post_score_total' => $state['post_score_total'],
             'approved_flag_count' => $state['approved_flag_count'],
+            'claimed_post_score_total' => $state['claimed_post_score_total'],
+            'verified_post_score_total' => $state['verified_post_score_total'],
+            'claimed_approved_flag_count' => $state['claimed_approved_flag_count'],
+            'verified_approved_flag_count' => $state['verified_approved_flag_count'],
             'is_hidden' => $state['is_hidden'],
             'hidden_reason' => $state['hidden_reason'],
             'post_id' => $postId,
@@ -1632,12 +1662,14 @@ class IncrementalReadModelUpdater
     /**
      * @param list<ThreadLabelRecord> $records
      * @param array<string, true> $approvedIdentityIds
-     * @return array{labels:list<string>,score_total:int,vote_count:int,activity_events:list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}>}
+     * @return array{labels:list<string>,score_total:int,verified_score_total:int,vote_count:int,activity_events:list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}>}
      */
-    private function deriveThreadLabelState(string $threadId, array $records, array $approvedIdentityIds, int $seedScore = 0, int $seedVoteCount = 0): array
+    private function deriveThreadLabelState(string $threadId, array $records, array $approvedIdentityIds, int $seedScore, int $seedVoteCount, ?string $cutoffAt): array
     {
         $labels = [];
         $scoreTotal = $seedScore;
+        $verifiedScoreTotal = $seedScore;
+        $countedVerifiedScoredTags = [];
         $voteCount = $seedVoteCount;
         $countedApprovedScoredTags = [];
         $countedVoteTags = [];
@@ -1649,6 +1681,7 @@ class IncrementalReadModelUpdater
             }
 
             $labelsAdded = [];
+            $recordCountsVerified = null;
             foreach ($record->labels as $label) {
                 if (!isset($labels[$label])) {
                     $labels[$label] = true;
@@ -1673,6 +1706,11 @@ class IncrementalReadModelUpdater
                 }
 
                 $dedupeKey = $this->threadVoteDedupeKey($record->authorIdentityId, $label);
+                $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $cutoffAt, CanonicalPathResolver::threadLabel($record->recordId), $record->authorIdentityId, $record->createdAt);
+                if ($recordCountsVerified && !isset($countedVerifiedScoredTags[$dedupeKey])) {
+                    $countedVerifiedScoredTags[$dedupeKey] = true;
+                    $verifiedScoreTotal += $this->threadLabelScoreValue($label);
+                }
                 if (isset($countedApprovedScoredTags[$dedupeKey])) {
                     continue;
                 }
@@ -1698,6 +1736,7 @@ class IncrementalReadModelUpdater
         return [
             'labels' => $labelList,
             'score_total' => $scoreTotal,
+            'verified_score_total' => $verifiedScoreTotal,
             'vote_count' => $voteCount,
             'activity_events' => $activityEvents,
         ];
@@ -1706,18 +1745,22 @@ class IncrementalReadModelUpdater
     /**
      * @param list<string> $labels
      */
-    private function updateThreadLabels(PDO $pdo, string $threadId, array $labels, int $scoreTotal, int $voteCount): void
+    private function updateThreadLabels(PDO $pdo, string $threadId, array $labels, int $scoreTotal, int $verifiedScoreTotal, int $voteCount): void
     {
         $stmt = $pdo->prepare(
             'UPDATE threads
              SET thread_labels_json = :thread_labels_json,
-                 score_total = :score_total,
+                 score_total = :effective_score_total,
+                 claimed_score_total = :score_total,
+                 verified_score_total = :verified_score_total,
                  vote_count = :vote_count
              WHERE root_post_id = :thread_id'
         );
         $stmt->execute([
             'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
+            'effective_score_total' => VerifiedAttribution::storedEnabled($pdo) ? $verifiedScoreTotal : $scoreTotal,
             'score_total' => $scoreTotal,
+            'verified_score_total' => $verifiedScoreTotal,
             'vote_count' => $voteCount,
             'thread_id' => $threadId,
         ]);

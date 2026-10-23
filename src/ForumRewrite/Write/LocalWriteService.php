@@ -36,6 +36,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\ApprovalPolicy;
 use ForumRewrite\Security\AttributionCutoff;
+use ForumRewrite\ReadModel\VerifiedAttribution;
 use ForumRewrite\Security\ApprovalAcceptance;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
@@ -2886,28 +2887,10 @@ class LocalWriteService
         return (new ReadModelConnection($this->databasePath))->open();
     }
 
+    /** Verified totals depend on the cutoff throughout, so a moved cutoff rebuilds them. */
     private function syncReadModelAfterAttributionCutoffWrite(string $commitSha): void
     {
-        if (!$this->canIncrementallyUpdateReadModel()) {
-            $this->refreshDerivedStateAfterCommit($commitSha);
-
-            return;
-        }
-
-        $pdo = $this->readModelPdo();
-        $pdo->beginTransaction();
-        try {
-            $this->incrementalReadModelUpdater()->writeMetadata($pdo, $commitSha);
-            $pdo->commit();
-        } catch (\Throwable $throwable) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-
-            throw $throwable;
-        }
-
-        $this->staleMarker()->clear();
+        $this->refreshDerivedStateAfterCommit($commitSha);
     }
 
     private function syncReadModelAfterFeatureFlagWrite(
@@ -2920,7 +2903,12 @@ class LocalWriteService
         ?string $createdAt = null,
     ): void
     {
-        if (!$this->canIncrementallyUpdateReadModel()) {
+        $cutoffChanged = false;
+        if ($key === FeatureFlagRegistry::VERIFIED_ATTRIBUTION && $this->canIncrementallyUpdateReadModel()) {
+            // The first switch-on sets the cutoff, which verified totals depend on.
+            $cutoffChanged = VerifiedAttribution::storedCutoff($this->readModelPdo()) !== VerifiedAttribution::resolveCutoff($this->repositoryRoot);
+        }
+        if ($cutoffChanged || !$this->canIncrementallyUpdateReadModel()) {
             // A rebuild replays feature-flag activity from git history too (see
             // ReadModelBuilder::featureFlagActivityEvents()), so it already covers
             // this write - don't also insert the activity row below, or it would
@@ -2962,6 +2950,9 @@ class LocalWriteService
                 'source_commit_sha' => $commitSha,
             ]);
 
+            if ($key === FeatureFlagRegistry::VERIFIED_ATTRIBUTION) {
+                VerifiedAttribution::apply($pdo, $this->featureFlags->withSiteValues([$key => $value])->isEnabled($key));
+            }
             $this->incrementalReadModelUpdater()->writeMetadata($pdo, $commitSha);
             $pdo->commit();
         } catch (\Throwable $throwable) {

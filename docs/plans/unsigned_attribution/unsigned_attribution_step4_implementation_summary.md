@@ -46,6 +46,22 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
   - Layout: the move field and button stack full width at desktop; usable, could be compacted later.
   - Moving the cutoff only advances read-model metadata for now; Stage 3 recomputes verified totals on a cutoff change.
 
+## Stage 3 - Verified vote totals
+
+- Changes:
+  - Schema 26: threads gain `claimed_score_total` and `verified_score_total`; posts gain claimed and verified `post_score_total` and `approved_flag_count`. Claimed is today's rule. Verified counts a vote naming an approved member only when its record is signed by that member, or was created (server `Created-At`, never `Action-At`) before the cutoff; with no cutoff everything counts. Imported score seeds count in both.
+  - `ReadModel/VerifiedAttribution`: the existing effective columns (`score_total`, `post_score_total`, `approved_flag_count`, `is_hidden`, `hidden_reason`) copy one set, chosen by the flag. Every existing query, page, API response and offline snapshot keeps reading the same columns. Metadata records the set in use and the cutoff the totals were derived with.
+  - Builder and incremental updater compute both sets with separate per-member deduplication (a later signed vote still counts when an earlier unsigned one by the same name did not).
+  - Flag toggle: swaps the effective columns in the same transaction, no rebuild. The first switch-on (cutoff appears) and cutoff moves rebuild, so totals match a full rebuild exactly. Startup swaps in place when an environment override changed the flag.
+  - Docs: `read_model_schema_v1.md` (columns, metadata keys, verified attribution section).
+- Judgment call for review: approved-member flags also hide flagged reply-agent posts (`approved_flag_count`). The verified rule applies there too, so an unsigned flag naming a member after the cutoff no longer hides a reply when the flag is on. Step 2 names scores, post counts and profiles; this treats hiding as part of the approved score.
+- Verification:
+  - `WriteApiSmokeTest::testVerifiedTotalsAgreeAcrossRebuildIncrementalToggleCutoffMoveAndEnvironment`: unsigned like and flag before the cutoff count; switch-on changes no counts; after the cutoff an unsigned upvote is claimed only and a signed downvote counts; incremental equals a full rebuild after each step; toggling off and on swaps without a rebuild and keeps the cutoff; moving the cutoff before the first votes leaves only the signed vote verified; an environment override applies on the next request.
+  - `LocalAppSmokeTest::testVersion25StartupRebuildsBeforeServingVerifiedTotals`: a version 25 cache missing the new column is rebuilt at startup before the thread page is served.
+  - `./v3 rebuild` on the zenmemes backup copy (`5b98332a`): 1,680 posts, 881 threads; compared with a rebuild by the pre-Stage-3 code, 0 threads differ in score or vote count and 0 posts differ in score, flag count or hidden state; claimed equals verified everywhere (no cutoff); 3.8 s warm against 5.4 s before.
+  - 41 read-model, scoring, offline snapshot, import, status and flag suites: all pass except 7 tests that fail identically on the Stage 2 commit (pre-existing): `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, two `ReadModelProvenanceTest` broken-history tests, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, two `LocalAppSmokeTest` static-build progress tests. Two `ImportInstanceCommandTest` tests failed during the batch while plan docs were being edited and passed on rerun.
+  - `WriteApiSmokeTest` parity test and Stage 2 cutoff test pass.
+
 ## Enhancement Requests
 
 - **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** pending renewed Approved Step 2 and Approved Step 3. / **Outcome:** pending.

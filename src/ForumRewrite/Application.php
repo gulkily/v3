@@ -1066,6 +1066,7 @@ final class Application
                 } elseif (($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
                     $rebuildReason = 'repository_head_mismatch';
                 } else {
+                    $this->applyVerifiedAttributionFlag($metadata);
                     return;
                 }
             } catch (\Throwable) {
@@ -1098,6 +1099,26 @@ final class Application
             );
             $builder->rebuild();
             $this->staleMarker()->clear();
+        });
+    }
+
+    /**
+     * The flag can also change outside the repository (environment), so the stored choice
+     * of totals is compared on each request and swapped in place; no rebuild is needed.
+     *
+     * @param array<string, string> $metadata
+     */
+    private function applyVerifiedAttributionFlag(array $metadata): void
+    {
+        $enabled = \ForumRewrite\ReadModel\VerifiedAttribution::enabled($this->repositoryRoot);
+        if (($metadata[\ForumRewrite\ReadModel\VerifiedAttribution::METADATA_ENABLED] ?? null) === ($enabled ? '1' : '0')) {
+            return;
+        }
+        $this->executionLock()->withExclusiveLock(function () use ($enabled): void {
+            $pdo = (new \ForumRewrite\ReadModel\ReadModelConnection($this->databasePath))->open();
+            $pdo->beginTransaction();
+            \ForumRewrite\ReadModel\VerifiedAttribution::apply($pdo, $enabled);
+            $pdo->commit();
         });
     }
 

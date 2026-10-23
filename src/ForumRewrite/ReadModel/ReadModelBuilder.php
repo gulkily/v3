@@ -38,6 +38,7 @@ final class ReadModelBuilder
     /** @var array<string, ?string> */
     private array $sourceCommitShaByPath = [];
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
+    private ?string $attributionCutoff = null;
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -73,6 +74,7 @@ final class ReadModelBuilder
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
             $this->measure('create_schema', fn (): mixed => $this->createSchema($pdo));
+            $this->attributionCutoff = $this->measure('resolve_attribution_cutoff', fn (): ?string => VerifiedAttribution::resolveCutoff($this->repositoryRoot));
 
             $posts = $this->measure('index_posts', fn (): array => $this->indexPosts($pdo));
             $profiles = $this->measure('index_profiles', fn (): array => $this->indexProfiles($pdo));
@@ -87,6 +89,7 @@ final class ReadModelBuilder
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
             ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot);
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
+            $this->measure('apply_verified_attribution', fn (): mixed => VerifiedAttribution::sync($pdo, $this->repositoryRoot, $this->attributionCutoff));
             $this->measure('commit_read_model', fn (): bool => $pdo->commit());
         } catch (\Throwable $throwable) {
             if ($pdo->inTransaction()) {
@@ -378,6 +381,8 @@ final class ReadModelBuilder
         $labelsByThread = [];
         $scoreByThread = [];
         $countedApprovedScoredTagsByThread = [];
+        $verifiedScoreByThread = [];
+        $countedVerifiedScoredTagsByThread = [];
         $voteCountByThread = [];
         $countedVoteTagsByThread = [];
         foreach ($this->progressItems('deriving_thread_label_records', $records) as $record) {
@@ -389,6 +394,10 @@ final class ReadModelBuilder
             $labelsByThread[$record->threadId] ??= [];
             $scoreByThread[$record->threadId] ??= $seedScoreByThread[$record->threadId] ?? 0;
             $countedApprovedScoredTagsByThread[$record->threadId] ??= [];
+            $verifiedScoreByThread[$record->threadId] ??= $seedScoreByThread[$record->threadId] ?? 0;
+            $countedVerifiedScoredTagsByThread[$record->threadId] ??= [];
+            $recordPath = CanonicalPathResolver::threadLabel($record->recordId);
+            $recordCountsVerified = null;
             $voteCountByThread[$record->threadId] ??= $seedVoteCountByThread[$record->threadId] ?? 0;
             $countedVoteTagsByThread[$record->threadId] ??= [];
             $labelsAdded = [];
@@ -414,6 +423,11 @@ final class ReadModelBuilder
                 }
 
                 $dedupeKey = $this->threadVoteDedupeKey($record->authorIdentityId, $label);
+                $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $this->attributionCutoff, $recordPath, $record->authorIdentityId, $record->createdAt);
+                if ($recordCountsVerified && !isset($countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey])) {
+                    $countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
+                    $verifiedScoreByThread[$record->threadId] += $this->threadLabelScoreValue($label);
+                }
                 if (isset($countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey])) {
                     continue;
                 }
@@ -439,6 +453,8 @@ final class ReadModelBuilder
             'UPDATE threads
              SET thread_labels_json = :thread_labels_json,
                  score_total = :score_total,
+                 claimed_score_total = :score_total,
+                 verified_score_total = :verified_score_total,
                  vote_count = :vote_count
              WHERE root_post_id = :root_post_id'
         );
@@ -449,6 +465,7 @@ final class ReadModelBuilder
             $updateThread->execute([
                 'thread_labels_json' => json_encode($labels, JSON_THROW_ON_ERROR),
                 'score_total' => $scoreByThread[$threadId] ?? ($seedScoreByThread[$threadId] ?? 0),
+                'verified_score_total' => $verifiedScoreByThread[$threadId] ?? ($seedScoreByThread[$threadId] ?? 0),
                 'vote_count' => $voteCountByThread[$threadId] ?? ($seedVoteCountByThread[$threadId] ?? 0),
                 'root_post_id' => $threadId,
             ]);
@@ -576,6 +593,9 @@ final class ReadModelBuilder
         $scoreByPost = [];
         $flaggersByPost = [];
         $countedApprovedScoredTagsByPost = [];
+        $verifiedScoreByPost = [];
+        $verifiedFlaggersByPost = [];
+        $countedVerifiedScoredTagsByPost = [];
         foreach ($this->progressItems('deriving_post_reaction_records', $records) as $record) {
             if (!isset($knownPosts[$record->postId])) {
                 continue;
@@ -596,6 +616,10 @@ final class ReadModelBuilder
             $scoreByPost[$record->postId] ??= 0;
             $flaggersByPost[$record->postId] ??= [];
             $countedApprovedScoredTagsByPost[$record->postId] ??= [];
+            $verifiedScoreByPost[$record->postId] ??= 0;
+            $verifiedFlaggersByPost[$record->postId] ??= [];
+            $countedVerifiedScoredTagsByPost[$record->postId] ??= [];
+            $recordCountsVerified = null;
             foreach ($record->tags as $tag) {
                 $tagsByPost[$record->postId][$tag] = true;
 
@@ -603,8 +627,12 @@ final class ReadModelBuilder
                     continue;
                 }
 
+                $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $this->attributionCutoff, CanonicalPathResolver::postReaction($record->recordId), $record->authorIdentityId, $record->createdAt);
                 if ($tag === 'flag') {
                     $flaggersByPost[$record->postId][$record->authorIdentityId] = true;
+                    if ($recordCountsVerified) {
+                        $verifiedFlaggersByPost[$record->postId][$record->authorIdentityId] = true;
+                    }
                 }
 
                 if (!TagScore::isScoredTag($tag)) {
@@ -612,6 +640,10 @@ final class ReadModelBuilder
                 }
 
                 $dedupeKey = $record->authorIdentityId . ':' . $tag;
+                if ($recordCountsVerified && !isset($countedVerifiedScoredTagsByPost[$record->postId][$dedupeKey])) {
+                    $countedVerifiedScoredTagsByPost[$record->postId][$dedupeKey] = true;
+                    $verifiedScoreByPost[$record->postId] += TagScore::scoreValueForTag($tag);
+                }
                 if (isset($countedApprovedScoredTagsByPost[$record->postId][$dedupeKey])) {
                     continue;
                 }
@@ -626,6 +658,10 @@ final class ReadModelBuilder
              SET post_tags_json = :post_tags_json,
                  post_score_total = :post_score_total,
                  approved_flag_count = :approved_flag_count,
+                 claimed_post_score_total = :post_score_total,
+                 verified_post_score_total = :verified_post_score_total,
+                 claimed_approved_flag_count = :approved_flag_count,
+                 verified_approved_flag_count = :verified_approved_flag_count,
                  is_hidden = :is_hidden,
                  hidden_reason = :hidden_reason
              WHERE post_id = :post_id'
@@ -640,6 +676,8 @@ final class ReadModelBuilder
                 'post_tags_json' => json_encode($tags, JSON_THROW_ON_ERROR),
                 'post_score_total' => $scoreByPost[$postId] ?? 0,
                 'approved_flag_count' => $approvedFlagCount,
+                'verified_post_score_total' => $verifiedScoreByPost[$postId] ?? 0,
+                'verified_approved_flag_count' => count($verifiedFlaggersByPost[$postId] ?? []),
                 'is_hidden' => $isHidden ? 1 : 0,
                 'hidden_reason' => $isHidden ? 'approved_flagged_reply_agent' : null,
                 'post_id' => $postId,

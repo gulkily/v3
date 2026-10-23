@@ -145,3 +145,18 @@
 ### Uncertain assessments
 
 - Railspike does not say whether a plan's named file path, replaced by an equivalent signed source meeting the same Step 2 requirement, needs renewed Step 3 approval. Treated as an implementation detail and recorded as a deviation in the Step 4 summary.
+
+## 2026-10-23T17:00Z · Step 4 Stage 3 (verified vote totals)
+
+### Necessary/useful instructions
+
+- `CONTRIBUTING.md` "Read-model schema changes": the four obligations (version bump, schema doc, prior-version startup test, `./v3 rebuild`) gave Stage 3 a complete, checkable definition of done. Retain.
+- Step 3 Key Risks "rebuild, incremental update, flag toggles and cutoff moves disagree": turned directly into one parity test that compares against a fresh rebuild after every step. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Step 2 lists scores, post counts and profiles; approved-member flags also hide reply-agent posts. Applying the rule there was a judgment call surfaced for maintainer review rather than a changed-scope return, since it follows from "do not count toward the approved score".

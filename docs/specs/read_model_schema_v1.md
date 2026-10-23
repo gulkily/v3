@@ -40,7 +40,7 @@ Single-row-per-key bookkeeping about the last rebuild.
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| `key` | TEXT PK | e.g. `schema_version`, `schema_fingerprint`, `repository_root`, `repository_head`, `rebuilt_at`, `rebuild_reason`, `thread_label_invalid_count` |
+| `key` | TEXT PK | e.g. `schema_version`, `schema_fingerprint`, `repository_root`, `repository_head`, `rebuilt_at`, `rebuild_reason`, `thread_label_invalid_count`, `verified_attribution_enabled`, `attribution_cutoff_at` |
 | `value` | TEXT | |
 
 ### `posts`
@@ -62,8 +62,12 @@ One row per canonical post record (both thread roots and replies).
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |
 | `post_tags_json` | TEXT | JSON array, default `'[]'` |
-| `post_score_total` | INTEGER | default 0 |
-| `approved_flag_count` | INTEGER | default 0 |
+| `post_score_total` | INTEGER | default 0; effective: the claimed or verified value, chosen by the verified attribution flag |
+| `approved_flag_count` | INTEGER | default 0; effective, as `post_score_total` |
+| `claimed_post_score_total` | INTEGER | default 0; every scored tag naming an approved member (schema 26) |
+| `verified_post_score_total` | INTEGER | default 0; unsigned tags count only before the attribution cutoff (schema 26) |
+| `claimed_approved_flag_count` | INTEGER | default 0 (schema 26) |
+| `verified_approved_flag_count` | INTEGER | default 0 (schema 26) |
 | `is_hidden` | INTEGER | default 0; moderation flag |
 | `hidden_reason` | TEXT NULL | |
 | `retracted_at` | TEXT NULL | accepted retraction timestamp |
@@ -86,7 +90,9 @@ One row per thread (keyed by its root post).
 | `last_post_id` | TEXT | |
 | `board_tags_json` | TEXT | JSON array |
 | `thread_labels_json` | TEXT | JSON array |
-| `score_total` | INTEGER | default 0 |
+| `score_total` | INTEGER | default 0; effective: the claimed or verified value, chosen by the verified attribution flag |
+| `claimed_score_total` | INTEGER | default 0; every scored label naming an approved member (schema 26) |
+| `verified_score_total` | INTEGER | default 0; unsigned labels count only before the attribution cutoff (schema 26) |
 | `vote_count` | INTEGER | default 0; distinct upvote/downvote events |
 | `retracted_at` | TEXT NULL | root retraction timestamp |
 | `retraction_class` | TEXT NULL | root author/operator authorization classification |
@@ -283,6 +289,22 @@ Metadata also includes `post_reaction_invalid_count`, parallel to
 `thread_label_invalid_count`. A missing signer key makes a supplied signature
 invalid, never unsigned. Raw source bytes are unchanged; current-source responses
 expose `X-Forum-Signature-Status`, and activity source metadata shows the status.
+
+## Verified attribution (schema version 26)
+
+Threads and posts keep two sets of approved-member totals. Claimed totals count
+every scored label or tag naming an approved member, as before. Verified totals
+count it only when its record is signed by that member, or was created (server
+`Created-At`, never `Action-At`) before the attribution cutoff; see
+[Attribution Cutoff Record V1](attribution_cutoff_record_v1.md). Imported score
+seeds count in both. The effective columns (`score_total`, `post_score_total`,
+`approved_flag_count`, `is_hidden`, `hidden_reason`) copy one set, chosen by the
+`FORUM_VERIFIED_ATTRIBUTION` flag, so turning the flag on or off swaps them in
+place without a rebuild. Metadata `verified_attribution_enabled` records the set
+in use and `attribution_cutoff_at` the cutoff the verified totals were derived
+with; startup swaps the set if the flag changed outside the repository, and a
+change of cutoff rebuilds. `vote_count` is unchanged by the flag. Startup
+rebuilds a version 25 cache before serving queries that use the new columns.
 
 ## Operator retraction attribution
 
