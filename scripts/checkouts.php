@@ -13,7 +13,7 @@ Usage: ./v3 checkouts [command] [argument] [options]
   overview        Show cached checkout observations (default)
   refresh         Fetch/refresh cached observations without creating an update plan
   preview         Fetch selected sources and save an update preview
-  apply <id>      Apply a saved preview (--sessions-paused required)
+  apply [id]      Apply saved preview, or fetch/apply all eligible (--sessions-paused required)
   list            List registered clones
   remove <path>   Forget a path; never deletes its files
 Options:

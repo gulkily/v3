@@ -65,3 +65,9 @@ Projected total remains unavailable pending exact frozen R1 feedback recovery; p
 - Request: mark apply-eligible preview rows with one character; user explicitly requested no legend.
 - Changes: prefix fresh-preview fast-forward/merge actions with `*`; cached overview and other actions remain unmarked, with no legend or JSON/eligibility changes.
 - Verification: 3 focused real-Git/render tests passed (fast-forward/merge marked, dirty/current and cached rows unmarked, no legend, existing one-line preview/column widths preserved); PHP syntax and diff checks passed.
+
+## Small post-merge refinement - Apply without a preview ID
+
+- Request: make apply handle all eligible checkouts without specifying a preview ID.
+- Changes: ID-less apply builds a fresh signed preview under the manager lock and runs the existing revalidated batch apply. Session coordination flag remains required; cached observations are never used as update authority. Explicit preview-ID flow is unchanged. Help/reference updated.
+- Verification: 4 focused real-Git checks passed (fresh batch fetch/update with dirty skip, feature merge and test-role exclusion, existing explicit-ID replay prevention, rewrite blocking); PHP syntax and diff checks passed. No live checkouts updated by verification.
