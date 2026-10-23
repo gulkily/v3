@@ -1,0 +1,27 @@
+flowchart TD
+  Operator[Operator UI / CLI] --> Switch[Shared mode-switch service]
+  Future[Future traffic/load controller] -.-> Switch
+  Switch --> Writer[Atomic .htaccess writer]
+  Writer --> Mode{Applied mode}
+  Request[Page request] --> Mode
+  Mode -->|Normal| PHP[Normal PHP routing]
+  Mode -->|High traffic| Eligible{Eligible public request?}
+  Eligible -->|No| PHP
+  Eligible -->|Yes, including sessions| Cached{Cached HTML exists?}
+  Cached -->|Yes| Apache[Apache serves HTML]
+  Cached -->|No| Capacity{Generation capacity available?}
+  Capacity -->|No| Busy[Temporary unavailable + retry guidance]
+  Capacity -->|Yes| Generate[Coordinated shared-page generation]
+  Log[Latest X access.log lines] --> Rank[Rank eligible pages by popularity]
+  Rank --> Cron[Bounded cron refresh]
+  Cron --> Generate
+  Apache --> Timestamp[Check embedded generation timestamp]
+  Timestamp -->|Stale| Low[Validated low-priority refresh request]
+  Low --> Cron
+  Generate --> Temp[Render temporary HTML]
+  Temp --> Valid{Still eligible and current?}
+  Valid -->|Yes| Publish[Atomically replace cached HTML]
+  Valid -->|No| Discard[Discard obsolete result]
+  Publish --> Cache[(HTML cache)]
+  Cache --> Cached
+  Generate -->|Refresh fails| Keep[Keep existing eligible HTML; record failure]

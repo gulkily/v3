@@ -20,6 +20,8 @@
 
   function currentViewFromUrl() {
     var view = new URLSearchParams(location.search).get("view") || "all";
+    // Security review is intentionally absent from the ordinary folder tree.
+    if (view === "security" && document.querySelector("[data-access-history-view]")) return view;
     return filterItems.some(function (item) {
       return item.getAttribute("data-paned-activity-view") === view;
     }) ? view : "all";

@@ -10,9 +10,11 @@ Usage:
   ./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
   ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test
+  ./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/] [--json]
+  ./v3 high-traffic cron|run [access.log] [--json]
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
   ./v3 tui
-  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.0-beta.1]
+  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.1-beta.1]
   ./v3 fdp sync ... (deprecated alias)
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
@@ -22,7 +24,7 @@ Usage:
   ./v3 images verify|restore <images.tar> <repository_root> <database_path> [--image-root=/private/images]
   ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
-  ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
+  ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root] [--inspect] [--repair-labels --resolve-label=<id>] [--json]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]
@@ -71,6 +73,10 @@ EOF
 fi
 
 case "${COMMAND}" in
+  high-traffic)
+    shift
+    exec php "${ROOT}/scripts/high_traffic.php" "$@"
+    ;;
   retraction-sweep)
     shift
     exec php "${ROOT}/scripts/retraction_sweep.php" "$@"

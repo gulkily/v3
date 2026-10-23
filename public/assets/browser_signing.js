@@ -855,7 +855,7 @@
   }
 
   function isInlineReplyComposer(root) {
-    return Boolean(root && typeof root.querySelector === "function" && root.querySelector("[data-inline-reply-details]"));
+    return Boolean(root && typeof root.querySelector === "function" && (root.querySelector("[data-inline-reply-compose]") || root.querySelector("[data-inline-reply-details]")));
   }
 
   function canonicalReplyUrl(result, returnTo) {
@@ -1298,6 +1298,7 @@
       alreadyRetracted: data.already_retracted === true,
       retractionStatus: data.retraction_status || "",
       cleanupStatus: data.cleanup_status || "",
+      labelCleanupStatus: data.label_cleanup_status || "",
       failedStep: data.failed_step || "",
       commitSha: data.commit_sha || "",
       serverTiming: serverTiming || {},

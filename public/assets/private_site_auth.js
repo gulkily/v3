@@ -281,6 +281,14 @@
     }
 
     if (state.dataset && state.dataset.publicAuthResume === "true") {
+      var sharedPage = Boolean(document.querySelector('meta[name="v3-generated-at"]'));
+      if (sharedPage) {
+        // Public shared HTML cannot change after authentication. Live actions and
+        // protected pages resume/verify identity when needed; do not reload or
+        // perform a redundant sign-in on every cached navigation.
+        delete state.dataset.publicAuthResume;
+        return;
+      }
       authenticate({
         returnTo: window.location.pathname + window.location.search,
         replaceHistory: true

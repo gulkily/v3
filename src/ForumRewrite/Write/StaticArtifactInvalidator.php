@@ -135,6 +135,7 @@ final class StaticArtifactInvalidator
      */
     public function invalidateAllGeneratedPresentation(): void
     {
+        foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::detach($root);
         $paths = [];
         foreach ($this->artifactRoots as $root) {
             if (!file_exists($root)) {

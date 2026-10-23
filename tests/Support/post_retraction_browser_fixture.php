@@ -25,6 +25,6 @@ if ($code !== 0) throw new RuntimeException('Cannot commit fixture seeds');
 $posts = [];
 foreach (array_merge(array_keys($identities), ['partial']) as $scenario) {
     $posts[$scenario] = $writer->prepareThread(['board_tags' => 'general', 'subject' => 'Retraction browser ' . $scenario,
-        'body' => 'Browser prose ' . $scenario, 'author_identity_id' => $identities['author']]);
+        'body' => 'Browser prose ' . $scenario . "\n#pinned", 'author_identity_id' => $identities['author']]);
 }
 echo json_encode(['identities' => $identities, 'posts' => $posts]);

@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <title><?= $e($title) ?></title>
   <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="Agent guide">
   <script>
     (function () {
       var modes = <?= json_encode($themeModes, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR) ?>;

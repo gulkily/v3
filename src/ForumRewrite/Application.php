@@ -169,7 +169,17 @@ final class Application
 
         if ($securityReviewRequest) {
             if (!$this->routeServices()->securityReviewAllowed()) {
-                $this->sendText("Authenticated root-approved operator access required.\n", 403, $this->routeServices()->noStoreHeaders());
+                if (!str_starts_with($path, '/api/') && ($query['format'] ?? '') !== 'rss') {
+                    $this->sendHtml($this->routeServices()->renderPageTemplate(
+                        'access_history_auth.php',
+                        ['canSignIn' => empty($_SESSION['authenticated_identity_id']), 'authReturnTo' => $path . '?view=security', 'viewerProfile' => null],
+                        'Access history', 'tools',
+                        ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/access_history_auth.js'],
+                        false,
+                    ), 403, $this->routeServices()->noStoreHeaders());
+                } else {
+                    $this->sendText("Authenticated root-approved operator access required.\n", 403, $this->routeServices()->noStoreHeaders());
+                }
                 return;
             }
             if (($query['format'] ?? '') === 'rss') {
@@ -434,6 +444,11 @@ final class Application
 
         if ($path === '/api/feature_flags/navigation') {
             $this->toolsPageController()->featureFlagNavigation($method);
+            return;
+        }
+
+        if ($path === '/api/prepare_high_traffic' || $path === '/api/finalize_high_traffic') {
+            $this->toolsPageController()->highTrafficApi($method,$query,$path === '/api/finalize_high_traffic');
             return;
         }
 
@@ -710,7 +725,7 @@ final class Application
                 return;
             }
 
-            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all')), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
+            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all'), $query['position'] ?? null), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
             return;
         }
 
@@ -1369,7 +1384,7 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return "Local test slice\nGET /api/\nGET /api/list_index\nGET /api/get_thread\nPOST /api/analyze_post\nPOST /api/score_post\nGET /about/\nGET /compose/thread\nGET /compose/reply\nGET /account/key/\nGET /instance/\nGET /backup/\n";
+        return (new \ForumRewrite\Http\LlmsTxtRenderer($this->featureFlags()))->render();
     }
 
     /**
@@ -1951,6 +1966,11 @@ final class Application
     private function membersOnlyRequestAllowed(string $method, string $path): bool
     {
         if ($method === 'GET' && ($path === '/docs' || $path === '/docs/' || str_starts_with($path, '/docs/'))) {
+            return true;
+        }
+
+        // Agent onboarding text: protocol and instance flags only, no content.
+        if ($method === 'GET' && ($path === '/llms.txt' || $path === '/api/' || $path === '/api')) {
             return true;
         }
 

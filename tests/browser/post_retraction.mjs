@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, readdir, writeFile, mkdir } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -31,7 +31,23 @@ try {
     const signature = await openpgp.sign({ message: await openpgp.createMessage({ text: prepared.canonical_record }), signingKeys: authorKey, detached: true });
     const response = await setup.request.post(base + '/api/create_prepared_post', { form: { prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path, canonical_record: prepared.canonical_record, author_identity_id: identities.author, detached_signature: signature } });
     const result = await response.json(); assert.equal(result.status, 'ok', JSON.stringify(result));
+    const reply = await setup.request.post(base + '/api/create_reply', { form: { thread_id: prepared.post_id, parent_id: prepared.post_id, body: 'Preserved browser reply' } });
+    assert.match(await reply.text(), /status=ok/);
+
   }
+  // Model an imported legacy label for one scenario; no ownership is inferred from its date.
+  for (const filename of await readdir(join(root, 'repository/records/thread-labels'))) {
+    if (!filename.endsWith('.txt')) continue;
+    const path = join(root, 'repository/records/thread-labels', filename);
+    const text = await readFile(path, 'utf8');
+    if (text.includes(`Thread-ID: ${posts.account.post_id}\n`)) {
+      await writeFile(path, text.replace(/^Source-Post-(?:ID|SHA256):.*\n/gm, ''));
+    }
+  }
+  let fixtureCommit = spawnSync('git', ['-C', join(root, 'repository'), 'add', 'records'], { encoding: 'utf8' });
+  assert.equal(fixtureCommit.status, 0, fixtureCommit.stderr);
+  fixtureCommit = spawnSync('git', ['-C', join(root, 'repository'), 'commit', '-qm', 'Legacy browser label fixture'], { encoding: 'utf8' });
+  assert.equal(fixtureCommit.status, 0, fixtureCommit.stderr);
   await setup.close();
   for (const scenario of (process.env.RETRACTION_SCENARIO ? [process.env.RETRACTION_SCENARIO] : ['author', 'operator', 'account', 'partial'])) {
     const role = scenario === 'partial' ? 'account' : scenario;
@@ -114,6 +130,11 @@ try {
     const fields = new URLSearchParams(response.request().postData());
     assert.equal(fields.get('actor_identity_id'), identities[role]);
     assert.match(fields.get('detached_signature'), /BEGIN PGP SIGNATURE/);
+    const currentLabels = await (await context.request.get(base + '/api/get_thread?thread_id=' + post.post_id)).text();
+    assert.equal(/^Labels:.*\bpinned\b/m.test(currentLabels), scenario === 'account');
+    if (scenario === 'account') {
+      await page.getByText("Some labels need operator review. Ask an operator to inspect this post's label ownership.", { exact: true }).waitFor();
+    }
     const recordPath = fields.get('record_path');
     const source = await context.request.get(base + '/source/current/' + recordPath);
     assert.equal(source.headers()['x-forum-signature-status'], 'verified');
@@ -136,6 +157,33 @@ try {
       const blocked = await context.request.get(base + path);
       assert.equal(blocked.status(), 410);
       assert.match(await blocked.text(), new RegExp(notice));
+    }
+    if (scenario === 'author') {
+      const removed = spawnSync(join(project, 'v3'), ['delete-record', post.post_id, join(root, 'repository'), join(root, 'read.sqlite3'), join(root, 'static'), '--json'], { env, encoding: 'utf8' });
+      assert.equal(removed.status, 0, removed.stdout + removed.stderr);
+      await page.goto(base + '/threads/' + post.post_id);
+      await page.getByText('Preserved browser reply', { exact: true }).waitFor();
+      assert.equal(await page.getByText('Browser prose author', { exact: true }).count(), 0);
+      console.log('PASS physical root deletion preserves browser conversation');
+    }
+    if (scenario === 'account') {
+      const themes = ['light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight'];
+      await mkdir('/tmp/retraction-browser-evidence', { recursive: true });
+      for (const width of [390, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const theme of themes) {
+          await page.evaluate(({ theme, id }) => { localStorage.setItem('forum-zenmemes-theme', theme); sessionStorage.setItem('forum-retraction-label-review', id); }, { theme, id: post.post_id });
+          await page.reload();
+          const warning = page.getByText("Some labels need operator review. Ask an operator to inspect this post's label ownership.", { exact: true });
+          await warning.waitFor();
+          assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
+          assert.equal(await warning.evaluate(node => node.scrollWidth <= node.clientWidth + 1), true, `${theme}/${width} warning overflow`);
+          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${theme}/${width} page overflow`);
+          await warning.scrollIntoViewIfNeeded();
+          if (['light', 'word97', 'chicago', 'midnight'].includes(theme)) await page.screenshot({ path: `/tmp/retraction-browser-evidence/${theme}-${width}.png` });
+        }
+      }
+      console.log('PASS operator-review warning in 13 themes at phone/desktop widths without overflow');
     }
     console.log(`PASS real browser ${scenario} retraction, signing and attribution`);
     await context.close();

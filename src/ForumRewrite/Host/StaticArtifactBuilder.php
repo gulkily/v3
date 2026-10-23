@@ -106,6 +106,45 @@ final class StaticArtifactBuilder
         $this->buildSharedPages($this->application());
     }
 
+    /** Run only in an isolated renderer process: no visitor globals or active session. */
+    public function renderHighTrafficRoute(string $route): string
+    {
+        if (HighTrafficRoute::canonical($route) === null || $_COOKIE !== [] || session_status() === PHP_SESSION_ACTIVE) {
+            throw new RuntimeException('Shared rendering requires an eligible route and isolated session context.');
+        }
+        if (FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+            ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)) {
+            throw new RuntimeException('High-traffic rendering is unavailable on private instances.');
+        }
+        http_response_code(200);
+        ob_start();
+        try {
+            $this->application()->handle('GET', $route);
+            $html = (string) ob_get_contents();
+        } finally { ob_end_clean(); }
+        if (http_response_code() !== 200 || !str_contains(strtolower($html), '</head>')) {
+            throw new RuntimeException('Only successful HTML pages can enter the shared cache.');
+        }
+        foreach (headers_list() as $header) {
+            if (preg_match('/^(set-cookie|location):/i', $header)) throw new RuntimeException('Shared render emitted session or redirect headers.');
+        }
+        $script = AssetFingerprint::fingerprintedPath($this->projectRoot . '/public', '/assets/high_traffic.js');
+        $html = str_replace('</head>', '<script defer src="' . htmlspecialchars($script, ENT_QUOTES) . '"></script></head>', $html);
+        preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#',$this->assetReferenceMarkup($html),$references);
+        $assetBytes=0;
+        foreach (array_unique($references[0]) as $reference) {
+            $source=AssetFingerprint::sourcePathForFingerprint($this->projectRoot . '/public',$reference);
+            if ($source!==null) $assetBytes+=filesize($source);
+        }
+        $configuredBytes=getenv('FORUM_HIGH_TRAFFIC_BYTES');
+        $assetLimit=$configuredBytes!==false && ctype_digit($configuredBytes) && (int)$configuredBytes>0 ? min(2684354560,(int)$configuredBytes) : 268435456;
+        if ($assetBytes>$assetLimit) throw new RuntimeException('Referenced assets exceed cache capacity.');
+        $this->copyReferencedAssets($html);
+        $this->assertFingerprintReferencesAvailable($html);
+        $stamp = '<meta name="v3-generated-at" content="' . gmdate('Y-m-d\TH:i:s\Z') . '">';
+        return str_replace('</head>', $stamp . '</head>', $html);
+    }
+
     private function buildSharedPages(Application $application): void
     {
         PlatformDocsCatalog::withSnapshot($this->projectRoot, fn () => $this->renderSharedPages($application));

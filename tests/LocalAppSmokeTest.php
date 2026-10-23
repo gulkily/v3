@@ -80,6 +80,38 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion24StartupRebuildsBeforeServingStandardActivityPages(): void
+    {
+        $database = sys_get_temp_dir() . '/activity-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='24' WHERE key='schema_version'");
+            $pdo->exec("UPDATE activity SET label='stale activity'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            $html = $this->render($app, '/activity/');
+            assertStringContains('Hello world', $html);
+            assertStringNotContains('stale activity', $html);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion22StartupRebuildsBeforeServingLabelRemovalQueries(): void
+    {
+        $database = sys_get_temp_dir() . '/label-startup-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='22' WHERE key='schema_version'");
+            $pdo->exec("UPDATE threads SET thread_labels_json='[\"pinned\"]' WHERE root_post_id='root-001'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('["bug","needs-review"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
+
     public function testVersion18StartupRebuildsRetractionAttributionBeforeServingPage(): void
     {
         $directory = sys_get_temp_dir() . '/forum-retraction-schema-' . bin2hex(random_bytes(6));
@@ -1370,6 +1402,111 @@ PHP;
         }
     }
 
+    public function testDeleteSourceCleansOwnedLabelsPreservesRepliesAndRetries(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        $bytes = file_get_contents($root . '/records/posts/root-001.txt');
+        $label = "Record-ID: label-owned\nCreated-At: 2026-04-10T12:00:00Z\nThread-ID: root-001\nOperation: add\nLabels: pinned\nSource-Post-ID: root-001\nSource-Post-SHA256: " . hash('sha256', $bytes) . "\n\n";
+        // Source author binding is required even when the label itself is unsigned.
+        $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse($bytes);
+        if ($post->authorIdentityId !== null) $label = str_replace("Source-Post-ID:", "Author-Identity-ID: {$post->authorIdentityId}\nSource-Post-ID:", $label);
+        file_put_contents($root . '/records/thread-labels/label-owned.txt', $label);
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['add', 'records']);
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['commit', '-qm', 'Owned label fixture']);
+        $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts, '--json']));
+        exec($command, $output, $status);
+        assertSame(0, $status);
+        assertSame(false, is_file($root . '/records/posts/root-001.txt'));
+        assertSame(false, is_file($root . '/records/thread-labels/label-owned.txt'));
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $html = $this->render($app, '/threads/root-001');
+        assertStringContains('Deleted post', $html);
+        assertStringContains('Reply body', $html);
+        assertStringContains('"operation": "delete"', $this->render($app, '/source/current/records/post-removals/root-001.json'));
+        $forte = json_decode($this->render($app, '/api/forte_thread_detail?thread_id=root-001'), true);
+        assertSame('ok', $forte['status']);
+        assertStringContains('Reply body', $forte['html']);
+        assertStringNotContains('Hello world', $forte['html']);
+        $head = \ForumRewrite\Canonical\LabelRemoval::git($root, ['rev-parse', 'HEAD']);
+        exec($command, $repeatOutput, $repeatStatus);
+        assertSame(0, $repeatStatus);
+        assertSame($head, \ForumRewrite\Canonical\LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame(false, str_contains($pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetchColumn(), 'pinned'));
+    }
+
+    public function testLegacyOrphanLabelRepairNeedsExplicitResolution(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($root, $args);
+        // Model the old operator path: source was deleted, legacy labels survived.
+        $git(['rm', 'records/posts/root-001.txt']); $git(['commit', '-qm', 'Delete old source only']);
+        $args = [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts];
+        $inspect = implode(' ', array_map('escapeshellarg', [...$args, '--inspect', '--json']));
+        $head = $git(['rev-parse', 'HEAD']);
+        exec($inspect, $output, $status); assertSame(0, $status);
+        assertSame($head, $git(['rev-parse', 'HEAD']));
+        assertTrue(count(json_decode(implode("\n", $output), true)['unresolved']) > 0);
+        $label = 'thread-label-20260415153000-ab12cd34';
+        $repair = implode(' ', array_map('escapeshellarg', [...$args, '--repair-labels', '--resolve-label=' . $label, '--json']));
+        exec($repair, $repaired, $repairStatus); assertSame(0, $repairStatus);
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame('[]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetchColumn());
+        assertTrue(is_file($root . '/records/posts/reply-001.txt'));
+    }
+
+    public function testSourceRemovalCommitFailureResumesAndRejectsStalePublication(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $old = \ForumRewrite\Retraction\PublicationGuard::begin($database, $root);
+        file_put_contents($root . '/.git/hooks/pre-commit', "#!/bin/sh\nexit 1\n");
+        chmod($root . '/.git/hooks/pre-commit', 0755);
+        $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts, '--json']));
+        exec($command . ' 2>&1', $output, $status);
+        assertSame(1, $status);
+        assertTrue(is_file($root . '/.git/source-label-removal-root-001.json'));
+        unlink($root . '/.git/hooks/pre-commit');
+        exec($command . ' 2>&1', $retryOutput, $retryStatus);
+        assertSame(0, $retryStatus);
+        assertSame(false, is_file($root . '/.git/source-label-removal-root-001.json'));
+        $staleRejected = false;
+        try { \ForumRewrite\Retraction\PublicationGuard::publish($old, $artifacts . '/stale.html', static function (): void {}); }
+        catch (RuntimeException) { $staleRejected = true; }
+        assertTrue($staleRejected);
+        assertTrue(\ForumRewrite\Retraction\PublicationGuard::begin($database, $root) !== null);
+    }
+
+    public function testZenMemesDeletedPinRepliesRepairWithoutRemovingConversation(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        $this->copyDirectory(__DIR__ . '/fixtures/retraction_pin_legacy/records', $root . '/records');
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($root, $args);
+        $git(['add', 'records']); $git(['commit', '-qm', 'Bulk import reported ZenMemes fixture']);
+        $sources = ['reply-20260526032118-654b2b08' => 'thread-label-20260526032118-3bdb37fe',
+            'reply-20260526032816-a1447d49' => 'thread-label-20260526032816-141bcd4a'];
+        foreach ($sources as $source => $label) $git(['rm', 'records/posts/' . $source . '.txt']);
+        $git(['commit', '-qm', 'Legacy source-only deletion']);
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame('["pin","pinned"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-20260526032027-014695b3'")->fetchColumn());
+        foreach ($sources as $source => $label) {
+            $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', $source, $root, $database, $artifacts, '--repair-labels', '--resolve-label=' . $label, '--json']));
+            exec($command . ' 2>&1', $output, $status); assertSame(0, $status);
+        }
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame('[]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-20260526032027-014695b3'")->fetchColumn());
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $html = $this->render($app, '/threads/thread-20260526032027-014695b3');
+        assertStringContains('Independent reply survives pin-source removal.', $html);
+        $board = $this->render($app, '/threads/?view=all');
+        preg_match_all('#<article\b[^>]*>.*?</article>#s', $board, $cards);
+        $targetCard = '';
+        foreach ($cards[0] as $card) if (str_contains($card, '/threads/thread-20260526032027-014695b3')) $targetCard = $card;
+        assertStringContains('The Rules of ZenMemes.com', $targetCard);
+        assertStringNotContains('pinned-thread-marker', $targetCard);
+    }
+
     public function testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
     {
         $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
@@ -1790,12 +1927,11 @@ PHP;
         assertStringContains('inline-reply-composer', $thread);
         assertStringContains('data-unicode-authored-text="0"', $thread);
         assertStringContains('data-emoji-authored-text="0"', $thread);
-        assertStringContains('data-inline-reply-details', $thread);
-        assertStringContains('class="inline-reply-prompt"', $thread);
+        assertStringContains('data-inline-reply-compose', $thread);
+        assertStringNotContains('data-inline-reply-trigger', $thread);
         assertStringContains('placeholder="Write a reply..."', $thread);
         $inlineReplyScript = (string) file_get_contents(__DIR__ . '/../public/assets/inline_reply_form.js');
-        assertStringContains('function scrollFullyIntoView(node)', $inlineReplyScript);
-        assertStringContains('node.scrollIntoView({', $inlineReplyScript);
+        assertStringNotContains('scrollIntoView', $inlineReplyScript);
         assertStringContains('inline-reply-identity-status', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $thread);
         assertStringContains('method="post" action="/compose/reply" class="stack" data-compose-form data-compose-kind="reply"', $composeReply);
@@ -2079,19 +2215,20 @@ PHP;
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: bug, needs-review', $activity);
         assertStringContains('/threads/root-001', $activity);
-        assertStringContains('Source:', $activity);
+        assertStringContains('Relevant files (', $activity);
         assertStringContains('records/posts/root-001.txt', $activity);
         assertStringContains('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt"', $activity);
         assertStringContains('href="/source/current/records/thread-labels/thread-label-20260415153000-ab12cd34.txt"', $activity);
         assertStringContains('Commit:', $activity);
         assertStringContains('commit unavailable', $activity);
-        assertStringContains('Signature:', $activity);
+        assertStringContains('Record signature:', $activity);
         assertStringContains('anonymous unsigned', $activity);
         assertStringNotContains('@ commit unavailable', $activity);
-        assertStringContains('GET /about/', $llms);
-        assertStringContains('POST /api/analyze_post', $llms);
+        assertStringContains('## This instance', $llms);
+        assertStringContains('POST /api/create_prepared_post', $llms);
         assertStringContains('GET /api/list_index', $llms);
+        assertStringContains('(/api/version)', $llms);
     }
 
     public function testBootstrapPostShowsUnavailablePublicKeyWhenProfileKeyIsEmpty(): void
@@ -2323,6 +2460,24 @@ PHP;
         );
         assertStringContains('2 replies', $metaMatch[1]);
 
+        $flagPath = $repositoryRoot . '/records/instance/feature-flags.txt';
+        if (!is_dir(dirname($flagPath))) { mkdir(dirname($flagPath), 0777, true); }
+        file_put_contents($flagPath, "Schema: site-feature-flags-v1\n\nFORUM_COLLAPSE_SAME_AUTHOR_POSTS_ENABLED: false\n");
+        $separate = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/cont-merge-root');
+        assertStringNotContains(' continuation', $separate);
+        assertStringNotContains('meta-deferred', $separate);
+        assertStringContains('4 replies', $separate);
+        foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
+            assertSame(1, preg_match('/<article id="post-cont-merge-' . $suffix . '"[^>]*>(.*?)<\/article>/s', $separate, $card));
+            assertStringContains('<p class="meta">', $card[1]);
+            assertStringContains('post-card-actions', $card[1]);
+        }
+        unlink($flagPath);
+        $restored = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/cont-merge-root');
+        assertStringContains(' continuation', $restored);
+        assertStringContains('2 replies', $restored);
+
+
         exec('rm -rf ' . escapeshellarg($repositoryRoot));
         @unlink($databasePath);
     }
@@ -2390,7 +2545,7 @@ PHP;
 
         assertStringContains('Signature:', $post);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $post);
-        assertStringContains('Signature:', $activity);
+        assertStringContains('detached signature', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $activity);
         assertSame("detached signature\n", $signature);
     }
@@ -2796,7 +2951,7 @@ PHP;
         $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
         $forte = (string) $fortePayload['html'];
 
-        assertStringContains('Commit files (', $classic);
+        assertStringContains('Relevant files (', $classic);
         assertStringContains('Relevant files (', $forte);
         assertStringContains('records/posts/root-001.txt', $classic);
         assertStringContains('records/posts/root-001.txt', $forte);

@@ -1,0 +1,7 @@
+Post-ID: reply-survivor
+Created-At: 2026-05-27T00:00:00Z
+Board-Tags: general
+Thread-ID: thread-20260526032027-014695b3
+Parent-ID: reply-20260526032118-654b2b08
+
+Independent reply survives pin-source removal.

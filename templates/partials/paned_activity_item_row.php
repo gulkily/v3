@@ -22,6 +22,6 @@ $itemId = (string) $item['id'];
   <?= $visible ? '' : 'hidden' ?>
 >
   <span class="paned-list-from"><?= $e((string) $item['kind']) ?></span>
-  <span class="paned-list-subject"><?= $e((string) ($item['label'] ?? '')) ?></span>
+  <span class="paned-list-subject"><?= $e(($item['view_security'] ?? false) ? \ForumRewrite\Activity\AccessHistoryPresenter::present($item)['title'] : (string) ($item['label'] ?? '')) ?></span>
   <span class="paned-list-date"><?= $relativeTimestamp((string) ($item['created_at'] ?? '')) ?></span>
 </div>

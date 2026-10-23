@@ -121,7 +121,7 @@ class LocalWriteService
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($postId, $threadLabels, $authorIdentityId, $createdAt);
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($postId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -200,7 +200,7 @@ class LocalWriteService
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt);
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -430,7 +430,7 @@ class LocalWriteService
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $record->createdAt);
+                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $record->createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $canonicalRecord));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -544,12 +544,19 @@ class LocalWriteService
 
     private function assertReplyTarget(string $threadId, string $parentId): void
     {
-        $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
-        $parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId));
-        $parentThreadId = $parent->threadId ?? $parent->postId;
-        if ($thread->postId !== $threadId || $parentThreadId !== $threadId) {
-            throw new RuntimeException('Parent post must belong to the target thread.');
+        $rootRemoval = \ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $threadId);
+        if (($rootRemoval['operation'] ?? null) === 'delete') {
+            if ($rootRemoval['post']['thread_id'] !== $threadId || $rootRemoval['post']['parent_id'] !== null) {
+                throw new RuntimeException('Target is not a thread root.');
+            }
+        } else {
+            $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+            if ($thread->threadId !== null) throw new RuntimeException('Target is not a thread root.');
         }
+        $parentRemoval = \ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $parentId);
+        $parentThreadId = ($parentRemoval['operation'] ?? null) === 'delete'
+            ? $parentRemoval['post']['thread_id'] : (($parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId)))->threadId ?? $parent->postId);
+        if ($parentThreadId !== $threadId) throw new RuntimeException('Parent post must belong to the target thread.');
     }
 
     /**
@@ -851,12 +858,18 @@ class LocalWriteService
             catch (\Throwable) { $cleanupStatus = 'failed'; }
         }
 
+        $labelCleanup = [];
+        try { $labelCleanup = \ForumRewrite\Canonical\LabelRemoval::inspect($this->repositoryRoot, $postId)['review_candidates']; }
+        catch (\Throwable) { $labelCleanup = ['Ownership inspection unavailable; operator review required.']; }
+
         $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
 
         return [
             'status' => 'ok',
             'retraction_status' => $failedStep === null ? 'complete' : 'partial',
             'cleanup_status' => $cleanupStatus,
+            'label_cleanup_status' => $labelCleanup === [] ? 'complete' : 'unresolved',
+            'unresolved_label_records' => $labelCleanup,
             'failed_step' => $failedStep,
             'already_retracted' => $alreadyRetracted,
             'post_id' => $postId,
@@ -2179,6 +2192,37 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    /** Signed instance-local routing action; never replicated as a canonical site flag. */
+    public function changeHighTraffic(array $input, string $operatorIdentityId, string $projectRoot, bool $finalize): array
+    {
+        return $this->withTimedWriteLock(function () use ($input,$operatorIdentityId,$projectRoot,$finalize): array {
+            $operatorIdentityId=$this->requireOpenPgpIdentityId($operatorIdentityId,'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot,$operatorIdentityId)) throw new RuntimeException('High-traffic changes require an approved operator identity.');
+            $cache=new \ForumRewrite\Host\HighTrafficCache($projectRoot,$this->repositoryRoot,$this->databasePath,getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $projectRoot . '/public');
+            $mode=new \ForumRewrite\Host\HighTrafficMode($cache);
+            if (!$finalize) {
+                $enabled=$this->requireBooleanValue($input['enabled'] ?? null,'enabled');
+                $record=json_encode(['action'=>'high-traffic','operator'=>$operatorIdentityId,'enabled'=>$enabled,
+                    'generation'=>$cache->state()['generation'],'nonce'=>bin2hex(random_bytes(16))],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
+                return $this->storePreparedPost('private/high-traffic',$record,['kind'=>'high-traffic','operator_identity_id'=>$operatorIdentityId])
+                    + ['status'=>'ok','canonical_record'=>$record];
+            }
+            $token=$this->requireHexToken((string)($input['prepare_token'] ?? ''),'prepare_token');
+            $prepared=$this->loadPreparedPost($token);$record=(string)($input['canonical_record'] ?? '');
+            if (($prepared['kind'] ?? '')!=='high-traffic' || ($prepared['operator_identity_id'] ?? '')!==$operatorIdentityId
+                || strtotime((string)($prepared['expires_at'] ?? ''))<time() || $record===''
+                || !hash_equals((string)$prepared['canonical_sha256'],hash('sha256',$record))) throw new RuntimeException('Prepared mode change is invalid or expired.');
+            [$key,$fingerprint]=$this->publicKeyForIdentity($operatorIdentityId);
+            $signature=$this->normalizeAsciiBody((string)($input['detached_signature'] ?? ''),'detached_signature');
+            if (!$this->signatureVerifier->verifyDetached($key,$record,$signature,$fingerprint)['ok']) throw new RuntimeException('Detached signature verification failed.');
+            $action=json_decode($record,true,512,JSON_THROW_ON_ERROR);
+            if ($action['generation']!==$cache->state()['generation']) throw new RuntimeException('Mode state changed. Reload and retry.');
+            $result=$mode->change($action['enabled'],'Signed operator action by ' . $operatorIdentityId);
+            $this->deletePreparedPost($token);
+            return ['status'=>'ok']+$result;
+        });
+    }
+
     public function prepareFeatureFlagChange(array $input, string $operatorIdentityId): array
     {
         return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
@@ -2990,6 +3034,7 @@ class LocalWriteService
 
     private function writeFile(string $relativePath, string $contents): void
     {
+        \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $relativePath, $contents);
         $path = $this->repositoryRoot . '/' . $relativePath;
         $directory = dirname($path);
         if (!is_dir($directory)) {
@@ -3090,6 +3135,7 @@ class LocalWriteService
 
     private function postTargetExists(string $postId): bool
     {
+        if ((\ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete') return true;
         foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
             if (is_file($this->repositoryRoot . '/' . $candidate) || is_file($this->repositoryRoot . '/' . $candidate . '.asc')) {
                 return true;
@@ -3146,7 +3192,7 @@ class LocalWriteService
     {
         $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
             $this->recoverSignedReactionWrites();
-            return \ForumRewrite\Retraction\PublicationGuard::lock($this->repositoryRoot)->withExclusiveLock($callback);
+            return \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot,$callback);
         });
         $result = $locked['result'];
         if (($result['commit_sha'] ?? null) !== null && $this->enqueueOfflineSnapshotPublication !== null) {
@@ -3272,6 +3318,7 @@ class LocalWriteService
 
     private function writeSignedReactionPair(array $signed): void
     {
+        \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $signed[0], $signed[1]);
         // Publish the signature first: a crash must never leave a new apparently unsigned vote.
         foreach ([$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]] as $relative => $bytes) {
             $path = $this->repositoryRoot . '/' . $relative;
@@ -3378,7 +3425,7 @@ class LocalWriteService
      * @param list<string> $labels
      * @return array{string,string}
      */
-    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null): array
+    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null, ?string $sourcePostId = null, ?string $sourcePostSha256 = null): array
     {
         $recordId = $this->generateRecordId('thread-label');
         $contents = "Record-ID: {$recordId}\n"
@@ -3389,6 +3436,7 @@ class LocalWriteService
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($actionAt !== null ? "Action-At: {$actionAt}\n" : '')
             . ($intentId !== null ? "Intent-ID: {$intentId}\n" : '')
+            . ($sourcePostId !== null ? "Source-Post-ID: {$sourcePostId}\nSource-Post-SHA256: {$sourcePostSha256}\n" : '')
             . "\n";
 
         (new ThreadLabelRecordParser())->parse($contents);

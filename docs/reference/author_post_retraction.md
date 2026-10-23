@@ -52,6 +52,24 @@ still physically removes a canonical file and is a separate operation.
   rebuilt without the post. The sweep removes stale retained releases/candidates
   and scrubs proven-affected LLM payloads from local diagnostic storage.
 
+## Source-owned thread labels
+
+Retracting a post withdraws thread labels generated from that post when ownership
+is proven. A label supplied independently by another surviving post, a button or
+an operator can remain. Label-derived scores, vote totals, activity and ordering
+are recomputed; independent replies remain readable. New hashtag-generated label
+records carry the source post ID and exact content hash without modifying signed
+post bytes.
+
+For ambiguous legacy labels, the retraction result reports
+`label_cleanup_status=unresolved` and `unresolved_label_records`. The browser shows
+an operator-review message after the normal reload. Retraction remains accepted;
+repeating it does not establish missing historical ownership. An operator uses
+[read-only source inspection and explicit label resolution](v3_cli.md#source-post-deletion-and-label-repair).
+Physical source deletion uses the same label-ownership policy and preserves
+conversation placeholders. This release does not claim to reverse every other
+generated-effect family or recall externally held copies.
+
 ## What retraction does not do
 
 - It does not delete the original canonical post file or remove it from Git history. Anyone with a clone,

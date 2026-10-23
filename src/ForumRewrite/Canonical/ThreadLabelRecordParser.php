@@ -40,6 +40,14 @@ final class ThreadLabelRecordParser
             throw new CanonicalRecordParseException('Author-Identity-ID must use the retained lowercase OpenPGP identity form.');
         }
 
+        $sourceId = $record->headers['Source-Post-ID'] ?? null;
+        $sourceHash = $record->headers['Source-Post-SHA256'] ?? null;
+        if (($sourceId === null) !== ($sourceHash === null)
+            || ($sourceId !== null && (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,200}$/D', $sourceId)
+                || !preg_match('/^[a-f0-9]{64}$/D', $sourceHash)))) {
+            throw new CanonicalRecordParseException('Label source requires a valid post ID and SHA-256 together.');
+        }
+
         $labels = $this->parseLabels($record->headers['Labels']);
 
         return new ThreadLabelRecord(
@@ -53,6 +61,8 @@ final class ThreadLabelRecordParser
             $record->body,
             $this->optionalActionAt($record->headers['Action-At'] ?? null),
             $record->headers['Intent-ID'] ?? null,
+            $sourceId,
+            $sourceHash,
         );
     }
 

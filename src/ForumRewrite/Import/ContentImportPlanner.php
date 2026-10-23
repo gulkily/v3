@@ -34,6 +34,7 @@ final class ContentImportPlanner
 
     public function plan(string $source, string $destination): array
     {
+        $removals = \ForumRewrite\Canonical\LabelRemoval::all($destination);
         $target = [];
         foreach (self::files($destination) as $path) {
             $key = ArchiveRecordCatalog::identityKey($destination, $path);
@@ -41,11 +42,27 @@ final class ContentImportPlanner
                 $target[$key][] = $path;
             }
         }
+        foreach ($removals as $id => $removal) if ($removal['operation'] === 'delete') $target['post:' . $id] = [];
         $entries = [];
         $byKey = [];
         foreach (self::files($source) as $path) {
             $entry = $this->describe($source, $path, $destination);
             $entry['hash'] = hash_file('sha256', $source . '/' . $path);
+            if (str_starts_with($path, 'records/posts/') && ($removals[basename($path, '.txt')]['operation'] ?? null) === 'delete') {
+                $entry = [...$entry, 'state' => 'duplicate', 'reason' => 'Source removed locally; structural placeholder retained', 'dependencies' => []];
+            }
+            if (str_starts_with($path, 'records/thread-labels/') && $entry['state'] === 'import') {
+                $label = (new CanonicalRecordRepository($source))->loadThreadLabel($path);
+                if ($label->sourcePostId !== null && ($removals[$label->sourcePostId]['operation'] ?? null) === 'delete') {
+                    $entry = [...$entry, 'state' => 'excluded', 'reason' => 'Label source was removed locally'];
+                }
+                foreach ($removals as $removed) {
+                    if (isset($removed['labels'][$path]) && $removed['operation'] === 'delete') {
+                        $entry = [...$entry, 'state' => 'excluded', 'reason' => 'Generated label withdrawn by local removal evidence'];
+                    }
+                }
+            }
+
             if ($entry['state'] === 'import') {
                 $key = $entry['key'];
                 $existing = $target[$key] ?? [];
@@ -161,6 +178,16 @@ final class ContentImportPlanner
     private function describe(string $root, string $path, ?string $keyFallbackRoot = null): array
     {
         $entry = ['state' => 'import', 'reason' => '', 'key' => ArchiveRecordCatalog::pathIdentityKey($path), 'dependencies' => []];
+        if (str_starts_with($path, 'records/post-removals/')) {
+            try {
+                $id = basename($path, '.json');
+                $accepted = $keyFallbackRoot === null ? null : \ForumRewrite\Canonical\LabelRemoval::read($keyFallbackRoot, $id);
+                if ($accepted === null || file_get_contents($root . '/' . $path) !== file_get_contents($keyFallbackRoot . '/' . $path)) {
+                    throw new RuntimeException('Removal evidence requires existing trusted local acceptance; restore trusted repository history.');
+                }
+                return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local removal evidence'];
+            } catch (Throwable $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
+        }
         if (ArchiveRecordCatalog::isSignaturePath($path) && !ArchiveRecordCatalog::isRecordPath($path)) {
             $record = substr($path, 0, -4);
             if (!is_file($root . '/' . $record)) {

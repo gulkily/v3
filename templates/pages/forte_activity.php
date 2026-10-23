@@ -23,7 +23,7 @@ foreach ($viewCounts as $viewCount) {
     }
 }
 ?>
-<div class="paned-window">
+<div class="paned-window"<?= $selectedView === 'security' ? ' data-access-history-view' : '' ?>>
   <div class="paned-menubar">
     <span>File</span><span>Edit</span><span>View</span><span>Folder</span><span>Navigate</span><span>Help</span>
   </div>
@@ -41,10 +41,12 @@ foreach ($viewCounts as $viewCount) {
     <div class="paned-board-main paned-panes-stack">
       <header class="paned-activity-context">
         <div class="paned-activity-heading">
-          <h1><?= $selectedView === 'security' ? 'Security review' : 'Activity' ?></h1>
+          <h1><?= $selectedView === 'security' ? 'Access history' : 'Activity' ?></h1>
           <a data-paned-activity-rss href="/activity/?view=<?= $e($selectedView) ?>&amp;format=rss"<?= in_array($selectedView, ['security', 'commits'], true) ? ' hidden' : '' ?>>RSS</a>
         </div>
 <?php if ($selectedView === 'security'): ?>
+<p><a href="/tools/user-access/#access-history">User Access</a></p>
+<?php if ($items === []): ?><p>No access changes recorded yet.</p><?php endif; ?>
 <?= $partial('partials/activity_security_notice.php', ['approvalPolicyEnabled' => $approvalPolicyEnabled]) ?>
 <?php endif; ?>
       </header>
