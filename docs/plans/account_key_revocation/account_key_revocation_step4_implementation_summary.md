@@ -4,7 +4,7 @@ Debug mode: enabled
 
 Effort study: `railspike-effort / v3/account_key_revocation` — [P2 ledger](../effort_estimation_trial.md#cycle-v3account_key_revocation).
 
-Status: Stages 1–4 complete; Stage 5 next; no revocation capability released.
+Status: Stages 1–5 complete; Stage 6 next; no revocation capability released.
 
 ## Execution and study entry
 
@@ -36,3 +36,9 @@ Status: Stages 1–4 complete; Stage 5 next; no revocation capability released.
 - Changes: Canonical revocation checks now guard attributed identity resolution and stored signing-key access, covering signed/unsigned attributed writes and preparations; existing session profiles are overlaid with canonical revoked state. Fresh authentication refuses revoked keys, and revocation APIs explicitly start sessions on real HTTP POSTs. Messaging rejects revoked viewers and excludes revoked recipient keys. Current public browsing and historical content remain available under existing site policy.
 - Verification: 28 messaging/key-resolution/history-sync/page/signed revocation tests passed, then 16 policy/mailbox/signed-recovery tests passed after final stale-cache assertions. Signed revocation fixture verifies pre-revocation signed preparation rejection, new attributed write rejection, old-session auth-status/private-API denial, recipient exclusion and denial with an obsolete approved cache bit. Shared fake profile schemas were updated for schema 26 after three resolver fixtures initially failed on missing columns. `git diff --check` passed.
 - Notes: Stage 3 commit: `03bdc9930`. Current session denial is independent of a stale approval bit; invalid canonical authority evidence fails closed. Startup rebuild fails rather than serving private routes when authority projection cannot validate. Exact fresh-login browser recovery and affected-device presentation remain Stages 6–7. Already authorized in-flight reads/downloaded ciphertext cannot be recalled. No production/dependency changes.
+
+## Stage 5 - User Access review and signing
+
+- Changes: Added operator-only actions on account key rows and a shared review card showing exact account/key, explicit UTC cutoff, permanent-access warning and last-key recovery consequence. Reused canonical signing; cancellation signs nothing, stale context requires renewed review, and lost-response retry retains exact signed bytes. Root actions are hidden and remain rejected server-side. Retained requested HTML mockup; generated screenshots remain outside the repository.
+- Verification: `node tests/browser/key_revocation.mjs` passed actual HTTP/session/signing on 1280px and 390px: target/cutoff/last-key warning, cancellation, acceptance, no-store, terminal row state, root exclusion and no horizontal overflow. Phone screenshot visually inspected from `/tmp/key-revocation-ui`; no screenshot is staged. 13 UserAccess/root-evidence/signed-revocation PHP tests passed (host/static test took 124 seconds). Node syntax and `git diff --check` passed.
+- Notes: Initial browser checks caught uppercase identity styling and a test-only response-body race during successful reload; removed uppercase presentation and assert acceptance via HTTP status plus refreshed state. Stage 4 commit: `d7f143369`. Theme-wide, stale/fault/retry and member-denial acceptance remains Stage 7; historical revoked rows and affected-device guidance are Stage 6. No new navigation/icon mapping or dependency changes.

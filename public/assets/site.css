@@ -746,3 +746,13 @@ pre {
 .scripture-expansion summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .scripture-expansion .body { margin-block-start: 0.6rem; overflow-wrap: anywhere; }
 .agent-reply-feedback { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+
+.key-revocation-facts { display:grid; grid-template-columns: minmax(7rem,auto) minmax(0,1fr); gap:.6rem 1rem; margin:0; }
+.key-revocation-facts dd { margin:0; overflow-wrap:anywhere; }
+.key-revocation-facts dt { color:var(--ink-soft); }
+.key-revocation-warning { border-inline-start:3px solid var(--status-error); padding-inline-start:1rem; }
+.key-revocation-danger { color:var(--status-error); }
+[data-revoke-key] { width:auto; margin-inline-start:.5rem; }
+@media(max-width:600px) { .key-revocation-facts {grid-template-columns:minmax(0,1fr)} .key-revocation-facts dd {margin-bottom:.5rem} [data-revoke-key] {margin:.5rem 0} }
+
+.key-revocation-facts [data-revocation-key] { font-family:monospace; }

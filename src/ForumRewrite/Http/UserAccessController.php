@@ -58,6 +58,8 @@ final class UserAccessController
         return $this->render('user_access_account.php', [
             'usernameToken' => $username,
             'profiles' => $profiles,
+            'canRevoke' => $this->services->securityReviewAllowed(),
+            'rootIdentityIds' => array_filter(array_column($profiles, 'identity_id'), fn ($id) => \ForumRewrite\Security\ApprovalPolicy::isOperator($this->services->repositoryRoot(), $id)),
             'approvalHistory' => $this->services->approvalHistory()->forUsername($username, 50, max(0, (int) ($query['key_offset'] ?? 0))),
         ]);
     }
@@ -93,6 +95,6 @@ final class UserAccessController
     {
         return $this->services->renderPageTemplate($template, $data + [
             'toolNavOptions' => ToolsPageSupport::navOptions('user-access'),
-        ], 'User Access', 'tools');
+        ], 'User Access', 'tools', !empty($data['canRevoke']) ? ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/key_revocation.js'] : []);
     }
 }
