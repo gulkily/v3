@@ -42,6 +42,23 @@ final class PublicationGuard
         return hash('sha256', json_encode($removals === [] ? array_keys($ids) : [array_keys($ids), $removals], JSON_THROW_ON_ERROR));
     }
 
+    /** Snapshot-only validation: pin absent targets without granting removal authority. */
+    public static function snapshotGeneration(string $root, array $excluded): string
+    {
+        $state = ExchangeRetractionState::snapshot($root, $excluded);
+        if ($state === null || array_diff_key($excluded, $state['absent']) !== []) {
+            throw new RuntimeException('Cannot validate snapshot retractions; inspect canonical evidence and retry.');
+        }
+        return hash('sha256', json_encode([$state, \ForumRewrite\Canonical\LabelRemoval::all($root)], JSON_THROW_ON_ERROR));
+    }
+
+    public static function validate(array $token): void
+    {
+        $current = isset($token['excluded'])
+            ? self::snapshotGeneration($token['root'], $token['excluded']) : self::generation($token['root']);
+        if ($current !== $token['generation']) throw new RuntimeException('Retraction changed during publication; rebuild and retry.');
+    }
+
     public static function begin(string $databasePath, ?string $repositoryRoot = null): ?array
     {
         $pdo = new PDO('sqlite:file:' . $databasePath . '?mode=ro');
@@ -69,7 +86,7 @@ final class PublicationGuard
     {
         if ($token === null) { $publish(); return; }
         self::withLock($token['root'], function () use ($token, $path, $publish): void {
-            if (self::generation($token['root']) !== $token['generation']) throw new RuntimeException('Retraction changed during publication; rebuild and retry.');
+            self::validate($token);
             $publish();
             if (file_put_contents($path . '.retraction-generation', $token['generation']) === false) throw new RuntimeException('Cannot record artifact generation.');
         });

@@ -13,6 +13,18 @@ final class ExchangeRetractionState
     /** null means unavailable, never an assertion that nothing was retracted. */
     public static function read(string $root): ?array
     {
+        return self::scan($root, false)['ids'] ?? null;
+    }
+
+    /** Build-local exclusions do not establish canonical removal authority. */
+    public static function snapshot(string $root, array $excluded = []): ?array
+    {
+        return self::scan($root, true, $excluded);
+    }
+
+    private static function scan(string $root, bool $allowAbsent, array $excluded = []): ?array
+    {
+        if ($allowAbsent && is_link($root . '/records')) return null;
         if (!is_dir($root . '/records') || !is_readable($root . '/records')) return null;
         if (file_exists($root . '/.git')) {
             $tracked = []; $code = 0;
@@ -22,14 +34,14 @@ final class ExchangeRetractionState
                 if (str_ends_with($path, '.txt') && (!is_file($root . '/' . $path) || !is_readable($root . '/' . $path))) return null;
             }
         }
-        $ids = [];
+        $ids = []; $absent = []; $evidence = [];
         try {
             foreach (\ForumRewrite\Canonical\LabelRemoval::all($root) as $id => $removal) {
                 if ($removal['operation'] === 'delete') $ids[$id] = true;
             }
         } catch (\Throwable) { return null; }
         $directory = $root . '/records/post-retractions';
-        if (!file_exists($directory)) return $ids;
+        if (!file_exists($directory)) return ['ids' => $ids, 'absent' => [], 'evidence' => []];
         if (!is_dir($directory) || !is_readable($directory) || is_link($directory)) return null;
         $paths = glob($directory . '/*');
         if ($paths === false) return null;
@@ -39,16 +51,37 @@ final class ExchangeRetractionState
                 if (pathinfo($path, PATHINFO_EXTENSION) !== 'txt') continue;
                 if (is_link($path)) return null;
                 $record = $repository->loadPostRetraction('records/post-retractions/' . basename($path));
+                $hash = hash_file('sha256', $path);
+                if ($hash === false) return null;
+                $evidence[basename($path)] = $hash;
+                if (isset($excluded[$record->postId])) {
+                    $absent[$record->postId] = true;
+                    continue;
+                }
                 $found = false;
                 foreach (CanonicalPathResolver::postCandidates($record->postId) as $postPath) {
-                    if (!is_file($root . '/' . $postPath)) continue;
+                    $absolute = $root . '/' . $postPath;
+                    if ($allowAbsent) {
+                        $part = $root;
+                        foreach (explode('/', $postPath) as $segment) {
+                            $part .= '/' . $segment;
+                            if (is_link($part) || (file_exists($part) && !is_readable($part))) return null;
+                            if ($part !== $absolute && file_exists($part) && !is_dir($part)) return null;
+                        }
+                        if (file_exists($absolute) && !is_file($absolute)) return null;
+                    }
+                    if (!is_file($absolute)) continue;
                     $found = true;
                     if (RetractedPosts::applies($repository->loadPost($postPath), $record)) $ids[$record->postId] = true;
                     break;
                 }
-                if (!$found && !isset($ids[$record->postId])) return null;
+                if (!$found && !isset($ids[$record->postId])) {
+                    if (!$allowAbsent) return null;
+                    $absent[$record->postId] = true;
+                }
             }
         } catch (\Throwable) { return null; }
-        return $ids;
+        ksort($ids); ksort($absent); ksort($evidence);
+        return ['ids' => $ids, 'absent' => $absent, 'evidence' => $evidence];
     }
 }
