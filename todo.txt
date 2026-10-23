@@ -174,3 +174,5 @@ No-JavaScript basic access — plan set aside
 	Plan: docs/plans/nojs_basic_access_step3_development_plan.md
 	Steps 1 and 2 approved; Step 3 draft, implementation not started.
 	Revalidate against current code before resuming plan review.
+
+add a note to the devs that todo.txt should be appended to... do not insert things in the middle of the file o_O
