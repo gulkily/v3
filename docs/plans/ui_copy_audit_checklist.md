@@ -431,6 +431,17 @@ Reviewed candidates; decisions and verification are recorded above.
 - Removed “Saved reader refreshed and rechecked.” The REFRESHING status/disabled button transitions to the checked status, freshness rows and enabled button, including unchanged revisions. Refresh completion no longer overwrites missing-archive, storage or published-snapshot recovery guidance returned by the check. Refresh failures and offline recovery remain visible.
 - Verification: four existing route/worker checks passed for refresh success/failure, unchanged revisions, preservation of failed-refresh data and forced refresh. Updated the route test's obsolete copy assertion after its initial expected failure. Production-script Chromium fixtures held the refresh pending, then covered changed/unchanged revisions, failure/retry, missing archives, storage denial, unavailable publication and offline refusal; confirmed retained warnings and revision/freshness output. Light/Word97/Chicago/Midnight 390px/1280px overflow passed; inspected Midnight phone publication-failure screenshot (`/tmp/copy-refresh-cycle5-publication.png`). Controlled worker/cache fixtures; actual lifecycle, physical devices and deployment unverified. Syntax/diff passed; zero dependency delta.
 
+## LLM Exchange return-link duplication — October 23, 2026
+
+- Removed the extra “Back to LLM Exchanges” link. The controller already supplies the shared Tools subnavigation with an active LLM Exchanges link to the same list. No destination, label, icon mapping or access rule changed.
+- Verification: seven existing exchange recorder/store/retraction checks and two core-route/exchange-link checks passed. Production-template Chromium fixtures used the real Tools registry and covered decoded, empty, non-text, provider-error, transport-error and long expanded prompt/response records. Confirmed exactly one list-return link, keyboard navigation to the rendered list, raw-JSON disclosure, unclipped focused link and Light/Word97/Chicago/Midnight 390px/1280px overflow. Inspected Midnight phone navigation screenshot (`/tmp/copy-return-cycle5-long.png`). A temporary application-route probe confirmed anonymous and disabled-UI list/detail requests remain 403 and approved missing records remain 404. Controlled records; actual providers, physical devices and deployment unverified. Syntax/diff passed; zero dependency delta.
+
+## Fifth audit pass closeout — October 23, 2026
+
+- Closed all three candidates with individual commits including this checklist: redundant readiness summaries (`e8d66daae`), routine refresh success (`e7de37f44`) and the duplicate LLM Exchange return link (this entry's commit). Readiness warning visibility and preservation of checked recovery guidance were verified alongside the removals.
+- Targeted PHP and controlled rendered phone/desktop checks passed as recorded above. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and deployment acceptance remain unverified. Changes remain local; origin has advanced and synchronization is still needed before publication.
+- Two further source observations are collected below for later review.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -449,12 +460,20 @@ Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **Feature Flags account-key review message** — Remove the user-reported unnecessary message that intermittently appears in Feature Flags: “Review account key grants and approval-policy changes (authenticated operator session required).” Verify when it appears and the affected rendered states.
 
-## Next phase — new candidates
+## Fifth audit phase — October 23, 2026
 
-These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
+Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **Offline health result summary** — Review READY/NOT READY alongside “Offline reading is ready/not ready on this device.” Preserve PARTIAL distinctions, publication failures, actionable guidance and accessible result announcements. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
 
 - [x] **Offline reader refresh success** — Review “Saved reader refreshed and rechecked” alongside the resulting health status and freshness rows. Check changed/unchanged revisions and failed refresh/retry; retain enough acknowledgment to distinguish a finished refresh from stale results. Source: `public/assets/offline_health.js`.
 
-- [ ] **LLM Exchange return-link duplication** — Review “Back to LLM Exchanges” against the existing LLM Exchanges Tools subnavigation link on detail pages. Check keyboard and phone navigation, access restrictions and long expanded raw records before removing any route back to the list. Sources: `templates/pages/llm_exchange.php`, `templates/partials/tools_nav.php`, `src/ForumRewrite/Http/LlmExchangesController.php`.
+- [x] **LLM Exchange return-link duplication** — Review “Back to LLM Exchanges” against the existing LLM Exchanges Tools subnavigation link on detail pages. Check keyboard and phone navigation, access restrictions and long expanded raw records before removing any route back to the list. Sources: `templates/pages/llm_exchange.php`, `templates/partials/tools_nav.php`, `src/ForumRewrite/Http/LlmExchangesController.php`.
+
+## Next phase — new candidates
+
+These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
+
+- [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
+
+- [ ] **System State repository head duplication** — Review “Short head” alongside the full Repository head and the abbreviated hash in Latest commit. Check long hashes, missing Git/history and stale read-model comparisons; preserve useful provenance and mismatch diagnosis. Source: `templates/pages/codebase_state.php`.
