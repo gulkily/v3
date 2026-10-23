@@ -242,10 +242,21 @@ final class PublicMarkdownRenderer
                 $tag = $item['tag']; $kind = $item['kind'];
                 $html .= '<' . $tag . ($tag === 'ol' ? ' start="' . (int) $item['number'] . '"' : '') . '>';
             }
-            $html .= '<li' . ($tag === 'ol' ? ' value="' . (int) $item['number'] . '"' : '') . '>';
-            $paragraph = []; $childIndent = null;
-            $flush = static function () use (&$html, &$paragraph, $sourcePath, $projectRoot): void {
-                if ($paragraph !== []) { $html .= '<p>' . self::inline(implode("\n", $paragraph), $sourcePath, $projectRoot) . '</p>'; $paragraph = []; }
+            $task = self::taskState($item, $sourcePath, $projectRoot);
+            $html .= '<li' . ($tag === 'ol' ? ' value="' . (int) $item['number'] . '"' : '')
+                . ($task === null ? '' : ' class="docs-task-item"') . '>';
+            $paragraph = []; $childIndent = null; $firstParagraph = true;
+            $flush = static function () use (&$html, &$paragraph, &$firstParagraph, $task, $sourcePath, $projectRoot): void {
+                if ($paragraph === []) { return; }
+                $text = implode("\n", $paragraph);
+                if ($firstParagraph && $task !== null) {
+                    $text = preg_replace('/^\[[ xX]\] +/', '', $text, 1) ?? $text;
+                    $content = '<label class="docs-task-label"><input type="checkbox" disabled'
+                        . ($task ? ' checked' : '') . '>' . self::inline($text, $sourcePath, $projectRoot) . '</label>';
+                } else {
+                    $content = self::inline($text, $sourcePath, $projectRoot);
+                }
+                $html .= '<p>' . $content . '</p>'; $paragraph = []; $firstParagraph = false;
             };
             $line = $item['text'];
             $index++;
@@ -278,6 +289,14 @@ final class PublicMarkdownRenderer
             $flush(); $html .= '</li>';
         }
         return $tag === null ? null : $html . '</' . $tag . '>';
+    }
+
+    /** Only visible first-line labels on supported unordered items become task displays. */
+    private static function taskState(array $item, ?string $sourcePath, string $projectRoot): ?bool
+    {
+        if ($item['tag'] !== 'ul' || preg_match('/^\[([ xX])\] +(?=\S)(.*)$/u', $item['text'], $m) !== 1) { return null; }
+        $label = html_entity_decode(strip_tags(self::inline($m[2], $sourcePath, $projectRoot)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return preg_match('/[^\s\p{Z}\p{C}]/u', $label) === 1 ? $m[1] !== ' ' : null;
     }
 
     private static function table(array $lines, bool $standalone, ?string $sourcePath, string $projectRoot): string

@@ -91,17 +91,17 @@ final class MarkdownListStructureTest
         assertStringContains('&lt;!--example--&gt;', PublicMarkdownRenderer::render($standalone));
     }
 
-    public function testListInlineSafetyAndLiteralTasks(): void
+    public function testListInlineSafetyAndReadOnlyTasks(): void
     {
         $source = "- [x] [CLI](v3_cli.md#delete-a-canonical-record)\n  - [ ] [bad](javascript:bad) and ![image](https://example.test/i.png)\n\n  <script>bad()</script>\n- [escape](../../../../etc/passwd)";
         $html = PublicMarkdownRenderer::render($source, 'docs/reference/author_post_retraction.md');
         assertStringContains('href="/docs/reference/v3_cli.md#delete-a-canonical-record"', $html);
-        assertStringContains('[x]', $html);
-        assertStringContains('[ ] bad (source unavailable)', $html);
+        assertStringContains('<input type="checkbox" disabled checked>', $html);
+        assertStringContains('<input type="checkbox" disabled>bad (source unavailable)', $html);
         assertStringContains('image (image unavailable)', $html);
         assertStringContains('&lt;script&gt;bad()&lt;/script&gt;', $html);
         assertStringContains('escape (source unavailable)', $html);
-        foreach (['<script', '<img', '<input', 'href="javascript:', 'href="../../'] as $unsafe) { assertTrue(!str_contains($html, $unsafe)); }
+        foreach (['<script', '<img', 'href="javascript:', 'href="../../'] as $unsafe) { assertTrue(!str_contains($html, $unsafe)); }
     }
 
     public function testListLinksCannotEscapeViaSymlinks(): void
