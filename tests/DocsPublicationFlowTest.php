@@ -13,6 +13,58 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 
 final class DocsPublicationFlowTest
 {
+    public function testSharedRefreshUsesTheSamePolicyAndKeepsActiveReleaseIndependent(): void
+    {
+        [$w, $project, $target, $database, $static, $publisher] = $this->destination();
+        $release = $publisher->build($database);
+        $publisher->activate($release);
+        $w->put($release . '/threads/preserved.html', 'existing detail artifact');
+        $before = file_get_contents($release . '/docs/guide.md.html');
+        $manifestBefore = file_get_contents($release . '/manifest.webmanifest');
+        $w->put($target . '/records/posts/next.txt', $w->post('next'));
+        $w->git($target);
+        (new ReadModelBuilder($target, $database, new CanonicalRecordRepository($target)))->rebuild();
+        $progress = [];
+        $candidate = $publisher->buildSharedRefresh($database, static function ($line) use (&$progress): void { $progress[] = $line; });
+        assertStringContains('Reusing documentation (2 documents).', implode("\n", $progress));
+        assertStringNotContains('Rendering documentation', implode("\n", $progress));
+        assertSame($before, file_get_contents($release . '/docs/guide.md.html'));
+        assertSame($manifestBefore, file_get_contents($release . '/manifest.webmanifest'));
+        assertSame('existing detail artifact', file_get_contents($candidate . '/threads/preserved.html'));
+        file_put_contents($candidate . '/threads/preserved.html', 'candidate changed');
+        assertSame('existing detail artifact', file_get_contents($release . '/threads/preserved.html'));
+        $head = trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+        assertStringContains('content="' . $head . '"', file_get_contents($candidate . '/docs/guide.md.html'));
+        $publisher->activate($candidate);
+        unlink($project . '/docs/guide.md');
+        $w->put($project . '/docs/new.md', '# New document');
+        $progress = [];
+        $changed = $publisher->buildSharedRefresh($database, static function ($line) use (&$progress): void { $progress[] = $line; });
+        assertStringContains('Rendering documentation (', implode("\n", $progress));
+        assertTrue(!is_file($changed . '/docs/guide.md.html'));
+        assertTrue(!is_file($changed . '/docs/_download/docs/guide.md.bin'));
+        assertStringNotContains('docs/guide.md', file_get_contents($changed . '/docs/_search.json'));
+        assertTrue(is_file($changed . '/docs/new.md.html'));
+    }
+
+    public function testSharedRefreshRepairsDamagedDocsAndAssetsWithFullFallback(): void
+    {
+        [$w, $project, $target, $database, $static, $publisher] = $this->destination();
+        $release = $publisher->build($database);
+        $publisher->activate($release);
+        $evidence = json_decode(file_get_contents($release . '/' . DocsPublication::MANIFEST), true);
+        $asset = array_key_first(array_filter($evidence['assets'], fn ($hash, $path) => str_starts_with($path, 'assets/'), ARRAY_FILTER_USE_BOTH));
+        file_put_contents($release . '/' . $asset, 'damaged asset');
+        file_put_contents($release . '/docs/deleted.md.html', 'stale');
+        $progress = [];
+        $candidate = $publisher->buildSharedRefresh($database, static function ($line) use (&$progress): void { $progress[] = $line; });
+        assertStringContains('Rendering documentation (', implode("\n", $progress));
+        assertTrue(!is_file($candidate . '/docs/deleted.md.html'));
+        assertSame($evidence['assets'][$asset], hash_file('sha256', $candidate . '/' . $asset));
+        assertSame('damaged asset', file_get_contents($release . '/' . $asset));
+        assertSame($release, realpath($static . '/current'));
+    }
+
     public function testRealCliColdNewRecordAndDuplicateImports(): void
     {
         $w = new ImportTestWorkspace();

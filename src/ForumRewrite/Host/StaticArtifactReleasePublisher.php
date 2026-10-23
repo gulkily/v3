@@ -107,6 +107,7 @@ final class StaticArtifactReleasePublisher
                 $databasePath,
                 $candidatePath,
                 $progressReporter,
+                $activeReleasePath,
             ))->refreshSharedPagesFromReadModel();
 
             $releaseDirectory = $this->staticHtmlRoot . '/releases';
@@ -127,7 +128,7 @@ final class StaticArtifactReleasePublisher
         }
     }
 
-    private function copyDirectory(string $sourcePath, string $targetPath): void
+    private function copyDirectory(string $sourcePath, string $targetPath, bool $releaseRoot = true): void
     {
         if (!mkdir($targetPath, 0777, true) && !is_dir($targetPath)) {
             throw new RuntimeException('Unable to create static refresh candidate directory.');
@@ -142,15 +143,23 @@ final class StaticArtifactReleasePublisher
             if ($entry === '.' || $entry === '..' || $entry === '.locks') {
                 continue;
             }
-
-            $sourceEntry = $sourcePath . '/' . $entry;
-            $targetEntry = $targetPath . '/' . $entry;
-            if (is_dir($sourceEntry) && !is_link($sourceEntry)) {
-                $this->copyDirectory($sourceEntry, $targetEntry);
+            // Documentation is validated and transferred by its canonical publication policy.
+            if ($releaseRoot && in_array($entry, ['docs', 'docs.html', 'docs.html.retraction-generation',
+                'docs.html.fastmod-generation', \ForumRewrite\Docs\DocsPublication::MANIFEST], true)) {
                 continue;
             }
 
-            if (!link($sourceEntry, $targetEntry) && !copy($sourceEntry, $targetEntry)) {
+            $sourceEntry = $sourcePath . '/' . $entry;
+            $targetEntry = $targetPath . '/' . $entry;
+            if (is_link($sourceEntry)) {
+                throw new RuntimeException('Shared refresh found an unsafe artifact link. Run ./v3 build-static to rebuild the complete release.');
+            }
+            if (is_dir($sourceEntry)) {
+                $this->copyDirectory($sourceEntry, $targetEntry, false);
+                continue;
+            }
+
+            if (!is_file($sourceEntry) || !copy($sourceEntry, $targetEntry)) {
                 throw new RuntimeException('Unable to copy static artifact into refresh candidate: ' . $entry);
             }
         }
