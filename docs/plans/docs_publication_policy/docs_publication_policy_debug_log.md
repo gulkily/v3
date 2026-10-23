@@ -137,3 +137,30 @@ Verification: restored four supporting artifacts and the pending Step 2 from pre
 - Stage sizing is a judgment, not measured effort; transfer/integrity stage must be split before execution if it exceeds the stated target.
 
 Verification: current builder/publisher APIs and existing docs/import/recovery tests inspected; revised plan accounts for approved marker exception, notification modes, original-output integrity, repeated reuse, normal reload behavior, failure/resume and full-inventory performance. Corrected earlier timestamp note to the high-traffic renderer boundary. R1 hashes match. Handoff validation checks stage fields, links, whitespace, file/dependency scope and unchanged application/todo files. No runtime tests or application edits; renewed Approved Step 3 required.
+
+## 2026-10-23T09:58:56Z — Step 4 v2 completed handoff
+
+### Necessary/useful instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate: fresh branch `feat/docs-publication-reuse` and approved planning-only commit `6e77d190` kept rewritten current-main ancestry and preserved old branch evidence without merging it. Retain.
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol: planning plus eight stage commits paired implementation/evidence with summary updates; Stage 8 closeout is `1932a872`, final production code is `e99e1412`. Retain auditable stage boundaries.
+- `docs/railspike/docs/workflow/step3_development_plan_do.md`, early material-risk validation and normal-flow recovery: source revalidation confirmed the version-only exception, then transfer isolation, corruption/fallback, actual committed-import failure/resume and late-input checks resolved risks before final acceptance. Retain.
+- `docs/railspike/docs/workflow/step4_implementation_after.md`, Contract/final verification: complete-library CLI builds, served dynamic/static browser journeys and actual next-import notification/reload verified the operator/reader outcome beyond helper tests. Retain focused-versus-full-suite distinctions.
+- `docs/railspike/RAILSPIKE.md`, Experimental Effort Estimation: one stable cycle retains original start, v1/v2 estimates, missing intake and unknown measured effort across clone migration. Final prospective projection remains 0.70; separately labeled retrospective 0.80; maintainer acceptance pending, with no accepted-count increment. Frozen R1 hashes verified. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Step 3 database-change instructions and Step 4 migration verification: no database schema change. Production deployment is outside approved local acceptance; no deployment/merge/push performed. Documentation-only restrictions do not apply to this approved application-maintenance cycle.
+
+### Uncertain assessments
+
+- Source documents include the cycle's own plans/logs. Writing evidence during a full source build can correctly invalidate that build; frozen temporary application/documentation snapshots made full-inventory performance comparisons reliable. Consider an explicit source-freezing note for self-documenting applications, without weakening input checks.
+- Relative scores remain single exposed judgments, not measured effort or a comfortable-fit decision. Acceptance and the full repository test suite are unclaimed.
+
+Final evidence: final helper/flow 15/15, catalog/reader/asset 29/29; prior broad targeted full-inventory run 45/45 before the final streaming refinement; final complete-library rebuild/build-static, frozen same-inventory benchmark and both-host browser acceptance passed after it. Existing three import/recovery suites 14/14 in an isolated two-doc application. A 48 MiB PDF is reused with a 24 MiB PHP budget. Final 1,459-doc local cold 54.284 s, new-record import 5.806 s, duplicate 6.118 s, shared refresh 5.230 s, all compatible repeats zero docs render callbacks; original content-import baseline 79.916 s. Cache/load uncontrolled; no fixed ratio promised. Browser failures were harness-only cached-symlink/closed-disclosure observations, corrected and rerun; no unresolved product failure. No third-party dependency, schema, UI markup/copy or navigation delta. Full evidence, source hashes and limitations are in the implementation summary/verification JSON.
+
+Commit audit: planning `6e77d190`, Stage 1 `b0ba9080`, Stage 2 `5e484da8`, Stage 3 `afea34a6`, Stage 4 `9ca80028`, Stage 5 `bdba01ab`, Stage 6 `ffd56887`, Stage 7 `e99e1412`, Stage 8 `1932a872`. This final handoff is log-only and does not amend a completed commit.
