@@ -1653,6 +1653,9 @@ class IncrementalReadModelUpdater
                 if (!isset($labels[$label])) {
                     $labels[$label] = true;
                     $labelsAdded[] = $label;
+                } elseif ($label === 'like') {
+                    // Activity records contributions, even when the effective label already exists.
+                    $labelsAdded[] = $label;
                 }
 
                 if ($record->authorIdentityId !== null && $this->countsThreadLabelTowardVoteTotal($label)) {

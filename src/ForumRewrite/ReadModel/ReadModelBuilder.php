@@ -396,6 +396,9 @@ final class ReadModelBuilder
                 if (!isset($labelsByThread[$record->threadId][$label])) {
                     $labelsByThread[$record->threadId][$label] = true;
                     $labelsAdded[] = $label;
+                } elseif ($label === 'like') {
+                    // Activity records contributions, even when the effective label already exists.
+                    $labelsAdded[] = $label;
                 }
 
                 if ($record->authorIdentityId !== null && $this->countsThreadLabelTowardVoteTotal($label)) {

@@ -1,0 +1,15 @@
+> **Feature plan:** [Step 1](./thread_like_activity_step1_solution_assessment.md) · [Step 2](./thread_like_activity_step2_feature_description.md) · [Step 3](./thread_like_activity_step3_development_plan.md) · [Step 4](./thread_like_activity_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+Effort study: `railspike-effort`, `v3/thread_like_activity`; [ledger](../effort_estimation_trial.md#cycle-v3thread_like_activity).
+
+## Entry
+
+- Step 3 approved; branch `feat/thread-like-activity`; planning commit `ab24d158` verified at HEAD before summary/application edits.
+- Scope v1: every eligible canonical like contribution is reported once, independent of prior label presence. Different signing keys can have the same displayed username; the actual local incident uses two keys both currently named `ilyag`. No claim that the user previously clicked Like is required for the fix.
+- 2026-10-23 UTC; baseline `39be82932fcc36c5017fcf368655ef449bf042da`; Codex single exposed rater; R1/P2. Step 3 total projection remains unavailable pending exact frozen-reference recovery, not zero or measured effort. Broader repository coverage, unlike controls and inactive-source duplicate-guard fixes remain separate.
+
+## Stage 1 — completed
+
+Full and incremental derivation now emit one event per eligible like-bearing record, retaining mixed-label grouping and existing score deduplication. Normal signed writes, duplicate retry, distinct same-author comments and rebuild parity passed; existing retraction coverage confirms withdrawn contributions stay excluded. Focused verification: 10 tests passed. No eligibility or vote calculation changed.

@@ -5268,6 +5268,34 @@ NODE;
         assertStringContains('/threads/root-001', $activity);
     }
 
+    public function testEachAcceptedLikeRecordAppearsOnceWithoutChangingVoteDeduplication(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+        $other = $this->linkGeneratedIdentity($app, 'later-like');
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => '#like', 'author_identity_id' => $author]);
+        $later = $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $other['identity_id']]);
+        assertSame('yes', $later['wrote_record']);
+        $repeat = $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $other['identity_id']]);
+        assertSame('no', $repeat['wrote_record']);
+        $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => '#like #answered #bug', 'author_identity_id' => $author]);
+        $pdo = new PDO('sqlite:' . $database);
+        $query = "SELECT action_key, author_identity_id, label FROM activity WHERE kind='thread_label_add' AND thread_id='root-001' AND label LIKE '%like%' ORDER BY action_key";
+        $incremental = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+        assertSame(3, count($incremental));
+        assertSame(3, count(array_unique(array_column($incremental, 'action_key'))));
+        assertSame(2, count(array_filter($incremental, static fn (array $row): bool => $row['author_identity_id'] === $author)));
+        assertSame(1, count(array_filter($incremental, static fn (array $row): bool => $row['label'] === 'Labels added: answered, like')));
+        $before = $pdo->query("SELECT score_total, vote_count, thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetch(PDO::FETCH_ASSOC);
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        assertSame($incremental, $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC));
+        assertSame($before, $pdo->query("SELECT score_total, vote_count, thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetch(PDO::FETCH_ASSOC));
+        assertSame('no', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $other['identity_id']])['wrote_record']);
+        assertSame(3, count($pdo->query($query)->fetchAll(PDO::FETCH_ASSOC)));
+    }
+
     public function testApprovedLikeTagAddsScoreAndDoesNotDoubleCountForSameIdentity(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
