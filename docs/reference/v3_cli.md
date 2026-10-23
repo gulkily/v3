@@ -239,7 +239,9 @@ branch, HEAD, target and dirty/operation state; changed inputs invalidate that
 folder's update. It applies the previewed source commit without fetching again:
 a later remote update requires a fresh preview. Main must fast-forward; eligible
 feature branches may fast-forward or receive an ordinary merge preserving local
-commits. A locally ahead branch stays untouched. Existing dirty/untracked work and
+commits. Ignored local files are protected against overwrite; an ignored-file
+collision fails for manual recovery. Submodule working trees are not recursively
+updated. A locally ahead branch stays untouched. Existing dirty/untracked work and
 Git operations are skipped; the tool never auto-stashes, switches branches,
 rebases, resets, pushes, clones, deletes or changes IDE trust.
 

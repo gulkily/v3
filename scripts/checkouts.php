@@ -74,6 +74,18 @@ try {
                 echo '  Source: ' . substr($entry['snapshot']['target'], 0, 12) . "\n";
             }
         }
+        if (in_array($command, ['add', 'list'], true)) {
+            foreach ($result['checkouts'] as $entry) {
+                echo '  Expected source: ' . $entry['source'] . "\n";
+            }
+        }
+        if (in_array($command, ['preview', 'apply'], true)) {
+            $counts = [];
+            foreach ($result['checkouts'] as $entry) {
+                $counts[$entry['action']] = ($counts[$entry['action']] ?? 0) + 1;
+            }
+            echo implode(' · ', array_map(fn ($action, $count) => $count . ' ' . $action, array_keys($counts), array_values($counts))) . "\n";
+        }
         if (isset($result['notice'])) {
             echo $result['notice'] . "\n";
         }

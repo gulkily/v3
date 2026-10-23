@@ -24,6 +24,9 @@ final class CheckoutManager
     public function run(string $command, ?string $argument, array $options): array
     {
         $this->directory($this->state);
+        if ((fileperms($this->state) & 0077) !== 0) {
+            throw new RuntimeException('State directory must be private; use a dedicated directory with mode 0700.');
+        }
         $lock = fopen($this->state . '/registry.lock', 'c');
         if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
             throw new RuntimeException('Another checkout command is running; retry when it finishes.');
@@ -91,7 +94,7 @@ final class CheckoutManager
             throw new RuntimeException('Unsupported registry; restore the registry or use --registry.');
         }
         foreach ($data['checkouts'] as $entry) {
-            foreach (['path', 'common', 'source', 'remote', 'target', 'role'] as $field) {
+            foreach (['path', 'common', 'source', 'storage', 'worktree', 'remote', 'target', 'role'] as $field) {
                 if (!is_string($entry[$field] ?? null) || $entry[$field] === '') {
                     throw new RuntimeException('Invalid registry entry; restore or remove the entry.');
                 }
@@ -179,7 +182,16 @@ final class CheckoutManager
         }
         $common = $this->git($path, ['rev-parse', '--path-format=absolute', '--git-common-dir'])[1];
         $url = $this->git($path, ['remote', 'get-url', $remote])[1];
-        return ['path' => (string) realpath($path), 'common' => (string) realpath($common), 'source' => $this->source($url)];
+        clearstatcache(true, $path);
+        clearstatcache(true, $common);
+        $worktreeStat = stat($path);
+        $storageStat = stat($common);
+        if ($worktreeStat === false || $storageStat === false) {
+            throw new RuntimeException('Checkout storage disappeared; restore or remove/re-add registration.');
+        }
+        return ['path' => (string) realpath($path), 'common' => (string) realpath($common), 'source' => $this->source($url),
+            'storage' => $storageStat['dev'] . ':' . $storageStat['ino'],
+            'worktree' => $worktreeStat['dev'] . ':' . $worktreeStat['ino']];
     }
 
     private function add(?string $path, array $options): array
@@ -241,7 +253,7 @@ final class CheckoutManager
     private function snapshot(array $entry): array
     {
         $identity = $this->identity($entry['path'], $entry['remote']);
-        foreach (['path', 'common', 'source'] as $field) {
+        foreach (['path', 'common', 'source', 'storage', 'worktree'] as $field) {
             if ($identity[$field] !== $entry[$field]) {
                 throw new RuntimeException('Registered source or checkout identity changed; review and remove/re-add the entry.');
             }
@@ -283,6 +295,7 @@ final class CheckoutManager
         $baseline = $history['baseline'] ?? null;
         $sourceRewritten = ($history['blocked'] ?? false)
             || ($before['target'] !== null && !$this->ancestor($path, $before['target'], $after['target']))
+            || (isset($history['observed']) && !$this->ancestor($path, $history['observed'], $after['target']))
             || ($baseline !== null && !$this->ancestor($path, $baseline, $after['target']));
         if ($sourceRewritten) {
             $this->writeJson($historyPath, ['baseline' => $baseline, 'blocked' => true, 'observed' => $after['target']]);
@@ -296,7 +309,7 @@ final class CheckoutManager
         }
         // Advance evidence only where the branch also descends from the fetched target.
         // Keep an older baseline for a diverged feature until its merge completes.
-        $this->writeJson($historyPath, ['baseline' => $ahead ? $after['target'] : ($baseline ?? $after['head']), 'blocked' => false]);
+        $this->writeJson($historyPath, ['baseline' => $ahead ? $after['target'] : ($baseline ?? $after['head']), 'observed' => $after['target'], 'blocked' => false]);
         if ($after['busy']) {
             $action = 'busy'; $reason = 'Git operation in progress; finish or abort it.';
         } elseif ($after['dirty']) {
@@ -320,6 +333,9 @@ final class CheckoutManager
     private function preview(array $options): array
     {
         $registry = $this->readRegistry();
+        if ($registry['checkouts'] === []) {
+            throw new RuntimeException('No clones registered; use ./v3 checkouts add <path>.');
+        }
         $rows = [];
         $seen = [];
         $selected = isset($options['path']) ? (realpath($options['path']) ?: $options['path']) : null;
@@ -403,8 +419,8 @@ final class CheckoutManager
                 $journal['checkouts'][$index] = $attempt;
                 $this->writeJson($journalPath, $journal);
                 $mergeArgs = $row['action'] === 'fast-forward'
-                    ? ['merge', '--ff-only', '--no-edit', $current['target']]
-                    : ['merge', '--no-ff', '--no-edit', $current['target']];
+                    ? ['-c', 'submodule.recurse=false', 'merge', '--ff-only', '--no-overwrite-ignore', '--no-edit', $current['target']]
+                    : ['-c', 'submodule.recurse=false', 'merge', '--no-ff', '--no-overwrite-ignore', '--no-edit', $current['target']];
                 [$code] = $this->git($row['path'], $mergeArgs, true);
                 if ($code !== 0) {
                     if ($this->git($row['path'], ['ls-files', '--unmerged'], true)[1] !== '') {
@@ -427,7 +443,7 @@ final class CheckoutManager
                 $row['reason'] = ($row['action'] === 'fast-forward' ? 'Fast-forward' : 'Feature merge')
                     . ' completed; HEAD ' . substr($after['head'], 0, 12) . '.';
                 $row['action'] = 'updated';
-                $this->writeJson($this->evidencePath($row), ['baseline' => $current['target'], 'blocked' => false]);
+                $this->writeJson($this->evidencePath($row), ['baseline' => $current['target'], 'observed' => $current['target'], 'blocked' => false]);
                 $row['head_after'] = $this->revision($row['path'], 'HEAD');
                 $journal['checkouts'][$index] = $row;
             } catch (\Throwable $error) {

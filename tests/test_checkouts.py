@@ -323,6 +323,123 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual('current', preview['checkouts'][0]['action'])
         self.assertEqual(0, self.apply(preview)['exit_code'])
 
+    def test_ignored_local_file_is_never_overwritten(self):
+        self.commit(self.up, '.gitignore', 'private.local\n')
+        self.git(self.clone, 'pull', '--ff-only')
+        self.add()
+        self.preview()
+        (self.clone / 'private.local').write_text('private local configuration')
+        (self.up / 'private.local').write_text('tracked upstream content')
+        self.git(self.up, 'add', '-f', 'private.local')
+        self.git(self.up, 'commit', '-qm', 'track previously ignored file')
+        old = self.git(self.clone, 'rev-parse', 'HEAD')
+        result = self.apply(self.preview(), code=2)
+        self.assertEqual('failed', result['checkouts'][0]['action'])
+        self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
+        self.assertEqual('private local configuration', (self.clone / 'private.local').read_text())
+
+    def test_post_merge_hook_changes_require_attention(self):
+        self.add()
+        self.preview()
+        target = self.commit(self.up, 'new', 'new')
+        hook = self.clone / '.git' / 'hooks' / 'post-merge'
+        hook.write_text('#!/bin/sh\nprintf hook-change > hook-created-file\n')
+        hook.chmod(0o700)
+        result = self.apply(self.preview(), code=2)
+        self.assertEqual('failed', result['checkouts'][0]['action'])
+        self.assertIn('HEAD may have advanced', result['checkouts'][0]['reason'])
+        self.assertEqual(target, self.git(self.clone, 'rev-parse', 'HEAD'))
+        self.assertTrue((self.clone / 'hook-created-file').exists())
+
+    def test_registry_uses_xdg_defaults_across_project_directories(self):
+        self.env['XDG_CONFIG_HOME'] = str(self.base / 'config-home')
+        self.env['XDG_STATE_HOME'] = str(self.base / 'state-home')
+        self.addCleanup(self.env.pop, 'XDG_CONFIG_HOME')
+        self.addCleanup(self.env.pop, 'XDG_STATE_HOME')
+        for cwd, args in [(self.clone, ['add', str(self.clone)]), (self.up, ['list'])]:
+            result = subprocess.run([str(ROOT / 'v3'), 'checkouts', *args, '--json'], cwd=cwd,
+                                    env=self.env, text=True, capture_output=True)
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            self.assertEqual(str(self.clone), json.loads(result.stdout)['checkouts'][0]['path'])
+        self.assertTrue((self.base / 'config-home' / 'v3' / 'checkouts.json').exists())
+
+    def test_remote_failure_and_existing_busy_skip_apply(self):
+        self.add()
+        self.preview()
+        before = self.git(self.clone, 'rev-parse', 'HEAD')
+        self.up.rename(self.base / 'offline')
+        preview = self.cli('preview', code=2)
+        self.assertEqual('unavailable', preview['checkouts'][0]['action'])
+        self.apply(preview, code=2)
+        self.assertEqual(before, self.git(self.clone, 'rev-parse', 'HEAD'))
+        (self.base / 'offline').rename(self.up)
+        (self.clone / '.git' / 'CHERRY_PICK_HEAD').write_text(before)
+        preview = self.cli('preview', code=2)
+        self.assertEqual('busy', preview['checkouts'][0]['action'])
+        self.apply(preview, code=2)
+        self.assertTrue((self.clone / '.git' / 'CHERRY_PICK_HEAD').exists())
+
+    def test_no_live_paths_and_shared_storage_identity_change(self):
+        self.add()
+        self.commit(self.up, 'new', 'new')
+        preview = self.preview()
+        old = self.git(self.clone, 'rev-parse', 'HEAD')
+        self.git(self.clone, 'worktree', 'add', '-q', '-b', 'linked', str(self.base / 'linked'))
+        self.clone.rename(self.base / 'preserved-original')
+        self.git(self.base, 'clone', '-q', str(self.up), str(self.clone))
+        self.git(self.clone, 'reset', '--hard', old)
+        result = self.apply(preview, code=2)
+        self.assertEqual('failed', result['checkouts'][0]['action'])
+        self.assertIn('identity changed', result['checkouts'][0]['reason'])
+        self.assertEqual(old, self.git(self.base / 'preserved-original', 'rev-parse', 'HEAD'))
+
+    def test_external_fetch_rewrite_detected_beyond_older_branch_baseline(self):
+        self.add()
+        self.preview()
+        self.git(self.clone, 'switch', '-qc', 'feature')
+        self.commit(self.clone, 'local', 'local feature')
+        self.commit(self.up, 'removed', 'soon rewritten')
+        self.assertEqual('merge', self.preview()['checkouts'][0]['action'])
+        self.git(self.up, 'reset', '--hard', 'HEAD~1')
+        self.commit(self.up, 'replacement', 'replacement history')
+        self.git(self.clone, 'fetch', 'origin')
+        self.assertEqual('migration-required', self.preview()['checkouts'][0]['action'])
+
+    def test_empty_preview_has_setup_guidance(self):
+        self.assertIn('No clones registered', self.cli('preview', code=1)['error'])
+
+    def test_real_interruption_preserves_attempt_and_blocks_replay(self):
+        import shlex
+        import signal
+        import time
+        self.make_diverged()
+        marker = self.base / 'hook-started'
+        hook = self.clone / '.git' / 'hooks' / 'pre-merge-commit'
+        hook.write_text('#!/bin/sh\ntouch ' + shlex.quote(str(marker)) + '\nsleep 30\n')
+        hook.chmod(0o700)
+        preview = self.preview()
+        process = subprocess.Popen([str(ROOT / 'v3'), 'checkouts', 'apply', preview['preview_id'],
+                                    '--sessions-paused', '--json', '--registry=' + str(self.registry),
+                                    '--state-dir=' + str(self.state)], env=self.env,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True, start_new_session=True)
+        try:
+            deadline = time.monotonic() + 10
+            while not marker.exists() and time.monotonic() < deadline:
+                if process.poll() is not None:
+                    self.fail('Apply exited before hook started: ' + process.communicate()[0])
+                time.sleep(0.05)
+            self.assertTrue(marker.exists(), 'Merge hook did not start')
+        finally:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGKILL)
+            process.communicate(timeout=5)
+        journal = json.loads((self.state / 'previews' / (preview['preview_id'] + '.result.json')).read_text())
+        self.assertFalse(journal['complete'])
+        self.assertEqual('attempting', journal['checkouts'][0]['action'])
+        self.assertIn('interrupted', self.apply(preview, code=1)['error'])
+        self.assertIn(self.preview()['checkouts'][0]['action'], ['busy', 'dirty'])
+
 
 if __name__ == '__main__':
     unittest.main()
