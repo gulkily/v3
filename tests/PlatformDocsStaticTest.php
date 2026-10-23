@@ -86,6 +86,10 @@ final class PlatformDocsStaticTest
             assertStringContains('class="docs-table-scroll" tabindex="0"', $document);
             assertTrue(str_contains($document, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
             assertTrue(str_contains($invalid, '<h1>Not Found</h1>'));
+            $procedure = $this->render($controller, '/docs/reference/author_post_retraction.md');
+            assertSame(1, substr_count($procedure, '<ol start="1">'));
+            foreach (range(1, 6) as $number) { assertStringContains('<li value="' . $number . '">', $procedure); }
+            assertStringContains('retraction record, signs it with the acting identity, and submits it.</p></li>', $procedure);
             assertStringContains('route-source: static-html', $workflow);
             assertStringContains('route-source: static-html', $this->render($controller, '/docs/_project/README.md?q=README'));
             assertStringContains('route-source: static-html', $this->render($controller, '/docs/?q=recovery'));

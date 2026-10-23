@@ -7,12 +7,27 @@ has no third-party parser bundle, Composer installation or dependency-download s
 
 ## Rendering boundary
 
-The earlier project parser renders headings, paragraphs, basic asterisk emphasis,
-inline code/links, backtick fences, flat lists, quotes and thematic breaks. Existing
-integration retains duplicate-safe heading IDs, catalog link safety, collapsed
+The project parser renders headings, paragraphs, basic asterisk emphasis,
+inline code/links, backtick fences, quotes, thematic breaks and supported lists.
+Integration retains duplicate-safe heading IDs, catalog link safety, collapsed
 escaped front matter, code language captions and keyboard-accessible code regions.
-Ordered-list source numbers are preserved across continuation paragraphs. Nested
-lists flatten; loose lists and continuations split. Task markers, reference links,
+
+Lists support space-indented `-`, `+`, `*`, numbered-dot and numbered-parenthesis
+items, mixed parent/child types and up to eight levels. Root markers start at
+column zero; child markers must reach their parent's content column, while
+siblings/dedents return to established columns. Wrapped and blank-line-separated
+paragraphs aligned with the owning content column stay inside the item. Each
+ordered number is explicit, preserving restarts, repeats and gaps; marker-kind
+changes start sibling lists. Five-to-eight-level lists get a keyboard-scrollable
+region so phone text retains usable width.
+
+Tabs, ambiguous indentation, over-limit depth, more than four marker-padding
+spaces, numeric markers above nine digits and list-contained tables, quotes or
+fenced/indented code retain the complete contiguous list as escaped source in a
+keyboard-scrollable region. Fenced example bytes remain intact; prose comments
+remain hidden. Following standalone headings, tables and code stay outside the
+fallback. An unclosed embedded fence retains the remaining example source through
+end-of-document rather than guessing where it ends. Task markers, reference links,
 autolinks, underscore emphasis, strikethrough and unsupported fences remain readable
 source. Standalone pipe tables render with semantic column headers, existing safe
 inline formatting/links, optional outer pipes, two or more columns and delimiter
@@ -38,8 +53,11 @@ counting method](../plans/markdown_dependency_removal/render_metrics.md), [resto
 comparison](../plans/markdown_dependency_removal/render_comparison.md), and
 [rare-syntax decision table](../plans/markdown_dependency_removal/rare_syntax_decisions.md).
 The [pipe-table extension](../plans/markdown_renderer_extension/markdown_renderer_extension_step4_implementation_summary.md)
-records its supported/fallback corpus classification and delivery evidence. Other
-syntax extensions remain deferred. No external component may be added without
+records its supported/fallback corpus classification and delivery evidence. The
+[list-structure slice](../plans/markdown_list_structure/markdown_list_structure_step4_implementation_summary.md)
+adds list ownership, explicit numbering and source recovery; its audit distinguishes
+structural coverage from representative visual review. Other syntax extensions
+and the wider Docs column follow-up remain deferred. No external component may be added without
 the dependency-consent policy in CONTRIBUTING.
 
 ## Library inventory and search
