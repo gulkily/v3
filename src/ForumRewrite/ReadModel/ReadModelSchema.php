@@ -37,6 +37,8 @@ final class ReadModelSchema
                 post_tags_json TEXT NOT NULL DEFAULT \'[]\',
                 post_score_total INTEGER NOT NULL DEFAULT 0,
                 approved_flag_count INTEGER NOT NULL DEFAULT 0,
+                attribution_verified INTEGER NOT NULL DEFAULT 1,
+                attribution_counted INTEGER NOT NULL DEFAULT 1,
                 claimed_post_score_total INTEGER NOT NULL DEFAULT 0,
                 verified_post_score_total INTEGER NOT NULL DEFAULT 0,
                 claimed_approved_flag_count INTEGER NOT NULL DEFAULT 0,
@@ -85,7 +87,11 @@ final class ReadModelSchema
                 approved_by_profile_slug TEXT NULL,
                 approved_by_label TEXT NULL,
                 post_count INTEGER NOT NULL DEFAULT 0,
-                thread_count INTEGER NOT NULL DEFAULT 0
+                thread_count INTEGER NOT NULL DEFAULT 0,
+                claimed_post_count INTEGER NOT NULL DEFAULT 0,
+                verified_post_count INTEGER NOT NULL DEFAULT 0,
+                claimed_thread_count INTEGER NOT NULL DEFAULT 0,
+                verified_thread_count INTEGER NOT NULL DEFAULT 0
             )',
             'CREATE TABLE username_routes (
                 username_token TEXT PRIMARY KEY,

@@ -64,6 +64,8 @@ One row per canonical post record (both thread roots and replies).
 | `post_tags_json` | TEXT | JSON array, default `'[]'` |
 | `post_score_total` | INTEGER | default 0; effective: the claimed or verified value, chosen by the verified attribution flag |
 | `approved_flag_count` | INTEGER | default 0; effective, as `post_score_total` |
+| `attribution_verified` | INTEGER | default 1; 0 when the post names an identity but is neither signed by it nor created before the attribution cutoff (schema 26) |
+| `attribution_counted` | INTEGER | default 1; effective: `attribution_verified` with the verified attribution flag on, else 1. Profile lists and counts include only counted posts (schema 26) |
 | `claimed_post_score_total` | INTEGER | default 0; every scored tag naming an approved member (schema 26) |
 | `verified_post_score_total` | INTEGER | default 0; unsigned tags count only before the attribution cutoff (schema 26) |
 | `claimed_approved_flag_count` | INTEGER | default 0 (schema 26) |
@@ -117,8 +119,12 @@ One row per identity with a bootstrapped profile.
 | `approved_by_identity_id` | TEXT NULL | |
 | `approved_by_profile_slug` | TEXT NULL | |
 | `approved_by_label` | TEXT NULL | |
-| `post_count` | INTEGER | default 0 |
-| `thread_count` | INTEGER | default 0 |
+| `post_count` | INTEGER | default 0; effective: claimed or verified, chosen by the verified attribution flag |
+| `thread_count` | INTEGER | default 0; effective, as `post_count` |
+| `claimed_post_count` | INTEGER | default 0; every post naming the identity, plus its bootstrap post (schema 26) |
+| `verified_post_count` | INTEGER | default 0; only posts with `attribution_verified = 1`, plus its bootstrap post (schema 26) |
+| `claimed_thread_count` | INTEGER | default 0 (schema 26) |
+| `verified_thread_count` | INTEGER | default 0 (schema 26) |
 
 ### `username_routes`
 
@@ -297,8 +303,13 @@ every scored label or tag naming an approved member, as before. Verified totals
 count it only when its record is signed by that member, or was created (server
 `Created-At`, never `Action-At`) before the attribution cutoff; see
 [Attribution Cutoff Record V1](attribution_cutoff_record_v1.md). Imported score
-seeds count in both. The effective columns (`score_total`, `post_score_total`,
-`approved_flag_count`, `is_hidden`, `hidden_reason`) copy one set, chosen by the
+seeds count in both. A label written in a post's body follows that post's
+signature when its content-bound source is proven. Posts carry the same rule in
+`attribution_verified`, and profiles keep claimed and verified post and thread
+counts. The effective columns (`score_total`, `post_score_total`,
+`approved_flag_count`, `is_hidden`, `hidden_reason`, `attribution_counted`,
+posts' `author_profile_slug`, profiles' `post_count` and `thread_count`) copy one
+set, chosen by the
 `FORUM_VERIFIED_ATTRIBUTION` flag, so turning the flag on or off swaps them in
 place without a rebuild. Metadata `verified_attribution_enabled` records the set
 in use and `attribution_cutoff_at` the cutoff the verified totals were derived

@@ -4994,6 +4994,9 @@ NODE;
                 return [
                     $pdo->query("SELECT score_total, claimed_score_total, verified_score_total, vote_count FROM threads WHERE root_post_id = 'root-001'")->fetch(\PDO::FETCH_NUM),
                     $pdo->query("SELECT post_score_total, claimed_post_score_total, verified_post_score_total, approved_flag_count, claimed_approved_flag_count, verified_approved_flag_count FROM posts WHERE post_id = 'reply-001'")->fetch(\PDO::FETCH_NUM),
+                    $pdo->query("SELECT score_total, claimed_score_total, verified_score_total FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetch(\PDO::FETCH_NUM),
+                    $pdo->query('SELECT post_id, attribution_verified, attribution_counted, author_profile_slug FROM posts ORDER BY post_id')->fetchAll(\PDO::FETCH_NUM),
+                    $pdo->query('SELECT identity_id, post_count, thread_count, claimed_post_count, verified_post_count, claimed_thread_count, verified_thread_count FROM profiles ORDER BY identity_id')->fetchAll(\PDO::FETCH_NUM),
                 ];
             };
             $rebuilt = function () use ($root, $columns): array {
@@ -5023,12 +5026,33 @@ NODE;
                 'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($key['home'], $record)]);
             [$thread] = $columns($database);
             assertSame([0, 1, 0], array_slice($thread, 0, 3), 'Flag on: effective score uses verified totals');
+
+            // A signed reply and its body label count; an unsigned reply naming the member does not.
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $signedReply = $this->createAuthoredReply($app, ['identity_id' => $identity, 'home' => $key['home']], 'thread-zenmemes-rules', 'Agreed #upvote');
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $unsignedReply = $writer->createReply(['thread_id' => 'thread-zenmemes-rules', 'parent_id' => 'thread-zenmemes-rules', 'body' => 'Not me #downvote', 'author_identity_id' => $identity])['post_id'];
+            [, , $rules, $posts, $profiles] = $columns($database);
+            $postsById = array_column($posts, null, 0);
+            assertSame([1, 1], [$postsById[$signedReply][1], $postsById[$signedReply][2]]);
+            assertSame([$unsignedReply, 0, 0, null], $postsById[$unsignedReply], 'Unverified reply is unlinked and uncounted');
+            assertSame(1, $rules[2] - $rules[1], 'Body label of the unverified reply is claimed only');
+            assertSame($rules[2], $rules[0]);
+            $profile = array_column($profiles, null, 0)[$identity];
+            assertSame(1, $profile[3] - $profile[4], 'Profile counts drop the unverified reply');
+            assertSame($profile[4], $profile[1]);
+            $profileIds = array_column(\ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts((new ReadModelConnection($database))->open(), [$identity]), 'post_id');
+            assertTrue(in_array($signedReply, $profileIds, true));
+            assertFalse(in_array($unsignedReply, $profileIds, true));
             assertSame($rebuilt(), $columns($database), 'Incremental equals rebuild');
 
             $metadata = static fn (): array => ReadModelMetadata::readMetadata((new ReadModelConnection($database))->open());
             $flag(false);
             assertSame('write_incremental', $metadata()['rebuild_reason'], 'Toggle needs no rebuild');
             assertSame([1, 1, 0], array_slice($columns($database)[0], 0, 3));
+            $postsById = array_column($columns($database)[3], null, 0);
+            assertSame(1, $postsById[$unsignedReply][2], 'Flag off: the reply counts again');
+            assertTrue($postsById[$unsignedReply][3] !== null, 'Flag off: the reply links again');
             assertSame($rebuilt(), $columns($database));
             $flag(true);
             assertSame($cutoff, AttributionCutoff::resolve($root)['cutoff_at'], 'Off and on keeps the cutoff');

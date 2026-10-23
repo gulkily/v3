@@ -62,6 +62,18 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
   - 41 read-model, scoring, offline snapshot, import, status and flag suites: all pass except 7 tests that fail identically on the Stage 2 commit (pre-existing): `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, two `ReadModelProvenanceTest` broken-history tests, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, two `LocalAppSmokeTest` static-build progress tests. Two `ImportInstanceCommandTest` tests failed during the batch while plan docs were being edited and passed on rerun.
   - `WriteApiSmokeTest` parity test and Stage 2 cutoff test pass.
 
+## Stage 4 - Posts and profiles by the same rule
+
+- Changes (same schema version 26, not yet released):
+  - Posts gain `attribution_verified` (signed by the named identity, created before the cutoff, anonymous, or a removed post) and the effective `attribution_counted`. With the flag on, an unverified post loses its profile link (`author_profile_slug` NULL; the claimed name stays in `author_label`) and drops out of profile post lists.
+  - Profiles keep claimed and verified post and thread counts; the effective `post_count` and `thread_count` follow the flag. A bootstrap post always counts for its owner.
+  - Labels written in a post's body follow that post: when the label's content-bound source is proven (`LabelOwnership`), it counts when the post would. This fixes a Stage 3 gap: body labels are server-written unsigned records, so labels from signed posts would otherwise have turned unverified after the cutoff.
+  - Builder, incremental post writes, identity linking and profile refresh all apply the rule; the flag swap updates posts and profiles in place.
+  - Docs: `read_model_schema_v1.md` (post and profile columns, body-label rule).
+- Verification:
+  - Parity test extended: after the cutoff a signed reply and its `#upvote` count; an unsigned reply naming the member is unlinked, uncounted, absent from the profile list, and its `#downvote` is claimed only; turning the flag off links and counts it again; every step equals a full rebuild.
+  - zenmemes backup copy: compared with the pre-Stage-3 rebuild, 0 threads, 0 posts (score, flags, hidden, profile link) and 0 profiles (post and thread counts) differ; no post is unverified without a cutoff.
+
 ## Enhancement Requests
 
 - **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** pending renewed Approved Step 2 and Approved Step 3. / **Outcome:** pending.

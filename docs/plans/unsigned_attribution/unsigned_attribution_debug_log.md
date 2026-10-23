@@ -160,3 +160,17 @@
 ### Uncertain assessments
 
 - Step 2 lists scores, post counts and profiles; approved-member flags also hide reply-agent posts. Applying the rule there was a judgment call surfaced for maintainer review rather than a changed-scope return, since it follows from "do not count toward the approved score".
+
+## 2026-10-23T18:30Z · Step 4 Stage 4 (posts and profiles)
+
+### Necessary/useful instructions
+
+- Step 2 core requirement "Labels written in an unverified post's body count as unverified votes": checking its converse exposed that body labels are separate unsigned records, so Stage 3 would have unverified labels from signed posts. Caught before release by implementing Stage 4 against the Step 2 text rather than the Step 3 stage summary. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Stage 3 was committed with a defect that Stage 4 fixed in the same unreleased schema version. Railspike does not say whether a later stage fixing an earlier stage's committed gap should be recorded as an enhancement request; it is recorded in the Stage 4 summary instead.

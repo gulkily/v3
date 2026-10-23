@@ -37,7 +37,7 @@ final class AuthoredContentRepository
              WHERE threads.retracted_at IS NULL
                AND threads.root_post_id IN (
                  SELECT post_id FROM posts
-                 WHERE post_id = thread_id AND author_identity_id IN (%s)
+                 WHERE post_id = thread_id AND attribution_counted = 1 AND author_identity_id IN (%s)
              )
              ORDER BY last_activity_at DESC, root_post_id ASC',
             $identityIds
@@ -71,6 +71,7 @@ final class AuthoredContentRepository
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE author_identity_id IN (%s)
+               AND posts.attribution_counted = 1
                AND posts.is_hidden = 0
                AND posts.retracted_at IS NULL
                AND COALESCE(json_extract(posts.agent_response_json, \'$.type\'), \'\') <> \'scripture_expansion\'

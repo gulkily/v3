@@ -81,8 +81,9 @@ final class ReadModelBuilder
             $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
             $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo, $approvalState));
             $this->measure('index_thread_subjects', fn (): mixed => $this->indexThreadSubjects($pdo));
-            $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts));
-            $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts));
+            $postAttribution = $this->measure('derive_post_attribution', fn (): array => $this->derivePostAttribution($posts));
+            $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts, $postAttribution));
+            $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts, $postAttribution));
             $this->measure('index_post_reactions', fn (): mixed => $this->indexPostReactions($pdo, $approvalState));
             $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
@@ -396,7 +397,6 @@ final class ReadModelBuilder
             $countedApprovedScoredTagsByThread[$record->threadId] ??= [];
             $verifiedScoreByThread[$record->threadId] ??= $seedScoreByThread[$record->threadId] ?? 0;
             $countedVerifiedScoredTagsByThread[$record->threadId] ??= [];
-            $recordPath = CanonicalPathResolver::threadLabel($record->recordId);
             $recordCountsVerified = null;
             $voteCountByThread[$record->threadId] ??= $seedVoteCountByThread[$record->threadId] ?? 0;
             $countedVoteTagsByThread[$record->threadId] ??= [];
@@ -423,7 +423,7 @@ final class ReadModelBuilder
                 }
 
                 $dedupeKey = $this->threadVoteDedupeKey($record->authorIdentityId, $label);
-                $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $this->attributionCutoff, $recordPath, $record->authorIdentityId, $record->createdAt);
+                $recordCountsVerified ??= VerifiedAttribution::countsThreadLabel($this->repositoryRoot, $this->attributionCutoff, $record);
                 if ($recordCountsVerified && !isset($countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey])) {
                     $countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
                     $verifiedScoreByThread[$record->threadId] += $this->threadLabelScoreValue($label);
@@ -771,8 +771,12 @@ final class ReadModelBuilder
      * @param array<string, array{approved_by_identity_id:?string,approved_by_profile_slug:?string,approved_by_label:?string}> $approvalState
      * @param array<string, array{post_count:int,thread_count:int}> $profileCounts
      */
-    private function linkPostAuthors(PDO $pdo, array $profiles, array $approvalState, array $profileCounts): void
+    private function linkPostAuthors(PDO $pdo, array $profiles, array $approvalState, array $profileCounts, array $postAttribution): void
     {
+        $markUnverified = $pdo->prepare('UPDATE posts SET attribution_verified = 0 WHERE post_id = ?');
+        foreach (array_keys(array_filter($postAttribution, static fn (bool $verified): bool => !$verified)) as $postId) {
+            $markUnverified->execute([$postId]);
+        }
         $updatePost = $pdo->prepare(
             'UPDATE posts
              SET author_identity_id = :author_identity_id, author_profile_slug = :author_profile_slug, author_label = :author_label
@@ -785,7 +789,11 @@ final class ReadModelBuilder
                  approved_by_profile_slug = :approved_by_profile_slug,
                  approved_by_label = :approved_by_label,
                  post_count = :post_count,
-                 thread_count = :thread_count
+                 thread_count = :thread_count,
+                 claimed_post_count = :post_count,
+                 claimed_thread_count = :thread_count,
+                 verified_post_count = :verified_post_count,
+                 verified_thread_count = :verified_thread_count
              WHERE identity_id = :identity_id'
         );
 
@@ -797,7 +805,7 @@ final class ReadModelBuilder
                 'bootstrap_post_id' => $profile['bootstrap_post_id'],
             ]);
 
-            $counts = $profileCounts[$profile['identity_id']] ?? ['post_count' => 0, 'thread_count' => 0];
+            $counts = $profileCounts[$profile['identity_id']] ?? ['post_count' => 0, 'thread_count' => 0, 'verified_post_count' => 0, 'verified_thread_count' => 0];
             $approval = $approvalState[$profile['identity_id']] ?? [
                 'approved_by_identity_id' => null,
                 'approved_by_profile_slug' => null,
@@ -810,6 +818,8 @@ final class ReadModelBuilder
                 'approved_by_label' => $approval['approved_by_label'],
                 'post_count' => $counts['post_count'],
                 'thread_count' => $counts['thread_count'],
+                'verified_post_count' => $counts['verified_post_count'],
+                'verified_thread_count' => $counts['verified_thread_count'],
                 'identity_id' => $profile['identity_id'],
             ]);
         }
@@ -1572,16 +1582,37 @@ final class ReadModelBuilder
     }
 
     /**
+     * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,source_path:string,source_commit_sha:?string,sequence_number:int}> $posts
+     * @return array<string, bool> whether each post counts as its named author's under verified attribution
+     */
+    private function derivePostAttribution(array $posts): array
+    {
+        $verified = [];
+        foreach ($this->progressItems('deriving_post_attribution', $posts) as $post) {
+            $verified[$post['post_id']] = VerifiedAttribution::countsPost(
+                $this->repositoryRoot,
+                $this->attributionCutoff,
+                $post['source_path'],
+                $post['author_identity_id'],
+                $post['created_at'],
+            );
+        }
+
+        return $verified;
+    }
+
+    /**
      * @param array<string, array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string}> $profiles
      * @param array<int, array{post_id:string,created_at:string,thread_id:string,parent_id:?string,subject:?string,body:string,board_tags_json:string,thread_type:?string,author_identity_id:?string,source_path:string,source_commit_sha:?string,sequence_number:int}> $posts
-     * @return array<string, array{post_count:int,thread_count:int}>
+     * @param array<string, bool> $postAttribution
+     * @return array<string, array{post_count:int,thread_count:int,verified_post_count:int,verified_thread_count:int}>
      */
-    private function deriveProfileCounts(array $profiles, array $posts): array
+    private function deriveProfileCounts(array $profiles, array $posts, array $postAttribution): array
     {
         $counts = [];
         $bootstrapPostOwners = [];
         foreach ($this->progressItems('initializing_profile_counts', $profiles) as $identityId => $profile) {
-            $counts[$identityId] = ['post_count' => 0, 'thread_count' => 0];
+            $counts[$identityId] = ['post_count' => 0, 'thread_count' => 0, 'verified_post_count' => 0, 'verified_thread_count' => 0];
             $bootstrapPostOwners[$profile['bootstrap_post_id']] = $identityId;
         }
 
@@ -1599,9 +1630,13 @@ final class ReadModelBuilder
             }
 
             foreach (array_keys($owners) as $identityId) {
+                $isThread = $post['post_id'] === $post['thread_id'];
                 $counts[$identityId]['post_count']++;
-                if ($post['post_id'] === $post['thread_id']) {
-                    $counts[$identityId]['thread_count']++;
+                $counts[$identityId]['thread_count'] += $isThread ? 1 : 0;
+                // A bootstrap post belongs to its identity's owner whatever its signature.
+                if (($postAttribution[$post['post_id']] ?? true) || ($bootstrapPostOwners[$post['post_id']] ?? null) === $identityId) {
+                    $counts[$identityId]['verified_post_count']++;
+                    $counts[$identityId]['verified_thread_count'] += $isThread ? 1 : 0;
                 }
             }
         }
