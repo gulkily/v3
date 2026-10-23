@@ -2054,6 +2054,7 @@ class LocalWriteService
                     }
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'recovered' => true];
                 }
+                $this->assertInvitationIssuerNotRevoked($entry);
                 if (strtotime($entry['issued']->expiresAt) <= time()) throw new RuntimeException('Invitation has expired.');
                 if ($this->isApprovedIdentity($authorIdentityId)) {
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'already_approved' => true];
@@ -2091,11 +2092,19 @@ class LocalWriteService
     public function inspectInvitation(string $token): array
     {
         $entry = $this->invitationForToken($token);
+        if ($entry['redeemed'] === null) $this->assertInvitationIssuerNotRevoked($entry);
         if ($entry['revoked'] !== null || ($entry['redeemed'] === null && strtotime($entry['issued']->expiresAt) <= time())) {
             throw new RuntimeException('Invitation is expired or revoked.');
         }
         return ['status' => 'ok', 'targeted' => $entry['issued']->destination !== null,
             'state' => $entry['redeemed'] === null ? 'available' : 'used'];
+    }
+
+    private function assertInvitationIssuerNotRevoked(array $entry): void
+    {
+        if (isset(\ForumRewrite\Security\KeyRevocations::all($this->repositoryRoot)[$entry['issued']->post->authorIdentityId])) {
+            throw new RuntimeException('The invitation issuer’s key was revoked. Ask for a new invitation.');
+        }
     }
 
     private function invitationForToken(string $token): array
@@ -2114,6 +2123,7 @@ class LocalWriteService
             $recipientIdentityId = $this->requireOpenPgpIdentityId((string) ($input['recipient_identity_id'] ?? ''), 'recipient_identity_id');
             $entry = $this->invitationForToken(trim((string) ($input['invite_token'] ?? '')));
             $sameRecipient = $entry['redeemed'] !== null && $entry['redeemed']->post->authorIdentityId === $recipientIdentityId;
+            if (!$sameRecipient) $this->assertInvitationIssuerNotRevoked($entry);
             if ($entry['revoked'] !== null || ($entry['redeemed'] !== null && !$sameRecipient)
                 || (!$sameRecipient && strtotime($entry['issued']->expiresAt) <= time())) {
                 throw new RuntimeException('Invitation is expired, revoked, or used by another identity.');

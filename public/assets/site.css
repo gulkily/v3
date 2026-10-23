@@ -758,3 +758,6 @@ pre {
 .key-revocation-facts [data-revocation-key] { font-family:monospace; }
 
 .key-revocation-warning code { overflow-wrap:anywhere; }
+.key-revocation-review button, [data-revoke-key] { min-height:44px; }
+
+.user-access-account h1, .key-revocation-review h2 { overflow-wrap:anywhere; }

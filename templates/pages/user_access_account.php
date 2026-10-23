@@ -1,4 +1,4 @@
-<section class="stack">
+<section class="stack user-access-account">
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
     <h1>Access: <?= $e($usernameToken) ?></h1>

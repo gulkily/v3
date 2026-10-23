@@ -29,6 +29,62 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testKeyRevocationRechecksReviewAndRecoversCommitAndRefreshFailures(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $operator = $this->linkSigningIdentity($app, 'fault-revoker'); $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $bob = $this->linkSigningIdentity($app, 'fault-bob');
+        $builder = new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)); $builder->rebuild();
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $pdo = (new ReadModelConnection($db))->open();
+        $approve = function ($target) use ($pdo, $writer, $operator): void {
+            $p = ProfileRepository::byIdentityId($pdo, $target['identity_id']);
+            $writer->approveUser(['approver_identity_id' => $operator['identity_id'], 'target_identity_id' => $target['identity_id'], 'target_profile_slug' => $p['profile_slug'], 'thread_id' => $p['bootstrap_thread_id'], 'parent_id' => $p['bootstrap_post_id']]);
+        };
+        $approve($bob);
+        $prepare = fn () => $writer->prepareKeyRevocation(['target_identity_id' => $bob['identity_id']], $operator['identity_id']);
+        $sign = fn ($p) => $p + ['detached_signature' => $this->signCanonicalRecord($operator['home'], $p['canonical_record'])];
+        $reject = function (callable $action, string $message): void {
+            $failed = false; try { $action(); } catch (RuntimeException $e) { assertStringContains($message, $e->getMessage()); $failed = true; } assertSame(true, $failed);
+        };
+        $reject(fn () => $writer->prepareKeyRevocation(['target_identity_id' => $bob['identity_id'], 'revocation_cutoff' => '2000-01-01T00:00:00Z'], $operator['identity_id']), 'Custom');
+        $prepared = $prepare(); $signed = $sign($prepared);
+        $bad = $signed; $bad['canonical_record'] = preg_replace('/Revocation-Cutoff: .+/', 'Revocation-Cutoff: 2000-01-01T00:00:00Z', $signed['canonical_record']);
+        $bad['detached_signature'] = $this->signCanonicalRecord($operator['home'], $bad['canonical_record']);
+        $reject(fn () => $writer->finalizePreparedKeyRevocation($bad, $operator['identity_id']), 'changed or expired');
+        $second = $this->linkSigningIdentity($app, 'fault-bob'); $approve($second);
+        $reject(fn () => $writer->finalizePreparedKeyRevocation($signed, $operator['identity_id']), 'Refresh and review');
+        $prepared = $prepare(); $signed = $sign($prepared);
+        $store = dirname($db) . '/prepared-posts/' . $prepared['prepare_token'] . '.json';
+        $metadata = json_decode(file_get_contents($store), true); $metadata['expires_at'] = '2000-01-01T00:00:00Z'; file_put_contents($store, json_encode($metadata));
+        $reject(fn () => $writer->finalizePreparedKeyRevocation($signed, $operator['identity_id']), 'changed or expired');
+        $prepared = $prepare(); $signed = $sign($prepared);
+        $duringReview = $writer->prepareThread(['author_identity_id' => $bob['identity_id'], 'subject' => 'Accepted while review was open', 'body' => 'Keep this accepted post', 'board_tags' => 'general']);
+        $writer->createPreparedPost($duringReview + ['author_identity_id' => $bob['identity_id'], 'detached_signature' => $this->signCanonicalRecord($bob['home'], $duringReview['canonical_record'])]);
+        $hook = $root . '/.git/hooks/pre-commit'; file_put_contents($hook, "#!/bin/sh\nexit 1\n"); chmod($hook, 0700);
+        try { $reject(fn () => $writer->finalizePreparedKeyRevocation($signed, $operator['identity_id']), 'Unable to commit'); } finally { unlink($hook); }
+        assertSame([], glob($root . '/records/key-revocations/*') ?: []); assertSame([], glob($root . '/records/key-revocation-acceptances/*') ?: []);
+        assertSame('', $this->gitOutput($root, 'status --porcelain'));
+        $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root)) extends LocalWriteService {
+            protected function rebuildReadModel(): array { throw new RuntimeException('Injected revocation refresh failure'); }
+        };
+        $reject(fn () => $failing->finalizePreparedKeyRevocation($signed, $operator['identity_id']), 'Canonical write committed');
+        $this->assertReadModelMarkedStale($db);
+        assertSame(1, (int) ProfileRepository::byIdentityId($pdo, $bob['identity_id'])['is_approved']);
+        $reject(fn () => $writer->prepareThread(['author_identity_id' => $bob['identity_id'], 'subject' => 'Blocked', 'body' => 'Blocked']), 'revoked');
+        $recovered = $writer->finalizePreparedKeyRevocation($signed, $operator['identity_id']); assertSame(true, $recovered['recovered']);
+        assertSame($prepared['revocation_review']['revocation_cutoff'], $recovered['revocation_cutoff']);
+        assertSame(1, count(glob($root . '/records/key-revocations/*.txt')));
+        assertStringContains('Keep this accepted post', $this->renderMethod($app, 'GET', '/threads/' . $duringReview['thread_id']));
+        assertSame(1, (int) ProfileRepository::byIdentityId($pdo, $second['identity_id'])['is_approved']);
+        $previous = getenv('FORUM_USERNAME_CHANGES_ENABLED'); putenv('FORUM_USERNAME_CHANGES_ENABLED=true');
+        try {
+            $reject(fn () => $writer->prepareProfileName(['author_identity_id' => $bob['identity_id'], 'username' => 'escape']), 'revoked');
+            $reject(fn () => $writer->prepareProfileName(['author_identity_id' => $operator['identity_id'], 'username' => 'fault-bob']), 'reserved');
+        } finally { putenv($previous === false ? 'FORUM_USERNAME_CHANGES_ENABLED' : 'FORUM_USERNAME_CHANGES_ENABLED=' . $previous); }
+    }
+
     public function testSignedKeyRevocationAcceptsOnceAndProtectsRetainedClaim(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -120,6 +176,20 @@ final class WriteApiSmokeTest
             $writer->approveUser(['approver_identity_id' => $actor['identity_id'], 'target_identity_id' => $target['identity_id'],
                 'target_profile_slug' => $profile['profile_slug'], 'thread_id' => $profile['bootstrap_thread_id'], 'parent_id' => $profile['bootstrap_post_id']]);
         }
+        $dave = $this->linkSigningIdentity($app, 'invited-before-revocation');
+        $future = $this->linkSigningIdentity($app, 'pending-after-revocation');
+        $bobProfile = ProfileRepository::byIdentityId($pdo, $bob['identity_id']);
+        foreach ([$dave, $future] as $recipient) {
+            $token = bin2hex(random_bytes(16));
+            $issue = $writer->prepareInvitation(['issuer_identity_id' => $bob['identity_id'], 'thread_id' => $bobProfile['bootstrap_thread_id'], 'parent_id' => $bobProfile['bootstrap_post_id'],
+                'verification_hash' => 'sha256:' . hash('sha256', $token), 'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600)]);
+            $writer->finalizePreparedInvitation($issue + ['author_identity_id' => $bob['identity_id'], 'detached_signature' => $this->signCanonicalRecord($bob['home'], $issue['canonical_record'])]);
+            $rp = ProfileRepository::byIdentityId($pdo, $recipient['identity_id']);
+            $redemption = $writer->prepareInvitationRedemption(['recipient_identity_id' => $recipient['identity_id'], 'thread_id' => $rp['bootstrap_thread_id'], 'parent_id' => $rp['bootstrap_post_id'], 'invite_token' => $token]);
+            $redemption['author_identity_id'] = $recipient['identity_id']; $redemption['detached_signature'] = $this->signCanonicalRecord($recipient['home'], $redemption['canonical_record']);
+            if ($recipient['identity_id'] === $dave['identity_id']) $writer->finalizePreparedInvitation($redemption);
+            else { $futureRedemption = $redemption; $futureToken = $token; }
+        }
         $id = 'key-revocation-' . str_repeat('a', 32);
         $contents = "Record-ID: {$id}\nOperation: revoke-key\nAuthor-Identity-ID: {$operator['identity_id']}\nTarget-Identity-ID: {$bob['identity_id']}\nUsername: revocation-bob\nRevocation-Cutoff: 2026-01-01T00:00:00Z\nReview-Context: sha256:" . str_repeat('a', 64) . "\n\n";
         foreach (['key-revocations', 'key-revocation-acceptances'] as $dir) mkdir($root . '/records/' . $dir, 0700, true);
@@ -127,19 +197,56 @@ final class WriteApiSmokeTest
         file_put_contents($root . '/' . $path, $contents);
         file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($operator['home'], $contents));
         $receipt = \ForumRewrite\Security\KeyRevocations::receiptPath($id);
-        file_put_contents($root . '/' . $receipt, \ForumRewrite\Security\KeyRevocations::encodeReceipt($contents, '2026-01-01T00:02:00Z'));
+        $acceptedAt = gmdate('Y-m-d\TH:i:s\Z');
+        file_put_contents($root . '/' . $receipt, \ForumRewrite\Security\KeyRevocations::encodeReceipt($contents, $acceptedAt));
         $this->runCommand($root, 'git add records'); $this->runCommand($root, 'git commit -qm "Fixture revocation"');
         $builder->rebuild();
         $row = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $bob['identity_id']);
         assertSame(0, (int) $row['is_approved']); assertSame(1, (int) $row['was_approved']); assertSame(1, (int) $row['is_revoked']);
-        assertSame('2026-01-01T00:00:00Z', $row['revocation_cutoff']); assertSame('2026-01-01T00:02:00Z', $row['revoked_at']);
+        assertSame('2026-01-01T00:00:00Z', $row['revocation_cutoff']); assertSame($acceptedAt, $row['revoked_at']);
         assertSame(1, (int) \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $casey['identity_id'])['is_approved']);
+        assertSame(1, (int) ProfileRepository::byIdentityId($pdo, $dave['identity_id'])['is_approved']);
+        foreach ([fn () => $writer->finalizePreparedInvitation($futureRedemption), fn () => $writer->inspectInvitation($futureToken)] as $attempt) {
+            $denied = false; try { $attempt(); } catch (RuntimeException $e) { assertStringContains('issuer', $e->getMessage()); $denied = true; } assertSame(true, $denied);
+        }
+        assertSame(0, (int) ProfileRepository::byIdentityId($pdo, $future['identity_id'])['is_approved']);
+
         assertStringContains('Historical bob post remains', $this->renderMethod($app, 'GET', '/threads/' . $bob['thread_id']));
+        assertStringNotContains('(unapproved)', $this->renderMethod($app, 'GET', '/threads/' . $bob['thread_id']));
+        assertStringContains('/user/revocation-bob', $this->renderMethod($app, 'GET', '/threads/' . $bob['thread_id']));
         assertSame('key-revocation:' . $id, \ForumRewrite\Import\ArchiveRecordCatalog::identityKey($root, $path));
         assertSame('key-revocation-acceptance:' . $id, \ForumRewrite\Import\ArchiveRecordCatalog::identityKey($root, $receipt));
         (new \ForumRewrite\ReadModel\IncrementalReadModelUpdater($db, $root))->applyApprovalSeedWrite(ReadModelMetadata::repositoryHead($root));
         $after = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $bob['identity_id']); assertSame($row, $after);
         assertSame(1, (int) \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $casey['identity_id'])['is_approved']);
+        // Trusted archive restore and repeated rebuild preserve both terminal access and prior sponsorship.
+        require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+        $workspace = new ImportTestWorkspace(); $restored = $workspace->repository('revocation-restore', true); $workspace->git($restored);
+        $archive = $workspace->root . '/revocation.tar.gz';
+        [$code, $output] = $workspace->command(['tar', '-czf', $archive, '-C', $root, 'records']); assertSame(0, $code, $output);
+        $restoreDb = $workspace->root . '/restored.sqlite3';
+        [$code, $output] = $workspace->command(['php', __DIR__ . '/../scripts/import_repository_archive.php', $archive, $restored, $restoreDb]); assertSame(0, $code, $output);
+        for ($i = 0; $i < 2; $i++) {
+            (new ReadModelBuilder($restored, $restoreDb, new CanonicalRecordRepository($restored)))->rebuild();
+            $restorePdo = (new ReadModelConnection($restoreDb))->open();
+            assertSame(1, (int) ProfileRepository::byIdentityId($restorePdo, $bob['identity_id'])['is_revoked']);
+            assertSame(0, (int) ProfileRepository::byIdentityId($restorePdo, $bob['identity_id'])['is_approved']);
+            assertSame(1, (int) ProfileRepository::byIdentityId($restorePdo, $casey['identity_id'])['is_approved']);
+            assertSame(1, (int) ProfileRepository::byIdentityId($restorePdo, $dave['identity_id'])['is_approved']);
+            $restoredHistory = (new \ForumRewrite\ReadModel\ApprovalHistory($restorePdo, $restored))->forUsername('revocation-bob');
+            assertSame(0, $restoredHistory['active_count']); assertSame($acceptedAt, $restoredHistory['rows'][0]['revoked_at']);
+        }
+        [$code, $output] = $workspace->command(['env', 'FORUM_STATIC_HTML_ROOT=' . $workspace->root . '/static', dirname(__DIR__) . '/v3', 'rebuild', $restored, $restoreDb]); assertSame(0, $code, $output);
+        foreach (['--json', '--summary', ''] as $mode) {
+            $command = [dirname(__DIR__) . '/v3', 'approval', 'audit', '--repository-root=' . $restored, '--database-path=' . $restoreDb];
+            if ($mode !== '') $command[] = $mode;
+            [$code, $output] = $workspace->command($command); assertSame(0, $code, $output);
+            if ($mode === '--json') { $report = json_decode($output, true, 512, JSON_THROW_ON_ERROR); assertSame(1, $report['revoked_keys']); assertSame('2026-01-01T00:00:00Z', $report['revocations'][0]['revocation_cutoff']); }
+            elseif ($mode === '--summary') assertStringContains('revoked_keys: 1', $output);
+            else { assertStringContains('Revoked keys', $output); assertStringContains($bob['identity_id'], $output); }
+        }
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($root, $restored);
+        assertSame('excluded', $plan[$path]['state']); assertSame('excluded', $plan[$receipt]['state']);
         file_put_contents($root . '/' . $receipt, str_replace('00:02:00Z', '00:03:00Z', file_get_contents($root . '/' . $receipt)));
         // Repository-owned time is trusted administration; exact signed bytes remain bound.
         file_put_contents($root . '/' . $path, str_replace('revocation-bob', 'forged-account', $contents));

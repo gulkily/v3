@@ -9,7 +9,7 @@
   async function request(path, fields) {
     const response = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fields) });
     let result;
-    try { result = await response.json(); } catch { throw new Error('The server response could not be read. Retry or reload to check the account.'); }
+    try { result = await response.json(); } catch { const error = new Error('The server response could not be read. Retry or reload to check the account.'); error.outcomeUnknown = true; throw error; }
     if (!response.ok || result.status !== 'ok') throw new Error(result.error || 'The request failed. Retry or reload to check the account.');
     return result;
   }
@@ -23,6 +23,9 @@
       const prepared = await request('/api/prepare_key_revocation', { target_identity_id: button.dataset.revokeKey });
       const data = prepared.revocation_review;
       if (!data || !data.target_identity_id || !data.revocation_cutoff || data.target_identity_id !== button.dataset.revokeKey) throw new Error('Revocation review is incomplete. Reload the account and try again.');
+      const fields = Object.fromEntries(String(prepared.canonical_record || '').split('\n').filter(line => line.includes(': ')).map(line => { const i = line.indexOf(': '); return [line.slice(0, i), line.slice(i + 2)]; }));
+      if (fields['Target-Identity-ID'] !== data.target_identity_id || fields.Username !== data.username || fields['Revocation-Cutoff'] !== data.revocation_cutoff) throw new Error('Signed request does not match the review. Reload the account and try again.');
+
       pending = prepared;
       find('heading').textContent = 'Revoke ' + data.username + '’s account key?';
       find('account').textContent = data.username; find('key').textContent = data.target_identity_id;
@@ -49,12 +52,16 @@
     if (busy || !pending) return;
     if (mustReview) { await prepare(origin); return; }
     buttons(true); say('');
+    let submitted = false;
     try {
       if (!signature) signature = await window.ForumBrowserSigning.signCanonicalRecord(pending.canonical_record);
+      submitted = true;
       await request('/api/create_prepared_key_revocation', { prepare_token: pending.prepare_token, record_path: pending.record_path, canonical_record: pending.canonical_record, detached_signature: signature });
       window.location.reload();
     } catch (error) {
-      say(error.message); find('reload').hidden = false;
+      say(submitted && (error instanceof TypeError || error.outcomeUnknown) ? 'Could not confirm the outcome. Retry or reload to check whether the key was revoked.' : error.message);
+      if (submitted) cancel.textContent = 'Close';
+      find('reload').hidden = false;
       // Keep the exact signed bytes after a lost response; committed retry is idempotent.
       mustReview = /changed|expired|review again|stale/i.test(error.message) && !/committed/i.test(error.message);
       confirm.textContent = mustReview ? 'Review again' : 'Retry';

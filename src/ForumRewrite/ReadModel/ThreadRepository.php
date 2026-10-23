@@ -41,7 +41,7 @@ final class ThreadRepository
                     posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    profiles.username_token AS author_username_token, MAX(COALESCE(profiles.is_approved, 0), COALESCE(profiles.was_approved, 0)) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -66,7 +66,7 @@ final class ThreadRepository
                     posts.body AS root_post_body,
                     posts.post_score_total AS root_post_score_total,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    profiles.username_token AS author_username_token, MAX(COALESCE(profiles.is_approved, 0), COALESCE(profiles.was_approved, 0)) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -91,7 +91,7 @@ final class ThreadRepository
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    MAX(COALESCE(profiles.is_approved, 0), COALESCE(profiles.was_approved, 0)) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -120,7 +120,7 @@ final class ThreadRepository
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    MAX(COALESCE(profiles.is_approved, 0), COALESCE(profiles.was_approved, 0)) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
