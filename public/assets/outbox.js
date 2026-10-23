@@ -66,7 +66,8 @@
         var card = document.createElement("details");
         card.className = "card outbox-item";
         var heading = document.createElement("summary");
-        heading.textContent = summary.action + " — " + displayState(summary.state) + " · " + (summary.summary || "Local action");
+        heading.textContent = summary.action + " — " + displayState(summary.state);
+        if (summary.summary) heading.textContent += " · " + summary.summary;
         var detailRoot = document.createElement("div");
         detailRoot.className = "outbox-item-detail";
         var detail = document.createElement("p");
