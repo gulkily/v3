@@ -38,6 +38,16 @@ keep top-level help current, and follow existing subcommand meanings: `cron`
 prints installation instructions; `run` executes the scheduled worker. Verify
 help, output modes and required next steps in the relevant implementation plan.
 
+## Private runtime configuration
+
+Register new private-config/environment settings in `PrivateConfigSchema`, with
+an explicit decision about inclusion in `templateDefaults()`. Template settings
+are emitted automatically by the private-config writer; add dedicated comments
+and examples when operators need guidance. Do not maintain a separate key list.
+Verify creation and `private-config refresh-template` preserve every template
+setting and existing custom values with `PrivateConfigCommandTest`; run the
+schema and affected configuration-consumer checks as well.
+
 ## Read-model schema changes
 
 `state/cache/post_index.sqlite3` is a disposable derived read model, rebuilt
