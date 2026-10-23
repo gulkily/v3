@@ -58,6 +58,8 @@
   function setHealthStatus(state, text) {
     status.setAttribute("data-status", state);
     status.textContent = text;
+    summary.hidden = true;
+    summary.textContent = "";
   }
 
   function diagnosticValue(value) {
@@ -328,7 +330,6 @@
     guidance.hidden = true;
     openSavedArchive.hidden = true;
     setHealthStatus("checking", "CHECKING");
-    summary.textContent = "Checking offline reading status…";
 
     try {
       var online = navigator.onLine;
@@ -353,6 +354,7 @@
         setCheck(publicationChecks, "Published archive", "missing", "Not checked — HTTPS is required.", "fetch(\"/offline/snapshot.sqlite3\", { method: \"HEAD\" })");
         setHealthStatus("not-ready", "NOT READY");
         summary.textContent = "Offline reading requires HTTPS.";
+        summary.hidden = false;
         guidance.hidden = false;
         showHttpsGuidance();
         return;
@@ -384,14 +386,14 @@
       if (serviceWorker.ready && artifacts.ready) {
         setHealthStatus("ready", "READY");
         openSavedArchive.hidden = false;
-        summary.textContent = "Offline reading is ready on this device.";
-        if (!published.ready && published.checked) guidance.textContent = "Saved content remains ready, but the current published snapshot is unavailable.";
-        else guidance.hidden = true;
+        if (!published.ready && published.checked) {
+          guidance.textContent = "Saved content remains ready, but the current published snapshot is unavailable.";
+          guidance.hidden = false;
+        } else guidance.hidden = true;
         return;
       }
 
       setHealthStatus(serviceWorker.ready || artifacts.snapshot ? "partial" : "not-ready", serviceWorker.ready || artifacts.snapshot ? "PARTIAL" : "NOT READY");
-      summary.textContent = "Offline reading is not ready on this device.";
       setGuidance(online, serviceWorker, artifacts, published);
     } finally {
       checking = false;
@@ -432,16 +434,14 @@
     refreshing = true;
     refreshReader.disabled = true;
     setHealthStatus("checking", "REFRESHING");
-    summary.textContent = "Refreshing the saved reader…";
     try {
       var worker = await serviceWorkerStatus();
       await requestReaderRefresh(worker.controller || (worker.registration && worker.registration.active));
       await checkHealth();
-      guidance.hidden = false;
-      guidance.textContent = "Saved reader refreshed and rechecked.";
     } catch (error) {
       setHealthStatus("partial", "REFRESH FAILED");
       summary.textContent = "The saved reader could not be refreshed.";
+      summary.hidden = false;
       guidance.hidden = false;
       guidance.textContent = error && error.message ? error.message : String(error);
     } finally {

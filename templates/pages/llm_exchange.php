@@ -85,7 +85,6 @@ $errorJson = json_encode($exchange['error'] ?? [], JSON_PRETTY_PRINT | JSON_UNES
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
   <article class="card">
-    <p><a href="/tools/llm-exchanges/">Back to LLM Exchanges</a></p>
     <h1>LLM Exchange <?= (int) $exchange['id'] ?></h1>
     <p class="meta"><?= $e($exchange['occurred_at']) ?> · <?= $e($exchange['call_type']) ?> · <?= $e($exchange['status']) ?></p>
     <p class="meta">Provider: <?= $e((string) ($exchange['provider'] ?? '')) ?> / <?= $e((string) ($exchange['provider_model'] ?? '')) ?><?php if ($providerRequestId !== ''): ?> · Request ID: <?= $e($providerRequestId) ?><?php endif; ?></p>
