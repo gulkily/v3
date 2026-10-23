@@ -876,6 +876,8 @@ final class WriteApiSmokeTest
             $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
             $_COOKIE = [];
             assertStringNotContains('Post summary:', $approvedPostPage);
+            assertStringNotContains('Reply to this post', $approvedPostPage);
+            assertStringContains('>Reply</a>', $approvedPostPage);
             assertStringNotContains('<strong>Question:</strong>', $approvedPostPage);
             assertStringContains('Moderation summary:', $approvedPostPage);
             assertStringContains('Moderation summary:', $approvedThreadPage);
