@@ -77,7 +77,7 @@ try {
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
     } else {
         $width = filter_var(getenv('COLUMNS'), FILTER_VALIDATE_INT) ?: 80;
-        $rendered = (new CheckoutRenderer($width))->render($result['checkouts'] ?? []);
+        $rendered = (new CheckoutRenderer($width))->render($result['checkouts'] ?? [], $command === 'preview');
         foreach ($rendered['lines'] as $line) {
             echo $line . "\n";
         }

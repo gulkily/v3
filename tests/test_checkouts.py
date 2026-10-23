@@ -799,6 +799,30 @@ class CheckoutsTest(unittest.TestCase):
         self.cli('refresh')
         self.assertEqual('current', self.cli()['checkouts'][0]['action'])
 
+    def test_preview_marks_only_apply_eligible_actions_without_legend(self):
+        self.add()
+        feature = self.base / 'feature-clone'
+        dirty = self.base / 'dirty-clone'
+        for path in [feature, dirty]:
+            self.git(self.base, 'clone', '-q', str(self.up), str(path))
+            self.add(path)
+        self.preview()
+        self.git(feature, 'switch', '-qc', 'feature')
+        self.commit(feature, 'local', 'local feature')
+        self.commit(self.up, 'remote', 'source change')
+        current = self.base / 'current-clone'
+        self.git(self.base, 'clone', '-q', str(self.up), str(current))
+        self.add(current)
+        (dirty / 'unfinished').write_text('unfinished')
+        output = self.cli('preview', raw=True, code=2)
+        self.assertIn('*fast-forward', output)
+        self.assertIn('*merge', output)
+        self.assertEqual(2, output.count('*'))
+        self.assertNotIn('*dirty', output)
+        self.assertNotIn('*current', output)
+        self.assertNotIn('legend', output.lower())
+        self.assertNotIn('*', self.cli(raw=True, code=2))
+
 
 if __name__ == '__main__':
     unittest.main()
