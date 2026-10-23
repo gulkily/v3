@@ -1,6 +1,6 @@
 (function () {
   const composeRoots = Array.from(document.querySelectorAll("[data-compose-root]"));
-  const intentSelector = 'textarea[name="body"], input[name="subject"], input[name="image"], input[name="image_description"]';
+  const intentSelector = 'textarea[name="body"], input[name="subject"], input[name="image"]';
   const reactionSelector = "[data-thread-reactions-root], .post-card[data-post-id]";
   let loadPromise = null;
 

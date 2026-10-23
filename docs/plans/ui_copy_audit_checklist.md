@@ -7,6 +7,18 @@
 - Reconciled the stale Browser identity ready triage entry with its completed implementation record below. Local completion does not establish deployment to the live instance. Deployment/live verification and the original feedback-comment reply remain open, as does the separate production legacy-ownership acceptance task.
 - This review changed tracking only; no product changes, rendered checks, production inspection, or deployment were performed.
 
+## Image attachment copy reduction — October 23, 2026
+
+- [x] Attachment status now shows only dimensions and file size (for example, “175 × 68 · 2 KiB”). Removed the image description field from the shared composer and its unused field styling/visibility and lazy-signing selector. Existing preparation, error and recovery feedback remains.
+- Verification: `node tests/browser/image_content_browser.mjs` passed with updated assertions for dimensions/size-only status and absent description input. Covered phone/desktop theme geometry and overflow, keyboard removal, busy/failure/offline recovery, dedicated reply, Forte reply/new-thread, QDB and real signed upload/retry. Inspected Midnight desktop screenshot `/tmp/image-content-browser-ZsPuUf/remove-preview.png`; PHP/JavaScript syntax and diff checks passed. No dependencies changed; `todo.txt` untouched.
+- Limitations: local Chromium fixtures and emulated viewports; physical devices, other engines, production and full-suite checks were not performed.
+
+## Image preview removal — October 23, 2026
+
+- [x] Replaced the shared “Remove image” text button with an × in the preview’s upper-right corner. Retained its accessible name, tooltip, 44px target, keyboard focus, busy disabling, and separate “Remove attachment to post text” recovery action. Preparation/failure states retain removal even without a thumbnail. No dependencies added or updated; `todo.txt` unchanged.
+- Verification: `node tests/browser/image_content_browser.mjs` passed, including all available standard themes at 390px/1280px for preview/control geometry and page overflow, keyboard removal, busy disabling, invalid-image removal, offline recovery removal, dedicated reply, Forte reply/new-thread dialog, QDB attachment and real signed thread/reply publication/retry. PHP/JavaScript syntax and diff checks passed. Inspected Midnight desktop screenshot `/tmp/image-content-browser-8iZ8xk/remove-preview.png` (extremely wide one-pixel-high image fixture).
+- Limitations: local Chromium fixtures and emulated viewports; physical devices, other browser engines, production deployment and full suite were not checked.
+
 ## Standard Activity relevant evidence — October 23, 2026
 
 - [x] Replace repeated full-commit file lists with Relevant files for each standard Activity item; keep the complete list behind the existing commit link. Preserve unsigned status, identity/signature/key evidence and recovery controls. Forte copy/behavior stays unchanged.

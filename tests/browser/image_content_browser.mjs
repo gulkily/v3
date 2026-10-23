@@ -126,13 +126,23 @@ try {
  await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
  const guestContext=await browser.newContext();const guestPage=await guestContext.newPage();await guestPage.goto(base+'/compose/thread');
  assert.equal(await guestPage.locator('.image-compose-fields').isVisible(),false);await guestContext.close();
+ const checkRemove = async scope => {
+   const remove=scope.getByRole('button',{name:'Remove image',exact:true});
+   await remove.waitFor();
+   assert.equal(await scope.locator('[name="image_description"]').count(),0);
+   if(await scope.locator('.image-upload-status').getAttribute('data-error')!=='true') assert.match(await scope.locator('.image-upload-status').textContent(),/^\d+ × \d+ · \d+ KiB$/);
+   await remove.scrollIntoViewIfNeeded();
+   const box=await remove.boundingBox(), preview=await scope.locator('.image-upload-preview').boundingBox();
+   assert.ok(box.width>=44 && box.height>=44,'remove touch target');
+   assert.ok(box.x>=preview.x-1 && box.y>=preview.y-1 && box.x+box.width<=preview.x+preview.width+1 && box.y+box.height<=preview.y+preview.height+1,'remove overlays preview');
+   await remove.focus();assert.equal(await remove.evaluate(e=>document.activeElement===e),true);
+ };
  const png=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=5000;c.height=2;c.getContext('2d').fillRect(0,0,2,2);return c.toDataURL('image/png').split(',')[1];}),'base64');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.evaluate(()=>window.ForumBrowserSigning.ensureActionIdentity());
  await page.locator('[name="body"]').fill('Browser image thread');
  await page.locator('[data-compose-disclosure="tags-subject"] > summary').click();
  await page.locator('[name="subject"]').fill('Image acceptance');
- assert.equal(await page.locator('.image-upload-description').isVisible(),false,'description hidden before an image is attached');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.setViewportSize({width:390,height:844});
  await page.locator('.compose-action-menu-toggle').click();const choose=page.locator('.image-upload-choose');await choose.focus();
@@ -146,15 +156,43 @@ try {
    },{bytes:[...png],method});
    await page.waitForFunction(()=>Boolean(document.querySelector('[data-compose-form]').__imageState?.file));
    assert.equal(await page.locator('.image-upload-preview').isVisible(),true);
-   await page.locator('.image-upload-remove').click();
+   if(method==='drop') {
+     await page.locator('.compose-action-menu-toggle').click();
+     const themes=await page.locator('[data-theme-option]').evaluateAll(es=>es.map(e=>e.dataset.themeOption).filter(t=>t!=='auto'));
+     for(const width of [390,1280]) for(const theme of themes) {
+       await page.setViewportSize({width,height:900});
+       await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
+       await checkRemove(page);
+       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no overflow: '+theme+' '+width);
+     }
+     await page.screenshot({path:join(root,'remove-preview.png'),fullPage:true});
+     await page.evaluate(()=>document.documentElement.dataset.theme='light');
+     await page.setViewportSize({width:390,height:844});
+     await page.evaluate(()=>ForumImageUpload.lock(document.querySelector('[data-compose-form]'),true));
+     assert.equal(await page.getByRole('button',{name:'Remove image',exact:true}).isDisabled(),true);
+     await page.evaluate(()=>ForumImageUpload.lock(document.querySelector('[data-compose-form]'),false));
+   }
+   await checkRemove(page);
+   await page.getByRole('button',{name:'Remove image',exact:true}).press('Enter');
    assert.equal(await page.locator('.image-upload-preview').isVisible(),false);
  }
+ // A failed preparation still exposes removal without requiring a thumbnail.
+ await page.locator('[name="image"]').setInputFiles({name:'broken.png',mimeType:'image/png',buffer:Buffer.from('invalid image')});
+ await page.waitForFunction(()=>Boolean(document.querySelector('[data-compose-form]').__imageState?.error));
+ await checkRemove(page);
+ await page.getByRole('button',{name:'Remove image',exact:true}).click();
+ // Keep the separate recovery action available when eligibility disappears.
+ await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
+ await page.waitForFunction(()=>Boolean(document.querySelector('[data-compose-form]').__imageState?.file));
+ await context.setOffline(true);
+ await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
+ await page.getByRole('button',{name:'Remove attachment to post text',exact:true}).click();
+ assert.equal(await page.locator('.image-upload-recovery').isVisible(),false);
+ await context.setOffline(false);
+ await page.evaluate(()=>ForumImageUpload.refreshEligibility(document.querySelector('[data-compose-form]')));
  assert.equal(await page.evaluate(()=>{const data=new DataTransfer();data.setData('text/plain','ordinary text');const e=new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data});document.querySelector('[name="body"]').dispatchEvent(e);return e.defaultPrevented;}),false);
  await page.setViewportSize({width:1280,height:900});
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
- await page.locator('.image-upload-description').waitFor({state:'visible'});
- await page.locator('[name="image_description"]').fill('Two dark pixels & <caption>');
- assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after fill');
  const preparedPng=Buffer.from(await page.evaluate(async()=>Array.from(new Uint8Array(await (await ForumImageUpload.ready(document.querySelector('[data-compose-form]'))).file.arrayBuffer()))));
  // Send correctly signed requests that bypass all browser preparation.
  const wide=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2049;c.height=1;return c.toDataURL('image/png').split(',')[1];}),'base64');
@@ -182,7 +220,6 @@ try {
    assert.equal(command('git',['-C',join(root,'repository'),'rev-parse','HEAD']),before);
  }
 
- assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>', 'description after file selection');
  // Anonymous must preserve the draft and refuse the attachment.
  await page.locator('.compose-action-menu > summary').click();
  await page.locator('[data-action="submit-anonymous-compose"]').click();
@@ -190,7 +227,6 @@ try {
  assert.equal(outcomes.length,0);
  assert.match(page.url(),/\/compose\/thread/);
  assert.equal(await page.locator('[name="body"]').inputValue(),'Browser image thread');
- assert.equal(await page.locator('[name="image_description"]').inputValue(),'Two dark pixels & <caption>');
  if(!webkitRun) {
    await page.locator('[data-compose-form] button[type="submit"]').first().click();
    await page.getByText(/Failed to fetch|Load failed/).waitFor();
@@ -209,9 +245,10 @@ try {
  await page.setViewportSize({width:390,height:844});
  await page.goto(base+`/compose/reply?thread_id=${thread.thread_id}&parent_id=${thread.post_id}`);
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
- await page.locator('[name="body"]').fill('Browser image reply');assert.equal(await page.locator('[name="image_description"]').inputValue(),'');
+ await page.locator('[name="body"]').fill('Browser image reply');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
+ await checkRemove(page);
  await page.locator('.compose-action-menu-toggle').click();
  await page.locator('[data-action="submit-anonymous-compose"]').click();
  await page.getByText('Image attachments require signed publication by an approved member.',{exact:false}).waitFor();
@@ -254,11 +291,17 @@ try {
  assert.equal(await forteReply.locator('.image-upload-dropzone .image-upload-choose').count(),0,'no standalone chooser beside the preview');
  await forteReply.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  await forteReply.locator('.image-upload-preview img').waitFor();
+ await checkRemove(forteReply);
  await page.locator('[data-paned-board-new]').click();
  const forteNew=page.locator('[data-paned-new-thread-dialog]');await forteNew.locator('.image-compose-fields:not([hidden])').waitFor();
  assert.equal(await (await attachEntry(forteNew)).textContent(),'Attach image');await forteNew.locator('.compose-action-menu-toggle').click();
  assert.equal(await forteNew.locator('.image-upload-preview').isVisible(),false);
  assert.equal(await forteReply.locator('.image-upload-preview').isVisible(),true);
+ await forteNew.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
+ await forteNew.locator('.image-upload-preview img').waitFor();
+ await checkRemove(forteNew);
+ await forteNew.getByRole('button',{name:'Remove image',exact:true}).click();
+ assert.equal(await forteNew.locator('.image-upload-preview').isVisible(),false);
  await forteNew.locator('[data-paned-new-thread-cancel]').click();
  await setFlags({site:'qdb'});
  assert.equal((await context.request.get(base+imageUrl)).status(),200);
