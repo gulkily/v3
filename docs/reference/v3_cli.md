@@ -336,6 +336,10 @@ fresh preview.
 Run real-Git acceptance tests with `php tests/run.php CheckoutsCommandTest`
 (or `python3 tests/test_checkouts.py` directly); they use
 isolated temporary registries and clones and do not alter registered live copies.
+For the eight-checkout WSL timing/terminal replay, run
+`python3 tests/checkouts_benchmark.py --output-dir=/tmp/checkout-benchmark`.
+It retains every cold/warm/slow/offline/busy sample and reports min/median/p95/max;
+the recorded target applies to this host, not arbitrary OS scheduling delays.
 
 ## Inspect operator status
 

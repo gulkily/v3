@@ -380,6 +380,18 @@ final class CheckoutManager
                 || !is_int($cache['refreshed_at'] ?? null) || !is_array($cache['checkouts'] ?? null)) {
                 return null;
             }
+            if (($cache['observed_at'] ?? null) !== null && !is_int($cache['observed_at'])) {
+                return null;
+            }
+            foreach ($cache['checkouts'] as $row) {
+                if (!is_array($row) || !is_string($row['path'] ?? null)
+                    || !is_string($row['action'] ?? null) || !is_string($row['reason'] ?? null)
+                    || (isset($row['observed_at']) && !is_int($row['observed_at']))
+                    || (isset($row['snapshot']) && (!is_array($row['snapshot']) || !is_string($row['snapshot']['branch'] ?? null)))
+                    || (isset($row['last_error']) && !is_string($row['last_error']))) {
+                    return null;
+                }
+            }
             return $cache;
         } catch (\Throwable) {
             return null;

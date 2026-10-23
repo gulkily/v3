@@ -780,6 +780,25 @@ class CheckoutsTest(unittest.TestCase):
         self.assertNotIn('preview_id', result)
         self.cli('refresh', '--no-refresh', code=1)
 
+    def test_malformed_cache_row_and_expired_worker_marker_recover(self):
+        import time
+        self.add()
+        self.cli('refresh')
+        result = self.cli()
+        path = self.state / ('overview-' + result['cache_key'] + '.json')
+        cache = json.loads(path.read_text())
+        cache['checkouts'][0]['snapshot'] = 'not-a-snapshot'
+        path.write_text(json.dumps(cache))
+        self.assertEqual('unchecked', self.cli(code=2)['checkouts'][0]['action'])
+        status = {'state': 'queued', 'key': result['cache_key'], 'token': 'a' * 24,
+                  'requested_at': int(time.time()) - 11}
+        (self.state / 'refresh.json').write_text(json.dumps(status))
+        result = self.cli(code=2, auto_refresh=True)
+        self.assertEqual('failed', result['refresh']['state'])
+        self.assertIn('did not start', result['refresh']['reason'])
+        self.cli('refresh')
+        self.assertEqual('current', self.cli()['checkouts'][0]['action'])
+
 
 if __name__ == '__main__':
     unittest.main()
