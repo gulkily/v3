@@ -119,10 +119,11 @@ try {
  await body.fill('One inline reply after retry');
  await page.route('**/api/prepare_reply',r=>r.abort(),{times:1});
  await form.locator('.compose-form-actions > button').click();
- await page.locator('[data-kind="error"]').waitFor();
- assert.equal(await body.inputValue(),'One inline reply after retry');
- assert.equal(await form.locator('.compose-form-actions').isVisible(),true);
- await form.locator('.compose-form-actions > button').click();await page.waitForURL(/\/threads\/.*#post-/);
+ await page.locator('[data-reply-state="failed"]').waitFor();
+ assert.equal(await body.inputValue(),'');
+ assert.match(await page.locator('[data-reply-state="failed"]').textContent(),/One inline reply after retry/);
+ await page.locator('[data-reply-state="failed"] button').click();
+ await page.locator('[data-reply-state="accepted"]').waitFor();
  assert.equal(await page.locator('.post-card').filter({hasText:'One inline reply after retry'}).count(),1);
  const noJs=await browser.newContext({javaScriptEnabled:false});const fallback=await noJs.newPage();await fallback.goto(threadUrl);
  assert.equal(await fallback.locator('[data-inline-reply-compose] textarea').isVisible(),true);

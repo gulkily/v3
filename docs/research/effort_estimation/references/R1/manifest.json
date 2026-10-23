@@ -46,5 +46,19 @@
     "ledger_sha256_before": "9cc7a60e04c7972b6b9fd5a720fd1b02793be2ad2a981e70a625afc044661bef",
     "current_feedback_sha256_before": "6f5a07426cf0624bde554b0d8034f32313481a0a8ca7387ce085386f2bdef31c",
     "source_routing_only": true
-  }
+  },
+  "additional_ledger_recoveries": [
+    {
+      "recorded_at_utc": "2026-10-23T17:46:53.176405+00:00",
+      "ledger_path": "docs/plans/effort_estimation_trial.md",
+      "original_source_link_targets": {
+        "Calibration report": "../../../railspike-dev/docs/research/effort_estimation/report.md",
+        "Implementation diff review": "../../../railspike-dev/docs/research/effort_estimation/diff_review.md",
+        "User feedback": "./zenmemes_meta_feedback_2026-10-18_summary.md"
+      },
+      "ledger_sha256_before": "84be6d74ea4ed34acd6f7b5d37809f96c40efb9cc0399f316f938ca3f60191ec",
+      "current_feedback_sha256_before": "6f5a07426cf0624bde554b0d8034f32313481a0a8ca7387ce085386f2bdef31c",
+      "source_routing_only": true
+    }
+  ]
 }
