@@ -45,6 +45,7 @@ $authenticatedIdentityId = is_array($viewerProfile)
           <button type="button" class="account-key-secondary-button" data-action="rename-profile"<?= ($usernameChangesEnabled ?? false) ? '' : ' hidden' ?>>Choose username</button>
           <button type="button" class="account-key-secondary-button" data-action="clear-browser-identity" hidden>Clear identity</button>
         </div>
+        <p class="meta account-key-join-request" data-role="join-request" hidden><span data-role="join-request-text"></span> <button type="button" class="account-key-viewer-copy" data-action="cancel-join-request">Cancel</button></p>
         <p class="meta account-key-simple-status" id="simple-status" hidden></p>
         <p class="meta" data-role="private-site-auth-status" hidden></p>
       </div>

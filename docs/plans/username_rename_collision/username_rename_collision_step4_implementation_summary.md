@@ -66,4 +66,15 @@ Effort study: `railspike-effort`, cycle `v3/username_rename_collision`; standing
 - Notes:
   - Found while testing: join requests are stored next to the database, which in tests is the shared temp directory, so files from other runs can appear. Listing now skips identities that aren't in this repository. Prepared posts already share this layout; in production the directory is per instance (`state/cache`).
   - The Stage 2 endpoint test only passed because of the order tests ran in (once output has been sent, `session_start()` doesn't run). Both endpoint tests now start the session explicitly through an `actAs()` helper.
-  - Removed three leftover request files from earlier failed runs in `/tmp/profile-name-join-requests/`.
+  - Removed leftover request files from earlier failed runs in `/tmp/profile-name-join-requests/`. (Correction, recorded in Stage 5: there were five files, not three; passing runs leave none.)
+
+## Stage 5 - Requester UI
+- Changes:
+  - `account_key.php`: a hidden pending-request line ("Waiting for <name> to accept.") with a Cancel button, inside the status card under the actions.
+  - `browser_signing.js`: Choose username accepts a `pending` result and shows the line instead of a status message. On load (flag on and signed in), the page fetches `/api/profile_name_request` to restore the line. Cancel posts `/api/cancel_profile_name_request`. The expiry is shown only within the last 24 hours. A free-name save hides the line.
+  - New browser regression `tests/browser/username_join_request.mjs`, with fixture `tests/Support/username_join_browser_fixture.php` (an operator approves an `ilya` holder and a `guest` requester). It reuses `invite_browser_router.php`. Screenshots are written when `SHOT_DIR` is set.
+- Verification:
+  - `node tests/browser/username_join_request.mjs`: passed at desktop (1280) and phone (390). Covers no line initially, request, line text, no duplicate status message, name unchanged, survives reload, no horizontal overflow, cancel, and stays cleared after reload.
+  - Screenshots reviewed in the light, word97, chicago and midnight themes at both widths. The line wraps with its button on phone, and Cancel matches the existing small-button style. The Word 97/Chicago fixed status bar shows over content in full-page screenshots; that is existing theme chrome, unrelated to this change.
+  - `AccountKeyPageHooksTest` and `BrowserSigningNormalizationTest`: 88/88 passed. `tests/browser/invite_zero_click.mjs` (includes Choose username to a free name): all three scenarios passed.
+- Notes: no navigation destination changed, so `theme-nav-icons.css` is unaffected. No CSS added; the line uses existing `meta` and `account-key-viewer-copy` styles.

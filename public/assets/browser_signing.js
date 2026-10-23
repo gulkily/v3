@@ -2934,6 +2934,35 @@
       }
     });
 
+    const joinRequestNode = root.querySelector('[data-role="join-request"]');
+    const renderJoinRequest = function (request) {
+      if (!joinRequestNode) return;
+      joinRequestNode.hidden = !request;
+      if (!request) return;
+      const hoursLeft = Math.ceil((Date.parse(request.expires_at) - Date.now()) / 3600000);
+      joinRequestNode.querySelector('[data-role="join-request-text"]').textContent = "Waiting for " + request.username + " to accept."
+        + (hoursLeft <= 24 ? " Expires in " + Math.max(hoursLeft, 1) + (hoursLeft > 1 ? " hours." : " hour.") : "");
+    };
+    const joinRequestJson = async function (endpoint, method) {
+      const response = await fetch(endpoint, { method: method, credentials: "same-origin" });
+      const result = await response.json();
+      if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to update the request.");
+      return result;
+    };
+    if (joinRequestNode && root.dataset.usernameChangesEnabled === "1" && root.dataset.authenticatedIdentityId) {
+      void joinRequestJson("/api/profile_name_request", "GET").then(function (result) { renderJoinRequest(result.request); }).catch(function () {});
+    }
+    const cancelJoinButton = root.querySelector('[data-action="cancel-join-request"]');
+    if (cancelJoinButton) cancelJoinButton.addEventListener("click", async function () {
+      cancelJoinButton.disabled = true;
+      try {
+        await joinRequestJson("/api/cancel_profile_name_request", "POST");
+        renderJoinRequest(null);
+      } catch (error) {
+        setStatus(statusNode, error.message || "Unable to cancel the request.", "error");
+      } finally { cancelJoinButton.disabled = false; }
+    });
+
     const renameButton = root.querySelector('[data-action="rename-profile"]');
     if (renameButton) renameButton.addEventListener("click", async function () {
       if (!hasBrowserKeypair()) {
@@ -2950,7 +2979,7 @@
           const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
             headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
           const result = await response.json();
-          if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
+          if (!response.ok || (result.status !== "ok" && result.status !== "pending")) throw new Error(result.error || "Unable to save username.");
           return result;
         };
         const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
@@ -2959,6 +2988,12 @@
           record_path: prepared.record_path, author_identity_id: identity,
           canonical_record: prepared.canonical_record, detached_signature: signature });
         if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
+        if (result.status === "pending") {
+          setStatus(statusNode, "", "info");
+          renderJoinRequest(result);
+          return;
+        }
+        renderJoinRequest(null);
         localStorage.setItem(storageKeys.username, result.username);
         root.dataset.authenticatedUsername = result.username;
         renderSavedState(root);
