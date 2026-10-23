@@ -77,6 +77,40 @@ try {
  await failed.getByRole('button',{name:'Retry',exact:true}).click();
  await page.waitForFunction(()=>document.querySelectorAll('[data-reply-state="accepted"]').length===2);
  assert.equal(await body.inputValue(),'Next draft survives retry');
+ // Multiple intentional sends proceed while prior requests are pending.
+ const heldFinalizers=[];
+ await page.route('**/api/create_prepared_post',route=>new Promise(resolve=>heldFinalizers.push(async()=>{await route.continue();resolve();})));
+ for(let i=0;i<2;i++) {
+  await body.fill('Identical intentional reply');await form.locator('.compose-form-actions > button').click();
+ }
+ await page.waitForFunction(()=>document.querySelectorAll('[data-reply-operation]').length===4);
+ for(let i=0;i<100 && heldFinalizers.length<2;i++)await new Promise(r=>setTimeout(r,50));
+ assert.equal(heldFinalizers.length,2);await heldFinalizers[1]();await heldFinalizers[0]();
+ await page.waitForFunction(()=>document.querySelectorAll('[data-reply-state="accepted"]').length===4);
+ await page.unroute('**/api/create_prepared_post');
+ assert.deepEqual(await page.locator('[data-reply-operation] .body').allTextContents(),['First immediate reply','Failed captured reply','Identical intentional reply','Identical intentional reply']);
+ // A lost accepted response must reconcile after reload without another post.
+ await page.route('**/api/create_prepared_post',async route=>{await route.fetch();await route.abort();},{times:1});
+ await body.fill('Lost-response reply');await form.locator('.compose-form-actions > button').click();
+ await page.locator('[data-reply-state="failed"]').waitFor();
+ await body.fill('Draft through reload');await page.reload();
+ const restored=page.locator('[data-reply-state="failed"]');await restored.waitFor();
+ assert.equal(await body.inputValue(),'Draft through reload');
+ let repeatFinalize=0;await page.route('**/api/create_prepared_post',route=>{repeatFinalize++;return route.continue();});
+ await restored.getByRole('button',{name:'Retry',exact:true}).click();
+ await page.waitForFunction(()=>!document.querySelector('[data-reply-state="failed"]'));
+ assert.equal(repeatFinalize,0,'known accepted operation reconciles without finalizing');
+ assert.equal(await body.inputValue(),'Draft through reload');
+ await page.reload();assert.equal(await page.locator('.post-card').filter({hasText:'Lost-response reply'}).count(),1);
+ // Two tabs recover the same not-yet-prepared operation under a shared lock.
+ await page.route('**/api/prepare_reply',route=>route.abort(),{times:1});
+ await body.fill('Two-tab recovered reply');await form.locator('.compose-form-actions > button').click();await page.locator('[data-reply-state="failed"]').waitFor();
+ const second=await context.newPage();await second.goto(threadUrl);
+ const secondRetry=second.locator('[data-reply-state="failed"] button');await secondRetry.waitFor();
+ await Promise.all([page.locator('[data-reply-state="failed"] button').evaluate(el=>el.click()),secondRetry.evaluate(el=>el.click())]);
+ await page.locator('[data-reply-state="accepted"]').waitFor();await second.close();
+ await page.reload();assert.equal(await page.locator('.post-card').filter({hasText:'Two-tab recovered reply'}).count(),1);
+ await body.fill('Next draft survives retry');
  // Storage errors leave the original editable copy intact.
  await page.evaluate(()=>{window.originalStorageSet=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k.startsWith('forum-reply-continuation:'))throw new Error('Storage full');return originalStorageSet.call(this,k,v);};});
  await form.locator('.compose-form-actions > button').click();

@@ -838,6 +838,7 @@
 
     if (scope && typeof scope.querySelectorAll === "function") {
       Array.from(scope.querySelectorAll("[data-pending-thread-id], [data-pending-reply-id]")).forEach(function (node) {
+        if (node.hasAttribute("data-reply-operation")) return;
         removeNode(node);
         removed += 1;
       });
@@ -3715,7 +3716,17 @@
           if (!prepared.ok) throw new Error(prepared.error);
           return {fields: Object.assign({}, fields), prepared};
         },
-        finalize: delivery => finalizeOutboxPost(delivery.fields, delivery.prepared)
+        finalize: delivery => finalizeOutboxPost(delivery.fields, delivery.prepared),
+        confirm: async function (delivery) {
+          const response = await fetch('/api/get_post?post_id=' + encodeURIComponent(delivery.prepared.postId), {credentials:'same-origin', cache:'no-store'});
+          if (response.status === 404) return false;
+          if (!response.ok) throw new Error("Unable to check this reply. Retry when the connection is available.");
+          const text = await response.text();
+          if (!text.includes('Post-ID: ' + delivery.prepared.postId + '\n') || !text.includes('Thread-ID: ' + delivery.fields.thread_id + '\n') || text.slice(text.indexOf('\n\n') + 2).trimEnd() !== delivery.fields.body.trimEnd()) {
+            throw new Error("The saved reply does not match its server record. Keep this page open and contact the operator.");
+          }
+          return true;
+        }
       }) : null;
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {
