@@ -14,6 +14,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Reply continuation](reply_continuation/)
+
 - [Production feedback management](production_feedback_management/)
 
 - [Markdown dependency removal](markdown_dependency_removal/)
