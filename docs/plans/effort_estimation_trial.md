@@ -226,6 +226,15 @@ Standing enrollment covers per-contribution thread-like activity through normal 
 
 2026-10-23 Step 4 closeout: Step 3 approved; [entry, stage outcomes, verification boundaries and retrospective assessment](./thread_like_activity/thread_like_activity_step4_implementation_summary.md). Planning commit `ab24d158`, followed by four summary-bearing stage commits on `feat/thread-like-activity`. Each eligible like contribution now appears with per-record historical attribution; version-24 startup and normal rebuild recover omissions without new canonical records. Isolated exact incident, 29 focused PHP tests, missing-history follow-up, signed-button browser flows and shared Activity recovery checks passed. Live deployment/physical devices and full-suite verification are not claimed. R1/P2 and scope v1 unchanged; numeric projection and retrospective assessment remain unavailable pending exact reference recovery; prior missing checkpoints stay missing. Maintainer fit/acceptance pending; no measured effort, independent outcome or accepted-count increment.
 
+## Cycle v3/thread_unpin_web_ui
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/thread_unpin_web_ui` | Step 1 awaiting review; implementation unapproved | v1 / R1 / P2 | Unavailable: frozen calibration report/diff sources missing | [Intake exposure and Step 1 limitation](./thread_unpin_web_ui_step1_solution_assessment.md#effort-snapshots) | No parent cycle; maintainer fit/acceptance pending |
+
+Standing enrollment covers browser-only thread unpinning with proposed operator authority, legacy/duplicate pin handling, repinning and rebuild/presentation recovery. Earlier diagnostic source exposure is disclosed; no pristine intake or numeric score is reconstructed. Feedback hash verified from its recorded Git revision; external report/diff unavailable in this checkout's environment. Preserve R1 and recover exact sources before rating. Planning and ledger updates remain uncommitted; no accepted-outcome count change.
+
+
 
 ## Cycle v3/reply_composer_focus_layout
 
