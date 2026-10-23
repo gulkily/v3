@@ -30,4 +30,35 @@ final class LabelOwnership
         }
         return ['status' => 'unresolved', 'source_post_id' => $label->sourcePostId, 'reason' => 'Source absent; inspect retained removal evidence or history.'];
     }
+    /** Compute once per aggregation, never cache across canonical writes. */
+    public static function inactive(string $root): array
+    {
+        $removed = RetractedPosts::effectivePostIds($root);
+        $evidence = LabelRemoval::all($root);
+        foreach ($evidence as $id => $entry) if ($entry['operation'] === 'delete') $removed[$id] = 'operator';
+        $inactive = [];
+        foreach (glob($root . '/records/thread-labels/*.txt') ?: [] as $path) {
+            $relative = 'records/thread-labels/' . basename($path);
+            try { $label = (new CanonicalRecordRepository($root))->loadThreadLabel($relative); }
+            catch (CanonicalRecordParseException) { continue; }
+            $source = $label->sourcePostId;
+            if ($source !== null && isset($removed[$source]) && self::inspect($label, $root)['status'] === 'proven') {
+                $inactive[$label->recordId] = true;
+            }
+            foreach ($evidence as $id => $entry) {
+                if (!isset($removed[$id]) && self::hasSource($root, $id)) continue;
+                if (isset($entry['labels'][$relative]) && hash_equals($entry['labels'][$relative], hash_file('sha256', $path))) {
+                    $inactive[$label->recordId] = true;
+                }
+            }
+        }
+        return $inactive;
+    }
+
+    public static function hasSource(string $root, string $id): bool
+    {
+        foreach (CanonicalPathResolver::postCandidates($id) as $path) if (is_file($root . '/' . $path)) return true;
+        return false;
+    }
+
 }

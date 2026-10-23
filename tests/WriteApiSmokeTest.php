@@ -3785,7 +3785,7 @@ NODE;
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $author = $this->createAuthoredThread($application, 'retract-author', 'Retraction marker body');
+        $author = $this->createAuthoredThread($application, 'retract-author', "Retraction marker body\n#pinned");
         $other = $this->linkSigningIdentity($application, 'retract-other');
 
         $_POST = ['author_identity_id' => $other['identity_id'], 'post_id' => $author['thread_id']];
@@ -3825,6 +3825,7 @@ NODE;
         assertSame(false, str_contains($threadPage, 'Retraction marker body'));
         $pdo = new PDO('sqlite:' . $databasePath);
         assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id = '" . $author['thread_id'] . "'")->fetchColumn());
+        assertSame('[]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = '" . $author['thread_id'] . "'")->fetchColumn());
 
         $repeat = $this->prepareRetractionRequest($application, $author['identity_id'], $author['thread_id']);
         assertSame(true, $repeat['already_retracted']);

@@ -333,10 +333,12 @@ final class ReadModelBuilder
         }
         $records = [];
 
+        $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $paths = $this->findRelativePaths('records/thread-labels');
         foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
-                $records[] = $this->canonicalRepository->loadThreadLabel($relativePath);
+                $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+                if (!isset($inactive[$record->recordId])) $records[] = $record;
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadLabelRecordCount++;
             }

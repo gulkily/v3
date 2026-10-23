@@ -119,6 +119,23 @@ final class ReadModelPostRetractionsTest
         assertSame(count($content), $service->countActivityViewTotal('content'));
     }
 
+    public function testRetractionWithdrawsOnlyContentBoundLabelsAndSurvivesRebuild(): void
+    {
+        $root = $this->fixtureWithThread();
+        $bytes = file_get_contents($root . '/records/posts/thread-gone.txt');
+        $base = "Created-At: 2026-04-11T12:00:00Z\nThread-ID: thread-gone\nOperation: add\nLabels: pinned\nAuthor-Identity-ID: " . self::AUTHOR . "\n";
+        file_put_contents($root . '/records/thread-labels/label-owned.txt', "Record-ID: label-owned\n" . $base . "Source-Post-ID: thread-gone\nSource-Post-SHA256: " . hash('sha256', $bytes) . "\n\n");
+        $pdo = $this->rebuild($root);
+        assertSame('["pinned"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-gone'")->fetchColumn());
+        $this->writeRetraction($root, 'thread-gone', self::AUTHOR);
+        $pdo = $this->rebuild($root);
+        assertSame('[]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-gone'")->fetchColumn());
+        file_put_contents($root . '/records/thread-labels/label-independent.txt', "Record-ID: label-independent\n" . $base . "\n");
+        $pdo = $this->rebuild($root);
+        assertSame('["pinned"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-gone'")->fetchColumn());
+        assertSame('Reply that stays visible.', trim($pdo->query("SELECT body FROM posts WHERE post_id='reply-to-gone'")->fetchColumn()));
+    }
+
     private function fixtureWithThread(): string
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-retraction-' . bin2hex(random_bytes(6));

@@ -1310,6 +1310,7 @@ class IncrementalReadModelUpdater
      */
     private function loadThreadLabelRecords(?string $threadId): array
     {
+        $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
@@ -1319,6 +1320,7 @@ class IncrementalReadModelUpdater
                 continue;
             }
 
+            if (isset($inactive[$record->recordId])) continue;
             if ($threadId !== null && $record->threadId !== $threadId) {
                 continue;
             }
