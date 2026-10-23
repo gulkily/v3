@@ -113,3 +113,25 @@ Read-model schema and forum navigation checks do not apply to this operator comm
 ### Uncertain assessments
 
 The one-page target conflicts with seven stages each requiring six fields, material history/concurrency risks and study records. Preserved complete stage contracts over a literal page limit; stage sizing remains a review judgment, not measured effort.
+
+## 2026-10-23T10:09:54+00:00 — Step 4 completed handoff
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: separate commits retained verification evidence for registry, history evidence, preview, apply and recovery; final Stage 7 is `99be459f3`. Retain stage summary/verification gates.
+- `step4_implementation_after.md`, Contract and environment verification: real-Git wrapper acceptance plus an actual interrupted Git process and a WSL terminal transcript provided evidence beyond mocked command output. Retain the explicit limitation on actual IntelliJ UI verification.
+- `RAILSPIKE.md`, effort checkpoints: preserved missing numeric projections and kept operational history migration separate from delivered automation; no accepted outcome invented. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Forum UI/theme/icon and read-model schema verification are inapplicable: changes add an operator CLI and tests, not browser navigation or schema.
+
+### Uncertain assessments
+
+Stage 1's initial combined shell verification/commit call did not stop after a failed test; its JSON error-mode fix and successful rerun were committed separately as `3bd230353` before Stage 2. Summary preserves the failure rather than claiming the original check passed. Future stage calls should gate commits on tool success, as later stages did. This is execution discipline rather than evidence the workflow gate is unnecessary.
+
+Final verification: scoped PHP harness 20/20, containing 32 real-Git cases; one additional actual interruption case passed separately. PHP/shell syntax, diff and cycle file links passed. Nine commits from planning through Stage 7 (minimum eight), with one additional Stage 1 correction. No full-suite, actual IntelliJ interaction, live enrollment, merge, push or history-erasure claim. Working tree clean after final log-only handoff commit. Maintainer fit/acceptance pending. Study snapshots remain canonical in Step 4 summary and indexed in the host ledger.
