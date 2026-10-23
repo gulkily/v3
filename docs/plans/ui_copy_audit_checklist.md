@@ -63,7 +63,7 @@ or the review establishes that the existing copy should remain.
   including “Action time (signed)” and “Integration time pending.” Check empty,
   draft, queued, published, failed, and retry states. Keep delivery uncertainty,
   unsaved work, and recovery actions clear. Source: `public/assets/outbox.js`.
-- [ ] **Bookmarklets** — Review overlap among the introduction, installation
+- [x] **Bookmarklets** — Review overlap among the introduction, installation
   instructions, group notes, and button descriptions. Check same-window and
   new-window groups, copy success/failure, and phone installation. Retain necessary
   setup, compatibility, and popup-blocking guidance. Source:
@@ -264,3 +264,9 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 These are observations for later rendered review, not approved removal decisions.
 
 - [ ] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
+
+## Bookmarklets copy cleanup — October 23, 2026
+
+- Removed the general introduction and repeated same-window note; removed repeated Compose Thread/window mechanics from seven button descriptions. Kept the installation instruction, content differences between Clip/Rip/Tweet/+URL, x.com scope, iPhone grouping and popup/iPhone warning.
+- Verification: existing seven-variant behavior/copy checks and real Chromium clipboard/keyboard/fallback/failure/retry suite passed. The actual isolated Bookmarklets route loaded through Tools; available themes at 375px/1280px passed copy-button geometry and focus checks. Inspected `/tmp/bookmarklet-copy-mobile.png`. PHP syntax and diff checks passed. Physical-phone installation, qutebrowser and production deployment were not verified. No dependencies changed.
+- Previous task commit: Outbox `a927c3c3f`.
