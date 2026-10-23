@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Account key revocation](account_key_revocation/)
+
 - [Markdown dependency removal](markdown_dependency_removal/)
 
 - [Standard Activity and shared pagination](activity_feed_pagination/)
