@@ -26,7 +26,7 @@ use PDO;
 final class ProfileRepository
 {
     private const COLUMNS = 'identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
+                    bootstrap_thread_id, public_key, is_approved, was_approved, is_revoked, revoked_at, revocation_cutoff, revoked_by_identity_id, revocation_source_path, approved_by_identity_id, approved_by_profile_slug,
                     approved_by_label, post_count, thread_count';
 
     /**

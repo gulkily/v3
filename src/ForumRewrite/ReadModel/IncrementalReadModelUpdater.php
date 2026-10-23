@@ -409,7 +409,7 @@ class IncrementalReadModelUpdater
         }
 
         $stmt = $pdo->prepare(
-            'SELECT profile_slug, username, username_token, COALESCE(is_approved, 0) AS is_approved
+            'SELECT profile_slug, username, username_token, MAX(was_approved, is_approved) AS is_approved
              FROM profiles WHERE identity_id = :identity_id'
         );
         $stmt->execute(['identity_id' => $identityId]);
@@ -708,7 +708,7 @@ class IncrementalReadModelUpdater
     private function loadCurrentApprovalState(PDO $pdo): array
     {
         $rows = $pdo->query(
-            'SELECT identity_id, COALESCE(is_approved, 0) AS is_approved,
+            'SELECT identity_id, MAX(was_approved, is_approved) AS is_approved,
                     approved_by_identity_id, approved_by_profile_slug, approved_by_label
              FROM profiles'
         )->fetchAll();
@@ -914,7 +914,7 @@ class IncrementalReadModelUpdater
      */
     private function loadProfileApprovalFields(PDO $pdo, string $identityId): array
     {
-        $stmt = $pdo->prepare('SELECT COALESCE(is_approved, 0) AS is_approved FROM profiles WHERE identity_id = :identity_id');
+        $stmt = $pdo->prepare('SELECT MAX(was_approved, is_approved) AS is_approved FROM profiles WHERE identity_id = :identity_id');
         $stmt->execute(['identity_id' => $identityId]);
         $row = $stmt->fetch();
         if (!is_array($row)) {
@@ -1157,6 +1157,7 @@ class IncrementalReadModelUpdater
 
     public function writeMetadata(PDO $pdo, string $commitSha): void
     {
+        \ForumRewrite\Security\KeyRevocations::project($pdo, $this->repositoryRoot);
         $stmt = $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
             'repository_root' => $this->repositoryRoot,
@@ -1610,7 +1611,7 @@ class IncrementalReadModelUpdater
      */
     private function loadApprovedIdentityIds(PDO $pdo): array
     {
-        $rows = $pdo->query('SELECT identity_id FROM profiles WHERE is_approved = 1')->fetchAll(PDO::FETCH_COLUMN);
+        $rows = $pdo->query('SELECT identity_id FROM profiles WHERE is_approved = 1 OR was_approved = 1')->fetchAll(PDO::FETCH_COLUMN);
 
         return array_fill_keys(array_map(static fn (mixed $value): string => (string) $value, $rows), true);
     }
@@ -1789,7 +1790,7 @@ class IncrementalReadModelUpdater
         }
 
         $stmt = $pdo->prepare(
-            'SELECT profile_slug, username, username_token, COALESCE(is_approved, 0) AS is_approved
+            'SELECT profile_slug, username, username_token, MAX(was_approved, is_approved) AS is_approved
              FROM profiles WHERE identity_id = :identity_id'
         );
         $stmt->execute(['identity_id' => $identityId]);

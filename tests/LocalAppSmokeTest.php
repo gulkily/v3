@@ -64,6 +64,24 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testVersion25StartupRebuildsBeforeRevocationProfileQueries(): void
+    {
+        $database = sys_get_temp_dir() . '/revocation-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            foreach (['was_approved', 'is_revoked', 'revoked_at', 'revocation_cutoff', 'revoked_by_identity_id', 'revocation_source_path'] as $column) $pdo->exec('ALTER TABLE profiles DROP COLUMN ' . $column);
+            $pdo->exec("UPDATE metadata SET value='25' WHERE key='schema_version'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+            assertSame(0, (int) $profile['is_revoked']);
+            assertSame(1, (int) $profile['was_approved']);
+        } finally { @unlink($database); }
+    }
+
     public function testVersion21StartupRebuildsAgentProvenanceBeforeServingPage(): void
     {
         $database = sys_get_temp_dir() . '/agent-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';

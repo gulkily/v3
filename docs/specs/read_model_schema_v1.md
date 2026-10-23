@@ -385,3 +385,14 @@ by original activity time and canonical action key, independent of disposable
 SQLite row IDs. Version 25 rebuilds prior models at normal startup before the
 new query contract runs. Existing Forte and RSS queries/return shapes remain
 unchanged; canonical records and Activity membership are unaffected.
+
+## Schema 26 — account key revocation
+
+`profiles` adds `was_approved` (historical approval), `is_revoked` (terminal current
+access overlay), `revoked_at` (server acceptance), `revocation_cutoff` (signed
+request value), `revoked_by_identity_id` and `revocation_source_path`. Historical
+authorship/sponsorship is derived before the revocation overlay sets current
+`is_approved` to zero. Full and incremental paths retain historical grants and
+never infer the cutoff from acceptance or Git times. Accepted revocation evidence
+also retains the username claim when the active-key count is zero. Startup must
+rebuild schema 25 before profile queries run. See [canonical contract](key_revocation_record_v1.md).

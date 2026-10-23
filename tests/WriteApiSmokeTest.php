@@ -29,6 +29,49 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testSignedRevocationProjectionPreservesSponsorHistoryAndCutoff(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $operator = $this->linkSigningIdentity($app, 'revocation-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $bob = $this->createAuthoredThread($app, 'revocation-bob', 'Historical bob post remains');
+        $casey = $this->linkSigningIdentity($app, 'revocation-casey');
+        $builder = new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root));
+        $builder->rebuild();
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $pdo = new PDO('sqlite:' . $db); $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        foreach ([[$operator, $bob], [$bob, $casey]] as [$actor, $target]) {
+            $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $target['identity_id']);
+            $writer->approveUser(['approver_identity_id' => $actor['identity_id'], 'target_identity_id' => $target['identity_id'],
+                'target_profile_slug' => $profile['profile_slug'], 'thread_id' => $profile['bootstrap_thread_id'], 'parent_id' => $profile['bootstrap_post_id']]);
+        }
+        $id = 'key-revocation-' . str_repeat('a', 32);
+        $contents = "Record-ID: {$id}\nOperation: revoke-key\nAuthor-Identity-ID: {$operator['identity_id']}\nTarget-Identity-ID: {$bob['identity_id']}\nUsername: revocation-bob\nRevocation-Cutoff: 2026-01-01T00:00:00Z\nReview-Context: sha256:" . str_repeat('a', 64) . "\n\n";
+        foreach (['key-revocations', 'key-revocation-acceptances'] as $dir) mkdir($root . '/records/' . $dir, 0700, true);
+        $path = \ForumRewrite\Security\KeyRevocations::path($id);
+        file_put_contents($root . '/' . $path, $contents);
+        file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($operator['home'], $contents));
+        $receipt = \ForumRewrite\Security\KeyRevocations::receiptPath($id);
+        file_put_contents($root . '/' . $receipt, \ForumRewrite\Security\KeyRevocations::encodeReceipt($contents, '2026-01-01T00:02:00Z'));
+        $this->runCommand($root, 'git add records'); $this->runCommand($root, 'git commit -qm "Fixture revocation"');
+        $builder->rebuild();
+        $row = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $bob['identity_id']);
+        assertSame(0, (int) $row['is_approved']); assertSame(1, (int) $row['was_approved']); assertSame(1, (int) $row['is_revoked']);
+        assertSame('2026-01-01T00:00:00Z', $row['revocation_cutoff']); assertSame('2026-01-01T00:02:00Z', $row['revoked_at']);
+        assertSame(1, (int) \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $casey['identity_id'])['is_approved']);
+        assertStringContains('Historical bob post remains', $this->renderMethod($app, 'GET', '/threads/' . $bob['thread_id']));
+        assertSame('key-revocation:' . $id, \ForumRewrite\Import\ArchiveRecordCatalog::identityKey($root, $path));
+        assertSame('key-revocation-acceptance:' . $id, \ForumRewrite\Import\ArchiveRecordCatalog::identityKey($root, $receipt));
+        (new \ForumRewrite\ReadModel\IncrementalReadModelUpdater($db, $root))->applyApprovalSeedWrite(ReadModelMetadata::repositoryHead($root));
+        $after = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $bob['identity_id']); assertSame($row, $after);
+        assertSame(1, (int) \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $casey['identity_id'])['is_approved']);
+        file_put_contents($root . '/' . $receipt, str_replace('00:02:00Z', '00:03:00Z', file_get_contents($root . '/' . $receipt)));
+        // Repository-owned time is trusted administration; exact signed bytes remain bound.
+        file_put_contents($root . '/' . $path, str_replace('revocation-bob', 'forged-account', $contents));
+        $failed = false; try { $builder->rebuild(); } catch (RuntimeException) { $failed = true; } assertSame(true, $failed);
+    }
+
     public function testFastmodPanelAndSignedSelectionPersistWithoutContentWrites(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();

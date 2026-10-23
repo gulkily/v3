@@ -19,6 +19,8 @@ final class ArchiveRecordCatalog
         return $relativePath === 'records/instance/public.txt'
             || $relativePath === 'records/instance/feature-flags.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/key-revocations/key-revocation-[a-f0-9]{32}\.txt$#', $relativePath) === 1
+            || preg_match('#^records/key-revocation-acceptances/key-revocation-[a-f0-9]{32}\.json$#', $relativePath) === 1
             || preg_match('#^records/approval-acceptances/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/post-removals/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/post-timestamps/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
@@ -55,6 +57,8 @@ final class ArchiveRecordCatalog
         return match ($family) {
             'posts' => 'post:' . $name,
             'post-removals' => 'post-removal:' . $name,
+            'key-revocations' => 'key-revocation:' . $name,
+            'key-revocation-acceptances' => 'key-revocation-acceptance:' . $name,
             'approval-acceptances' => 'approval-acceptance:' . $name,
             'post-timestamps' => 'post-timestamp:' . $name,
             'identity' => 'identity:openpgp:' . strtolower(substr($name, strlen('identity-openpgp-'))),
@@ -84,6 +88,10 @@ final class ArchiveRecordCatalog
         $repository = new CanonicalRecordRepository($repositoryRoot);
 
         try {
+            if (str_starts_with($relativePath, 'records/key-revocations/') || str_starts_with($relativePath, 'records/key-revocation-acceptances/')) {
+                $row = \ForumRewrite\Security\KeyRevocations::read($repositoryRoot, pathinfo($relativePath, PATHINFO_FILENAME));
+                return (str_ends_with($relativePath, '.json') ? 'key-revocation-acceptance:' : 'key-revocation:') . $row['record_id'];
+            }
             if (str_starts_with($relativePath, 'records/post-removals/')) {
                 $id = basename($relativePath, '.json');
                 return \ForumRewrite\Canonical\LabelRemoval::read($repositoryRoot, $id) === null ? null : 'post-removal:' . $id;
