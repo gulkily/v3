@@ -1142,6 +1142,16 @@
     return field && field.files && field.files[0] || null;
   }
 
+  async function imageSignedFields(fields, preparedImage, description) {
+    const file = preparedImage.file, width = preparedImage.width, height = preparedImage.height;
+    if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
+    if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
+    const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
+    return fields;
+  }
+
   async function submitImageCompose(form) {
     if (!navigator.onLine || !window.crypto || !window.crypto.subtle) throw new Error("Image publication requires an online HTTPS connection (or localhost).");
     if (!window.ForumImageUpload) throw new Error("Image preparation is unavailable. Reload and select the image again.");
@@ -1149,14 +1159,8 @@
     try {
     await window.ForumImageUpload.assertEligible(form);
     const preparedImage = await window.ForumImageUpload.ready(form);
-    const file = preparedImage.file, width = preparedImage.width, height = preparedImage.height;
-    const description = composeFormFieldValue(form, "image_description").trim();
-    if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
-    const fields = collectSignedSubmitFields(form);
-    if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
-    const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
-    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
+    const fields = await imageSignedFields(collectSignedSubmitFields(form), preparedImage, composeFormFieldValue(form, "image_description").trim());
+    const file = preparedImage.file;
     const identity = JSON.stringify(fields);
     let pending = form.__pendingImagePost;
     if (!pending || pending.identity !== identity) {
@@ -3706,17 +3710,25 @@
     const continuation = isReplyComposeForm(form) && !location.pathname.startsWith('/forte') && window.ForumReplyContinuation
       ? window.ForumReplyContinuation.bind(form, root, {
         card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
-        prepare: async function (fields) {
+        prepare: async function (captured, attachment, description) {
+          let fields = Object.assign({}, captured);
           await ensureActionIdentity(null, null);
           const identity = currentAuthorIdentityId();
           if (fields.author_identity_id && fields.author_identity_id !== identity) throw new Error("The signing identity changed. Restore that identity and retry.");
           fields.author_identity_id = identity;
+          let imageFile;
+          if (attachment) {
+            const image = await window.ForumImagePrepare.prepare(attachment);
+            fields = await imageSignedFields(fields, image, description);
+            imageFile = image.file;
+          }
           const response = await submitUrlEncoded('/api/prepare_reply', fields);
           const prepared = parsePreparedPostJsonResponse(response.text, response.serverTiming, "Unable to prepare reply.");
           if (!prepared.ok) throw new Error(prepared.error);
-          return {fields: Object.assign({}, fields), prepared};
+          return {fields: Object.assign({}, fields, imageFile ? {imageFile} : {}), prepared};
         },
         finalize: delivery => finalizeOutboxPost(delivery.fields, delivery.prepared),
+        clearImage: () => window.ForumImageUpload?.clear(form),
         confirm: async function (delivery) {
           const response = await fetch('/api/get_post?post_id=' + encodeURIComponent(delivery.prepared.postId), {credentials:'same-origin', cache:'no-store'});
           if (response.status === 404) return false;
@@ -3760,10 +3772,15 @@
           return;
         }
 
-        if (continuation && !composeImageFile(form)) {
+        if (continuation) {
           const fields = collectReplySubmitFields(form);
-          if (!fields.body.trim()) throw new Error("Write a reply before posting.");
-          continuation.send(fields);
+          const image = form.__imageState;
+          if (image?.error) throw image.error;
+          const attachment = image && (image.file || image.sourceFile);
+          if (!fields.body.trim() && !attachment) throw new Error("Write a reply before posting.");
+          const description = composeFormFieldValue(form, "image_description").trim();
+          if (attachment && (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description))) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
+          continuation.send(fields, attachment, description);
           setStatus(statusNode, "", "ok");
           restoreComposeUiState();
           completeActionTiming(timing, "queued");

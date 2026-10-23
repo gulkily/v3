@@ -117,6 +117,48 @@ try {
  await page.locator('[data-kind="error"]').waitFor();
  assert.equal(await body.inputValue(),'Next draft survives retry');
  await page.evaluate(()=>{Storage.prototype.setItem=originalStorageSet;});
+ await setFlags({images:true});await page.goto(threadUrl);
+ await form.locator('.image-compose-fields:not([hidden])').waitFor();
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC','base64');
+ let releaseImages;const imageGate=new Promise(resolve=>releaseImages=resolve);
+ await page.unroute('**/api/create_prepared_post');
+ await page.route('**/api/create_prepared_post',async route=>{await imageGate;await route.continue();});
+ for(let i=0;i<2;i++) {
+  await form.locator('[name="image"]').setInputFiles({name:'test.png',mimeType:'image/png',buffer:png});
+  await form.locator('.image-upload-preview img').waitFor();
+  await body.fill('Captured image '+i);
+  await form.locator('[name="image_description"]').fill('Image description '+i);
+  await form.locator('.compose-form-actions > button').click();
+  assert.equal(await body.inputValue(),'');
+  assert.equal(await form.locator('.image-upload-preview').isVisible(),false);
+ }
+ await body.fill('Newer image draft');
+ releaseImages();await page.waitForFunction(()=>document.querySelectorAll('[data-reply-state="accepted"]').length===2);
+ assert.equal(await body.inputValue(),'Newer image draft');
+ await page.unroute('**/api/create_prepared_post');
+ await page.route('**/api/create_prepared_post',async route=>{await route.fetch();await route.abort();},{times:1});
+ await form.locator('[name="image"]').setInputFiles({name:'retry.png',mimeType:'image/png',buffer:png});
+ await form.locator('.image-upload-preview img').waitFor();await body.fill('Image lost response');
+ await form.locator('.compose-form-actions > button').click();await page.locator('[data-reply-state="failed"]').waitFor();
+ await body.fill('Image recovery newer draft');await page.reload();
+ await page.locator('[data-reply-state="failed"] img').waitFor();
+ await page.locator('[data-reply-state="failed"] button').click();
+ await page.waitForFunction(()=>!document.querySelector('[data-reply-state="failed"]'));
+ assert.equal(await body.inputValue(),'Image recovery newer draft');
+ await page.reload();assert.equal(await page.locator('.post-card').filter({hasText:'Image lost response'}).count(),1);
+ assert.equal(await page.locator('.post-card').filter({hasText:'Captured image 0'}).locator('.post-image img').count(),1);
+ // Failed blob persistence retains its memory copy and exposes recovery.
+ await page.evaluate(()=>{window.oldIdbOpen=IDBFactory.prototype.open;IDBFactory.prototype.open=function(name,...args){if(name==='forum-reply-attachments-v1')throw new Error('Quota exceeded');return oldIdbOpen.call(this,name,...args);};});
+ await form.locator('.image-compose-fields:not([hidden])').waitFor();
+ await form.locator('[name="image"]').setInputFiles({name:'quota.png',mimeType:'image/png',buffer:png});
+ await form.locator('.image-upload-preview img').waitFor();await body.fill('Image storage recovery');
+ await form.locator('.compose-form-actions > button').click();
+ await page.locator('[data-reply-state="failed"]').waitFor();
+ assert.match(await page.locator('[data-reply-state="failed"]').textContent(),/Keep this page open/);
+ await body.fill('Draft after image storage failure');
+ await page.evaluate(()=>{IDBFactory.prototype.open=oldIdbOpen;});
+ await page.locator('[data-reply-state="failed"] button').click();await page.locator('[data-reply-state="accepted"]').waitFor();
+ assert.equal(await body.inputValue(),'Draft after image storage failure');
  assert.deepEqual(errors,[]);
  console.log('PASS immediate text reply before network, focus, captured failure/retry, newer draft isolation, storage failure');
 } catch(error){console.error(log);throw error;} finally {await browser?.close();server.kill();await once(server,'exit').catch(()=>{});await rm(root,{recursive:true,force:true});}

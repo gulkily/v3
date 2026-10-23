@@ -257,3 +257,11 @@
     resize: none;
   }
 }
+
+.reply-operation-image {
+  display: block;
+  max-width: 100%;
+  max-height: 24rem;
+  height: auto;
+  object-fit: contain;
+}

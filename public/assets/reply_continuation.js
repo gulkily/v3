@@ -2,10 +2,30 @@
   'use strict';
   const prefix = 'forum-reply-continuation:';
   function save(item) {
-    try { localStorage.setItem(prefix + item.id, JSON.stringify(item)); }
+    try { localStorage.setItem(prefix + item.id, JSON.stringify(item, (key, value) => key === 'imageFile' ? undefined : value)); }
     catch { throw new Error('Reply recovery storage is unavailable or full. Keep this page open, free browser storage and retry.'); }
   }
   function load(id) { return JSON.parse(localStorage.getItem(prefix + id) || 'null'); }
+  const unsavedImages = new Map();
+  function attachmentStore(id, file) {
+    return new Promise((resolve, reject) => {
+      const fail = () => reject(new Error('Attachment recovery storage is unavailable or full. Keep this page open, free browser storage and retry.'));
+      let request;
+      try { request = indexedDB.open('forum-reply-attachments-v1', 1); } catch { fail(); return; }
+      request.onupgradeneeded = () => request.result.createObjectStore('attachments');
+      request.onerror = fail;
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('attachments', file ? 'readwrite' : 'readonly');
+        const operation = file ? tx.objectStore('attachments').put(file, id) : tx.objectStore('attachments').get(id);
+        tx.oncomplete = () => { db.close(); resolve(operation.result); };
+        tx.onerror = tx.onabort = () => { db.close(); fail(); };
+      };
+    });
+  }
+  window.addEventListener('beforeunload', event => {
+    if (unsavedImages.size) { event.preventDefault(); event.returnValue = ''; }
+  });
   function bind(form, root, api) {
     if (!root.querySelector('[data-inline-reply-compose]')) return null;
     const body = form.querySelector('[name="body"]');
@@ -25,6 +45,17 @@
       card.append(retry);
       api.insert(root, card);
       let running = false;
+      let preview;
+      async function showImage() {
+        const file = unsavedImages.get(item.id) || await attachmentStore(item.id);
+        if (!file || preview) return;
+        preview = document.createElement('img');
+        preview.alt = item.description || 'Reply attachment';
+        preview.src = URL.createObjectURL(file);
+        preview.className = 'reply-operation-image';
+        card.querySelector('.body').append(preview);
+      }
+      if (item.hasImage) void showImage().catch(() => {});
       function update(next) {
         item = next;
         card.dataset.replyState = item.state;
@@ -46,11 +77,23 @@
         // A second tab must reload the winning operation while holding the same lock.
         item = load(item.id) || item;
         if (item.state === 'accepted') { update(item); return; }
+        let attachment;
+        if (item.hasImage) {
+          attachment = unsavedImages.get(item.id) || await attachmentStore(item.id);
+          if (!attachment) throw new Error('Attachment recovery is unavailable. Keep the original page open and retry there.');
+          if (unsavedImages.has(item.id)) { await attachmentStore(item.id, attachment); unsavedImages.delete(item.id); }
+          if (item.delivery) item.delivery.fields.imageFile = attachment;
+        }
         if (item.delivery && await api.confirm(item.delivery)) {
           item.result = {postId:item.delivery.prepared.postId};
         } else {
           if (!item.delivery) {
-            item.delivery = await api.prepare(item.fields);
+            item.delivery = await api.prepare(item.fields, attachment, item.description);
+            if (item.delivery.fields.imageFile) {
+              unsavedImages.set(item.id, item.delivery.fields.imageFile);
+              await attachmentStore(item.id, item.delivery.fields.imageFile);
+              unsavedImages.delete(item.id);
+            }
             save(item); // Persist exact target/token before any finalization attempt.
           }
           let result = await api.finalize(item.delivery);
@@ -97,10 +140,12 @@
       try { const item = JSON.parse(event.newValue); if (matches(item)) render(item); } catch { /* Ignore unrelated malformed storage. */ }
     });
     return {
-      send(fields) {
-        const item = {id:crypto.randomUUID(), fields, state:'pending', createdAt:Date.now()};
+      send(fields, attachment, description) {
+        const item = {id:crypto.randomUUID(), fields, hasImage:Boolean(attachment), description, state:'pending', createdAt:Date.now()};
         save(item);
+        if (attachment) unsavedImages.set(item.id, attachment);
         const view = render(item);
+        if (attachment) api.clearImage();
         body.value = '';
         api.clearDraft(form);
         body.dispatchEvent(new Event('input', {bubbles:true}));
