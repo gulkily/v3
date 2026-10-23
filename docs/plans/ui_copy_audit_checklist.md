@@ -421,6 +421,11 @@ Reviewed candidates; decisions and verification are recorded above.
 - Targeted PHP checks and controlled rendered phone/desktop checks passed as recorded per item. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and live-instance acceptance remain unverified; prior deployment and layout follow-ups remain open.
 - The three observations below are future review candidates, not completed changes.
 
+## Offline health result summary — October 23, 2026
+
+- Removed the routine ready/not-ready sentences beside READY, PARTIAL and NOT READY. Empty summaries stay hidden; the existing live status announces results, and diagnostic rows and guidance retain missing/partial distinctions. HTTPS and refresh-failure summaries remain visible. Fixed the existing saved-content/publication warning branch to unhide its guidance instead of assigning text to a hidden element.
+- Verification: existing offline-health route check passed. Production-script Chromium fixtures covered initial/repeat pending checks, ready, missing archive, storage denial, offline, unavailable publication, insecure context, refresh failure and retry. Confirmed the publication warning and HTTPS recovery are visible, routine summaries stay hidden and recovery summaries reappear. Four themes (Light/Word97/Chicago/Midnight) at 390px/1280px passed overflow; inspected Midnight phone storage-error screenshot (`/tmp/copy-health-cycle5-storage.png`). Controlled worker/cache/publication fixtures; actual lifecycle, physical devices and deployment unverified. Syntax/diff passed; zero dependency delta.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -443,7 +448,7 @@ Reviewed candidates; decisions and verification are recorded above.
 
 These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
 
-- [ ] **Offline health result summary** — Review READY/NOT READY alongside “Offline reading is ready/not ready on this device.” Preserve PARTIAL distinctions, publication failures, actionable guidance and accessible result announcements. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
+- [x] **Offline health result summary** — Review READY/NOT READY alongside “Offline reading is ready/not ready on this device.” Preserve PARTIAL distinctions, publication failures, actionable guidance and accessible result announcements. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
 
 - [ ] **Offline reader refresh success** — Review “Saved reader refreshed and rechecked” alongside the resulting health status and freshness rows. Check changed/unchanged revisions and failed refresh/retry; retain enough acknowledgment to distinguish a finished refresh from stale results. Source: `public/assets/offline_health.js`.
 
