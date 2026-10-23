@@ -13,6 +13,7 @@ class CheckoutsTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='v3-checkouts-')
         self.addCleanup(self.temp.cleanup)
+        self.addCleanup(self.stop_background)
         self.base = Path(self.temp.name)
         self.env = dict(os.environ, GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null',
                         GIT_AUTHOR_NAME='Checkout test', GIT_AUTHOR_EMAIL='test@example.invalid',
@@ -25,6 +26,37 @@ class CheckoutsTest(unittest.TestCase):
         self.clone = self.base / 'clone'
         self.git(self.base, 'clone', '-q', str(self.up), str(self.clone))
 
+    def stop_background(self):
+        import signal
+        import time
+        state = self.base / 'state' / 'refresh.json'
+        for _ in range(60):
+            if not state.exists():
+                return
+            try:
+                status = json.loads(state.read_text())
+                pid = status.get('pid')
+                if pid and status.get('state') == 'running' and os.getpgid(pid) == pid:
+                    os.killpg(pid, signal.SIGTERM)
+                    time.sleep(0.1)
+                elif status.get('state') != 'queued':
+                    return
+            except (ProcessLookupError, json.JSONDecodeError):
+                return
+            time.sleep(0.05)
+
+    def wait_refresh(self):
+        import time
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            path = self.state / 'refresh.json'
+            if path.exists():
+                status = json.loads(path.read_text())
+                if status['state'] not in ['queued', 'running']:
+                    return status
+            time.sleep(0.05)
+        self.fail('Refresh did not finish')
+
     def git(self, directory, *args, check=True):
         return subprocess.run(['git', '-C', str(directory), *args], env=self.env,
                               text=True, capture_output=True, check=check).stdout.strip()
@@ -35,7 +67,9 @@ class CheckoutsTest(unittest.TestCase):
         self.git(directory, 'commit', '-qm', text)
         return self.git(directory, 'rev-parse', 'HEAD')
 
-    def cli(self, *args, code=0, raw=False, cwd=None):
+    def cli(self, *args, code=0, raw=False, cwd=None, auto_refresh=False):
+        if not auto_refresh and (not args or str(args[0]).startswith('--') or args[0] == 'overview') and '--help' not in args:
+            args = (*args, '--no-refresh')
         result = subprocess.run([str(ROOT / 'v3'), 'checkouts', *map(str, args),
                                  '--registry=' + str(self.registry), '--state-dir=' + str(self.state),
                                  *([] if raw else ['--json'])], cwd=cwd or ROOT,
@@ -521,6 +555,59 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual(2, len(rendered['lines']))
         self.assertNotIn('\n', rendered['lines'][1])
         self.assertNotIn('\x1b', rendered['lines'][1])
+
+    def test_detached_refresh_populates_cache_and_coalesces(self):
+        import time
+        self.add()
+        start = time.monotonic()
+        first = self.cli(code=2, auto_refresh=True)
+        self.assertLess(time.monotonic() - start, 1)
+        self.assertIn(first['refresh']['state'], ['queued', 'running'])
+        token = first['refresh'].get('token')
+        second = self.cli(code=None, auto_refresh=True)
+        self.assertNotIn('preview_id', second)
+        status = self.wait_refresh()
+        self.assertEqual('complete', status['state'], status)
+        self.assertEqual(token, status['token'])
+        result = self.cli(auto_refresh=True)
+        self.assertEqual('current', result['checkouts'][0]['action'])
+        self.assertEqual('fresh', result['refresh']['state'])
+        self.assertFalse((self.state / 'previews').exists())
+
+    def test_refresh_failure_preserves_good_observation_and_age(self):
+        self.add()
+        result = self.cli('refresh')
+        observed = result['checkouts'][0]['observed_at']
+        self.up.rename(self.base / 'offline')
+        result = self.cli('refresh', code=2)
+        self.assertEqual('current', result['checkouts'][0]['action'])
+        self.assertEqual(observed, result['checkouts'][0]['observed_at'])
+        self.assertIn('last_error', result['checkouts'][0])
+        self.assertIn('stale:', self.cli(raw=True, code=2))
+
+    def test_background_deferred_on_apply_lock_and_spawn_failure(self):
+        import fcntl
+        self.add()
+        with (self.state / 'registry.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.cli(code=2, auto_refresh=True)
+            self.assertEqual('deferred', self.wait_refresh()['state'])
+        (self.state / 'refresh.json').unlink()
+        result = subprocess.run(['php', '-d', 'disable_functions=proc_open', str(ROOT / 'scripts/checkouts.php'),
+                                 '--json', '--registry=' + str(self.registry), '--state-dir=' + str(self.state)],
+                                env=self.env, text=True, capture_output=True)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual('failed', json.loads(result.stdout)['refresh']['state'])
+
+    def test_cold_worker_failure_and_retry(self):
+        self.add()
+        self.up.rename(self.base / 'offline')
+        self.cli(code=2, auto_refresh=True)
+        self.assertEqual('failed', self.wait_refresh()['state'])
+        self.assertEqual('unavailable', self.cli(code=2)['checkouts'][0]['action'])
+        (self.base / 'offline').rename(self.up)
+        self.cli('refresh')
+        self.assertEqual('current', self.cli()['checkouts'][0]['action'])
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ const CHECKOUT_HELP = <<<'HELP'
 Usage: ./v3 checkouts [command] [argument] [options]
   add <path>       Register an existing clone (--remote=origin --target=main)
   overview        Show cached checkout observations (default)
+  refresh         Fetch/refresh cached observations without creating an update plan
   preview         Fetch selected sources and save an update preview
   apply <id>      Apply a saved preview (--sessions-paused required)
   list            List registered clones
@@ -21,6 +22,7 @@ Options:
   --state-dir=/path              Private state (default: XDG_STATE_HOME/v3/checkouts)
   --path=/checkout               Preview one registered path (required for test/server roles)
   --sessions-paused              Assert coding/server sessions are coordinated for apply
+  --no-refresh                   Read cached overview without scheduling a worker
   --json                         Machine-readable output
 Exit: 0 completed; 1 command/config error; 2 attention or partial results.
 Defaults: ~/.config/v3/checkouts.json and ~/.local/state/v3/checkouts.
@@ -35,7 +37,9 @@ try {
             echo CHECKOUT_HELP . "\n";
             exit(0);
         }
-        if ($arg === '--sessions-paused') {
+        if ($arg === '--no-refresh') {
+            $options['no-refresh'] = true;
+        } elseif ($arg === '--sessions-paused') {
             $options['sessions-paused'] = true;
         } elseif ($arg === '--json') {
             $options['json'] = true;
@@ -48,12 +52,13 @@ try {
         }
     }
     $command = $positionals[0] ?? 'overview';
-    if (count($positionals) > 2 || (in_array($command, ['list', 'preview', 'overview'], true) && count($positionals) > 1)) {
+    if (count($positionals) > 2 || (in_array($command, ['list', 'preview', 'overview', 'refresh'], true) && count($positionals) > 1)) {
         throw new RuntimeException('Unexpected argument; run ./v3 checkouts --help.');
     }
     $allowed = ['registry', 'state-dir', 'json', ...match ($command) {
         'add' => ['remote', 'target', 'role'],
-        'preview', 'overview' => ['path'],
+        'preview', 'refresh', '__refresh' => ['path'],
+        'overview' => ['path', 'no-refresh'],
         'apply' => ['sessions-paused'],
         default => [],
     }];
@@ -63,6 +68,9 @@ try {
         }
     }
     $result = (new CheckoutManager($options['registry'] ?? null, $options['state-dir'] ?? null))->run($command, $positionals[1] ?? null, $options);
+    if ($command === '__refresh') {
+        exit($result['exit_code'] ?? 0);
+    }
     if ($options['json'] ?? false) {
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
     } else {
@@ -85,10 +93,13 @@ try {
             if ($command === 'overview') {
                 echo ($result['age_seconds'] === null ? 'Unchecked' : 'Checked ' . $result['age_seconds'] . 's ago')
                     . ' · ' . $result['refresh']['state'] . ' · cached observations' . "\n";
+                if (in_array($result['refresh']['state'], ['failed', 'deferred'], true)) {
+                    echo $result['refresh']['reason'] . "\n";
+                }
             } else {
-            echo ($command === 'preview'
+            echo ($command === 'refresh' ? $result['notice'] : ($command === 'preview'
                 ? 'Fetched refs; no checked-out files changed. Pause sessions before apply.'
-                : 'Other branches, stashes and linked worktrees unchanged. Preview again after recovery.') . "\n";
+                : 'Other branches, stashes and linked worktrees unchanged. Preview again after recovery.')) . "\n";
             }
         }
         if ($command === 'preview' && isset($result['preview_id'])) {

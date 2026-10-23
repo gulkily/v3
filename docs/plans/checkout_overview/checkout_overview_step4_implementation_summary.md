@@ -15,3 +15,9 @@ Effort study: `railspike-effort / v3/checkout_overview`; [ledger](../effort_esti
 - Changes: shared CHECKOUT/BRANCH/ACTION/HINT renderer with shortest unique suffix labels, Unicode-aware cell widths, control-character sanitization, narrow layout and abbreviation/details guidance. Preview/apply and cached view share it; apply preserves a full recovery-result file. No per-row source listings.
 - Verification: 4 focused real-Git/render checks passed at 30/80/120 columns, duplicate labels, Unicode/control values, explicit preview and saved-preview output. PHP syntax passed. Initial line-count failure exposed an overlong dirty hint; shortened the hint and reran successfully.
 - Notes: Stage 1 `ba6eda559`; background status/refresh follows Stage 3. JSON keeps full values.
+
+## Stage 3 - Detached refresh lifecycle
+
+- Changes: detached single-flight worker and synchronous refresh, 30s freshness, queued/running/deferred/failed status with launch timeout and bounded status/cache retention. Worker owns a session, handles interruption/deadline by terminating its own process group, retains previous good observations/errors, and never creates apply previews. `--no-refresh` supports deliberate cache-only diagnosis; normal default schedules automatically.
+- Verification: 4 real-Git worker tests passed: detached response under 1s/coalescing, retained good rows/age after offline fetch, deferred manager lock, disabled process launcher and cold failure/retry. Corrected retained-error exit reporting after a failing focused test and reran successfully.
+- Notes: Stage 2 `2929b56f4`; background launch needs available POSIX/pcntl PHP support, otherwise visible failure plus synchronous refresh recovery. No live worker or registry test mutations.

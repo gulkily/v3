@@ -61,6 +61,9 @@ final class CheckoutRenderer
 
     private function hint(array $row): string
     {
+        if (isset($row['last_error'])) {
+            return 'stale: refresh failed';
+        }
         return match ($row['action'] ?? '') {
             'unchecked' => 'awaiting refresh',
             'dirty' => 'preserve changes',
