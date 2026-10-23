@@ -18,7 +18,7 @@ Options:
   --json                        Machine-readable output
 HELP;
 
-$options = [];
+$options = ['json' => in_array('--json', $argv, true)];
 try {
     $positionals = [];
     foreach (array_slice($argv, 1) as $arg) {
