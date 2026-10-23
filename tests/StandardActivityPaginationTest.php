@@ -178,7 +178,7 @@ final class StandardActivityPaginationTest
         }
         assertStringContains('record-004', $render('/activity/?view=bootstrap'));
         $denied = $render('/activity/?view=security');
-        assertStringContains('Authenticated root-approved operator access required.', $denied);
+        assertStringContains('Sign in with your operator account to view access history.', $denied);
         assertStringNotContains('record-204', $denied);
         (new \ForumRewrite\Write\StaticArtifactInvalidator($root . '/public'))->invalidateReply('root-001', 'reply-001');
         assertSame(false, is_file($root . '/public/activity.html'));

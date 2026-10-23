@@ -86,7 +86,7 @@ final class ActivityPageController
                     $page['items'],
                 ),
             ],
-            'Activity',
+            $view === 'security' ? 'Access history' : 'Activity',
             'activity',
             ['/assets/openpgp_loader.js','/assets/browser_signing.js','/assets/private_site_auth.js'],
         );

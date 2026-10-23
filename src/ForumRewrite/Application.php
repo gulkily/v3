@@ -169,7 +169,17 @@ final class Application
 
         if ($securityReviewRequest) {
             if (!$this->routeServices()->securityReviewAllowed()) {
-                $this->sendText("Authenticated root-approved operator access required.\n", 403, $this->routeServices()->noStoreHeaders());
+                if (!str_starts_with($path, '/api/') && ($query['format'] ?? '') !== 'rss') {
+                    $this->sendHtml($this->routeServices()->renderPageTemplate(
+                        'access_history_auth.php',
+                        ['canSignIn' => empty($_SESSION['authenticated_identity_id']), 'authReturnTo' => $path . '?view=security', 'viewerProfile' => null],
+                        'Access history', 'tools',
+                        ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/access_history_auth.js'],
+                        false,
+                    ), 403, $this->routeServices()->noStoreHeaders());
+                } else {
+                    $this->sendText("Authenticated root-approved operator access required.\n", 403, $this->routeServices()->noStoreHeaders());
+                }
                 return;
             }
             if (($query['format'] ?? '') === 'rss') {

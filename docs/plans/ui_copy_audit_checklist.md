@@ -17,6 +17,14 @@
 - [x] Keep legacy label uncertainty actionable after accepted retraction: the existing reload acknowledgment displays operator-review guidance only when ownership candidates remain unresolved. No new navigation, confirmation or routine explanatory panel.
 - Verified real signed author/operator/account and partial-retry browser flows; legacy warning in all 13 themes at 390px/1280px without warning/page overflow. Inspected Word97/Chicago phone and Midnight desktop screenshots; existing menu keyboard/Escape/touch check passed. Fixture also verifies physical root deletion preserves conversation. Screenshots are local `/tmp/retraction-browser-evidence/` evidence, not deployment artifacts.
 - [ ] Production ZenMemes rollout and live legacy ownership resolution remain operator acceptance tasks; missing historical proof is not silently inferred. [Implementation record](retraction_effects/retraction_effects_step4_implementation_summary.md).
+## Access history in User Access — October 21, 2026
+
+- [x] Removed the detached Feature Flags paragraph and loose User Access audit link. Show five recent events in User Access, with concise summaries, expandable canonical evidence and conditional View all.
+- [x] Keep legacy uncertainty and authentication failure/retry feedback; protect history with authenticated operator authorization and no-store. Hint-only operators get recovery; authenticated members (including forged operator hints) receive no protected history.
+- [x] Actual Chromium flow: Tools/User Access → event evidence → full history/older page → return; empty history, grant/invitation/policy/legacy events, 111-event shared-date paging, expired-session signing/retry, invalid cursor, keyboard expansion, pending approvals and source links. Existing Forte retry/parity harness passes.
+- [x] Loaded phone/desktop at 390/1280 px across all 16 themes, recent and expanded full history; no page overflow. Reviewed `/tmp/access-history-light-1280.png` and `/tmp/access-history-midnight-390.png`. Existing User Access launcher/subnav icons verified in Word97, Chicago and Midnight; no destination/icon mapping was added or renamed.
+- Evidence: `node tests/browser/access_history.mjs`, `node tests/browser/forte_activity_parity.mjs`, 47 focused PHP tests. The original user's browser session was not inspected; isolated tests reproduce hint-only one-line 403 and empty authorized history separately. Non-Chromium browsers, production deployment and the full test suite were not run in this cycle.
+
 
 ## Browser identity ready notice — October 21, 2026 triage
 
@@ -216,3 +224,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - [x] Removed the private workflow block above Activity, its client rendering/fetching and Activity workflow script inclusion. Existing thread/post workflow controls and documented APIs remain available; no replacement copy or navigation added.
 - Verification: operator/anonymous, JavaScript enabled/disabled, 390px/1280px Activity matrix passed with ordinary filter navigation and no overflow. Observed zero workflow requests through the former polling interval and visibility refresh. Existing signed start/answer/revise/approve, failure/retry and saved-key resumption journey passed. Standard Activity native pagination, empty filter, invalid-position/HTTP recovery, RSS and opening an entry passed with scripts on/off. All 13 themes passed phone/desktop overflow checks; inspected phone Activity heading/navigation screenshot and Word97 loaded-content/pagination screenshot. Existing Forte append/detail checks also passed.
 - Limitations: local fixtures and emulated viewports; production deployment/reload and physical-device checks pending. This removes one non-repository workflow block; complete repository coverage and script-free private workflow reading are separate proposals. See the [implementation summary](./railspike_workflow_visibility/railspike_workflow_visibility_step4_implementation_summary.md).
+
+## Access history merge verification — October 23, 2026
+
+- [x] Retained shared standard Activity Previous/Next/First page controls and private sign-in recovery when merging Access history. Relevant-file evidence preserves signature and unavailable-commit status.
+- Passed merged-code browser checks for Access history (16 themes at 390/1280), standard Activity (13 themes, native controls, JS on/off) and Forte append/Commits/parity; 15 focused PHP checks passed. Full-suite and deployment verification remain unperformed.

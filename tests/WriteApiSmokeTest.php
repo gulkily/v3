@@ -7018,6 +7018,9 @@ NODE;
             $_POST = [];
             $operator = $this->extractValue($response, 'identity_id');
             $this->seedApprovedIdentity($root, $operator);
+            $_SESSION = ['authenticated_identity_id' => $operator];
+            assertStringContains('No access changes recorded yet.', $this->renderMethod($app, 'GET', '/tools/user-access/'));
+            $_SESSION = [];
             $target = $this->linkGeneratedIdentity($app, 'security-target');
             $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
             $change = function (bool $value) use ($writer, $operator, $key): void {
@@ -7038,13 +7041,28 @@ NODE;
                 foreach ($paths as $path) {
                     $denied = $this->renderMethod($app, 'GET', $path);
                     assertSame(403, http_response_code());
-                    assertStringContains('Authenticated root-approved operator access required', $denied);
+                    if ($viewer === null && !str_starts_with($path, '/api/') && !str_contains($path, 'format=rss')) {
+                        assertStringContains('Sign in with your operator account', $denied);
+                        assertStringContains('data-auth-return-to="', $denied);
+                    } else {
+                        assertStringContains('Authenticated root-approved operator access required', $denied);
+                    }
                     assertStringNotContains('Acceptance receipt', $denied);
                 }
             }
             $_SESSION = ['authenticated_identity_id' => $operator];
             $_COOKIE = [];
-            assertStringContains('<a href="/activity/?view=security">Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
+            $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
+            assertStringContains('<h2>Access history</h2>', $recent);
+            assertStringContains('Account key approved for security-target', $recent);
+            assertStringContains('Acceptance receipt', $recent);
+            assertSame(4, substr_count($recent, 'class="access-history-event"'));
+            assertStringNotContains('>View all</a>', $recent);
+            $change(true); $change(false); $change(true);
+            $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
+            assertSame(5, substr_count($recent, 'class="access-history-event"'));
+            assertStringContains('>View all</a>', $recent);
+            assertStringNotContains('Review account key grants', $this->renderMethod($app, 'GET', '/tools/feature-flags/'));
             foreach (['/activity/', '/forte/activity/'] as $path) {
                 $page = $this->renderMethod($app, 'GET', $path);
                 assertStringNotContains('Operator security review', $page);
@@ -7055,8 +7073,8 @@ NODE;
                 assertSame(200, http_response_code());
                 assertStringNotContains('>Operator security review</a>', $page);
                 assertStringNotContains('<span>Operator security review</span>', $page);
-                assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=true', $page);
-                assertStringContains('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false', $page);
+                assertStringContains('Cross-account approvals enabled', $page);
+                assertStringContains('Cross-account approvals restricted', $page);
                 assertStringContains('security-target', $page);
                 assertStringContains('Current cross-account policy:', $page);
                 if (str_starts_with($path, '/forte/')) {
@@ -7080,7 +7098,7 @@ NODE;
             assertStringContains('Acceptance receipt', $securityPage['detail_html']);
             assertStringContains('Affected account: security-target', $securityPage['detail_html']);
             $securityRows = json_decode($this->renderMethod($app, 'GET', '/api/forte_activity_page?view=security&rows_only=1'), true, 512, JSON_THROW_ON_ERROR);
-            assertStringContains('new_account: security-operator approved a key for security-target', $securityRows['html']);
+            assertStringContains('Account key approved for security-target', $securityRows['html']);
             $ordinary = $this->renderMethod($app, 'GET', '/api/forte_activity_detail?id=' . $id);
             assertStringNotContains('Affected account:', $ordinary);
             assertStringNotContains('Acceptance receipt', $ordinary);

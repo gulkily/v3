@@ -27,6 +27,11 @@ $hasRelevantFiles = $relevantFiles !== [];
       <span><?= $forteContentMeta($item, 'created_at', '') ?></span>
     </div>
   </div>
+<?php if (array_key_exists('security_review', $item)): ?>
+  <div class="post-card paned-post-card">
+<?= $partial('partials/access_history_event.php', ['item' => $item + ['link' => $forteLink]]) ?>
+  </div>
+<?php else: ?>
   <div class="post-card paned-post-card">
     <div class="body">
       <p><?= $e((string) ($item['label'] ?? '')) ?></p>
@@ -35,9 +40,6 @@ $hasRelevantFiles = $relevantFiles !== [];
 <?php endif; ?>
 <?php if ((string) ($item['author_label'] ?? '') === 'reply-agent'): ?>
       <p class="meta">Author: reply-agent <span class="agent-label">automated reply agent</span></p>
-<?php endif; ?>
-<?php if (array_key_exists('security_review', $item)): ?>
-<?= $partial('partials/approval_security_review.php', ['item' => $item]) ?>
 <?php endif; ?>
 <?php if ($hasRelevantFiles): ?>
 <?= $indent($partial('partials/activity_commit_manifest.php', [
@@ -60,4 +62,5 @@ $hasRelevantFiles = $relevantFiles !== [];
 <?php endif; ?>
     </div>
   </div>
+<?php endif; ?>
 </article>
