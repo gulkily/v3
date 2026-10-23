@@ -95,14 +95,14 @@ final class DocsPublication
     }
 
     /** A false result requests a complete docs-owned rebuild by the caller. */
-    public function reuseInto(string $sourceRoot, string $candidateRoot): bool
+    public function reuseInto(string $sourceRoot, string $candidateRoot, ?string $signature = null, ?string $version = null): bool
     {
         if (!$this->isReusableContext() || is_link($candidateRoot) || realpath($sourceRoot) === realpath($candidateRoot)) {
             return false;
         }
         try {
-            $signature = $this->inputSignature();
-            $version = $this->version();
+            $signature ??= $this->inputSignature();
+            $version ??= $this->version();
             $manifest = json_decode($this->read($sourceRoot, self::MANIFEST), true, flags: JSON_THROW_ON_ERROR);
             if (!is_array($manifest) || ($manifest['format'] ?? null) !== self::FORMAT
                 || ($manifest['input'] ?? null) !== $signature || !is_string($manifest['version'] ?? null)) {

@@ -8,6 +8,7 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/DocsPublicationTest.php',
+    __DIR__ . '/DocsPublicationFlowTest.php',
     __DIR__ . "/HighTrafficTest.php",
     __DIR__ . "/AccessHistoryPresenterTest.php",
     __DIR__ . "/FastmodTaggingFlagTest.php",

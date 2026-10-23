@@ -31,6 +31,7 @@ final class StaticArtifactReleasePublisher
                 $databasePath,
                 $candidatePath,
                 $progressReporter,
+                realpath($this->staticHtmlRoot . '/current') ?: null,
             ))->buildFromReadModel();
 
             $releaseDirectory = $this->staticHtmlRoot . '/releases';
