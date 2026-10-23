@@ -1,0 +1,13 @@
+{
+  "recorded_at": "2026-10-23T07:20:36.304102+00:00",
+  "repo": "gulkily/v3",
+  "fork_count": 0,
+  "pull_requests": 0,
+  "releases": 0,
+  "actions_artifacts": 0,
+  "actions_caches": 0,
+  "rulesets": 0,
+  "guidance": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository",
+  "host_retention": "Non-sensitive dependency source is not eligible for GitHub Support sensitive-data purging under the current published policy. Cached/unreachable server data cannot be verified erased by a branch rewrite.",
+  "other_copies": "Deployment clones, backups and copies outside the seven inventoried repositories are not proven absent; full-removal outcome remains incomplete."
+}

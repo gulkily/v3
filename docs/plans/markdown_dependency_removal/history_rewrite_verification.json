@@ -1,0 +1,103 @@
+{
+  "recorded_at": "2026-10-23T07:16:42.392702+00:00",
+  "original_commits": 2988,
+  "rewritten_reachable_commits": 2988,
+  "changed_commits": 139,
+  "unchanged_commits": 2849,
+  "changed_refs": 6,
+  "preserved_refs": 14,
+  "tree_deltas_checked": 139,
+  "removed_paths": 425,
+  "target_blob_count": 424,
+  "target_blobs_in_rewritten_reachable_history": 0,
+  "all_non_target_content_preserved": true,
+  "commit_messages_author_committer_dates_encoding_and_parent_graph_preserved": true,
+  "main_tree_byte_identical": true,
+  "annotated_tag_unchanged": true,
+  "railspike_tree_unchanged": true,
+  "corpus_revision_old": "c3f3653a199997a1e2fc7bbcac7da21d95ce3649",
+  "corpus_revision_new": "f0801ef43e53a92a7f5afc2b523fbb9ed561d570",
+  "frozen_documents_hash_verified": 1312,
+  "main_old": "afe40311e5013075326a8f597877e00556fd5e9a",
+  "main_rewritten": "bbab2f5355156871c67b809a56321ab2d046e727",
+  "publication_status": "not published; stage4 audit commit will be added before final ref review",
+  "clean_storage": {
+    "rewritten.git": {
+      "stored_objects": 32834,
+      "target_objects_present": 0,
+      "fsck": "passed"
+    },
+    "checkout": {
+      "stored_objects": 32834,
+      "target_objects_present": 0,
+      "fsck": "passed"
+    }
+  },
+  "focused_tests": {
+    "run": 48,
+    "passed": 48,
+    "failed": 0,
+    "command": "php tests/run.php PlatformDocsPageTest PlatformDocsCatalogTest PlatformDocsStaticTest RailspikeSyncCommandTest RailspikeWorkflowTest"
+  },
+  "release_tests": {
+    "php": "8.1.2-1ubuntu2.27",
+    "composerAtRuntime": false,
+    "dynamicStaticParity": "passed",
+    "staleSharedRefreshRetry": "passed",
+    "rendererFailure503": "passed",
+    "markdownVendorAbsent": true,
+    "failedBuildRetainsActiveRelease": "passed",
+    "completePackageRollbackAndRegeneration": "passed",
+    "staticBrowserScenarios": 8,
+    "staticDiscoveryScenarios": 8,
+    "root": "/tmp/markdown-release-i4pg_g06"
+  },
+  "content_scan": {
+    "scanned_reachable_blobs": 12037,
+    "package_namespace_or_generated_autoloader_candidates_outside_inventory": [],
+    "rename_records_involving_target": [],
+    "limitations": "Exact blob identity plus package namespace/autoloader and rename scans; not a proof that no arbitrary fragment was ever copied."
+  },
+  "mapped_corpus_render": {
+    "documents": 1312,
+    "errors": 0,
+    "report_sha256": "5d21c02244d3eed8e68b7fe9eab066c4b71b6501f553d6050059ba62f64cd632"
+  },
+  "private_recovery_graph": {
+    "recorded_at": "2026-10-23T07:21:40.020993+00:00",
+    "original_commits": 3135,
+    "rewritten_reachable_commits": 3135,
+    "changed_commits": 143,
+    "unchanged_commits": 2992,
+    "changed_refs": 81,
+    "preserved_refs": 472,
+    "tree_deltas_checked": 143,
+    "removed_paths": 425,
+    "target_blob_count": 424,
+    "target_blobs_in_rewritten_reachable_history": 0,
+    "all_non_target_content_preserved": true,
+    "commit_messages_author_committer_dates_encoding_and_parent_graph_preserved": true,
+    "main_tree_byte_identical": true,
+    "annotated_tag_unchanged": true,
+    "railspike_tree_unchanged": true,
+    "corpus_revision_old": "c3f3653a199997a1e2fc7bbcac7da21d95ce3649",
+    "corpus_revision_new": "f0801ef43e53a92a7f5afc2b523fbb9ed561d570",
+    "frozen_documents_hash_verified": 1312,
+    "main_old": "afe40311e5013075326a8f597877e00556fd5e9a",
+    "main_rewritten": "bbab2f5355156871c67b809a56321ab2d046e727",
+    "publication_status": "not published; stage4 audit commit will be added before final ref review"
+  },
+  "private_recovery_location": "/home/wsl/.local/state/v3-history-rewrite/20261023T0723Z",
+  "original_clones": "Preserved; no reset, ref replacement, reflog expiration or object pruning performed in existing clones.",
+  "full_suite": "Not rerun for history-only transformation; earlier merge full suite stopped at 65 passes, zero failures. No full-suite pass claimed.",
+  "recovery_verification": {
+    "restored_ref_count": 553,
+    "refs_match_clean_local_snapshot": true,
+    "target_objects_in_restored_storage": 0,
+    "fsck": "passed",
+    "bundles": {
+      "before.bundle": "d7fdc7a6e63d78ba4e80aeb49197a8d393a271c16955f3fa281343193c3c6a1c",
+      "clean-local.bundle": "d81777a7667a3e2e4ee0eca784af11740f8e9e782d39bf91f64df28887acd92c"
+    }
+  }
+}

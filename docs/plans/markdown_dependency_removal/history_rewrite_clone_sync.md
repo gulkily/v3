@@ -1,8 +1,10 @@
 # Coordinated history rewrite and clone synchronization
 
-Status: preparation only. User and assistant coordinate GitHub. Wait for user OK
-before rewriting; review concrete replacement refs before shared publication.
-No commands below have been executed to change any clone.
+Status: isolated rewrite verified on 2026-10-23; shared publication pending exact-ref review.
+User authorized the rehearsal after consolidation. The seven existing clones remain
+preserved; the procedure below has not been executed against their refs or storage.
+See the [Stage 4 evidence](./history_rewrite_verification.json) and
+[commit mapping](./history_rewrite_commit_map.json).
 
 ## Before the freeze
 
@@ -181,6 +183,61 @@ verification; neither approach alone proves universal erasure.
 
 ## Current gate
 
-User finishes consolidation and push, then gives OK. Assistant does not rewrite
-existing history or publish replacement refs while waiting. Stage 4 rehearsal and
-Stage 5 publication/cleanup remain incomplete.
+Stage 4 isolated rewrite and recovery verification are complete. The audit commit
+adds evidence only; its parent is the byte-identical rewritten main. Review the exact
+six replacement refs in the private publication sheet before authorizing Stage 5.
+Reconfirm that Git writers are paused and advertised refs still match the captured
+old values. Existing clones, private recovery bundles and host-retained data mean
+complete-removal acceptance remains pending even after the six refs are published.
+
+## Verified rehearsal and recovery — 2026-10-23
+
+The pure history rewrite changes 139 of 2,988 commits, retaining the entire graph
+and all non-target files. Six remote branches change; 13 branches and the existing
+annotated tag do not. [Exact pure rewrite mapping](./history_rewrite_ref_map.json)
+precedes the audit-only commit that will become the proposed published main tip.
+The final exact publication sheet is saved privately beside the recovery bundles.
+
+Private recovery location: `/home/wsl/.local/state/v3-history-rewrite/20261023T0723Z`.
+`before.bundle` preserves the captured original local/remote graphs; `clean-local.bundle`
+preserves their verified rewritten counterparts. Both include private local refs and
+stash histories and must never be uploaded. The working-file backups and local ref
+maps are in the same private directory. Original clones retain ignored configuration,
+runtime data and reflog-only objects. Do not delete any of them merely because bundles
+exist; verify each intended recovery and fresh snapshot before a clone is changed.
+
+Old feature tips before the renderer restoration retain their project-authored
+parser integration but lose the vendor tree. They are historical snapshots, not
+accepted Docs release builds. Integrate rewritten main into a retained feature
+branch before resuming its Docs runtime; never merge old ancestry into new history.
+
+GitHub API inventory reports no forks, pull requests, releases, Actions artifacts
+or caches. Its [current removal guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)
+explicitly excludes non-sensitive data from support purging. Cached or unreachable
+host storage and other deployment/archive copies remain outside verified erasure.
+
+## Reusing the frozen metrics after commit IDs change
+
+Preserve the archived measurement files byte-for-byte. Create a temporary copy of
+the baseline with its corpus revision translated through the committed map, then
+pass that copy to the existing metrics command:
+
+```bash
+python3 - <<'PYTHON'
+import json
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+folder = Path('docs/plans/markdown_dependency_removal')
+baseline = json.loads((folder / 'render_baseline.json').read_text())
+mapping = json.loads((folder / 'history_rewrite_commit_map.json').read_text())
+baseline['corpus_revision'] = mapping[baseline['corpus_revision']]
+with NamedTemporaryFile(mode='w', suffix='.json', prefix='mapped-markdown-baseline-', delete=False) as output:
+    json.dump(baseline, output)
+    print(output.name)
+PYTHON
+# Use the printed filename as BASELINE below.
+python3 scripts/markdown_metrics.py --baseline BASELINE --output /tmp/render-after-rewrite.json
+```
+
+This was executed against the fresh rewritten checkout: 1,312 original source hashes
+match and all 1,312 documents render without errors. The reference parser stays absent.

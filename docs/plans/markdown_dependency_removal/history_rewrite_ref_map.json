@@ -1,0 +1,122 @@
+[
+  {
+    "ref": "refs/heads/account-key-redesign",
+    "old": "9ea852850cbdbf6f509554e7559cc66141dfa6db",
+    "new": "9ea852850cbdbf6f509554e7559cc66141dfa6db",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/chore/repository-directory-cleanup",
+    "old": "eeff9a9a048e7d61417013a0a30b8cdfdd86ec0f",
+    "new": "eeff9a9a048e7d61417013a0a30b8cdfdd86ec0f",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/docs/ephemeral-testing-plans",
+    "old": "1c80da2ddc4b933b6a878f4602c76c7c794cb6c7",
+    "new": "1c80da2ddc4b933b6a878f4602c76c7c794cb6c7",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/docs/private-messaging-diagrams",
+    "old": "d78e83fe5279804b096ffb45aed53e75ef3d44a8",
+    "new": "d78e83fe5279804b096ffb45aed53e75ef3d44a8",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/feat/activity-feed-pagination",
+    "old": "a483d38dd51eebd70bdc057b11255f3265bfe430",
+    "new": "b00983902945354b8d4ec749d023d94f4acad909",
+    "changed": true
+  },
+  {
+    "ref": "refs/heads/feat/agent-api-docs",
+    "old": "26ce503c52e71f53be7b828cc90e24992e8c02c9",
+    "new": "26ce503c52e71f53be7b828cc90e24992e8c02c9",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/feat/agent-personality-context",
+    "old": "58011b47688978c3cea8f9a556bf47e66317b72a",
+    "new": "58011b47688978c3cea8f9a556bf47e66317b72a",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/feat/retraction-effects",
+    "old": "39be82932fcc36c5017fcf368655ef449bf042da",
+    "new": "e467460ae27b11f659d0ffe3c1d96117489ae807",
+    "changed": true
+  },
+  {
+    "ref": "refs/heads/feat/thread-like-activity",
+    "old": "e507cb71f37cd1b78ca66394b437b9d9f918e4cd",
+    "new": "23c1fbde1d399a0dceee7e6b18000c10668fdf6d",
+    "changed": true
+  },
+  {
+    "ref": "refs/heads/feature/docs-discovery",
+    "old": "c34edb4645e791271a6863a1ca2e74ffba09a126",
+    "new": "2f305d0586aa7b2085422daa1907de0a0ee2b39c",
+    "changed": true
+  },
+  {
+    "ref": "refs/heads/feature/listing-query-dialog",
+    "old": "daa67f4d199b5177328cff72331236bacce7b5b8",
+    "new": "daa67f4d199b5177328cff72331236bacce7b5b8",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/feature/mitrapclub-events-experience",
+    "old": "f7a15188e30b7d85e6a01a33759464d81def5a5b",
+    "new": "f7a15188e30b7d85e6a01a33759464d81def5a5b",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/feature/operator-privilege-delegation",
+    "old": "9f3f9563561105850293c662bfdf6914ea9fe12e",
+    "new": "9f3f9563561105850293c662bfdf6914ea9fe12e",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/feature/same-author-collapse-toggle",
+    "old": "7e17152e89fdf3cc6c76892cf06356fa14140922",
+    "new": "c9b2f531b698ef3337a273db0240c87a1e96ce1e",
+    "changed": true
+  },
+  {
+    "ref": "refs/heads/feature/scripture-response-reliability-revision",
+    "old": "8a1f712f54a00304f8c2d30da075fc2cb0285bd4",
+    "new": "8a1f712f54a00304f8c2d30da075fc2cb0285bd4",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/fix-word97-nav-active-override",
+    "old": "db2e9fd8ed5c896bfccc015c95c076779abe5d2c",
+    "new": "db2e9fd8ed5c896bfccc015c95c076779abe5d2c",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/main",
+    "old": "afe40311e5013075326a8f597877e00556fd5e9a",
+    "new": "bbab2f5355156871c67b809a56321ab2d046e727",
+    "changed": true
+  },
+  {
+    "ref": "refs/heads/merge-origin-main-fdp-debug-log",
+    "old": "394322ce1638aee192a222cf81817b9e26697aaa",
+    "new": "394322ce1638aee192a222cf81817b9e26697aaa",
+    "changed": false
+  },
+  {
+    "ref": "refs/heads/qdb-strip-timestamps",
+    "old": "27060502b394ceafbd58c54bae31e9af5dbd2d1e",
+    "new": "27060502b394ceafbd58c54bae31e9af5dbd2d1e",
+    "changed": false
+  },
+  {
+    "ref": "refs/tags/fdp-before-2026-10-02",
+    "old": "e0450ecd19485de4fefd92fe8d0a09b22e0eb46f",
+    "new": "e0450ecd19485de4fefd92fe8d0a09b22e0eb46f",
+    "changed": false
+  }
+]
