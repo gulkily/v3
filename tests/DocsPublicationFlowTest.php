@@ -14,6 +14,108 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 
 final class DocsPublicationFlowTest
 {
+    public function testReportedResumeCompletesWithChangedAndMissingDamagedOrLegacyDocs(): void
+    {
+        foreach (['missing', 'damaged', 'legacy'] as $case) {
+            [$w, $project, $target, $database, $static, $publisher] = $this->destination();
+            if ($case === 'damaged') {
+                $docs = (new DocsReleasePublisher($project, $target, $static))->publish();
+                file_put_contents($docs . '/docs/guide.md.html', 'damaged docs output');
+            } elseif ($case === 'legacy') {
+                $legacy = $static . '/releases/legacy';
+                (new \ForumRewrite\Docs\DocsArtifactBuilder($project, $target, $legacy, str_repeat('a', 64)))->build();
+                $w->put($legacy . '/index.html', 'previous forum');
+                $w->put($legacy . '.retraction-generation', \ForumRewrite\Retraction\PublicationGuard::generation($target));
+                $publisher->activate($legacy);
+            }
+            $locator = new DocsReleaseLocator($static);
+            $beforeDocs = $locator->active();
+            $source = $w->repository('source');
+            $w->put($source . '/records/posts/resumed.txt', $w->post('resumed'));
+            $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+            $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+            $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+            $options = ['--repository-root=' . $target, '--database-path=' . $database, '--static-html-root=' . $static];
+            $template = $project . '/templates/pages/tag.php';
+            $original = file_get_contents($template);
+            file_put_contents($template, '<?php throw new RuntimeException("Injected forum publication failure");');
+            [$code, $out] = $w->command([$project . '/v3', 'import-instance', $server->url, ...$options]);
+            assertSame(1, $code, $out);
+            assertStringContains('--resume', $out);
+            assertTrue(is_file($target . '/.git/instance-import/pending.json'));
+            $head = trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+            file_put_contents($template, $original);
+            $this->trapDocsBulkWork($w, $project);
+            $w->put($project . '/docs/guide.md', '# Source changed before resume');
+            unset($server);
+            [$code, $out] = $w->command([$project . '/v3', 'import-instance', '--resume', ...$options]);
+            assertSame(0, $code, $out);
+            $this->assertNoDocsWork($out);
+            clearstatcache(true);
+            assertSame($head, trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]));
+            assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+            assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
+            assertStringContains('Imported resumed', file_get_contents($static . '/current/tags/general.html'));
+            assertTrue(!is_dir($static . '/current/docs'));
+            assertSame($beforeDocs, $locator->active());
+        }
+    }
+
+    public function testForumImportCompletesWhileDocsPublicationHoldsItsOwnLock(): void
+    {
+        foreach ([false, true] as $failDocs) {
+            [$w, $project, $target, $database, $static] = $this->destination();
+            (new DocsReleasePublisher($project, $target, $static))->publish();
+            $locator = new DocsReleaseLocator($static);
+            $beforeDocs = $locator->active();
+            $w->put($project . '/docs/guide.md', '# Independently changed docs');
+            $ready = $w->root . '/docs-ready';
+            $continue = $w->root . '/docs-continue';
+            $result = $w->root . '/docs-result';
+            $script = $w->root . '/docs-worker.php';
+            $w->put($script, '<?php require ' . var_export($project . '/autoload.php', true) . ';'
+                . '$ready=' . var_export($ready, true) . ';$continue=' . var_export($continue, true) . ';'
+                . 'try {(new \\ForumRewrite\\Docs\\DocsReleasePublisher(' . var_export($project, true) . ','
+                . var_export($target, true) . ',' . var_export($static, true) . '))->publish(function()use($ready,$continue){'
+                . 'if(!file_exists($ready)){file_put_contents($ready,"ready");$until=microtime(true)+60;'
+                . 'while(!file_exists($continue)){if(microtime(true)>$until)throw new RuntimeException("Barrier timeout");usleep(20000);}}});'
+                . 'file_put_contents(' . var_export($result, true) . ',"complete");}'
+                . 'catch(Throwable $e){file_put_contents(' . var_export($result, true) . ',$e->getMessage());exit(1);}');
+            $process = proc_open([PHP_BINARY, $script], [0 => ['file', '/dev/null', 'r'],
+                1 => ['file', $w->root . '/worker.log', 'a'], 2 => ['file', $w->root . '/worker.log', 'a']], $pipes);
+            try {
+                for ($n = 0; $n < 500 && !file_exists($ready); $n++) usleep(20000);
+                assertTrue(is_file($ready));
+                if ($failDocs) $w->put($project . '/templates/pages/platform_docs_document.php', '<?php throw new RuntimeException("Concurrent docs failure");');
+                $source = $w->repository('source');
+                $w->put($source . '/records/posts/concurrent.txt', $w->post('concurrent'));
+                $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+                $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+                $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+                [$code, $out] = $w->command([$project . '/v3', 'import-instance', $server->url,
+                    '--repository-root=' . $target, '--database-path=' . $database, '--static-html-root=' . $static]);
+                assertSame(0, $code, $out);
+                $this->assertNoDocsWork($out);
+                assertTrue(!file_exists($result)); // The docs process is still paused inside its publication lock.
+                clearstatcache(true);
+                $forum = realpath($static . '/current');
+                $databaseHash = hash_file('sha256', $database);
+                $w->put($continue, 'continue');
+                $exit = proc_close($process);
+                $process = null;
+                assertSame($failDocs ? 1 : 0, $exit, file_get_contents($result));
+                assertSame($forum, realpath($static . '/current'));
+                assertSame($databaseHash, hash_file('sha256', $database));
+                assertStringContains('Imported concurrent', file_get_contents($static . '/current/tags/general.html'));
+                if ($failDocs) assertSame($beforeDocs, $locator->active());
+                else assertTrue($beforeDocs['version'] !== $locator->active()['version']);
+            } finally {
+                $w->put($continue, 'continue');
+                if (is_resource($process)) { proc_terminate($process); proc_close($process); }
+            }
+        }
+    }
+
     public function testRealCliImportsDoNoDocsBulkWorkWithBrokenDocsAndUnavailableStorage(): void
     {
         $w = new ImportTestWorkspace();
