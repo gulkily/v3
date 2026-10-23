@@ -36,8 +36,14 @@ try {
       const secondKeys = await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));
       assert.equal(secondKeys.length, 100);
       assert.equal(firstKeys.some(key => secondKeys.includes(key)), false);
-      const source = page.locator('a[href^="/source/current/records/posts/page-"]').first();
+      const source = page.locator('a[href^="/source/"][href*="/records/posts/page-"]').first();
       assert.equal((await context.request.get(base + await source.getAttribute('href'))).status(), 200);
+      assert.equal(await page.locator('.activity-commit-manifest li').count(), 100);
+      assert.equal(await page.getByText('records/notes/unrelated-2299.txt', { exact: true }).count(), 0);
+      const commitLink = page.locator('a[href^="/source/commits/"]').first();
+      const commitPage = await context.request.get(base + await commitLink.getAttribute('href'));
+      assert.equal(commitPage.status(), 200);
+      assert.ok((await commitPage.text()).includes('records/notes/unrelated-2299.txt'));
       await page.getByRole('link', { name: 'Next', exact: true }).click(); await page.waitForLoadState('load');
       assert.equal(await page.locator(rowLinks).count(), 5);
       assert.equal(await page.getByRole('link', { name: 'Next', exact: true }).count(), 0);

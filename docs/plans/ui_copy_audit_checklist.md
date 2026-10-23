@@ -1,5 +1,11 @@
 # UI copy audit checklist
 
+## Standard Activity relevant evidence — October 23, 2026
+
+- [x] Replace repeated full-commit file lists with Relevant files for each standard Activity item; keep the complete list behind the existing commit link. Preserve unsigned status, identity/signature/key evidence and recovery controls. Forte copy/behavior stays unchanged.
+- Verified the Git-backed bulk-commit browser fixture with/without JavaScript, all 13 themes at 390px/1280px, historical source/full-commit links, pagination, empty/invalid/error/retry states and long values. Actual local Activity source access, Next/Back and overflow checks passed at both widths. Focused PHP 30/30 plus the core-route regression; signed-reaction and real Forte append/Commits browser regressions passed. [Outline and measured outcome](standard_activity_manifest_size_fix_outline.md).
+- Existing deployed static HTML requires republishing; production rollout and physical devices remain unverified.
+
 ## Standard Activity pagination — October 23, 2026
 
 - [x] Add only Previous/Next navigation, an empty state and actionable First page recovery for invalid/expired positions. Use native link and browser retry behavior; no routine success notice or help panel.

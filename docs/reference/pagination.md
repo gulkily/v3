@@ -90,6 +90,10 @@ controls.
 - Activity orders by record time and canonical action key. Forward comparisons
   exclude the boundary; Previous queries reverse the comparison/order, then
   restore display order. Do not base canonical positions on disposable SQLite IDs.
+- Bound per-item detail as well as item count. Standard Activity uses only
+  `relevant_files` and skips full commit enrichment. Keep complete manifests on
+  explicit commit pages; a 100-item limit does not bound HTML if every item
+  repeats thousands of unrelated files. Test a large Git-backed shared commit.
 - Boundaries need not refer to an existing anchor row. Deleting an anchor must
   not strand the reader. Probe available directions, including empty pages.
 - An unchanged dataset traverses once without gaps or duplicates. New entries

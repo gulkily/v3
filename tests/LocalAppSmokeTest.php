@@ -2215,14 +2215,14 @@ PHP;
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: bug, needs-review', $activity);
         assertStringContains('/threads/root-001', $activity);
-        assertStringContains('Source:', $activity);
+        assertStringContains('Relevant files (', $activity);
         assertStringContains('records/posts/root-001.txt', $activity);
         assertStringContains('records/thread-labels/thread-label-20260415153000-ab12cd34.txt', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt"', $activity);
         assertStringContains('href="/source/current/records/thread-labels/thread-label-20260415153000-ab12cd34.txt"', $activity);
         assertStringContains('Commit:', $activity);
         assertStringContains('commit unavailable', $activity);
-        assertStringContains('Signature:', $activity);
+        assertStringContains('Record signature:', $activity);
         assertStringContains('anonymous unsigned', $activity);
         assertStringNotContains('@ commit unavailable', $activity);
         assertStringContains('## This instance', $llms);
@@ -2545,7 +2545,7 @@ PHP;
 
         assertStringContains('Signature:', $post);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $post);
-        assertStringContains('Signature:', $activity);
+        assertStringContains('detached signature', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $activity);
         assertSame("detached signature\n", $signature);
     }
@@ -2951,7 +2951,7 @@ PHP;
         $fortePayload = json_decode($this->render($application, '/api/forte_activity_detail?id=' . $activityId), true);
         $forte = (string) $fortePayload['html'];
 
-        assertStringContains('Commit files (', $classic);
+        assertStringContains('Relevant files (', $classic);
         assertStringContains('Relevant files (', $forte);
         assertStringContains('records/posts/root-001.txt', $classic);
         assertStringContains('records/posts/root-001.txt', $forte);

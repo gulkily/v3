@@ -204,6 +204,75 @@ final class StandardActivityPaginationTest
         }
     }
 
+    public function testLargeSharedCommitDoesNotExpandEveryStandardItemOrWarmFullManifest(): void
+    {
+        $root = sys_get_temp_dir() . '/activity-bulk-' . bin2hex(random_bytes(6));
+        mkdir($root, 0700);
+        $output = [];
+        exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/Support/standard_activity_pagination_fixture.php') . ' ' . escapeshellarg($root) . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+        $database = $root . '/read.sqlite3';
+        $pdo = new PDO('sqlite:' . $database);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $service = new ActivityService(static fn (): PDO => $pdo, $root . '/repository', $database);
+        $page = $service->fetchActivityPage('all');
+        assertSame(100, count($page['items']));
+        assertSame([], (new ReflectionProperty($service, 'activityCommitManifestCache'))->getValue($service));
+        $full = $service->fetchActivity('all')['items'];
+        foreach ($page['items'] as $index => $item) {
+            assertSame([], $item['source_commit_files']);
+            assertSame(1, count($item['relevant_files']));
+            assertSame('added', $item['relevant_files'][0]['status']);
+            assertSame($item['source_path'], $item['relevant_files'][0]['path']);
+            assertSame($full[$index]['relevant_files'], $item['relevant_files']);
+            assertTrue(count($full[$index]['source_commit_files']) > 2300);
+        }
+        $app = new Application(dirname(__DIR__), $root . '/repository', $database, $root . '/static');
+        $html = $this->render($app, '/activity/');
+        assertTrue(strlen($html) < 500000);
+        assertSame(100, substr_count($html, '<li>'));
+        assertStringNotContains('records/notes/unrelated-2299.txt', $html);
+        assertStringContains('rel="next"', $html);
+        assertStringContains('/source/blob/' . $page['items'][0]['source_commit_sha'] . '/' . $page['items'][0]['source_path'], $html);
+        $commit = $this->render($app, '/source/commits/' . $page['items'][0]['source_commit_sha']);
+        assertStringContains('records/notes/unrelated-2299.txt', $commit);
+    }
+
+    public function testMissingHistoryPreservesBootstrapAndUnsignedEvidence(): void
+    {
+        $root = sys_get_temp_dir() . '/activity-no-history-' . bin2hex(random_bytes(6));
+        mkdir($root, 0700);
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__ . '/fixtures/parity_minimal_v1', FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($iterator as $file) {
+            $destination = $root . '/' . $iterator->getSubPathname();
+            $file->isDir() ? mkdir($destination, 0700, true) : copy($file->getPathname(), $destination);
+        }
+        file_put_contents($root . '/records/posts/bootstrap-evidence.txt', "Post-ID: bootstrap-evidence\nCreated-At: 2026-10-23T00:00:00Z\nBoard-Tags: identity internal\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\nIdentity evidence.\n");
+        $database = sys_get_temp_dir() . '/activity-evidence-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $app = new Application(dirname(__DIR__), $root, $database);
+        $html = $this->render($app, '/activity/');
+        $pdo = new PDO('sqlite:' . $database);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $service = new ActivityService(static fn (): PDO => $pdo, $root, $database);
+        $page = $service->fetchActivityPage('all')['items'];
+        $existing = $service->fetchActivity('all')['items'];
+        $byKey = array_column($existing, null, 'action_key');
+        $bootstrap = false;
+        foreach ($page as $item) {
+            assertSame($byKey[$item['action_key']]['relevant_files'], $item['relevant_files']);
+            assertSame($byKey[$item['action_key']]['source_signature_status'], $item['source_signature_status']);
+            if ($item['record_family'] === 'identity_bootstrap') {
+                $bootstrap = true;
+                assertTrue(in_array('identity record', array_column($item['relevant_files'], 'role'), true));
+            }
+        }
+        assertTrue($bootstrap);
+        assertStringContains('Record signature: anonymous unsigned', $html);
+        assertStringContains('commit unavailable', $html);
+        assertStringContains('Relevant files (', $html);
+        assertStringContains('/source/current/records/posts/root-001.txt', $html);
+    }
+
     public function testNavigationContractIsIndependentOfActivity(): void
     {
         $links = PageNavigation::links('/example/', ['filter' => 'a & b'], 'example:a & b', null, ['key' => 'entry-9']);

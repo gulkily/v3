@@ -37,6 +37,9 @@ final class ActivityService
     /** @var array<string, list<array{status:string,path:string,previous_path:string}>|null> */
     private array $sourceCommitFileManifestCache = [];
 
+    /** @var array<string,array<string,array{status:string,path:string,previous_path:string}>> */
+    private array $relevantCommitFileIndex = [];
+
     /** @var array<string, array<int, array<string, mixed>>|null> */
     private array $activityCommitManifestCache = [];
 
@@ -135,7 +138,7 @@ final class ActivityService
         $first = $rows === [] ? $position : $boundary($rows[0]);
         $last = $rows === [] ? $position : $boundary($rows[count($rows) - 1]);
         return [
-            'items' => array_map(fn (array $row): array => $this->enrichActivityItem($view === 'security' ? $this->securityReviewItem($row) : $row), $rows),
+            'items' => array_map(fn (array $row): array => $this->enrichActivityItem($view === 'security' ? $this->securityReviewItem($row) : $row, false), $rows),
             'previous' => $first !== null && $read($first, 'previous', 1) !== [] ? $first : null,
             'next' => $last !== null && $read($last, 'next', 1) !== [] ? $last : null,
         ];
@@ -253,7 +256,7 @@ final class ActivityService
      * @param array<string, mixed> $post
      * @return array<string, mixed>
      */
-    private function enrichActivityItem(array $post): array
+    private function enrichActivityItem(array $post, bool $includeFullCommit = true): array
     {
         $sourcePath = $post['source_path'] !== null ? (string) $post['source_path'] : '';
         $sourceCommitSha = $post['source_commit_sha'] !== null ? (string) $post['source_commit_sha'] : '';
@@ -271,7 +274,7 @@ final class ActivityService
             'source_commit_sha' => $sourceCommitSha,
             'source_path_href' => $this->sourcePathHref($sourcePath, $sourceCommitSha),
             'source_commit_href' => $this->sourceCommitHref($sourceCommitSha),
-            'source_commit_files' => $this->activityCommitManifest($sourceCommitSha) ?? [],
+            'source_commit_files' => $includeFullCommit ? ($this->activityCommitManifest($sourceCommitSha) ?? []) : [],
             'source_signature_path' => $signature['path'],
             'source_signature_href' => $signature['href'],
             'source_signature_status' => $this->sourceSignatureStatus(
@@ -288,7 +291,8 @@ final class ActivityService
         ];
         if (array_key_exists('security_review', $post)) $item['security_review'] = $post['security_review'];
         if (isset($post['security_account'])) $item['security_account'] = $post['security_account'];
-        $item['relevant_files'] = $this->activityItemRelevantFiles($item);
+        $evidence = $includeFullCommit ? $item : array_replace($item, ['source_commit_files' => $this->relevantCommitFiles($item)]);
+        $item['relevant_files'] = $this->activityItemRelevantFiles($evidence);
 
         return $item;
     }
@@ -874,6 +878,46 @@ final class ActivityService
 
         $this->sourceCommitFileManifestCache[$commitSha] = $files;
 
+        return $files;
+    }
+
+    /**
+     * Enrich only this action's evidence. Raw commit paths are indexed once
+     * per request; unrelated files never trigger signature/key metadata work.
+     * @param array<string,mixed> $item
+     * @return list<array<string,string>>
+     */
+    private function relevantCommitFiles(array $item): array
+    {
+        $sourcePath = (string) $item['source_path'];
+        if ($sourcePath === '') return [];
+        $sha = (string) $item['source_commit_sha'];
+        if (!array_key_exists($sha, $this->relevantCommitFileIndex)) {
+            $this->relevantCommitFileIndex[$sha] = array_column($this->sourceCommitFiles($sha) ?? [], null, 'path');
+        }
+        $byPath = $this->relevantCommitFileIndex[$sha];
+        $paths = [$sourcePath];
+        if ($item['record_family'] === 'identity_bootstrap') {
+            $identity = $this->signatureSignerIdentityId($sourcePath);
+            $fingerprint = $identity === null ? null : $this->openPgpFingerprintFromIdentityId($identity);
+            if ($fingerprint !== null) $paths[] = CanonicalPathResolver::identity(strtolower($fingerprint));
+        }
+        $signaturePath = (string) $item['source_signature_path'];
+        if ($signaturePath !== '') {
+            $paths[] = $signaturePath;
+            $signature = $this->activityCommitSignatureMetadata($signaturePath);
+            if ($signature['public_key_path'] !== '') $paths[] = $signature['public_key_path'];
+        }
+        $files = [];
+        foreach (array_unique($paths) as $path) {
+            if (!isset($byPath[$path])) continue;
+            $raw = $byPath[$path];
+            $href = $this->sourceCommitFileHref($path, $raw['status'], $sha);
+            $entry = SourcePathValidator::isValidCanonicalDetachedSignaturePath($path)
+                ? $this->standaloneSignatureRelevantFile($path, $href)
+                : $this->standaloneRelevantFile($path, $href, $this->sourceCommitFileRole($path));
+            $files[] = array_replace($entry, $raw);
+        }
         return $files;
     }
 
