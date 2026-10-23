@@ -83,3 +83,32 @@ Six required stage fields plus contract/risks make the compact plan longer than 
 ### Study checkpoint
 
 `railspike-effort` / `v3/markdown_list_structure`, scope v1 clarified, R1/P2, baseline `b9d1cc874973b9a8f8452a2a61a7d308430bb678`, Codex single exposed rater. **0.90 total reaffirmed** after accounting for six-stage ownership/nesting/fallback, canonical link safety, phone/theme checks, actual copied full/shared publication/failure recovery and corpus classification/documentation. Six planned/zero completed stages; no implementation. Existing table harness reuse limits delivery work, while broader list ownership remains the material parsing risk. All three frozen R1 hashes reverified, including exact historical feedback from `4f6cfe2b436fae8d939b1349fe724a3879ee0a0e`. Earlier scores/missing intake retained; no measured labor, independent rating, retrospective completion score, maintainer acceptance or accepted-count increment. Wider Docs layout and parent removal acceptance remain separate.
+
+## Step 4 complete — 2026-10-23T15:03:57.381168+00:00
+
+Debug mode remains enabled from approved Step 3. Executed on `feature/markdown-list-structure`, planning `17fcec043`, stages `e27a0356d`, `dd24c3ad1`, `3bfe93666`, `f9b4528d0`, `4876f2337`, `2f9b448d7`. Six planned/six completed stages; technical local outcome complete, maintainer acceptance/full suite/deployment/physical devices pending.
+
+### Necessary/useful instructions
+
+- Step 4 Before organization/planning gate: kept substantive ledger, summary and evidence outside the initial approved-plan/debug commit; new branch preserved the merged table work and prior recovery audits. Retain.
+- Step 4 Do stage verification/cadence: each stage has its own summary-bearing commit before dependents, separating paragraph/number ownership, nesting, unsupported safety, reader access, publication recovery and corpus acceptance. Retain.
+- Completion Contract and CONTRIBUTING UI verification: actual reader screenshots, Tab/arrow/focus, safe links, deep/nine-level fixtures and generated delivery prevent source-only accessibility claims. Local scrolling retained readable deep text while respecting the deferred wider-column request. Retain.
+- Publication recovery and corpus method: copied full/shared CLI publication, 503 injection, active-release retention and restoration succeeded. All 453 measured nested-list documents were classified structurally; the nine fallback regions remain explicit and safety-filtered source equality is separated from independent comment-safety tests. Retain.
+- Effort closeout: entry/projected 0.90 is preserved separately from retrospective 0.95, unknown labor/independent rating and pending maintainer comfortable-fit judgment. No accepted-count increment or parent-removal completion claim. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings. Full inventory/static verification takes several minutes but covers normal browse/asset/reader delivery beyond the fast renderer fixtures; duration alone does not establish redundancy.
+
+### Inapplicable instructions
+
+No schema, navigation destination/icon, external dependency, source-document rewrite, wider-column implementation, production activation, merge/push or recovery-storage disposal. No visible UI-copy cleanup; new region labels supply keyboard context. No workflow-rule changes.
+
+### Uncertain assessments and corrections
+
+- Initial new assertion assumed no separator newline before standalone prose; semantic list and paragraph checks replaced the serialization assumption.
+- Mixed nesting fixture exposed parent continuation at a child's marker column; returning to the established ancestor content column fixed ownership before Stage 2 passed.
+- Browser assertions were updated from six detached lists to one six-step semantic procedure, and strengthened to prove both deep-list and source-region Tab/arrow access. Screenshots reset scroll only after those checks, so initial markers remain inspectable.
+- Corpus structural coverage is complete for the measured 453 documents; visual coverage remains representative. Future unsupported embedded-block/indentation forms need separate review. Unclosed embedded fences retain the remaining example source instead of guessing a closing boundary.
+
+No new request/scope split, new reference, independent rating, measured labor or accepted outcome. Frozen R1 report/diff and exact historical feedback hashes verified at final checkpoint. Wider Docs follow-up and parent historical-removal acceptance remain separate.
