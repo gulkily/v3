@@ -61,6 +61,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Feature flags search and status toolbar](feature_flags_toolbar/)
 - [Username change gate](username_change_gate/)
+- [Username rename collision](username_rename_collision/)
 - [Music media embeds](music_media_embeds/)
 - [Stable Messages/Invite nav buttons](nav_links_load_stability/)
 - [Word 97 disabled buttons and dark Win9x theme](word97_disabled_and_dark_theme/)
