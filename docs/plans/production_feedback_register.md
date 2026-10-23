@@ -12,7 +12,7 @@ Workflow and delivery evidence are independent. No entry is closed by this migra
 
 | Request | Outcome | Workflow state | Delivery evidence |
 | --- | --- | --- | --- |
-| [PF-20261021-F01](#pf-20261021-f01) | Reply focus | untriaged | Unverified |
+| [PF-20261021-F01](#pf-20261021-f01) | Reply focus | blocked | Local browser evidence; physical phone/deployment pending |
 | [PF-20261021-F02](#pf-20261021-f02) | Identity-ready notice | blocked | Local only; deployment pending |
 | [PF-20261021-F03](#pf-20261021-f03) | Text-entry macros | untriaged | Unverified |
 | [PF-20261021-F04](#pf-20261021-f04) | Simple recent activity | untriaged | Unverified |
@@ -43,10 +43,22 @@ Coordinate F01/B01/B02/B04 with existing reply work before scoping. F08/F09/F10 
 
 ## PF-20261021-F01 — Reply focus
 
-- **Alias:** `2026-10-21/F01` (Feature 01); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Alias:** `2026-10-21/F01` (Feature 01); **workflow state:** blocked awaiting physical phone acceptance and deployment; **delivery evidence:** locally verified desktop/automated phone flow, 2026-10-23. Production behavior remains unverified. [Implementation evidence and limits](reply_continuation/reply_continuation_step4_implementation_summary.md).
 - **Request:** Keep the reply entry field focused after posting, ready for another reply. **Reports:** [reply-20261021175726-73beca3d](https://zenmemes.com/posts/reply-20261021175726-73beca3d). **Inherited estimate:** 0.15 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
-- **Done when:** Post once, retain usable reply focus; failure/retry preserves text and sends no duplicate. **Next action:** Reconcile with paused reply-focus/layout work and confirm the phone entry/failure path before scoping.
-- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Reply submission navigates to the canonical reply; focus and phone-keyboard behavior overlap paused reply work. [Source](../../public/assets/browser_signing.js).
+- **Done when:** Desktop immediately displays the pending reply and retains usable writing focus; phone reveals it with one-tap re-entry. Independent failure/retry preserves captured content and the newer draft, with no duplicate posts. **Next action:** Complete the linked iPhone Safari/Firefox checklist, then separately deploy and verify consecutive sends and failure/retry in production. No source-comment reply is authorized.
+- **Recorded evidence/context:** Open — the new [reply continuation cycle](reply_continuation/reply_continuation_step4_implementation_summary.md) implements immediate signed text/image replies on both standard routes, desktop consecutive writing, phone reading/one-tap re-entry and independent recovery. Local browser evidence does not establish physical phone or production acceptance. The earlier source investigation below describes the pre-change baseline. Related [reply-focus/layout implementation](reply_composer_focus_layout/reply_composer_focus_layout_step4_implementation_summary.md) reached local handoff, with physical iPhone acceptance pending; it is no longer accurately described as paused. Its [approved boundary](reply_composer_focus_layout/reply_composer_focus_layout_step2_feature_description.md#delivery-scope-and-completion-boundary) explicitly preserves existing navigation/update, so it does not complete F01. [Source](../../public/assets/browser_signing.js).
+
+### F01 investigation — 2026-10-23
+
+User selected immediate desktop consecutive writing and phone return-to-reading with visible sent reply and one-tap composer re-entry. [Reply continuation Step 1 assessment](./reply_continuation/reply_continuation_step1_solution_assessment.md) and [Step 2 requirements](./reply_continuation/reply_continuation_step2_feature_description.md) were explicitly approved; [Step 3 development plan](./reply_continuation/reply_continuation_step3_development_plan.md) was also explicitly approved and [Step 4](./reply_continuation/reply_continuation_step4_implementation_summary.md) records local implementation and verification. Physical phone and production acceptance remain pending.
+
+#### Historical pre-change source inspection
+
+`submitOptimisticReply()` and `submitSignedReplyAndNavigate()` both call `navigateToCanonicalReply()` after success; image replies use the same navigation helper. That helper performs `window.location.assign()` to a URL anchored at the created post. The document/editor is replaced, so retaining the current editor's focus requires a change to this success lifecycle. Entry-time focus in `inline_reply_form.js` does not address it.
+
+Existing browser checks (`tests/browser/reply_compose_focus.mjs` and `tests/browser/reply_viewport_flow.mjs`) expect the canonical `#post-` navigation. They provide historical coverage for retained drafts, recoverable failures and exactly one persisted reply, but do not assert usable focus for a second reply after success. These checks were inspected, not rerun in this investigation.
+
+Recommended next scope: keep the standard inline composer ready after a confirmed post, with the accepted reply visible and the next reply's parent explicit in the design. Resolve how the dedicated reply page continues before choosing the implementation; include attachments, draft clearing only for the accepted submission, pending duplicate protection, failure/retry and phone keyboard behavior. Forte and anonymous/no-script paths need explicit compatibility boundaries. This is investigation only: no new plan approval, application change, deployment or dependency delta. The inherited 0.15 estimate is unchanged historical feedback, not a source-informed implementation projection.
 
 <a id="pf-20261021-f02"></a>
 

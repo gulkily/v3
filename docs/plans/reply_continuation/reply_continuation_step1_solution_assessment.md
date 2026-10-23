@@ -40,7 +40,7 @@ Verify consecutive sends, delayed/out-of-order completion, failures/retry, uncer
 
 ## Request disposition and approval
 
-Desktop immediate continuation and phone sent-reply visibility/one-tap re-entry are incorporated as scope v1. User subsequently explicitly approved Step 1 Option A; [Step 2](./reply_continuation_step2_feature_description.md) is prepared for review. No implementation or commits; Step 2 approval remains pending.
+Desktop immediate continuation and phone sent-reply visibility/one-tap re-entry are incorporated as scope v1. User subsequently explicitly approved Step 1 Option A; [Step 2](./reply_continuation_step2_feature_description.md) is prepared for review. Steps 2–3 were subsequently explicitly approved; implementation evidence is in [Step 4](./reply_continuation_step4_implementation_summary.md).
 
 ## Effort snapshots
 

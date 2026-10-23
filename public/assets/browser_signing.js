@@ -838,7 +838,7 @@
 
     if (scope && typeof scope.querySelectorAll === "function") {
       Array.from(scope.querySelectorAll("[data-pending-thread-id], [data-pending-reply-id]")).forEach(function (node) {
-        if (node.hasAttribute("data-reply-operation")) return;
+        if (node.dataset && node.dataset.replyOperation) return;
         removeNode(node);
         removed += 1;
       });
@@ -3631,7 +3631,7 @@
     refreshComposeIdentityFromStorage();
 
     if (hasBrowserKeypair()) {
-      void syncIdentityHint(preferredIdentityHint());
+      void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
 
     if (root.dataset.composeSubmitted === "1") {
@@ -3707,7 +3707,7 @@
 
     form.addEventListener("keydown", submitComposeFromKeyboard);
 
-    const continuation = isReplyComposeForm(form) && !location.pathname.startsWith('/forte') && window.ForumReplyContinuation
+    const continuation = isReplyComposeForm(form) && window.ForumReplyContinuation && !window.location.pathname.startsWith('/forte')
       ? window.ForumReplyContinuation.bind(form, root, {
         card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
         prepare: async function (captured, attachment, description) {
@@ -3727,14 +3727,23 @@
           if (!prepared.ok) throw new Error(prepared.error);
           return {fields: Object.assign({}, fields, imageFile ? {imageFile} : {}), prepared};
         },
-        finalize: delivery => finalizeOutboxPost(delivery.fields, delivery.prepared),
-        clearImage: () => window.ForumImageUpload?.clear(form),
+        finalize: async function (delivery) {
+          const result = await finalizeOutboxPost(delivery.fields, delivery.prepared);
+          return result.retryableIdentityMismatch
+            ? Object.assign({}, result, {error:"The signing identity changed. Restore that identity and retry."})
+            : result;
+        },
+        clearImage: function () {
+          window.ForumImageUpload?.clear(form);
+          const description = form.querySelector('[name="image_description"]');
+          if (description) description.value = '';
+        },
         confirm: async function (delivery) {
           const response = await fetch('/api/get_post?post_id=' + encodeURIComponent(delivery.prepared.postId), {credentials:'same-origin', cache:'no-store'});
           if (response.status === 404) return false;
           if (!response.ok) throw new Error("Unable to check this reply. Retry when the connection is available.");
           const text = await response.text();
-          if (!text.includes('Post-ID: ' + delivery.prepared.postId + '\n') || !text.includes('Thread-ID: ' + delivery.fields.thread_id + '\n') || text.slice(text.indexOf('\n\n') + 2).trimEnd() !== delivery.fields.body.trimEnd()) {
+          if (!text.includes('Post-ID: ' + delivery.prepared.postId + '\n') || !text.includes('Thread-ID: ' + delivery.fields.thread_id + '\n') || text.slice(text.indexOf('\n\n') + 2).trimEnd() !== delivery.prepared.canonicalRecord.slice(delivery.prepared.canonicalRecord.indexOf('\n\n') + 2).trimEnd()) {
             throw new Error("The saved reply does not match its server record. Keep this page open and contact the operator.");
           }
           return true;

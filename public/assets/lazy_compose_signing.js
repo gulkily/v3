@@ -78,7 +78,10 @@
         return Promise.reject(new Error("Browser signing asset URLs are missing from the page asset configuration."));
       }
 
-      loadPromise = appendScript(loaderPath)
+      const loader = appendScript(loaderPath);
+      loadPromise = (assetPaths.replyContinuation
+        ? loader.then(function () { return appendScript(assetPaths.replyContinuation); })
+        : loader)
         .then(function () {
           return appendScript(signingPath);
         })
@@ -93,7 +96,7 @@
   }
 
   function handleIntent() {
-    void loadSigningAssets();
+    void loadSigningAssets().catch(function () {});
   }
 
   composeRoots.forEach(function (composeRoot) {

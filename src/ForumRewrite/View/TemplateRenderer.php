@@ -219,6 +219,7 @@ final class TemplateRenderer
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
                 'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
                 'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
+                'replyContinuation' => $this->assetPath('/assets/reply_continuation.js'),
             ],
             'browserRuntime' => $browserRuntime,
             'pageStylesheetPaths' => $pageStylesheetPaths,
@@ -465,6 +466,7 @@ final class TemplateRenderer
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
                 'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
                 'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
+                'replyContinuation' => $this->assetPath('/assets/reply_continuation.js'),
             ],
         ]);
     }

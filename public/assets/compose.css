@@ -310,3 +310,7 @@
     margin: 0;
   }
 }
+
+.reply-continuation-root {
+  overflow-anchor: none;
+}

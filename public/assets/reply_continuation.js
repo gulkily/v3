@@ -1,13 +1,16 @@
 (function () {
   'use strict';
   const prefix = 'forum-reply-continuation:';
+  let lastCreatedAt = 0;
   function save(item) {
     try { localStorage.setItem(prefix + item.id, JSON.stringify(item, (key, value) => key === 'imageFile' ? undefined : value)); }
     catch { throw new Error('Reply recovery storage is unavailable or full. Keep this page open, free browser storage and retry.'); }
   }
   function load(id) { return JSON.parse(localStorage.getItem(prefix + id) || 'null'); }
   const unsavedImages = new Map();
-  function attachmentStore(id, file) {
+  async function attachmentStore(id, file, remove = false) {
+    // ArrayBuffer storage also works in engines that cannot clone File into IDB.
+    const retained = file ? {bytes:await file.arrayBuffer(), name:file.name, type:file.type} : null;
     return new Promise((resolve, reject) => {
       const fail = () => reject(new Error('Attachment recovery storage is unavailable or full. Keep this page open, free browser storage and retry.'));
       let request;
@@ -16,9 +19,9 @@
       request.onerror = fail;
       request.onsuccess = () => {
         const db = request.result;
-        const tx = db.transaction('attachments', file ? 'readwrite' : 'readonly');
-        const operation = file ? tx.objectStore('attachments').put(file, id) : tx.objectStore('attachments').get(id);
-        tx.oncomplete = () => { db.close(); resolve(operation.result); };
+        const tx = db.transaction('attachments', file || remove ? 'readwrite' : 'readonly');
+        const operation = remove ? tx.objectStore('attachments').delete(id) : file ? tx.objectStore('attachments').put(retained, id) : tx.objectStore('attachments').get(id);
+        tx.oncomplete = () => { db.close(); resolve(file ? operation.result : operation.result ? new File([operation.result.bytes], operation.result.name, {type:operation.result.type}) : null); };
         tx.onerror = tx.onabort = () => { db.close(); fail(); };
       };
     });
@@ -27,7 +30,8 @@
     if (unsavedImages.size) { event.preventDefault(); event.returnValue = ''; }
   });
   function bind(form, root, api) {
-    if (!form.hasAttribute('data-phone-reply')) return null;
+    if (!form.hasAttribute('data-phone-reply') || !navigator.locks || !window.visualViewport) return null;
+    root.classList.add('reply-continuation-root');
     const body = form.querySelector('[name="body"]');
     const threadId = form.querySelector('[name="thread_id"]').value;
     const parentId = form.querySelector('[name="parent_id"]').value;
@@ -37,9 +41,10 @@
     stack.setAttribute('aria-label', 'Your replies');
     stack.hidden = true;
     const panel = root.querySelector('[data-reply-panel]');
-    if (root.querySelector('[data-inline-reply-compose]')) root.before(stack);
-    else panel.before(stack);
-    function matches(item) { return item?.fields?.thread_id === threadId && item.fields.parent_id === parentId; }
+    function matches(item) {
+      return typeof item?.id === 'string' && typeof item?.fields?.body === 'string' &&
+        item.fields.thread_id === threadId && item.fields.parent_id === parentId;
+    }
     function render(item) {
       if (views.has(item.id)) { views.get(item.id).update(item); return views.get(item.id); }
       if (item.result && document.getElementById('post-' + item.result.postId)) return null;
@@ -50,49 +55,64 @@
       const retry = document.createElement('button');
       retry.type = 'button'; retry.textContent = 'Retry';
       card.append(retry);
+      if (!stack.isConnected) {
+        if (root.querySelector('[data-inline-reply-compose]')) root.before(stack);
+        else panel.before(stack);
+      }
       stack.hidden = false;
       stack.append(card);
       let running = false;
       let preview;
       async function showImage() {
-        const file = unsavedImages.get(item.id) || await attachmentStore(item.id);
-        if (!file || preview) return;
+        const file = item.imageUrl ? null : unsavedImages.get(item.id) || await attachmentStore(item.id);
+        if ((!file && !item.imageUrl) || preview) return;
         preview = document.createElement('img');
         preview.alt = item.description || 'Reply attachment';
-        preview.src = URL.createObjectURL(file);
+        preview.src = item.imageUrl || URL.createObjectURL(file);
         preview.className = 'reply-operation-image';
         card.querySelector('.body').append(preview);
       }
       if (item.hasImage) void showImage().catch(() => {});
       function update(next) {
+        const follow = stack.scrollHeight - stack.clientHeight - stack.scrollTop < 48;
         item = next;
         card.dataset.replyState = item.state;
+        card.setAttribute('aria-busy', String(running));
         retry.hidden = running || item.state === 'accepted';
         if (item.state === 'accepted') {
+          if (preview && item.imageUrl && preview.getAttribute('src') !== item.imageUrl) {
+            URL.revokeObjectURL(preview.src); preview.src = item.imageUrl;
+          }
           status.textContent = '';
           const link = document.createElement('a');
           link.href = '/posts/' + encodeURIComponent(item.result.postId);
           link.textContent = 'Open reply'; status.append(link);
           const canonical = document.getElementById('post-' + item.result.postId);
-          if (canonical && canonical !== card) { card.remove(); }
+          if (canonical && canonical !== card) {
+            if (preview) URL.revokeObjectURL(preview.src);
+            card.remove();
+            if (!stack.children.length) stack.hidden = true;
+          }
           card.removeAttribute('data-pending-reply-id');
           card.classList.remove('pending-reply-card');
         } else {
-          status.textContent = item.error || (running ? 'Posting…' : 'Not confirmed. Check and retry.');
+          status.textContent = running ? 'Posting…' : item.error || 'Not confirmed. Check and retry.';
         }
+        if (follow) stack.scrollTop = stack.scrollHeight;
       }
       async function transmit() {
         // A second tab must reload the winning operation while holding the same lock.
         item = load(item.id) || item;
         if (item.state === 'accepted') { update(item); return; }
+        const confirmed = item.delivery && await api.confirm(item.delivery);
         let attachment;
-        if (item.hasImage) {
+        if (item.hasImage && !confirmed) {
           attachment = unsavedImages.get(item.id) || await attachmentStore(item.id);
           if (!attachment) throw new Error('Attachment recovery is unavailable. Keep the original page open and retry there.');
           if (unsavedImages.has(item.id)) { await attachmentStore(item.id, attachment); unsavedImages.delete(item.id); }
           if (item.delivery) item.delivery.fields.imageFile = attachment;
         }
-        if (item.delivery && await api.confirm(item.delivery)) {
+        if (confirmed) {
           item.result = {postId:item.delivery.prepared.postId};
         } else {
           if (!item.delivery) {
@@ -116,8 +136,11 @@
           }
           item.result = result;
         }
+        const reference = item.delivery?.fields.body.match(/(?:^|\n)Image-v1: ([a-f0-9]{64}) (png|jpg) /);
+        if (reference) item.imageUrl = '/images/' + reference[1] + '.' + reference[2];
         item.state = 'accepted'; item.error = ''; save(item);
         update(item);
+        if (item.hasImage) void attachmentStore(item.id, undefined, true).catch(() => {});
       }
       async function deliver() {
         if (running) return;
@@ -134,13 +157,18 @@
         } catch (error) { item.error = error.message; item.state = 'failed'; }
         finally { running = false; update(item); }
       }
+      // Retrying an older item must not blur/collapse the active composer
+      // between pointer down and click, or move a newer draft out of view.
+      retry.addEventListener('pointerdown', event => event.preventDefault());
       retry.addEventListener('click', () => void deliver());
       const view = {card, update, deliver}; views.set(item.id, view); update(item);
       return view;
     }
     // Restoring never silently submits. The user can check/retry each retained item.
     try {
-      Object.keys(localStorage).filter(key => key.startsWith(prefix)).map(key => JSON.parse(localStorage.getItem(key)))
+      Object.keys(localStorage).filter(key => key.startsWith(prefix)).map(key => {
+        try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+      })
         .filter(matches).sort((a,b) => a.createdAt - b.createdAt).forEach(render);
     } catch { /* The original form remains usable; Send reports storage failure. */ }
     window.addEventListener('storage', event => {
@@ -149,7 +177,8 @@
     });
     return {
       send(fields, attachment, description) {
-        const item = {id:crypto.randomUUID(), fields, hasImage:Boolean(attachment), description, state:'pending', createdAt:Date.now()};
+        lastCreatedAt = Math.max(Date.now(), lastCreatedAt + 1);
+        const item = {id:crypto.randomUUID(), fields, hasImage:Boolean(attachment), description, state:'pending', createdAt:lastCreatedAt};
         save(item);
         if (attachment) unsavedImages.set(item.id, attachment);
         const editorTop = body.getBoundingClientRect().top;
@@ -167,9 +196,14 @@
             stack.scrollIntoView({block:'end'});
           });
         } else {
-          body.focus({preventScroll:true});
+          if (document.activeElement !== body) body.focus({preventScroll:true});
           // Keep the editor at its writing position as the local stack appears.
-          window.scrollBy(0, body.getBoundingClientRect().top - editorTop);
+          const preservePosition = () => {
+            if (document.activeElement === body && !body.value) window.scrollBy(0, body.getBoundingClientRect().top - editorTop);
+          };
+          preservePosition();
+          // Browsers may reveal the cleared caret during their next rendering step.
+          requestAnimationFrame(preservePosition);
         }
         void view.deliver();
       }

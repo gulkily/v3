@@ -91,7 +91,7 @@ try {
  assert.deepEqual(await page.locator('[data-reply-operation] .body').allTextContents(),['First immediate reply','Failed captured reply','Identical intentional reply','Identical intentional reply']);
  // A lost accepted response must reconcile after reload without another post.
  await page.route('**/api/create_prepared_post',async route=>{await route.fetch();await route.abort();},{times:1});
- await body.fill('Lost-response reply');await form.locator('.compose-form-actions > button').click();
+ await body.fill('  Lost-response reply \n');await form.locator('.compose-form-actions > button').click();
  await page.locator('[data-reply-state="failed"]').waitFor();
  await body.fill('Draft through reload');await page.reload();
  const restored=page.locator('[data-reply-state="failed"]');await restored.waitFor();
@@ -111,6 +111,22 @@ try {
  await page.locator('[data-reply-state="accepted"]').waitFor();await second.close();
  await page.reload();assert.equal(await page.locator('.post-card').filter({hasText:'Two-tab recovered reply'}).count(),1);
  await body.fill('Next draft survives retry');
+ // A definitive expired token can be renewed only after checking absence.
+ await page.unroute('**/api/create_prepared_post');
+ await page.route('**/api/create_prepared_post',route=>route.abort(),{times:1});
+ await body.fill('Expired preparation recovery');await form.locator('.compose-form-actions > button').click();
+ await page.locator('[data-reply-state="failed"]').waitFor();
+ await page.unroute('**/api/create_prepared_post');
+ const expired=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('forum-reply-continuation:')).map(k=>JSON.parse(localStorage.getItem(k))).find(i=>i.fields.body==='Expired preparation recovery'));
+ const tokenPath=join(root,'prepared-posts',expired.delivery.prepared.prepareToken+'.json');
+ const token=JSON.parse(readFileSync(tokenPath,'utf8'));token.expires_at='2000-01-01T00:00:00Z';await writeFile(tokenPath,JSON.stringify(token));
+ const expiryFailures=[];page.on('requestfailed',r=>expiryFailures.push({url:r.url(),error:r.failure()?.errorText}));
+ await page.locator('[data-reply-state="failed"] button').click();
+ try { await page.getByText('Reply preparation expired. Retry to prepare it again.',{exact:true}).waitFor(); }
+ catch(error) { console.error('Expiry recovery state:',await page.locator('[data-reply-operation]').allTextContents(),expiryFailures);throw error; }
+ await page.locator('[data-reply-state="failed"] button').click();await page.locator('[data-reply-state="accepted"]').waitFor();
+ await page.reload();assert.equal(await page.locator('.post-card').filter({hasText:'Expired preparation recovery'}).count(),1);
+ await body.fill('Next draft survives retry');
  // Storage errors leave the original editable copy intact.
  await page.evaluate(()=>{window.originalStorageSet=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k.startsWith('forum-reply-continuation:'))throw new Error('Storage full');return originalStorageSet.call(this,k,v);};});
  await form.locator('.compose-form-actions > button').click();
@@ -120,20 +136,24 @@ try {
  await setFlags({images:true});await page.goto(threadUrl);
  await form.locator('.image-compose-fields:not([hidden])').waitFor();
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC','base64');
+ const otherPng=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2;c.height=2;const ctx=c.getContext('2d');ctx.fillStyle='red';ctx.fillRect(0,0,2,2);return c.toDataURL('image/png').split(',')[1];}),'base64');
  let releaseImages;const imageGate=new Promise(resolve=>releaseImages=resolve);
  await page.unroute('**/api/create_prepared_post');
  await page.route('**/api/create_prepared_post',async route=>{await imageGate;await route.continue();});
  for(let i=0;i<2;i++) {
-  await form.locator('[name="image"]').setInputFiles({name:'test.png',mimeType:'image/png',buffer:png});
+  await form.locator('[name="image"]').setInputFiles({name:'test.png',mimeType:'image/png',buffer:i?otherPng:png});
   await form.locator('.image-upload-preview img').waitFor();
   await body.fill('Captured image '+i);
   await form.locator('[name="image_description"]').fill('Image description '+i);
   await form.locator('.compose-form-actions > button').click();
   assert.equal(await body.inputValue(),'');
   assert.equal(await form.locator('.image-upload-preview').isVisible(),false);
+  assert.equal(await form.locator('[name="image_description"]').inputValue(),'');
  }
  await body.fill('Newer image draft');
- releaseImages();await page.waitForFunction(()=>document.querySelectorAll('[data-reply-state="accepted"]').length===2);
+ releaseImages();
+ try { await page.waitForFunction(()=>document.querySelectorAll('[data-reply-state="accepted"]').length===2); }
+ catch(error) { console.error(await page.locator('[data-reply-operation]').allTextContents()); throw error; }
  assert.equal(await body.inputValue(),'Newer image draft');
  await page.unroute('**/api/create_prepared_post');
  await page.route('**/api/create_prepared_post',async route=>{await route.fetch();await route.abort();},{times:1});
@@ -147,6 +167,7 @@ try {
  assert.equal(await body.inputValue(),'Image recovery newer draft');
  await page.reload();assert.equal(await page.locator('.post-card').filter({hasText:'Image lost response'}).count(),1);
  assert.equal(await page.locator('.post-card').filter({hasText:'Captured image 0'}).locator('.post-image img').count(),1);
+ assert.notEqual(await page.locator('.post-card').filter({hasText:'Captured image 0'}).locator('.post-image img').getAttribute('src'),await page.locator('.post-card').filter({hasText:'Captured image 1'}).locator('.post-image img').getAttribute('src'));
  // Failed blob persistence retains its memory copy and exposes recovery.
  await page.evaluate(()=>{window.oldIdbOpen=IDBFactory.prototype.open;IDBFactory.prototype.open=function(name,...args){if(name==='forum-reply-attachments-v1')throw new Error('Quota exceeded');return oldIdbOpen.call(this,name,...args);};});
  await form.locator('.image-compose-fields:not([hidden])').waitFor();
@@ -159,6 +180,20 @@ try {
  await page.evaluate(()=>{IDBFactory.prototype.open=oldIdbOpen;});
  await page.locator('[data-reply-state="failed"] button').click();await page.locator('[data-reply-state="accepted"]').waitFor();
  assert.equal(await body.inputValue(),'Draft after image storage failure');
+ // An identity change after preparation cannot sign a captured reply as another author.
+ let preparedReady,releasePrepared;
+ const preparedSeen=new Promise(resolve=>preparedReady=resolve),preparedGate=new Promise(resolve=>releasePrepared=resolve);
+ await page.route('**/api/prepare_reply',async route=>{const response=await route.fetch();preparedReady();await preparedGate;await route.fulfill({response});},{times:1});
+ await body.fill('Identity captured reply');await form.locator('.compose-form-actions > button').click();await preparedSeen;
+ const alternate=await openpgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'alternate-author'}],format:'armored'});
+ const alternateFingerprint=(await openpgp.readKey({armoredKey:alternate.publicKey})).getFingerprint();
+ await page.evaluate(({alternate,alternateFingerprint})=>{localStorage.setItem('forum_pki_public_key',alternate.publicKey);localStorage.setItem('forum_pki_private_key',alternate.privateKey);localStorage.setItem('forum_pki_fingerprint',alternateFingerprint);},{alternate,alternateFingerprint});
+ releasePrepared();await page.locator('[data-reply-state="failed"]').waitFor();
+ assert.match(await page.locator('[data-reply-state="failed"]').textContent(),/identity changed/i);
+ await body.fill('Draft survives identity recovery');
+ await page.evaluate(({keys,fingerprint})=>{localStorage.setItem('forum_pki_public_key',keys.publicKey);localStorage.setItem('forum_pki_private_key',keys.privateKey);localStorage.setItem('forum_pki_fingerprint',fingerprint);},{keys,fingerprint});
+ await page.locator('[data-reply-state="failed"] button').click();await page.waitForFunction(()=>!document.querySelector('[data-reply-state="failed"]'));
+ assert.equal(await body.inputValue(),'Draft survives identity recovery');
  // Dedicated entry retains its parent and allows consecutive sends in place.
  const threadId=new URL(threadUrl).pathname.split('/').pop();
  await page.goto(base+'/compose/reply?thread_id='+threadId+'&parent_id='+threadId);
@@ -179,10 +214,28 @@ try {
  assert.equal(page.url(),dedicatedUrl);
  await dedicatedBody.fill('Long newer draft '+('word '.repeat(300)));
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ if(process.env.REPLY_CONTINUATION_SCREENSHOTS)await mkdir(process.env.REPLY_CONTINUATION_SCREENSHOTS,{recursive:true});
+ const themes=process.env.REPLY_RECOVERY_ONLY ? [] : process.env.REPLY_ALL_THEMES ? ['light','dark','console','lcd','chicago','vapor','forge','sticker','arena','thermal','whitehot','word97','midnight','chouse','qdb','mitrapclub'] : ['light','word97','chicago','midnight'];
+ // Rendered desktop pending/success flow, including loaded long content.
+ for(const entry of ['inline','dedicated'])for(const theme of themes) {
+  await page.goto(entry==='inline'?threadUrl:dedicatedUrl);
+  await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
+  await page.addStyleTag({content:readFileSync(join(project,'public/assets/theme-'+theme+'.css'),'utf8')});
+  const df=page.locator('[data-phone-reply]'),db=df.locator('[name="body"]');
+  await db.fill('Desktop '+entry+' '+theme+' '+('long-value-'.repeat(50)));
+  await db.scrollIntoViewIfNeeded();const before=await db.boundingBox();
+  await df.evaluate(el=>el.requestSubmit(el.querySelector('.compose-form-actions > button')));
+  const sent=page.locator('[data-reply-operation]').last();await sent.locator('a').waitFor();
+  assert.equal(await db.evaluate(el=>document.activeElement===el),true);
+  if(Math.abs((await db.boundingBox()).y-before.y)>=3 && process.env.REPLY_CONTINUATION_SCREENSHOTS)await page.screenshot({path:process.env.REPLY_CONTINUATION_SCREENSHOTS+'/unstable-'+entry+'-'+theme+'.png'});
+  assert.ok(Math.abs((await db.boundingBox()).y-before.y)<3,'stable editor '+entry+' '+theme+' '+JSON.stringify({before,after:await db.boundingBox()}));
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'desktop overflow '+theme);
+  if(process.env.REPLY_CONTINUATION_SCREENSHOTS && ['word97','midnight'].includes(theme))await page.screenshot({path:process.env.REPLY_CONTINUATION_SCREENSHOTS+'/'+entry+'-'+theme+'-desktop.png'});
+ }
  const phoneContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',hasTouch:true,viewport:{width:390,height:844}});
  const phonePage=await phoneContext.newPage();phonePage.on('pageerror',e=>errors.push(e.message));
  if(process.env.REPLY_CONTINUATION_SCREENSHOTS)await mkdir(process.env.REPLY_CONTINUATION_SCREENSHOTS,{recursive:true});
- for(const entry of ['inline','dedicated'])for(const theme of ['light','word97','chicago','midnight']) {
+ for(const entry of ['inline','dedicated'])for(const theme of themes) {
   await phonePage.goto(entry==='inline'?threadUrl:dedicatedUrl);
   await phonePage.evaluate(t=>document.documentElement.dataset.theme=t,theme);
   await phonePage.addStyleTag({content:readFileSync(join(project,'public/assets/theme-'+theme+'.css'),'utf8')});
@@ -210,6 +263,16 @@ try {
   await phonePage.unroute('**/api/prepare_reply');
  }
  await phoneContext.close();
+ // Anonymous and no-script publication retain their native navigation contract.
+ await page.goto(threadUrl);await body.fill('Anonymous compatible reply');
+ await form.evaluate(el=>el.requestSubmit(el.querySelector('[data-action="submit-anonymous-compose"]')));
+ await page.waitForURL(/#post-/);assert.equal(await page.locator('.post-card').filter({hasText:'Anonymous compatible reply'}).count(),1);
+ const fallbackContext=await browser.newContext({javaScriptEnabled:false});
+ const fallback=await fallbackContext.newPage();await fallback.goto(threadUrl);
+ await fallback.locator('[data-phone-reply] [name="body"]').fill('No-script compatible reply');
+ await fallback.locator('[data-phone-reply] .compose-form-actions > button').click();
+ await fallback.waitForURL(/#post-/);assert.equal(await fallback.locator('.post-card').filter({hasText:'No-script compatible reply'}).count(),1);
+ await fallbackContext.close();
  assert.deepEqual(errors,[]);
- console.log('PASS immediate text reply before network, focus, captured failure/retry, newer draft isolation, storage failure');
-} catch(error){console.error(log);throw error;} finally {await browser?.close();server.kill();await once(server,'exit').catch(()=>{});await rm(root,{recursive:true,force:true});}
+ console.log('PASS immediate/concurrent text and images, reverse completion, lost responses, reload/two-tab/expiry/storage recovery, desktop focus/geometry, phone reading/tap, '+themes.length+' themes, anonymous and no-script publication');
+} catch(error){console.error(log.slice(-4000));throw error;} finally {await browser?.close();server.kill();await once(server,'exit').catch(()=>{});await rm(root,{recursive:true,force:true});}
