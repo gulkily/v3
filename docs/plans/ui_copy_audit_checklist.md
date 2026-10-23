@@ -82,7 +82,7 @@ or the review establishes that the existing copy should remain.
   Check root/reply cards, post detail, and affected alternate views, including
   pending, failed, and completed states. Preserve useful attribution and moderation
   consequences. Source: `templates/partials/post_card.php` and shared feedback.
-- [ ] **Feature Flags** — Review descriptions, state badges, save feedback,
+- [x] **Feature Flags** — Review descriptions, state badges, save feedback,
   and operator-access explanations for duplication. Check search/no matches,
   enabled/disabled/overridden flags, and save failure/retry. Keep site-wide effects
   and flag-specific consequences beside their controls. Sources:
@@ -287,3 +287,9 @@ These are observations for later rendered review, not approved removal decisions
 - Removed the generated Post summary and Question classification beside the original content in both shared root/reply templates. Kept provider attribution, moderation summary/recommended action, quality/respondability/reasons, suggested response and Unicode evidence. Canonical analysis and API data are unchanged; this is reader presentation only.
 - Verification: four existing write-API checks passed for idempotent analysis, missing configuration, Unicode warnings/visibility and related content. Updated existing assertions and checked approved post-detail output as well as thread output. Actual HTTP-rendered root/detail/anonymous fixture output passed Chromium keyboard expand/collapse, retained attribution/moderation and four-theme 390px/1280px overflow checks; inspected Midnight phone detail screenshot. The initial detail assertion lacked the approved identity cookie; corrected the test setup before passing. Syntax/diff passed. No browser pending/failure generation lifecycle rerun, physical devices or production verification; those paths were not edited. No dependencies changed.
 - Previous task commit: Offline Reading `e9a611a7c`.
+
+## Feature Flags copy cleanup — October 23, 2026
+
+- Removed routine Saved feedback after successful toggle/reset; the switch/state/override now communicate the result. Empty statuses are hidden; Saving, failed saves and navigation-refresh recovery remain visible. Reduced three repeated Fastmod help links to one concise Fastmod link beside the parent scoring flag. Kept site-wide consequences, effective-state labels, flag descriptions, dependencies and locked/read-only reasons.
+- Verification: existing toolbar browser suite passed search/no matches, filters/counts, enabled/overridden/locked/read-only/no-JS states, signed-save lifecycle with controlled responses, toggle/reset, delayed saves, failure recovery and keyboard/focus preservation. Extended its actual stylesheet/layout coverage to Light/Dark/Console/Word97/Chicago/Midnight at 375px/1150px and asserted hidden successful-save status. Inspected Word97 phone screenshot. Targeted PHP flag/evaluator/private-message checks passed; syntax/diff passed. Physical devices and production unverified; dependencies unchanged.
+- Analysis follow-up: repeated four-theme root/detail/anonymous rendering with every theme stylesheet explicitly loaded; inspected the corrected Midnight phone screenshot. The first pass changed attributes without loading all stylesheets. Analysis task commit: `173b897ee`.
