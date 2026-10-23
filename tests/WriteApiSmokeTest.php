@@ -3760,9 +3760,13 @@ NODE;
                     ['payload' => ['messages' => [['role' => 'user', 'content' => $index === 2 ? 'Unrelated prompt' : 'Exchange private prose']]]],
                     ['body' => 'Exchange response prose'], 'completed', 1, ['message' => 'Exchange error prose']);
             }
-            $rawRows = $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
             $_COOKIE = ['identity_hint' => 'guest'];
-            assertStringContains('Exchange private prose', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]));
+            $withoutRequestId = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]);
+            assertStringContains('Exchange private prose', $withoutRequestId);
+            assertStringNotContains('Request ID:', $withoutRequestId);
+            $pdo->exec("UPDATE llm_exchanges SET provider_request_id = 'req-visible-123' WHERE id = " . (int) $ids[2]);
+            assertStringContains('Request ID: req-visible-123', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[2]));
+            $rawRows = $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
             $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
             $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'], 'record_path' => $prepared['record_path'],
                 'author_identity_id' => $author['identity_id'], 'canonical_record' => $prepared['canonical_record'],

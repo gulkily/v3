@@ -360,6 +360,11 @@ Reviewed candidates; decisions and verification are recorded above.
 - Removed the header’s “Reply to this post” link. The card’s existing Reply action remains beside the content and points to the same thread/parent composer, including retracted posts. No composer or retraction behavior changed.
 - Verification: current production renderer covered signed/unsigned, unavailable history, retracted, bootstrap root and long evidence-header states before/after removal. Chromium verified one remaining Reply, its thread/parent URL, keyboard navigation to the controlled compose destination, provenance links and Light/Word97/Chicago/Midnight 390px/1280px overflow. Inspected Word97 phone signed screenshot. Three existing analysis/post-exchange/retraction API checks passed; updated the existing post-detail copy assertions. Initial browser probes assumed the root fixture shared the reply’s thread ID and checked navigation before completion; corrected both probe assumptions before the passing run. Actual composer submission, physical devices and deployment unverified. Syntax/diff passed; dependencies unchanged.
 
+## LLM Exchange absent request ID — October 23, 2026
+
+- Omitted Request ID when it is missing, null or empty; available identifiers remain beside provider/model. Status, prompt/response, raw JSON, missing-response feedback and error evidence remain unchanged.
+- Verification: eight existing recorder/store/post-exchange/retraction checks passed, including updated actual-route assertions for absent and available IDs and unchanged rows through retraction. Production-rendered completed, provider-error and transport-error fixtures covered present/missing/null/empty IDs, keyboard raw-evidence expansion and four-theme 390px/1280px overflow. Inspected Midnight phone transport-error screenshot (`/tmp/copy-exchange-after-transport-error.png`). Controlled provider records; real provider calls, physical devices and deployment unverified. Syntax/diff passed; dependencies unchanged.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -374,6 +379,6 @@ These observations need rendered review before deciding what to remove. Keep thi
 
 - [x] **Post-detail Reply duplication** — Review the header's “Reply to this post” link against the card's Reply action. Check long evidence headers, root/reply details and retracted posts; retain an easy-to-find reply action. Source: `templates/pages/post.php`, `templates/partials/post_card.php`.
 
-- [ ] **LLM Exchange absent request ID** — Review the routine “Request ID: unavailable” field on detail pages when no provider identifier exists. Check completed, provider-error and transport-error records; retain available trace IDs and error evidence. Source: `templates/pages/llm_exchange.php`.
+- [x] **LLM Exchange absent request ID** — Review the routine “Request ID: unavailable” field on detail pages when no provider identifier exists. Check completed, provider-error and transport-error records; retain available trace IDs and error evidence. Source: `templates/pages/llm_exchange.php`.
 
 - [ ] **Visitor statistics zero-request period** — Review the “No eligible requests” paragraph alongside zero totals and an empty chart/table. Distinguish no traffic from initialization, collection gaps and failures; retain privacy/counting limits. Source: `templates/pages/visitor_statistics.php`.
