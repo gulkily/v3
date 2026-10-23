@@ -77,7 +77,7 @@ or the review establishes that the existing copy should remain.
   unavailable content, queued likes, and reconnect outcomes. Retain snapshot scope,
   freshness limitations, and actionable recovery. Sources:
   `templates/pages/offline_reader.php`, `public/assets/offline_reader.js`.
-- [ ] **Thread/post analysis** — Review expanded analysis for overlapping
+- [x] **Thread/post analysis** — Review expanded analysis for overlapping
   summaries and technical fields that do not help the reader make a decision.
   Check root/reply cards, post detail, and affected alternate views, including
   pending, failed, and completed states. Preserve useful attribution and moderation
@@ -281,3 +281,9 @@ These are observations for later rendered review, not approved removal decisions
 - Removed routine saved-content success strings (already hidden by existing status policy), duplicate missing-tag status/count and duplicate missing-thread paragraph. Missing content retains one reconnect instruction; saved-image scope and archive indicators remain. Explicit queued-Like and reconnect-processing outcomes are now visible rather than hidden with routine load successes, preserving delivery uncertainty and the Outbox recovery path.
 - Verification: 19 existing snapshot presentation/thread/cache-worker checks passed. Chromium loaded the production reader template/script and real SQLite runtime with isolated loaded/empty snapshots; board, tags, existing/missing tag and existing/missing thread states passed. Checked single missing-content recovery, queued Like/Outbox access, reconnect outcome and four-theme 390px/1280px overflow. Inspected Midnight queued-Like screenshot. An initial browser probe lacked UTF-8 metadata; corrected the temporary fixture before the successful run. Real network reconnection/delivery, physical devices and deployment remain unverified. Syntax/diff passed; dependencies unchanged.
 - Previous task commit: Fastmod `0e2663ba3`.
+
+## Thread/post analysis copy — October 23, 2026
+
+- Removed the generated Post summary and Question classification beside the original content in both shared root/reply templates. Kept provider attribution, moderation summary/recommended action, quality/respondability/reasons, suggested response and Unicode evidence. Canonical analysis and API data are unchanged; this is reader presentation only.
+- Verification: four existing write-API checks passed for idempotent analysis, missing configuration, Unicode warnings/visibility and related content. Updated existing assertions and checked approved post-detail output as well as thread output. Actual HTTP-rendered root/detail/anonymous fixture output passed Chromium keyboard expand/collapse, retained attribution/moderation and four-theme 390px/1280px overflow checks; inspected Midnight phone detail screenshot. The initial detail assertion lacked the approved identity cookie; corrected the test setup before passing. Syntax/diff passed. No browser pending/failure generation lifecycle rerun, physical devices or production verification; those paths were not edited. No dependencies changed.
+- Previous task commit: Offline Reading `e9a611a7c`.

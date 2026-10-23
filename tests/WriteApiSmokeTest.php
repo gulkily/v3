@@ -871,10 +871,16 @@ final class WriteApiSmokeTest
             assertStringNotContains('Post analysis', $anonymousThreadPage);
             assertStringContains('Post analysis', $approvedThreadPage);
             assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
-            assertStringContains('Post summary:', $approvedThreadPage);
+            assertStringNotContains('Post summary:', $approvedThreadPage);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            $_COOKIE = [];
+            assertStringNotContains('Post summary:', $approvedPostPage);
+            assertStringNotContains('<strong>Question:</strong>', $approvedPostPage);
+            assertStringContains('Moderation summary:', $approvedPostPage);
             assertStringContains('Moderation summary:', $approvedThreadPage);
             assertStringContains('Respondability:', $approvedThreadPage);
-            assertStringContains('Question:', $approvedThreadPage);
+            assertStringNotContains('<strong>Question:</strong>', $approvedThreadPage);
             assertStringContains('Response value:', $approvedThreadPage);
             assertStringContains('Unicode risk:', $approvedThreadPage);
             assertStringContains('Unicode scripts:', $approvedThreadPage);
