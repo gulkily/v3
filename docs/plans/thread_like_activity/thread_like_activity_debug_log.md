@@ -60,3 +60,31 @@ No supported findings.
 
 - Four one-hour stage targets are planning bounds, not measured work or an independent numeric estimate; discoveries require revision before dependent implementation.
 - Frozen R1 sources remain missing, so the numeric total remains unavailable rather than assigning a replacement reference or reconstructing past estimates.
+
+## 2026-10-23 UTC — Step 4 completed handoff
+
+### Necessary/useful instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_before.md` and `step4_implementation_do.md`, planning organization/commit gate and stage commit cadence: planning `ab24d158` contains only Steps 1–3, existing debug history and index organization; the summary begins in Stage 1. Stages `540777f2`, `375fed9e`, `3ef2401c`, `a7b79a45` each include their summary update. Final review confirmed the minimum planning-plus-stage count and no unrelated drafts in commits. Retain these reviewable boundaries.
+- `step4_implementation_do.md`, Completion Contract/known-environment acceptance: an isolated copy of the exact local repository proved baseline one-event versus corrected two-event recovery, unchanged scoring and original-record hash. Signed-button browser tests separately verified actual normal entry, source bytes/signature, classic/Forte Activity and RSS rather than relying only on SQL. Retain the distinction between fixture checks and user-condition evidence.
+- `step4_implementation_after.md`, verification/omission reporting: focused PHP checks (29 tests plus the extended missing-history regression), real-browser phone/desktop/theme/empty/retry coverage, syntax, links and commit gates are recorded separately from unverified live deployment, physical devices and full-suite verification. PHP GD remains absent; preceding-cycle baseline image failures were not misreported as a current full-suite run. Retain explicit evidence boundaries.
+- `docs/railspike/RAILSPIKE.md`, Experimental Effort Estimation/checkpoints: entry reaffirmed unavailable numeric projection; closeout separately records retrospective scope and pending maintainer fit. R1/P2, exposed rater and missing earlier checkpoints remain unchanged. Only this cycle's ledger section was staged; unrelated unpin planning stays in the working copy. Retain stable identity and scoped ledger rules.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- New navigation/icon and UI copy-cleanup requirements: no controls, navigation destinations or product copy changed. Shared Activity rendering was still verified because row derivation changed.
+- Production deployment, physical-device acceptance and new authorization roles are outside the approved local implementation; no original canonical records or live read model were changed as a test fixture.
+- Independent/sub-agent study ratings: no delegation requested or performed; a single exposed rater is recorded.
+
+### Uncertain assessments
+
+- Frozen R1 calibration sources remain unavailable; numeric projected/retrospective scores cannot be recovered from stage count, elapsed time or patch size. Maintainer fit and acceptance remain pending.
+- Rapid repeated navigation of one browser page intermittently aborted theme matrix navigation. Fresh pages per matrix case, actual viewport/theme assertions and full page loads resolved the harness instability; final complete signed-browser and shared-reader runs passed. This was not counted as an application regression or evidence of deployment behavior.
+
+### Final review and handoff state
+
+Planning and four summary-bearing stage commits verified, with documentation-only clarification `6bf1b5c5` accurately distinguishing Stage 1 normal writes from Stage 4 signed-browser coverage. Feature link/path checks and whitespace checks passed. Debug mode restored as enabled from the summary; this separate commit contains only the completed-step report. Original unrelated unpin ledger draft, repository-coverage backlog, `.test_self_approval` and concurrent `todo.txt` change are preserved outside the cycle's commits. Branch is `feat/thread-like-activity`; merge/deployment not performed. Prior branch-push preference is carried forward to origin publication of this reviewable branch.
