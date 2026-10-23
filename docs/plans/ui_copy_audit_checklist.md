@@ -301,12 +301,23 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Final core-route and Bookmarklets/compose-prefill smoke checks passed (2/2). Feature Flags targeted PHP checks passed (25/25). No new or updated dependencies, navigation destinations, icon mappings, generated assets or `todo.txt` changes.
 - Newly observed candidates remain unchecked under Next phase. These local changes have not been deployed or verified on the live instance; existing production acceptance and source-comment follow-ups remain open. Temporary browser scripts/screenshots are under `/tmp/`; no full-suite or physical-device acceptance is claimed.
 
-## Next phase — new candidates
+## Outbox aggregate summary — October 23, 2026
+
+- Removed the loaded total/attention sentence repeated above state-labelled rows. Nonempty Outbox status is hidden; individual action states, local-draft scope, delivery uncertainty and recovery remain. Empty-state and storage/action errors still use the visible status.
+- Verification: six existing presentation/state/storage checks passed. Chromium production-script fixture passed nine expanded states, hidden loaded summary, empty state, keyboard disclosure, queue transition, failed-send feedback and four-theme 390px/1280px overflow. Screenshot evidence: `/tmp/copy-outbox-*.png`. Local controlled fixtures; server delivery, physical devices and deployment unverified. JavaScript syntax/diff passed; dependencies unchanged.
+
+## Current phase — October 23, 2026
 
 These are observations for later rendered review, not approved removal decisions.
 
-- [ ] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
+- [x] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
 - [ ] **Post analysis no-risk fields** — Review routine “Recommended action: none,” “Unicode risk: none” and script inventories in expanded analysis. Check benign and risky posts; retain actual warnings, moderation consequences and useful evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
 - [ ] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
 - [ ] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
 - [ ] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
+
+## Next phase — new candidates
+
+These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
+
+- [ ] **Outbox row labels** — Review action/state prefixes and generic “Local action” fallbacks against meaningful saved titles. Check long titles, reactions, untitled drafts and unknown states; preserve delivery-state distinctions. Source: `public/assets/outbox.js`.

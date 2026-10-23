@@ -60,8 +60,7 @@
         setStatus("No local drafts or queued actions on this device.", "empty");
         return;
       }
-      var pending = window.forumOutbox.pendingCount(items);
-      setStatus(items.length + " local item" + (items.length === 1 ? "" : "s") + "; " + pending + " still need attention.", "ready");
+      setStatus("", "ready");
       items.forEach(function (item) {
         var summary = window.forumOutbox.safeSummary(item);
         var card = document.createElement("details");
