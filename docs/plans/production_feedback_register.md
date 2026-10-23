@@ -98,3 +98,42 @@ Coordinate F01/B01/B02/B04 with existing reply work before scoping. F08/F09/F10 
 ### F06 evidence reconciliation
 
 Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection as future work. The later source summary links the [local implementation record](lcd_color_choices/lcd_color_choices_step4_implementation_summary.md), which reports browser/persistence/contrast checks. Local implementation is recorded here; deployment and production acceptance remain pending. This is document reconciliation, not a new test.
+
+## PF-20261021-B01 — Composer jumping
+
+- **Alias:** `2026-10-21/B01` (Bug 01); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Investigate the multiple causes of the home-page post form intermittently jumping up and down; use a rubber-duck root-cause review. **Reports:** [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145). **Inherited estimate:** 0.75 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Reproduce each jump and verify corrected geometry through loading, focus, drafts, and recovery. **Next action:** Reproduce each jump and distinguish focus, loading and expansion causes before scoping.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Several causes are reported; existing focus and expansion paths need a reproducible root-cause review. [Source](../../public/assets/inline_reply_form.js).
+
+## PF-20261021-B02 — Textarea edge alignment
+
+- **Alias:** `2026-10-21/B02` (Bug 02); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Keep the textarea’s top, left, and right edges fixed when the composer expands. **Reports:** [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145). **Inherited estimate:** 0.25 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Top/left/right edges stay fixed during expansion across phone/desktop themes; other content does not overflow. **Next action:** Measure composer edges in compact/expanded states before choosing a bounded fix.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Compact and expanded states use different CSS geometry; start with measured board-composer bounds. [Source](../../public/assets/compose.css).
+
+## PF-20261021-B03 — Saved draft starts collapsed
+
+- **Alias:** `2026-10-21/B03` (Bug 03); **workflow state:** blocked; **delivery evidence:** locally verified; deployment/production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Keep the composer collapsed on page load, even when the textarea contains saved text. **Reports:** [reply-20261021180138-eddd96a4](https://zenmemes.com/posts/reply-20261021180138-eddd96a4). **Inherited estimate:** 0.15 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Restored draft stays compact until focus, preserving text, selection, warnings, and retry. **Next action:** Verify deployment and saved-draft behavior in production; preserve home-page-only evidence.
+- **Recorded evidence/context:** Home-page fix implemented and locally verified — [checks and limits](ui_copy_audit_checklist.md#saved-home-page-draft-stays-collapsed--october-21-2026); deployment pending. **Triage context:** Completed bounded state change; draft text no longer implies initial engagement. [Source](../../public/assets/inline_reply_form.js).
+
+## PF-20261021-B04 — Slow reply feedback
+
+- **Alias:** `2026-10-21/B04` (Bug 04); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Investigate and reduce the many-second delay before a posted reply produces a visible response on the live site. **Reports:** [reply-20261021175854-431cbb06](https://zenmemes.com/posts/reply-20261021175854-431cbb06). **Inherited estimate:** 1.5 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Measure the delay, improve the identified stage, and verify prompt feedback plus one accepted reply and retry. **Next action:** Measure the live delay by stage and reconcile historical latency reports before choosing a slice.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Reply preparation, signing, finalization, and navigation are separate stages; the live bottleneck is unknown. [Source](../../public/assets/browser_signing.js).
+
+## PF-20261021-B05 — QDB temporarily busy
+
+- **Alias:** `2026-10-21/B05` (Bug 05); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Investigate and fix QDB returning “temporarily busy.” **Reports:** [reply-20261021180434-90201f38](https://zenmemes.com/posts/reply-20261021180434-90201f38). **Inherited estimate:** 0.75 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Identify the failing route and cause; verify ordinary QDB use and controlled recovery without hiding errors. **Next action:** Confirm the failing QDB route and current availability; collect evidence for the 503 cause.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** FrontController has several 503 paths; the reported production cause has not been reproduced. [Source](../../src/ForumRewrite/Host/FrontController.php).
+
+## Related historical reports awaiting reconciliation
+
+B04 and F01 overlap earlier slow-reply/focus reports, including October 18 Feature 09/Bug 04. These are relationships, not confirmed duplicates or closures. October 18 Feature 33 concerns different browser-identity wording from F02. Same-day composer reports outside the October 21 snapshot are not silently added; review them as new intake. Older inventories and excluded external Codex feedback remain outside this register's 16-entry coverage.

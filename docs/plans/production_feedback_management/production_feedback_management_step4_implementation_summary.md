@@ -22,3 +22,9 @@ Branch: `docs/production-feedback-management`. Planning commit: `0c93edaa9`. App
 - Changes: F04–F11 records and proposed next-work list; shared-source query requests remain separate. F06 explicitly reconciles historical proposed work with later local evidence, retaining pending deployment.
 - Verification: all 11 feature aliases/sources/estimates checked against source rows; completion checks retained from triage. Local referenced paths and `git diff --check` passed.
 - Notes: Stage 1 commit `367bf407f`; no inherited estimate replaced with a new forecast, no implementation or production claims. Runtime/UI checks inapplicable.
+
+## Stage 3 - Bugs and discovery
+
+- Changes: five bug records, 16 historical-row links in both October 21 documents, clear historical/current-authority labels, planning-index entry and shared triage links. Older inventories remain unreconciled; partial-import/excluded-context limits retained.
+- Verification: all 16 aliases/source/estimate mappings checked; B03 remains home-page local-only, B04 retains historical latency relationship without assumed duplicate closure. Register/source/plan local paths and row-anchor targets checked; `git diff --check` passed.
+- Notes: Stage 2 commit `3235e3ae2`; original October 21 assertions retained as historical evidence. No runtime/UI/deployment verification claimed.

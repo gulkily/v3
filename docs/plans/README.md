@@ -8,6 +8,10 @@ feature even when only some steps were recorded; step numbers retain their origi
 workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
+## Production feedback
+
+[Request register](production_feedback_register.md) — current tracking for migrated requests; [intake and update guide](../reference/production_feedback_management.md). Older inventories are linked from the register and await reconciliation.
+
 ## Feature folders
 
 - [Production feedback management](production_feedback_management/)
