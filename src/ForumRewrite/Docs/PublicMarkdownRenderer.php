@@ -25,17 +25,15 @@ final class PublicMarkdownRenderer
                 . self::escape($match[1]) . '</code></pre></details>';
             $markdown = substr($markdown, strlen($match[0]));
         }
-        $lines = preg_split('/\r\n|\r|\n/', $markdown) ?: [];
+        $lines = self::withoutProseComments(preg_split('/\r\n|\r|\n/', $markdown) ?: []);
         $html = [];
         $paragraph = [];
-        $listType = null;
         $inCodeBlock = false;
         $codeLines = [];
         $codeLanguage = '';
         $headings = [];
         $tableLines = [];
         $tableStandalone = true;
-        $inComment = false;
         $skipThrough = -1;
 
         $flushParagraph = static function () use (&$html, &$paragraph, $sourcePath, $projectRoot): void {
@@ -44,13 +42,6 @@ final class PublicMarkdownRenderer
                 $paragraph = [];
             }
         };
-        $flushList = static function () use (&$html, &$listType): void {
-            if ($listType !== null) {
-                $html[] = '</' . $listType . '>';
-                $listType = null;
-            }
-        };
-
         $flushTable = static function () use (&$html, &$tableLines, &$tableStandalone, $sourcePath, $projectRoot): void {
             if ($tableLines !== []) {
                 $html[] = self::table($tableLines, $tableStandalone, $sourcePath, $projectRoot);
@@ -62,7 +53,6 @@ final class PublicMarkdownRenderer
             if ($lineNumber <= $skipThrough) { continue; }
             if (preg_match('/^\s*```([^`]*)$/', $line, $fence) === 1) {
                 $flushParagraph();
-                $flushList();
                 $flushTable();
                 if ($inCodeBlock) {
                     $html[] = self::codeBlock($codeLines, $codeLanguage);
@@ -80,34 +70,18 @@ final class PublicMarkdownRenderer
                 continue;
             }
 
-            // Hide comments in prose only; fenced examples remain verbatim.
-            if ($inComment) {
-                $end = strpos($line, '-->');
-                if ($end === false) { continue; }
-                $line = substr($line, $end + 3);
-                $inComment = false;
-            }
-            $line = preg_replace('/<!--.*?-->/', '', $line) ?? $line;
-            $start = strpos($line, '<!--');
-            if ($start !== false) {
-                $line = substr($line, 0, $start);
-                $inComment = true;
-            }
-            if (self::listItem($line) !== null && self::listItem($line)['indent'] === 0
-                && preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) !== 1) {
+            if (self::listStart($line) && preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) !== 1) {
                 [$block, $last] = self::listBlock($lines, $lineNumber);
-                $block[0] = $line;
-                $list = self::structuredList($block, $sourcePath, $projectRoot);
-                if ($list !== null) {
-                    $flushParagraph(); $flushList(); $flushTable();
-                    $html[] = $list;
-                    $skipThrough = $last;
-                    continue;
-                }
+                $flushParagraph(); $flushTable();
+                $html[] = self::structuredList($block, $sourcePath, $projectRoot)
+                    ?? '<pre class="docs-list-source" tabindex="0" role="region" aria-label="List source"><code>'
+                        . self::escape(implode("\n", $block)) . '</code></pre>';
+                $skipThrough = $last;
+                continue;
             }
             if (preg_match('/^\s*<img\b[^>]*>\s*$/i', $line) === 1
                 && preg_match('/\balt\s*=\s*(["\'])(.*?)\1/is', $line, $alt) === 1) {
-                $flushParagraph(); $flushList(); $flushTable();
+                $flushParagraph(); $flushTable();
                 $html[] = '<p>' . self::escape(html_entity_decode($alt[2], ENT_QUOTES | ENT_HTML5, 'UTF-8') . ' (image unavailable)') . '</p>';
                 continue;
             }
@@ -118,23 +92,21 @@ final class PublicMarkdownRenderer
                 || (str_contains($line, '|') && preg_match('/^[ \t|:\-]+$/', $nextLine) === 1 && str_contains($nextLine, '|'));
             if ($continuesTable || $startsTable) {
                 if ($tableLines === []) {
-                    $tableStandalone = $listType === null && !$blockStart;
+                    $tableStandalone = !$blockStart;
                 }
                 $tableStandalone = $tableStandalone && preg_match('/^(?: {2}|\t)/', $line) !== 1;
-                $flushParagraph(); $flushList();
+                $flushParagraph();
                 $tableLines[] = $line;
                 continue;
             }
             $flushTable();
             if (trim($line) === '') {
                 $flushParagraph();
-                $flushList();
                 continue;
             }
 
             if (preg_match('/^(#{1,6})\s+(.+?)\s*#*\s*$/', $line, $matches) === 1) {
                 $flushParagraph();
-                $flushList();
                 $level = strlen($matches[1]);
                 // Keep existing document-fragment navigation when restoring the parser.
                 $slug = mb_strtolower(strip_tags(html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
@@ -149,46 +121,20 @@ final class PublicMarkdownRenderer
 
             if (preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) === 1) {
                 $flushParagraph();
-                $flushList();
                 $html[] = '<hr>';
-                continue;
-            }
-
-            if (preg_match('/^\s*([-*+])\s+(.+)$/', $line, $matches) === 1) {
-                $flushParagraph();
-                if ($listType !== 'ul') {
-                    $flushList();
-                    $html[] = '<ul>';
-                    $listType = 'ul';
-                }
-                $html[] = '<li>' . self::inline($matches[2], $sourcePath, $projectRoot) . '</li>';
-                continue;
-            }
-
-            if (preg_match('/^\s*(\d+)[.)]\s+(.+)$/', $line, $matches) === 1) {
-                $flushParagraph();
-                if ($listType !== 'ol') {
-                    $flushList();
-                    $html[] = '<ol start="' . (int) $matches[1] . '">';
-                    $listType = 'ol';
-                }
-                $html[] = '<li>' . self::inline($matches[2], $sourcePath, $projectRoot) . '</li>';
                 continue;
             }
 
             if (preg_match('/^>\s?(.*)$/', $line, $matches) === 1) {
                 $flushParagraph();
-                $flushList();
                 $html[] = '<blockquote><p>' . self::inline($matches[1], $sourcePath, $projectRoot) . '</p></blockquote>';
                 continue;
             }
 
-            $flushList();
             $paragraph[] = $line;
         }
 
         $flushParagraph();
-        $flushList();
         $flushTable();
 
         if ($inCodeBlock) {
@@ -204,24 +150,72 @@ final class PublicMarkdownRenderer
         $ordered = ctype_digit($m[2][0]);
         return ['indent' => strlen($m[1]), 'column' => strlen($m[1] . $m[2] . $m[3]),
             'kind' => $ordered ? substr($m[2], -1) : $m[2], 'tag' => $ordered ? 'ol' : 'ul',
-            'number' => $ordered ? substr($m[2], 0, -1) : null, 'text' => $m[4]];
+            'number' => $ordered ? substr($m[2], 0, -1) : null, 'padding' => strlen($m[3]), 'text' => $m[4]];
     }
 
-    /** Keep only adjacent items and indented continuations; standalone content stays outside. */
+    private static function listStart(string $line): bool
+    {
+        return preg_match('/^[ \t]*(?:[-+*]|[0-9]+[.)])[ \t]+/', $line) === 1;
+    }
+
+    private static function fence(string $line): ?array
+    {
+        if (preg_match('/^(?:[ \t]*(?:[-+*]|[0-9]+[.)])[ \t]+)?[ \t]*(`{3,}|~{3,})(.*)$/', $line, $m) !== 1) { return null; }
+        return ['char' => $m[1][0], 'length' => strlen($m[1]), 'tail' => trim($m[2])];
+    }
+
+    /** Comments in prose stay private; code bytes, including example comments, remain verbatim. */
+    private static function withoutProseComments(array $lines): array
+    {
+        $inComment = false; $fence = null;
+        foreach ($lines as &$line) {
+            $marker = self::fence($line);
+            if ($fence !== null) {
+                if ($marker !== null && $marker['char'] === $fence['char'] && $marker['length'] >= $fence['length'] && $marker['tail'] === '' && preg_match('/^[ \t]*[`~]+[ \t]*$/', $line) === 1) { $fence = null; }
+                continue;
+            }
+            if (!$inComment && $marker !== null) { $fence = $marker; continue; }
+            $clean = ''; $cursor = 0; $length = strlen($line);
+            while ($cursor < $length) {
+                if ($inComment) {
+                    $end = strpos($line, '-->', $cursor);
+                    if ($end === false) { break; }
+                    $cursor = $end + 3; $inComment = false;
+                } else {
+                    $start = strpos($line, '<!--', $cursor);
+                    if ($start === false) { $clean .= substr($line, $cursor); break; }
+                    $clean .= substr($line, $cursor, $start - $cursor);
+                    $cursor = $start + 4; $inComment = true;
+                }
+            }
+            $line = $clean;
+            if (!$inComment && ($marker = self::fence($line)) !== null) { $fence = $marker; }
+        }
+        unset($line);
+        return $lines;
+    }
+
+    /** Fenced examples in unsupported lists belong to the source block even across dedents. */
     private static function listBlock(array $lines, int $start): array
     {
-        $last = $start;
-        for ($i = $start + 1, $count = count($lines); $i < $count; $i++) {
-            $line = $lines[$i];
-            if (trim($line) === '') {
-                $next = $i + 1;
-                while ($next < $count && trim($lines[$next]) === '') { $next++; }
-                if ($next === $count || (self::listItem($lines[$next]) === null && preg_match('/^[ \t]+\S/', $lines[$next]) !== 1)) { break; }
-            } elseif (self::listItem($line) === null && preg_match('/^[ \t]+\S/', $line) !== 1) {
-                break;
+        $last = $start; $fence = null;
+        for ($i = $start, $count = count($lines); $i < $count; $i++) {
+            $line = $lines[$i]; $marker = self::fence($line);
+            if ($fence !== null) {
+                $last = $i;
+                if ($marker !== null && $marker['char'] === $fence['char'] && $marker['length'] >= $fence['length'] && $marker['tail'] === '' && preg_match('/^[ \t]*[`~]+[ \t]*$/', $line) === 1) { $fence = null; }
+                continue;
             }
-            if (preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) === 1) { break; }
+            if ($i > $start) {
+                if (trim($line) === '') {
+                    $next = $i + 1;
+                    while ($next < $count && trim($lines[$next]) === '') { $next++; }
+                    if ($next === $count || (!self::listStart($lines[$next]) && preg_match('/^[ \t]+\S/', $lines[$next]) !== 1)) { break; }
+                } elseif (!self::listStart($line) && preg_match('/^[ \t]+\S/', $line) !== 1) { break; }
+                if (preg_match('/^(?:[-*_]\s*){3,}$/', $line) === 1) { break; }
+            }
             $last = $i;
+            if ($marker !== null) { $fence = $marker; }
         }
         return [array_slice($lines, $start, $last - $start + 1), $last];
     }
@@ -240,7 +234,7 @@ final class PublicMarkdownRenderer
         while ($index < count($lines)) {
             $item = self::listItem($lines[$index]);
             if ($item === null || $item['indent'] !== $indent) { break; }
-            if (strlen($item['number'] ?? '') > 9) { return null; }
+            if (strlen($item['number'] ?? '') > 9 || $item['padding'] > 4) { return null; }
             if ($kind !== $item['kind']) {
                 if ($tag !== null) { $html .= '</' . $tag . '>'; }
                 $tag = $item['tag']; $kind = $item['kind'];
@@ -254,7 +248,8 @@ final class PublicMarkdownRenderer
             $line = $item['text'];
             $index++;
             while (true) {
-                if (str_contains($line, '<!--') || str_contains($line, "\t") || preg_match('/^(?:[|>#]|`{3}|~{3})/', ltrim($line)) === 1) { return null; }
+                if (str_contains($line, "\t") || preg_match('/^(?:[|>#]|`{3}|~{3})/', ltrim($line)) === 1) { return null; }
+                if (str_contains($line, '|') && isset($lines[$index]) && preg_match('/^[ \t|:\-]+$/', $lines[$index]) === 1 && str_contains($lines[$index], '|')) { return null; }
                 if (trim($line) !== '') { $paragraph[] = $line; } else { $flush(); }
                 if ($index >= count($lines)) { break; }
                 $line = $lines[$index];

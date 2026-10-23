@@ -52,6 +52,70 @@ final class MarkdownListStructureTest
         assertStringContains('<li><p>Risks or open questions:</p><ul><li><p>Impact:', $html);
     }
 
+    public function testUnsupportedIndentationFallsBackAsAWholeBlock(): void
+    {
+        $deep = '';
+        for ($depth = 0; $depth < 9; $depth++) { $deep .= str_repeat('  ', $depth) . '- Level ' . $depth . "\n"; }
+        foreach (["- Parent\n - Ambiguous", "- Parent\n\t- Tab", "-\tTab marker", "  - No root", "- Parent\n  - Child\n   - Unknown column", "-     Indented code", "12345678901234567890. Huge", rtrim($deep)] as $source) {
+            $html = PublicMarkdownRenderer::render($source . "\n\nAfter");
+            assertSame(1, substr_count($html, 'aria-label="List source"'), $source);
+            assertTrue(!str_contains($html, '<li'), $source);
+            assertStringContains(htmlspecialchars($source, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $html);
+            assertStringContains('<p>After</p>', $html);
+        }
+    }
+
+    public function testEmbeddedBlocksRetainSourceAndFollowingTables(): void
+    {
+        foreach (["- Parent\n  > Quote", "- Parent\n  | A | B |\n  | --- | --- |\n  | x | y |", "- Parent\n  A | B\n  --- | ---", "- Parent\n      code", "- Parent\n  ```php\nraw unindented example\n  ```", "- ```\nraw example\n```", "- Parent\n  ~~~~\nraw ~~~ example\n  ~~~~"] as $source) {
+            $html = PublicMarkdownRenderer::render($source . "\n\n# After\n\n| C | D |\n| --- | --- |\n| one | two |");
+            assertSame(1, substr_count($html, 'aria-label="List source"'), $source);
+            assertStringContains(htmlspecialchars($source, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $html);
+            assertStringContains('<h1 id="after">After</h1>', $html);
+            assertSame(1, substr_count($html, '<table>'));
+        }
+    }
+
+    public function testCommentSafetyAndFencedExampleBytes(): void
+    {
+        $html = PublicMarkdownRenderer::render("- Visible <!--PRIVATE-->\n  text\n- Other");
+        assertTrue(!str_contains($html, 'PRIVATE'));
+        assertStringContains('text</p>', $html);
+        $html = PublicMarkdownRenderer::render("- Parent <!--PRIVATE\nSECRET-->\n  > Quote <!--HIDDEN-->");
+        foreach (['PRIVATE', 'SECRET', 'HIDDEN'] as $private) { assertTrue(!str_contains($html, $private)); }
+        assertStringContains('aria-label="List source"', $html);
+        $source = "- Parent\n  ```\n<!--example bytes-->\n- ```\n<!--more bytes-->\n  ```";
+        $html = PublicMarkdownRenderer::render($source);
+        assertStringContains(htmlspecialchars($source, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $html);
+        $standalone = "<!--hidden-->```\n<!--example-->\n```";
+        assertStringContains('&lt;!--example--&gt;', PublicMarkdownRenderer::render($standalone));
+    }
+
+    public function testListInlineSafetyAndLiteralTasks(): void
+    {
+        $source = "- [x] [CLI](v3_cli.md#delete-a-canonical-record)\n  - [ ] [bad](javascript:bad) and ![image](https://example.test/i.png)\n\n  <script>bad()</script>\n- [escape](../../../../etc/passwd)";
+        $html = PublicMarkdownRenderer::render($source, 'docs/reference/author_post_retraction.md');
+        assertStringContains('href="/docs/reference/v3_cli.md#delete-a-canonical-record"', $html);
+        assertStringContains('[x]', $html);
+        assertStringContains('[ ] bad (source unavailable)', $html);
+        assertStringContains('image (image unavailable)', $html);
+        assertStringContains('&lt;script&gt;bad()&lt;/script&gt;', $html);
+        assertStringContains('escape (source unavailable)', $html);
+        foreach (['<script', '<img', '<input', 'href="javascript:', 'href="../../'] as $unsafe) { assertTrue(!str_contains($html, $unsafe)); }
+    }
+
+    public function testListLinksCannotEscapeViaSymlinks(): void
+    {
+        $root = sys_get_temp_dir() . '/markdown-list-boundary-' . bin2hex(random_bytes(6));
+        mkdir($root . '/docs', 0777, true);
+        symlink('/etc/passwd', $root . '/docs/escape.md');
+        try {
+            $html = PublicMarkdownRenderer::render("- [bad](escape.md)", 'docs/source.md', $root);
+            assertStringContains('bad (source unavailable)', $html);
+            assertTrue(!str_contains($html, 'href='));
+        } finally { unlink($root . '/docs/escape.md'); rmdir($root . '/docs'); rmdir($root); }
+    }
+
     public function testRetractionGuideKeepsSixProcedureParagraphs(): void
     {
         $html = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'), 'docs/reference/author_post_retraction.md');
