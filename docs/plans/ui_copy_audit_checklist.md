@@ -1,5 +1,12 @@
 # UI copy audit checklist
 
+## Outstanding-item review — October 23, 2026
+
+- Reviewed unchecked entries against the completion records and current source. Seven copy-audit candidates remain open: Outbox, Bookmarklets, Fastmod, Offline reading, Thread/post analysis, Feature Flags, and Users empty state. Their rendered-state review and acceptance checks below remain outstanding; source inspection does not close them.
+- Current source still contains repeated Outbox summaries and technical timestamps, Bookmarklets introduction/group/button descriptions, Fastmod enabled-score and selection explanations, routine offline “Showing saved…” notices, and the Users empty-state explanation. These remain candidates for removal, subject to checking the affected flows and necessary recovery information.
+- Reconciled the stale Browser identity ready triage entry with its completed implementation record below. Local completion does not establish deployment to the live instance. Deployment/live verification and the original feedback-comment reply remain open, as does the separate production legacy-ownership acceptance task.
+- This review changed tracking only; no product changes, rendered checks, production inspection, or deployment were performed.
+
 ## Standard Activity relevant evidence — October 23, 2026
 
 - [x] Replace repeated full-commit file lists with Relevant files for each standard Activity item; keep the complete list behind the existing commit link. Preserve unsigned status, identity/signature/key evidence and recovery controls. Forte copy/behavior stays unchanged.
@@ -28,8 +35,9 @@
 
 ## Browser identity ready notice — October 21, 2026 triage
 
-- [ ] Remove the routine “Browser identity ready” notice and hide its empty status element; retain necessary pending/failure/recovery feedback and explicit Account results. [Triage and acceptance](browser_identity_ready_triage_2026-10-21.md).
-- Verification so far: source inspection only; the message and compose initialization path remain in `public/assets/browser_signing.js`. Implementation, phone/desktop shared-view and theme checks, and relevant regression checks are pending. This item is not resolved.
+- [x] Remove the routine “Browser identity ready” notice and hide its empty status element; retain necessary pending/failure/recovery feedback and explicit Account results. [Triage and acceptance](browser_identity_ready_triage_2026-10-21.md).
+- Implementation and local verification are recorded under [Browser identity ready](#browser-identity-ready--october-21-2026) below; this supersedes the initial source-only triage status.
+- [ ] Deploy and verify the notice removal on the live instance; local checks did not establish production completion.
 - [ ] After verified completion, reply under the original feedback comment as requested by the user; distinguish this fix from the other composer issues in that comment.
 
 ## Import CLI recovery guidance — October 20, 2026
