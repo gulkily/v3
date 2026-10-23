@@ -98,3 +98,31 @@ The requested one-page layout competes with six required fields across five stag
 ### Study checkpoint
 
 `railspike-effort` / `v3/markdown_renderer_extension`, scope v1 clarified, R1/P2, Codex single exposed rater; baseline `ad7e8f5fc5570ee5bdcdf08a03b2dfac524c9d83` retained. **0.65 total reaffirmed**, including completed planning and remaining five-stage parsing/safety, accessibility, copied full/shared publication/failure recovery, corpus/theme review and documentation. Existing table/focus CSS and canonical dynamic/static path reduce delivery uncertainty; boundary and corpus risks remain included. Reverified R1 report/diff hashes and exact historical feedback from `4f6cfe2b436fae8d939b1349fe724a3879ee0a0e`. Prior checkpoints retained, no reconstructed intake or independent rating. Five planned/zero completed implementation stages; no measured labor, retrospective outcome score, implementation/deployment, maintainer acceptance or accepted-count increment. Parent removal acceptance remains incomplete.
+
+## Step 4 complete — 2026-10-23T10:37:06.215722+00:00
+
+Debug mode: enabled, inherited unchanged from Step 3. Approved Step 3 executed on `feature/markdown-renderer-tables`; planning `073fb5f6a`, stages `ec3155f37`, `2eecbf33e`, `2a3e27046`, `483ec05bb`, `2207dddaf`. Five planned/five completed stages; technical local outcome complete, deployment/full suite/physical devices and maintainer acceptance pending.
+
+### Necessary/useful instructions
+
+- Step 4 Before planning gate/organization: isolated the approved plans/log from implementation, metrics and substantive ledger content; preserved earlier removal audit and recovery work. Retain.
+- Step 4 Do stage boundaries: each of five stages has verification, summary and separate commit before dependent work. Boundary and semantic-link tests preceded browser/publication work. Retain.
+- CONTRIBUTING rendered verification: screenshot review caught a real long-code column squeeze missed by overflow-only assertions; corrected width/word breaking and added readable-dimension checks, then reran the matrix. Retain.
+- Completion Contract and study closeout: actual copied full/shared publication, 503 injection, retained active release and restoration/retry prevent a direct-render-only completion claim. Corpus source comparison found deliberate nested fallback and headerless orphan rows; recorded them rather than inflating supported-document totals. Preserve projected 0.65 separately from retrospective 0.70 and pending maintainer acceptance. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings. Full inventory/static verification takes several minutes but provides coverage beyond the fast renderer tests; its duration alone does not justify removing it.
+
+### Inapplicable instructions
+
+No schema/navigation destination changes, new dependencies, production activation, external publication or recovery-storage disposal. No UI copy cleanup; accessible region labels support keyboard users without visible explanatory text. Full-suite and physical-device checks were not claimed.
+
+### Uncertain assessments and corrections
+
+- New test classes require explicit runner registration: an initial command ran only existing tests; registered the class and confirmed each new method executed before the Stage 2 commit.
+- Initial stale source-label assertion failed as expected after supported-table rendering; updated the behavior assertion, preserved code-byte checks and reran all reader tests.
+- One-page planning limits compete with mandatory fields/risk coverage; the approved plan favored explicit verification boundaries. No workflow rule changed.
+- Structural classification is complete for all 66 measured documents, visual review is representative. Other table/inline syntaxes and future source changes may need separate review.
+
+No new enhancement request, scope split, reference revision, independent rating, measured labor or accepted outcome. Final study entries are in the summary and host ledger; parent historical-removal acceptance remains incomplete.
