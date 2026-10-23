@@ -231,20 +231,30 @@ references them.
 
 ### Documentation publication
 
-Imports and shared refreshes keep the complete documentation library. Compatible
-publications report `Reusing documentation (N documents)` and copy validated
-readers, browse/search pages, source downloads and referenced assets without
-rendering them again. Embedded version markers are refreshed for the destination
-so the existing reload notification continues to work.
+Imports, `--resume`, forum builds and shared refreshes perform no documentation
+rendering or bulk inventory, validation or copying. Changed application code,
+missing docs and broken docs templates do not make imports rebuild the library.
+Previously published docs remain available across forum publication and cleanup.
 
-The first publication, older releases without reuse evidence, changed documents
-or rendering inputs, and missing or damaged output automatically render the full
-library. Progress reports `Rendering documentation` separately from forum pages.
-Source, presentation, profile, effective feature-flag and asset changes invalidate
-reuse; an unrelated record commit alone does not. No new flag or manual cache
-repair is needed. If fallback rendering fails, the previous complete release stays
-active; correct the reported cause and use the same-destination `--resume` flow
-above.
+Publish docs separately for initial static setup or after docs, rendering, profile
+or asset changes, using the same destination and profile as the site:
+
+```sh
+./v3 docs publish --repository-root="$records" --static-html-root="$static_root"
+```
+
+Use `--json` for automation and the site's normal `FORUM_SITE_ID` environment.
+The complete library, browse/search pages, downloads and assets activate together
+under the static root's `-docs` sibling. This command does not replace the forum
+release, read model or forum offline snapshot. Docs use `/api/docs-version` for
+update notifications, independently of forum imports.
+
+An existing combined release is retained through a bounded legacy reference until
+a successful docs publication replaces it. Without any publication, PHP readers
+remain available; static-only hosting needs the separate docs command. A failed
+docs publication preserves the prior library. Correct the reported cause and retry
+`docs publish` with the same options/profile. Use import `--resume` only for the
+pending forum import; it does not retry docs publication.
 
 ## Requirements, limits, and deployment check
 
