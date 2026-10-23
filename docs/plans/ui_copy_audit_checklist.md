@@ -68,9 +68,8 @@ or the review establishes that the existing copy should remain.
   new-window groups, copy success/failure, and phone installation. Retain necessary
   setup, compatibility, and popup-blocking guidance. Source:
   `templates/pages/bookmarklets.php` and its browser feedback.
-- [ ] **Fastmod** — Review the enabled-score summary against checked controls,
-  repeated selection instructions, and whether full prompts need to appear by
-  default. Check operator/read-only views, settings failures, and save feedback.
+- [x] **Fastmod** — Review the enabled-score summary against checked controls,
+  repeated selection instructions, while keeping the full prompts visible as explicitly requested. Check operator/read-only views, settings failures, and save feedback.
   Preserve the meaning of scores, the minimum-selection requirement, and access
   recovery. Source: `templates/pages/fastmod.php` and its browser feedback.
 - [ ] **Offline reading** — Review repeated “Showing saved…” success feedback
@@ -270,3 +269,9 @@ These are observations for later rendered review, not approved removal decisions
 - Removed the general introduction and repeated same-window note; removed repeated Compose Thread/window mechanics from seven button descriptions. Kept the installation instruction, content differences between Clip/Rip/Tweet/+URL, x.com scope, iPhone grouping and popup/iPhone warning.
 - Verification: existing seven-variant behavior/copy checks and real Chromium clipboard/keyboard/fallback/failure/retry suite passed. The actual isolated Bookmarklets route loaded through Tools; available themes at 375px/1280px passed copy-button geometry and focus checks. Inspected `/tmp/bookmarklet-copy-mobile.png`. PHP syntax and diff checks passed. Physical-phone installation, qutebrowser and production deployment were not verified. No dependencies changed.
 - Previous task commit: Outbox `a927c3c3f`.
+
+## Fastmod surrounding copy — October 23, 2026
+
+- User refinement: keep full Fastmod prompts on the page. Preserved the complete introduction and every rubric prompt, visible without expansion. Removed the enabled-score list repeated by checked controls and the extra selection explanation; retained minimum selection, score semantics in the prompts, read-only access guidance and recovery. Hid initially empty status; removed the transient Saved notice before reload.
+- Verification: three rubric checks and the existing real signed-save/scoring browser suite passed (including rejected empty selection, selected-rubric persistence, no scoring on save and scoring retry). Controlled production-template/script Chromium checks covered operator/read-only/settings-error views, full prompt equality/visibility, validation/signing recovery and overflow in Light/Word97/Chicago/Midnight at 390px/1280px. Inspected Word97 phone screenshot. Syntax/diff checks passed. Physical devices and production unverified; no dependencies changed.
+- Bookmarklets follow-up: four-theme 375px/1280px page-overflow checks passed. Its task commit is `88b02d864`.
