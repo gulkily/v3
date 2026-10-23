@@ -87,7 +87,7 @@ or the review establishes that the existing copy should remain.
   enabled/disabled/overridden flags, and save failure/retry. Keep site-wide effects
   and flag-specific consequences beside their controls. Sources:
   `templates/pages/feature_flags.php`, `public/assets/feature_flags.js`.
-- [ ] **Users empty state** — Review whether the explanation following “No
+- [x] **Users empty state** — Review whether the explanation following “No
   visible users yet” adds necessary information. Check truly empty and
   approved-without-visible-content cases, including affected alternate views.
   Source: `templates/pages/users.php`.
@@ -263,6 +263,11 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 These are observations for later rendered review, not approved removal decisions.
 
 - [ ] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
+- [ ] **Post analysis no-risk fields** — Review routine “Recommended action: none,” “Unicode risk: none” and script inventories in expanded analysis. Check benign and risky posts; retain actual warnings, moderation consequences and useful evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
+- [ ] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
+- [ ] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
+- [ ] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
+
 
 ## Bookmarklets copy cleanup — October 23, 2026
 
@@ -293,3 +298,15 @@ These are observations for later rendered review, not approved removal decisions
 - Removed routine Saved feedback after successful toggle/reset; the switch/state/override now communicate the result. Empty statuses are hidden; Saving, failed saves and navigation-refresh recovery remain visible. Reduced three repeated Fastmod help links to one concise Fastmod link beside the parent scoring flag. Kept site-wide consequences, effective-state labels, flag descriptions, dependencies and locked/read-only reasons.
 - Verification: existing toolbar browser suite passed search/no matches, filters/counts, enabled/overridden/locked/read-only/no-JS states, signed-save lifecycle with controlled responses, toggle/reset, delayed saves, failure recovery and keyboard/focus preservation. Extended its actual stylesheet/layout coverage to Light/Dark/Console/Word97/Chicago/Midnight at 375px/1150px and asserted hidden successful-save status. Inspected Word97 phone screenshot. Targeted PHP flag/evaluator/private-message checks passed; syntax/diff passed. Physical devices and production unverified; dependencies unchanged.
 - Analysis follow-up: repeated four-theme root/detail/anonymous rendering with every theme stylesheet explicitly loaded; inspected the corrected Midnight phone screenshot. The first pass changed attributes without loading all stylesheets. Analysis task commit: `173b897ee`.
+
+## Users empty-state copy — October 23, 2026
+
+- Removed the explanation beneath “No visible users yet.” Populated directory, agent attribution and profile links are unchanged. Review found the explanation could mislead: existing approved profiles with zero thread/post counts are still returned by the directory query.
+- Verification: eight existing profile-content/theme and directory-invalidation checks passed. Controlled production-template Chromium empty/populated views passed keyboard member-link navigation and Light/Word97/Chicago/Midnight overflow checks at 390px/1280px; inspected Midnight phone empty screenshot. The actual isolated Users route covered a populated approved profile, that profile with zero content counts, and no approved profiles by modifying only the disposable fixture read model. The first actual-route probe assumed bootstrap had no profiles; corrected that assumption and explicitly exercised all three states. Forte has its own template and was not changed. Physical devices/production unverified; syntax/diff passed and dependencies unchanged.
+- Previous task commit: Feature Flags `d587823f4`.
+
+## Audit pass closeout — October 23, 2026
+
+- All seven original Next audit candidates now have individual cleanup/verification records and task commits, each including this checklist. The initial tracking review was committed as `9e0225c47`; earlier task hashes are recorded in subsequent entries. `git log -- docs/plans/ui_copy_audit_checklist.md` identifies each task's own commit.
+- Final core-route and Bookmarklets/compose-prefill smoke checks passed (2/2). Feature Flags targeted PHP checks passed (25/25). No new or updated dependencies, navigation destinations, icon mappings, generated assets or `todo.txt` changes.
+- Newly observed candidates remain unchecked under Next phase. These local changes have not been deployed or verified on the live instance; existing production acceptance and source-comment follow-ups remain open. Temporary browser scripts/screenshots are under `/tmp/`; no full-suite or physical-device acceptance is claimed.
