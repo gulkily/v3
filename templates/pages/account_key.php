@@ -12,6 +12,9 @@ $authenticatedIdentityId = is_array($viewerProfile)
     : '';
 ?>
 <section class="stack" data-account-key-root data-username-changes-enabled="<?= ($usernameChangesEnabled ?? false) ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
+<?php if ((int) ($viewerProfile['is_revoked'] ?? 0) === 1): ?>
+<?= $partial('partials/key_revoked_notice.php') ?>
+<?php endif; ?>
   <article class="card">
     <header class="account-key-header">
       <h1>Account Key</h1>

@@ -756,3 +756,5 @@ pre {
 @media(max-width:600px) { .key-revocation-facts {grid-template-columns:minmax(0,1fr)} .key-revocation-facts dd {margin-bottom:.5rem} [data-revoke-key] {margin:.5rem 0} }
 
 .key-revocation-facts [data-revocation-key] { font-family:monospace; }
+
+.key-revocation-warning code { overflow-wrap:anywhere; }

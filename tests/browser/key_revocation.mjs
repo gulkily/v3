@@ -50,6 +50,14 @@ try {
     page.once('dialog', dialog => dialog.accept());
     await page.locator('[data-signed-approval-form] button').click();
     await page.waitForURL(/approval=success/);
+    const affected = await browser.newContext({ viewport: { width, height: 844 }, serviceWorkers: 'block' });
+    const memberFingerprint = (await pgp.readKey({ armoredKey: member.publicKey })).getFingerprint();
+    await affected.addInitScript(({ member, memberFingerprint, width }) => {
+      for (const [key, value] of Object.entries({ username: 'revoke-' + width, public_key: member.publicKey, private_key: member.privateKey, fingerprint: memberFingerprint, published_fingerprint: memberFingerprint.toUpperCase() })) localStorage.setItem('forum_pki_' + key, value);
+    }, { member, memberFingerprint, width });
+    const affectedPage = await affected.newPage();
+    await affectedPage.goto(base + '/account/key/');
+    await affectedPage.waitForFunction(() => document.querySelector('[data-private-site-auth-state]').dataset.authenticatedIdentityId !== '');
     const account = base + '/tools/user-access/accounts/revoke-' + width;
     let response = await page.goto(account); assert.match(response.headers()['cache-control'], /no-store/);
     const button = page.locator('[data-revoke-key]');
@@ -71,10 +79,24 @@ try {
     await page.waitForLoadState('networkidle');
     await page.waitForFunction(() => document.querySelector('main').innerText.includes('Revoked'));
     assert.equal(await page.locator('[data-revoke-key]').count(), 0);
+    assert.match(await page.locator('.account-key-history').innerText(), /Revoked/);
+    await page.getByText('Revocation evidence', { exact: true }).click();
+    assert.match(await page.locator('.account-key-history').innerText(), /Revocation cutoff:/);
+    const oldSession = await affected.request.get(base + '/api/auth_status'); assert.equal(oldSession.status(), 401); assert.match(await oldSession.text(), /code=key_revoked/);
+    await affectedPage.goto(base + '/account/key/'); await affectedPage.locator('[data-key-revoked-notice]').waitFor();
+    assert.equal(await affectedPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    const securityDenied = await affected.request.get(base + '/activity/?view=security'); assert.equal(securityDenied.status(), 403);
+    const fresh = await browser.newContext();
+    const challenge = (await (await fresh.request.get(base + '/api/auth_challenge')).text()).match(/^challenge=(.+)$/m)[1];
+    const detached = await pgp.sign({ message: await pgp.createMessage({ text: challenge }), signingKeys: await pgp.readPrivateKey({ armoredKey: member.privateKey }), detached: true });
+    const login = await fresh.request.post(base + '/api/authenticate_identity', { form: { identity_id: member.identity_id, challenge, detached_signature: detached } });
+    assert.equal(login.status(), 403); assert.match(await login.text(), /code=key_revoked/);
+    await fresh.close(); await affected.close();
+
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   }
   await page.goto(base + '/tools/user-access/accounts/browser-inviter');
   assert.equal(await page.locator('[data-revoke-key]').count(), 0);
-  console.log('PASS real signed revocation on desktop/phone: exact key/cutoff, last-key warning, cancel, one acceptance, no-store, revoked state, root exclusion, overflow');
+  console.log('PASS real signed revocation on desktop/phone: exact key/cutoff, last-key warning, cancel, one acceptance, no-store, revoked state, root exclusion, retained history, old-session denial, fresh-login denial, affected-device recovery, overflow');
 } catch (error) { console.error(logs.slice(-12000)); throw error; }
 finally { if (browser) await browser.close(); if (server) server.kill(); await rm(root, { recursive: true, force: true }); }

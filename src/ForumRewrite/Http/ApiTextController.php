@@ -135,7 +135,9 @@ final class ApiTextController
         $history = $this->routeServices->approvalHistory()->forProfile($profile);
         $historyText = 'Approval-Classification: ' . $history['classification'] . "\nAccepted-At: " . ($history['accepted_at'] ?? 'unknown')
             . "\nApproval-Evidence: " . ($history['source_path'] ?? 'unknown') . "\nAcceptance-Receipt: " . ($history['receipt_path'] ?? 'unknown')
-            . "\nAccount-Key-History: /user/" . rawurlencode((string) $profile['username_token']) . "#account-keys\n";
+            . "\nKey-Revoked: " . (($history['is_revoked'] ?? false) ? 'yes' : 'no')
+            . "\nRevocation-Cutoff: " . ($history['revocation_cutoff'] ?? 'none') . "\nRevoked-At: " . ($history['revoked_at'] ?? 'none')
+            . "\nRevocation-Evidence: " . ($history['revocation_source_path'] ?? 'none') . "\nAccount-Key-History: /user/" . rawurlencode((string) $profile['username_token']) . "#account-keys\n";
         $this->routeServices->sendText(
             "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nImage-Upload-Allowed: {$imageUpload}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n" . $historyText,
             200,

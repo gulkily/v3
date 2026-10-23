@@ -37,7 +37,7 @@ final class UserAccessController
             }
         }
         return $this->services->renderPageTemplate('user_access.php', [
-            'users' => ProfileRepository::approvedDirectoryUsers($this->services->pdo()),
+            'users' => ProfileRepository::approvedDirectoryUsers($this->services->pdo(), true),
             'canSecurityReview' => $allowed,
             'canResumeHistory' => $canResume,
             'historyItems' => $items,

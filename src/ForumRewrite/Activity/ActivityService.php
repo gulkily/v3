@@ -249,6 +249,7 @@ final class ActivityService
         $stmt->execute();
         $row = $stmt->fetch();
 
+        if ($row !== false && $row['kind'] === 'key_revocation' && !($this->authorizeSecurity !== null && ($this->authorizeSecurity)())) return null;
         return $row === false ? null : $this->enrichActivityItem($row);
     }
 
@@ -289,6 +290,7 @@ final class ActivityService
             'author_username_token' => $post['author_username_token'],
             'author_is_approved' => (int) $post['author_is_approved'],
         ];
+        if (isset($post['security_revocation'])) $item['security_revocation'] = $post['security_revocation'];
         if (array_key_exists('security_review', $post)) $item['security_review'] = $post['security_review'];
         if (isset($post['security_account'])) $item['security_account'] = $post['security_account'];
         $evidence = $includeFullCommit ? $item : array_replace($item, ['source_commit_files' => $this->relevantCommitFiles($item)]);
@@ -300,6 +302,11 @@ final class ActivityService
     public function securityReviewItem(array $item): array
     {
         if (!($this->authorizeSecurity !== null && ($this->authorizeSecurity)())) throw new RuntimeException('Authenticated root-approved operator access required.');
+        if ($item['kind'] === 'key_revocation') {
+            $item['security_revocation'] = \ForumRewrite\Security\KeyRevocations::read($this->repositoryRoot, basename($item['source_path'], '.txt'));
+            $item['security_account'] = $item['security_revocation']['username'];
+            return $item;
+        }
         $receipt = str_starts_with((string) $item['source_path'], 'records/posts/')
             ? \ForumRewrite\Security\ApprovalAcceptance::read($this->repositoryRoot, $item['source_path']) : null;
         $item['security_review'] = $receipt;
@@ -380,7 +387,7 @@ final class ActivityService
         $quotedHiddenTag = '%"' . ThreadRowSupport::HIDDEN_BOOTSTRAP_TAG . '"%';
         [$viewWhere, $viewParameters] = $this->activityViewClause($view, $quotedHiddenTag);
 
-        return [$viewWhere . $this->profileNameVisibilitySql(), $viewParameters];
+        return [$viewWhere . ($view === 'security' ? '' : " AND activity.kind != 'key_revocation'") . $this->profileNameVisibilitySql(), $viewParameters];
     }
 
     /**
@@ -398,7 +405,7 @@ final class ActivityService
     private function activityViewClause(string $view, string $quotedHiddenTag): array
     {
         return match ($view) {
-            'security' => ["AND (activity.kind = 'approval' OR (activity.kind = 'invitation' AND activity.label LIKE 'Invitation redeem:%') OR (activity.kind = 'site_feature_flag' AND activity.label LIKE :policy_flag))", ['policy_flag' => '%FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=%']],
+            'security' => ["AND (activity.kind = 'key_revocation' OR activity.kind = 'approval' OR (activity.kind = 'invitation' AND activity.label LIKE 'Invitation redeem:%') OR (activity.kind = 'site_feature_flag' AND activity.label LIKE :policy_flag))", ['policy_flag' => '%FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=%']],
             'identity' => ['AND activity.board_tags_json LIKE :identity_tag', ['identity_tag' => $quotedHiddenTag]],
             'bootstrap' => [
                 'AND activity.board_tags_json LIKE :identity_tag AND activity.board_tags_json LIKE :internal_tag',
@@ -612,6 +619,7 @@ final class ActivityService
     public function activityItemLink(array $item): array
     {
         $kind = (string) ($item['kind'] ?? '');
+        if ($kind === 'key_revocation') return ['href' => '/source/current/' . $item['source_path'], 'label' => 'Signed revocation record'];
         if ($kind === 'site_feature_flag') {
             $sourcePath = (string) ($item['source_path'] ?? '');
             $prefix = 'records/feature-flag-changes/';

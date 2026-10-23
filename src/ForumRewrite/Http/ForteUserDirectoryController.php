@@ -187,7 +187,7 @@ final class ForteUserDirectoryController
                     SUM(thread_count) AS thread_count,
                     SUM(post_count) AS post_count
              FROM profiles
-             WHERE is_approved = 0
+             WHERE is_approved = 0 AND is_revoked = 0
                AND username_token NOT IN (SELECT username_token FROM profiles WHERE is_approved = 1)
              GROUP BY username_token
              ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'

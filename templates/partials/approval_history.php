@@ -5,7 +5,7 @@ $keyOnly = (bool) ($approvalHistory['profile_scope'] ?? false); ?>
 <article id="account-keys" class="card account-key-history<?= $keyOnly ? ' account-key-history-single' : '' ?>" aria-label="<?= $keyOnly ? 'Key approval' : 'Account key history' ?>">
   <h2><?= $keyOnly ? 'Key approval' : 'Account key history' ?></h2>
 <?php if (!$keyOnly): ?>
-  <p class="meta account-key-history-note"><?= (int) $approvalHistory['total'] ?> approved keys.</p>
+  <p class="meta account-key-history-note"><?= (int) ($approvalHistory['active_count'] ?? $approvalHistory['total']) ?> approved keys.</p>
 <?php elseif ($approvalHistory['rows'] === []): ?>
   <p>This key is not approved.</p>
 <?php endif; ?>
@@ -49,6 +49,15 @@ $classification = match ($grant['classification']) {
 <?php if ($grant['receipt_path'] !== null): ?>
       <p><a href="/source/current/<?= $e($grant['receipt_path']) ?>">Acceptance receipt</a></p>
 <?php endif; ?>
+    </details>
+<?php endif; ?>
+<?php if ($grant['is_revoked'] ?? false): ?>
+    <p><strong>Revoked</strong> · Accepted <?= $e($grant['revoked_at']) ?>.</p>
+    <details>
+      <summary>Revocation evidence</summary>
+      <p class="meta">Revocation cutoff: <?= $e($grant['revocation_cutoff']) ?>.</p>
+      <p class="meta">Revoked by <code><?= $e($grant['revoked_by_identity_id']) ?></code>.</p>
+      <p><a href="/source/current/<?= $e($grant['revocation_source_path']) ?>">Signed revocation record</a></p>
     </details>
 <?php endif; ?>
   </li>

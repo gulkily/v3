@@ -44,7 +44,7 @@ final class ApprovalAudit
         $profiles = [];
         $usernameCounts = [];
         foreach ($pdo->query('SELECT identity_id, profile_slug, username, username_token,
-                is_approved, approved_by_identity_id, approved_by_label, bootstrap_thread_id, bootstrap_post_id FROM profiles
+                is_approved, was_approved, is_revoked, revoked_at, revocation_cutoff, revoked_by_identity_id, revocation_source_path, approved_by_identity_id, approved_by_label, bootstrap_thread_id, bootstrap_post_id FROM profiles
                 ORDER BY username_token, identity_id')->fetchAll(PDO::FETCH_ASSOC) as $profile) {
             $profiles[$profile['identity_id']] = $profile;
             if ((int) $profile['is_approved'] === 1) {
@@ -70,7 +70,7 @@ final class ApprovalAudit
                 $reason = 'Identity is explicitly seeded by root.';
             } elseif ($approverId === null || $approverId === $identityId
                 || isset($seeds[$identityId])
-                || (!isset($seeds[$approverId]) && ($approver === null || (int) $approver['is_approved'] !== 1))) {
+                || (!isset($seeds[$approverId]) && ($approver === null || max((int) $approver['is_approved'], (int) ($approver['was_approved'] ?? 0)) !== 1))) {
                 $category = 'unknown';
                 $reason = 'Missing or inconsistent approval attribution; inspect canonical records.';
             } elseif (isset($seeds[$approverId])) {
@@ -109,9 +109,12 @@ final class ApprovalAudit
             ];
         }
 
+        $revocations = array_values(\ForumRewrite\Security\KeyRevocations::all($repositoryRoot));
         return [
+            'revoked_keys' => count($revocations),
+            'revocations' => $revocations,
             'scope' => 'Currently approved keys and their read-model attributed approver, including invitation-derived grants. Not every historical approval event.',
-            'limitations' => 'Review candidates are not proven violations. First-key status, operator status, and the setting at acceptance time are unknown without an acceptance receipt. Current-state categories remain review hints; recorded acceptance facts are reported separately. Signatures are not reverified. Only current attribution is reported, not all possible approval paths.',
+            'limitations' => 'Review candidates are not proven violations. First-key status, operator status, and the setting at acceptance time are unknown without an acceptance receipt. Current-state categories remain review hints; recorded acceptance facts are reported separately. Approval signatures are not reverified; revocation evidence is validated. Only current attribution is reported, not all possible approval paths.',
             'repository_root' => $repositoryRoot,
             'read_model_metadata' => $metadata,
             'warnings' => $warnings,

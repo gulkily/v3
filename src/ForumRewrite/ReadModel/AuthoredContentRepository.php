@@ -30,7 +30,7 @@ final class AuthoredContentRepository
             $pdo,
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
                     threads.reply_count, threads.last_post_id, threads.score_total, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    profiles.username_token AS author_username_token, MAX(COALESCE(profiles.is_approved, 0), COALESCE(profiles.was_approved, 0)) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -67,7 +67,7 @@ final class AuthoredContentRepository
             $pdo,
             'SELECT posts.post_id, posts.created_at, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
                     posts.author_profile_slug, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved, posts.board_tags_json
+                    MAX(COALESCE(profiles.is_approved, 0), COALESCE(profiles.was_approved, 0)) AS author_is_approved, posts.board_tags_json
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE author_identity_id IN (%s)

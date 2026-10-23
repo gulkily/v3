@@ -17,7 +17,7 @@ final class ApprovalHistory
     /** One key on a profile; the account-wide list belongs on the username page. */
     public function forKey(array $profile): array
     {
-        $rows = (int) $profile['is_approved'] === 1 ? [$this->forProfile($profile)] : [];
+        $rows = (int) $profile['is_approved'] === 1 || (int) ($profile['is_revoked'] ?? 0) === 1 ? [$this->forProfile($profile)] : [];
         return ['username' => $profile['username_token'], 'rows' => $rows, 'total' => count($rows),
             'profile_scope' => true, 'offset' => 0, 'next_offset' => null, 'previous_offset' => null];
     }
@@ -26,17 +26,20 @@ final class ApprovalHistory
     {
         $limit = max(1, min(100, $limit));
         $offset = max(0, $offset);
-        $count = $this->pdo->prepare('SELECT COUNT(*) FROM profiles WHERE username_token = ? AND is_approved = 1');
+        $count = $this->pdo->prepare('SELECT COUNT(*) FROM profiles WHERE username_token = ? AND (is_approved = 1 OR is_revoked = 1)');
         $count->execute([$token]);
         $total = (int) $count->fetchColumn();
-        $query = $this->pdo->prepare('SELECT * FROM profiles WHERE username_token = ? AND is_approved = 1 ORDER BY identity_id LIMIT ? OFFSET ?');
+        $active = $this->pdo->prepare('SELECT COUNT(*) FROM profiles WHERE username_token = ? AND is_approved = 1');
+        $active->execute([$token]);
+        $activeCount = (int) $active->fetchColumn();
+        $query = $this->pdo->prepare('SELECT * FROM profiles WHERE username_token = ? AND (is_approved = 1 OR is_revoked = 1) ORDER BY identity_id LIMIT ? OFFSET ?');
         $query->bindValue(1, $token);
         $query->bindValue(2, $limit, PDO::PARAM_INT);
         $query->bindValue(3, $offset, PDO::PARAM_INT);
         $query->execute();
         $rows = [];
         foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $profile) $rows[] = $this->forProfile($profile);
-        return ['username' => $token, 'rows' => $rows, 'total' => $total, 'offset' => $offset,
+        return ['username' => $token, 'rows' => $rows, 'total' => $total, 'active_count' => $activeCount, 'offset' => $offset,
             'next_offset' => $offset + $limit < $total ? $offset + $limit : null,
             'previous_offset' => $offset > 0 ? max(0, $offset - $limit) : null];
     }
@@ -46,8 +49,11 @@ final class ApprovalHistory
         $row = ['identity_id' => $profile['identity_id'], 'profile_slug' => $profile['profile_slug'],
             'approver_identity_id' => $profile['approved_by_identity_id'], 'approver_label' => $profile['approved_by_label'] ?: 'unknown',
             'classification' => 'unknown', 'accepted_at' => null, 'recorded_at' => null, 'recorded_at_kind' => null, 'existing_key_count' => null,
-            'target_username_at_acceptance' => null, 'actor_is_operator' => null, 'cross_account_allowed' => null, 'source_path' => null, 'receipt_path' => null, 'kind' => 'unknown'];
-        if ((int) $profile['is_approved'] !== 1) return $row;
+            'target_username_at_acceptance' => null, 'actor_is_operator' => null, 'cross_account_allowed' => null, 'source_path' => null, 'receipt_path' => null, 'kind' => 'unknown',
+            'is_revoked' => (int) ($profile['is_revoked'] ?? 0) === 1, 'revoked_at' => $profile['revoked_at'] ?? null,
+            'revocation_cutoff' => $profile['revocation_cutoff'] ?? null, 'revoked_by_identity_id' => $profile['revoked_by_identity_id'] ?? null,
+            'revocation_source_path' => $profile['revocation_source_path'] ?? null];
+        if ((int) $profile['is_approved'] !== 1 && !$row['is_revoked']) return $row;
         if ($profile['approved_by_identity_id'] === null && ApprovalPolicy::isOperator($this->root, $profile['identity_id'])) {
             $row['kind'] = 'root_seed';
             $row['source_path'] = CanonicalPathResolver::approvalSeed(substr($profile['identity_id'], 8));

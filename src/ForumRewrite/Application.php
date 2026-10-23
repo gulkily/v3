@@ -1193,6 +1193,7 @@ final class Application
         $canApprove = $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
+            && (int) ($profile['is_revoked'] ?? 0) !== 1
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
         $approvalReview = null;
         if ($accessManagement && $canApprove) {
@@ -2105,6 +2106,7 @@ final class Application
 
         return $viewerProfile !== null
             && ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1
+            && (int) ($viewerProfile['is_revoked'] ?? 0) !== 1
             && $method === 'GET' && in_array($path, ['/', '/threads', '/threads/'], true)
             && $query === [];
     }
@@ -2666,6 +2668,10 @@ final class Application
 
     private function renderLobbyAccessRequiredPage(): string
     {
+        $viewer = $this->lobbyViewerProfile();
+        if ((int) ($viewer['is_revoked'] ?? 0) === 1) {
+            return $this->renderPageTemplate('key_revoked.php', ['viewerProfile' => $viewer], 'Account key revoked', 'account');
+        }
         return $this->renderPageTemplate(
             'message.php',
             [

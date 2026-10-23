@@ -85,9 +85,23 @@ final class KeyRevocations
         $pdo->exec('UPDATE profiles SET was_approved = is_approved WHERE is_revoked = 0');
         $update = $pdo->prepare('UPDATE profiles SET is_approved = 0, is_revoked = 1, revoked_at = ?, revocation_cutoff = ?,
             revoked_by_identity_id = ?, revocation_source_path = ? WHERE identity_id = ? AND username_token = ?');
-        foreach (self::all($root) as $row) {
+        $rows = self::all($root);
+        foreach ($rows as $row) {
             $update->execute([$row['accepted_at'], $row['revocation_cutoff'], $row['operator_identity_id'], $row['source_path'], $row['identity_id'], $row['username']]);
             if ($update->rowCount() !== 1) throw new RuntimeException('Revoked account claim is missing or changed.');
+            $exists = $pdo->prepare("SELECT id FROM activity WHERE action_key = ?");
+            $exists->execute(['key-revocation:' . $row['record_id']]);
+            if ($exists->fetchColumn() === false) {
+                $operator = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $row['operator_identity_id']);
+                $commit = []; $code = 0;
+                exec('git -C ' . escapeshellarg($root) . ' log -1 --format=%H -- ' . escapeshellarg($row['source_path']) . ' 2>/dev/null', $commit, $code);
+                $insert = $pdo->prepare("INSERT INTO activity (created_at, kind, record_family, action_key, label, board_tags_json, author_identity_id, author_profile_slug, author_username_token, author_label, author_is_approved, source_path, source_commit_sha)
+                    VALUES (?, 'key_revocation', 'key_revocation', ?, ?, '[\"identity\",\"internal\"]', ?, ?, ?, ?, 1, ?, ?)");
+                $insert->execute([$row['accepted_at'], 'key-revocation:' . $row['record_id'], 'Account key revoked for ' . $row['username'],
+                    $row['operator_identity_id'], $operator['profile_slug'] ?? null, $operator['username_token'] ?? null,
+                    $operator['username'] ?? $row['operator_identity_id'], $row['source_path'], $code === 0 ? ($commit[0] ?? null) : null]);
+            }
+
         }
     }
 }

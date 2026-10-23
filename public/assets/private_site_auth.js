@@ -214,6 +214,10 @@
     });
 
     var authenticationResult = await authenticationResponse.text();
+    if (/^code=key_revoked$/m.test(authenticationResult)) {
+      document.querySelectorAll('[data-private-site-auth-state]').forEach(function (node) { node.dataset.authenticatedIdentityId = ""; });
+    }
+
     if (!authenticationResponse.ok) {
       throw new Error(responseError(authenticationResult, "Unable to authenticate this browser identity."));
     }

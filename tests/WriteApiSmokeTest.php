@@ -57,6 +57,22 @@ final class WriteApiSmokeTest
         assertSame($prepared['revocation_review']['revocation_cutoff'], $accepted['revocation_cutoff']);
         $_POST = $signed; $again = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_key_revocation'), true); if (($again['status'] ?? '') !== 'ok') throw new RuntimeException(json_encode($again)); assertSame(true, $again['recovered']);
         assertSame(1, count(glob($root . '/records/key-revocations/*.txt')));
+        $history = (new \ForumRewrite\ReadModel\ApprovalHistory($pdo, $root))->forUsername('revoked-account');
+        assertSame(1, $history['total']); assertSame(0, $history['active_count']); assertSame(true, $history['rows'][0]['is_revoked']);
+        assertSame($accepted['revocation_cutoff'], $history['rows'][0]['revocation_cutoff']);
+        assertStringContains('Revocation cutoff:', $this->renderMethod($app, 'GET', '/tools/user-access/accounts/revoked-account'));
+        assertStringContains('revoked-account', $this->renderMethod($app, 'GET', '/tools/user-access/'));
+        assertStringContains('Key-Revoked: yes', $this->renderMethod($app, 'GET', '/api/get_profile?profile_slug=' . $bob['profile_slug']));
+        $activity = new \ForumRewrite\Activity\ActivityService(fn () => $pdo, $root, $db, false, fn () => true);
+        $events = array_values(array_filter($activity->fetchActivityRows('security', 'date', 'desc')['items'], fn ($row) => $row['kind'] === 'key_revocation'));
+        assertSame(1, count($events)); assertSame($accepted['revocation_cutoff'], $events[0]['security_revocation']['revocation_cutoff']);
+        $publicActivity = new \ForumRewrite\Activity\ActivityService(fn () => $pdo, $root, $db);
+        assertSame([], array_values(array_filter($publicActivity->fetchActivityRows('all', 'date', 'desc')['items'], fn ($row) => $row['kind'] === 'key_revocation')));
+        assertSame(null, $publicActivity->fetchActivityDetail((int) $events[0]['id']));
+        assertStringContains('Revocation-Cutoff:', $this->renderMethod($app, 'GET', '/source/current/' . $accepted['record_path']));
+        $audit = (new \ForumRewrite\Support\ApprovalAudit())->collect($pdo, $root);
+        assertSame(1, $audit['revoked_keys']); assertSame($accepted['revocation_cutoff'], $audit['revocations'][0]['revocation_cutoff']);
+
         $failed = false; try { $writer->seedApprovedIdentity($bob['identity_id'], 'cannot restore'); } catch (RuntimeException) { $failed = true; } assertSame(true, $failed);
         $_POST = []; $replacement = $this->linkSigningIdentity($app, 'revoked-account');
         $policy = new \ForumRewrite\Security\ApprovalPolicy($pdo, $root);
@@ -72,6 +88,8 @@ final class WriteApiSmokeTest
         }
         $_SESSION['authenticated_identity_id'] = $bob['identity_id']; $_POST = [];
         assertStringContains('status=unauthenticated', $this->renderMethod($app, 'GET', '/api/auth_status'));
+        assertStringContains('This account key was revoked', $this->renderMethod($app, 'GET', '/account/key/'));
+        assertStringNotContains('Approval pending.', $this->renderMethod($app, 'GET', '/lobby/'));
         $privateDenied = json_decode($this->renderMethod($app, 'GET', '/api/private_messages/recipient_keys?username_token=revoked-account'), true);
         assertSame('error', $privateDenied['status']);
         assertSame([], (new \ForumRewrite\Messaging\ApprovedUserKeyResolver())->keysForUsernameToken($pdo, 'revoked-account'));

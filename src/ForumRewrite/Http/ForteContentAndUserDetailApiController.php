@@ -96,15 +96,13 @@ final class ForteContentAndUserDetailApiController
             $profiles,
             static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
         ));
-        if ($approvedProfiles === []) {
+        $approvedIdentityIds = ProfileRepository::historicallyApprovedIdentityIds($this->routeServices->pdo(), $usernameToken);
+        if ($approvedIdentityIds === []) {
             $this->userDetailPending($usernameToken, $profiles);
             return;
         }
 
-        $approvedIdentityIds = array_values(array_map(
-            static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
-        ));
+
 
         $approvedThreads = AuthoredContentRepository::visibleThreads($this->routeServices->pdo(), $approvedIdentityIds);
         $approvedPosts = AuthoredContentRepository::visiblePosts($this->routeServices->pdo(), $approvedIdentityIds);

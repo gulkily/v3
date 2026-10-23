@@ -119,6 +119,11 @@ final class AuthApiController
 
         $viewerProfile = ($this->authenticatedViewerProfile)();
         $isApproved = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        if ((int) ($viewerProfile['is_revoked'] ?? 0) === 1) {
+            $this->routeServices->sendText("status=unauthenticated\ncode=key_revoked\nerror=This account key was revoked. Use another approved key or ask an operator to approve a replacement key.\n", 401, $this->routeServices->noStoreHeaders());
+            return;
+        }
+
         $this->routeServices->sendText(
             $isApproved ? "status=authenticated\n" : "status=unauthenticated\n",
             $isApproved ? 200 : 401,

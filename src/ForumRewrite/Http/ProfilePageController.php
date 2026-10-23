@@ -60,10 +60,7 @@ final class ProfilePageController
             $profiles,
             static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
         ));
-        $approvedIdentityIds = array_values(array_map(
-            static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
-        ));
+        $approvedIdentityIds = ProfileRepository::historicallyApprovedIdentityIds($this->routeServices->pdo(), $usernameToken);
         $ownIdentityIds = array_values(array_map(
             static fn (array $profile): string => (string) $profile['identity_id'],
             $profiles

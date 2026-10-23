@@ -8,6 +8,9 @@ $hasMembersOnlyAccess = $viewerProfile !== null
     && (($viewerProfile['_members_only_access'] ?? (((int) ($viewerProfile['is_approved'] ?? 0)) === 1)) === true);
 ?>
 <section class="stack" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>">
+<?php if ((int) ($viewerProfile['is_revoked'] ?? 0) === 1): ?>
+<?= $partial('partials/key_revoked_notice.php') ?>
+<?php endif; ?>
   <article class="card">
     <h1>Lobby</h1>
 <?php if ($viewerProfile === null): ?>
@@ -16,7 +19,7 @@ $hasMembersOnlyAccess = $viewerProfile !== null
     <p><a href="/">Enter the site</a></p>
 <?php elseif (((int) ($viewerProfile['is_approved'] ?? 0)) === 1): ?>
     <p><a href="/account/key/">Sign in again</a> to enter the site.</p>
-<?php else: ?>
+<?php elseif ((int) ($viewerProfile['is_revoked'] ?? 0) !== 1): ?>
     <p>Approval pending.</p>
 <?php endif; ?>
     <p class="meta" data-role="private-site-auth-status" hidden></p>

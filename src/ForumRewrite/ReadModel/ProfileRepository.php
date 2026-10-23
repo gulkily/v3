@@ -73,7 +73,7 @@ final class ProfileRepository
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function approvedDirectoryUsers(PDO $pdo): array
+    public static function approvedDirectoryUsers(PDO $pdo, bool $includeRevoked = false): array
     {
         $stmt = $pdo->query(
             'SELECT username_token, MIN(username) AS username,
@@ -81,7 +81,7 @@ final class ProfileRepository
                     SUM(thread_count) AS thread_count,
                     SUM(post_count) AS post_count
              FROM profiles
-             WHERE is_approved = 1
+             WHERE ' . ($includeRevoked ? '(is_approved = 1 OR is_revoked = 1)' : 'is_approved = 1') . '
              GROUP BY username_token
              ORDER BY SUM(thread_count) DESC, SUM(post_count) DESC, username_token ASC'
         );
@@ -110,7 +110,7 @@ final class ProfileRepository
                  ORDER BY candidate.created_at DESC, candidate.action_key DESC, candidate.id DESC
                  LIMIT 1
              )
-             WHERE is_approved = 0
+             WHERE is_approved = 0 AND is_revoked = 0
              ORDER BY CASE WHEN latest_activity.created_at IS NULL THEN 1 ELSE 0 END ASC,
                       latest_activity.created_at DESC,
                       latest_activity.action_key DESC,
@@ -125,9 +125,17 @@ final class ProfileRepository
         return $stmt->fetchAll();
     }
 
+    /** Historical authored content stays discoverable after access revocation. */
+    public static function historicallyApprovedIdentityIds(PDO $pdo, string $username): array
+    {
+        $query = $pdo->prepare('SELECT identity_id FROM profiles WHERE username_token = ? AND (is_approved = 1 OR was_approved = 1) ORDER BY identity_id');
+        $query->execute([$username]);
+        return $query->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     public static function hasPendingDirectoryProfiles(PDO $pdo): bool
     {
-        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
+        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 AND is_revoked = 0 LIMIT 1');
 
         return $stmt->fetchColumn() !== false;
     }

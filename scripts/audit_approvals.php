@@ -70,7 +70,7 @@ try {
         $report['rows'] = array_values(array_filter($report['rows'], static fn (array $row): bool => $row['review_candidate']));
     }
     if (isset($options['summary'])) {
-        unset($report['rows']);
+        unset($report['rows'], $report['revocations']);
     }
     if (isset($options['json'])) {
         fwrite(STDOUT, json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
@@ -84,7 +84,7 @@ try {
     foreach ($report['warnings'] as $warning) {
         fwrite(STDOUT, 'Warning: ' . $clean($warning) . "\n");
     }
-    foreach (['approved_keys', 'approved_usernames', 'review_candidates'] as $key) {
+    foreach (['approved_keys', 'approved_usernames', 'review_candidates', 'revoked_keys'] as $key) {
         fwrite(STDOUT, $key . ': ' . $report[$key] . "\n");
     }
     foreach ($report['counts'] as $category => $count) {
@@ -97,6 +97,12 @@ try {
     fwrite(STDOUT, "\n" . implode("\t", $columns) . "\n");
     foreach ($report['rows'] as $row) {
         fwrite(STDOUT, implode("\t", array_map(static fn (string $key): string => $clean($row[$key]), $columns)) . "\n");
+    }
+    if ($report['revocations'] !== []) {
+        fwrite(STDOUT, "\nRevoked keys\nidentity_id\tusername\trevocation_cutoff\taccepted_at\toperator_identity_id\tsource_path\n");
+        foreach ($report['revocations'] as $row) {
+            fwrite(STDOUT, implode("\t", array_map(static fn ($key) => $clean($row[$key]), ['identity_id', 'username', 'revocation_cutoff', 'accepted_at', 'operator_identity_id', 'source_path'])) . "\n");
+        }
     }
 } catch (Throwable $exception) {
     fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n" . approvalAuditUsage());

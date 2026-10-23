@@ -4,6 +4,9 @@
 <?php if ($isReplyAgentProfile): ?>
     <p><strong>Account type:</strong> automated reply agent</p>
 <?php endif; ?>
+    <?php if ((int) ($profile['is_revoked'] ?? 0) === 1): ?>
+    <p><strong>Revoked</strong></p>
+<?php endif; ?>
     <p><strong>Approved:</strong> <?= ((int) $profile['is_approved']) === 1 ? 'yes' : 'no' ?></p>
 <?php if (((int) $profile['is_approved']) === 1 && ((string) ($profile['approved_by_label'] ?? '')) !== ''): ?>
     <p><strong>Approved by:</strong>

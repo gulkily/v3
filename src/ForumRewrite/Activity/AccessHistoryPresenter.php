@@ -14,6 +14,7 @@ final class AccessHistoryPresenter
         $actor = $context['actor_username'] ?? $item['author_label'] ?? 'unknown';
         $kind = $item['kind'] ?? '';
         $title = match ($kind) {
+            'key_revocation' => 'Account key revoked' . (isset($item['security_revocation']['username']) ? ' for ' . $item['security_revocation']['username'] : ''),
             'approval' => 'Account key approved' . ($target ? ' for ' . $target : ''),
             'invitation' => 'Invitation accepted' . ($target ? ' by ' . $target : ''),
             default => (string) ($item['label'] ?? 'Access change'),
@@ -31,7 +32,7 @@ final class AccessHistoryPresenter
             'title' => $title,
             'byline' => 'By ' . ($actor !== '' ? $actor : 'unknown') . ($classification !== '' ? ' · ' . $classification : ''),
             'created_at' => (string) ($item['created_at'] ?? ''),
-            'icon' => match ($kind) { 'approval' => '+', 'invitation' => '✓', default => '↔' },
+            'icon' => match ($kind) { 'key_revocation' => '−', 'approval' => '+', 'invitation' => '✓', default => '↔' },
         ];
     }
 }
