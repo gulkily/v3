@@ -251,6 +251,33 @@ final class CanonicalRecordParsersTest
         }
     }
 
+    public function testRemovalEvidenceRequiresExactLocalAcceptance(): void
+    {
+        $root = sys_get_temp_dir() . '/label-removal-' . bin2hex(random_bytes(6));
+        mkdir($root . '/records/posts', 0777, true);
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($root, $args);
+        $post = "Post-ID: root-001\nCreated-At: 2026-04-10T12:00:00Z\nBoard-Tags: general\nSubject: Example\n\n#pinned\n";
+        try {
+            $git(['init', '-q']); $git(['config', 'user.email', 'test@example.test']); $git(['config', 'user.name', 'Test']);
+            file_put_contents($root . '/records/posts/root-001.txt', $post);
+            $git(['add', 'records']); $git(['commit', '-qm', 'Create source']);
+            $record = \ForumRewrite\Canonical\LabelRemoval::prepare($root, 'root-001', 'delete');
+            $path = \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
+            $git(['add', $path]); $git(['commit', '-qm', 'Import repository']);
+            assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Removal evidence lacks trusted local acceptance; restore trusted Git history: ' . $path);
+            $record['actor'] = 'local-operator'; $record['accepted_at'] = '2026-04-11T00:00:00Z';
+            \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
+            $git(['add', $path]); $git(['commit', '-qm', 'Accept source label cleanup root-001']);
+            assertSame('delete', \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001')['operation']);
+            file_put_contents($root . '/' . $path, '{}');
+            assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Invalid removal evidence: ' . $path);
+        } finally {
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($files as $file) { if ($file->isDir()) rmdir($file->getPathname()); else unlink($file->getPathname()); }
+            rmdir($root);
+        }
+    }
+
     public function testRejectsThreadLabelWithUnsupportedOperation(): void
     {
         $contents = "Record-ID: thread-label-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: remove\nLabels: bug\n\n";
