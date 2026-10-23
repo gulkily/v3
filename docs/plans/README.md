@@ -8,13 +8,31 @@ feature even when only some steps were recorded; step numbers retain their origi
 workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
+[Markdown work checklist](markdown_work_checklist.md) — relevance-sorted completed work, acceptance, follow-ups and optional compatibility decisions.
+
+## Production feedback
+
+[Request register](production_feedback_register.md) — current tracking for migrated requests; [intake and update guide](../reference/production_feedback_management.md). Older inventories are linked from the register and await reconciliation.
+
 ## Feature folders
 
 - [Independent documentation publication](docs_independent_publication/)
 
 - [Documentation publication policy](docs_publication_policy/)
+- [Absent retraction snapshot publication](absent_retraction_snapshot/)
+
+- [Reply continuation](reply_continuation/)
+
+- [Production feedback management](production_feedback_management/)
+
+- [Cached checkout overview](checkout_overview/)
+
+- [Concurrent checkout synchronization](concurrent_checkouts/)
 
 - [Markdown dependency removal](markdown_dependency_removal/)
+- [Markdown renderer tables](markdown_renderer_extension/)
+- [Markdown list structure](markdown_list_structure/)
+- [Markdown task lists](markdown_task_lists/)
 
 - [Standard Activity and shared pagination](activity_feed_pagination/)
 

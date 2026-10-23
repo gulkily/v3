@@ -76,8 +76,19 @@ final class PlatformDocsStaticTest
             assertTrue(str_contains($index, 'route-source: static-html'));
             assertTrue(str_contains($index, 'Platform Docs'));
             assertTrue(str_contains($document, 'route-source: static-html'));
+            assertStringContains('<table>', $document);
+            assertStringContains('<th scope="col">', $document);
+            assertStringContains('class="docs-table-scroll" tabindex="0"', $document);
             assertTrue(str_contains($document, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
             assertStringContains('data-docs-document-retry', $invalid);
+            $procedure = $this->render($controller, '/docs/reference/author_post_retraction.md');
+            assertSame(1, substr_count($procedure, '<ol start="1">'));
+            foreach (range(1, 6) as $number) { assertStringContains('<li value="' . $number . '">', $procedure); }
+            assertStringContains('retraction record, signs it with the acting identity, and submits it.</p></li>', $procedure);
+            $checklist = $this->render($controller, '/docs/plans/agent_api_onboarding_checklist.md');
+            assertStringContains('<input type="checkbox" disabled>', $checklist);
+            assertStringContains('class="docs-task-label"', $checklist);
+            assertSame(file_get_contents(dirname(__DIR__) . '/docs/plans/agent_api_onboarding_checklist.md'), $this->render($controller, '/docs/_download/docs/plans/agent_api_onboarding_checklist.md'));
             assertStringContains('route-source: static-html', $workflow);
             assertStringContains('route-source: static-html', $this->render($controller, '/docs/_project/README.md?q=README'));
             assertStringContains('route-source: static-html', $this->render($controller, '/docs/?q=recovery'));

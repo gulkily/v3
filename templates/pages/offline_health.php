@@ -8,7 +8,7 @@
   <article class="card codebase-status-card" data-role="offline-health-status-card">
     <h1>Offline Reading</h1>
     <p class="codebase-status offline-health-status" data-role="offline-health-status" data-status="checking" aria-live="polite">CHECKING</p>
-    <p class="meta" data-role="offline-health-summary" aria-live="polite">Checking offline reading status…</p>
+    <p class="meta" data-role="offline-health-summary" aria-live="polite" hidden></p>
   </article>
   <article class="card offline-health-card">
     <h2>Device</h2>

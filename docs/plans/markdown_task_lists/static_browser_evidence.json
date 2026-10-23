@@ -1,0 +1,685 @@
+{
+  "base": "http://127.0.0.1:53393",
+  "evidence": [
+    {
+      "width": 1280,
+      "theme": "default",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 1280,
+        "scroll": 1280,
+        "tables": [
+          {
+            "client": 675,
+            "scroll": 675
+          },
+          {
+            "client": 675,
+            "scroll": 675
+          },
+          {
+            "client": 675,
+            "scroll": 675
+          },
+          {
+            "client": 675,
+            "scroll": 700
+          }
+        ]
+      },
+      "fixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "deepWidth": 655,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "word97",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 1280,
+        "scroll": 1280,
+        "tables": [
+          {
+            "client": 762,
+            "scroll": 762
+          },
+          {
+            "client": 762,
+            "scroll": 762
+          },
+          {
+            "client": 762,
+            "scroll": 762
+          },
+          {
+            "client": 762,
+            "scroll": 762
+          }
+        ]
+      },
+      "fixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "deepWidth": 742,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "chicago",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 1280,
+        "scroll": 1280,
+        "tables": [
+          {
+            "client": 775,
+            "scroll": 775
+          },
+          {
+            "client": 775,
+            "scroll": 775
+          },
+          {
+            "client": 775,
+            "scroll": 775
+          },
+          {
+            "client": 775,
+            "scroll": 775
+          }
+        ]
+      },
+      "fixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "deepWidth": 755,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "midnight",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 1280,
+        "scroll": 1280,
+        "tables": [
+          {
+            "client": 760,
+            "scroll": 760
+          },
+          {
+            "client": 760,
+            "scroll": 760
+          },
+          {
+            "client": 760,
+            "scroll": 760
+          },
+          {
+            "client": 760,
+            "scroll": 760
+          }
+        ]
+      },
+      "fixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "deepWidth": 740,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 1280,
+        "scroll": 1280,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    },
+    {
+      "width": 390,
+      "theme": "default",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 390,
+        "scroll": 390,
+        "tables": [
+          {
+            "client": 327,
+            "scroll": 608
+          },
+          {
+            "client": 327,
+            "scroll": 608
+          },
+          {
+            "client": 327,
+            "scroll": 608
+          },
+          {
+            "client": 327,
+            "scroll": 700
+          }
+        ]
+      },
+      "fixture": {
+        "width": 390,
+        "scroll": 390,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 390,
+        "scroll": 390,
+        "deepWidth": 428,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 390,
+        "scroll": 390,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    },
+    {
+      "width": 390,
+      "theme": "word97",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 390,
+        "scroll": 390,
+        "tables": [
+          {
+            "client": 308,
+            "scroll": 608
+          },
+          {
+            "client": 308,
+            "scroll": 608
+          },
+          {
+            "client": 308,
+            "scroll": 608
+          },
+          {
+            "client": 308,
+            "scroll": 699
+          }
+        ]
+      },
+      "fixture": {
+        "width": 390,
+        "scroll": 390,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 390,
+        "scroll": 390,
+        "deepWidth": 428,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 390,
+        "scroll": 390,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    },
+    {
+      "width": 390,
+      "theme": "chicago",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 390,
+        "scroll": 390,
+        "tables": [
+          {
+            "client": 327,
+            "scroll": 608
+          },
+          {
+            "client": 327,
+            "scroll": 608
+          },
+          {
+            "client": 327,
+            "scroll": 608
+          },
+          {
+            "client": 327,
+            "scroll": 700
+          }
+        ]
+      },
+      "fixture": {
+        "width": 390,
+        "scroll": 390,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 390,
+        "scroll": 390,
+        "deepWidth": 428,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 390,
+        "scroll": 390,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    },
+    {
+      "width": 390,
+      "theme": "midnight",
+      "javaScript": false,
+      "tables": 4,
+      "tableSources": 0,
+      "procedureItems": 6,
+      "keyboard": "passed",
+      "cliFragment": "passed",
+      "dimensions": {
+        "width": 390,
+        "scroll": 390,
+        "tables": [
+          {
+            "client": 306,
+            "scroll": 608
+          },
+          {
+            "client": 306,
+            "scroll": 608
+          },
+          {
+            "client": 306,
+            "scroll": 608
+          },
+          {
+            "client": 306,
+            "scroll": 699
+          }
+        ]
+      },
+      "fixture": {
+        "width": 390,
+        "scroll": 390,
+        "alignment": [
+          "left",
+          "center",
+          "right"
+        ],
+        "cellLinkNavigation": "passed"
+      },
+      "listFixture": {
+        "width": 390,
+        "scroll": 390,
+        "deepWidth": 428,
+        "cellLinkNavigation": "passed"
+      },
+      "taskFixture": {
+        "width": 390,
+        "scroll": 390,
+        "boxes": [
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Pending task with CLI wrapped detail."
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Child task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Complete bold task"
+          },
+          {
+            "checked": false,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          },
+          {
+            "checked": true,
+            "disabled": true,
+            "width": 16,
+            "label": "Same task"
+          }
+        ],
+        "linkNavigation": "passed"
+      }
+    }
+  ]
+}

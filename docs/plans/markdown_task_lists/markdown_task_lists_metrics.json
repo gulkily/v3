@@ -1,0 +1,793 @@
+{
+  "revision": "682ab5b40179624b86b9c53ad3fd7dba98ccec69",
+  "corpus_documents": 1420,
+  "checked": 644,
+  "unchecked": 538,
+  "documents_with_checked": 36,
+  "documents_with_unchecked": 34,
+  "task_documents": 47,
+  "method": "Existing markdown_metrics.scan source candidates over tracked catalog-eligible Markdown at the revision; code bodies/front matter excluded. Counts are heuristic unordered-item marker candidates, not semantic render outcomes; overlapping checked/unchecked document counts are not added. No renderer changes or reference-parser installation.",
+  "documents": [
+    {
+      "path": "docs/architecture/new_site_spec_style_guide.md",
+      "source_sha256": "46f2174598990524a84fc719128a3f4b9849291da8ab20c026dbf6d9bde81984",
+      "checked": 0,
+      "unchecked": 6,
+      "locations": {
+        "task_unchecked": [
+          72,
+          73,
+          74,
+          75
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/agent_api_onboarding_checklist.md",
+      "source_sha256": "7bf606fa727f0fed639e05bccb21cad172e19186d663d37f8d9afa0fddd83d57",
+      "checked": 8,
+      "unchecked": 17,
+      "locations": {
+        "task_checked": [
+          120,
+          123,
+          125,
+          130
+        ],
+        "task_unchecked": [
+          69,
+          71,
+          74,
+          77
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/archive/zenmemes_rules_pinned_post_options.md",
+      "source_sha256": "44a974f482a90f09f08cbbfedcf3b4e80cd0bf13c0717dca26cfa4201b2d5efb",
+      "checked": 20,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          110,
+          111,
+          112,
+          113
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/backlog/account_key_approval_policy_fdp_checklist.md",
+      "source_sha256": "0435388a59582fe27598573fa19506b4e387db35a9ef7866dd22509a02bdb8da",
+      "checked": 22,
+      "unchecked": 22,
+      "locations": {
+        "task_checked": [
+          31,
+          42,
+          43,
+          44
+        ],
+        "task_unchecked": [
+          41,
+          46,
+          47,
+          48
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md",
+      "source_sha256": "3dc6688b6a2b6a7dd3eb17ebf6cd57c0b940d823a1bf5fb1a00d62aac6473148",
+      "checked": 20,
+      "unchecked": 21,
+      "locations": {
+        "task_checked": [
+          11,
+          12,
+          13,
+          21
+        ],
+        "task_unchecked": [
+          36,
+          55,
+          56,
+          57
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/backlog/activity_repository_coverage_checklist.md",
+      "source_sha256": "aeea67be18e838ac415480de2c03e7fef28b37223cd222a0ab593a35a6027d35",
+      "checked": 1,
+      "unchecked": 23,
+      "locations": {
+        "task_checked": [
+          11
+        ],
+        "task_unchecked": [
+          12,
+          13,
+          14,
+          15
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/backlog/ephemeral_testing_read_model_checklist.md",
+      "source_sha256": "0ef59a4be756a9baacc895ff5b8a051273f242f025a04293ec67a285ffcacc34",
+      "checked": 8,
+      "unchecked": 23,
+      "locations": {
+        "task_checked": [
+          9,
+          10,
+          11,
+          12
+        ],
+        "task_unchecked": [
+          24,
+          25,
+          26,
+          27
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/backlog/fast_post_scoring_mvp_product_plan_v1.md",
+      "source_sha256": "cd48961ccd854436e7297044d20c6d806a839e094afbb9ac0f5fd76744641bee",
+      "checked": 0,
+      "unchecked": 8,
+      "locations": {
+        "task_unchecked": [
+          292,
+          294,
+          296,
+          298
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/backlog/offline_support_extended_roadmap.md",
+      "source_sha256": "91ef5ac30af7dff718fee07b8b0a057c0a6210e818047ce479c727d609659850",
+      "checked": 24,
+      "unchecked": 24,
+      "locations": {
+        "task_checked": [
+          26,
+          27,
+          29,
+          31
+        ],
+        "task_unchecked": [
+          46,
+          73,
+          74,
+          76
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/dependency_fallback_checklist.md",
+      "source_sha256": "12aac7d145f5ad0a77317f0df01883115bd3f6cd63ae95fa0a548395114707de",
+      "checked": 10,
+      "unchecked": 28,
+      "locations": {
+        "task_checked": [
+          13,
+          14,
+          15,
+          16
+        ],
+        "task_unchecked": [
+          25,
+          26,
+          27,
+          28
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/docs_audit_findings_and_checklist_v1.md",
+      "source_sha256": "14b58256fae2e1a21930d971f99af4080b54b972a904e06043566bd3cbc1a037",
+      "checked": 20,
+      "unchecked": 1,
+      "locations": {
+        "task_checked": [
+          18,
+          34,
+          41,
+          57
+        ],
+        "task_unchecked": [
+          133
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/effort_estimation_trial_maintainer_checklist.md",
+      "source_sha256": "1796382d2300ff904d43f7872941a4e7b4352e034a08668258a79fca583d19cb",
+      "checked": 2,
+      "unchecked": 11,
+      "locations": {
+        "task_checked": [
+          9,
+          10
+        ],
+        "task_unchecked": [
+          11,
+          12,
+          13,
+          17
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/fast_post_scoring_productization_remaining_work_plan.md",
+      "source_sha256": "006e7adabfacbe9a74a43bc08eb701b9233f5028cfd188febe4a235722a90e82",
+      "checked": 24,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          18,
+          22,
+          34,
+          37
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/fastmod_prepublication_hold/fastmod_development_checklist.md",
+      "source_sha256": "ba7d10ceebdd77243f48210e25ad97274b6d37d2c4c2588e82495eb667f22dd1",
+      "checked": 9,
+      "unchecked": 33,
+      "locations": {
+        "task_checked": [
+          7,
+          8,
+          9,
+          10
+        ],
+        "task_unchecked": [
+          15,
+          16,
+          17,
+          23
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/fastmod_provider_call_limit_checklist.md",
+      "source_sha256": "2f62a12d03f1ceb9edeb6bca525fa36ea23a059410ff34cdcceb65db09c65fed",
+      "checked": 5,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          6,
+          8,
+          10,
+          12
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/fastmod_rename_checklist.md",
+      "source_sha256": "f84760d3108da92f86ae411bc60b5e8f3ff278fd9a01fdfc2ed2e5012b135908",
+      "checked": 10,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          12,
+          13,
+          14,
+          16
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/fastmod_status_clarity_checklist.md",
+      "source_sha256": "ff8303ab6dd6072353a3d55f71702c20963e5f15bdfdce2705074b7ee9d5ac1b",
+      "checked": 5,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          8,
+          10,
+          12,
+          14
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/forte_users_lessons_for_board_activity.md",
+      "source_sha256": "4f7a91ef91f7725b0da7721b6e2becd6ccf3436adbfd3ea8fbc1491335eda7f6",
+      "checked": 0,
+      "unchecked": 2,
+      "locations": {
+        "task_unchecked": [
+          7,
+          12
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/instance_content_sync/instance_content_sync_fix_checklist.md",
+      "source_sha256": "d7d833b445ed1a2bf2f8b20ab87ff9a54d0d482c89cf75d2bcdb427dc1bc4e0c",
+      "checked": 5,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          7,
+          12,
+          22,
+          38
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/local_server_dependency_install/local_server_dependency_install_debug_log.md",
+      "source_sha256": "abf5f4354d4b54832b5cb8659740aed95b6ca3f51cd0704445155bf427dd243c",
+      "checked": 0,
+      "unchecked": 9,
+      "locations": {
+        "task_unchecked": [
+          101,
+          102,
+          103,
+          104
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/local_server_dependency_install/local_server_dependency_platform_support_checklist.md",
+      "source_sha256": "c7b7180af699caa99b6b66dd860322110b70e865fe89b17cb98a9fe3c57fa1d2",
+      "checked": 0,
+      "unchecked": 23,
+      "locations": {
+        "task_unchecked": [
+          15,
+          16,
+          17,
+          18
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/local_server_dependency_recovery_checklist.md",
+      "source_sha256": "89275ec33c497cfe9c7a6ecf72b87e509d73079c77d0fa3d6a062d820ad13a73",
+      "checked": 34,
+      "unchecked": 5,
+      "locations": {
+        "task_checked": [
+          17,
+          18,
+          19,
+          20
+        ],
+        "task_unchecked": [
+          44,
+          45,
+          49,
+          51
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/local_server_dependency_recovery_railspike_failure_report.md",
+      "source_sha256": "ec2d691c9e65664dd863a089d5ebdc1ed1e9a1d974c8af5465370a8c38dca94a",
+      "checked": 0,
+      "unchecked": 9,
+      "locations": {
+        "task_unchecked": [
+          66,
+          67,
+          68,
+          69
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/markdown_dependency_removal/history_rewrite_clone_sync.md",
+      "source_sha256": "822a69f70fc79761c144e9342421d7b35ac220db632b2f5669a2a15dea1d2545",
+      "checked": 0,
+      "unchecked": 47,
+      "locations": {
+        "task_unchecked": [
+          50,
+          51,
+          52,
+          53
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/media_embed_support_checklist.md",
+      "source_sha256": "83d9c8a62b5d1357a511260d55e856abdde75cf57c7479f41f122921a68a88a9",
+      "checked": 22,
+      "unchecked": 27,
+      "locations": {
+        "task_checked": [
+          31,
+          32,
+          33,
+          34
+        ],
+        "task_unchecked": [
+          84,
+          111,
+          112,
+          113
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/mitrapclub_theme_and_features_checklist.md",
+      "source_sha256": "af6a33860ae2060169e04b91e348346c895fd7f1e3f55e3022b388bf0cec76fa",
+      "checked": 11,
+      "unchecked": 10,
+      "locations": {
+        "task_checked": [
+          10,
+          17,
+          25,
+          33
+        ],
+        "task_unchecked": [
+          77,
+          81,
+          84,
+          86
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/multi_site_refactor_checklist.md",
+      "source_sha256": "ee6882397eef0ab21f619071ca07fcbdea672d3abe0b639c6569767a9a17f484",
+      "checked": 19,
+      "unchecked": 4,
+      "locations": {
+        "task_checked": [
+          7,
+          8,
+          9,
+          10
+        ],
+        "task_unchecked": [
+          45,
+          46,
+          47,
+          48
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/multi_site_refactor_review/multi_site_refactor_review_step1_solution_assessment.md",
+      "source_sha256": "5820dcafdcd5ace3e2c313ca0d0dacacda206ebffbdf923412e97b270237c414",
+      "checked": 0,
+      "unchecked": 10,
+      "locations": {
+        "task_unchecked": [
+          43,
+          44,
+          45,
+          46
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/offline_outbox/offline_outbox_mvp_checklist.md",
+      "source_sha256": "98949a05655eb5a6cf845b05a1421035a4dcec3866ad4fab3805f1dfdd384f31",
+      "checked": 31,
+      "unchecked": 17,
+      "locations": {
+        "task_checked": [
+          8,
+          10,
+          11,
+          13
+        ],
+        "task_unchecked": [
+          31,
+          41,
+          42,
+          47
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/openpgp_asset_and_identity_code_fixes_v1.md",
+      "source_sha256": "81d3f1345762273a2cbef76b5ddf836cb3d46aba1c3b1819d88c8939794d0cec",
+      "checked": 5,
+      "unchecked": 1,
+      "locations": {
+        "task_checked": [
+          16,
+          17,
+          18,
+          19
+        ],
+        "task_unchecked": [
+          21
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/openpgp_production_incident_recovery_checklist_v1.md",
+      "source_sha256": "39a11e8f6c21a0fd7c5ecba444efa5590a282041dfd080fe095f819a2c1124cd",
+      "checked": 19,
+      "unchecked": 47,
+      "locations": {
+        "task_checked": [
+          28,
+          32,
+          62,
+          81
+        ],
+        "task_unchecked": [
+          30,
+          50,
+          52,
+          54
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/page_asset_performance_inventory.md",
+      "source_sha256": "6e6192d2cbff0e6fc79a152d44a5bf9c33f32166482ff17e4e6ac8affd76b9b3",
+      "checked": 32,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          16,
+          17,
+          18,
+          19
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/pagination_consolidation_checklist.md",
+      "source_sha256": "ff709078346353d7acc55c9a43268cc8573dd5c54e29c433916dbb4bcd144f0c",
+      "checked": 25,
+      "unchecked": 12,
+      "locations": {
+        "task_checked": [
+          9,
+          10,
+          11,
+          12
+        ],
+        "task_unchecked": [
+          23,
+          46,
+          47,
+          48
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/phone_site_development_checklist.md",
+      "source_sha256": "528a09e851e232df6c4062128e1cccdacdf15ba4a33ee41f35eff3ec75768451",
+      "checked": 0,
+      "unchecked": 4,
+      "locations": {
+        "task_unchecked": [
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/php_production_deployment_checklist_v1.md",
+      "source_sha256": "3512f9843e99e19b6577762792af832fb424c32d221740d75cd2d33c79978c39",
+      "checked": 31,
+      "unchecked": 13,
+      "locations": {
+        "task_checked": [
+          45,
+          46,
+          47,
+          48
+        ],
+        "task_unchecked": [
+          60,
+          71,
+          111,
+          112
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/private_messaging_diagrams_checklist.md",
+      "source_sha256": "a33dacf07420505e934cc679311438e60bcb7a43085a786154f71456a1251194",
+      "checked": 28,
+      "unchecked": 17,
+      "locations": {
+        "task_checked": [
+          46,
+          47,
+          48,
+          49
+        ],
+        "task_unchecked": [
+          8,
+          9,
+          10,
+          17
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/private_messaging_usability_master_checklist.md",
+      "source_sha256": "ad39ed07a1689b4a1af8f9f1d247744e67299c413ae56d808e0b1d8d81a71b69",
+      "checked": 48,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          40,
+          44,
+          47,
+          49
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/qdb_classic_urls_checklist.md",
+      "source_sha256": "e3d007aaa455bfcbb335dc07aff1d4e3f8d9b17aa59d86fad8d48a936258e6b4",
+      "checked": 7,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          16,
+          20,
+          23,
+          34
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/qdb_page_titles_checklist.md",
+      "source_sha256": "217dab06c97d290eaf9f819b4bb1d5eb478c4e9a75e18527733d30ac624c0eaf",
+      "checked": 29,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          12,
+          13,
+          14,
+          15
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/qdb_theme_fidelity_checklist.md",
+      "source_sha256": "801a7386c685c6228ac606454a4ab079f246d197f9dcffb381f3969b3e9678d1",
+      "checked": 16,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          9,
+          14,
+          21,
+          30
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/shared_nav_icons_checklist.md",
+      "source_sha256": "e7fbb8516bbbd26e5b247d068a3ad9b65d7efbddc27fac9648ffa1001bddecfd",
+      "checked": 4,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          18,
+          19,
+          25,
+          31
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/task_queue_candidate_catalog.md",
+      "source_sha256": "f841fc71614062bb91a0ca5a60cb8f1ce94e3618499bab2417373e4246f2bee0",
+      "checked": 2,
+      "unchecked": 4,
+      "locations": {
+        "task_checked": [
+          11,
+          13
+        ],
+        "task_unchecked": [
+          15,
+          18,
+          21,
+          24
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/test_run_history_retention_plan_v1.md",
+      "source_sha256": "477c7d73d0a5a52b4c00f17e2874ba0e7680ac0c709d989e7d50b562f73c5e92",
+      "checked": 0,
+      "unchecked": 7,
+      "locations": {
+        "task_unchecked": [
+          5,
+          7,
+          9,
+          11
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/ui_copy_audit_checklist.md",
+      "source_sha256": "4c4d8e528eb14e46684b055e11496bc496962b944908c90e44c65ec1d76212f7",
+      "checked": 79,
+      "unchecked": 10,
+      "locations": {
+        "task_checked": [
+          12,
+          18,
+          24,
+          29
+        ],
+        "task_unchecked": [
+          26,
+          40,
+          41,
+          97
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/word97_theme_improvements_plan_v1.md",
+      "source_sha256": "0baa170addcbc43ab5b15b37a0126774ce0898743cc8ebdf727dc8965539bef6",
+      "checked": 5,
+      "unchecked": 4,
+      "locations": {
+        "task_checked": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "task_unchecked": [
+          10,
+          11,
+          12,
+          13
+        ]
+      }
+    },
+    {
+      "path": "docs/plans/zenmemes_feedback_automation_checklist.md",
+      "source_sha256": "696ec0ca3e7736c56b41f33360409154f8e54f4dc32ac047149968694f5e6163",
+      "checked": 0,
+      "unchecked": 39,
+      "locations": {
+        "task_unchecked": [
+          9,
+          10,
+          11,
+          12
+        ]
+      }
+    },
+    {
+      "path": "docs/specs/theme_menu_representative_options_spec_v1.md",
+      "source_sha256": "959b24f336e6f86988a2cb2f922e201e280ad72e823d133459658b0af64d1a1c",
+      "checked": 4,
+      "unchecked": 0,
+      "locations": {
+        "task_checked": [
+          14,
+          19,
+          23,
+          32
+        ]
+      }
+    }
+  ]
+}

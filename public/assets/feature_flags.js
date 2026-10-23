@@ -234,6 +234,7 @@
         link.title = 'Unread status unavailable. Reload the page.';
         link.querySelector('#private-message-unread-status').textContent = link.title;
       }
+      status.hidden = false;
       status.textContent = 'Saved. Navigation could not refresh. ';
       var reload = document.createElement('button');
       reload.type = 'button';
@@ -252,6 +253,7 @@
 
       var status = statusElementFor(form);
       if (status) {
+        status.hidden = false;
         status.textContent = "Saving...";
       }
       var fields = Object.fromEntries(new FormData(form).entries());
@@ -286,12 +288,14 @@
       }).then(function (result) {
         updateRow(form, result);
         if (status) {
-          status.textContent = "Saved.";
+          status.textContent = "";
+          status.hidden = true;
         }
         refreshFilters();
         if (fields.key === 'FORUM_PRIVATE_MESSAGES_ENABLED') return refreshNavigation(result, status);
       }).catch(function (error) {
         if (status) {
+          status.hidden = false;
           status.textContent = error.message;
         }
       }).finally(function () {

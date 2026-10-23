@@ -14,6 +14,7 @@ Usage:
   ./v3 high-traffic cron|run [access.log] [--json]
   ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
   ./v3 tui
+  ./v3 checkouts [overview|refresh|preview|apply|add|list|remove] [...options]
   ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.2.1-beta.1]
   ./v3 fdp sync ... (deprecated alias)
   ./v3 rebuild [repository_root] [database_path]
@@ -164,6 +165,10 @@ case "${COMMAND}" in
   test)
     shift
     php "${ROOT}/tests/run.php" "$@"
+    ;;
+  checkouts)
+    shift
+    exec php "${ROOT}/scripts/checkouts.php" "$@"
     ;;
   status)
     shift

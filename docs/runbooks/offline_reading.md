@@ -67,8 +67,8 @@ latest offline reading set without rendering every static post page:
 ./v3 offline diagnose --url=https://your-public-domain
 ```
 
-`offline publish` creates only the bounded public SQLite snapshot and atomically
-replaces the independently published copy. It does not rebuild the read model,
+`offline publish` creates the bounded public SQLite base and compact update,
+atomically replacing each independently published copy. It does not rebuild the read model,
 render static HTML, deploy an application release, or refresh any browser
 cache. The reader uses the application’s canonical fingerprinted SQLite runtime
 URL, rather than relying on an unfingerprinted binary path. It preserves the
@@ -194,3 +194,11 @@ thread content fails to load while offline:
 
 Clearing site data removes the saved reader and snapshot until the browser
 next refreshes them online.
+
+## Snapshot exclusion contract (version 5)
+
+Public base and update databases include `excluded_posts(post_id TEXT PRIMARY KEY)`. These IDs are temporary publication exclusions for valid retained retractions whose canonical target was confirmed absent at build entry; they do not grant permanent removal authority. The records themselves are not copied into public snapshots. Target reappearance stays excluded for that build and is validated normally by a later build. Canonical records are retained.
+
+The reader applies exclusions even when their threads are outside an update's bounded window, removes the matching cached post, clears excluded-root presentation and refreshes affected thread counts/activity while preserving surviving replies. Older snapshots without this table remain readable. Version 5 artifacts require the updated reader to enforce these exclusions when applying updates to older bases; refresh the existing reader/service-worker assets with the application release. Existing saved offline copies cannot be changed until the client reconnects and refreshes.
+
+For this absent-target condition, publication needs no canonical repair: run the existing `./v3 offline publish` command or let the existing queued publication run. Both publish base and compact update. If validation instead reports unsafe or unavailable evidence, inspect `records/post-retractions/` in the selected repository, restore missing tracked files or repair malformed/unsafe evidence, then rerun publication. A queued retry can succeed after repair; for an exhausted task use the existing `task-queue enqueue-offline-snapshot` and targeted worker commands against that same instance. Do not delete retained retractions to bypass validation.

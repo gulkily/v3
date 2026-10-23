@@ -33,11 +33,14 @@ try {
         exit(2);
     }
 
-    $result = (new OfflineSnapshotPublisher($staticHtmlRoot))->publish($databasePath);
+    $publisher = new OfflineSnapshotPublisher($staticHtmlRoot);
+    $update = $publisher->publishUpdate($databasePath);
+    $result = $publisher->publish($databasePath);
     fwrite(STDOUT, "Offline snapshot published\n");
     fwrite(STDOUT, "Site profile: {$siteId}\n");
     fwrite(STDOUT, "Read-model database: {$databasePath}\n");
     fwrite(STDOUT, "Snapshot path: {$result['path']}\n");
+    fwrite(STDOUT, "Update path: {$update['path']}\n");
     fwrite(STDOUT, "Generated: {$result['generated_at']}\n");
     fwrite(STDOUT, "Threads: {$result['thread_count']}; posts: {$result['post_count']}; bytes: {$result['size_bytes']}\n");
     fwrite(STDOUT, "This uses the existing read model and does not rebuild data or render static post pages.\n");
@@ -86,7 +89,7 @@ function printUsage($stream): void
 Usage:
   ./v3 offline publish [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html]
 
-Build and atomically publish the bounded, public offline SQLite snapshot from
+Build and atomically publish the bounded, public offline SQLite base and update from
 the current read model. This does not rebuild the read model or render static
 HTML pages. It is unavailable when approved-members-only is enabled.
 

@@ -5,7 +5,7 @@ import { chromium } from 'playwright-core';
 
 const html = mode => execFileSync('php', ['tests/Support/feature_flags_toolbar_fixture.php', mode], { encoding: 'utf8' });
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
-async function setup(context, mode = '') {
+async function setup(context, mode = '', themed = true) {
   await context.route('http://flags.test/**', async route => {
     const path = new URL(route.request().url()).pathname;
     if (path.startsWith('/assets/')) return route.fulfill({ body: await readFile('public' + path), contentType: path.endsWith('.css') ? 'text/css' : 'text/javascript' });
@@ -13,6 +13,7 @@ async function setup(context, mode = '') {
   });
   const page = await context.newPage();
   await page.goto('http://flags.test/tools/feature-flags/');
+  if (themed) for (const theme of ['word97', 'chicago', 'midnight']) await page.addStyleTag({ url: '/assets/theme-' + theme + '.css' });
   return page;
 }
 try {
@@ -67,7 +68,7 @@ try {
 
   for (const width of [1150, 375]) {
     await page.setViewportSize({ width, height: 800 });
-    for (const theme of ['light', 'dark', 'console']) {
+    for (const theme of ['light', 'dark', 'console', 'word97', 'chicago', 'midnight']) {
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; window.scrollTo(0, 0); }, theme);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${theme}/${width} overflow`);
       for (const button of await page.locator('[data-flag-filter]').all()) {
@@ -113,6 +114,7 @@ try {
   await beta.getByRole('switch').click(); await settled();
   assert.deepEqual(await counts(), ['4', '2', '2', '2']);
   assert.equal(await beta.locator('.feature-flag-reset-form').isVisible(), true, 'New override exposes reset without reload');
+  assert.equal(await beta.locator('[data-role="feature-flag-status"]').isVisible(), false, 'Changed switch communicates success without a notice');
   await chip('overridden').click();
   await beta.getByRole('button', { name: 'Reset to default' }).click(); await settled();
   assert.deepEqual(await visible(), ['TEST_ALPHA']);
@@ -158,12 +160,12 @@ try {
   assert.equal(await readonly.locator('[role="switch"]:disabled').count(), 4);
   await readonly.locator('[data-flag-filter="locked"]').click();
   assert.equal(await readonly.locator('[data-feature-flag-row]:visible').count(), 2, 'Viewer permission is not locked state');
-  const nojs = await setup(await browser.newContext({ javaScriptEnabled: false }));
+  const nojs = await setup(await browser.newContext({ javaScriptEnabled: false }), '', false);
   assert.equal(await nojs.locator('[data-feature-flags-toolbar]').isVisible(), false);
   assert.equal(await nojs.locator('[data-feature-flags-empty]').isVisible(), false);
   assert.equal(await nojs.locator('[data-feature-flag-row]:visible').count(), 4);
   assert.equal(await nojs.locator('form[method="post"][action="/tools/feature-flags/"]:visible').count(), 3);
-  console.log('PASS toolbar search/status/counts/empty recovery, keyboard, read-only/no-JS, light/dark/console at 375/1150px and sticky banner');
+  console.log('PASS toolbar search/status/counts/empty recovery, keyboard, read-only/no-JS, six themes at 375/1150px and sticky banner');
 } finally {
   await browser.close();
 }

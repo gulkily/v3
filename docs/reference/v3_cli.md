@@ -191,6 +191,169 @@ confirm no second username prompt appears. It leaves the identity and post in
 place intentionally. Do not rerun it after an ambiguous result—first inspect
 the reported post URL. `--confirm-production-write` is mandatory.
 
+## Synchronize code checkouts
+
+Use this from an IntelliJ terminal in any checkout containing the command:
+
+```bash
+./v3 checkouts add /home/wsl/v3
+./v3 checkouts add /home/wsl/agent/v3-codex
+./v3 checkouts list
+./v3 checkouts
+./v3 checkouts preview
+./v3 checkouts apply <preview-id> --sessions-paused
+```
+
+`./v3 checkouts` (or `overview`) immediately displays cached observations in
+aligned CHECKOUT / BRANCH / ACTION / HINT columns. The default does not inspect
+Git in the foreground or wait on a running refresh/apply lock. The footer shows
+observation age and refresh state. Branch/action labels describe the last
+observation; they do not establish the checkout's live state or permission to
+apply. First use, changed registration or invalid cache shows `unchecked` rows
+while refresh is scheduled. No apply ID or command comes from cached output.
+
+Background refresh is scheduled when no matching cache exists or its latest
+attempt is at least 30 seconds old. Repeated calls coalesce into one worker, with
+up to three fetches across independent Git stores. Fetch children never write
+history evidence; the existing manager lock protects coordinator classification
+and publication. Observations publish atomically only for the same registry and
+selection. Fresh `preview` also warms the matching observation cache; an attempted
+apply invalidates affected cached rows. Test/server exclusions still apply.
+
+States include `queued`, `running`, `fresh`, `busy`, `deferred` and `failed`.
+A manager/apply lock can defer a worker; cached output stays available. A queued
+worker that never starts becomes a visible failure after 10 seconds; failed or
+deferred launch attempts use a short retry cooldown. To fetch and diagnose now:
+
+```bash
+./v3 checkouts refresh
+./v3 checkouts --no-refresh --json
+```
+
+`refresh` waits for fresh observations but does not create an apply ID. On an
+offline/failed observation, retain the previous good row and its original timestamp
+with `last_error`/`error_at`; a stale-error hint and failure state distinguish it
+from a successful new observation. A cold failure shows `unavailable`. Correct
+access/state permissions and retry `refresh`; when another command owns the manager
+lock, retry once it finishes. `--no-refresh` deliberately reads cache without
+scheduling a worker. Neither this command nor background refresh moves branches.
+
+Detached background refresh needs `nohup` and CLI PHP's POSIX/pcntl support.
+If unavailable, cached output reports failure and `refresh` remains the synchronous
+recovery route. Worker lifetime is bounded to 120 seconds, each Git child to
+30 seconds; handled cancellation terminates its isolated process group. An
+uncatchable kill may still require process/Git inspection. Worker status is a
+bounded private file, output is detached from the terminal, and only a small
+bounded set of observation-cache generations is retained. Do not clear history
+evidence to force freshness.
+
+`preview` deliberately waits for fresh source inspection and creates a signed
+update plan, so it can still take several seconds. Then pause coding/server
+sessions before `apply`. Cached overview's subsecond target is measured locally;
+network-complete preview has no subsecond promise. `list` remains registry-only.
+
+Rows use unique short path suffixes; full paths/reasons remain in JSON. `COLUMNS`
+controls width (80-column fallback, bounded 20–240); narrow terminals omit HINT
+and abbreviate values with an explicit full-details hint. Control characters are
+sanitized in human output. For abbreviated apply recovery, the printed result-file
+path preserves the complete resolve/abort instructions without replaying an apply.
+
+Register only directories you want to update. `add` validates the existing clone
+and records its absolute root, Git storage identity, expected remote source,
+remote name (`--remote=origin`), target (`--target=main`) and role. The default role
+is `development`. Test/server roles (`--role=test` or `--role=server`) appear as
+excluded in batch previews; select one explicitly with
+`./v3 checkouts preview --path=/absolute/registered/path`. Shared-storage linked
+worktrees and symlink aliases cannot be registered as independent clones.
+Nothing scans your home directory or enrolls existing copies automatically.
+
+All projects use one private registry at `~/.config/v3/checkouts.json` and private
+history/preview/results at `~/.local/state/v3/checkouts`; `XDG_CONFIG_HOME` and
+`XDG_STATE_HOME` override those base directories. `--registry=/path/file.json`
+and `--state-dir=/private/path` allow isolation. Pass the same overrides to each
+command; the preview's suggested apply command includes them. These files contain
+local paths; keep them local. Do not edit saved previews. `remove <registered-path>`
+forgets registration and archives its enrollment evidence without deleting files.
+For a moved/missing directory, remove its old absolute registered path and add the
+new location; generate a new preview after any registry change.
+
+Preview fetches **only the registered source branch**, updates its remote-tracking
+ref, and saves the exact fetched revision plus each checkout's state under an
+opaque preview ID. It changes no checked-out files or branches. Results distinguish
+`fast-forward`, `merge`, `current`, `ahead`, `dirty`, `busy`, `diverged`,
+`migration-required`, `unavailable`, `stale` and `excluded`. A missing source or
+credential/access failure does not silently select another remote. Correct access
+or registration and retry preview. Raw remote/hook errors are suppressed because
+they may include credentials; inspect Git locally when diagnosing failures.
+
+To fetch and apply all eligible development checkouts without copying a preview ID,
+pause their coding/server sessions first, then run:
+
+```bash
+./v3 checkouts apply --sessions-paused
+```
+
+Without an ID, apply creates a **fresh** preview under the same command lock and
+immediately applies eligible rows. It does not use cached observations or a prior
+preview. Dirty/busy/excluded/migration-required folders remain skipped; results can
+be partial. To inspect the changes first, keep using `preview` followed by
+`apply <preview-id> --sessions-paused`.
+
+Before applying, coordinate agents and servers in the selected folders, then pass
+`--sessions-paused`. This is an operator assertion; clean Git status is not proof
+that an agent is idle. Tool locks serialize commands using the **same state
+directory**, not external Git/editor processes. Apply revalidates registry, source,
+branch, HEAD, target and dirty/operation state; changed inputs invalidate that
+folder's update. It applies the previewed source commit without fetching again:
+a later remote update requires a fresh preview. Main must fast-forward; eligible
+feature branches may fast-forward or receive an ordinary merge preserving local
+commits. Ignored local files are protected against overwrite; an ignored-file
+collision fails for manual recovery. Submodule working trees are not recursively
+updated. A locally ahead branch stays untouched. Existing dirty/untracked work and
+Git operations are skipped; the tool never auto-stashes, switches branches,
+rebases, resets, pushes, clones, deletes or changes IDE trust.
+
+History eligibility is deliberately conservative. Enrollment records a baseline
+only when the checked-out branch and fetched target are directly comparable by
+ancestry. A first-run divergent branch requires manual reconciliation, even when
+it is legitimate work. Subsequent known feature divergence can merge while source
+history remains forward and branch continuity is proved. Source rewinds/replacements
+block, including an externally fetched rewrite where persisted baseline evidence
+shows the break. When no prior evidence exists, an already-fetched divergent branch
+also blocks. Common ancestry alone never authorizes a merge. This cannot infer all
+past force-pushes from Git alone; uncertain cases need review. Follow the
+[history migration runbook](../plans/markdown_dependency_removal/history_rewrite_clone_sync.md)
+for separately authorized reconciliation. After verified migration, explicitly
+remove/re-add registration to archive the sticky block and establish new evidence;
+this does not migrate any Git history itself.
+
+Apply records each attempt before changing a branch. On conflict, it leaves Git's
+merge state and prints commands to resolve/continue or abort in that directory;
+independent folders may still update. Preserve work, resolve or abort the merge,
+then run a fresh preview. A failed hook, missing identity or timed-out operation
+requires inspecting Git status, configuration, hooks and any remaining processes
+or locks before retrying. Git subprocesses have a 30-second limit; timeout does not
+prove child hooks have stopped or undo changes. Interrupted/attempted preview IDs
+cannot be replayed. Inspect the private `<id>.result.json` and Git status, then
+create a new preview. No automatic rollback or whole-batch atomicity is promised.
+
+`--json` keeps full paths/reasons, per-row observation timestamps and refresh
+metadata; human output abbreviates for terminal width.
+Exit **0** means completion without attention, **1** means command/configuration
+failure, and **2** means partial results or attention required; inspect every row.
+These results cover selected **checked-out branches**, not every local branch,
+stash or detached worktree, and never establish historical erasure. Preview rows
+not applied retain their observed disposition; verify current conditions with a
+fresh preview.
+
+Run real-Git acceptance tests with `php tests/run.php CheckoutsCommandTest`
+(or `python3 tests/test_checkouts.py` directly); they use
+isolated temporary registries and clones and do not alter registered live copies.
+For the eight-checkout WSL timing/terminal replay, run
+`python3 tests/checkouts_benchmark.py --output-dir=/tmp/checkout-benchmark`.
+It retains every cold/warm/slow/offline/busy sample and reports min/median/p95/max;
+the recorded target applies to this host, not arbitrary OS scheduling delays.
+
 ## Inspect operator status
 
 ```
@@ -652,7 +815,7 @@ fallbacks, but new writes use `LLM_*` names.
 
 - `view` / `--view` — print a redacted summary and update reminders without writing the file
 - `edit` / `--edit` — open an existing config in `$VISUAL`, `$EDITOR`, or `vi`; it does not print secrets or create a missing file
-- `refresh-template` — rewrite the file with current comments/examples while preserving existing values
+- `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL`, while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`
 - `--path=...` — write to a specific file instead of the default `../forum-private/secrets.php` (relative to this checkout)
