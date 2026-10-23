@@ -84,7 +84,8 @@ final class ForteActivityReadModelRecoveryTest
                 author_label TEXT NOT NULL,
                 author_profile_slug TEXT NULL,
                 author_username_token TEXT NULL,
-                author_is_approved INTEGER NOT NULL
+                author_is_approved INTEGER NOT NULL,
+                attribution_counted INTEGER NOT NULL DEFAULT 1
             )'
         );
 
