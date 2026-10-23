@@ -12,16 +12,13 @@
   function stateExplanation(state) {
     var explanations = {
       draft: "Saved only on this device; queue it when it is ready.",
-      queued: "Waiting for your explicit Send action.",
       waiting_for_connection: "No connection was available. Retry when online.",
       sending: "Contacting the server; do not close this page until the result appears.",
-      accepted: "The server confirmed this action.",
       rejected: "The server did not accept this action. Review the result before retrying.",
       conflicted: "The target changed or is unavailable. Review before retrying.",
-      cancelled: "This local action was cancelled.",
       needs_attention: "Local signing or identity setup needs your attention before retrying."
     };
-    return explanations[state] || "Local Outbox state.";
+    return explanations[state] || "";
   }
 
   function targetLink(item) {
@@ -54,6 +51,7 @@
     function setStatus(message, kind) {
       status.textContent = message;
       status.dataset.kind = kind || "";
+      status.hidden = !message;
     }
 
     function render(items) {
@@ -82,8 +80,6 @@
           titleAnchor.href = target.href;
           titleAnchor.textContent = linkTitle.text;
           detail.appendChild(titleAnchor);
-        } else {
-          detail.textContent = summary.summary || "Local action";
         }
         var created = document.createElement("p");
         created.className = "meta";
@@ -93,20 +89,20 @@
         updated.textContent = "Last updated " + summary.updatedAt;
         var actionTime = document.createElement("p");
         actionTime.className = "meta";
-        actionTime.textContent = item.actionAt ? "Action time (signed) " + item.actionAt : "Action time was not signed.";
+        actionTime.textContent = "Action time (signed) " + item.actionAt;
         var integrationTime = document.createElement("p");
         integrationTime.className = "meta";
-        integrationTime.textContent = item.integrationAt ? "Integration time " + item.integrationAt : "Integration time pending.";
+        integrationTime.textContent = "Integration time " + item.integrationAt;
         var explanation = document.createElement("p");
         explanation.className = "meta";
         explanation.textContent = stateExplanation(summary.state);
         card.appendChild(heading);
-        detailRoot.appendChild(detail);
+        if (target) detailRoot.appendChild(detail);
         detailRoot.appendChild(created);
-        detailRoot.appendChild(updated);
-        detailRoot.appendChild(actionTime);
-        detailRoot.appendChild(integrationTime);
-        detailRoot.appendChild(explanation);
+        if (summary.updatedAt !== summary.createdAt) detailRoot.appendChild(updated);
+        if (item.actionAt) detailRoot.appendChild(actionTime);
+        if (item.integrationAt) detailRoot.appendChild(integrationTime);
+        if (explanation.textContent) detailRoot.appendChild(explanation);
         if (summary.outcome && summary.outcome.message) {
           var outcome = document.createElement("p");
           outcome.className = "meta";

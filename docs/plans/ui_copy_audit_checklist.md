@@ -59,7 +59,7 @@ rendered states before choosing changes; keep necessary consequences and recover
 visible. An unchecked item remains open until changes and verification are recorded,
 or the review establishes that the existing copy should remain.
 
-- [ ] **Outbox** — Review repeated action summaries and technical timestamps,
+- [x] **Outbox** — Review repeated action summaries and technical timestamps,
   including “Action time (signed)” and “Integration time pending.” Check empty,
   draft, queued, published, failed, and retry states. Keep delivery uncertainty,
   unsaved work, and recovery actions clear. Source: `public/assets/outbox.js`.
@@ -253,3 +253,14 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 - Merged current remote main and LCD palette work, retaining both verification histories. Adapted restored home-page draft engagement to the shared composer binder while preserving inline-reply expansion behavior.
 - Passed `node tests/browser/lcd_palettes.mjs` and `node tests/browser/board_compose_focus.mjs` on merged code: Chromium phone/desktop palette, contrast, layout, persistence, keyboard, rotation/recovery, four-theme draft focus, failure/retry, signed publication and no-script checks. JavaScript/PHP syntax and diff checks passed. Existing blocked-storage composer errors remain separately identified by the LCD check. Full-suite, physical-device and production checks were not performed for this merge.
+
+## Outbox copy cleanup — October 23, 2026
+
+- Removed the unlinked duplicate action summary, unchanged Last updated timestamp, absent signed/integration timestamps, and routine queued/accepted/cancelled explanations. Retained linked targets, actual signed/integration times, draft locality, sending uncertainty, failures and recovery controls. Empty status elements are hidden.
+- Verification: six existing Outbox presentation/state/storage checks passed. Chromium production-script fixture covered nine expanded states, empty state, keyboard disclosure, Queue transition and failed Send feedback with retry control; Light/Word97/Chicago/Midnight at 390px/1280px passed overflow checks. Inspected Midnight phone screenshot (`/tmp/copy-outbox-midnight-390.png`). Local controlled browser fixture; actual server delivery, physical devices and production deployment were not exercised. No dependencies added or changed.
+
+## Next phase — new candidates
+
+These are observations for later rendered review, not approved removal decisions.
+
+- [ ] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
