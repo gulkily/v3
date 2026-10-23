@@ -229,6 +229,23 @@ a committed import. Old run directories retain review data; remove completed
 runs only after reviewing their reports and confirming no pending journal
 references them.
 
+### Documentation publication
+
+Imports and shared refreshes keep the complete documentation library. Compatible
+publications report `Reusing documentation (N documents)` and copy validated
+readers, browse/search pages, source downloads and referenced assets without
+rendering them again. Embedded version markers are refreshed for the destination
+so the existing reload notification continues to work.
+
+The first publication, older releases without reuse evidence, changed documents
+or rendering inputs, and missing or damaged output automatically render the full
+library. Progress reports `Rendering documentation` separately from forum pages.
+Source, presentation, profile, effective feature-flag and asset changes invalidate
+reuse; an unrelated record commit alone does not. No new flag or manual cache
+repair is needed. If fallback rendering fails, the previous complete release stays
+active; correct the reported cause and use the same-destination `--resume` flow
+above.
+
 ## Requirements, limits, and deployment check
 
 Use the application's supported PHP runtime with SQLite, zlib, HTTPS stream

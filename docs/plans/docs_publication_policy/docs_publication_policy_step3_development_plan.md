@@ -4,7 +4,7 @@ Debug mode: enabled
 
 Effort study: `railspike-effort / v3/docs_publication_policy`, standing enrollment P2; [host ledger](../effort_estimation_trial.md#enrollment-index-after-p2).
 
-Current plan: **scope v2**, Step 2 approved; renewed Step 3 approval pending. Historical v1 Stage 1 audit is complete; Stage 1 below revalidates it on current main before Stages 2–8.
+Current plan: **scope v2**, renewed Steps 2 and 3 approved. All eight current stages are locally complete; see the [implementation outcome](./docs_publication_policy_step4_implementation_summary.md#commits-and-study-outcome). Historical approvals/checkpoints below remain preserved.
 
 ## Completion Contract
 
