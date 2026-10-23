@@ -88,3 +88,7 @@ No supported findings.
 
 - Full cleanup ownership cannot be inferred from a configured origin or Git credentials; explicit target/coordination information remains pending. No universal-erasure or live remote audit claim.
 - Stage sizing is provisional until the controlled-copy inventory is known; split/replan if it exceeds the process limits.
+
+## Stage 5 synchronization — 2026-10-23
+
+Debug mode remains enabled. Preservation requirements were useful: fresh bundles caught newer stash work absent from the rehearsal map. Verification exposed concurrent agent edits/branch creation, an update-ref stash reflog side effect, mutable test runtime files and a publication snapshot changed by our own documentation edit. Retained all snapshots; restored and mapped original stash entries; verified the supplemental stash separately. No work was discarded. Clone configuration and final working-state checks passed; remaining old storage is intentional recovery, not removal completion. No additional workflow-rule change recommended. Renderer assessment remains an independently gated Step 1.

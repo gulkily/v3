@@ -1,0 +1,20 @@
+{
+  "verified_at": "2026-10-23T07:33:14.927752+00:00",
+  "remote": "https://github.com/gulkily/v3.git",
+  "independent_fetch": "Fresh HTTPS mirror clone; no shared local objects or alternates",
+  "fresh_clone": "/tmp/v3-published-rewrite-8TQdVS/repository.git",
+  "published_main": "1a358bc9be3cdb725277c792625a678e7bc85436",
+  "approved_changed_refs": 6,
+  "all_remote_refs_verified": 20,
+  "unchanged_branches_and_tags": 14,
+  "reachable_commits": 2989,
+  "commit_graph_matches_reviewed_candidate": true,
+  "target_blob_inventory_count": 424,
+  "target_blobs_reachable": 0,
+  "target_blobs_in_fresh_clone_storage": 0,
+  "target_path_history_entries": 0,
+  "git_fsck": "passed",
+  "application_validation": "Reviewed candidate passed 48 focused checks, copied-package recovery and 16 browser scenarios; exact published graph matches candidate. No production deployment.",
+  "original_clones_and_recovery": "Retained; synchronization, stale-ref reconciliation and backup/object disposal remain pending.",
+  "host_retained_storage": "Not proven erased; a fresh clone verifies served reachable history, not GitHub internal caches or unreachable objects."
+}

@@ -1,0 +1,593 @@
+{
+  "corpus_revision": "ad7e8f5fc5570ee5bdcdf08a03b2dfac524c9d83",
+  "renderer_revision": "ad7e8f5fc5570ee5bdcdf08a03b2dfac524c9d83",
+  "document_count": 1402,
+  "render_errors": 0,
+  "method": "Source candidate occurrences, document counts and reference AST node totals are independent. Candidates may overlap; nested items are also items. Table counts are candidate rows/cells; reference definitions are not link uses. Bare URL candidates overlap inline/autolinks. List continuation/loose, indented code, math, Setext and inline variants require review. Code bodies are excluded from prose matches and counted as example lines. Inline source patterns are same-line candidates, not complete Markdown parsing. Unknown forms are not proven absent. Front matter is excluded from prose; reference AST includes it. No vendor source or rendered HTML is retained.",
+  "rare_max_documents": 5,
+  "syntax": {
+    "autolink_bare_candidate": {
+      "occurrences": 306,
+      "documents": 57,
+      "rare": false
+    },
+    "autolink_email_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "autolink_url": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "blockquote_line": {
+      "occurrences": 758,
+      "documents": 688,
+      "rare": false
+    },
+    "blockquote_nested_line": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "code_example_line": {
+      "occurrences": 1332,
+      "documents": 92,
+      "rare": false
+    },
+    "emphasis_asterisk_candidate": {
+      "occurrences": 267,
+      "documents": 78,
+      "rare": false
+    },
+    "emphasis_underscore_candidate": {
+      "occurrences": 18,
+      "documents": 14,
+      "rare": false
+    },
+    "fence_backtick": {
+      "occurrences": 341,
+      "documents": 92,
+      "rare": false
+    },
+    "fence_language": {
+      "occurrences": 302,
+      "documents": 89,
+      "rare": false
+    },
+    "fence_mermaid": {
+      "occurrences": 6,
+      "documents": 2,
+      "rare": true
+    },
+    "fence_tilde": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "footnote_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "front_matter": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "gfm_alert_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "hardbreak_backslash": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "hardbreak_spaces": {
+      "occurrences": 2173,
+      "documents": 224,
+      "rare": false
+    },
+    "heading_atx": {
+      "occurrences": 11691,
+      "documents": 1401,
+      "rare": false
+    },
+    "heading_setext_candidate": {
+      "occurrences": 1147,
+      "documents": 100,
+      "rare": false
+    },
+    "html_comment_start": {
+      "occurrences": 10,
+      "documents": 2,
+      "rare": true
+    },
+    "html_tag_candidate": {
+      "occurrences": 27,
+      "documents": 13,
+      "rare": false
+    },
+    "image_markdown_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "indented_code_candidate": {
+      "occurrences": 944,
+      "documents": 69,
+      "rare": false
+    },
+    "inline_code": {
+      "occurrences": 32625,
+      "documents": 1256,
+      "rare": false
+    },
+    "link_fragment_candidate": {
+      "occurrences": 240,
+      "documents": 86,
+      "rare": false
+    },
+    "link_inline_candidate": {
+      "occurrences": 4361,
+      "documents": 796,
+      "rare": false
+    },
+    "link_reference_explicit_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "link_reference_shortcut_candidate": {
+      "occurrences": 1302,
+      "documents": 61,
+      "rare": false
+    },
+    "list_continuation_candidate": {
+      "occurrences": 15766,
+      "documents": 598,
+      "rare": false
+    },
+    "list_loose_candidate": {
+      "occurrences": 6104,
+      "documents": 929,
+      "rare": false
+    },
+    "list_nested_item": {
+      "occurrences": 9716,
+      "documents": 453,
+      "rare": false
+    },
+    "list_ordered_item": {
+      "occurrences": 2121,
+      "documents": 409,
+      "rare": false
+    },
+    "list_unordered_item": {
+      "occurrences": 41126,
+      "documents": 1367,
+      "rare": false
+    },
+    "math_candidate": {
+      "occurrences": 10,
+      "documents": 8,
+      "rare": false
+    },
+    "reference_definition": {
+      "occurrences": 26,
+      "documents": 1,
+      "rare": true
+    },
+    "strikethrough_candidate": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "strong_asterisk_candidate": {
+      "occurrences": 5482,
+      "documents": 957,
+      "rare": false
+    },
+    "strong_underscore_candidate": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "table_cell_candidate": {
+      "occurrences": 3529,
+      "documents": 66,
+      "rare": false
+    },
+    "table_row_candidate": {
+      "occurrences": 999,
+      "documents": 66,
+      "rare": false
+    },
+    "table_separator": {
+      "occurrences": 117,
+      "documents": 66,
+      "rare": false
+    },
+    "task_checked": {
+      "occurrences": 626,
+      "documents": 36,
+      "rare": false
+    },
+    "task_unchecked": {
+      "occurrences": 542,
+      "documents": 34,
+      "rare": false
+    },
+    "thematic_break_candidate": {
+      "occurrences": 18,
+      "documents": 5,
+      "rare": true
+    },
+    "unclosed_fence": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    }
+  },
+  "full_report_private": "/home/wsl/.local/state/v3-history-rewrite/20261023T0723Z/extension_refreshed_metrics.json",
+  "full_report_sha256": "4351c347ae1126be43d9831dedffcf78daf1dc3819cc4ee5955ca2e040254123",
+  "previous_corpus_documents": 1312,
+  "previous_syntax": {
+    "autolink_bare_candidate": {
+      "occurrences": 251,
+      "documents": 47,
+      "rare": false
+    },
+    "autolink_email_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "autolink_url": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "blockquote_line": {
+      "occurrences": 689,
+      "documents": 630,
+      "rare": false
+    },
+    "blockquote_nested_line": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "code_example_line": {
+      "occurrences": 1238,
+      "documents": 85,
+      "rare": false
+    },
+    "emphasis_asterisk_candidate": {
+      "occurrences": 267,
+      "documents": 78,
+      "rare": false
+    },
+    "emphasis_underscore_candidate": {
+      "occurrences": 18,
+      "documents": 14,
+      "rare": false
+    },
+    "fence_backtick": {
+      "occurrences": 323,
+      "documents": 85,
+      "rare": false
+    },
+    "fence_language": {
+      "occurrences": 284,
+      "documents": 82,
+      "rare": false
+    },
+    "fence_mermaid": {
+      "occurrences": 6,
+      "documents": 2,
+      "rare": true
+    },
+    "fence_tilde": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "footnote_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "front_matter": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "gfm_alert_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "hardbreak_backslash": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "hardbreak_spaces": {
+      "occurrences": 2155,
+      "documents": 219,
+      "rare": false
+    },
+    "heading_atx": {
+      "occurrences": 10748,
+      "documents": 1311,
+      "rare": false
+    },
+    "heading_setext_candidate": {
+      "occurrences": 1147,
+      "documents": 100,
+      "rare": false
+    },
+    "html_comment_start": {
+      "occurrences": 10,
+      "documents": 2,
+      "rare": true
+    },
+    "html_tag_candidate": {
+      "occurrences": 27,
+      "documents": 13,
+      "rare": false
+    },
+    "image_markdown_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "indented_code_candidate": {
+      "occurrences": 944,
+      "documents": 69,
+      "rare": false
+    },
+    "inline_code": {
+      "occurrences": 31105,
+      "documents": 1171,
+      "rare": false
+    },
+    "link_fragment_candidate": {
+      "occurrences": 170,
+      "documents": 53,
+      "rare": false
+    },
+    "link_inline_candidate": {
+      "occurrences": 3864,
+      "documents": 723,
+      "rare": false
+    },
+    "link_reference_explicit_candidate": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    },
+    "link_reference_shortcut_candidate": {
+      "occurrences": 1126,
+      "documents": 57,
+      "rare": false
+    },
+    "list_continuation_candidate": {
+      "occurrences": 15607,
+      "documents": 590,
+      "rare": false
+    },
+    "list_loose_candidate": {
+      "occurrences": 5657,
+      "documents": 855,
+      "rare": false
+    },
+    "list_nested_item": {
+      "occurrences": 9670,
+      "documents": 451,
+      "rare": false
+    },
+    "list_ordered_item": {
+      "occurrences": 2030,
+      "documents": 386,
+      "rare": false
+    },
+    "list_unordered_item": {
+      "occurrences": 39463,
+      "documents": 1287,
+      "rare": false
+    },
+    "math_candidate": {
+      "occurrences": 10,
+      "documents": 8,
+      "rare": false
+    },
+    "reference_definition": {
+      "occurrences": 26,
+      "documents": 1,
+      "rare": true
+    },
+    "strikethrough_candidate": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "strong_asterisk_candidate": {
+      "occurrences": 4907,
+      "documents": 884,
+      "rare": false
+    },
+    "strong_underscore_candidate": {
+      "occurrences": 1,
+      "documents": 1,
+      "rare": true
+    },
+    "table_cell_candidate": {
+      "occurrences": 2563,
+      "documents": 55,
+      "rare": false
+    },
+    "table_row_candidate": {
+      "occurrences": 761,
+      "documents": 55,
+      "rare": false
+    },
+    "table_separator": {
+      "occurrences": 93,
+      "documents": 55,
+      "rare": false
+    },
+    "task_checked": {
+      "occurrences": 573,
+      "documents": 33,
+      "rare": false
+    },
+    "task_unchecked": {
+      "occurrences": 419,
+      "documents": 30,
+      "rare": false
+    },
+    "thematic_break_candidate": {
+      "occurrences": 18,
+      "documents": 5,
+      "rare": true
+    },
+    "unclosed_fence": {
+      "occurrences": 0,
+      "documents": 0,
+      "rare": true
+    }
+  },
+  "rare_examples": {
+    "autolink_email_candidate": [],
+    "autolink_url": [
+      {
+        "path": "docs/runbooks/phone_site_development_live_walkthrough.md",
+        "lines": [
+          49
+        ]
+      }
+    ],
+    "blockquote_nested_line": [],
+    "fence_mermaid": [
+      {
+        "path": "docs/architecture/private_messaging.md",
+        "lines": [
+          40,
+          70,
+          117,
+          149
+        ]
+      },
+      {
+        "path": "docs/railspike/README.md",
+        "lines": [
+          106
+        ]
+      }
+    ],
+    "fence_tilde": [],
+    "footnote_candidate": [],
+    "front_matter": [
+      {
+        "path": "docs/research/sigtbd_fault_tolerant_governance_slides_5min_marp.md",
+        "lines": [
+          1
+        ]
+      }
+    ],
+    "gfm_alert_candidate": [],
+    "hardbreak_backslash": [],
+    "html_comment_start": [
+      {
+        "path": "docs/railspike/README.md",
+        "lines": [
+          325,
+          359
+        ]
+      },
+      {
+        "path": "docs/research/sigtbd_fault_tolerant_governance_slides_5min_marp.md",
+        "lines": [
+          41,
+          54,
+          70,
+          84
+        ]
+      }
+    ],
+    "image_markdown_candidate": [],
+    "link_reference_explicit_candidate": [],
+    "reference_definition": [
+      {
+        "path": "docs/plans/thywill_site_option_review.md",
+        "lines": [
+          123,
+          124,
+          125,
+          126
+        ]
+      }
+    ],
+    "strikethrough_candidate": [
+      {
+        "path": "docs/plans/chouse_club_hosting_plan_v1.md",
+        "lines": [
+          141
+        ]
+      }
+    ],
+    "strong_underscore_candidate": [
+      {
+        "path": "docs/plans/backlog/fast_post_scoring_mvp_product_plan_v1.md",
+        "lines": [
+          77
+        ]
+      }
+    ],
+    "thematic_break_candidate": [
+      {
+        "path": "docs/plans/backlog/v3_terminal_operator_ui_step1_solution_assessment.md",
+        "lines": [
+          8
+        ]
+      },
+      {
+        "path": "docs/plans/ephemeral_testing_tasks.md",
+        "lines": [
+          24,
+          147
+        ]
+      },
+      {
+        "path": "docs/plans/qdb_theme_fidelity_checklist.md",
+        "lines": [
+          214
+        ]
+      },
+      {
+        "path": "docs/research/sigtbd_fault_tolerant_governance_slides_5min.md",
+        "lines": [
+          10,
+          22,
+          37,
+          50
+        ]
+      },
+      {
+        "path": "docs/research/sigtbd_fault_tolerant_governance_slides_5min_marp.md",
+        "lines": [
+          46,
+          59,
+          75,
+          89
+        ]
+      }
+    ],
+    "unclosed_fence": []
+  }
+}

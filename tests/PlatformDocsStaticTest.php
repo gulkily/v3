@@ -81,6 +81,9 @@ final class PlatformDocsStaticTest
             assertTrue(str_contains($index, 'route-source: static-html'));
             assertTrue(str_contains($index, 'Platform Docs'));
             assertTrue(str_contains($document, 'route-source: static-html'));
+            assertStringContains('<table>', $document);
+            assertStringContains('<th scope="col">', $document);
+            assertStringContains('class="docs-table-scroll" tabindex="0"', $document);
             assertTrue(str_contains($document, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
             assertTrue(str_contains($invalid, '<h1>Not Found</h1>'));
             assertStringContains('route-source: static-html', $workflow);

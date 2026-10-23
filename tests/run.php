@@ -114,6 +114,7 @@ $testFiles = [
     __DIR__ . '/AgentApiWorkedExampleTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',
     __DIR__ . '/PlatformDocsPageTest.php',
+    __DIR__ . '/MarkdownPipeTableTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',
     __DIR__ . '/PrivateMessageDatabaseConfigTest.php',
     __DIR__ . '/PrivateMessageApiRoutingTest.php',
