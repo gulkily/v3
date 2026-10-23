@@ -42,6 +42,7 @@ Effort study: `railspike-effort` / `v3/activity_feed_pagination`; [ledger](../ef
 - **Unverified:** production deployment, the user's live server/browser and physical devices. Tests use temporary copies/fixtures; original user content and live read model are not rewritten. Branch publication is separate from merge/deployment.
 - **Full suite not run:** 44 focused tests are not a full-suite claim. PHP GD remains absent; the preceding cycle reproduced missing-GD image failures on unchanged application code. No new full-suite result is inferred.
 - **Supported limits:** results are live, not frozen snapshots. Positions expire if unkeyed local history changes/reindexes; First page recovers. Offline Activity pages are not cached by the existing worker: reconnect and Reload/Back; worker policy was tested without substituting unrelated cached content. No automatic all-history offline archive or other-list migration is included.
+- Deployment guidance explicitly requires refreshing existing static HTML for the new first-page controls; application/read-model updates alone do not rewrite a previously published artifact. Live deployment remains unverified.
 - No schema/table-shape change beyond version-gated query semantics; no new navigation destination/icon mapping. All four stage commits include their corresponding summary updates; the planning commit contains only plans/debug history/index organization.
 
 ## Study closeout

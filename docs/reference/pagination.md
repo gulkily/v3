@@ -112,7 +112,16 @@ introduced this contract in read-model version 25 without changing table shape.
 
 Query-bearing standard Activity requests bypass first-page static artifacts;
 `StaticArtifactBuilder` publishes only the first `/activity/` page. Preserve
-normal publication invalidation. Verify the actual FrontController path, not
+normal publication invalidation. When deploying changed pagination markup, rebuild
+or republish existing static HTML as well as updating the application/read model;
+a previously published first page will not gain controls merely from a PHP
+change. The normal operator command is:
+
+```bash
+./v3 build-static /path/to/content-repository /path/to/read-model.sqlite3 /path/to/static-artifacts
+```
+
+Use the artifact destination configured for that installation. Verify the actual FrontController path, not
 only direct Application rendering. Never strip a position and serve page one
 under an older-page URL.
 
