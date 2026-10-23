@@ -111,11 +111,8 @@ final class CheckoutManager
         return $data;
     }
 
-    private function git(string $path, array $args, bool $allowFailure = false): array
+    private function gitEnvironment(): array
     {
-        if ($this->deadline !== null && microtime(true) >= $this->deadline) {
-            throw new RuntimeException('Refresh deadline exceeded; retry with checkouts refresh.');
-        }
         $env = getenv();
         foreach (array_keys($env) as $key) {
             if (in_array($key, ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_NAMESPACE', 'GIT_PREFIX', 'GIT_SHALLOW_FILE', 'GIT_QUARANTINE_PATH'], true)) {
@@ -126,6 +123,15 @@ final class CheckoutManager
         $env['GIT_EDITOR'] = 'true';
         $env['GIT_MERGE_AUTOEDIT'] = 'no';
         $env['LC_ALL'] = 'C';
+        return $env;
+    }
+
+    private function git(string $path, array $args, bool $allowFailure = false): array
+    {
+        if ($this->deadline !== null && microtime(true) >= $this->deadline) {
+            throw new RuntimeException('Refresh deadline exceeded; retry with checkouts refresh.');
+        }
+        $env = $this->gitEnvironment();
         $pipes = [];
         $process = proc_open(['git', '-C', $path, ...$args], [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, $env);
         if (!is_resource($process)) {
@@ -283,15 +289,18 @@ final class CheckoutManager
         return $this->state . '/history-' . hash('sha256', $entry['common'] . "\n" . $entry['source'] . "\n" . $this->tracking($entry)) . '.json';
     }
 
-    private function inspect(array $entry): array
+    private function inspect(array $entry, ?array $before = null): array
     {
         $path = $entry['path'];
-        $before = $this->snapshot($entry);
+        $alreadyFetched = $before !== null;
+        $before ??= $this->snapshot($entry);
         if ($before['busy']) {
             return ['action' => 'busy', 'reason' => 'Git operation in progress; finish or abort it, then preview again.', 'snapshot' => $before];
         }
         // Fetch just the registered branch; do not fetch tags or unrelated remotes.
-        $this->git($path, ['fetch', '--no-tags', '--no-recurse-submodules', $entry['remote'], '+refs/heads/' . $entry['target'] . ':' . $this->tracking($entry)]);
+        if (!$alreadyFetched) {
+            $this->git($path, $this->fetchArguments($entry));
+        }
         $after = $this->snapshot($entry);
         foreach (['head', 'branch', 'dirty'] as $field) {
             if ($before[$field] !== $after[$field]) {
@@ -406,31 +415,57 @@ final class CheckoutManager
             'exit_code' => $this->attention($rows) || in_array($refresh['state'], ['failed', 'deferred'], true) ? 2 : 0];
     }
 
+    private function fetchArguments(array $entry): array
+    {
+        return ['fetch', '--no-tags', '--no-recurse-submodules', $entry['remote'], '+refs/heads/' . $entry['target'] . ':' . $this->tracking($entry)];
+    }
+
     private function collect(array $registry, array $options): array
     {
+        $this->deadline ??= microtime(true) + 120;
         $rows = [];
         $seen = [];
+        $prepared = [];
+        $tasks = [];
         $selected = isset($options['path']) ? (realpath($options['path']) ?: $options['path']) : null;
-        foreach ($registry['checkouts'] as $entry) {
-            $row = $entry;
+        if ($selected !== null && !array_filter($registry['checkouts'], fn ($entry) => $entry['path'] === $selected)) {
+            throw new RuntimeException('Selected path is not registered; use checkouts list or add.');
+        }
+        foreach ($registry['checkouts'] as $index => $entry) {
+            $rows[$index] = $entry;
             if (($selected !== null && $selected !== $entry['path']) || ($entry['role'] !== 'development' && $selected === null)) {
-                $row += ['action' => 'excluded', 'reason' => 'Not selected; test/server roles require --path.'];
+                $rows[$index] += ['action' => 'excluded', 'reason' => 'Not selected; test/server roles require --path.'];
             } elseif (isset($seen[$entry['common']])) {
-                $row += ['action' => 'excluded', 'reason' => 'Shared Git storage already selected.'];
+                $rows[$index] += ['action' => 'excluded', 'reason' => 'Shared Git storage already selected.'];
             } else {
                 $seen[$entry['common']] = true;
                 try {
-                    $row += $this->inspect($entry);
+                    $before = $this->snapshot($entry);
+                    if ($before['busy']) {
+                        $rows[$index] += ['action' => 'busy', 'reason' => 'Git operation in progress; finish or abort it, then preview again.', 'snapshot' => $before];
+                    } else {
+                        $prepared[$index] = $before;
+                        $tasks[$index] = ['path' => $entry['path'], 'args' => $this->fetchArguments($entry)];
+                    }
                 } catch (\Throwable $error) {
-                    $row += ['action' => 'unavailable', 'reason' => $error->getMessage()];
+                    $rows[$index] += ['action' => 'unavailable', 'reason' => $error->getMessage()];
                 }
             }
-            $rows[] = $row;
         }
-        if ($selected !== null && !array_filter($rows, fn ($row) => $row['path'] === $selected)) {
-            throw new RuntimeException('Selected path is not registered; use checkouts list or add.');
+        $results = (new CheckoutFetchPool())->fetch($tasks, $this->gitEnvironment(), $this->deadline);
+        foreach ($prepared as $index => $before) {
+            try {
+                if ($results[$index] !== 0) {
+                    throw new RuntimeException($results[$index] === 124
+                        ? 'Git fetch timed out; inspect processes/locks, then retry refresh.'
+                        : 'Git fetch failed; check remote access/configuration, then retry refresh.');
+                }
+                $rows[$index] += $this->inspect($registry['checkouts'][$index], $before);
+            } catch (\Throwable $error) {
+                $rows[$index] += ['action' => 'unavailable', 'reason' => $error->getMessage()];
+            }
         }
-        return $rows;
+        return array_values($rows);
     }
 
     private function refreshStatus(): array

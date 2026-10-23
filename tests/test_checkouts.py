@@ -609,6 +609,75 @@ class CheckoutsTest(unittest.TestCase):
         self.cli('refresh')
         self.assertEqual('current', self.cli()['checkouts'][0]['action'])
 
+    def slow_fetch(self, path, delay=0.4, marker=None):
+        import shlex
+        wrapper = self.base / ('upload-' + path.name)
+        marker = marker or self.base / ('started-' + path.name)
+        wrapper.write_text('#!/bin/sh\ndate +%s%N > ' + shlex.quote(str(marker))
+                           + '\nsleep ' + str(delay) + '\nexec git-upload-pack "$@"\n')
+        wrapper.chmod(0o700)
+        self.git(path, 'config', 'remote.origin.uploadpack', str(wrapper))
+        return marker
+
+    def test_independent_fetches_overlap_and_foreground_stays_fast(self):
+        import time
+        clones = [self.clone]
+        for name in ['second', 'third']:
+            path = self.base / name
+            self.git(self.base, 'clone', '-q', str(self.up), str(path))
+            clones.append(path)
+        markers = []
+        for path in clones:
+            self.add(path)
+            markers.append(self.slow_fetch(path, delay=1))
+        self.cli(code=2, auto_refresh=True)
+        deadline = time.monotonic() + 5
+        while not all(p.exists() for p in markers) and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertTrue(all(p.exists() for p in markers))
+        stamps = [int(p.read_text()) for p in markers]
+        self.assertLess((max(stamps) - min(stamps)) / 1e9, 0.4)
+        start = time.monotonic()
+        result = self.cli(code=2, auto_refresh=True)
+        self.assertLess(time.monotonic() - start, 1)
+        self.assertEqual('running', result['refresh']['state'])
+        self.assertEqual('complete', self.wait_refresh()['state'])
+
+    def test_registry_change_during_refresh_discards_cache(self):
+        import time
+        self.add()
+        marker = self.slow_fetch(self.clone, delay=0.5)
+        first = self.cli(code=2, auto_refresh=True)
+        deadline = time.monotonic() + 5
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertTrue(marker.exists())
+        registry = json.loads(self.registry.read_text())
+        registry['revision'] = 'manually-changed-generation'
+        self.registry.write_text(json.dumps(registry))
+        status = self.wait_refresh()
+        self.assertEqual('failed', status['state'])
+        self.assertIn('Registry changed', status['reason'])
+        self.assertFalse((self.state / ('overview-' + first['cache_key'] + '.json')).exists())
+        self.assertEqual('unchecked', self.cli(code=2)['checkouts'][0]['action'])
+
+    def test_cancelled_worker_cannot_publish_cache_or_replay_old_token(self):
+        import signal
+        import time
+        self.add()
+        marker = self.slow_fetch(self.clone, delay=10)
+        first = self.cli(code=2, auto_refresh=True)
+        deadline = time.monotonic() + 5
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertTrue(marker.exists())
+        status = json.loads((self.state / 'refresh.json').read_text())
+        self.assertEqual(status['pid'], os.getpgid(status['pid']))
+        os.kill(status['pid'], signal.SIGTERM)
+        self.assertEqual('failed', self.wait_refresh()['state'])
+        self.assertFalse((self.state / ('overview-' + first['cache_key'] + '.json')).exists())
+        self.cli('__refresh', first['refresh']['token'], code=2, raw=True)
+
 
 if __name__ == '__main__':
     unittest.main()

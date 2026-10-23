@@ -21,3 +21,9 @@ Effort study: `railspike-effort / v3/checkout_overview`; [ledger](../effort_esti
 - Changes: detached single-flight worker and synchronous refresh, 30s freshness, queued/running/deferred/failed status with launch timeout and bounded status/cache retention. Worker owns a session, handles interruption/deadline by terminating its own process group, retains previous good observations/errors, and never creates apply previews. `--no-refresh` supports deliberate cache-only diagnosis; normal default schedules automatically.
 - Verification: 4 real-Git worker tests passed: detached response under 1s/coalescing, retained good rows/age after offline fetch, deferred manager lock, disabled process launcher and cold failure/retry. Corrected retained-error exit reporting after a failing focused test and reran successfully.
 - Notes: Stage 2 `2929b56f4`; background launch needs available POSIX/pcntl PHP support, otherwise visible failure plus synchronous refresh recovery. No live worker or registry test mutations.
+
+## Stage 4 - Bounded concurrent fetches
+
+- Changes: shared collector captures pre-fetch snapshots, runs at most three independent fetch-only Git children, and classifies/publishes evidence solely in the manager-lock-owning coordinator. Pool enforces per-child/overall limits and reaps handled cancellations; refresh never creates preview files. Registry generation is rechecked before cache publication.
+- Verification: 6 focused real-Git tests passed: three slow independent fetches overlap, cached foreground remains under 1s during work, manual registry change discards cache, actual SIGTERM cancels the isolated worker group and prevents publication/token replay, observed/externally fetched and already-fetched rewrites remain blocked.
+- Notes: Stage 3 `dc633db4b`. Uncatchable kill cannot guarantee descendant cleanup; future inspection must still revalidate source/Git state. No child writes authoritative history/cache.
