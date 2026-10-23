@@ -32,8 +32,6 @@ x	request only a 0-1 probability in response
 html pages should be marked up with the templates used to build them
 	also include pointers to where in the code the template was included
 
-clean up the failing tests
-
 offline support feature stub
 Tracked in `docs/plans/backlog/offline_support_roadmap.md`.
 	Next: snapshot lifecycle confidence and cache controls.
@@ -61,9 +59,6 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 	needs its own Step 1 given the redirect-following/unknown-provider
 		design questions
 
-xmake it easy to import/sync content from another instance
-	make this schedulable too
-
 continue with docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md;
 
 when we import another instance, we end up with a lot of unapproved accounts
@@ -76,19 +71,6 @@ unify thread-label and post-reaction record formats
 	keep existing signed and unsigned records compatible without rewriting signed bytes
 	account for imports, activity, signature companions, and duplicate detection
 	separate follow-up to signed_thread_label_records
-
-image uploading
-	remove the limitations on image size and type, and allow for more flexible image handling
-x		accept larger sources and JPEG/PNG/WebP/GIF/BMP through client preparation
-		remaining: broader formats/server conversion; bounded source and output sizes still apply
-x	automatically downsample images to a reasonable size for display, and discard the original
-x		downsample it on the client side if possible
-	create a feature to auto-describe images using LLM
-x	create a modern image upload UI
-x		support mobile devices with large area touch targets
-x		allow drag-and-drop and paste from clipboard
-x	do not display the form to users who cannot upload images
-x	collapse the image selector one small thing that doesn't double the size of the compose form.
 
 compose form improvements
 	"choose an image" module should look like the other modules
@@ -126,10 +108,6 @@ we need to get rid of all or almost all commands that have a dash
 https://zenmemes.com/user/ilyag#account-keys
 things like this should have a score of some kind that makes it easy to spot traits
 
-every page that has data listing should have a query to reproduce that listing in the database viewer with the locally saved data and immediately run the query and make it easy to edit and modify the query
-the database interface should open in a popup dialog that is as instant as possible and retain state and preserve background page state easy to return to.
-we should update existing viewable queries, such as in /tools/codebase/ to this new mode.
-
 for common assumed commands, we should have assistance:
 example: wsl@Lenovo:~/agent/v3-codex-2$ ./v3 import
          Unknown command: import
@@ -146,81 +124,6 @@ Explain feature for page help
 	use docs/plans/ui_copy_audit_checklist.md as the cleanup inventory
 	keep essential warnings and recovery actions visible when needed
 
-Existing feature-flag test failure
-	WriteApiSmokeTest::testPreparedFeatureFlagChangeVerifiesSignatureAndCommitsActionEvidence
-	Reproduced on main ed71ae0f: prepared feature-flag result lacks post_id used at tests/WriteApiSmokeTest.php:4261
-
-i want to have a developer mode where i can self-approve without root approval
-
-
-User Access icon completed
-	Added person-and-key icon to Tools launcher and shared Tools subnavigation
-	Verified Word97, Chicago, and Midnight: launcher plus active/inactive navigation
-	Browser checked 16px dimensions, decoded SVGs, and visually inspected each theme
-
-Explore a better project name than PHP Forum Rewrite
-	Step 1 candidates: Threadkeep, Commonroom, or existing Zenmemes identity
-	Assessment: docs/plans/project_naming_step1_solution_assessment.md
-	Pending naming direction and approval; no rename implemented
-
-Create a document of 200 project name choices
-	Completed: docs/plans/project_naming_candidates.md
-	Ten styles with twenty distinct names each; selection remains open
-
-Fix first-paint button movement on /compose/thread and /compose/reply
-	Completed: server-render Outbox actions, reserve image picker space, move identity feedback below forms
-	Verified 24 browser layout cases, both Outbox saves, image posting/recovery integration, and focused Outbox tests
-	Regression: tests/browser/compose_layout_stability.mjs
-
-Align Create thread and More actions controls on /compose/thread
-	Removed inherited submit top margin and full-width sizing in action rows with a menu
-	Matched menu height to the submit button and kept both controls on one row at mobile widths
-	Extended compose layout regression to check top edges, heights, and horizontal placement
-
-Keep the project named v3 for now
-	Decision: retain v3; defer alternative naming ideas
-	Updated README title and recorded the decision in the naming assessment
-	Supersedes the earlier pending naming direction
-
-Close project naming exploration
-	Completed: retain v3 and commit the README title correction and naming record
-	Earlier naming exploration and candidate-selection entries are closed; no approval is pending
-	The earlier 200-name candidate file is no longer present in this checkout
-
-Explore post-retraction sweep
-	Step 1: compare inline, cron reconciliation, queue plus reconciliation, and lifecycle hooks
-	Assessment: docs/plans/post_retraction_sweep/post_retraction_sweep_step1_solution_assessment.md
-	Pending Step 1 approval; no implementation authorized
-
-Define post-retraction sweep requirements
-	Step 1 approved; Step 2 drafted in docs/plans/post_retraction_sweep/post_retraction_sweep_step2_feature_description.md
-	Pending Step 2 approval; implementation not started
-
-Plan post-retraction sweep implementation
-	Step 2 approved; seven-stage Step 3 plan drafted
-	Pending Step 3 approval; no implementation or commits started
-
-Complete post-retraction sweep implementation
-	Completed all seven approved stages on feature/post-retraction-sweep; supersedes the pending approval entries above
-	Immediate CLI preview/run/status, acceptance queueing, cron reconciliation, bounded recovery, and publication safety implemented
-	Final focused suite: 55 passed; browser retraction/privacy/menu checks passed
-	Full PHP suite: 1,331 passed, 3 failures reproduced on unchanged base
-	Coverage and operator recovery: docs/reference/retraction_sweep.md
-	Implementation summary: docs/plans/post_retraction_sweep/post_retraction_sweep_step4_implementation_summary.md
-	No production deployment or cron installation performed
-
-Make retraction sweep CLI output readable
-	Preview, status and run use text summaries by default; --json retains structured output
-
-Consolidate the complete post-retraction workflow
-	Expanded docs/reference/author_post_retraction.md into the end-to-end guide
-	Covers signing, suppression, cleanup, verification, recovery, configuration and deployment
-	Specialist sweep/privacy references link back to the central guide
-
-Make the complete retraction guide discoverable on the website
-	Added Post Retraction: Complete Workflow under Operations in the Platform Docs catalog
-	Existing catalog-based static builds now include the guide
-
 nojs compatibility
 	this is going to be a big one
 
@@ -229,8 +132,6 @@ image attachment: replace the "Remove image" text button with an x button on the
 	follow-up to attach_image_in_menu (docs/plans/attach_image_in_menu/attach_image_in_menu_step2_feature_description.md)
 
 qr codes should match theme within reason
-remove the windark to midnight theme alias (ThemeRegistry::LEGACY_ALIASES, layout.php and theme_toggle.js reads, theme-hint cookie mapping)
-	once saved Midnight preferences have had time to migrate; see docs/plans/rename_windark_to_midnight/
 
 UI copy cleanup: favor deleting text over editing or moving it into help; rely on an intuitive, explorable interface.
 	Keep essential warnings and recovery actions visible; apply this preference to the existing Explain task and audit checklist.
@@ -263,8 +164,3 @@ No-JavaScript basic access — plan set aside
 	Plan: docs/plans/nojs_basic_access_step3_development_plan.md
 	Steps 1 and 2 approved; Step 3 draft, implementation not started.
 	Revalidate against current code before resuming plan review.
-
-Merge completed post-retraction work into main
-	Integrated feature/post-retraction-sweep and pulled origin/main; preserved both sides of compose, test registry and documentation conflicts
-	Verified 33 focused PHP tests, 24 compose layout cases with both Outbox saves, and 20 reply-menu theme/viewport cases
-	Markdown renderer and Docs Discovery planning remain uncommitted and outside this merge
