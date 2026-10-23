@@ -1,8 +1,8 @@
 > **Feature plan:** [Step 1](./docs_independent_publication_step1_solution_assessment.md) · [Step 2](./docs_independent_publication_step2_feature_description.md) · [Step 3](./docs_independent_publication_step3_development_plan.md) · [Step 4](./docs_independent_publication_step4_implementation_summary.md)
 
-Restored inherited state: Step 3 approval, planning and Stages 1–6 commits, enabled debug, R1/P2 study history and pending bookkeeping were reconciled before Stage 7 continuation; no scope change.
-
 Debug mode: enabled
+
+Restored inherited state: Step 3 approval, planning and Stages 1–6 commits, enabled debug, R1/P2 study history and pending bookkeeping were reconciled before Stage 7 continuation; no scope change.
 
 Effort study: `railspike-effort / v3/docs_independent_publication`, standing enrollment P2; [host ledger](../effort_estimation_trial.md#enrollment-index-after-p2).
 
