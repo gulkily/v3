@@ -324,15 +324,26 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Verification: eight existing exchange-recorder/store and post-exchange/retraction API checks passed, including visibility filtering and provider transport failures. Production-rendered loaded/empty list states passed four-theme 390px/1280px Chromium overflow checks with visible post/exchange links; inspected Midnight phone list screenshot. Syntax/diff passed. Browser fixtures used controlled rows; actual provider calls, physical devices and deployment unverified. Dependencies unchanged.
 - Previous item commit: evidence retention review `48d4f7f95`.
 
+## Visitor statistics initialization copy — October 23, 2026
+
+- Removed the sentence explaining when counts appear; retained the initializing state itself. Unavailable-state recovery, incomplete-period warning, request/privacy scope, chart/table and expanded counting limitations remain.
+- Verification: ten existing statistics configuration/store/observer/page checks passed, including initialization, partial periods and operator-session access. Chromium production-renderer fixtures covered initializing, unavailable, loaded, partial and zero-request periods; expanded counting/privacy details and Light/Word97/Chicago/Midnight overflow passed at 390px/1280px. Inspected Midnight initializing and Word97 partial phone screenshots. Final core-route smoke passed. Syntax/diff passed; physical devices and production deployment unverified. Dependencies unchanged.
+- Previous item commit: LLM Exchanges introduction `6dfc100cf`.
+
+## Second audit pass closeout — October 23, 2026
+
+- Closed all five current-phase candidates, each in an individual commit including this checklist. Four copy changes; evidence-header review retained the existing UI with its rationale. No new dependencies, navigation destinations, icon mappings, Fastmod prompt edits or `todo.txt` changes.
+- Collected five further candidates below; these remain observations for a future pass. Local controlled browser fixtures and targeted regression checks do not establish live-instance deployment. Full-suite and physical-device acceptance were not performed.
+
 ## Current phase — October 23, 2026
 
-These are observations for later rendered review, not approved removal decisions.
+Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
 - [x] **Post analysis no-risk fields** — Review routine “Recommended action: none,” “Unicode risk: none” and script inventories in expanded analysis. Check benign and risky posts; retain actual warnings, moderation consequences and useful evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
 - [x] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
 - [x] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
-- [ ] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
+- [x] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
 
 ## Next phase — new candidates
 
@@ -345,3 +356,5 @@ These observations need rendered review before deciding what to remove. Keep thi
 - [ ] **Post-detail Reply duplication** — Review the header's “Reply to this post” link against the card's Reply action. Check long evidence headers, root/reply details and retracted posts; retain an easy-to-find reply action. Source: `templates/pages/post.php`, `templates/partials/post_card.php`.
 
 - [ ] **LLM Exchange absent request ID** — Review the routine “Request ID: unavailable” field on detail pages when no provider identifier exists. Check completed, provider-error and transport-error records; retain available trace IDs and error evidence. Source: `templates/pages/llm_exchange.php`.
+
+- [ ] **Visitor statistics zero-request period** — Review the “No eligible requests” paragraph alongside zero totals and an empty chart/table. Distinguish no traffic from initialization, collection gaps and failures; retain privacy/counting limits. Source: `templates/pages/visitor_statistics.php`.

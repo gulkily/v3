@@ -8,7 +8,7 @@
 <?php if ($dashboard['status'] === 'unavailable'): ?>
     <div class="feedback feedback-error">Visitor statistics are currently unavailable. Check the private statistics-state path and try again.</div>
 <?php elseif ($dashboard['status'] === 'initializing'): ?>
-    <p>Visitor statistics are initializing. Counts will appear after eligible page visits are observed.</p>
+    <p>Visitor statistics are initializing.</p>
 <?php else: ?>
 <?php $totals = $dashboard['totals']; ?>
 <?php $buckets = $dashboard['buckets']; ?>
