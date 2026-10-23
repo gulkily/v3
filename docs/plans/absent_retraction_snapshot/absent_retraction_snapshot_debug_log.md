@@ -113,3 +113,27 @@ No supported findings.
 ### Uncertain assessments
 
 - Static inspection establishes the update gap, not runtime feasibility. Stage 1 validation and Stage 3 consumption checks must resolve safety before dependents; stage sizing/0.70 remains an exposed estimate.
+
+## 2026-10-23T20:17:54Z Step 4 completed handoff
+
+Debug mode: enabled, inherited from approved Step 3. Planning fd4fa3839; stages 622adaf59, 5c7b6a3a0, 63ef804bf, 6012d8a65, 6aff8c726. Branch `feat/absent-retraction-snapshot`; no merge/push/deployment/live repair/task retry. Scope v3, stable study ID/R1/P2 and exposed single rater preserved; 0.70 projection and separate 0.80 retrospective assessment recorded in summary/ledger, maintainer acceptance pending.
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate: plans were organized with repaired navigation/index, committed before the summary or runtime changes; preserved a reviewable approved boundary. Retain the gate.
+- `step4_implementation_do.md`, Stage Boundary Protocol: each of five stages has scoped verification and a summary-bearing commit before the next stage. Retain traceability; final correction to rootless post Likes is covered by real browser assertions.
+- `step4_implementation_after.md`, Final Verification Checklist: full-suite results are explicitly incomplete (75 passes before interruption) rather than inferred from 57 focused cases/16 browser scenarios. Final reader correction was verified separately after the frozen full-suite copy was created. Retain this distinction.
+- `RAILSPIKE.md`, Experimental Effort Estimation: preserves historical unavailable checkpoints and scope v2 0.85/v3 0.70 separately; final 0.80 is retrospective and not measured labor or acceptance. Retain score semantics.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only scope and core read-model migration checks are inapplicable: this is an application change to portable snapshot metadata and PHP-side filtering with unchanged core queries/schema. Deployment, physical-device and installed-client upgrade verification are outside local implementation acceptance. No navigation destination/icon changes occurred.
+
+### Uncertain assessments
+
+- Changing host documentation during a full static-publication regression triggered its intentional fingerprint guard. A frozen bounded-doc fixture then passed both shared import/static recovery tests; an immutable full-tree attempt passed 75 cases, including full-corpus legacy bootstrap, before deliberate interruption in a long import test. These results do not establish full-suite success or a baseline failure. Consider documenting an immutable-copy test setup before workflows with concurrent plan edits and guarded document publication.
+- Installed service-worker upgrades and production deployment remain unverified; portable version-5 exclusions require updated reader assets. Required local CLI/configured-worker, source safety/reappearance, stale-base/dependent-expansion and rendered-reader recovery were verified. No claim of maintainer comfortable-fit acceptance is made.
