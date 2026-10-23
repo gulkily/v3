@@ -410,13 +410,24 @@ Reviewed candidates; decisions and verification are recorded above.
 - Removed the unconditional image-backup paragraph from the shared saved-reader shell, so it no longer appears above every saved board/tag/thread view. Backup still offers its separate Images collection download. Offline mode, missing-content reconnect guidance, queue outcomes and Outbox recovery remain.
 - Verification: fourteen existing worker/navigation/thread-presentation and offline-reader route/control checks passed. Chromium used the real SQLite runtime with controlled loaded/empty snapshots across board (All/Newest), tags, found/missing tags and found/missing threads. Confirmed notice absence, one recovery message per missing view, queued Like and reconnect outcomes, and Light/Word97/Chicago/Midnight 390px/1280px overflow. Inspected Midnight phone board screenshot (`/tmp/copy-offline-cycle4-board.png`). Snapshot fixtures and sender stubs do not establish live delivery, worker upgrades on existing devices or deployment to the reported other instance. Syntax/diff passed; dependencies unchanged.
 
+## Feature Flags account-key notice review — October 23, 2026
+
+- Already removed by `904e055a7` (expired operator-session recovery), which deleted the exact detached paragraph and link from Feature Flags. No further product change. Access history remains in User Access with authenticated operator access and sign-in recovery. The other instance's intermittent display cannot be diagnosed or declared deployed from this checkout.
+- Verification: three existing feature-flag behavior/operator-security API checks passed, including Feature Flags notice absence, authenticated history, permission denial and operator sign-in recovery. Existing Chromium toolbar/save checks passed for search/filter/counts, empty recovery, keyboard focus, failed/delayed saves, read-only and no-JavaScript views, and six themes at 375px/1150px; a temporary copy also asserted the exact notice is absent from editable/read-only/no-JavaScript fixtures. Inspected Midnight phone screenshot (`/tmp/feature-flags-midnight-375.png`). Controlled fixtures; actual signatures covered by existing API checks, not browser stubs. Physical devices and deployment unverified. Dependencies unchanged.
+
+## Fourth audit pass closeout — October 23, 2026
+
+- Reviewed all five candidates: three copy changes (offline pending feedback, sparse analysis quality, shared offline image-backup notice), one retained missing-content decision and one verification of an existing removal. Each item has its own commit with this checklist. Earlier item commits: `f10e5a5b9`, `5cf1b52a7`, `973150ad0`, `52907671e`; the Feature Flags verification is in this entry's commit.
+- Targeted PHP checks and controlled rendered phone/desktop checks passed as recorded per item. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and live-instance acceptance remain unverified; prior deployment and layout follow-ups remain open.
+- The three observations below are future review candidates, not completed changes.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
 
-## Next phase — new candidates
+## Fourth audit phase — October 23, 2026
 
-These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
+Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **Offline health checking feedback** — Review “CHECKING” alongside “Checking offline reading status…” in initial and repeat checks. Preserve pending feedback, offline readiness, storage failures and actionable recovery. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
 
@@ -426,4 +437,14 @@ These observations need rendered review before deciding what to remove. Keep thi
 
 - [x] **Offline reader image-backup notice** — Remove the user-reported unnecessary notice: “Saved snapshots preserve image references but do not include image files. Download the separate image backup from the online Backup page to preserve them.” Reported at the top of board newest/all and apparently every page on another instance. Verify the affected saved views. Source: `templates/pages/offline_reader.php`.
 
-- [ ] **Feature Flags account-key review message** — Remove the user-reported unnecessary message that intermittently appears in Feature Flags: “Review account key grants and approval-policy changes (authenticated operator session required).” Verify when it appears and the affected rendered states.
+- [x] **Feature Flags account-key review message** — Remove the user-reported unnecessary message that intermittently appears in Feature Flags: “Review account key grants and approval-policy changes (authenticated operator session required).” Verify when it appears and the affected rendered states.
+
+## Next phase — new candidates
+
+These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
+
+- [ ] **Offline health result summary** — Review READY/NOT READY alongside “Offline reading is ready/not ready on this device.” Preserve PARTIAL distinctions, publication failures, actionable guidance and accessible result announcements. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
+
+- [ ] **Offline reader refresh success** — Review “Saved reader refreshed and rechecked” alongside the resulting health status and freshness rows. Check changed/unchanged revisions and failed refresh/retry; retain enough acknowledgment to distinguish a finished refresh from stale results. Source: `public/assets/offline_health.js`.
+
+- [ ] **LLM Exchange return-link duplication** — Review “Back to LLM Exchanges” against the existing LLM Exchanges Tools subnavigation link on detail pages. Check keyboard and phone navigation, access restrictions and long expanded raw records before removing any route back to the list. Sources: `templates/pages/llm_exchange.php`, `templates/partials/tools_nav.php`, `src/ForumRewrite/Http/LlmExchangesController.php`.
