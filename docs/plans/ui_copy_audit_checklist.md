@@ -234,3 +234,14 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 - [x] Retained shared standard Activity Previous/Next/First page controls and private sign-in recovery when merging Access history. Relevant-file evidence preserves signature and unavailable-commit status.
 - Passed merged-code browser checks for Access history (16 themes at 390/1280), standard Activity (13 themes, native controls, JS on/off) and Forte append/Commits/parity; 15 focused PHP checks passed. Full-suite and deployment verification remain unperformed.
+
+
+## LCD palette selector — October 21, 2026
+
+- [x] Added Green, muted Amber, grayish Purple, and Gray choices to one LCD-only control left of the theme selector. No explanatory copy or settings page. Theme selector top/right offsets remain stable.
+- Verified pointer/keyboard, phone/desktop rendering, text/control contrast, saved preferences/first paint, fallback and stylesheet recovery. See the [implementation summary](lcd_color_choices/lcd_color_choices_step4_implementation_summary.md) for commands, coverage, and the existing blocked-storage composer limitation. Physical-phone and production checks remain pending.
+
+## LCD palette merge verification — October 23, 2026
+
+- Merged current remote main and LCD palette work, retaining both verification histories. Adapted restored home-page draft engagement to the shared composer binder while preserving inline-reply expansion behavior.
+- Passed `node tests/browser/lcd_palettes.mjs` and `node tests/browser/board_compose_focus.mjs` on merged code: Chromium phone/desktop palette, contrast, layout, persistence, keyboard, rotation/recovery, four-theme draft focus, failure/retry, signed publication and no-script checks. JavaScript/PHP syntax and diff checks passed. Existing blocked-storage composer errors remain separately identified by the LCD check. Full-suite, physical-device and production checks were not performed for this merge.

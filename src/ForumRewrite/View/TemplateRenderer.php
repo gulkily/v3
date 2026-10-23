@@ -229,6 +229,7 @@ final class TemplateRenderer
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
             'themes' => $themes,
+            'lcdPalettes' => ThemeRegistry::LCD_PALETTES,
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
             'themeStylesheetPaths' => $themeStylesheetPaths,

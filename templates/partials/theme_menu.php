@@ -1,4 +1,19 @@
 <div class="theme-menu" data-role="theme-menu">
+<?php if (in_array('lcd', array_column($themes, 'name'), true)): ?>
+  <div class="lcd-palette" data-role="lcd-palette">
+    <button type="button" class="lcd-palette__trigger" data-action="lcd-palette-toggle"
+      aria-label="Choose LCD palette" title="Choose LCD palette" aria-haspopup="menu"
+      aria-expanded="false" aria-controls="lcd-palette-popover"><span class="lcd-palette__chip" aria-hidden="true"></span></button>
+    <div class="theme-menu__popover" id="lcd-palette-popover" role="menu" aria-label="LCD palette" hidden>
+<?php foreach ($lcdPalettes as $palette => $label): ?>
+      <button type="button" class="theme-menu__option lcd-palette__option" role="menuitemradio"
+        aria-checked="false" data-lcd-palette-option="<?= $e($palette) ?>">
+        <span class="lcd-palette__chip" data-palette-chip="<?= $e($palette) ?>" aria-hidden="true"></span><?= $e($label) ?>
+      </button>
+<?php endforeach; ?>
+    </div>
+  </div>
+<?php endif; ?>
   <button
     type="button"
     class="theme-toggle theme-swatch"

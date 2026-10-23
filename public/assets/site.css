@@ -275,6 +275,43 @@ pre {
   flex: 0 0 auto;
 }
 
+/* The palette is positioned outside the theme menu to preserve its size/anchor. */
+.lcd-palette { display: none; }
+.lcd-palette {
+  position: absolute;
+  z-index: 31;
+  right: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.lcd-palette__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+}
+.lcd-palette__chip {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  background: var(--lcd-chip, #a2b578);
+  border: 1px solid var(--ink);
+}
+[data-palette-chip="green"] { --lcd-chip: #a2b578; }
+[data-palette-chip="amber"], :root[data-lcd-palette="amber"] { --lcd-chip: #b6ab8b; }
+[data-palette-chip="purple"], :root[data-lcd-palette="purple"] { --lcd-chip: #aaa1b7; }
+[data-palette-chip="gray"], :root[data-lcd-palette="gray"] { --lcd-chip: #acb5aa; }
+.lcd-palette__trigger:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
 .theme-menu__trigger {
   width: auto;
   min-width: 0;

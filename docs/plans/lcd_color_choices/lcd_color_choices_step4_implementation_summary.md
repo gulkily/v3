@@ -1,0 +1,46 @@
+> **Feature plan:** [Step 1](./lcd_color_choices_step1_solution_assessment.md) · [Step 2](./lcd_color_choices_step2_feature_description.md) · [Step 3](./lcd_color_choices_step3_development_plan.md) · [Step 4](./lcd_color_choices_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+# LCD color choices — Implementation summary
+
+- Branch: `feat/lcd-color-choices`; planning commit: `c10c305b`.
+- Request: user-edited Step 3 specifies muted Amber, grayish Purple instead of Blue, and left-hand placement with unchanged theme top/right offsets. Disposition: approved palette/placement refinements in the latest plan, retained over earlier proposed colors. Approval: `Approved Step 3`. Outcome: tracked in stages below; no pending scope requests.
+- Effort study: not selected. Deployment, database migrations, new navigation/icon mappings: inapplicable to approved scope.
+- Mockup remains untracked supporting material, outside the planning/implementation commits.
+
+## Stage 1 - Green and muted Amber
+
+- Changes: Green/muted Amber now selectable through a left-hand LCD-only swatch menu, with namespaced persistence and restoration before paint. Menu labels, selected state, arrow/Home/End keys, Escape, outside dismissal, and focus return use the canonical theme controls.
+- Verification: passed `node tests/browser/theme_cycle.cjs` and `./v3 test ThemeRegistryTest ProfileThemePresentationTest SiteProfileRegistryTest` (23/23). Chromium at 390px/1280px passed keyboard selection, Escape/refocus, navigation to Tools, reload, theme round trip, and page overflow. Main theme menu y/right offsets exactly match the pre-change baseline (390px: y=82.765625, right=28.1875; 1280px: y=66.578125, right=266.1875). Screenshots saved under `/tmp/lcd-stage1-{390,1280}.png`; phone screenshot inspected.
+- Notes: standalone layout intentionally keeps its existing scheme-only behavior. Verification caught and corrected a theme-isolation rule violation and an overly broad popover lookup collision before commit. Full palette recoloring/contrast and failure injection remain in Stages 2–3.
+
+## Stage 2 - Purple, Gray, and readable shared surfaces
+
+- Changes: Added grayish Purple/Gray; recolored LCD gradients, chrome, swatches, forms, feedback, and status variables. Retained Green backgrounds; darkened secondary text/borders and its warning color where measured contrast missed approved targets. Added explicit focus outlines and readable placeholders for all LCD palettes.
+- Verification: passed the 23 theme/profile PHP checks, existing theme-cycle checks, syntax and whitespace checks. Chromium at 390px/1280px traversed real board/thread routes for each palette; sampled 31 text/status/control-border foreground/background pairs per palette/viewport with no contrast failures after correction (4.5:1 text, 3:1 borders). Focus and expanded feedback probes were rendered alongside actual thread content; no page overflow. Screenshots: `/tmp/lcd-stage2-{green,amber,purple,gray}-{390,1280}.png`; inspected all four phone palettes and desktop Purple.
+- Notes: Probe feedback uses existing component classes with representative success/error/warning/expanded content; it is not evidence of completing a server write. Stage 1 commit: `201b472e`. Failure injection, namespace isolation, first-paint assertions, and durable browser regression coverage remain Stage 3.
+
+## Stage 3 - Recovery and release verification
+
+- Changes: Added self-contained `tests/browser/lcd_palettes.mjs` against real PHP routes. Fixed palette stacking above thread content, matched DOM tab order to left-hand placement, and selected the main popover by ID to avoid menu collisions. Failed theme downloads now retain the working theme and can retry; initial failed sheets are checked for readable rules rather than only a non-null reference. No unrelated identity code was changed.
+- Verification — passed: `node tests/browser/lcd_palettes.mjs` in Chromium, 390px/1280px: all four palettes, saved/invalid/missing preferences, namespace isolation, reload/navigation/round trips, menu/cycle entry, keyboard navigation/Escape/Tab/outside dismissal, unchanged theme selector anchors, expanded reply composer, no overflow, other permitted themes, standalone Forte light scheme, first paint, storage reads/writes throwing, failed and delayed stylesheets, rapid switching, initial failure and retry. Final screenshots: `/tmp/lcd-palettes-zxeblV/{green,amber,purple,gray}-{390,1280}.png`; inspected phone Purple and desktop Amber popovers, in addition to Stage 2 surface captures.
+- Verification — passed: `node tests/browser/theme_cycle.cjs`; `./v3 test ThemeRegistryTest ProfileThemePresentationTest SiteProfileRegistryTest LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet LocalAppSmokeTest::testThemeToggleWarmsAlternateThemeStylesheetsAtLowPriority` (25/25); PHP/JavaScript syntax and `git diff --check`.
+- Reverification: integrated browser suite, theme-cycle checks, 23 theme/profile checks, and core-route smoke passed. All 34 sampled contrast pairs per palette/viewport passed; inspected `/tmp/lcd-palettes-uKgZYc/purple-390.png` and `amber-1280.png`. No additional UI copy was introduced.
+- Known baseline failure / follow-up: With all browser storage reads blocked, board composer initialization throws from `browser_signing.js:1594` (`currentAuthorIdentityId`). Reproduced independently on pre-feature `c10c305b` in a detached temporary checkout with the same stack and unchanged asset hash. The palette remains operable under this condition; the browser regression separately permits only this known composer stack (up to two events from read/both scenarios), and fails on other uncaught errors. General composer storage recovery is outside this palette cycle and remains pending.
+- Notes: Stage 2 commit: `ed31277c`. No copy cleanup occurred; only essential palette names/accessibility labels were added. Deployment, schema migrations, and navigation/icon changes are inapplicable. Firefox/WebKit and the full PHP suite were not run; this is focused Chromium/theme regression evidence, not an all-browser/full-suite claim.
+
+## Completion
+
+- All three approved stages are complete with verification and stage-scoped commits. The four-palette flow and required palette recovery pass locally; the separately reproduced composer limitation above remains.
+- Planning commit precedes the implementation summary and application edits; approved plans retain their historical content. Supporting mockups remain outside commits.
+- Ready for user review on `feat/lcd-color-choices`; no merge or deployment performed. Implementation stage commits: `201b472e`, `ed31277c`, `96a6293c`; diagnostic handoff: `45398cfa`.
+
+## Additional enhancement request — palette rotation
+
+- Request: retain one LCD dropdown entry while rotating through every LCD color, in the current release.
+- Disposition: [one-shot enhancement](../lcd_palette_rotation_step2_feature_description.md) on the existing branch; user explicitly overrode staged follow-up gates with “Please just add it as a one-shot.” Completed original stages remain intact.
+- Approval: explicit one-shot implementation authorization received on 2026-10-22.
+- Changes: the dropdown still has exactly one LCD entry and restores its saved palette. Rotation enters LCD Green, visits Amber/Purple/Gray, then advances to the next theme; direct palette selection sets the current rotation stop. Each stop persists normally, and current/next accessible labels and tooltips include the palette. Palette updates wait for stylesheet success; newer selections supersede pending rotation, including a dropdown request for the same LCD theme.
+- Verification: passed `node tests/browser/lcd_palettes.mjs` in Chromium at 390px/1280px, including the full rotation sequence, Enter/Space activation, one LCD dropdown entry, accurate next-stop labels/tooltips, persistence/reload, direct palette selection, blocked storage, and a delayed rotation superseded by dropdown selection. Existing contrast/layout/recovery regressions also passed (with the separately recorded composer baseline exception). Evidence: `/tmp/lcd-palettes-nOMuIg/`. Passed `node tests/browser/theme_cycle.cjs`, 24 targeted PHP theme/profile/loading checks, JavaScript syntax, and `git diff --check`. No layout/style or navigation changes; no UI copy cleanup.
+- Limitations: the previously documented baseline composer errors under globally blocked storage remain outside this enhancement. No merge/deployment.

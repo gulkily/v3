@@ -21,6 +21,8 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Reply composer focus and layout](reply_composer_focus_layout/)
 - [Access history in User Access](feature_flags_security_review_cleanup/)
 
+- [LCD color choices](lcd_color_choices/)
+
 - [Documentation discovery](docs_discovery/)
 - [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 
