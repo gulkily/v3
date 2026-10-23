@@ -1,9 +1,6 @@
 # Coordinated history rewrite and clone synchronization
 
-Status: six approved replacement refs published and independently verified on 2026-10-23.
-Main is `1a358bc9be3cdb725277c792625a678e7bc85436`. The seven existing clones remain
-preserved; the synchronization/cleanup procedure below has not been executed against
-their refs or storage.
+Status: published main `1a358bc9be3cdb725277c792625a678e7bc85436` and all seven existing clones synchronized on 2026-10-23. Local publication audit `ad7e8f5f` remains on `chore/markdown-history-rewrite`. Retained refs, eight stashes and fourteen registered worktrees (including two missing registrations) are reconciled; recovery storage is intentionally retained. [Clone verification](./history_clone_sync_verification.json).
 See the [Stage 4 evidence](./history_rewrite_verification.json) and
 [commit mapping](./history_rewrite_commit_map.json).
 
@@ -189,8 +186,7 @@ executed as the reviewed atomic six-ref update; main is `1a358bc9`. A fresh HTTP
 clone matches all 20 advertised refs and contains none of the targeted blobs.
 [Publication verification](./history_publication_verification.json).
 
-Keep old clones paused until their refs/worktrees are reconciled with the rewritten
-graph and preserved work is verified. Existing clones, private recovery bundles,
+The seven inventoried clones now have reconciled refs/worktrees and verified preserved work. Existing clones, private recovery bundles,
 reflog-only objects and host-retained data mean complete-removal acceptance remains
 pending. Publication authorization did not include clone resets or backup disposal.
 
@@ -245,3 +241,11 @@ python3 scripts/markdown_metrics.py --baseline BASELINE --output /tmp/render-aft
 
 This was executed against the fresh rewritten checkout: 1,312 original source hashes
 match and all 1,312 documents render without errors. The reference parser stays absent.
+
+## Stage 5 clone synchronization — 2026-10-23
+
+User explicitly requested synchronization preserving local work, stashes, configuration and recovery backups. Used in-place mapped ref updates after fresh per-clone bundles, config/log/worktree-metadata snapshots and tracked/untracked backups. All local main/origin-main refs match published `1a358bc9`; retained branches keep mapped historical tips. Linked worktree files only changed where the mapped tree removed target vendor paths; detached and missing worktree HEADs were reconciled without pruning registrations. No runtime was activated from a historical feature snapshot.
+
+Eight stashes retain count/order/messages and mapped work/index/untracked parents. A newer `v3-claude-2` stash missing from the original map required three supplemental commit checks (two rewritten, one identical); non-target trees and raw metadata/messages were preserved. Private supplemental mapping and clean stash bundle are beside the original bundles. New branch/working changes made by other agents during early attempts were detected; checks restarted from fresh snapshots and no concurrent work was overwritten. Original and intermediate backups remain available.
+
+Final recovery snapshot: `/home/wsl/.local/state/v3-history-rewrite/20261023T0723Z/clone-sync-20261023T094406Z`. Earlier attempts are retained in sibling timestamped directories. Per-clone config hashes and working patches/untracked hashes were verified; final ignored-file hashes matched. Existing bundles were not modified. No application dependency, push, service change, reflog expiration, object pruning or backup disposal. All retained refs, stash entries and worktree HEADs have zero target blobs/path history; fsck passed. Non-stash reflogs and unreachable objects deliberately retain recovery history, so object-storage erasure and external/host-retention acceptance remain pending.
