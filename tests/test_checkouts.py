@@ -799,6 +799,59 @@ class CheckoutsTest(unittest.TestCase):
         self.cli('refresh')
         self.assertEqual('current', self.cli()['checkouts'][0]['action'])
 
+    def test_preview_marks_only_apply_eligible_actions_without_legend(self):
+        self.add()
+        feature = self.base / 'feature-clone'
+        dirty = self.base / 'dirty-clone'
+        for path in [feature, dirty]:
+            self.git(self.base, 'clone', '-q', str(self.up), str(path))
+            self.add(path)
+        self.preview()
+        self.git(feature, 'switch', '-qc', 'feature')
+        self.commit(feature, 'local', 'local feature')
+        self.commit(self.up, 'remote', 'source change')
+        current = self.base / 'current-clone'
+        self.git(self.base, 'clone', '-q', str(self.up), str(current))
+        self.add(current)
+        (dirty / 'unfinished').write_text('unfinished')
+        output = self.cli('preview', raw=True, code=2)
+        self.assertIn('*fast-forward', output)
+        self.assertIn('*merge', output)
+        self.assertEqual(2, output.count('*'))
+        self.assertNotIn('*dirty', output)
+        self.assertNotIn('*current', output)
+        self.assertNotIn('legend', output.lower())
+        self.assertNotIn('*', self.cli(raw=True, code=2))
+
+    def test_apply_without_id_refreshes_all_eligible_and_skips_dirty(self):
+        self.add()
+        dirty = self.base / 'dirty'
+        self.git(self.base, 'clone', '-q', str(self.up), str(dirty))
+        self.add(dirty)
+        self.cli('refresh')
+        old = self.git(self.clone, 'rev-parse', 'HEAD')
+        target = self.commit(self.up, 'new', 'new source')
+        (dirty / 'unfinished').write_text('unfinished')
+        self.cli('apply', code=1)
+        self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
+        result = self.cli('apply', '--sessions-paused', code=2)
+        self.assertEqual(['updated', 'dirty'], [row['action'] for row in result['checkouts']])
+        self.assertEqual(target, self.git(self.clone, 'rev-parse', 'HEAD'))
+        self.assertEqual(old, self.git(dirty, 'rev-parse', 'HEAD'))
+        self.assertEqual('unfinished', (dirty / 'unfinished').read_text())
+        self.assertIn('preview_id', result)
+
+    def test_apply_without_id_merges_eligible_feature_and_keeps_test_excluded(self):
+        local, source = self.make_diverged()
+        test = self.base / 'test'
+        self.git(self.base, 'clone', '-q', str(self.up), str(test))
+        self.add(test, role='test')
+        self.commit(self.up, 'extra', 'later source')
+        result = self.cli('apply', '--sessions-paused')
+        self.assertEqual(['updated', 'excluded'], [row['action'] for row in result['checkouts']])
+        self.assertEqual(local, self.git(self.clone, 'rev-parse', 'HEAD^1'))
+        self.assertEqual(source, self.git(test, 'rev-parse', 'HEAD'))
+
 
 if __name__ == '__main__':
     unittest.main()

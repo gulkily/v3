@@ -294,6 +294,11 @@ function formatConfigValue(string $key, mixed $value): string
  */
 function renderPrivateConfigFile(array $config, array $existing, bool $includeComments): string
 {
+    $remainingTemplateKeys = array_fill_keys(array_keys(\ForumRewrite\Support\PrivateConfigSchema::templateDefaults()), true);
+    $renderLine = static function (string $key, mixed $value) use (&$remainingTemplateKeys): string {
+        unset($remainingTemplateKeys[$key]);
+        return renderConfigLine($key, $value);
+    };
     $additionalKeys = \ForumRewrite\Support\PrivateConfigSchema::additionalFileValues($existing);
 
     $contents = "<?php\n\n"
@@ -307,73 +312,85 @@ function renderPrivateConfigFile(array $config, array $existing, bool $includeCo
 
     $contents .= "return [\n";
     if ($includeComments) {
+        $contents .= "    // Status frontend URL for ./v3 status; leave empty for local auto-discovery.\n"
+            . "    // Example: https://forum.example/ (use the direct URL for this instance).\n"
+            . "    // --url takes precedence, then FORUM_STATUS_URL from the environment or this file.\n";
+    }
+    $contents .= $renderLine('FORUM_STATUS_URL', $config['FORUM_STATUS_URL']);
+
+    if ($includeComments) {
         $contents .= "    // LLM provider used for post analysis and agent reply drafting.\n"
             . "    // Required, no default. Supported values: openai, openrouter, anthropic, stub, or a custom OpenAI-compatible gateway name.\n";
     }
-    $contents .= renderConfigLine('LLM_PROVIDER', $config['LLM_PROVIDER']);
+    $contents .= $renderLine('LLM_PROVIDER', $config['LLM_PROVIDER']);
 
     if ($includeComments) {
         $contents .= "\n    // Provider API key. For LLM_PROVIDER=stub this can stay as the placeholder.\n";
     }
-    $contents .= renderConfigLine('LLM_API_KEY', $config['LLM_API_KEY']);
+    $contents .= $renderLine('LLM_API_KEY', $config['LLM_API_KEY']);
 
     if ($includeComments) {
         $contents .= "\n    // Base URL without the endpoint path.\n"
             . "    // OpenAI-compatible providers call /v1/chat/completions; Anthropic calls /v1/messages.\n";
     }
-    $contents .= renderConfigLine('LLM_API_BASE_URL', $config['LLM_API_BASE_URL']);
+    $contents .= $renderLine('LLM_API_BASE_URL', $config['LLM_API_BASE_URL']);
 
     if ($includeComments) {
         $contents .= "\n    // Provider model identifier.\n";
     }
-    $contents .= renderConfigLine('LLM_MODEL', $config['LLM_MODEL']);
+    $contents .= $renderLine('LLM_MODEL', $config['LLM_MODEL']);
 
     if ($includeComments) {
         $contents .= "\n    // External provider request timeout in seconds.\n";
     }
-    $contents .= renderConfigLine('LLM_TIMEOUT_SECONDS', (int) $config['LLM_TIMEOUT_SECONDS']);
-    $contents .= renderConfigLine('AGENT_REPLY_MAX_COMPLETION_TOKENS', $config['AGENT_REPLY_MAX_COMPLETION_TOKENS']);
+    $contents .= $renderLine('LLM_TIMEOUT_SECONDS', (int) $config['LLM_TIMEOUT_SECONDS']);
+    $contents .= $renderLine('AGENT_REPLY_MAX_COMPLETION_TOKENS', $config['AGENT_REPLY_MAX_COMPLETION_TOKENS']);
 
     if ($includeComments) {
         $contents .= "\n    // Optional provider headers. OpenRouter commonly uses HTTP-Referer and X-Title.\n";
     }
-    $contents .= renderConfigLine('LLM_EXTRA_HEADERS', $config['LLM_EXTRA_HEADERS']);
+    $contents .= $renderLine('LLM_EXTRA_HEADERS', $config['LLM_EXTRA_HEADERS']);
 
     if ($includeComments) {
         $contents .= "\n    // Prompt template path, relative to the application root unless absolute.\n";
     }
-    $contents .= renderConfigLine('LLM_POST_ANALYSIS_PROMPT_PATH', $config['LLM_POST_ANALYSIS_PROMPT_PATH']);
+    $contents .= $renderLine('LLM_POST_ANALYSIS_PROMPT_PATH', $config['LLM_POST_ANALYSIS_PROMPT_PATH']);
 
     if ($includeComments) {
         $contents .= "\n    // Fastmod is independent of full post analysis and disabled by default.\n"
             . "    // Its LLM settings fall back to the corresponding LLM_* values when omitted.\n"
             . "    // Prompt path is the shared CSV task introduction; choose rubric templates in Tools > Fastmod.\n";
     }
-    $contents .= renderConfigLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])
-        . renderConfigLine('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED', $config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'])
-        . renderConfigLine('FAST_SCORING_LLM_MODEL', $config['FAST_SCORING_LLM_MODEL'])
-        . renderConfigLine('FAST_SCORING_PROMPT_PATH', $config['FAST_SCORING_PROMPT_PATH'])
-        . renderConfigLine('FAST_SCORING_DATABASE_PATH', $config['FAST_SCORING_DATABASE_PATH']);
+    $contents .= $renderLine('FAST_SCORING_ENABLED', $config['FAST_SCORING_ENABLED'])
+        . $renderLine('FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED', $config['FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED'])
+        . $renderLine('FAST_SCORING_LLM_MODEL', $config['FAST_SCORING_LLM_MODEL'])
+        . $renderLine('FAST_SCORING_PROMPT_PATH', $config['FAST_SCORING_PROMPT_PATH'])
+        . $renderLine('FAST_SCORING_DATABASE_PATH', $config['FAST_SCORING_DATABASE_PATH']);
 
     if ($includeComments) {
         $contents .= "\n    // Agent reply controls. These names remain Dedalus-prefixed for backward compatibility.\n";
     }
-    $contents .= renderConfigLine('DEDALUS_AGENT_REPLIES_ENABLED', $config['DEDALUS_AGENT_REPLIES_ENABLED'])
-        . renderConfigLine('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $config['DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED'])
-        . renderConfigLine('AGENT_RESPONSE_REQUESTS_ENABLED', $config['AGENT_RESPONSE_REQUESTS_ENABLED']);
+    $contents .= $renderLine('DEDALUS_AGENT_REPLIES_ENABLED', $config['DEDALUS_AGENT_REPLIES_ENABLED'])
+        . $renderLine('DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED', $config['DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED'])
+        . $renderLine('AGENT_RESPONSE_REQUESTS_ENABLED', $config['AGENT_RESPONSE_REQUESTS_ENABLED']);
 
     if ($includeComments) {
         $contents .= "\n    // Private LLM exchange capture and web visibility. Both default to true.\n";
     }
-    $contents .= renderConfigLine('LLM_CONVERSATION_RECORDING_ENABLED', $config['LLM_CONVERSATION_RECORDING_ENABLED'])
-        . renderConfigLine('LLM_CONVERSATION_UI_ENABLED', $config['LLM_CONVERSATION_UI_ENABLED']);
+    $contents .= $renderLine('LLM_CONVERSATION_RECORDING_ENABLED', $config['LLM_CONVERSATION_RECORDING_ENABLED'])
+        . $renderLine('LLM_CONVERSATION_UI_ENABLED', $config['LLM_CONVERSATION_UI_ENABLED']);
+
+    // Every schema template setting must survive writes, even without a dedicated comment block.
+    foreach ($remainingTemplateKeys as $key => $_included) {
+        $contents .= $renderLine($key, $config[$key]);
+    }
 
     if ($additionalKeys !== []) {
         if ($includeComments) {
             $contents .= "\n    // Additional existing values preserved by refresh-template.\n";
         }
         foreach ($additionalKeys as $key) {
-            $contents .= renderConfigLine($key, $existing[$key]);
+            $contents .= $renderLine($key, $existing[$key]);
         }
     }
 
