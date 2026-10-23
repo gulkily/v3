@@ -27,3 +27,9 @@ Effort study: `railspike-effort / v3/concurrent_checkouts`; [ledger](../effort_e
 - Changes: session-coordination assertion, signed-preview/registry validation, tool/common-storage locks, stale snapshot rejection, fast-forward-only Git update, per-folder durable attempt/results and no preview replay.
 - Verification: `python3 tests/test_checkouts.py`: 17 real-Git tests passed, including invalid/tampered preview, registry/HEAD/branch/source/dirty changes, session flag, lock contention and interrupted-result replay rejection.
 - Notes: Stage 3 commit `f3527f330`. External writers must still be paused; tool locks coordinate only this tool using the same state directory. Preview applies its fetched commit, not an unobserved later remote tip.
+
+## Stage 5 - Feature merge and recovery
+
+- Changes: ordinary feature merges preserve parents/local commits; conflicts retain recovery state with path-specific continue/abort guidance, independent folders proceed; post-update checks, ahead/main-divergence handling, missing-identity/hook failures, explicit remove/re-enrollment archives history evidence after reviewed reconciliation.
+- Verification: `python3 tests/test_checkouts.py`: 22 tests passed. Added merge-parent checks, conflict plus independent success, abort/retry, missing identity, failed hook, non-fast-forward main exclusion and sticky-history re-enrollment. Initial identity fixture exposed overly broad Git environment stripping; narrowed it to repository-routing variables and reran successfully.
+- Notes: Stage 4 commit `830d2bd40`. Tool never resets/reconciles branches; manual rewrite fixture reset is test setup only. Git timeout is an uncertain operation requiring inspection, never automatic replay.

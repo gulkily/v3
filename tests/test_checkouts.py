@@ -228,6 +228,78 @@ class CheckoutsTest(unittest.TestCase):
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             self.assertIn('Another checkout command', self.cli('list', code=1)['error'])
 
+    def make_diverged(self, conflict=False):
+        self.add()
+        self.preview()
+        self.git(self.clone, 'switch', '-qc', 'feature')
+        local = self.commit(self.clone, 'base.txt' if conflict else 'local.txt', 'local feature')
+        source = self.commit(self.up, 'base.txt' if conflict else 'remote.txt', 'remote change')
+        return local, source
+
+    def test_feature_merge_preserves_parents(self):
+        local, source = self.make_diverged()
+        result = self.apply(self.preview())
+        self.assertEqual('updated', result['checkouts'][0]['action'])
+        parents = self.git(self.clone, 'show', '-s', '--format=%P', 'HEAD').split()
+        self.assertEqual([local, source], parents)
+        self.assertEqual('', self.git(self.clone, 'status', '--porcelain'))
+        self.assertEqual('ahead', self.preview()['checkouts'][0]['action'])
+
+    def test_conflict_independent_success_abort_and_retry(self):
+        local, source = self.make_diverged(conflict=True)
+        other = self.base / 'other'
+        self.git(self.base, 'clone', '-q', str(self.up), str(other))
+        self.add(other)
+        self.commit(self.up, 'new.txt', 'more')
+        result = self.apply(self.preview(), code=2)
+        self.assertEqual(['conflict', 'updated'], [r['action'] for r in result['checkouts']])
+        self.assertIn('merge --abort', result['checkouts'][0]['reason'])
+        self.assertEqual(local, self.git(self.clone, 'rev-parse', 'HEAD'))
+        self.assertEqual('busy', self.preview()['checkouts'][0]['action'])
+        self.git(self.clone, 'merge', '--abort')
+        self.git(self.clone, 'merge', '-s', 'ours', '--no-edit', 'origin/main')
+        self.assertEqual('ahead', self.preview()['checkouts'][0]['action'])
+
+    def test_failing_merge_hook_and_missing_identity(self):
+        self.make_diverged()
+        hook = self.clone / '.git' / 'hooks' / 'pre-merge-commit'
+        hook.write_text('#!/bin/sh\nexit 1\n')
+        hook.chmod(0o700)
+        result = self.apply(self.preview(), code=2)
+        self.assertEqual('failed', result['checkouts'][0]['action'])
+        self.assertIn('hooks', result['checkouts'][0]['reason'])
+        self.git(self.clone, 'merge', '--abort')
+        hook.unlink()
+        self.git(self.clone, 'config', 'user.useConfigOnly', 'true')
+        for key in ['GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL']:
+            self.env.pop(key)
+        result = self.apply(self.preview(), code=2)
+        self.assertEqual('failed', result['checkouts'][0]['action'])
+
+    def test_main_divergence_is_attention_and_never_merged(self):
+        self.add()
+        self.preview()
+        old = self.commit(self.clone, 'local.txt', 'local')
+        self.commit(self.up, 'remote.txt', 'remote')
+        preview = self.cli('preview', code=2)
+        self.assertEqual('diverged', preview['checkouts'][0]['action'])
+        self.apply(preview, code=2)
+        self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
+
+    def test_reconciled_rewrite_reenrollment(self):
+        self.add()
+        self.preview()
+        self.commit(self.up, 'old', 'old')
+        self.preview()
+        self.git(self.up, 'reset', '--hard', 'HEAD~1')
+        target = self.commit(self.up, 'new', 'replacement')
+        self.assertEqual('migration-required', self.preview()['checkouts'][0]['action'])
+        self.git(self.clone, 'reset', '--hard', target)
+        self.cli('remove', self.clone)
+        self.add()
+        self.assertEqual('current', self.preview()['checkouts'][0]['action'])
+        self.assertTrue(list(self.state.glob('history-*.retired-*')))
+
 
 if __name__ == '__main__':
     unittest.main()

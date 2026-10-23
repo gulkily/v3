@@ -104,7 +104,7 @@ final class CheckoutManager
     {
         $env = getenv();
         foreach (array_keys($env) as $key) {
-            if (str_starts_with($key, 'GIT_')) {
+            if (in_array($key, ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_NAMESPACE', 'GIT_PREFIX', 'GIT_SHALLOW_FILE', 'GIT_QUARANTINE_PATH'], true)) {
                 unset($env[$key]);
             }
         }
@@ -303,7 +303,7 @@ final class CheckoutManager
         } elseif ($ahead) {
             $action = 'ahead'; $reason = 'Locally ahead; local commits preserved.';
         } elseif ($after['branch'] === $entry['target']) {
-            $action = 'excluded'; $reason = 'Main branch diverged; reconcile local commits manually (main updates are fast-forward only).';
+            $action = 'diverged'; $reason = 'Main branch diverged; reconcile local commits manually (main updates are fast-forward only).';
         } else {
             $action = 'merge'; $reason = 'Merge fetched source into the feature branch.';
         }
@@ -382,11 +382,11 @@ final class CheckoutManager
                     || !$this->ancestor($row['path'], $history['baseline'], $current['target'])) {
                     throw new RuntimeException('History evidence changed; inspect migration status and preview again.');
                 }
-                if ($row['action'] === 'merge') {
-                    // Merge application is introduced and verified in Stage 5.
-                    throw new RuntimeException('Feature merge application is not available yet.');
+                if ($row['action'] === 'merge' && ($current['branch'] === $row['target']
+                    || !$this->ancestor($row['path'], $history['baseline'], $current['head']))) {
+                    throw new RuntimeException('Feature merge history is no longer proven; preview again.');
                 }
-                if (!$this->ancestor($row['path'], $current['head'], $current['target'])) {
+                if ($row['action'] === 'fast-forward' && !$this->ancestor($row['path'], $current['head'], $current['target'])) {
                     throw new RuntimeException('Fast-forward no longer valid; preview again.');
                 }
                 $index = count($journal['checkouts']);
@@ -395,12 +395,31 @@ final class CheckoutManager
                 $attempt['reason'] = 'Update started; if interrupted inspect Git status before a fresh preview.';
                 $journal['checkouts'][$index] = $attempt;
                 $this->writeJson($journalPath, $journal);
-                [$code] = $this->git($row['path'], ['merge', '--ff-only', '--no-edit', $current['target']], true);
-                if ($code !== 0 || $this->revision($row['path'], 'HEAD') !== $current['target']) {
-                    throw new RuntimeException('Git update did not complete cleanly; inspect Git status/locks and hooks, then preview again.');
+                $mergeArgs = $row['action'] === 'fast-forward'
+                    ? ['merge', '--ff-only', '--no-edit', $current['target']]
+                    : ['merge', '--no-ff', '--no-edit', $current['target']];
+                [$code] = $this->git($row['path'], $mergeArgs, true);
+                if ($code !== 0) {
+                    if ($this->git($row['path'], ['ls-files', '--unmerged'], true)[1] !== '') {
+                        $row['action'] = 'conflict';
+                        $prefix = 'git -C ' . escapeshellarg($row['path']);
+                        $row['reason'] = 'Resolve files, then ' . $prefix . ' merge --continue; or cancel with '
+                            . $prefix . ' merge --abort. Then run a fresh preview.';
+                        $journal['checkouts'][$index] = $row;
+                        $this->writeJson($journalPath, $journal);
+                        continue;
+                    }
+                    throw new RuntimeException('Git update failed or timed out; inspect Git status, identity, hooks and operation state. If a merge is pending, finish it or use git merge --abort; then create a fresh preview.');
                 }
+                $after = $this->snapshot($row);
+                if ($after['branch'] !== $current['branch'] || $after['dirty'] || $after['busy']
+                    || !$this->ancestor($row['path'], $current['head'], $after['head'])
+                    || !$this->ancestor($row['path'], $current['target'], $after['head'])) {
+                    throw new RuntimeException('Post-update verification needs attention; inspect Git status and hooks. HEAD may have advanced; use a fresh preview after recovery.');
+                }
+                $row['reason'] = ($row['action'] === 'fast-forward' ? 'Fast-forward' : 'Feature merge')
+                    . ' completed; HEAD ' . substr($after['head'], 0, 12) . '.';
                 $row['action'] = 'updated';
-                $row['reason'] = 'Fast-forward completed; HEAD ' . substr($current['target'], 0, 12) . '.';
                 $this->writeJson($this->evidencePath($row), ['baseline' => $current['target'], 'blocked' => false]);
                 $row['head_after'] = $this->revision($row['path'], 'HEAD');
                 $journal['checkouts'][$index] = $row;
@@ -478,6 +497,13 @@ final class CheckoutManager
         $path = realpath($path) ?: $path;
         $registry = $this->readRegistry();
         $before = count($registry['checkouts']);
+        foreach ($registry['checkouts'] as $entry) {
+            if ($entry['path'] === $path && is_file($this->evidencePath($entry))) {
+                if (!rename($this->evidencePath($entry), $this->evidencePath($entry) . '.retired-' . bin2hex(random_bytes(6)))) {
+                    throw new RuntimeException('Cannot archive enrollment evidence; registration was not removed.');
+                }
+            }
+        }
         $registry['checkouts'] = array_values(array_filter($registry['checkouts'], fn ($entry) => $entry['path'] !== $path));
         if (count($registry['checkouts']) === $before) {
             throw new RuntimeException('Path is not registered; use checkouts list.');
