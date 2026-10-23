@@ -17,3 +17,7 @@ Full and incremental derivation now emit one event per eligible like-bearing rec
 ## Stage 2 — completed
 
 Incremental refresh resolves each canonical label path's own commit instead of borrowing the triggering write's commit. Unavailable/invalid history is stored as null. Actor, original timestamp and canonical action keys are preserved. Five focused tests passed, including three distinct source commits compared against Git and full rebuild, one-row cursor traversal/count agreement, duplicate retry, and existing link contracts. Existing source/signature enrichment remains shared by consumers.
+
+## Stage 3 — completed
+
+Read-model version 24 forces normal startup to recover omitted like events from version-23 databases, without changing table shape or canonical records. The schema specification describes the derivation change. Both focused tests passed: a deliberately omitted second like was recovered before normal Activity rendering, `./v3 rebuild` retained both items without adding records, and existing incremental-failure/full-rebuild fallback remained healthy.

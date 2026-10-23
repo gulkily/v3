@@ -5268,6 +5268,32 @@ NODE;
         assertStringContains('/threads/root-001', $activity);
     }
 
+    public function testVersion23StartupRecoversOmittedLikeActivityWithoutNewRecords(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        foreach (['#like', 'Another contribution #like'] as $body) {
+            $writer->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => $body, 'author_identity_id' => $author]);
+        }
+        $pdo = new PDO('sqlite:' . $database);
+        $where = "kind='thread_label_add' AND thread_id='root-001' AND label LIKE '%like%'";
+        assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
+        $recordsBefore = glob($root . '/records/thread-labels/*.txt');
+        $pdo->exec('DELETE FROM activity WHERE id=(SELECT MAX(id) FROM activity WHERE ' . $where . ')');
+        $pdo->exec("UPDATE metadata SET value='23' WHERE key='schema_version'");
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        assertStringContains('Labels added: like', $this->renderMethod($app, 'GET', '/activity/'));
+        assertSame('24', $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+        assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
+        $output = [];
+        exec(escapeshellarg(dirname(__DIR__) . '/v3') . ' rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($database) . ' 2>&1', $output, $exitCode);
+        assertSame(0, $exitCode, implode("\n", $output));
+        assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
+        assertSame($recordsBefore, glob($root . '/records/thread-labels/*.txt'));
+    }
+
     public function testEachAcceptedLikeRecordAppearsOnceWithoutChangingVoteDeduplication(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();

@@ -366,3 +366,14 @@ structural post identity, exact label-file hashes, acceptance time and local act
 It contains no source prose and is effective only with an exact trusted local
 `Accept source label cleanup <source-id>` commit. Importing an archive receipt
 alone grants no authority. Preserve trusted repository history for restoration.
+
+### Per-contribution like Activity (schema version 24)
+
+No table shape changes. Version 24 rebuilds existing derived rows so each eligible
+canonical thread-label record containing `like` contributes one Activity item,
+even when the thread already has that effective label. Mixed-label records remain
+one item; other labels retain first-appearance semantics. Scoring and vote
+eligibility are unchanged. Each item retains its canonical action key, actor,
+record timestamp and per-path source commit; unavailable history stays unknown.
+Normal startup rebuilds version-23 models before serving Activity. Canonical
+records are unchanged; `./v3 rebuild` also recovers previously omitted items.
