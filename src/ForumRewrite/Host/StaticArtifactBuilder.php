@@ -24,6 +24,7 @@ final class StaticArtifactBuilder
     private ?array $retractionToken = null;
     private array $metaToken = [];
     private ?array $docsInputs = null;
+    private array $copiedAssets = [];
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
@@ -48,6 +49,7 @@ final class StaticArtifactBuilder
 
     public function buildFromReadModel(): void
     {
+        $this->copiedAssets = [];
         $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
         $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         if (!is_dir($this->artifactRoot)) {
@@ -101,6 +103,7 @@ final class StaticArtifactBuilder
      */
     public function refreshSharedPagesFromReadModel(): void
     {
+        $this->copiedAssets = [];
         $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
         $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         if (!is_dir($this->artifactRoot)) {
@@ -538,15 +541,22 @@ final class StaticArtifactBuilder
         }
 
         $sourcePaths = [];
+        $copied = [];
         foreach (array_unique($matches[0]) as $fingerprintedPath) {
+            if (isset($this->copiedAssets[$fingerprintedPath]) && is_file($this->artifactRoot . $fingerprintedPath)
+                && !is_link($this->artifactRoot . $fingerprintedPath)) {
+                continue;
+            }
             $sourcePath = AssetFingerprint::sourcePathForFingerprint($this->projectRoot . '/public', $fingerprintedPath);
             if ($sourcePath === null) {
                 continue;
             }
             $sourcePaths[] = substr($sourcePath, strlen($this->projectRoot . '/public'));
+            $copied[$fingerprintedPath] = true;
         }
 
         AssetFingerprint::copyReferencedFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot, $sourcePaths);
+        $this->copiedAssets += $copied;
     }
 
     /**

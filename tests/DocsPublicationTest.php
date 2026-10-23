@@ -10,6 +10,21 @@ use ForumRewrite\Docs\PlatformDocsCatalog;
 
 final class DocsPublicationTest
 {
+    public function testDownloadOnlyDocumentsAreCopiedWithinABoundedMemoryBudget(): void
+    {
+        [$w, $publication, $project, $repo, $release] = $this->publication(largeDownload: true);
+        $script = $w->root . '/reuse.php';
+        $w->put($script, '<?php require ' . var_export(dirname(__DIR__) . '/autoload.php', true)
+            . '; $publication = new \\ForumRewrite\\Docs\\DocsPublication('
+            . var_export($project, true) . ',' . var_export($repo, true) . ');'
+            . 'if (!$publication->reuseInto(' . var_export($release, true) . ','
+            . var_export($w->root . '/candidate', true) . ')) { exit(1); }');
+        [$code, $output] = $w->command([PHP_BINARY, '-d', 'memory_limit=24M', $script]);
+        assertSame(0, $code, $output);
+        assertSame(hash_file('sha256', $project . '/docs/large.pdf'),
+            hash_file('sha256', $w->root . '/candidate/docs/_download/docs/large.pdf.bin'));
+    }
+
     public function testValidatedReuseRefreshesOnlyMarkersAndIsIndependentAcrossReleases(): void
     {
         [$w, $publication, $project, $repo, $release] = $this->publication();
@@ -116,7 +131,7 @@ final class DocsPublicationTest
         }
     }
 
-    private function publication(): array
+    private function publication(bool $largeDownload = false): array
     {
         $w = new ImportTestWorkspace();
         $project = $w->root . '/project';
@@ -124,6 +139,14 @@ final class DocsPublicationTest
         $w->git($repo);
         $w->put($project . '/README.md', '# Readme');
         $w->put($project . '/docs/guide.md', '# Guide');
+        if ($largeDownload) {
+            $file = fopen($project . '/docs/large.pdf', 'wb');
+            $chunk = str_repeat('x', 1048576);
+            for ($n = 0; $n < 48; $n++) {
+                fwrite($file, $chunk);
+            }
+            fclose($file);
+        }
         $w->put($project . '/public/assets/docs.js', 'console.log("docs");');
         $publication = new DocsPublication($project, $repo);
         $release = $w->root . '/release';
@@ -131,7 +154,11 @@ final class DocsPublicationTest
         $inventory = PlatformDocsCatalog::inventory($project);
         foreach ($inventory as $entry) {
             $paths[] = ltrim($entry['href'], '/') . '.html';
-            $w->put($release . '/docs/_download/' . $entry['path'] . '.bin', file_get_contents($project . '/' . $entry['path']));
+            $destination = $release . '/docs/_download/' . $entry['path'] . '.bin';
+            if (!is_dir(dirname($destination))) {
+                mkdir(dirname($destination), 0777, true);
+            }
+            copy($project . '/' . $entry['path'], $destination);
         }
         foreach (PlatformDocsCatalog::browseQueries($inventory, PlatformDocsCatalog::PAGE_SIZE) as $query) {
             $paths[] = ltrim(PlatformDocsCatalog::browsePath($query), '/');

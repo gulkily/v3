@@ -117,14 +117,22 @@ final class DocsPublication
             $this->clearOwned($candidateRoot);
             foreach (['files', 'assets'] as $group) {
                 foreach ($validated[$group] as $path => $hash) {
-                    $contents = $this->read($sourceRoot, $path);
-                    if (!hash_equals($hash, hash('sha256', $contents))) {
-                        throw new RuntimeException('Documentation output changed during reuse.');
-                    }
                     if ($group === 'files' && str_ends_with($path, '.html')) {
+                        $contents = $this->read($sourceRoot, $path);
+                        if (!hash_equals($hash, hash('sha256', $contents))) {
+                            throw new RuntimeException('Documentation output changed during reuse.');
+                        }
                         $contents = $this->refreshMarker($contents, $manifest['version'], $version);
+                        $this->write($candidateRoot, $path, $contents);
+                    } else {
+                        // Downloads may exceed the preview limit and the PHP memory budget.
+                        $source = $this->file($sourceRoot, $path);
+                        $this->publishFile($candidateRoot, $path, static function (string $temporary) use ($source, $hash): void {
+                            if (!copy($source, $temporary) || hash_file('sha256', $temporary) !== $hash) {
+                                throw new RuntimeException('Documentation output changed during reuse.');
+                            }
+                        });
                     }
-                    $this->write($candidateRoot, $path, $contents);
                 }
             }
             $this->recordPublication($candidateRoot, $signature, $version);
@@ -176,14 +184,20 @@ final class DocsPublication
         $files = $assets = [];
         $notifications = $this->flags()->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION);
         foreach ($paths as $path) {
-            $contents = $this->read($root, $path);
-            $files[$path] = hash('sha256', $contents);
+            $files[$path] = hash_file('sha256', $this->file($root, $path));
+            if ($files[$path] === false) {
+                throw new RuntimeException('Cannot hash documentation output: ' . $path);
+            }
             if (isset($required[$path]) && str_ends_with($path, '.html')) {
+                $contents = $this->read($root, $path);
                 $this->validateMarker($contents, $version, $notifications);
                 // Match the builder's markup-only asset boundary; prose examples are inert.
                 preg_match_all('~<script\b[^>]*>.*?</script>|<[a-z][^>]*>~is', $contents, $markup);
                 preg_match_all('#/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+#', implode(' ', $markup[0]), $references);
                 foreach ($references[0] as $reference) {
+                    if (isset($assets[ltrim($reference, '/')])) {
+                        continue;
+                    }
                     $source = AssetFingerprint::sourcePathForFingerprint($this->projectRoot . '/public', $reference);
                     if ($source === null) {
                         throw new RuntimeException('Documentation references an unknown asset.');
@@ -198,7 +212,7 @@ final class DocsPublication
             }
         }
         foreach ($assets as $path => $expected) {
-            if (hash('sha256', $this->read($root, $path)) !== $expected) {
+            if (hash_file('sha256', $this->file($root, $path)) !== $expected) {
                 throw new RuntimeException('Missing or damaged documentation asset: ' . $path);
             }
         }
@@ -271,12 +285,21 @@ final class DocsPublication
         $this->assertInputs($manifest['input'], $manifest['version']);
     }
 
-    private function read(string $root, string $relative): string
+    private function file(string $root, string $relative): string
     {
         $base = realpath($root);
         $path = $base === false ? false : realpath($base . '/' . $relative);
         if ($base === false || $path !== $base . '/' . $relative || !is_file($path) || is_link($path)) {
             throw new RuntimeException('Missing or unsafe documentation output: ' . $relative);
+        }
+        return $path;
+    }
+
+    private function read(string $root, string $relative): string
+    {
+        $path = $this->file($root, $relative);
+        if ($relative === self::MANIFEST && filesize($path) > 33554432) {
+            throw new RuntimeException('Oversized documentation publication evidence.');
         }
         $contents = file_get_contents($path);
         if ($contents === false) {
@@ -286,6 +309,15 @@ final class DocsPublication
     }
 
     private function write(string $root, string $relative, string $contents): void
+    {
+        $this->publishFile($root, $relative, static function (string $temporary) use ($contents): void {
+            if (file_put_contents($temporary, $contents) !== strlen($contents)) {
+                throw new RuntimeException('Cannot write documentation output.');
+            }
+        });
+    }
+
+    private function publishFile(string $root, string $relative, callable $writer): void
     {
         if (is_link($root)) {
             throw new RuntimeException('Unsafe documentation candidate root.');
@@ -314,8 +346,8 @@ final class DocsPublication
             throw new RuntimeException('Cannot create documentation temporary file.');
         }
         try {
-            if (file_put_contents($temporary, $contents) !== strlen($contents)
-                || !rename($temporary, $directory . '/' . $filename)) {
+            $writer($temporary);
+            if (!rename($temporary, $directory . '/' . $filename)) {
                 throw new RuntimeException('Cannot publish documentation output.');
             }
         } finally {
