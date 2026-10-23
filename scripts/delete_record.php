@@ -12,6 +12,14 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
+$json = in_array('--json', $argv, true);
+$inspect = in_array('--inspect', $argv, true);
+$repair = in_array('--repair-labels', $argv, true);
+$resolvedLabels = [];
+$argv = array_values(array_filter($argv, static function (string $argument) use (&$resolvedLabels): bool {
+    if (str_starts_with($argument, '--resolve-label=')) { $resolvedLabels[] = substr($argument, 16); return false; }
+    return !in_array($argument, ['--json', '--inspect', '--repair-labels'], true);
+}));
 $target = (string) ($argv[1] ?? '');
 
 if ($target === '' || in_array($target, ['-h', '--help'], true)) {
@@ -28,6 +36,32 @@ $repositoryRoot = normalizePath($argv[2] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: 
 $databasePath = normalizePath($argv[3] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
 $artifactRoot = $argv[4] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
 $artifactRoot = $artifactRoot !== null && $artifactRoot !== '' ? normalizePath($artifactRoot) : null;
+$sourceId = basename($target, '.txt');
+$source = null;
+if ($inspect || $repair || str_starts_with($target, 'records/posts/') || !str_contains($target, '/')) {
+    try { $source = \ForumRewrite\Canonical\LabelRemoval::source($repositoryRoot, $sourceId); }
+    catch (RuntimeException $error) { if ($inspect || $repair) { fwrite(STDERR, $error->getMessage() . "\n"); exit(1); } }
+}
+if ($source !== null) {
+    try {
+        if ($inspect) {
+            $result = \ForumRewrite\Canonical\LabelRemoval::inspect($repositoryRoot, $sourceId);
+            unset($result['post']);
+        } else {
+            \ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");
+            $defaultStatic = \ForumRewrite\PresentationPathResolver::staticHtmlRoot($projectRoot, \ForumRewrite\SiteProfileRegistry::active());
+            $presentation = (string) (getenv('FORUM_STATIC_HTML_ROOT') ?: $defaultStatic);
+            $result = \ForumRewrite\Write\SourceLabelRemoval::run($repositoryRoot, $databasePath, $sourceId, $repair, $resolvedLabels, $artifactRoot ?? $presentation);
+        }
+        if ($json) fwrite(STDOUT, json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . "\n");
+        else {
+            fwrite(STDOUT, ($inspect ? 'Source label inspection' : 'Source label cleanup accepted') . ': ' . $sourceId . "\n");
+            foreach ($result as $key => $value) fwrite(STDOUT, $key . ': ' . (is_array($value) ? json_encode($value) : (string) $value) . "\n");
+            if (($result['unresolved_labels'] ?? $result['unresolved'] ?? []) !== []) fwrite(STDOUT, "Legacy labels remain unresolved; inspect ownership and use --repair-labels --resolve-label=<label-id> only for a verified source relationship.\n");
+        }
+        exit(0);
+    } catch (Throwable $error) { fwrite(STDERR, $error->getMessage() . "\n"); exit(1); }
+}
 $relativePath = resolveRecordPath($repositoryRoot, $target);
 $absolutePath = $repositoryRoot . '/' . $relativePath;
 
@@ -305,6 +339,10 @@ rebuilds the read model, and rebuilds static artifacts when artifact_root or
 FORUM_PUBLIC_ARTIFACT_ROOT is present.
 
 record_path_or_id may be a relative path like:
+  --inspect --json: inspect source ownership without mutation
+  --repair-labels --resolve-label=<label-id>: record explicit operator ownership resolution
+  Repeat a source deletion command to recover an incomplete refresh.
+
   records/thread-labels/thread-label-20260530000001-zenrules.txt
 
 or an unambiguous filename stem like:

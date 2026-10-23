@@ -24,7 +24,7 @@ Usage:
   ./v3 images verify|restore <images.tar> <repository_root> <database_path> [--image-root=/private/images]
   ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
   ./v3 thread-attributes <thread_id_or_record> [repository_root] [database_path]
-  ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
+  ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root] [--inspect] [--repair-labels --resolve-label=<id>] [--json]
   ./v3 unicode-risk-backfill [repository_root] [database_path] [--with-llm]
   ./v3 build-static [repository_root] [database_path] [artifact_root]
   ./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]

@@ -128,7 +128,7 @@ final class LabelRemoval
         }
         ksort($labels);
         return ['source_id' => $id, 'source_hash' => $inspection['source_hash'],
-            'operation' => $existing['operation'] ?? $operation, 'accepted_at' => gmdate('Y-m-d\TH:i:s\Z'),
+            'operation' => $existing['operation'] ?? $operation, 'accepted_at' => $existing['accepted_at'] ?? gmdate('Y-m-d\TH:i:s\Z'),
             'actor' => 'local-operator', 'labels' => $labels,
             'post' => ['post_id' => $id, 'thread_id' => $post->threadId ?? $id, 'parent_id' => $post->parentId,
                 'created_at' => $post->createdAt, 'author_identity_id' => $post->authorIdentityId]];

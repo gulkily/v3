@@ -1386,6 +1386,54 @@ PHP;
         }
     }
 
+    public function testDeleteSourceCleansOwnedLabelsPreservesRepliesAndRetries(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        $bytes = file_get_contents($root . '/records/posts/root-001.txt');
+        $label = "Record-ID: label-owned\nCreated-At: 2026-04-10T12:00:00Z\nThread-ID: root-001\nOperation: add\nLabels: pinned\nSource-Post-ID: root-001\nSource-Post-SHA256: " . hash('sha256', $bytes) . "\n\n";
+        // Source author binding is required even when the label itself is unsigned.
+        $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse($bytes);
+        if ($post->authorIdentityId !== null) $label = str_replace("Source-Post-ID:", "Author-Identity-ID: {$post->authorIdentityId}\nSource-Post-ID:", $label);
+        file_put_contents($root . '/records/thread-labels/label-owned.txt', $label);
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['add', 'records']);
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['commit', '-qm', 'Owned label fixture']);
+        $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts, '--json']));
+        exec($command, $output, $status);
+        assertSame(0, $status);
+        assertSame(false, is_file($root . '/records/posts/root-001.txt'));
+        assertSame(false, is_file($root . '/records/thread-labels/label-owned.txt'));
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $html = $this->render($app, '/threads/root-001');
+        assertStringContains('Deleted post', $html);
+        assertStringContains('Reply body', $html);
+        $head = \ForumRewrite\Canonical\LabelRemoval::git($root, ['rev-parse', 'HEAD']);
+        exec($command, $repeatOutput, $repeatStatus);
+        assertSame(0, $repeatStatus);
+        assertSame($head, \ForumRewrite\Canonical\LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame(false, str_contains($pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetchColumn(), 'pinned'));
+    }
+
+    public function testLegacyOrphanLabelRepairNeedsExplicitResolution(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($root, $args);
+        // Model the old operator path: source was deleted, legacy labels survived.
+        $git(['rm', 'records/posts/root-001.txt']); $git(['commit', '-qm', 'Delete old source only']);
+        $args = [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts];
+        $inspect = implode(' ', array_map('escapeshellarg', [...$args, '--inspect', '--json']));
+        $head = $git(['rev-parse', 'HEAD']);
+        exec($inspect, $output, $status); assertSame(0, $status);
+        assertSame($head, $git(['rev-parse', 'HEAD']));
+        assertTrue(count(json_decode(implode("\n", $output), true)['unresolved']) > 0);
+        $label = 'thread-label-20260415153000-ab12cd34';
+        $repair = implode(' ', array_map('escapeshellarg', [...$args, '--repair-labels', '--resolve-label=' . $label, '--json']));
+        exec($repair, $repaired, $repairStatus); assertSame(0, $repairStatus);
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame('[]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetchColumn());
+        assertTrue(is_file($root . '/records/posts/reply-001.txt'));
+    }
+
     public function testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState(): void
     {
         $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
