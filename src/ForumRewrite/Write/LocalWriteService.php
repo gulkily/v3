@@ -1230,6 +1230,25 @@ class LocalWriteService
         }
     }
 
+    /**
+     * A name is held when any other profile, approved or pending, uses its token.
+     * `guest` is shared by design and never held.
+     */
+    private function isUsernameHeld(string $username, string $exceptIdentityId): bool
+    {
+        $token = strtolower(trim($username));
+        if ($token === 'guest') {
+            return false;
+        }
+        foreach (\ForumRewrite\ReadModel\ProfileRepository::byUsernameToken($this->readModelPdo(), $token) as $profile) {
+            if ((string) $profile['identity_id'] !== $exceptIdentityId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @param array<string, mixed> $input @return array<string, mixed> */
     public function prepareProfileName(array $input): array
     {
@@ -1248,7 +1267,8 @@ class LocalWriteService
             (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
             return $this->storePreparedPost('records/profile-names/' . $id . '.txt', $contents, [
                 'kind' => 'profile-name', 'author_identity_id' => $identity, 'username' => $name,
-            ]) + ['status' => 'ok', 'canonical_record' => $contents, 'record_path' => 'records/profile-names/' . $id . '.txt'];
+            ]) + ['status' => 'ok', 'canonical_record' => $contents, 'record_path' => 'records/profile-names/' . $id . '.txt',
+                'held' => $this->isUsernameHeld($name, $identity)];
         });
     }
 
@@ -1279,6 +1299,9 @@ class LocalWriteService
             $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
             if ($latest !== null && $record['Created-At'] <= $latest['Created-At']) {
                 throw new RuntimeException('A newer username was saved. Retry to prepare a fresh name change.');
+            }
+            if ($this->isUsernameHeld($record['Username'], $identity)) {
+                throw new RuntimeException('That username is already in use.');
             }
             $this->writeFile($path, $contents);
             $this->writeFile($path . '.asc', $signature);

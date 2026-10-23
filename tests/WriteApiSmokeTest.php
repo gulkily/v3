@@ -195,6 +195,43 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testRenameIntoHeldUsernameIsNeverSavedDirectly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $holder = $this->createSigningKey('held-name');
+        $mover = $this->createSigningKey('mover');
+        $guest = $this->createSigningKey('guest');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $writer->linkIdentity(['public_key' => $holder['public_key']]);
+            $writer->linkIdentity(['public_key' => $guest['public_key']]);
+            $identity = $writer->linkIdentity(['public_key' => $mover['public_key']])['identity_id'];
+            $rename = function (string $name) use ($writer, $identity, $mover): array {
+                $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => $name]);
+                return [$prepared, $prepared + ['author_identity_id' => $identity,
+                    'detached_signature' => $this->signCanonicalRecord($mover['home'], $prepared['canonical_record'])]];
+            };
+
+            [$prepared, $signed] = $rename('Held-Name');
+            assertSame(true, $prepared['held']);
+            assertThrowsRuntime(fn () => $writer->finalizePreparedProfileName($signed), 'That username is already in use.');
+            assertSame(false, is_file($root . '/' . $prepared['record_path']));
+            $pdo = (new ReadModelConnection($db))->open();
+            assertSame('mover', ProfileRepository::byIdentityId($pdo, $identity)['username']);
+
+            foreach (['guest', 'mover', 'free-name'] as $name) {
+                [$prepared, $signed] = $rename($name);
+                assertSame(false, $prepared['held']);
+                assertSame($name, $writer->finalizePreparedProfileName($signed)['username']);
+            }
+        } finally {
+            foreach ([$holder, $mover, $guest] as $key) {
+                $this->deleteTree($key['home']);
+            }
+        }
+    }
+
     private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
     {
         return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);
