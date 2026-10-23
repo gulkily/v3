@@ -1,8 +1,9 @@
 # Coordinated history rewrite and clone synchronization
 
-Status: isolated rewrite verified on 2026-10-23; shared publication pending exact-ref review.
-User authorized the rehearsal after consolidation. The seven existing clones remain
-preserved; the procedure below has not been executed against their refs or storage.
+Status: six approved replacement refs published and independently verified on 2026-10-23.
+Main is `1a358bc9be3cdb725277c792625a678e7bc85436`. The seven existing clones remain
+preserved; the synchronization/cleanup procedure below has not been executed against
+their refs or storage.
 See the [Stage 4 evidence](./history_rewrite_verification.json) and
 [commit mapping](./history_rewrite_commit_map.json).
 
@@ -183,12 +184,15 @@ verification; neither approach alone proves universal erasure.
 
 ## Current gate
 
-Stage 4 isolated rewrite and recovery verification are complete. The audit commit
-adds evidence only; its parent is the byte-identical rewritten main. Review the exact
-six replacement refs in the private publication sheet before authorizing Stage 5.
-Reconfirm that Git writers are paused and advertised refs still match the captured
-old values. Existing clones, private recovery bundles and host-retained data mean
-complete-removal acceptance remains pending even after the six refs are published.
+Stage 4 and shared publication are verified. User authorization “Publish now” was
+executed as the reviewed atomic six-ref update; main is `1a358bc9`. A fresh HTTPS
+clone matches all 20 advertised refs and contains none of the targeted blobs.
+[Publication verification](./history_publication_verification.json).
+
+Keep old clones paused until their refs/worktrees are reconciled with the rewritten
+graph and preserved work is verified. Existing clones, private recovery bundles,
+reflog-only objects and host-retained data mean complete-removal acceptance remains
+pending. Publication authorization did not include clone resets or backup disposal.
 
 ## Verified rehearsal and recovery — 2026-10-23
 
