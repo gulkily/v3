@@ -5,7 +5,7 @@ Start in the [request register](../plans/production_feedback_register.md), linke
 ## Intake and identity
 
 1. Search the register and linked older inventories for the reported outcome and source-post ID. Match by intended behavior and acceptance conditions, not shared keywords or shared source alone.
-2. For a new outcome, allocate an unused permanent ID `PF-YYYYMMDD-Fnn` or `PF-YYYYMMDD-Bnn` using the intake date/category and next unused number. Never renumber or reuse retired IDs. Link the exact report, parent post and full thread; retain every batch/category/item alias, request nuance and import limitation. Label unknowns.
+2. For a new outcome, allocate an unused permanent ID `PF-YYYYMMDD-Fnn` or `PF-YYYYMMDD-Bnn` using the intake date/category and next unused number. Never renumber or reuse retired IDs. Keep an explicit lowercase ID anchor (for example `pf-20261021-f07`) so links survive title changes. Link the exact report, parent post and full thread; retain every batch/category/item alias, request nuance and import limitation. Label unknowns.
 3. Add workflow state, delivery evidence/date/limits, completion checks, next action, inherited estimate/provenance, proposed workflow and existing plan/evidence links. Use the [minimal triage process](minimal_feedback_triage.md) for benefit/effort/uncertainty; preserve original estimates separately from revised scoped estimates. Scores and recommendations never authorize implementation.
 4. Repeated reports of the same outcome add sources/aliases to the existing request. Distinct outcomes get separate linked requests. Uncertain duplicates stay separate with a review next action; older unreconciled inventories remain explicitly outside migrated coverage.
 
