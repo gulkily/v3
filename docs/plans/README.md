@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Independent documentation publication](docs_independent_publication/)
+
 - [Documentation publication policy](docs_publication_policy/)
 
 - [Markdown dependency removal](markdown_dependency_removal/)
