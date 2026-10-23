@@ -10,15 +10,18 @@ Setup complete; maintainer acceptance of the provisional R1 anchor remains pendi
 
 ## Frozen reference set R1
 
+<!-- R1 exact-source recovery 2026-10-23 -->
+> Current recovery, 2026-10-23T17:46:53.169621+00:00: the source links below now use exact verified host-local snapshots. See the [portable provenance manifest](../research/effort_estimation/references/R1/manifest.json). Use these frozen bytes rather than the changed current feedback or external checkout paths. Earlier unavailable checkpoints remain historical; recovery enables new dated ratings and does not backfill them.
+
 Recorded 2026-10-19T03:20:46.805149+00:00. Definition: **1.0 is the largest well-scoped, releasable slice we would comfortably approve for one Railspike cycle, including required verification and documentation.** Startup dependency recovery is the provisional 1.0 reference, conditional on its existing installer/test infrastructure. Maintainer acceptance is pending. Smaller comparisons include duplicate preview suppression (0.10), about-copy integration (0.20), numeric permalinks (0.25), score emphasis (0.30), toolbar identity (0.35) and composer decluttering (0.60).
 
 | Source | SHA-256 |
 | --- | --- |
-| [Calibration report](../../../railspike-dev/docs/research/effort_estimation/report.md) | `d3a30b6400b83bb25283b4234b41ba07515df9a696ea44de59c10186103771b0` |
-| [Implementation diff review](../../../railspike-dev/docs/research/effort_estimation/diff_review.md) | `068b3519326e08a939df40b5abe0106ddcbab80bd796616c76b5084a21462b84` |
-| [User feedback](./zenmemes_meta_feedback_2026-10-18_summary.md) | `ef335604ecd5b51e5c04067d88e4d6f01cb4fdb21b8f4d7dba7b5b90e4012bfc` |
+| [Calibration report](../research/effort_estimation/references/R1/calibration-report.txt) | `d3a30b6400b83bb25283b4234b41ba07515df9a696ea44de59c10186103771b0` |
+| [Implementation diff review](../research/effort_estimation/references/R1/implementation-diff-review.txt) | `068b3519326e08a939df40b5abe0106ddcbab80bd796616c76b5084a21462b84` |
+| [User feedback](../research/effort_estimation/references/R1/user-feedback.txt) | `ef335604ecd5b51e5c04067d88e4d6f01cb4fdb21b8f4d7dba7b5b90e4012bfc` |
 
-Reference documents live in an external checkout. If unavailable, restore these exact sources and verify hashes before rating; do not silently use changed anchors. Explicitly version any accepted replacement as R2, retaining R1 and affected score histories. The same frozen reference set applies across a batch. Local path relocation may repair links without changing content identity.
+Frozen snapshots now live in this repository; the manifest records their original sources. If unavailable, restore these exact sources and verify hashes before rating; do not silently use changed anchors. Explicitly version any accepted replacement as R2, retaining R1 and affected score histories. The same frozen reference set applies across a batch. Local path relocation may repair links without changing content identity.
 
 ## Rating protocol
 
