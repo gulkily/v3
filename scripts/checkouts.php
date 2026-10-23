@@ -10,6 +10,7 @@ const CHECKOUT_HELP = <<<'HELP'
 Usage: ./v3 checkouts <command> [argument] [options]
   add <path>       Register an existing clone (--remote=origin --target=main)
   preview         Fetch selected sources and save an update preview
+  apply <id>      Apply a saved preview (--sessions-paused required)
   list            List registered clones
   remove <path>   Forget a path; never deletes its files
 Options:
@@ -17,6 +18,7 @@ Options:
   --registry=/path/file.json     Shared registry (default: XDG_CONFIG_HOME/v3/checkouts.json)
   --state-dir=/path              Private state (default: XDG_STATE_HOME/v3/checkouts)
   --path=/checkout              Preview one registered path (required for test/server roles)
+  --sessions-paused             Assert coding/server sessions are coordinated for apply
   --json                        Machine-readable output
 HELP;
 
@@ -28,7 +30,9 @@ try {
             echo CHECKOUT_HELP . "\n";
             exit(0);
         }
-        if ($arg === '--json') {
+        if ($arg === '--sessions-paused') {
+            $options['sessions-paused'] = true;
+        } elseif ($arg === '--json') {
             $options['json'] = true;
         } elseif (preg_match('/^--(registry|state-dir|remote|target|role|path)=(.+)$/', $arg, $match)) {
             $options[$match[1]] = $match[2];
@@ -59,7 +63,7 @@ try {
         if (isset($result['notice'])) {
             echo $result['notice'] . "\n";
         }
-        if (isset($result['preview_id'])) {
+        if ($command === 'preview' && isset($result['preview_id'])) {
             echo 'Apply: ./v3 checkouts apply ' . $result['preview_id'] . ' --sessions-paused' . "\n";
             echo "Only selected checked-out branches are considered; other branches, stashes and linked worktrees stay untouched.\n";
         }

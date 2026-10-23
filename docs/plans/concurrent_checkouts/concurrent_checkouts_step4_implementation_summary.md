@@ -21,3 +21,9 @@ Effort study: `railspike-effort / v3/concurrent_checkouts`; [ledger](../effort_e
 - Changes: private signed preview snapshots with registry/source/HEAD identity, opaque IDs, human actions/reasons and JSON parity; attention exit 2 and fetch side-effect notice. Source URLs/errors remain sanitized; selected/excluded roles visible.
 - Verification: `python3 tests/test_checkouts.py`: 12 cases passed, including private saved-preview permissions, human guidance, missing paths and invalid selectors; PHP syntax passed.
 - Notes: Stage 2 commit `8721d5963`. Apply and preview-consumption validation follow in Stage 4; no live pool touched.
+
+## Stage 4 - Revalidated fast-forward application
+
+- Changes: session-coordination assertion, signed-preview/registry validation, tool/common-storage locks, stale snapshot rejection, fast-forward-only Git update, per-folder durable attempt/results and no preview replay.
+- Verification: `python3 tests/test_checkouts.py`: 17 real-Git tests passed, including invalid/tampered preview, registry/HEAD/branch/source/dirty changes, session flag, lock contention and interrupted-result replay rejection.
+- Notes: Stage 3 commit `f3527f330`. External writers must still be paused; tool locks coordinate only this tool using the same state directory. Preview applies its fetched commit, not an unobserved later remote tip.

@@ -34,6 +34,7 @@ final class CheckoutManager
                 'list' => ['command' => 'list', 'checkouts' => $this->readRegistry()['checkouts']],
                 'remove' => $this->remove($argument),
                 'preview' => $this->preview($options),
+                'apply' => $this->apply($argument, $options),
                 default => throw new RuntimeException('Unknown checkouts command; run ./v3 checkouts --help.'),
             };
         } finally {
@@ -342,6 +343,89 @@ final class CheckoutManager
         return ['command' => 'preview', 'preview_id' => $id, 'checkouts' => $rows,
             'notice' => 'Fetched selected sources; no checked-out files changed. Pause coding/server sessions before apply.',
             'exit_code' => $this->attention($rows) ? 2 : 0];
+    }
+
+    private function apply(?string $id, array $options): array
+    {
+        if (!($options['sessions-paused'] ?? false)) {
+            throw new RuntimeException('Pause coding/server sessions, then apply with --sessions-paused. Clean status does not prove idle sessions.');
+        }
+        $plan = $this->loadPreview($id);
+        $registry = $this->readRegistry();
+        if (!hash_equals($plan['registry'], hash('sha256', json_encode($registry, JSON_THROW_ON_ERROR)))) {
+            throw new RuntimeException('Registry changed; run a fresh preview.');
+        }
+        $journalPath = $this->state . '/previews/' . $id . '.result.json';
+        if (is_file($journalPath)) {
+            throw new RuntimeException('Preview already attempted or interrupted; inspect the prior result and Git status, then create a fresh preview. Result: ' . $journalPath);
+        }
+        $journal = ['command' => 'apply', 'preview_id' => $id, 'complete' => false, 'checkouts' => []];
+        $this->writeJson($journalPath, $journal);
+        foreach ($plan['checkouts'] as $row) {
+            if (!in_array($row['action'], ['fast-forward', 'merge'], true)) {
+                $journal['checkouts'][] = $row;
+                $this->writeJson($journalPath, $journal);
+                continue;
+            }
+            $lock = null;
+            try {
+                $lock = fopen($this->state . '/git-' . hash('sha256', $row['common']) . '.lock', 'c');
+                if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
+                    throw new RuntimeException('Checkout tool lock busy; retry with a new preview.');
+                }
+                $current = $this->snapshot($row);
+                if ($current !== $row['snapshot'] || $current['dirty'] || $current['busy']) {
+                    throw new RuntimeException('Checkout/source changed after preview; pause sessions and create a fresh preview.');
+                }
+                $history = $this->readJson($this->evidencePath($row));
+                if (($history['blocked'] ?? true) || !isset($history['baseline'])
+                    || !$this->ancestor($row['path'], $history['baseline'], $current['target'])) {
+                    throw new RuntimeException('History evidence changed; inspect migration status and preview again.');
+                }
+                if ($row['action'] === 'merge') {
+                    // Merge application is introduced and verified in Stage 5.
+                    throw new RuntimeException('Feature merge application is not available yet.');
+                }
+                if (!$this->ancestor($row['path'], $current['head'], $current['target'])) {
+                    throw new RuntimeException('Fast-forward no longer valid; preview again.');
+                }
+                $index = count($journal['checkouts']);
+                $attempt = $row;
+                $attempt['action'] = 'attempting';
+                $attempt['reason'] = 'Update started; if interrupted inspect Git status before a fresh preview.';
+                $journal['checkouts'][$index] = $attempt;
+                $this->writeJson($journalPath, $journal);
+                [$code] = $this->git($row['path'], ['merge', '--ff-only', '--no-edit', $current['target']], true);
+                if ($code !== 0 || $this->revision($row['path'], 'HEAD') !== $current['target']) {
+                    throw new RuntimeException('Git update did not complete cleanly; inspect Git status/locks and hooks, then preview again.');
+                }
+                $row['action'] = 'updated';
+                $row['reason'] = 'Fast-forward completed; HEAD ' . substr($current['target'], 0, 12) . '.';
+                $this->writeJson($this->evidencePath($row), ['baseline' => $current['target'], 'blocked' => false]);
+                $row['head_after'] = $this->revision($row['path'], 'HEAD');
+                $journal['checkouts'][$index] = $row;
+            } catch (\Throwable $error) {
+                $row['action'] = 'failed';
+                $row['reason'] = $error->getMessage();
+                if (isset($index) && ($journal['checkouts'][$index]['action'] ?? '') === 'attempting') {
+                    $journal['checkouts'][$index] = $row;
+                } else {
+                    $journal['checkouts'][] = $row;
+                }
+            } finally {
+                if (is_resource($lock)) {
+                    flock($lock, LOCK_UN);
+                    fclose($lock);
+                }
+                unset($index);
+            }
+            $this->writeJson($journalPath, $journal);
+        }
+        $journal['complete'] = true;
+        $journal['exit_code'] = $this->attention($journal['checkouts']) ? 2 : 0;
+        $journal['notice'] = 'Only selected checked-out branches were considered. Other branches, stashes and linked worktrees stay untouched. Run a fresh preview after recovery.';
+        $this->writeJson($journalPath, $journal);
+        return $journal;
     }
 
     private function attention(array $rows): bool

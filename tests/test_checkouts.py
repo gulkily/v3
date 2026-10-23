@@ -160,6 +160,74 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual('unavailable', result['checkouts'][0]['action'])
         self.cli('preview', '--path=/not/registered', code=1)
 
+    def apply(self, preview, code=0):
+        return self.cli('apply', preview['preview_id'], '--sessions-paused', code=code)
+
+    def test_apply_fast_forward_and_consume(self):
+        self.add()
+        self.preview()
+        target = self.commit(self.up, 'new.txt', 'new')
+        preview = self.preview()
+        self.cli('apply', preview['preview_id'], code=1)
+        result = self.apply(preview)
+        self.assertEqual('updated', result['checkouts'][0]['action'])
+        self.assertEqual(target, self.git(self.clone, 'rev-parse', 'HEAD'))
+        self.apply(preview, code=1)
+        self.assertEqual('current', self.preview()['checkouts'][0]['action'])
+
+    def test_apply_rejects_changed_or_corrupt_preview_and_registry(self):
+        self.add()
+        preview = self.preview()
+        path = self.state / 'previews' / (preview['preview_id'] + '.json')
+        data = json.loads(path.read_text())
+        data['plan']['checkouts'][0]['path'] = '/unintended'
+        path.write_text(json.dumps(data))
+        self.assertIn('damaged', self.apply(preview, code=1)['error'])
+        preview = self.preview()
+        self.cli('remove', self.clone)
+        self.assertIn('Registry changed', self.apply(preview, code=1)['error'])
+        self.cli('apply', '../bad', '--sessions-paused', code=1)
+
+    def test_apply_skips_changed_head_branch_remote_dirty_and_target(self):
+        for change in ['branch', 'dirty', 'remote', 'target', 'head']:
+            with self.subTest(change=change):
+                self.git(self.clone, 'reset', '--hard', 'origin/main')
+                self.git(self.clone, 'clean', '-fd')
+                self.git(self.clone, 'switch', '-q', 'main')
+                self.git(self.clone, 'remote', 'set-url', 'origin', str(self.up))
+                if not self.registry.exists():
+                    self.add()
+                self.commit(self.up, 'new.txt', 'new ' + change)
+                preview = self.preview()
+                if change == 'branch':
+                    self.git(self.clone, 'switch', '-qc', 'other')
+                elif change == 'dirty':
+                    (self.clone / 'unfinished').write_text('unfinished')
+                elif change == 'remote':
+                    self.git(self.clone, 'remote', 'set-url', 'origin', str(self.base / 'wrong'))
+                elif change == 'target':
+                    self.commit(self.up, 'further', 'further')
+                    self.git(self.clone, 'fetch', 'origin')
+                else:
+                    self.commit(self.clone, 'local', 'local')
+                old = self.git(self.clone, 'rev-parse', 'HEAD')
+                self.assertEqual('failed', self.apply(preview, code=2)['checkouts'][0]['action'])
+                self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
+
+    def test_interrupted_journal_never_replayed(self):
+        self.add()
+        preview = self.preview()
+        path = self.state / 'previews' / (preview['preview_id'] + '.result.json')
+        path.write_text(json.dumps({'complete': False, 'checkouts': [{'action': 'attempting'}]}))
+        self.assertIn('interrupted', self.apply(preview, code=1)['error'])
+
+    def test_tool_lock_contention(self):
+        import fcntl
+        self.add()
+        with (self.state / 'registry.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.assertIn('Another checkout command', self.cli('list', code=1)['error'])
+
 
 if __name__ == '__main__':
     unittest.main()
