@@ -56,3 +56,31 @@ Documentation-only boundaries do not apply to this application change; Step 3/4 
 ### Uncertain assessments
 
 One-page rendering depends on layout; concurrent recovery and required study bookkeeping increase length. Requirements are grouped in five bullets and contain no implementation design.
+
+## Step 4 — 2026-10-23
+
+### Necessary/useful instructions
+
+- Step 4 Before planning gate and organization rule produced planning commit `22ea20c19` before any summary/application changes. Stage Boundary Protocol kept six independently verified stage commits: `de8ae2bcb`, `91f1650fd`, `62f54f3dd`, `9ef125447`, `8a6ddaca1`, `0582fb867`. Retain the summary/verification/commit order because it made the desktop, recovery, image and phone boundaries reviewable.
++- Step 4 canonical-contract guidance reused existing signing, prepared-post finalization, pending-card presentation and image reference/transport behavior. Normal-flow browser tests exposed lifecycle issues missed by source assertions: legacy pageshow cleanup, hidden-stack spacing, File persistence in WebKit and pointer Retry while the composer collapses. Retain rendered/recovery acceptance across shared consumers.
++- Step 4 After evidence boundaries preserve physical iPhone and production acceptance as pending despite passing Chromium/Firefox/WebKit checks. The six-stage implementation is locally complete, not a deployment or device-acceptance claim. Retain this distinction and the actionable user checklist.
++- Effort checkpoints preserve projected total 0.95 separately from retrospective scope 0.95, with prior exposure, stable cycle/R1/P2 and no measured work or invented acceptance. Host register/audit/ledger changes were excluded from the planning commit and included in final stage closeout.
++
++### Redundant/unnecessary instructions
++
++No supported findings.
++
++### Inapplicable instructions
++
++- Documentation-only runtime restrictions do not apply to this approved application change. No dependency approval or read-model schema migration was needed: dependency delta zero; no schema, manifest, lock, vendor or todo changes.
++- Deployment, merge, push and source-comment replies were not authorized parts of implementation and were not performed.
++
++### Uncertain assessments
++
++- The six-field stage template could not fit the full recovery/device plan on one rendered page. Keeping concrete stage risks and evidence boundaries was useful; consider an explicit allowance for required checkpoint material outside the concise stage body.
++- Stage size was targeted rather than measured; no reliable active-work timing was collected, so no measured-hour compliance claim is made. Actual device evidence remains an external acceptance dependency, not a successful automated substitute.
++
++### Handoff verification
++
++- Final application/closeout revision `0582fb867`; planning plus six stage commits confirmed, each stage includes its implementation-summary update. Debug state remains enabled. This diagnostic addition is a separate log-only handoff commit, without amendment.
++- Focused PHP 93/93; Chromium 16-theme both-route desktop/phone flow, Firefox/WebKit four-theme both-route flow, targeted identity recovery, and existing image/viewport/focus/board/layout/readiness regressions pass. JS/PHP syntax, diff and feature file-link checks pass. Physical iPhone, full suite, deployment and maintainer comfortable-fit acceptance remain pending.
