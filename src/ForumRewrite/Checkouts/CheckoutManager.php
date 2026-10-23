@@ -158,6 +158,12 @@ final class CheckoutManager
             }
             return strtolower($parts['scheme']) . '://' . strtolower($parts['host']) . (isset($parts['port']) ? ':' . $parts['port'] : '') . preg_replace('~(?:\.git)?/?$~', '', $parts['path'] ?? '');
         }
+        if (str_contains($url, '://')) {
+            $parts = parse_url($url);
+            if ($parts === false || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) {
+                throw new RuntimeException('Use a credential-free remote URL; configure Git credentials separately.');
+            }
+        }
         // SSH aliases and local remotes intentionally remain exact identities.
         return $url;
     }
@@ -196,6 +202,7 @@ final class CheckoutManager
             }
         }
         $registry['checkouts'][] = $entry;
+        $registry['revision'] = bin2hex(random_bytes(12));
         $this->writeJson($this->registry, $registry);
         return ['command' => 'add', 'checkouts' => [$entry]];
     }
@@ -508,6 +515,7 @@ final class CheckoutManager
         if (count($registry['checkouts']) === $before) {
             throw new RuntimeException('Path is not registered; use checkouts list.');
         }
+        $registry['revision'] = bin2hex(random_bytes(12));
         $this->writeJson($this->registry, $registry);
         return ['command' => 'remove', 'path' => $path];
     }

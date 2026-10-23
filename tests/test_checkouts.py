@@ -300,6 +300,29 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual('current', self.preview()['checkouts'][0]['action'])
         self.assertTrue(list(self.state.glob('history-*.retired-*')))
 
+    def test_help_option_scope_and_custom_apply_command(self):
+        self.add()
+        self.cli('apply', 'bad', '--path=' + str(self.clone), code=1)
+        self.cli('list', '--target=other', code=1)
+        output = self.cli('preview', raw=True)
+        self.assertIn('--registry=', output)
+        self.assertIn('--state-dir=', output)
+        self.assertIn('Exit: 0', self.cli('--help', raw=True))
+
+    def test_registry_remove_readd_invalidates_old_preview(self):
+        self.add()
+        preview = self.preview()
+        self.cli('remove', self.clone)
+        self.add()
+        self.assertIn('Registry changed', self.apply(preview, code=1)['error'])
+
+    def test_shared_registry_from_two_project_directories(self):
+        self.add()
+        self.assertEqual(str(self.clone), self.cli('list', cwd=self.up)['checkouts'][0]['path'])
+        preview = self.cli('preview', cwd=self.clone)
+        self.assertEqual('current', preview['checkouts'][0]['action'])
+        self.assertEqual(0, self.apply(preview)['exit_code'])
+
 
 if __name__ == '__main__':
     unittest.main()

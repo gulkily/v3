@@ -33,3 +33,9 @@ Effort study: `railspike-effort / v3/concurrent_checkouts`; [ledger](../effort_e
 - Changes: ordinary feature merges preserve parents/local commits; conflicts retain recovery state with path-specific continue/abort guidance, independent folders proceed; post-update checks, ahead/main-divergence handling, missing-identity/hook failures, explicit remove/re-enrollment archives history evidence after reviewed reconciliation.
 - Verification: `python3 tests/test_checkouts.py`: 22 tests passed. Added merge-parent checks, conflict plus independent success, abort/retry, missing identity, failed hook, non-fast-forward main exclusion and sticky-history re-enrollment. Initial identity fixture exposed overly broad Git environment stripping; narrowed it to repository-routing variables and reran successfully.
 - Notes: Stage 4 commit `830d2bd40`. Tool never resets/reconciles branches; manual rewrite fixture reset is test setup only. Git timeout is an uncertain operation requiring inspection, never automatic replay.
+
+## Stage 6 - Operator documentation and integration
+
+- Changes: CLI reference covers registry, setup/selectors, role exclusions, history-baseline limitations, source failures, preview side effects, session coordination, conflicts and interruption recovery; help includes exits and custom-state apply command. Registry mutation revision invalidates old previews even after remove/re-add. Added normal PHP test-harness wrapper for the Python standard-library real-Git fixtures.
+- Verification: 25 real-Git cases passed directly and via `php tests/run.php CheckoutsCommandTest` (1 wrapper passed). Existing `StatusCommandTest RailspikeSyncCommandTest`: 19/19 passed. PHP/shell syntax and diff checks passed. Tests exercise shared registry from two directory contexts, help/options and custom apply guidance.
+- Notes: Stage 5 commit `f55adab58`. Optional automatic discovery remains deferred. No production/IDE settings or live registry writes.

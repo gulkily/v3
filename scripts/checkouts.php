@@ -17,9 +17,12 @@ Options:
   --role=development|test|server  Role for add; defaults to development
   --registry=/path/file.json     Shared registry (default: XDG_CONFIG_HOME/v3/checkouts.json)
   --state-dir=/path              Private state (default: XDG_STATE_HOME/v3/checkouts)
-  --path=/checkout              Preview one registered path (required for test/server roles)
-  --sessions-paused             Assert coding/server sessions are coordinated for apply
-  --json                        Machine-readable output
+  --path=/checkout               Preview one registered path (required for test/server roles)
+  --sessions-paused              Assert coding/server sessions are coordinated for apply
+  --json                         Machine-readable output
+Exit: 0 completed; 1 command/config error; 2 attention or partial results.
+Defaults: ~/.config/v3/checkouts.json and ~/.local/state/v3/checkouts.
+Coordinate active sessions before apply. Preview fetches refs; other branches stay untouched.
 HELP;
 
 $options = ['json' => in_array('--json', $argv, true)];
@@ -46,6 +49,17 @@ try {
     if (count($positionals) > 2 || (in_array($command, ['list', 'preview'], true) && count($positionals) > 1)) {
         throw new RuntimeException('Unexpected argument; run ./v3 checkouts --help.');
     }
+    $allowed = ['registry', 'state-dir', 'json', ...match ($command) {
+        'add' => ['remote', 'target', 'role'],
+        'preview' => ['path'],
+        'apply' => ['sessions-paused'],
+        default => [],
+    }];
+    foreach (array_keys($options) as $key) {
+        if (!in_array($key, $allowed, true)) {
+            throw new RuntimeException('Option --' . $key . ' does not apply to ' . $command . '.');
+        }
+    }
     $result = (new CheckoutManager($options['registry'] ?? null, $options['state-dir'] ?? null))->run($command, $positionals[1] ?? null, $options);
     if ($options['json'] ?? false) {
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
@@ -64,7 +78,13 @@ try {
             echo $result['notice'] . "\n";
         }
         if ($command === 'preview' && isset($result['preview_id'])) {
-            echo 'Apply: ./v3 checkouts apply ' . $result['preview_id'] . ' --sessions-paused' . "\n";
+            $apply = 'Apply: ./v3 checkouts apply ' . $result['preview_id'] . ' --sessions-paused';
+            foreach (['registry', 'state-dir'] as $key) {
+                if (isset($options[$key])) {
+                    $apply .= ' --' . $key . '=' . escapeshellarg($options[$key]);
+                }
+            }
+            echo $apply . "\n";
             echo "Only selected checked-out branches are considered; other branches, stashes and linked worktrees stay untouched.\n";
         }
         if ($command === 'list' && !$result['checkouts']) {

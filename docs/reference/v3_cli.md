@@ -191,6 +191,94 @@ confirm no second username prompt appears. It leaves the identity and post in
 place intentionally. Do not rerun it after an ambiguous result—first inspect
 the reported post URL. `--confirm-production-write` is mandatory.
 
+## Synchronize code checkouts
+
+Use this from an IntelliJ terminal in any checkout containing the command:
+
+```bash
+./v3 checkouts add /home/wsl/v3
+./v3 checkouts add /home/wsl/agent/v3-codex
+./v3 checkouts list
+./v3 checkouts preview
+./v3 checkouts apply <preview-id> --sessions-paused
+```
+
+Register only directories you want to update. `add` validates the existing clone
+and records its absolute root, Git storage identity, expected remote source,
+remote name (`--remote=origin`), target (`--target=main`) and role. The default role
+is `development`. Test/server roles (`--role=test` or `--role=server`) appear as
+excluded in batch previews; select one explicitly with
+`./v3 checkouts preview --path=/absolute/registered/path`. Shared-storage linked
+worktrees and symlink aliases cannot be registered as independent clones.
+Nothing scans your home directory or enrolls existing copies automatically.
+
+All projects use one private registry at `~/.config/v3/checkouts.json` and private
+history/preview/results at `~/.local/state/v3/checkouts`; `XDG_CONFIG_HOME` and
+`XDG_STATE_HOME` override those base directories. `--registry=/path/file.json`
+and `--state-dir=/private/path` allow isolation. Pass the same overrides to each
+command; the preview's suggested apply command includes them. These files contain
+local paths; keep them local. Do not edit saved previews. `remove <registered-path>`
+forgets registration and archives its enrollment evidence without deleting files.
+For a moved/missing directory, remove its old absolute registered path and add the
+new location; generate a new preview after any registry change.
+
+Preview fetches **only the registered source branch**, updates its remote-tracking
+ref, and saves the exact fetched revision plus each checkout's state under an
+opaque preview ID. It changes no checked-out files or branches. Results distinguish
+`fast-forward`, `merge`, `current`, `ahead`, `dirty`, `busy`, `diverged`,
+`migration-required`, `unavailable`, `stale` and `excluded`. A missing source or
+credential/access failure does not silently select another remote. Correct access
+or registration and retry preview. Raw remote/hook errors are suppressed because
+they may include credentials; inspect Git locally when diagnosing failures.
+
+Before applying, coordinate agents and servers in the selected folders, then pass
+`--sessions-paused`. This is an operator assertion; clean Git status is not proof
+that an agent is idle. Tool locks serialize commands using the **same state
+directory**, not external Git/editor processes. Apply revalidates registry, source,
+branch, HEAD, target and dirty/operation state; changed inputs invalidate that
+folder's update. It applies the previewed source commit without fetching again:
+a later remote update requires a fresh preview. Main must fast-forward; eligible
+feature branches may fast-forward or receive an ordinary merge preserving local
+commits. A locally ahead branch stays untouched. Existing dirty/untracked work and
+Git operations are skipped; the tool never auto-stashes, switches branches,
+rebases, resets, pushes, clones, deletes or changes IDE trust.
+
+History eligibility is deliberately conservative. Enrollment records a baseline
+only when the checked-out branch and fetched target are directly comparable by
+ancestry. A first-run divergent branch requires manual reconciliation, even when
+it is legitimate work. Subsequent known feature divergence can merge while source
+history remains forward and branch continuity is proved. Source rewinds/replacements
+block, including an externally fetched rewrite where persisted baseline evidence
+shows the break. When no prior evidence exists, an already-fetched divergent branch
+also blocks. Common ancestry alone never authorizes a merge. This cannot infer all
+past force-pushes from Git alone; uncertain cases need review. Follow the
+[history migration runbook](../plans/markdown_dependency_removal/history_rewrite_clone_sync.md)
+for separately authorized reconciliation. After verified migration, explicitly
+remove/re-add registration to archive the sticky block and establish new evidence;
+this does not migrate any Git history itself.
+
+Apply records each attempt before changing a branch. On conflict, it leaves Git's
+merge state and prints commands to resolve/continue or abort in that directory;
+independent folders may still update. Preserve work, resolve or abort the merge,
+then run a fresh preview. A failed hook, missing identity or timed-out operation
+requires inspecting Git status, configuration, hooks and any remaining processes
+or locks before retrying. Git subprocesses have a 30-second limit; timeout does not
+prove child hooks have stopped or undo changes. Interrupted/attempted preview IDs
+cannot be replayed. Inspect the private `<id>.result.json` and Git status, then
+create a new preview. No automatic rollback or whole-batch atomicity is promised.
+
+`--json` returns the same dispositions and per-folder reasons as human output.
+Exit **0** means completion without attention, **1** means command/configuration
+failure, and **2** means partial results or attention required; inspect every row.
+These results cover selected **checked-out branches**, not every local branch,
+stash or detached worktree, and never establish historical erasure. Preview rows
+not applied retain their observed disposition; verify current conditions with a
+fresh preview.
+
+Run real-Git acceptance tests with `php tests/run.php CheckoutsCommandTest`
+(or `python3 tests/test_checkouts.py` directly); they use
+isolated temporary registries and clones and do not alter registered live copies.
+
 ## Inspect operator status
 
 ```
