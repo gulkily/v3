@@ -7,9 +7,9 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\Checkouts\CheckoutManager;
 
 const CHECKOUT_HELP = <<<'HELP'
-Usage: ./v3 checkouts <command> [argument] [options]
+Usage: ./v3 checkouts [command] [argument] [options]
   add <path>       Register an existing clone (--remote=origin --target=main)
-  preview         Fetch selected sources and save an update preview
+  preview         Fetch selected sources and save an update preview (default)
   apply <id>      Apply a saved preview (--sessions-paused required)
   list            List registered clones
   remove <path>   Forget a path; never deletes its files
@@ -45,7 +45,7 @@ try {
             $positionals[] = $arg;
         }
     }
-    $command = $positionals[0] ?? 'list';
+    $command = $positionals[0] ?? 'preview';
     if (count($positionals) > 2 || (in_array($command, ['list', 'preview'], true) && count($positionals) > 1)) {
         throw new RuntimeException('Unexpected argument; run ./v3 checkouts --help.');
     }
@@ -65,14 +65,22 @@ try {
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
     } else {
         foreach ($result['checkouts'] ?? [] as $entry) {
-            echo $entry['path'] . '  ' . ($entry['snapshot']['branch'] ?? '[' . $entry['role'] . ']')
-                . '  ' . ($entry['action'] ?? $entry['remote'] . '/' . $entry['target']) . "\n";
-            if (isset($entry['reason'])) {
-                echo '  ' . $entry['reason'] . "\n";
-            }
-            if (isset($entry['snapshot']['target'])) {
-                echo '  Source: ' . substr($entry['snapshot']['target'], 0, 12) . "\n";
-            }
+            $branch = $entry['snapshot']['branch'] ?? '[' . $entry['role'] . ']';
+            $action = $entry['action'] ?? $entry['remote'] . '/' . $entry['target'];
+            $hint = match ($action) {
+                'dirty' => 'preserve changes, then preview again',
+                'busy' => 'finish or abort Git operation',
+                'migration-required' => str_starts_with($entry['reason'], 'Divergent')
+                    ? 'unproven divergence; reconcile history first'
+                    : 'rewritten upstream; reconcile history first',
+                'diverged' => 'reconcile main manually',
+                'excluded' => str_starts_with($entry['reason'], 'Not selected')
+                    ? 'not selected' : $entry['reason'],
+                'current', 'ahead', 'fast-forward', 'merge', 'updated' => '',
+                default => $entry['reason'] ?? '',
+            };
+            $line = $entry['path'] . '  ' . $branch . '  ' . $action . ($hint !== '' ? ' — ' . $hint : '');
+            echo preg_replace('/[\r\n\t]+/', ' ', $line) . "\n";
         }
         if (in_array($command, ['preview', 'apply'], true)) {
             $counts = [];
@@ -82,7 +90,9 @@ try {
             echo implode(' · ', array_map(fn ($action, $count) => $count . ' ' . $action, array_keys($counts), array_values($counts))) . "\n";
         }
         if (isset($result['notice'])) {
-            echo $result['notice'] . "\n";
+            echo ($command === 'preview'
+                ? 'Fetched refs; no checked-out files changed. Pause sessions before apply.'
+                : 'Other branches, stashes and linked worktrees unchanged. Preview again after recovery.') . "\n";
         }
         if ($command === 'preview' && isset($result['preview_id'])) {
             $apply = 'Apply: ./v3 checkouts apply ' . $result['preview_id'] . ' --sessions-paused';
@@ -92,7 +102,6 @@ try {
                 }
             }
             echo $apply . "\n";
-            echo "Only selected checked-out branches are considered; other branches, stashes and linked worktrees stay untouched.\n";
         }
         if ($command === 'list' && !$result['checkouts']) {
             echo "No clones registered. Use ./v3 checkouts add <path>.\n";

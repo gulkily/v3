@@ -146,7 +146,8 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual(0o600, plan.stat().st_mode & 0o777)
         self.assertEqual(result['preview_id'], json.loads(plan.read_text())['plan']['id'])
         output = self.cli('preview', raw=True)
-        self.assertIn('Already current', output)
+        self.assertIn('  current', output)
+        self.assertNotIn('Source:', output)
         self.assertIn('no checked-out files changed', output)
         self.assertIn('--sessions-paused', output)
         (self.clone / 'new').write_text('dirty')
@@ -439,6 +440,28 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual('attempting', journal['checkouts'][0]['action'])
         self.assertIn('interrupted', self.apply(preview, code=1)['error'])
         self.assertIn(self.preview()['checkouts'][0]['action'], ['busy', 'dirty'])
+
+    def test_default_command_previews_with_one_line_per_checkout(self):
+        self.add()
+        other = self.base / 'other'
+        self.git(self.base, 'clone', '-q', str(self.up), str(other))
+        self.add(other)
+        old = self.git(self.clone, 'rev-parse', 'HEAD')
+        target = self.commit(self.up, 'new', 'new source')
+        (other / 'unfinished').write_text('unfinished')
+        result = self.cli(code=2)
+        self.assertEqual('preview', result['command'])
+        self.assertEqual(['fast-forward', 'dirty'], [r['action'] for r in result['checkouts']])
+        output = self.cli(raw=True, code=2)
+        rows = [line for line in output.splitlines() if line.startswith(str(self.base))]
+        self.assertEqual(2, len(rows))
+        self.assertIn('fast-forward', rows[0])
+        self.assertIn('dirty', rows[1])
+        self.assertIn('preserve changes', rows[1])
+        self.assertNotIn('Source:', output)
+        self.assertEqual(5, len(output.splitlines()))
+        self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
+        self.assertEqual(target, self.git(self.clone, 'rev-parse', 'origin/main'))
 
 
 if __name__ == '__main__':

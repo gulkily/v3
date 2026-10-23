@@ -63,3 +63,9 @@ Original baseline `19f1066a` retained; rewritten entry `1a358bc9`, planning `b1b
 - Request: remove the expected-source listings because registered copies use the same repository.
 - Disposition: authorized, in-scope output cleanup; removed expected-source lines from human add/list output. Registry source validation and JSON source fields remain available.
 - Verification: 3 focused CLI tests passed (registry lifecycle, credential-source handling, custom apply/help); PHP syntax and diff checks passed. Rendered live `checkouts list` confirms eight concise rows without expected-source listings. No browser UI changed; historical terminal transcript preserves the original acceptance output.
+
+## Follow-up - Default compact preview
+
+- Request: make preview the default `./v3 checkouts` behavior and display each checkout on one line.
+- Disposition: authorized in-scope CLI refinement; default command fetches/previews without applying, compact rows retain branch/action and recovery hints; source OIDs and complete reasons remain in JSON. Explicit list remains registration-only. Help/reference updated.
+- Verification: 4 real-Git checks passed (default preview fetches without moving HEAD, exactly one line per checkout, saved-preview output/help, conflict recovery); PHP syntax and diff checks passed. Live default invocation respected another running checkout command and exited with lock guidance; live preview was not executed.

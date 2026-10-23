@@ -199,9 +199,14 @@ Use this from an IntelliJ terminal in any checkout containing the command:
 ./v3 checkouts add /home/wsl/v3
 ./v3 checkouts add /home/wsl/agent/v3-codex
 ./v3 checkouts list
-./v3 checkouts preview
+./v3 checkouts
 ./v3 checkouts apply <preview-id> --sessions-paused
 ```
+
+`./v3 checkouts` defaults to preview: one line per checkout with branch, action
+and a compact recovery hint where needed. `preview` remains an explicit alias;
+`list` lists registration without fetching. JSON retains complete reasons/source
+metadata.
 
 Register only directories you want to update. `add` validates the existing clone
 and records its absolute root, Git storage identity, expected remote source,
