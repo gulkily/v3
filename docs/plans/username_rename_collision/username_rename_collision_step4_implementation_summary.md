@@ -93,3 +93,14 @@ Effort study: `railspike-effort`, cycle `v3/username_rename_collision`; standing
   - Screenshots reviewed (light, word97, chicago, midnight; desktop and phone). The first pass showed full-width Accept/Decline and the error at the bottom of the section; both fixed before commit.
   - `AccountKeyPageHooksTest`: 6/6 passed.
 - Notes: `/user/ilya` doesn't print profile fingerprints in its main text, so the browser test checks composite membership through the recipient-keys API instead.
+
+## Stage 7 - Documentation
+- Changes:
+  - `docs/specs/profile_read_contract_v1.md`: commits the "Composite User" section drafted before this cycle (definition, "composite identity" is not a separate term, effect of a rename, private-message history) and adds the consent-to-join rule.
+  - `docs/reference/invitation_entry.md`: step 4 no longer says "Names need not be unique"; step 7 says a held name stops at a join request; new "Joining a username someone else uses" section (request, answer, save, endpoints, flag).
+  - `docs/research/username_change_report.md`: follow-up section recording what was traced, defined and changed, and what remains open.
+- Verification:
+  - Relative link and anchor check across the three docs and this cycle's plans: all targets exist. The only flagged anchor (`#cycle-v3username_rename_collision`) is a false positive from the checker stripping underscores; GitHub keeps them.
+  - `git diff --check`: clean.
+  - Behaviour described matches the Stage 1–6 tests: held includes pending holders; `guest` is exempt; one request per key; 7-day expiry; operator-only acceptance for pending-only names; one combined commit.
+- Notes: the report's two earlier "Unverified" bullets are left as written (historical) and answered by the new follow-up section.

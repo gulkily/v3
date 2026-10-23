@@ -94,6 +94,14 @@ Every resolved profile read must be able to surface at least:
 - Unapproved collisions remain separate pending profiles and are never folded into approved totals.
 - Collision handling remains deterministic and fully derivable from indexed profile state plus approval state.
 
+## Composite User
+
+- A composite user is the set of approved profiles that share one normalized `username_token`. It is the "visible user bucket" above, and the unit that private messaging encrypts to and delivers by (`ApprovedUserKeyResolver`). "Composite identity" is not a separate term.
+- Membership is derived, not recorded. Each profile keeps its own `Identity-ID`; approval follows `Identity-ID`, not the username.
+- A verified `set-name` record under `records/profile-names/` changes the profile's `username_token`. The profile leaves its old composite user and joins the one for the new token, or forms a new one. This affects `/user/<username>`, `/users/` grouping, private-message recipient keys, and which approvers count as "same username" for additional keys. Its approval is unchanged.
+- A rename can join an existing composite user only with consent: renaming to a token another profile uses (approved or pending, except the shared `guest`) is held as a join request until an approved holder of that token or an operator accepts it with a signed grant (`records/profile-name-grants/`). See [choosing a username](../reference/invitation_entry.md#joining-a-username-someone-else-uses). Grants are audit records; membership is still derived from the rename record.
+- Stored private messages keep the sender and recipient tokens they were sent with, so earlier conversations stay under the old name after a rename.
+
 ## Derived Read-Model Requirements
 
 The indexed profile model must materialize enough data to support:

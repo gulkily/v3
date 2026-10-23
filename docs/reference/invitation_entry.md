@@ -65,7 +65,9 @@ that button reads “Re-setup / change name”.
    hyphen, and removes leading/trailing hyphens. An empty result becomes `guest`.
    For example, `Alice Smith` becomes `alice-smith`. The server requires the
    normalized name to contain 1–80 characters from that same character set;
-   overly long names are rejected rather than truncated. Names need not be unique.
+   overly long names are rejected rather than truncated. A name another profile
+   already uses becomes a join request instead (see below); `guest` is shared by
+   design and always saves directly.
 5. **Prepare an unsigned record.** The browser sends the identity ID and normalized
    name to `POST /api/prepare_profile_name`. The server checks that the identity
    exists and prepares a record with a unique ID, UTC timestamp, `set-name`
@@ -80,7 +82,9 @@ that button reads “Re-setup / change name”.
    preparation type/expiry, the record hash, identity/path binding, record format,
    and the signature against the identity's public key. It rejects a prepared
    change whose timestamp is no newer than the latest verified name change,
-   preventing stale requests from overwriting a newer saved name.
+   preventing stale requests from overwriting a newer saved name. If another
+   profile, approved or pending, now uses the name, the server stops here and
+   holds the signed record as a join request (see below).
 8. **Persist the signed change.** The server writes
    `records/profile-names/profile-name-<32 hex>.txt` and its `.txt.asc` signature
    companion, then commits both to the canonical repository. It preserves the
@@ -97,6 +101,35 @@ that button reads “Re-setup / change name”.
     Account, and dispatches `forum:identity-changed` for listening UI components.
     Account displays “Username saved. Your key and approval are unchanged.”
     Authenticated Account renders also reconcile the local name with server state.
+
+### Joining a username someone else uses
+
+A key can join an existing name, for example a second device joining your main
+key's name, only with the consent of that name's holder:
+
+1. **Request.** Choosing a name another profile uses holds the signed rename as a
+   pending join request in private server state (one per key; a new request
+   replaces it) and Account shows "Waiting for <name> to accept." with
+   **Cancel**. The requester's name is unchanged until the request is accepted.
+   Requests expire after 7 days.
+2. **Answer.** An approved key that currently has that name, or an operator, sees
+   the request under **Username requests** on Account. **Accept** signs a
+   `grant-name` record (`records/profile-name-grants/`) naming the key, the name
+   and the held record; **Decline** removes the request. A name used only by
+   unapproved profiles can be accepted by an operator only.
+3. **Save.** Under the write lock the server re-checks the request, the
+   grantor's authority, both signatures and that the requester has not renamed
+   since asking, then commits the grant and the held rename together. The
+   requester joins that name's composite user (see the
+   [profile read contract](../specs/profile_read_contract_v1.md#composite-user)).
+   Grants are an audit record only: the read model derives names from the
+   rename record and approvals as before.
+
+Endpoints: `GET /api/profile_name_request`, `POST /api/cancel_profile_name_request`
+(requester, signed-in session); `GET /api/profile_name_join_requests`,
+`POST /api/decline_profile_name_request` (holder or operator, signed-in session);
+`POST /api/prepare_profile_name_grant`, `POST /api/finalize_profile_name_grant`
+(signed). All are refused while username changes are off.
 
 ### Naming errors and recovery
 

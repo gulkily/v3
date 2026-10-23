@@ -84,3 +84,12 @@ Plans: [username_change_gate](../plans/username_change_gate/).
 - **Caption:** while the flag is on, the key-replacing Account button reads "Start over with a new key" (it creates a new key and identity); while off it keeps "Re-setup / change name".
 - **Consequence to note:** the zero-click invitation flow lets invitees pick a name after arrival; with the flag off they cannot, and stay `guest` until an operator enables it.
 - **Still open:** the composite-user effect of a rename (grouping by username token, approval same-username rule, stored private-message tokens) is untraced; see `todo.txt`.
+
+## Follow-up: composite user definition and join requests (branch `feat/username-rename-collision`)
+
+Plans: [username_rename_collision](../plans/username_rename_collision/).
+
+- **Traced:** stored private messages are not re-keyed on a rename, so earlier conversations stay under the old name; and a rename into an approved user's name previously joined that composite user without consent, gaining its new messages and "same username" approval authority.
+- **Defined:** "composite user" in the [profile read contract](../specs/profile_read_contract_v1.md#composite-user); "composite identity" is not a separate term.
+- **Changed:** renaming into a name another profile uses is now a join request that a holder of the name or an operator must accept; `guest` stays shared. See [joining a username](../reference/invitation_entry.md#joining-a-username-someone-else-uses).
+- **Still open:** private-message history after a rename, and conversation metadata visible to whoever later takes a vacated name.
