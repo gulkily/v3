@@ -1,6 +1,6 @@
 (function () {
   const composeRoots = Array.from(document.querySelectorAll("[data-compose-root]"));
-  const intentSelector = 'textarea[name="body"], input[name="subject"], input[name="image"], input[name="image_description"]';
+  const intentSelector = 'textarea[name="body"], input[name="subject"], input[name="image"]';
   const reactionSelector = "[data-thread-reactions-root], .post-card[data-post-id]";
   let loadPromise = null;
 
@@ -78,7 +78,10 @@
         return Promise.reject(new Error("Browser signing asset URLs are missing from the page asset configuration."));
       }
 
-      loadPromise = appendScript(loaderPath)
+      const loader = appendScript(loaderPath);
+      loadPromise = (assetPaths.replyContinuation
+        ? loader.then(function () { return appendScript(assetPaths.replyContinuation); })
+        : loader)
         .then(function () {
           return appendScript(signingPath);
         })
@@ -93,7 +96,7 @@
   }
 
   function handleIntent() {
-    void loadSigningAssets();
+    void loadSigningAssets().catch(function () {});
   }
 
   composeRoots.forEach(function (composeRoot) {

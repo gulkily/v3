@@ -1,0 +1,1669 @@
+{
+  "recordedUtc": "2026-10-23T19:47:27.202728+00:00",
+  "browser": "Chromium /opt/google/chrome/chrome; JavaScript disabled",
+  "minimumRequiredContrast": 3,
+  "sourceHashes": {
+    "public/assets/platform_docs.css": "2d74e2cbd75e412ddb32642799f1e20fde89f2b53125e97a36f92460fd25b426",
+    "src/ForumRewrite/Docs/PublicMarkdownRenderer.php": "30de58cb6f23a02d4e96cc8e020a189d66febd827e73951ce874431cfe93462f",
+    "tests/browser/docs_task_contrast.mjs": "4f762c67829e4059c9472e461415e1cb4c6bc3beced57c4cf2e895711adfec25",
+    "tests/browser/platform_docs.mjs": "ce3e42a2e8b9ea3780f8f2d88fa3882103bca44e68b8e783ac2408f783625a47",
+    "tests/fixtures/markdown_task_reader.md": "86137d5cb75bffb892394310ef2a421785c0a7ce001df099c8851d4f38e72035"
+  },
+  "runs": [
+    {
+      "kind": "dynamic",
+      "cases": 46,
+      "rawEvidence": "/tmp/markdown-task-contrast-5dinak1b/contrast/evidence.json",
+      "rawSha256": "3e4263f558f7f640486e1fef8bb3f7a66f87124afdcfcdf4bf35fb0443225e71",
+      "minimumUncheckedBorderContrast": 8.462789597084885,
+      "minimumCheckedTickContrast": 3.9558854162253763,
+      "casesEvidence": [
+        {
+          "theme": "auto-light",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/auto-light-1280.png",
+          "screenshotSha256": "d62a0186c0e8bb0c0f4deb4af6056e8aa7f81e714b9aba2ee1a4af1bd12953f7"
+        },
+        {
+          "theme": "auto-dark",
+          "width": 1280,
+          "scheme": "dark",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/auto-dark-1280.png",
+          "screenshotSha256": "4ac94b74caa397777c2fc15e6c3403502b37ef845f53271bb062e99f638dd27b"
+        },
+        {
+          "theme": "light",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/light-1280.png",
+          "screenshotSha256": "d62a0186c0e8bb0c0f4deb4af6056e8aa7f81e714b9aba2ee1a4af1bd12953f7"
+        },
+        {
+          "theme": "dark",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/dark-1280.png",
+          "screenshotSha256": "4ac94b74caa397777c2fc15e6c3403502b37ef845f53271bb062e99f638dd27b"
+        },
+        {
+          "theme": "console",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.501509892658328,
+          "checkedTickContrast": 15.585813499978006,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/console-1280.png",
+          "screenshotSha256": "82967871fb8371d9822cd33124cd8edef6cb69d59010061c99ea7390bf050d8f"
+        },
+        {
+          "theme": "lcd",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.68060466264544,
+          "checkedTickContrast": 8.334789650597306,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-1280.png",
+          "screenshotSha256": "25f71071b6c626c67e48640d0a69012481d332e15e8d82a7477f16211df13105"
+        },
+        {
+          "theme": "chicago",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 10.378762002183594,
+          "checkedTickContrast": 3.9558854162253763,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/chicago-1280.png",
+          "screenshotSha256": "3bd00def802350c7938459f1a26b6c7e575ba136fe5a5c9633b2b31fbd553f26"
+        },
+        {
+          "theme": "vapor",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.0486220612276,
+          "checkedTickContrast": 16.413088367374446,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/vapor-1280.png",
+          "screenshotSha256": "6b05d02e42b64ca26623bacbfa3e89d1d5ea15f89138d1e8a0fefe7fddb6ff40"
+        },
+        {
+          "theme": "forge",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.335412985298346,
+          "checkedTickContrast": 16.388316268546784,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/forge-1280.png",
+          "screenshotSha256": "f19e92674abe41a2a7bb7a7bc1104039f6dbd714830902bcdbc7d500cde76d92"
+        },
+        {
+          "theme": "sticker",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 19.79814571052481,
+          "checkedTickContrast": 4.886911878021721,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/sticker-1280.png",
+          "screenshotSha256": "06f190cfe833da5c290fd020e5e0e79b33dcc3e63a83b7119110c63efe55d92d"
+        },
+        {
+          "theme": "arena",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/arena-1280.png",
+          "screenshotSha256": "3b1e09baf1e5939ad0a2a7a3a385fee295fd2adb04f988619ec93dcc779ae31e"
+        },
+        {
+          "theme": "thermal",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.952643929036924,
+          "checkedTickContrast": 15.917145179213158,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/thermal-1280.png",
+          "screenshotSha256": "0dadc7c99c4111eed588a592424fd2c3141f6f3b3884158e42d70b9988439045"
+        },
+        {
+          "theme": "whitehot",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 17.289446181260647,
+          "checkedTickContrast": 15.979401319777295,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/whitehot-1280.png",
+          "screenshotSha256": "f68a9412489450a0f98d74c2c19ab11d4999d6f90da1b5db7877b19a39e730ea"
+        },
+        {
+          "theme": "word97",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 11.542302514116262,
+          "checkedTickContrast": 5.317210002277984,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/word97-1280.png",
+          "screenshotSha256": "d0387727891eee211f06704eebc87897997e630637e5165e9e4bf8daba7e2a6f"
+        },
+        {
+          "theme": "midnight",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.462789597084885,
+          "checkedTickContrast": 7.497689004951754,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/midnight-1280.png",
+          "screenshotSha256": "38efb44d7091588bb8ca37f3297fe60d030f44c05cdf56099e6cde1e0a92bfc5"
+        },
+        {
+          "theme": "chouse",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 12.924493885931456,
+          "checkedTickContrast": 14.613456488588715,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/chouse-1280.png",
+          "screenshotSha256": "03b02704f6141ec6867596e00b69deebeba923b3aba6338b22f3c02cf8a68081"
+        },
+        {
+          "theme": "qdb",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 18.427342383975944,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/qdb-1280.png",
+          "screenshotSha256": "9eddb852402b647ea201e177d22f9eea1c8b6b877e67cb50ced71d832cfd49a4"
+        },
+        {
+          "theme": "mitrapclub",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.788301276518409,
+          "checkedTickContrast": 16.294100650425367,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/mitrapclub-1280.png",
+          "screenshotSha256": "d8e637fb84aec85678a5ff35d28dfd117ed5e83859875165e5e690b6617345f4"
+        },
+        {
+          "theme": "lcd-amber",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.291534594165286,
+          "checkedTickContrast": 7.7525413193143855,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-amber-1280.png",
+          "screenshotSha256": "08fa962960c3398757c46099cac75ee42361b10b53369300e6dd0f5aeaed43a7"
+        },
+        {
+          "theme": "lcd-purple",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.480352515004196,
+          "checkedTickContrast": 7.84185217235885,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-purple-1280.png",
+          "screenshotSha256": "528d5669e6d6198dad60ebe33aa8a668367bd5aee52e8f1466c31aa79dd815d2"
+        },
+        {
+          "theme": "lcd-gray",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.228980846936414,
+          "checkedTickContrast": 7.65307609294816,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-gray-1280.png",
+          "screenshotSha256": "2176154e2d39eb76d906cbcb8f7b1d148036e9950f5a62684e79390b887b5c2f"
+        },
+        {
+          "theme": "forced-light",
+          "width": 1280,
+          "scheme": "light",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/forced-light-1280.png",
+          "screenshotSha256": "c24eebc64274f903f10099edac3dc53660519ef6930469290fe2a5b27681c585"
+        },
+        {
+          "theme": "forced-dark",
+          "width": 1280,
+          "scheme": "dark",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/forced-dark-1280.png",
+          "screenshotSha256": "6cf1d13cdc41a90da43399e01bcdccffe1308361e9c58c972ce32bd2cc9a3e96"
+        },
+        {
+          "theme": "auto-light",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/auto-light-390.png",
+          "screenshotSha256": "aca83584e20ed5cdeef313128a842351e0b743da66157c1a8a6f1c8ff0ffd355"
+        },
+        {
+          "theme": "auto-dark",
+          "width": 390,
+          "scheme": "dark",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/auto-dark-390.png",
+          "screenshotSha256": "a9fc5ce2a91ca97452dd39920447a85975dcb29cbc75f2b68f511c1ccc30af6d"
+        },
+        {
+          "theme": "light",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/light-390.png",
+          "screenshotSha256": "aca83584e20ed5cdeef313128a842351e0b743da66157c1a8a6f1c8ff0ffd355"
+        },
+        {
+          "theme": "dark",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/dark-390.png",
+          "screenshotSha256": "a9fc5ce2a91ca97452dd39920447a85975dcb29cbc75f2b68f511c1ccc30af6d"
+        },
+        {
+          "theme": "console",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.501509892658328,
+          "checkedTickContrast": 15.585813499978006,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/console-390.png",
+          "screenshotSha256": "c33c9f644e95be2a9e192b5211729fe91052824adbcd1fc4695af82aaeb4b03e"
+        },
+        {
+          "theme": "lcd",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.68060466264544,
+          "checkedTickContrast": 8.334789650597306,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-390.png",
+          "screenshotSha256": "63175641b33c15f31813b6557e952b926abc0d4a26d5a4588ac5533f426077b7"
+        },
+        {
+          "theme": "chicago",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 10.378762002183594,
+          "checkedTickContrast": 3.9558854162253763,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/chicago-390.png",
+          "screenshotSha256": "cd7dcae417efa51a60d383d07c2e67e0a7b68373668db05f7f69fce19a488099"
+        },
+        {
+          "theme": "vapor",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.0486220612276,
+          "checkedTickContrast": 16.413088367374446,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/vapor-390.png",
+          "screenshotSha256": "5f35b616a82fc302b34b91ac745556f28e01751fc9a83a12302280741f101dd7"
+        },
+        {
+          "theme": "forge",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.335412985298346,
+          "checkedTickContrast": 16.388316268546784,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/forge-390.png",
+          "screenshotSha256": "6d53c2787573b37fac5643952acc6b948d7c8375ed264b60453b2ba44e64fa7a"
+        },
+        {
+          "theme": "sticker",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 19.79814571052481,
+          "checkedTickContrast": 4.886911878021721,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/sticker-390.png",
+          "screenshotSha256": "20e13c780ee621098572c852d7176772124051e6321dd6887784a4cf92de6894"
+        },
+        {
+          "theme": "arena",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/arena-390.png",
+          "screenshotSha256": "dd6af30d25d064fdf7d22f50c22f80b77723b089a3af8308c8d90de70e417812"
+        },
+        {
+          "theme": "thermal",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.952643929036924,
+          "checkedTickContrast": 15.917145179213158,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/thermal-390.png",
+          "screenshotSha256": "8f65d5946b5d85fdbbbc9399587e0ed6d6a7f39833c6188d9595731318335212"
+        },
+        {
+          "theme": "whitehot",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 17.289446181260647,
+          "checkedTickContrast": 15.979401319777295,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/whitehot-390.png",
+          "screenshotSha256": "22e3ae75a7e3f285957bd03bcb74634f67144a6fbb71d005535eb8ad683f3909"
+        },
+        {
+          "theme": "word97",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 11.542302514116262,
+          "checkedTickContrast": 5.317210002277984,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/word97-390.png",
+          "screenshotSha256": "c8008a0e3913853d21e5c0a26000e5e6be67b2f04d8d4a2d2cbdff4c422f5104"
+        },
+        {
+          "theme": "midnight",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.462789597084885,
+          "checkedTickContrast": 7.497689004951754,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/midnight-390.png",
+          "screenshotSha256": "691c968e757be72fb963377664bc63a6362e63cec1038e3df86e8b5f81f8382b"
+        },
+        {
+          "theme": "chouse",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 12.924493885931456,
+          "checkedTickContrast": 14.613456488588715,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/chouse-390.png",
+          "screenshotSha256": "5d263a3b221f955f5442119a1ec9fc7b1d6c58ea29c0d2bd6f77a7d02b6bb2da"
+        },
+        {
+          "theme": "qdb",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 18.427342383975944,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/qdb-390.png",
+          "screenshotSha256": "ef5b327295579c70c80d784539c98310729fed444bdded38b73ba189beaabc72"
+        },
+        {
+          "theme": "mitrapclub",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.788301276518409,
+          "checkedTickContrast": 16.294100650425367,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/mitrapclub-390.png",
+          "screenshotSha256": "87426fb0303ef0464f2826e2f9aef7f34009ee355f7771ef18b764f60196fb02"
+        },
+        {
+          "theme": "lcd-amber",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.291534594165286,
+          "checkedTickContrast": 7.7525413193143855,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-amber-390.png",
+          "screenshotSha256": "f4b5c61f136c758cfdad1d46d3efc0413473ebedfdadc9219cad8c3c31680cf3"
+        },
+        {
+          "theme": "lcd-purple",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.480352515004196,
+          "checkedTickContrast": 7.84185217235885,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-purple-390.png",
+          "screenshotSha256": "d0e1f318d290144cd08c1a5b231da1b1a7c928d1c6fd1cdd95268c130dcbb5b7"
+        },
+        {
+          "theme": "lcd-gray",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.228980846936414,
+          "checkedTickContrast": 7.65307609294816,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/lcd-gray-390.png",
+          "screenshotSha256": "d1f39ecf3170733a40e4e6cd558b5c7fa0f8d219818da301ada6c7df0e2fc332"
+        },
+        {
+          "theme": "forced-light",
+          "width": 390,
+          "scheme": "light",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/forced-light-390.png",
+          "screenshotSha256": "cc5814ed081d400cfc6e019751368e02a5dbb0c83e5d2265390af13e8072a47d"
+        },
+        {
+          "theme": "forced-dark",
+          "width": 390,
+          "scheme": "dark",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-task-contrast-5dinak1b/contrast/forced-dark-390.png",
+          "screenshotSha256": "20e04cdd09f1012bb53cf637bf85f65c2d23e82a4e4dc01c497bbf6fe27ee03a"
+        }
+      ]
+    },
+    {
+      "kind": "generated",
+      "cases": 46,
+      "rawEvidence": "/tmp/markdown-release-we3h09lr/contrast/evidence.json",
+      "rawSha256": "c67ec14608b83c7358692fce7ac6a8c7e9ab1a15db409181129b563dea0836a8",
+      "minimumUncheckedBorderContrast": 8.462789597084885,
+      "minimumCheckedTickContrast": 3.9558854162253763,
+      "casesEvidence": [
+        {
+          "theme": "auto-light",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/auto-light-1280.png",
+          "screenshotSha256": "d62a0186c0e8bb0c0f4deb4af6056e8aa7f81e714b9aba2ee1a4af1bd12953f7"
+        },
+        {
+          "theme": "auto-dark",
+          "width": 1280,
+          "scheme": "dark",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/auto-dark-1280.png",
+          "screenshotSha256": "4ac94b74caa397777c2fc15e6c3403502b37ef845f53271bb062e99f638dd27b"
+        },
+        {
+          "theme": "light",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/light-1280.png",
+          "screenshotSha256": "d62a0186c0e8bb0c0f4deb4af6056e8aa7f81e714b9aba2ee1a4af1bd12953f7"
+        },
+        {
+          "theme": "dark",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/dark-1280.png",
+          "screenshotSha256": "4ac94b74caa397777c2fc15e6c3403502b37ef845f53271bb062e99f638dd27b"
+        },
+        {
+          "theme": "console",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.501509892658328,
+          "checkedTickContrast": 15.585813499978006,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/console-1280.png",
+          "screenshotSha256": "82967871fb8371d9822cd33124cd8edef6cb69d59010061c99ea7390bf050d8f"
+        },
+        {
+          "theme": "lcd",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.68060466264544,
+          "checkedTickContrast": 8.334789650597306,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-1280.png",
+          "screenshotSha256": "25f71071b6c626c67e48640d0a69012481d332e15e8d82a7477f16211df13105"
+        },
+        {
+          "theme": "chicago",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 10.378762002183594,
+          "checkedTickContrast": 3.9558854162253763,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/chicago-1280.png",
+          "screenshotSha256": "3bd00def802350c7938459f1a26b6c7e575ba136fe5a5c9633b2b31fbd553f26"
+        },
+        {
+          "theme": "vapor",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.0486220612276,
+          "checkedTickContrast": 16.413088367374446,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/vapor-1280.png",
+          "screenshotSha256": "6b05d02e42b64ca26623bacbfa3e89d1d5ea15f89138d1e8a0fefe7fddb6ff40"
+        },
+        {
+          "theme": "forge",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.335412985298346,
+          "checkedTickContrast": 16.388316268546784,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/forge-1280.png",
+          "screenshotSha256": "f19e92674abe41a2a7bb7a7bc1104039f6dbd714830902bcdbc7d500cde76d92"
+        },
+        {
+          "theme": "sticker",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 19.79814571052481,
+          "checkedTickContrast": 4.886911878021721,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/sticker-1280.png",
+          "screenshotSha256": "06f190cfe833da5c290fd020e5e0e79b33dcc3e63a83b7119110c63efe55d92d"
+        },
+        {
+          "theme": "arena",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/arena-1280.png",
+          "screenshotSha256": "3b1e09baf1e5939ad0a2a7a3a385fee295fd2adb04f988619ec93dcc779ae31e"
+        },
+        {
+          "theme": "thermal",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.952643929036924,
+          "checkedTickContrast": 15.917145179213158,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/thermal-1280.png",
+          "screenshotSha256": "0dadc7c99c4111eed588a592424fd2c3141f6f3b3884158e42d70b9988439045"
+        },
+        {
+          "theme": "whitehot",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 17.289446181260647,
+          "checkedTickContrast": 15.979401319777295,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/whitehot-1280.png",
+          "screenshotSha256": "f68a9412489450a0f98d74c2c19ab11d4999d6f90da1b5db7877b19a39e730ea"
+        },
+        {
+          "theme": "word97",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 11.542302514116262,
+          "checkedTickContrast": 5.317210002277984,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/word97-1280.png",
+          "screenshotSha256": "d0387727891eee211f06704eebc87897997e630637e5165e9e4bf8daba7e2a6f"
+        },
+        {
+          "theme": "midnight",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.462789597084885,
+          "checkedTickContrast": 7.497689004951754,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/midnight-1280.png",
+          "screenshotSha256": "38efb44d7091588bb8ca37f3297fe60d030f44c05cdf56099e6cde1e0a92bfc5"
+        },
+        {
+          "theme": "chouse",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 12.924493885931456,
+          "checkedTickContrast": 14.613456488588715,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/chouse-1280.png",
+          "screenshotSha256": "03b02704f6141ec6867596e00b69deebeba923b3aba6338b22f3c02cf8a68081"
+        },
+        {
+          "theme": "qdb",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 18.427342383975944,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/qdb-1280.png",
+          "screenshotSha256": "9eddb852402b647ea201e177d22f9eea1c8b6b877e67cb50ced71d832cfd49a4"
+        },
+        {
+          "theme": "mitrapclub",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.788301276518409,
+          "checkedTickContrast": 16.294100650425367,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/mitrapclub-1280.png",
+          "screenshotSha256": "d8e637fb84aec85678a5ff35d28dfd117ed5e83859875165e5e690b6617345f4"
+        },
+        {
+          "theme": "lcd-amber",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.291534594165286,
+          "checkedTickContrast": 7.7525413193143855,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-amber-1280.png",
+          "screenshotSha256": "08fa962960c3398757c46099cac75ee42361b10b53369300e6dd0f5aeaed43a7"
+        },
+        {
+          "theme": "lcd-purple",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.480352515004196,
+          "checkedTickContrast": 7.84185217235885,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-purple-1280.png",
+          "screenshotSha256": "528d5669e6d6198dad60ebe33aa8a668367bd5aee52e8f1466c31aa79dd815d2"
+        },
+        {
+          "theme": "lcd-gray",
+          "width": 1280,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.228980846936414,
+          "checkedTickContrast": 7.65307609294816,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-gray-1280.png",
+          "screenshotSha256": "2176154e2d39eb76d906cbcb8f7b1d148036e9950f5a62684e79390b887b5c2f"
+        },
+        {
+          "theme": "forced-light",
+          "width": 1280,
+          "scheme": "light",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/forced-light-1280.png",
+          "screenshotSha256": "c24eebc64274f903f10099edac3dc53660519ef6930469290fe2a5b27681c585"
+        },
+        {
+          "theme": "forced-dark",
+          "width": 1280,
+          "scheme": "dark",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/forced-dark-1280.png",
+          "screenshotSha256": "6cf1d13cdc41a90da43399e01bcdccffe1308361e9c58c972ce32bd2cc9a3e96"
+        },
+        {
+          "theme": "auto-light",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/auto-light-390.png",
+          "screenshotSha256": "aca83584e20ed5cdeef313128a842351e0b743da66157c1a8a6f1c8ff0ffd355"
+        },
+        {
+          "theme": "auto-dark",
+          "width": 390,
+          "scheme": "dark",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/auto-dark-390.png",
+          "screenshotSha256": "a9fc5ce2a91ca97452dd39920447a85975dcb29cbc75f2b68f511c1ccc30af6d"
+        },
+        {
+          "theme": "light",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.847792395063241,
+          "checkedTickContrast": 9.256361945812529,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/light-390.png",
+          "screenshotSha256": "aca83584e20ed5cdeef313128a842351e0b743da66157c1a8a6f1c8ff0ffd355"
+        },
+        {
+          "theme": "dark",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 13.734932014448301,
+          "checkedTickContrast": 15.000512635804558,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/dark-390.png",
+          "screenshotSha256": "a9fc5ce2a91ca97452dd39920447a85975dcb29cbc75f2b68f511c1ccc30af6d"
+        },
+        {
+          "theme": "console",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.501509892658328,
+          "checkedTickContrast": 15.585813499978006,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/console-390.png",
+          "screenshotSha256": "c33c9f644e95be2a9e192b5211729fe91052824adbcd1fc4695af82aaeb4b03e"
+        },
+        {
+          "theme": "lcd",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.68060466264544,
+          "checkedTickContrast": 8.334789650597306,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-390.png",
+          "screenshotSha256": "63175641b33c15f31813b6557e952b926abc0d4a26d5a4588ac5533f426077b7"
+        },
+        {
+          "theme": "chicago",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 10.378762002183594,
+          "checkedTickContrast": 3.9558854162253763,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/chicago-390.png",
+          "screenshotSha256": "cd7dcae417efa51a60d383d07c2e67e0a7b68373668db05f7f69fce19a488099"
+        },
+        {
+          "theme": "vapor",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.0486220612276,
+          "checkedTickContrast": 16.413088367374446,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/vapor-390.png",
+          "screenshotSha256": "5f35b616a82fc302b34b91ac745556f28e01751fc9a83a12302280741f101dd7"
+        },
+        {
+          "theme": "forge",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 15.335412985298346,
+          "checkedTickContrast": 16.388316268546784,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/forge-390.png",
+          "screenshotSha256": "6d53c2787573b37fac5643952acc6b948d7c8375ed264b60453b2ba44e64fa7a"
+        },
+        {
+          "theme": "sticker",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 19.79814571052481,
+          "checkedTickContrast": 4.886911878021721,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/sticker-390.png",
+          "screenshotSha256": "20e13c780ee621098572c852d7176772124051e6321dd6887784a4cf92de6894"
+        },
+        {
+          "theme": "arena",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/arena-390.png",
+          "screenshotSha256": "dd6af30d25d064fdf7d22f50c22f80b77723b089a3af8308c8d90de70e417812"
+        },
+        {
+          "theme": "thermal",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.952643929036924,
+          "checkedTickContrast": 15.917145179213158,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/thermal-390.png",
+          "screenshotSha256": "8f65d5946b5d85fdbbbc9399587e0ed6d6a7f39833c6188d9595731318335212"
+        },
+        {
+          "theme": "whitehot",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 17.289446181260647,
+          "checkedTickContrast": 15.979401319777295,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/whitehot-390.png",
+          "screenshotSha256": "22e3ae75a7e3f285957bd03bcb74634f67144a6fbb71d005535eb8ad683f3909"
+        },
+        {
+          "theme": "word97",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 11.542302514116262,
+          "checkedTickContrast": 5.317210002277984,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/word97-390.png",
+          "screenshotSha256": "c8008a0e3913853d21e5c0a26000e5e6be67b2f04d8d4a2d2cbdff4c422f5104"
+        },
+        {
+          "theme": "midnight",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 8.462789597084885,
+          "checkedTickContrast": 7.497689004951754,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/midnight-390.png",
+          "screenshotSha256": "691c968e757be72fb963377664bc63a6362e63cec1038e3df86e8b5f81f8382b"
+        },
+        {
+          "theme": "chouse",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 12.924493885931456,
+          "checkedTickContrast": 14.613456488588715,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/chouse-390.png",
+          "screenshotSha256": "5d263a3b221f955f5442119a1ec9fc7b1d6c58ea29c0d2bd6f77a7d02b6bb2da"
+        },
+        {
+          "theme": "qdb",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 18.427342383975944,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/qdb-390.png",
+          "screenshotSha256": "ef5b327295579c70c80d784539c98310729fed444bdded38b73ba189beaabc72"
+        },
+        {
+          "theme": "mitrapclub",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 14.788301276518409,
+          "checkedTickContrast": 16.294100650425367,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/mitrapclub-390.png",
+          "screenshotSha256": "87426fb0303ef0464f2826e2f9aef7f34009ee355f7771ef18b764f60196fb02"
+        },
+        {
+          "theme": "lcd-amber",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.291534594165286,
+          "checkedTickContrast": 7.7525413193143855,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-amber-390.png",
+          "screenshotSha256": "f4b5c61f136c758cfdad1d46d3efc0413473ebedfdadc9219cad8c3c31680cf3"
+        },
+        {
+          "theme": "lcd-purple",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.480352515004196,
+          "checkedTickContrast": 7.84185217235885,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-purple-390.png",
+          "screenshotSha256": "d0e1f318d290144cd08c1a5b231da1b1a7c928d1c6fd1cdd95268c130dcbb5b7"
+        },
+        {
+          "theme": "lcd-gray",
+          "width": 390,
+          "scheme": "light",
+          "forced": false,
+          "uncheckedBorderContrast": 9.228980846936414,
+          "checkedTickContrast": 7.65307609294816,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/lcd-gray-390.png",
+          "screenshotSha256": "d1f39ecf3170733a40e4e6cd558b5c7fa0f8d219818da301ada6c7df0e2fc332"
+        },
+        {
+          "theme": "forced-light",
+          "width": 390,
+          "scheme": "light",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/forced-light-390.png",
+          "screenshotSha256": "cc5814ed081d400cfc6e019751368e02a5dbb0c83e5d2265390af13e8072a47d"
+        },
+        {
+          "theme": "forced-dark",
+          "width": 390,
+          "scheme": "dark",
+          "forced": true,
+          "uncheckedBorderContrast": 21,
+          "checkedTickContrast": 21,
+          "screenshot": "/tmp/markdown-release-we3h09lr/contrast/forced-dark-390.png",
+          "screenshotSha256": "20e04cdd09f1012bb53cf637bf85f65c2d23e82a4e4dc01c497bbf6fe27ee03a"
+        }
+      ]
+    }
+  ],
+  "pixelIdenticalStatePairScreenshots": 46,
+  "readerRegression": {
+    "generatedCases": 8,
+    "evidence": {
+      "base": "http://127.0.0.1:18088",
+      "evidence": [
+        {
+          "width": 1280,
+          "theme": "default",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 1280,
+            "scroll": 1280,
+            "tables": [
+              {
+                "client": 675,
+                "scroll": 675
+              },
+              {
+                "client": 675,
+                "scroll": 675
+              },
+              {
+                "client": 675,
+                "scroll": 675
+              },
+              {
+                "client": 675,
+                "scroll": 700
+              }
+            ]
+          },
+          "fixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "deepWidth": 655,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        },
+        {
+          "width": 1280,
+          "theme": "word97",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 1280,
+            "scroll": 1280,
+            "tables": [
+              {
+                "client": 762,
+                "scroll": 762
+              },
+              {
+                "client": 762,
+                "scroll": 762
+              },
+              {
+                "client": 762,
+                "scroll": 762
+              },
+              {
+                "client": 762,
+                "scroll": 762
+              }
+            ]
+          },
+          "fixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "deepWidth": 742,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        },
+        {
+          "width": 1280,
+          "theme": "chicago",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 1280,
+            "scroll": 1280,
+            "tables": [
+              {
+                "client": 775,
+                "scroll": 775
+              },
+              {
+                "client": 775,
+                "scroll": 775
+              },
+              {
+                "client": 775,
+                "scroll": 775
+              },
+              {
+                "client": 775,
+                "scroll": 775
+              }
+            ]
+          },
+          "fixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "deepWidth": 755,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        },
+        {
+          "width": 1280,
+          "theme": "midnight",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 1280,
+            "scroll": 1280,
+            "tables": [
+              {
+                "client": 760,
+                "scroll": 760
+              },
+              {
+                "client": 760,
+                "scroll": 760
+              },
+              {
+                "client": 760,
+                "scroll": 760
+              },
+              {
+                "client": 760,
+                "scroll": 760
+              }
+            ]
+          },
+          "fixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "deepWidth": 740,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 1280,
+            "scroll": 1280,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        },
+        {
+          "width": 390,
+          "theme": "default",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 390,
+            "scroll": 390,
+            "tables": [
+              {
+                "client": 327,
+                "scroll": 608
+              },
+              {
+                "client": 327,
+                "scroll": 608
+              },
+              {
+                "client": 327,
+                "scroll": 608
+              },
+              {
+                "client": 327,
+                "scroll": 700
+              }
+            ]
+          },
+          "fixture": {
+            "width": 390,
+            "scroll": 390,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 390,
+            "scroll": 390,
+            "deepWidth": 428,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 390,
+            "scroll": 390,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        },
+        {
+          "width": 390,
+          "theme": "word97",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 390,
+            "scroll": 390,
+            "tables": [
+              {
+                "client": 308,
+                "scroll": 608
+              },
+              {
+                "client": 308,
+                "scroll": 608
+              },
+              {
+                "client": 308,
+                "scroll": 608
+              },
+              {
+                "client": 308,
+                "scroll": 699
+              }
+            ]
+          },
+          "fixture": {
+            "width": 390,
+            "scroll": 390,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 390,
+            "scroll": 390,
+            "deepWidth": 428,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 390,
+            "scroll": 390,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        },
+        {
+          "width": 390,
+          "theme": "chicago",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 390,
+            "scroll": 390,
+            "tables": [
+              {
+                "client": 327,
+                "scroll": 608
+              },
+              {
+                "client": 327,
+                "scroll": 608
+              },
+              {
+                "client": 327,
+                "scroll": 608
+              },
+              {
+                "client": 327,
+                "scroll": 700
+              }
+            ]
+          },
+          "fixture": {
+            "width": 390,
+            "scroll": 390,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 390,
+            "scroll": 390,
+            "deepWidth": 428,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 390,
+            "scroll": 390,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        },
+        {
+          "width": 390,
+          "theme": "midnight",
+          "javaScript": false,
+          "tables": 4,
+          "tableSources": 0,
+          "procedureItems": 6,
+          "keyboard": "passed",
+          "cliFragment": "passed",
+          "dimensions": {
+            "width": 390,
+            "scroll": 390,
+            "tables": [
+              {
+                "client": 306,
+                "scroll": 608
+              },
+              {
+                "client": 306,
+                "scroll": 608
+              },
+              {
+                "client": 306,
+                "scroll": 608
+              },
+              {
+                "client": 306,
+                "scroll": 699
+              }
+            ]
+          },
+          "fixture": {
+            "width": 390,
+            "scroll": 390,
+            "alignment": [
+              "left",
+              "center",
+              "right"
+            ],
+            "cellLinkNavigation": "passed"
+          },
+          "listFixture": {
+            "width": 390,
+            "scroll": 390,
+            "deepWidth": 428,
+            "cellLinkNavigation": "passed"
+          },
+          "taskFixture": {
+            "width": 390,
+            "scroll": 390,
+            "boxes": [
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Pending task with CLI wrapped detail."
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Child task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Complete bold task"
+              },
+              {
+                "checked": false,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              },
+              {
+                "checked": true,
+                "disabled": true,
+                "width": 18,
+                "label": "Same task"
+              }
+            ],
+            "linkNavigation": "passed"
+          }
+        }
+      ]
+    },
+    "initialCorrectionDynamicCases": 8,
+    "initialDynamicEvidence": "/tmp/markdown-task-contrast-6kutlmo2/browser/evidence.json",
+    "note": "Initial dynamic reader regression precedes Arena tick-color refinement; final generated regression and both 46-case sweeps use final CSS."
+  },
+  "sharedRefresh": {
+    "command": [
+      "/tmp/markdown-release-we3h09lr/application/v3",
+      "build-static",
+      "--shared-only",
+      "/tmp/markdown-release-we3h09lr/repository",
+      "/tmp/markdown-release-we3h09lr/read.sqlite3",
+      "/tmp/markdown-release-we3h09lr/static"
+    ],
+    "exit": 0,
+    "output": "pages (1950/1957): /docs/?folder=docs%2Freference&page=1.\n[1/2] Rendering shared pages (1951/1957): /docs/?folder=docs%2Fresearch&page=1.\n[1/2] Rendering shared pages (1952/1957): /docs/?folder=docs%2Fresearch%2Feffort_estimation&page=1.\n[1/2] Rendering shared pages (1953/1957): /docs/?folder=docs%2Fresearch%2Feffort_estimation%2Freferences&page=1.\n[1/2] Rendering shared pages (1954/1957): /docs/?folder=docs%2Fresearch%2Feffort_estimation%2Freferences%2FR1&page=1.\n[1/2] Rendering shared pages (1955/1957): /docs/?folder=docs%2Frunbooks&page=1.\n[1/2] Rendering shared pages (1956/1957): /docs/?folder=docs%2Fspecs&page=1.\n[1/2] Rendering shared pages (1957/1957): /docs/?folder=Project&page=1.\n[1/2] Rendering shared pages complete (1957/1957).\n[1/2] Shared static release is ready: /tmp/markdown-release-we3h09lr/static/releases/release-20261023194536-58c67ae4\n[2/2] Activating the shared static release...\n[2/2] Shared static release activated.\nRefreshed and activated shared static release /tmp/markdown-release-we3h09lr/static/releases/release-20261023194536-58c67ae4\nElapsed: 89.321 seconds\n"
+  },
+  "focusedPhp": {
+    "command": "php tests/run.php MarkdownTaskListTest MarkdownListStructureTest MarkdownPipeTableTest PlatformDocsPageTest PlatformDocsCatalogTest",
+    "run": 52,
+    "passed": 52,
+    "failed": 0
+  },
+  "limitations": [
+    "Chromium fixtures and computed color measurements, not a full accessibility certification",
+    "Physical devices/assistive technology, full suite, maintainer UAT, merge and production publication remain pending",
+    "Historical full-build/failure/recovery and corpus evidence retained; correction changes CSS only"
+  ]
+}

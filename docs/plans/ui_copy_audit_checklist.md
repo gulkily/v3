@@ -7,6 +7,18 @@
 - Reconciled the stale Browser identity ready triage entry with its completed implementation record below. Local completion does not establish deployment to the live instance. Deployment/live verification and the original feedback-comment reply remain open, as does the separate production legacy-ownership acceptance task.
 - This review changed tracking only; no product changes, rendered checks, production inspection, or deployment were performed.
 
+## Image attachment copy reduction — October 23, 2026
+
+- [x] Attachment status now shows only dimensions and file size (for example, “175 × 68 · 2 KiB”). Removed the image description field from the shared composer and its unused field styling/visibility and lazy-signing selector. Existing preparation, error and recovery feedback remains.
+- Verification: `node tests/browser/image_content_browser.mjs` passed with updated assertions for dimensions/size-only status and absent description input. Covered phone/desktop theme geometry and overflow, keyboard removal, busy/failure/offline recovery, dedicated reply, Forte reply/new-thread, QDB and real signed upload/retry. Inspected Midnight desktop screenshot `/tmp/image-content-browser-ZsPuUf/remove-preview.png`; PHP/JavaScript syntax and diff checks passed. No dependencies changed; `todo.txt` untouched.
+- Limitations: local Chromium fixtures and emulated viewports; physical devices, other engines, production and full-suite checks were not performed.
+
+## Image preview removal — October 23, 2026
+
+- [x] Replaced the shared “Remove image” text button with an × in the preview’s upper-right corner. Retained its accessible name, tooltip, 44px target, keyboard focus, busy disabling, and separate “Remove attachment to post text” recovery action. Preparation/failure states retain removal even without a thumbnail. No dependencies added or updated; `todo.txt` unchanged.
+- Verification: `node tests/browser/image_content_browser.mjs` passed, including all available standard themes at 390px/1280px for preview/control geometry and page overflow, keyboard removal, busy disabling, invalid-image removal, offline recovery removal, dedicated reply, Forte reply/new-thread dialog, QDB attachment and real signed thread/reply publication/retry. PHP/JavaScript syntax and diff checks passed. Inspected Midnight desktop screenshot `/tmp/image-content-browser-8iZ8xk/remove-preview.png` (extremely wide one-pixel-high image fixture).
+- Limitations: local Chromium fixtures and emulated viewports; physical devices, other browser engines, production deployment and full suite were not checked.
+
 ## Standard Activity relevant evidence — October 23, 2026
 
 - [x] Replace repeated full-commit file lists with Relevant files for each standard Activity item; keep the complete list behind the existing commit link. Preserve unsigned status, identity/signature/key evidence and recovery controls. Forte copy/behavior stays unchanged.
@@ -253,6 +265,17 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Merged current remote main and LCD palette work, retaining both verification histories. Adapted restored home-page draft engagement to the shared composer binder while preserving inline-reply expansion behavior.
 - Passed `node tests/browser/lcd_palettes.mjs` and `node tests/browser/board_compose_focus.mjs` on merged code: Chromium phone/desktop palette, contrast, layout, persistence, keyboard, rotation/recovery, four-theme draft focus, failure/retry, signed publication and no-script checks. JavaScript/PHP syntax and diff checks passed. Existing blocked-storage composer errors remain separately identified by the LCD check. Full-suite, physical-device and production checks were not performed for this merge.
 
+## Consecutive reply continuation — October 23, 2026
+
+- [x] Keep routine identity/posting chatter out of the active composer. Pending/failed status and Retry belong to each captured reply; confirmed replies use the complete canonical post card and its normal actions. Phone re-entry uses the existing field without a help panel or new navigation control.
+- [x] Actual local signed text/image flows cover immediate display with requests held, concurrent/reversed completion, retained newer draft, lost-response/reload/two-tab/expiry/storage recovery, anonymous and no-script posting. Chromium phone/desktop rendered continuation passes both routes across all 16 explicit themes; Firefox and WebKit pass the same functional flow across Light/Word97/Chicago/Midnight. Long content stays within the local stack and page bounds; representative desktop Word97/Midnight and phone Word97/Midnight screenshots inspected in `/tmp/reply-continuation-review/`.
+- [x] Removed an initially hidden stack's first-paint spacing shift, corrected fixed theme status-bar overlap and preserved the desktop editor through the browser's cleared-caret rendering adjustment. Existing layout/readiness and image browser regressions pass; detailed commands and browser limits belong to the [implementation summary](reply_continuation/reply_continuation_step4_implementation_summary.md).
+- [ ] Physical iPhone Safari/Firefox keyboard, caret, rotation and one-tap re-entry acceptance; production rollout/F01 acceptance remain pending. No new/renamed navigation destination or external dependency.
+
+- Reply continuation correction, October 23: removed the accepted placeholder's “Open reply” presentation. Reconcile the full canonical body/metadata/actions in place; pending and rendering-failure recovery remain distinct from publication. Verified complete long reply HTML, signed Like, draft isolation and rendering-only Retry in three engines; phone four-theme layout/one-tap checks and representative Midnight/Word97 screenshots pass. This corrects an omission in the original acceptance coverage.
+
+- Ordinary-flow correction: removed the separate “Your replies” region and its fixed-height/inner-scroll styling. Posted cards are direct siblings in the existing page, with canonical same-author grouping, bylines and counts reconciled in place. No new help text or navigation was added. Full-card/reload parity and phone reading/re-entry pass on both routes in Chromium/Firefox/WebKit (four themes); Chromium continuation/recovery also passes all 16 desktop/phone themes. Shared restoration fetches prevent the long-history request burst exposed by the first sweep. Device/deployment limits remain in the implementation summary.
+
 ## Outbox copy cleanup — October 23, 2026
 
 - Removed the unlinked duplicate action summary, unchanged Last updated timestamp, absent signed/integration timestamps, and routine queued/accepted/cancelled explanations. Retained linked targets, actual signed/integration times, draft locality, sending uncertainty, failures and recovery controls. Empty status elements are hidden.
@@ -390,16 +413,90 @@ Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **Visitor statistics zero-request period** — Review the “No eligible requests” paragraph alongside zero totals and an empty chart/table. Distinguish no traffic from initialization, collection gaps and failures; retain privacy/counting limits. Source: `templates/pages/visitor_statistics.php`.
 
+## Offline health pending feedback — October 23, 2026
+
+- Removed the duplicate checking and refreshing sentences. The existing CHECKING/REFRESHING status remains; the empty summary is hidden while pending and shown again for results or failures. Readiness, storage errors, offline guidance and refresh recovery remain.
+- Verification: existing offline-health route test passed. Chromium controlled service-worker/cache/publication fixtures covered initial and repeat pending checks, ready/missing archives, storage denial, offline and unavailable-publication states, refresh failure and successful retry. Light/Word97/Chicago/Midnight at 390px/1280px passed overflow checks; inspected Midnight phone storage-failure screenshot (`/tmp/copy-health-cycle4-storage.png`). An initial temporary browser script had a brace typo; fixed before the passing run. Physical devices, actual worker/cache lifecycle and deployment unverified. No dependency or navigation changes.
+
+## LLM Exchange missing-content review — October 23, 2026
+
+- Decision: retain both messages. “No prompt content extracted” identifies the reader's extraction limit without claiming the raw request is empty. “No response body was recorded” distinguishes absent body data from a successful readable response; raw non-text response data and provider/transport errors remain separately accessible. Blank sections or raw disclosures alone would not communicate those distinctions. No product change.
+- Verification: eight existing exchange recorder/store/database checks passed. Production-template Chromium fixtures covered empty records, non-text request/response JSON, raw bodies, decoded text, provider errors and transport errors. Keyboard raw-JSON expansion and Light/Word97/Chicago/Midnight 390px/1280px overflow checks passed; inspected Midnight phone non-text screenshot (`/tmp/copy-missing-cycle4-nontext.png`). Controlled provider fixtures; actual calls, physical devices and deployment unverified. Dependencies unchanged.
+
+## Analysis quality fallback cleanup — October 23, 2026
+
+- Removed the manufactured discussion-value “unknown” when Quality contains only a good-faith estimate. Present discussion values and good-faith estimates (including zero) remain, with no leading comma when discussion value is absent/null. Root, reply and post-detail views share the decision. Retained moderation, provider and respondability unknowns because missing safety/provenance/decision inputs are materially different from a populated assessment.
+- Verification: two existing post-analysis/Unicode-risk API checks passed. Production-template Chromium fixtures covered absent, complete, discussion-only, good-faith-only, null, zero and high-moderation records in root/reply/detail views; checked retained moderation action/summary and response assessments, keyboard disclosure and Light/Word97/Chicago/Midnight 390px/1280px overflow. Inspected Midnight phone moderation screenshot (`/tmp/copy-quality-cycle4.png`). Controlled historical-analysis fixtures; live providers, physical devices and deployment unverified. Syntax/diff passed; dependencies unchanged.
+
+## Offline reader image-backup notice — October 23, 2026
+
+- Removed the unconditional image-backup paragraph from the shared saved-reader shell, so it no longer appears above every saved board/tag/thread view. Backup still offers its separate Images collection download. Offline mode, missing-content reconnect guidance, queue outcomes and Outbox recovery remain.
+- Verification: fourteen existing worker/navigation/thread-presentation and offline-reader route/control checks passed. Chromium used the real SQLite runtime with controlled loaded/empty snapshots across board (All/Newest), tags, found/missing tags and found/missing threads. Confirmed notice absence, one recovery message per missing view, queued Like and reconnect outcomes, and Light/Word97/Chicago/Midnight 390px/1280px overflow. Inspected Midnight phone board screenshot (`/tmp/copy-offline-cycle4-board.png`). Snapshot fixtures and sender stubs do not establish live delivery, worker upgrades on existing devices or deployment to the reported other instance. Syntax/diff passed; dependencies unchanged.
+
+## Feature Flags account-key notice review — October 23, 2026
+
+- Already removed by `904e055a7` (expired operator-session recovery), which deleted the exact detached paragraph and link from Feature Flags. No further product change. Access history remains in User Access with authenticated operator access and sign-in recovery. The other instance's intermittent display cannot be diagnosed or declared deployed from this checkout.
+- Verification: three existing feature-flag behavior/operator-security API checks passed, including Feature Flags notice absence, authenticated history, permission denial and operator sign-in recovery. Existing Chromium toolbar/save checks passed for search/filter/counts, empty recovery, keyboard focus, failed/delayed saves, read-only and no-JavaScript views, and six themes at 375px/1150px; a temporary copy also asserted the exact notice is absent from editable/read-only/no-JavaScript fixtures. Inspected Midnight phone screenshot (`/tmp/feature-flags-midnight-375.png`). Controlled fixtures; actual signatures covered by existing API checks, not browser stubs. Physical devices and deployment unverified. Dependencies unchanged.
+
+## Fourth audit pass closeout — October 23, 2026
+
+- Reviewed all five candidates: three copy changes (offline pending feedback, sparse analysis quality, shared offline image-backup notice), one retained missing-content decision and one verification of an existing removal. Each item has its own commit with this checklist. Earlier item commits: `f10e5a5b9`, `5cf1b52a7`, `973150ad0`, `52907671e`; the Feature Flags verification is in this entry's commit.
+- Targeted PHP checks and controlled rendered phone/desktop checks passed as recorded per item. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and live-instance acceptance remain unverified; prior deployment and layout follow-ups remain open.
+- The three observations below are future review candidates, not completed changes.
+
+## Offline health result summary — October 23, 2026
+
+- Removed the routine ready/not-ready sentences beside READY, PARTIAL and NOT READY. Empty summaries stay hidden; the existing live status announces results, and diagnostic rows and guidance retain missing/partial distinctions. HTTPS and refresh-failure summaries remain visible. Fixed the existing saved-content/publication warning branch to unhide its guidance instead of assigning text to a hidden element.
+- Verification: existing offline-health route check passed. Production-script Chromium fixtures covered initial/repeat pending checks, ready, missing archive, storage denial, offline, unavailable publication, insecure context, refresh failure and retry. Confirmed the publication warning and HTTPS recovery are visible, routine summaries stay hidden and recovery summaries reappear. Four themes (Light/Word97/Chicago/Midnight) at 390px/1280px passed overflow; inspected Midnight phone storage-error screenshot (`/tmp/copy-health-cycle5-storage.png`). Controlled worker/cache/publication fixtures; actual lifecycle, physical devices and deployment unverified. Syntax/diff passed; zero dependency delta.
+
+## Offline reader refresh success — October 23, 2026
+
+- Removed “Saved reader refreshed and rechecked.” The REFRESHING status/disabled button transitions to the checked status, freshness rows and enabled button, including unchanged revisions. Refresh completion no longer overwrites missing-archive, storage or published-snapshot recovery guidance returned by the check. Refresh failures and offline recovery remain visible.
+- Verification: four existing route/worker checks passed for refresh success/failure, unchanged revisions, preservation of failed-refresh data and forced refresh. Updated the route test's obsolete copy assertion after its initial expected failure. Production-script Chromium fixtures held the refresh pending, then covered changed/unchanged revisions, failure/retry, missing archives, storage denial, unavailable publication and offline refusal; confirmed retained warnings and revision/freshness output. Light/Word97/Chicago/Midnight 390px/1280px overflow passed; inspected Midnight phone publication-failure screenshot (`/tmp/copy-refresh-cycle5-publication.png`). Controlled worker/cache fixtures; actual lifecycle, physical devices and deployment unverified. Syntax/diff passed; zero dependency delta.
+
+## LLM Exchange return-link duplication — October 23, 2026
+
+- Removed the extra “Back to LLM Exchanges” link. The controller already supplies the shared Tools subnavigation with an active LLM Exchanges link to the same list. No destination, label, icon mapping or access rule changed.
+- Verification: seven existing exchange recorder/store/retraction checks and two core-route/exchange-link checks passed. Production-template Chromium fixtures used the real Tools registry and covered decoded, empty, non-text, provider-error, transport-error and long expanded prompt/response records. Confirmed exactly one list-return link, keyboard navigation to the rendered list, raw-JSON disclosure, unclipped focused link and Light/Word97/Chicago/Midnight 390px/1280px overflow. Inspected Midnight phone navigation screenshot (`/tmp/copy-return-cycle5-long.png`). A temporary application-route probe confirmed anonymous and disabled-UI list/detail requests remain 403 and approved missing records remain 404. Controlled records; actual providers, physical devices and deployment unverified. Syntax/diff passed; zero dependency delta.
+
+## Fifth audit pass closeout — October 23, 2026
+
+- Closed all three candidates with individual commits including this checklist: redundant readiness summaries (`e8d66daae`), routine refresh success (`e7de37f44`) and the duplicate LLM Exchange return link (this entry's commit). Readiness warning visibility and preservation of checked recovery guidance were verified alongside the removals.
+- Targeted PHP and controlled rendered phone/desktop checks passed as recorded above. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and deployment acceptance remain unverified. Changes remain local; origin has advanced and synchronization is still needed before publication.
+- Two further source observations are collected below for later review.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
+
+## Fourth audit phase — October 23, 2026
+
+Reviewed candidates; decisions and verification are recorded above.
+
+- [x] **Offline health checking feedback** — Review “CHECKING” alongside “Checking offline reading status…” in initial and repeat checks. Preserve pending feedback, offline readiness, storage failures and actionable recovery. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
+
+- [x] **LLM Exchange missing content** — Review “No prompt content extracted” and “No response body was recorded” alongside raw request/response disclosures and errors. Check empty, non-text, provider-error and transport-error records; retain the distinction between extraction limits and absent provider output. Source: `templates/pages/llm_exchange.php`.
+
+- [x] **Analysis quality fallbacks** — Review “Quality: unknown” when only good-faith likelihood is present, and other conditional unknown values. Check partially populated historical analyses alongside complete assessments; preserve meaningful quality and moderation evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
+
+- [x] **Offline reader image-backup notice** — Remove the user-reported unnecessary notice: “Saved snapshots preserve image references but do not include image files. Download the separate image backup from the online Backup page to preserve them.” Reported at the top of board newest/all and apparently every page on another instance. Verify the affected saved views. Source: `templates/pages/offline_reader.php`.
+
+- [x] **Feature Flags account-key review message** — Remove the user-reported unnecessary message that intermittently appears in Feature Flags: “Review account key grants and approval-policy changes (authenticated operator session required).” Verify when it appears and the affected rendered states.
+
+## Fifth audit phase — October 23, 2026
+
+Reviewed candidates; decisions and verification are recorded above.
+
+- [x] **Offline health result summary** — Review READY/NOT READY alongside “Offline reading is ready/not ready on this device.” Preserve PARTIAL distinctions, publication failures, actionable guidance and accessible result announcements. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
+
+- [x] **Offline reader refresh success** — Review “Saved reader refreshed and rechecked” alongside the resulting health status and freshness rows. Check changed/unchanged revisions and failed refresh/retry; retain enough acknowledgment to distinguish a finished refresh from stale results. Source: `public/assets/offline_health.js`.
+
+- [x] **LLM Exchange return-link duplication** — Review “Back to LLM Exchanges” against the existing LLM Exchanges Tools subnavigation link on detail pages. Check keyboard and phone navigation, access restrictions and long expanded raw records before removing any route back to the list. Sources: `templates/pages/llm_exchange.php`, `templates/partials/tools_nav.php`, `src/ForumRewrite/Http/LlmExchangesController.php`.
 
 ## Next phase — new candidates
 
 These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
 
-- [ ] **Offline health checking feedback** — Review “CHECKING” alongside “Checking offline reading status…” in initial and repeat checks. Preserve pending feedback, offline readiness, storage failures and actionable recovery. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
+- [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
 
-- [ ] **LLM Exchange missing content** — Review “No prompt content extracted” and “No response body was recorded” alongside raw request/response disclosures and errors. Check empty, non-text, provider-error and transport-error records; retain the distinction between extraction limits and absent provider output. Source: `templates/pages/llm_exchange.php`.
-
-- [ ] **Analysis quality fallbacks** — Review “Quality: unknown” when only good-faith likelihood is present, and other conditional unknown values. Check partially populated historical analyses alongside complete assessments; preserve meaningful quality and moderation evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
+- [ ] **System State repository head duplication** — Review “Short head” alongside the full Repository head and the abbreviated hash in Latest commit. Check long hashes, missing Git/history and stale read-model comparisons; preserve useful provenance and mismatch diagnosis. Source: `templates/pages/codebase_state.php`.

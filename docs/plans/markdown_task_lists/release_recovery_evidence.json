@@ -1,0 +1,20 @@
+{
+  "php": "8.1.2-1ubuntu2.28",
+  "composerAtRuntime": false,
+  "dynamicStaticParity": "passed",
+  "tableAndFallbackParity": "passed",
+  "listAndFallbackParity": "passed",
+  "literalNumberingAndDeepRegion": "passed",
+  "nativeDisabledTasks": "passed",
+  "taskSourceDownloadUnchanged": "passed",
+  "cellLinkDestination": "passed",
+  "removedReaderRefresh": "passed",
+  "staleSharedRefreshRetry": "passed",
+  "rendererFailure503": "passed",
+  "markdownVendorAbsent": true,
+  "failedBuildRetainsActiveRelease": "passed",
+  "completePackageRollbackAndRegeneration": "passed",
+  "staticBrowserScenarios": 8,
+  "staticDiscoveryScenarios": 8,
+  "root": "/tmp/markdown-release-we3h09lr"
+}

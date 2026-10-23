@@ -8,7 +8,6 @@
       <span class="offline-mode-bar__indicator" data-role="offline-reader-indicator"></span>
     </span>
   </div>
-  <p class="meta">Saved snapshots preserve image references but do not include image files. Download the separate image backup from the online Backup page to preserve them.</p>
   <p class="meta" data-role="offline-reader-status" aria-live="polite">Starting saved reader…</p>
   <div class="stack" data-role="offline-reader-content" hidden></div>
 </section>

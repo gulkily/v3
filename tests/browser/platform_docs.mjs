@@ -157,7 +157,66 @@ try {
         assert.equal(await page.locator('#delete-a-canonical-record').count(), 1);
         listFixture.cellLinkNavigation = 'passed';
       }
-      evidence.push({ width, theme, javaScript: false, tables: 4, tableSources: 0, procedureItems: 6, keyboard: 'passed', cliFragment: 'passed', dimensions, fixture, listFixture });
+      let taskFixture = null;
+      if (process.env.DOCS_TASK_FIXTURE_PATH) {
+        if (width === 1280 && theme === 'default') {
+          await page.goto(base + '/tools/');
+          await page.locator('a[href="/docs/"]').first().click();
+          await page.getByRole('link', {name: 'Browse all docs', exact: true}).click();
+          const onboarding = page.locator('[data-docs-results] a[href^="/docs/plans/agent_api_onboarding_checklist.md"]');
+          for (let n = 0; n < 20 && !(await onboarding.count()); n++) {
+            await page.locator('.docs-pages a', {hasText: 'Next'}).click();
+          }
+          assert.ok(await onboarding.count(), 'Checklist is discoverable through ordinary Docs browsing');
+          await onboarding.first().click();
+          assert.ok(await page.locator('.docs-task-label input:disabled').count());
+        }
+        await page.goto(base + process.env.DOCS_TASK_FIXTURE_PATH);
+        if (theme !== 'default') {
+          await page.evaluate(theme => (document.getElementById('theme-stylesheet')?.remove(), document.documentElement.setAttribute('data-theme', theme)), theme);
+          await page.evaluate(css => { const style = document.createElement('style'); style.textContent = css; document.head.append(style); }, await readFile('public/assets/theme-' + theme + '.css', 'utf8'));
+        }
+        const boxes = page.locator('.docs-content input[type="checkbox"]');
+        assert.equal(await boxes.count(), 5);
+        const pending = page.getByRole('checkbox', {name: 'Pending task with CLI wrapped detail.', exact: true});
+        assert.equal(await pending.count(), 1);
+        assert.equal(await pending.isChecked(), false);
+        assert.equal(await pending.isDisabled(), true);
+        assert.equal(await page.getByRole('checkbox', {name: 'Child task', exact: true}).isChecked(), true);
+        assert.equal(await page.getByRole('checkbox', {name: 'Complete bold task', exact: true}).isChecked(), true);
+        assert.equal(await page.getByRole('checkbox', {name: 'Same task', exact: true}).count(), 2);
+        assert.ok(await boxes.evaluateAll(nodes => nodes.every(e => e.disabled && !e.name && !e.id && e.labels.length === 1)));
+        assert.equal(await page.locator('.docs-task-item').first().evaluate(e => getComputedStyle(e).listStyleType), 'none');
+        const before = await boxes.evaluateAll(nodes => nodes.map(e => e.checked));
+        for (const box of await boxes.all()) {
+          await box.evaluate(e => e.scrollIntoView({block: 'center', behavior: 'instant'}));
+          await page.waitForTimeout(100);
+          const rect = await box.boundingBox();
+          assert.ok(rect && rect.width >= 12 && rect.height >= 12);
+          await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+          await page.keyboard.press('Space');
+          await page.waitForTimeout(200);
+        }
+        assert.deepEqual(await boxes.evaluateAll(nodes => nodes.map(e => e.checked)), before);
+        await page.locator('[data-docs-return]').focus();
+        let reachedTaskLink = false;
+        for (let n = 0; n < 100; n++) {
+          await page.keyboard.press('Tab');
+          assert.equal(await page.evaluate(() => document.activeElement?.matches('.docs-content input[type="checkbox"]')), false);
+          if (await page.evaluate(() => document.activeElement?.matches('.docs-task-label a'))) { reachedTaskLink = true; break; }
+        }
+        assert.ok(reachedTaskLink);
+        assert.equal(await page.locator('.docs-list-source').count(), 1);
+        assert.ok((await page.locator('.docs-list-source').innerText()).includes('[x] Source only'));
+        taskFixture = await page.evaluate(() => ({width: innerWidth, scroll: document.documentElement.scrollWidth, boxes: [...document.querySelectorAll('.docs-task-label input')].map(e => ({checked:e.checked, disabled:e.disabled, width:e.getBoundingClientRect().width, label:e.labels[0].innerText}))}));
+        assert.ok(taskFixture.scroll <= width + 1);
+        await page.screenshot({path: output + '/tasks-' + theme + '-' + width + '.png', fullPage: true});
+        await page.locator('.docs-task-label a[href="/docs/reference/v3_cli.md#delete-a-canonical-record"]').click();
+        assert.ok(page.url().endsWith('/docs/reference/v3_cli.md#delete-a-canonical-record'));
+        assert.equal(await page.locator('#delete-a-canonical-record').count(), 1);
+        taskFixture.linkNavigation = 'passed';
+      }
+      evidence.push({ width, theme, javaScript: false, tables: 4, tableSources: 0, procedureItems: 6, keyboard: 'passed', cliFragment: 'passed', dimensions, fixture, listFixture, taskFixture });
       await context.close();
     }
   }

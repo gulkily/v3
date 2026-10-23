@@ -27,10 +27,21 @@ fenced/indented code retain the complete contiguous list as escaped source in a
 keyboard-scrollable region. Fenced example bytes remain intact; prose comments
 remain hidden. Following standalone headings, tables and code stay outside the
 fallback. An unclosed embedded fence retains the remaining example source through
-end-of-document rather than guessing where it ends. Task markers, reference links,
-autolinks, underscore emphasis, strikethrough and unsupported fences remain readable
-source. Standalone pipe tables render with semantic column headers, existing safe
-inline formatting/links, optional outer pipes, two or more columns and delimiter
+end-of-document rather than guessing where it ends.
+
+Supported unordered items beginning with `[ ]`, `[x]` or `[X]` followed by spaces
+and visible task text display native disabled checkboxes. Their first paragraph
+supplies the accessible task name; children and later paragraphs remain separate.
+Repeated tasks require no generated identifiers. Checkboxes cannot be toggled or
+submitted; task links and keyboard access to links/source regions still work.
+Original Markdown and downloads are unchanged. Ordered items, malformed/escaped
+markers, empty/invisible labels, later-paragraph markers, code/table examples and
+unsupported whole-list source regions keep literal task text. No progress counter
+or editing feature is included.
+
+Reference links, autolinks, underscore emphasis, strikethrough and unsupported
+fences remain readable source. Standalone pipe tables render with semantic column
+headers, existing safe inline formatting/links, optional outer pipes, two or more columns and delimiter
 alignment (`:---`, `:---:`, `---:`). Header and body widths must match; empty cells,
 escaped pipes and pipes inside single-backtick inline code are supported. Tables
 scroll horizontally in a keyboard-focusable region without widening the page.
@@ -57,7 +68,10 @@ records its supported/fallback corpus classification and delivery evidence. The
 [list-structure slice](../plans/markdown_list_structure/markdown_list_structure_step4_implementation_summary.md)
 adds list ownership, explicit numbering and source recovery; its audit distinguishes
 structural coverage from representative visual review. Other syntax extensions
-and the wider Docs column follow-up remain deferred. No external component may be added without
+and the wider Docs column follow-up remain deferred. The
+[task-list slice](../plans/markdown_task_lists/markdown_task_lists_step4_implementation_summary.md)
+records disabled state/name/link checks and the displayed-versus-source corpus
+classification. The requested in-page checkbox counter is a separate todo item. No external component may be added without
 the dependency-consent policy in CONTRIBUTING.
 
 ## Library inventory and search
@@ -133,9 +147,9 @@ anonymous static host serves the active snapshot; personalized requests retain
 the existing dynamic-response policy.
 
 Reload `/docs/reference/author_post_retraction.md` after refresh. Verify four
-scrollable table-source regions, the six source-numbered procedure steps, emphasis
+rendered, scrollable tables, the six source-numbered procedure steps, emphasis
 and the working `v3_cli.md#delete-a-canonical-record` link. Check at desktop and
-390px widths, Tab to source/code regions and scroll with arrow keys. If a CDN or
+390px widths, Tab to table/source/code regions and scroll with arrow keys. If a CDN or
 browser serves older output, invalidate the affected URL and retry; do not delete
 the active release. Dynamic and generated document content must match.
 

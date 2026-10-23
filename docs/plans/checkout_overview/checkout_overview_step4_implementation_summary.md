@@ -59,3 +59,15 @@ Projected total remains unavailable pending exact frozen R1 feedback recovery; p
 ## Main integration
 
 2026-10-23T15:03:21+00:00: user explicitly authorized merge and push. Fast-forwarded local main to remote `b9d1cc874`, then merged `feat/checkout-overview` including the predecessor checkout tooling. Resolved the sole append-only study-ledger conflict by retaining both independent sets of records; application/test-runner changes merged automatically. Combined `php tests/run.php CheckoutsCommandTest StatusCommandTest RailspikeSyncCommandTest MarkdownPipeTableTest` passed 28/28 PHP checks, including all 53 real-Git checkout acceptance cases. No live clone synchronization or automatic migration added. Ordinary push follows the verified merge; exact merge revision/publication is recorded in Git history and the user handoff.
+
+## Small post-merge refinement - Preview eligibility marker
+
+- Request: mark apply-eligible preview rows with one character; user explicitly requested no legend.
+- Changes: prefix fresh-preview fast-forward/merge actions with `*`; cached overview and other actions remain unmarked, with no legend or JSON/eligibility changes.
+- Verification: 3 focused real-Git/render tests passed (fast-forward/merge marked, dirty/current and cached rows unmarked, no legend, existing one-line preview/column widths preserved); PHP syntax and diff checks passed.
+
+## Small post-merge refinement - Apply without a preview ID
+
+- Request: make apply handle all eligible checkouts without specifying a preview ID.
+- Changes: ID-less apply builds a fresh signed preview under the manager lock and runs the existing revalidated batch apply. Session coordination flag remains required; cached observations are never used as update authority. Explicit preview-ID flow is unchanged. Help/reference updated.
+- Verification: 4 focused real-Git checks passed (fresh batch fetch/update with dirty skip, feature merge and test-role exclusion, existing explicit-ID replay prevention, rewrite blocking); PHP syntax and diff checks passed. No live checkouts updated by verification.
