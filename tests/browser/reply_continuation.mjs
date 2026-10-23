@@ -88,7 +88,7 @@ try {
  assert.equal(heldFinalizers.length,2);await heldFinalizers[1]();await heldFinalizers[0]();
  await page.waitForFunction(()=>document.querySelectorAll('[data-reply-state="accepted"]').length===4);
  await page.unroute('**/api/create_prepared_post');
- assert.deepEqual(await page.locator('[data-reply-operation] .body').allTextContents(),['First immediate reply','Failed captured reply','Identical intentional reply','Identical intentional reply']);
+ assert.deepEqual((await page.locator('[data-reply-operation] .body').allTextContents()).map(text=>text.trim()),['First immediate reply','Failed captured reply','Identical intentional reply','Identical intentional reply']);
  // A lost accepted response must reconcile after reload without another post.
  await page.route('**/api/create_prepared_post',async route=>{await route.fetch();await route.abort();},{times:1});
  await body.fill('  Lost-response reply \n');await form.locator('.compose-form-actions > button').click();
@@ -225,7 +225,7 @@ try {
   await db.fill('Desktop '+entry+' '+theme+' '+('long-value-'.repeat(50)));
   await db.scrollIntoViewIfNeeded();const before=await db.boundingBox();
   await df.evaluate(el=>el.requestSubmit(el.querySelector('.compose-form-actions > button')));
-  const sent=page.locator('[data-reply-operation]').last();await sent.locator('a').waitFor();
+  const sent=page.locator('[data-reply-operation]').last();await sent.locator('.post-card-actions').waitFor();
   assert.equal(await db.evaluate(el=>document.activeElement===el),true);
   if(Math.abs((await db.boundingBox()).y-before.y)>=3 && process.env.REPLY_CONTINUATION_SCREENSHOTS)await page.screenshot({path:process.env.REPLY_CONTINUATION_SCREENSHOTS+'/unstable-'+entry+'-'+theme+'.png'});
   assert.ok(Math.abs((await db.boundingBox()).y-before.y)<3,'stable editor '+entry+' '+theme+' '+JSON.stringify({before,after:await db.boundingBox()}));
@@ -259,7 +259,7 @@ try {
   await pb.tap();assert.equal(await pb.evaluate(el=>el===document.activeElement),true);
   assert.equal(await phonePage.locator('[data-reply-reading="1"]').count(),0);
   await pb.fill('Next phone draft');resume();
-  await card.locator('a').waitFor();assert.equal(await pb.inputValue(),'Next phone draft');
+  await card.locator('.post-card-actions').waitFor();assert.equal(await pb.inputValue(),'Next phone draft');
   await phonePage.unroute('**/api/prepare_reply');
  }
  await phoneContext.close();

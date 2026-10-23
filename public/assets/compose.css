@@ -273,7 +273,7 @@
   overflow-anchor: none;
   align-content: start;
 }
-.reply-continuation-stack .body {
+.reply-continuation-stack .reply-operation-placeholder .body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   min-width: 0;

@@ -3738,6 +3738,17 @@
           const description = form.querySelector('[name="image_description"]');
           if (description) description.value = '';
         },
+        renderPost: async function (postId, threadId, commitSha) {
+          const response = await fetch(canonicalReplyUrl({postId, threadId, commitSha:commitSha || ''}), {credentials:'same-origin', cache:'no-store'});
+          if (!response.ok) throw new Error("Reply posted. Retry loading its full view.");
+          const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+          const post = doc.getElementById('post-' + postId);
+          if (!post?.matches('.post-card[data-post-id]')) throw new Error("Reply posted. Retry loading its full view.");
+          const catalog = doc.querySelector('[data-agent-response-mode-catalog]');
+          if (catalog && !document.querySelector('[data-agent-response-mode-catalog]')) document.body.append(document.importNode(catalog, true));
+          return document.importNode(post, true);
+        },
+        bindPost: post => window.ForumThreadReactions?.bindWithin(post),
         confirm: async function (delivery) {
           const response = await fetch('/api/get_post?post_id=' + encodeURIComponent(delivery.prepared.postId), {credentials:'same-origin', cache:'no-store'});
           if (response.status === 404) return false;

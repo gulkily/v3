@@ -48,7 +48,8 @@
     function render(item) {
       if (views.has(item.id)) { views.get(item.id).update(item); return views.get(item.id); }
       if (item.result && document.getElementById('post-' + item.result.postId)) return null;
-      const card = api.card({pendingId:item.id, parentId:item.fields.parent_id, body:item.fields.body, status:'Posting…'});
+      let card = api.card({pendingId:item.id, parentId:item.fields.parent_id, body:item.fields.body, status:'Posting…'});
+      card.classList.add('reply-operation-placeholder');
       card.dataset.replyOperation = item.id;
       const status = card.querySelector('[data-role="pending-reply-status"]');
       status.setAttribute('role', 'status');
@@ -63,6 +64,30 @@
       stack.append(card);
       let running = false;
       let preview;
+      let rendering = false;
+      let rendered = false;
+      async function hydrate() {
+        if (rendering || rendered || !card.isConnected) return;
+        rendering = true;
+        retry.hidden = true;
+        try {
+          const full = await api.renderPost(item.result.postId, item.fields.thread_id, item.result.commitSha);
+          if (!card.isConnected) return;
+          const follow = stack.scrollHeight - stack.clientHeight - stack.scrollTop < 48;
+          full.dataset.replyOperation = item.id;
+          full.dataset.replyState = 'accepted';
+          full.dataset.replyRendered = '1';
+          if (preview) URL.revokeObjectURL(preview.src);
+          card.replaceWith(full);
+          card = full; rendered = true;
+          api.bindPost(full);
+          if (follow) stack.scrollTop = stack.scrollHeight;
+        } catch {
+          status.hidden = false;
+          status.textContent = 'Reply posted. Retry loading its full view.';
+          retry.hidden = false;
+        } finally { rendering = false; }
+      }
       async function showImage() {
         const file = item.imageUrl ? null : unsavedImages.get(item.id) || await attachmentStore(item.id);
         if ((!file && !item.imageUrl) || preview) return;
@@ -80,13 +105,11 @@
         card.setAttribute('aria-busy', String(running));
         retry.hidden = running || item.state === 'accepted';
         if (item.state === 'accepted') {
+          if (rendered) return;
           if (preview && item.imageUrl && preview.getAttribute('src') !== item.imageUrl) {
             URL.revokeObjectURL(preview.src); preview.src = item.imageUrl;
           }
-          status.textContent = '';
-          const link = document.createElement('a');
-          link.href = '/posts/' + encodeURIComponent(item.result.postId);
-          link.textContent = 'Open reply'; status.append(link);
+          status.textContent = ''; status.hidden = true;
           const canonical = document.getElementById('post-' + item.result.postId);
           if (canonical && canonical !== card) {
             if (preview) URL.revokeObjectURL(preview.src);
@@ -95,6 +118,7 @@
           }
           card.removeAttribute('data-pending-reply-id');
           card.classList.remove('pending-reply-card');
+          void hydrate();
         } else {
           status.textContent = running ? 'Posting…' : item.error || 'Not confirmed. Check and retry.';
         }
@@ -160,7 +184,7 @@
       // Retrying an older item must not blur/collapse the active composer
       // between pointer down and click, or move a newer draft out of view.
       retry.addEventListener('pointerdown', event => event.preventDefault());
-      retry.addEventListener('click', () => void deliver());
+      retry.addEventListener('click', () => { if (item.state === 'accepted') void hydrate(); else void deliver(); });
       const view = {card, update, deliver}; views.set(item.id, view); update(item);
       return view;
     }
