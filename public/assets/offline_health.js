@@ -438,8 +438,6 @@
       var worker = await serviceWorkerStatus();
       await requestReaderRefresh(worker.controller || (worker.registration && worker.registration.active));
       await checkHealth();
-      guidance.hidden = false;
-      guidance.textContent = "Saved reader refreshed and rechecked.";
     } catch (error) {
       setHealthStatus("partial", "REFRESH FAILED");
       summary.textContent = "The saved reader could not be refreshed.";
