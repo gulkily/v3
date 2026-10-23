@@ -23,7 +23,7 @@ const paths = [
   '/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001',
   '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad',
   '/tools/outbox/',
-  '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security',
+  '/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security',
   '/compose/thread', '/profiles/alice', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'
 ];
 vm.runInThisContext(source);
@@ -54,9 +54,31 @@ NODE;
         foreach (['/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001', '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad'] as $path) {
             assertSame(true, $policy[$path]);
         }
-        foreach (['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/compose/thread', '/profiles/alice', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'] as $path) {
+        foreach (['/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/compose/thread', '/profiles/alice', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'] as $path) {
             assertSame(false, $policy[$path]);
         }
+    }
+
+    public function testUncachedActivityPositionFailsOnlineRecoveryRatherThanUsingReaderShell(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs'), vm = require('vm');
+global.self = { location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' }, addEventListener() {} };
+let cacheLookups = 0;
+global.caches = { open: async () => ({ match: async () => { cacheLookups++; return new Response('Wrong first page'); } }) };
+global.fetch = async () => { throw new Error('offline'); };
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+(async () => {
+  const request = new Request('https://forum.test/activity/?view=all&position=abc');
+  if (cacheableRequest(request)) throw new Error('Activity position was cacheable');
+  try { await networkFirstNavigation(request); throw new Error('Wrong fallback supplied'); }
+  catch (error) { if (error.message !== 'offline') throw error; }
+  if (cacheLookups !== 0) throw new Error('An unrelated shell was read');
+})().catch(error => { console.error(error); process.exitCode = 1; });
+NODE;
+        $output = [];
+        exec('node -e ' . escapeshellarg($script) . ' ' . escapeshellarg(__DIR__ . '/../public/service_worker.js') . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
     }
 
     public function testRefreshMessageReportsSuccessAndFailureToRequester(): void

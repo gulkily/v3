@@ -11,6 +11,7 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-c
 const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
 const keys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'reaction-browser' }], format: 'armored' });
+keys.priorPublicKey = (await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'earlier-like' }], format: 'armored' })).publicKey;
 const fingerprint = (await globalThis.openpgp.readKey({ armoredKey: keys.publicKey })).getFingerprint().toUpperCase();
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
 try {
@@ -37,7 +38,7 @@ try {
         localStorage.setItem('forum_pki_fingerprint', fingerprint);
         localStorage.setItem('forum_pki_published_fingerprint', fingerprint);
         localStorage.setItem('forum_pki_username', 'reaction-browser');
-        localStorage.setItem('forum-zenmemes-theme', 'light');
+        if (!localStorage.getItem('forum-zenmemes-theme')) localStorage.setItem('forum-zenmemes-theme', 'light');
         if (skew) {
           const Original = Date;
           window.Date = class extends Original { toISOString() { return new Original(this.getTime() - 3600000).toISOString(); } };
@@ -69,6 +70,7 @@ try {
         const source = await context.request.get(base + `/source/current/records/${family}/${id}.txt`);
         assert.equal(await source.text(), record);
         assert.equal(source.headers()['x-forum-signature-status'], 'verified');
+        return id;
       }
       if (mode === 'qdb') {
         await page.goto(base + '/1');
@@ -90,7 +92,56 @@ try {
           assert.equal(responses.length, 0, 'signing failure must not submit unsigned');
           await page.evaluate(() => { window.ForumBrowserSigning.signCanonicalRecord = window.savedReactionSigner; });
         }
-        await vote('[data-action="apply-thread-tag"][data-tag="like"]');
+        const likeId = await vote('[data-action="apply-thread-tag"][data-tag="like"]');
+        const query = spawnSync('php', ['-r', '$p=new PDO("sqlite:".$argv[1]); echo json_encode($p->query("SELECT id, source_path, source_commit_sha FROM activity WHERE kind=\'thread_label_add\' AND label LIKE \'%like%\'")->fetchAll(PDO::FETCH_ASSOC));', join(root, 'read.sqlite3')], { encoding: 'utf8' });
+        assert.equal(query.status, 0, query.stderr);
+        const likeRows = JSON.parse(query.stdout);
+        assert.equal(likeRows.length, 2, 'existing effective like must not hide the new contribution');
+        const own = likeRows.find(row => row.source_path.endsWith(likeId + '.txt'));
+        assert.ok(own);
+        assert.notEqual(likeRows[0].source_commit_sha, likeRows[1].source_commit_sha);
+        const rss = await context.request.get(base + '/activity/?view=all&format=rss');
+        assert.equal(((await rss.text()).match(/<title>Labels added: like<\/title>/g) || []).length, 2);
+        for (const width of [390, 1280]) {
+          await page.setViewportSize({ width, height: 900 });
+          for (const theme of ['light', 'word97', 'chicago', 'midnight']) {
+            await page.evaluate(theme => localStorage.setItem('forum-zenmemes-theme', theme), theme);
+            const activityPage = await context.newPage();
+            await activityPage.setViewportSize({ width, height: 900 });
+            await activityPage.goto(base + (mode === 'forte' ? '/forte/activity/?selected=' + own.id : '/activity/'));
+            assert.equal(await activityPage.evaluate(() => innerWidth), width);
+            const themeAttribute = mode === 'forte' ? 'data-forte-scheme' : 'data-resolved-theme';
+            const expectedTheme = mode === 'forte' ? (theme === 'midnight' ? 'dark' : 'light') : theme;
+            assert.equal(await activityPage.locator('html').getAttribute(themeAttribute), expectedTheme);
+            if (mode === 'forte') {
+              await activityPage.locator('[data-paned-activity-id="' + own.id + '"]').click();
+              await activityPage.locator('[data-paned-activity-content-item-id="' + own.id + '"]:visible').waitFor();
+            }
+            const link = activityPage.locator('a[href*="' + likeId + '.txt"]').first();
+            await link.waitFor({ state: 'attached' });
+            // Source evidence lives in expandable manifests in both views.
+            const details = link.locator('xpath=ancestor::details');
+            if (await details.count()) await details.evaluateAll(nodes => nodes.forEach(node => { node.open = true; }));
+            await link.waitFor({ state: 'visible' });
+            assert.ok(await activityPage.locator('a[href*="' + own.source_commit_sha + '"]').count());
+            assert.ok(await activityPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${mode} ${theme} ${width}: page overflow`);
+            if (theme === 'midnight') await activityPage.screenshot({ path: `/tmp/thread-like-${mode}-${width}.png`, fullPage: true });
+            await activityPage.close();
+          }
+          const emptyPage = await context.newPage();
+          await emptyPage.setViewportSize({ width, height: 900 });
+          await emptyPage.goto(base + (mode === 'forte' ? '/forte/activity/?view=approval' : '/activity/?view=approval'));
+          if (mode === 'forte') {
+            assert.equal(await emptyPage.locator('[data-paned-activity-id]:visible').count(), 0);
+            assert.equal(await emptyPage.locator('[data-paned-activity-status-count]').textContent(), '0 items');
+          } else {
+            assert.equal(await emptyPage.locator('article.card').count(), 1);
+          }
+          assert.ok(await emptyPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+          await emptyPage.close();
+        }
+        console.log(`PASS ${mode}: later signed like in Activity, own source/commit, RSS, phone/desktop and four themes`);
+        await page.goto(base + (mode === 'forte' ? '/forte?selected=root-001' : '/threads/root-001'));
         await vote('[data-action="apply-post-tag"][data-post-id="root-001"][data-tag="flag"]');
         await vote('[data-action="apply-post-tag"][data-post-id="reply-001"][data-tag="like"]');
         await vote('[data-action="apply-post-tag"][data-post-id="reply-001"][data-tag="flag"]');

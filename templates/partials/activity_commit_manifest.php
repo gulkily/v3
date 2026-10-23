@@ -20,6 +20,8 @@ $heading = (string) ($heading ?? 'Commit files');
     <span title="<?= $e($commitSha) ?>"><?= $e(substr($commitSha, 0, 12)) ?></span>
 <?php endif; ?>
   </p>
+<?php elseif ($show_unavailable_commit ?? false): ?>
+  <p class="meta">Commit: <span>commit unavailable</span></p>
 <?php endif; ?>
   <h3><?= $e($heading) ?> (<?= $e((string) count($files)) ?>)</h3>
   <ul>

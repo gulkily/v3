@@ -126,7 +126,10 @@ if ($labelRecords === []) {
         $record = $entry['record'];
         foreach ($record->labels as $label) {
             printField('label', $label);
-            printField('adding_post_id', '(not applicable; labels are added by thread-label records)');
+            $ownership = \ForumRewrite\Canonical\LabelOwnership::inspect($record, $repositoryRoot);
+            printField('adding_post_id', $record->sourcePostId ?? '(unresolved or independent action)');
+            printField('ownership_status', $ownership['status']);
+            printField('ownership_evidence', $ownership['reason']);
             printField('adding_record_id', $record->recordId);
             printField('adding_record_path', $entry['path']);
             printField('adding_record_created_at', $record->createdAt);

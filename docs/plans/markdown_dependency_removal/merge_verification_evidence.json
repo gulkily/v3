@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-10-23T06:56:59.528589+00:00",
+  "integration_base": "d969817c9c1262bc2561689abc8badc4209f6a1e",
+  "removal_head": "33154d8d",
+  "focused": {
+    "run": 48,
+    "passed": 48,
+    "failed": 0,
+    "log": "/tmp/markdown-integration-focused.log"
+  },
+  "release": {
+    "php": "8.1.2-1ubuntu2.27",
+    "composerAtRuntime": false,
+    "dynamicStaticParity": "passed",
+    "staleSharedRefreshRetry": "passed",
+    "rendererFailure503": "passed",
+    "markdownVendorAbsent": true,
+    "failedBuildRetainsActiveRelease": "passed",
+    "completePackageRollbackAndRegeneration": "passed",
+    "staticBrowserScenarios": 8,
+    "staticDiscoveryScenarios": 8,
+    "root": "/tmp/markdown-release-czb9ipph"
+  },
+  "metrics": "passed",
+  "renderer_lint": "passed",
+  "diff_check_against_origin_main": "passed",
+  "full_suite": {
+    "status": "interrupted, not a full-suite pass",
+    "completed_passes": 65,
+    "completed_failures": 0,
+    "log": "/tmp/markdown-integration-full.log",
+    "reason": "Optional broad run stopped after focused and copied-package/browser acceptance completed; import/publication coverage remained in progress."
+  },
+  "history_rewrite": "not performed; exact-ref publication review pending",
+  "dependency_additions": 0
+}

@@ -77,6 +77,18 @@ final class RouteServices
     ) {
     }
 
+    public function highTrafficStatus(): array
+    {
+        try {
+            return (new \ForumRewrite\Host\HighTrafficMode(new \ForumRewrite\Host\HighTrafficCache(
+                $this->projectRoot,$this->repositoryRoot,$this->databasePath,getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $this->projectRoot . '/public')))->status();
+        } catch (\Throwable $error) { return ['effective_mode'=>'unknown','error'=>$error->getMessage()]; }
+    }
+    public function changeHighTraffic(array $input, string $operator, bool $finalize): array
+    {
+        return $this->writer()->changeHighTraffic($input,$operator,$this->projectRoot,$finalize);
+    }
+
     public function testingSelfApprovalToken(): ?string
     {
         $profile = $this->defaultViewerProfile();

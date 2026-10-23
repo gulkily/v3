@@ -168,3 +168,92 @@
   display: block !important;
   visibility: hidden;
 }
+
+/* A phone reply is one bounded panel: editor, feedback and actions participate
+   in the same layout. No independent submit overlay can cover the textarea.
+   The repeated attribute keeps theme card padding/stack margins from overriding
+   the composing panel geometry. */
+:root [data-reply-panel][data-reply-panel].reply-panel-active {
+  position: fixed;
+  z-index: 100;
+  top: var(--reply-panel-top);
+  left: var(--reply-panel-left);
+  width: var(--reply-panel-width);
+  height: var(--reply-panel-height);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active > * {
+  flex: 0 0 auto;
+  margin: 0;
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active > form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active form > * {
+  flex: 0 0 auto;
+  margin: 0;
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active form > :is(textarea[name="body"], label:has(textarea[name="body"])) {
+  flex: 1 1 0;
+  min-height: 80px;
+  min-width: 0;
+  height: auto;
+  max-height: none;
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active form > label:has(textarea[name="body"]) {
+  display: flex;
+  flex-direction: column;
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active textarea[name="body"] {
+  min-height: 80px;
+  flex: 1 1 0;
+  resize: none;
+  overscroll-behavior: contain;
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active .image-compose-fields[hidden] {
+  display: none !important;
+}
+:root [data-reply-panel][data-reply-panel].reply-panel-active .compose-form-actions {
+  margin-top: var(--reply-panel-menu-space, 0px);
+}
+.reply-panel-active .compose-action-menu-list {
+  max-height: var(--reply-panel-menu-height);
+  max-width: calc(var(--reply-panel-width) - 20px);
+  width: max-content;
+  min-width: min(12rem, calc(var(--reply-panel-width) - 20px));
+  overflow: auto;
+}
+.reply-panel-active .compose-action-menu-list > button {
+  white-space: normal;
+}
+
+/* Collapse before first paint, with native focus expanding the same editor even
+   before deferred scripts run. No-script forms retain their complete layout. */
+@media (scripting: enabled) {
+  :is([data-inline-thread-compose][data-inline-thread-expanded="0"], [data-inline-reply-compose][data-inline-reply-expanded="0"]):not(:focus-within) {
+    padding: 0.8rem 0.9rem;
+  }
+  :is([data-inline-thread-compose][data-inline-thread-expanded="0"], [data-inline-reply-compose][data-inline-reply-expanded="0"]):not(:focus-within) > .inline-reply-identity-status,
+  :is([data-inline-thread-compose][data-inline-thread-expanded="0"], [data-inline-reply-compose][data-inline-reply-expanded="0"]):not(:focus-within) form > :not(textarea) {
+    display: none;
+  }
+  :is([data-inline-thread-compose][data-inline-thread-expanded="0"], [data-inline-reply-compose][data-inline-reply-expanded="0"]):not(:focus-within) textarea[name="body"] {
+    height: 4.75rem;
+    min-height: 4.75rem;
+    margin: 0;
+    resize: none;
+  }
+}

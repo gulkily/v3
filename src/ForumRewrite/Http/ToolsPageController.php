@@ -80,6 +80,17 @@ final class ToolsPageController
         }
     }
 
+    public function highTrafficApi(string $method, array $query, bool $finalize): void
+    {
+        if ($method!=='POST') { $this->routeServices->sendJson(['status'=>'error','error'=>'method not allowed'],405,$this->routeServices->noStoreHeaders());return; }
+        $viewer=($this->resolveViewerProfileFromIdentityHint)();
+        if (!$this->viewerCanManageFeatureFlags($viewer)) { $this->routeServices->sendJson(['status'=>'error','error'=>'An approved operator identity is required.'],403,$this->routeServices->noStoreHeaders());return; }
+        try {
+            $result=$this->routeServices->changeHighTraffic($this->routeServices->requestData($query),(string)$viewer['identity_id'],$finalize);
+            $this->routeServices->sendJson($result,200,$this->routeServices->noStoreHeaders());
+        } catch (\Throwable $error) { $this->routeServices->sendJson(['status'=>'error','error'=>$error->getMessage()],400,$this->routeServices->noStoreHeaders()); }
+    }
+
     public function index(): string
     {
         return $this->routeServices->renderPageTemplate(
@@ -213,10 +224,11 @@ final class ToolsPageController
                 'registry' => new FeatureFlagRegistry(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('feature-flags'),
                 'canManageFeatureFlags' => $this->viewerCanManageFeatureFlags($viewerProfile),
+                'highTraffic' => $this->viewerCanManageFeatureFlags($viewerProfile) ? $this->routeServices->highTrafficStatus() : null,
             ],
             'Feature Flags',
             'tools',
-            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/feature_flags.js'],
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/feature_flags.js', '/assets/high_traffic_control.js'],
         );
     }
 

@@ -22,10 +22,30 @@ final class UserAccessController
 
     public function index(): string
     {
-        return $this->render('user_access.php', [
+        $allowed = $this->services->securityReviewAllowed();
+        $viewer = ($this->viewer)();
+        $canResume = !$allowed && empty($_SESSION['authenticated_identity_id'])
+            && $viewer !== null && (int) ($viewer['is_approved'] ?? 0) === 1
+            && ($viewer['approved_by_label'] ?? '') === 'root';
+        $history = $allowed ? $this->services->activityService()->fetchActivityRows('security', 'date', 'desc', limit: 5) : ['items' => [], 'has_more' => false];
+        $items = [];
+        foreach ($history['items'] as $row) {
+            $item = $this->services->activityService()->fetchActivityDetail((int) $row['id']);
+            if ($item !== null) {
+                $item = $this->services->activityService()->securityReviewItem($item);
+                $items[] = $item + ['link' => $this->services->activityService()->activityItemLink($item)];
+            }
+        }
+        return $this->services->renderPageTemplate('user_access.php', [
             'users' => ProfileRepository::approvedDirectoryUsers($this->services->pdo()),
-            'canSecurityReview' => $this->services->securityReviewAllowed(),
-        ]);
+            'canSecurityReview' => $allowed,
+            'canResumeHistory' => $canResume,
+            'historyItems' => $items,
+            'historyHasMore' => $history['has_more'],
+            'toolNavOptions' => ToolsPageSupport::navOptions('user-access'),
+        ], 'User Access', 'tools', $canResume ? [
+            '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/access_history_auth.js',
+        ] : [], !$canResume);
     }
 
     public function account(string $username, array $query): ?string

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Images\ImageReference;
 use ForumRewrite\Images\ImageStore;
@@ -80,7 +81,7 @@ final class ImageContentTest
             imagepng($legacy, $base . '/legacy.png'); imagedestroy($legacy);
             $legacyRef = ImageStore::inspect($base . '/legacy.png', 'Legacy wide image');
             $store->put($base . '/legacy.png', $legacyRef);
-            file_put_contents($base . '/repo/records/posts/legacy.txt', "Post-ID: legacy\nCreated-At: 2026-10-13T00:00:00Z\nBoard-Tags: general\n\n" . ImageReference::line($legacyRef) . "\n");
+            file_put_contents($base . '/repo/records/posts/legacy.txt', "Post-ID: legacy\nBoard-Tags: general\n\n" . ImageReference::line($legacyRef) . "\n");
             $git = 'git -C ' . escapeshellarg($base . '/repo');
             foreach (['init -q', 'config user.name Test', 'config user.email test@example.test', 'add .', 'commit -qm Initial'] as $command) {
                 exec($git . ' ' . $command . ' 2>&1', $output, $status);
@@ -90,7 +91,10 @@ final class ImageContentTest
             $head = $backup->revision();
             $images = $backup->export('images', $head); $archives[] = $images['path'];
             $repo = $backup->export('tar.gz', $head); $archives[] = $repo['path'];
+            $zip = $backup->export('zip', $head); $archives[] = $zip['path'];
             assertSame($images['revision'], $repo['revision']);
+            $repositoryTar = new PharData($repo['path']);
+            assertSame(file_get_contents($base . '/repo/records/posts/legacy.txt'), $repositoryTar['repository/records/posts/legacy.txt']->getContent());
             $tar = new PharData($images['path']);
             $manifest = json_decode($tar['manifest.json']->getContent(), true, 512, JSON_THROW_ON_ERROR);
             assertSame($head, $manifest['repository_head']);
@@ -122,6 +126,56 @@ final class ImageContentTest
             foreach ($archives as $path) { @unlink($path); }
             \ForumRewrite\Images\ImageBackup::removeTree($base);
         }
+    }
+
+    public function testBackupLegacyDatesUseMetadataOrHistoryWithoutChangingRecords(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source');
+        $contents = [];
+        for ($i = 0; $i < 40; $i++) {
+            $contents['legacy-' . $i] = str_replace("Created-At: 2026-04-10T12:00:00Z\n", '', $w->post('legacy-' . $i));
+            $w->put($root . '/records/posts/legacy-' . $i . '.txt', $contents['legacy-' . $i]);
+        }
+        $w->git($root);
+        // A rename must still resolve the original addition date through history.
+        $originalDate = trim($w->command(['git', '-C', $root, 'log', '--format=%aI', '--reverse', '--', 'records/posts/legacy-0.txt'])[1]);
+        $datedPath = \ForumRewrite\Canonical\CanonicalPathResolver::datedPost('legacy-0', gmdate('Y-m-d\TH:i:s\Z', strtotime($originalDate)));
+        mkdir(dirname($root . '/' . $datedPath), 0700, true);
+        assertSame(0, $w->command(['git', '-C', $root, 'mv', 'records/posts/legacy-0.txt', $datedPath])[0]);
+        assertSame(0, $w->command(['git', '-C', $root, 'commit', '-qm', 'Rename legacy post'])[0]);
+        $started = microtime(true);
+        assertSame([], \ForumRewrite\Images\ImageBackup::references($root));
+        assertTrue(microtime(true) - $started < 10, 'Small legacy scan exceeded 10 seconds');
+        assertSame('', trim($w->command(['git', '-C', $root, 'status', '--porcelain'])[1]));
+        assertSame($contents['legacy-0'], file_get_contents($root . '/' . $datedPath));
+        $loader = new \ForumRewrite\Canonical\CanonicalRecordRepository($root, allowLegacyFilesystemTimestamp: false);
+        assertSame(gmdate('Y-m-d\TH:i:s\Z', strtotime($originalDate)), $loader->loadPost($datedPath)->createdAt);
+
+        $noHistory = $w->repository('metadata-only');
+        $bytes = str_replace("Created-At: 2026-04-10T12:00:00Z\n", '', $w->post('portable'));
+        $w->put($noHistory . '/records/posts/portable.txt', $bytes);
+        // Existing callers keep their filesystem fallback, but backup must reject it.
+        (new \ForumRewrite\Canonical\CanonicalRecordRepository($noHistory))->loadPost('records/posts/portable.txt');
+        try {
+            \ForumRewrite\Images\ImageBackup::references($noHistory);
+            throw new RuntimeException('Expected unavailable provenance rejection');
+        } catch (\ForumRewrite\Canonical\CanonicalRecordParseException $error) {
+            throw $error; // The backup should attach record-path context.
+        } catch (RuntimeException $error) {
+            assertStringContains('records/posts/portable.txt: Missing required post header: Created-At', $error->getMessage());
+        }
+        $metadata = \ForumRewrite\Canonical\LegacyPostTimestamp::encode('portable', $bytes, '2020-01-02T03:04:05Z');
+        $w->put($noHistory . '/records/post-timestamps/portable.json', $metadata);
+        assertSame([], \ForumRewrite\Images\ImageBackup::references($noHistory));
+        assertSame($bytes, file_get_contents($noHistory . '/records/posts/portable.txt'));
+        $w->put($noHistory . '/records/posts/portable.txt', $bytes . "Changed\n");
+        $this->reject(fn () => \ForumRewrite\Images\ImageBackup::references($noHistory));
+        $w->put($noHistory . '/records/posts/portable.txt', str_replace('Post-ID: portable', 'Post-ID: wrong-path', $w->post('portable')));
+        $this->reject(fn () => \ForumRewrite\Images\ImageBackup::references($noHistory));
+        unlink($noHistory . '/records/posts/portable.txt');
+        symlink('/dev/null', $noHistory . '/records/posts/linked.txt');
+        $this->reject(fn () => \ForumRewrite\Images\ImageBackup::references($noHistory));
     }
 
     public function testUploadCapacityAndUnsafeArchivesFailWithoutReplacingData(): void

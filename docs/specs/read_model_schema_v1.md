@@ -348,3 +348,40 @@ upgrade schema 3 metadata columns, replace complete updated threads, and remove
 unavailable expansion IDs even when their source thread is outside the update's
 recent-thread window. The reader shows stored expansion beneath its initial
 answer without generation controls; legacy snapshots remain readable.
+
+### Source-removal placeholders (schema version 23)
+
+No columns are added. Version 23 requires rebuilding old derived rows: accepted
+physical source removals materialize content-free post placeholders using retained
+thread/parent identity, creation time and author identity. Existing retraction
+columns mark operator removal; no reply prose is promoted into a missing root.
+Generated labels with proven removed/retracted sources are excluded from label,
+score, vote and activity aggregation; surviving independent labels remain active.
+
+The `source_removal_generation` metadata key binds rebuilt aggregation to the
+accepted source-removal/resolution records. Static/offline publication rejects a
+source model with a missing or different generation while such evidence exists.
+Evidence lives in `records/post-removals/<source-id>.json`: operation, content hash,
+structural post identity, exact label-file hashes, acceptance time and local actor.
+It contains no source prose and is effective only with an exact trusted local
+`Accept source label cleanup <source-id>` commit. Importing an archive receipt
+alone grants no authority. Preserve trusted repository history for restoration.
+
+### Per-contribution like Activity (schema version 24)
+
+No table shape changes. Version 24 rebuilds existing derived rows so each eligible
+canonical thread-label record containing `like` contributes one Activity item,
+even when the thread already has that effective label. Mixed-label records remain
+one item; other labels retain first-appearance semantics. Scoring and vote
+eligibility are unchanged. Each item retains its canonical action key, actor,
+record timestamp and per-path source commit; unavailable history stays unknown.
+Normal startup rebuilds version-23 models before serving Activity. Canonical
+records are unchanged; `./v3 rebuild` also recovers previously omitted items.
+
+### Standard Activity page queries (schema version 25)
+
+Table shape is unchanged. Standard Activity gains bounded page queries ordered
+by original activity time and canonical action key, independent of disposable
+SQLite row IDs. Version 25 rebuilds prior models at normal startup before the
+new query contract runs. Existing Forte and RSS queries/return shapes remain
+unchanged; canonical records and Activity membership are unaffected.

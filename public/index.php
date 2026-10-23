@@ -19,5 +19,5 @@ $repositoryRoot = getenv('FORUM_REPOSITORY_ROOT') ?: ($identityRequest
 $databasePath = getenv('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($projectRoot);
 $staticHtmlRoot = getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile);
 
-$controller = new FrontController($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot);
+$controller = new FrontController($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
 $controller->handle($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/', $_COOKIE);

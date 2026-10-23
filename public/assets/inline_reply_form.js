@@ -1,143 +1,45 @@
 (function () {
-  function hasReplyBody(details) {
-    const body = details.querySelector('textarea[name="body"]');
-    return body !== null && body.value.trim() !== "";
-  }
+  function bindInlineComposer(composer, stateKey) {
+    const form = composer.querySelector('[data-compose-form]');
+    const body = form && form.querySelector('textarea[name="body"]');
+    if (!body) return;
+    let engaged = false;
 
-  function requestFrame(callback) {
-    if (typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(callback);
-      return;
+    function sync() {
+      const editing = composer.contains(document.activeElement);
+      if (editing) engaged = true;
+      const attached = form.__imagePickerOpen || window.ForumImageUpload?.has(form);
+      const warning = composer.querySelector('[data-kind="error"], [data-role="compose-field-normalization-status"]:not([hidden])');
+      composer.dataset[stateKey] = editing || ((stateKey !== 'inlineThreadExpanded' || engaged) && body.value.trim() !== "") || attached || warning ? '1' : '0';
     }
 
-    window.setTimeout(callback, 0);
-  }
-
-  function scrollFullyIntoView(node) {
-    if (!node || typeof node.getBoundingClientRect !== "function") {
-      return;
-    }
-
-    const rect = node.getBoundingClientRect();
-    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-    if (viewportHeight <= 0 || viewportWidth <= 0) {
-      return;
-    }
-
-    const clippedBelow = rect.bottom > viewportHeight;
-    const clippedAbove = rect.top < 0;
-    const clippedRight = rect.right > viewportWidth;
-    const clippedLeft = rect.left < 0;
-    if (!clippedBelow && !clippedAbove && !clippedRight && !clippedLeft) {
-      return;
-    }
-
-    node.scrollIntoView({
-      behavior: "smooth",
-      block: rect.height <= viewportHeight ? "nearest" : "start",
-      inline: "nearest",
-    });
-  }
-
-  function bindInlineReply(details) {
-    const trigger = details.querySelector("[data-inline-reply-trigger]");
-    const summary = details.querySelector(".inline-reply-summary");
-    const body = details.querySelector('textarea[name="body"]');
-    const composer = details.closest("[data-compose-root]") || details;
-
-    function syncOpenState() {
-      const expanded = details.open;
-      details.dataset.inlineReplyExpanded = expanded ? "1" : "";
-      if (summary) {
-        summary.hidden = expanded;
-      }
-    }
-
-    function openComposer(focusBody) {
-      details.open = true;
-      syncOpenState();
-      if (focusBody && body) {
-        window.setTimeout(function () {
-          body.focus();
-          requestFrame(function () {
-            scrollFullyIntoView(composer);
-          });
-        }, 0);
-        return;
-      }
-
-      requestFrame(function () {
-        scrollFullyIntoView(composer);
-      });
-    }
-
-    function maybeCollapseComposer() {
-      if (!details.open || hasReplyBody(details)) {
-        return;
-      }
-
-      const form = details.querySelector('[data-compose-form]');
-      if (form && (form.__imagePickerOpen || window.ForumImageUpload?.has(form))) {
-        return;
-      }
-
-      const active = document.activeElement;
-      if (active && details.contains(active)) {
-        return;
-      }
-
-      details.open = false;
-      syncOpenState();
-    }
-
-    if (hasReplyBody(details)) {
-      openComposer(false);
-    }
-
-    if (body) {
-      document.querySelectorAll("[data-inline-reply-link]").forEach(function (link) {
-        link.addEventListener("click", function (event) {
-          if (event.defaultPrevented || event.button !== 0 || event.ctrlKey ||
-              event.metaKey || event.shiftKey || event.altKey ||
-              link.hasAttribute("download") || (link.target && link.target !== "_self")) {
-            return;
-          }
-
+    // The browser focuses the actual editor directly. Never transfer focus or
+    // scroll the container while the software keyboard is opening.
+    if (composer.hasAttribute('data-inline-reply-compose')) {
+      document.querySelectorAll('[data-inline-reply-link]').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey ||
+              event.shiftKey || event.altKey || link.hasAttribute('download') ||
+              (link.target && link.target !== '_self')) return;
           event.preventDefault();
-          openComposer(true);
+          // A Reply link explicitly navigates to this editor; let native focus
+          // reveal it once rather than adding another scrolling animation.
+          body.dispatchEvent(new Event('compose-editing-intent', {bubbles: true}));
+          body.focus();
         });
       });
     }
-
-    if (trigger) {
-      trigger.addEventListener("click", function (event) {
-        event.preventDefault();
-        openComposer(true);
-      });
-
-      trigger.addEventListener("focus", function () {
-        openComposer(true);
-      });
-    }
-
-    details.addEventListener("focusin", function (event) {
-      if (event.target && event.target.tagName === "SUMMARY") {
-        return;
-      }
-
-      openComposer(false);
-    });
-
-    details.addEventListener("focusout", function () {
-      window.setTimeout(maybeCollapseComposer, 0);
-    });
-
-    details.addEventListener("toggle", syncOpenState);
-    syncOpenState();
+    composer.addEventListener('focusin', sync);
+    composer.addEventListener('focusout', function () { window.setTimeout(sync, 0); });
+    composer.addEventListener('input', sync);
+    composer.addEventListener('change', sync);
+    new MutationObserver(sync).observe(composer, {subtree: true, attributes: true, attributeFilter: ['hidden', 'data-kind']});
+    window.addEventListener('pageshow', sync);
+    sync();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-inline-reply-details]").forEach(bindInlineReply);
+    document.querySelectorAll("[data-inline-thread-compose]").forEach(function (node) { bindInlineComposer(node, "inlineThreadExpanded"); });
+    document.querySelectorAll("[data-inline-reply-compose]").forEach(function (node) { bindInlineComposer(node, "inlineReplyExpanded"); });
   });
 })();

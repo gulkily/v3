@@ -20,6 +20,7 @@ final class ArchiveRecordCatalog
             || $relativePath === 'records/instance/feature-flags.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/approval-acceptances/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
+            || preg_match('#^records/post-removals/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/post-timestamps/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/thread-subjects/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
@@ -53,6 +54,7 @@ final class ArchiveRecordCatalog
         $name = pathinfo($path, PATHINFO_FILENAME);
         return match ($family) {
             'posts' => 'post:' . $name,
+            'post-removals' => 'post-removal:' . $name,
             'approval-acceptances' => 'approval-acceptance:' . $name,
             'post-timestamps' => 'post-timestamp:' . $name,
             'identity' => 'identity:openpgp:' . strtolower(substr($name, strlen('identity-openpgp-'))),
@@ -82,6 +84,10 @@ final class ArchiveRecordCatalog
         $repository = new CanonicalRecordRepository($repositoryRoot);
 
         try {
+            if (str_starts_with($relativePath, 'records/post-removals/')) {
+                $id = basename($relativePath, '.json');
+                return \ForumRewrite\Canonical\LabelRemoval::read($repositoryRoot, $id) === null ? null : 'post-removal:' . $id;
+            }
             if (str_starts_with($relativePath, 'records/approval-acceptances/')) {
                 $id = basename($relativePath, '.json');
                 $post = $repository->loadPost(\ForumRewrite\Canonical\CanonicalPathResolver::post($id));

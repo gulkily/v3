@@ -62,12 +62,37 @@ try {
  assert.match(stale,/changed/);
  const unsigned=await context.request.post(base+'/api/railspike_workflow',{data:{operation:'prepare',action:'start',post_id:data.direct}});assert.equal(unsigned.status(),400);
  await page.goto(base+'/posts/'+data.direct);const direct=page.locator(`[data-railspike-post="${data.direct}"]`);await direct.locator('summary').first().waitFor();await direct.locator('summary').first().click();await direct.getByRole('button',{name:'Start development',exact:true}).click();await direct.getByText('Railspike Step 1: queued',{exact:true}).waitFor();
- await page.goto(base+'/activity/');await page.locator('[data-railspike-activity] a').first().waitFor();
+ const activityWorkflowRequests=[];
+ const recordWorkflow=request=>{if(new URL(request.url()).pathname==='/api/railspike_workflow')activityWorkflowRequests.push(request.url());};
+ page.on('request',recordWorkflow);
+ await page.goto(base+'/activity/');
+ await page.getByRole('heading',{name:'Activity',exact:true}).waitFor();
+ assert.equal(await page.locator('[data-railspike-activity]').count(),0);
+ await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+ await page.waitForTimeout(5500);
+ assert.deepEqual(activityWorkflowRequests,[]);
+ page.off('request',recordWorkflow);
  assert.equal(await page.getByText('Site development · operators only',{exact:true}).count(),0);
+ const operatorState=await context.storageState();
+ for(const operator of [true,false]) for(const javaScriptEnabled of [true,false]) for(const width of [390,1280]) {
+  const check=await browser.newContext({javaScriptEnabled,storageState:operator?operatorState:undefined,viewport:{width,height:900},serviceWorkers:'block'});
+  try {
+   const checked=await check.newPage();const workflowRequests=[];
+   checked.on('request',r=>{if(new URL(r.url()).pathname==='/api/railspike_workflow')workflowRequests.push(r.url());});
+   await checked.goto(base+'/activity/');
+   await checked.getByRole('heading',{name:'Activity',exact:true}).waitFor();
+   assert.equal(await checked.locator('[data-railspike-activity]').count(),0);
+   if(operator&&javaScriptEnabled&&width===390)await checked.screenshot({path:'/tmp/activity-workflow-removal-phone.png'});
+   await checked.getByRole('link',{name:'Visible Content',exact:true}).click();
+   await checked.waitForLoadState('load');assert.equal(new URL(checked.url()).searchParams.get('view'),'content');
+   assert.equal(await checked.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
+   assert.deepEqual(workflowRequests,[]);
+  } finally {await check.close();}
+ }
  const saved=await context.storageState(); saved.cookies=[];
  const resumed=await browser.newContext({storageState:saved,viewport:{width:390,height:844},serviceWorkers:'block'});
  const resumePage=await resumed.newPage();await resumePage.goto(base+'/posts/'+data.direct);await resumePage.locator(`[data-railspike-post="${data.direct}"]`).getByText('Railspike Step 1: queued',{exact:true}).waitFor();await resumed.close();
  const anonymous=await browser.newContext({serviceWorkers:'block'});const response=await anonymous.request.get(base+'/threads/'+data.thread);assert.equal((await response.text()).includes('Literal <script>'),false);assert.equal((await anonymous.request.get(base+'/api/railspike_workflow?activity=1')).status(),403);await anonymous.close();
  assert.deepEqual(errors,[]);
- console.log(JSON.stringify({status:'passed',viewport:390,checks:['reply-added hashtag','signed start/answer/revise/approve','failure and retry','read-model rebuild','stale approval','inert output','direct-tag standalone post','private activity','anonymous privacy','no overflow']}));
+ console.log(JSON.stringify({status:'passed',viewport:390,checks:['reply-added hashtag','signed start/answer/revise/approve','failure and retry','read-model rebuild','stale approval','inert output','direct-tag standalone post','Activity without workflow UI or polling','operator/anonymous JS/no-JS phone/desktop matrix','anonymous privacy','no overflow']}));
 } catch(e) {console.error(log.slice(-5000));throw e;} finally {await browser?.close();server.kill();}

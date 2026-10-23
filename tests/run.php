@@ -7,6 +7,8 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . "/HighTrafficTest.php",
+    __DIR__ . "/AccessHistoryPresenterTest.php",
     __DIR__ . "/FastmodTaggingFlagTest.php",
     __DIR__ . "/FastmodMetaTest.php",
     __DIR__ . '/RetractionSweepTest.php',
@@ -83,6 +85,7 @@ $testFiles = [
     __DIR__ . '/ImportedQuoteSeedScoringTest.php',
     __DIR__ . '/InvitationIssuanceTest.php',
     __DIR__ . '/ActivityItemLinkTest.php',
+    __DIR__ . '/StandardActivityPaginationTest.php',
     __DIR__ . '/FeatureFlagChangePageTest.php',
     __DIR__ . '/BackupPageTest.php',
     __DIR__ . '/LocalAppSmokeTest.php',
@@ -106,6 +109,9 @@ $testFiles = [
     __DIR__ . '/FrontendTargetResolverTest.php',
     __DIR__ . '/DatabaseLockProbeTest.php',
     __DIR__ . '/HealthIndicatorsTest.php',
+    __DIR__ . '/ApiRouteCatalogTest.php',
+    __DIR__ . '/LlmsTxtRendererTest.php',
+    __DIR__ . '/AgentApiWorkedExampleTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',
     __DIR__ . '/PlatformDocsPageTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',

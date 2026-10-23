@@ -3,9 +3,6 @@
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
     <h1>User Access</h1>
     <p><a href="/tools/user-access/pending/">Pending approvals</a></p>
-<?php if ($canSecurityReview): ?>
-    <p><a href="/activity/?view=security">Security review</a></p>
-<?php endif; ?>
   </article>
   <article class="card">
     <h2>Accounts</h2>
@@ -19,4 +16,23 @@
     </ul>
 <?php endif; ?>
   </article>
+<?php if ($canSecurityReview || ($canResumeHistory ?? false)): ?>
+  <article class="card" id="access-history">
+    <div class="access-history-heading">
+      <h2>Access history</h2>
+<?php if ($canSecurityReview && $historyHasMore): ?>
+      <a href="/activity/?view=security">View all</a>
+<?php endif; ?>
+    </div>
+<?php if (!$canSecurityReview): ?>
+<?= $partial('partials/access_history_auth.php', ['canSignIn' => true, 'authReturnTo' => '/tools/user-access/#access-history']) ?>
+<?php elseif ($historyItems === []): ?>
+    <p class="meta">No access changes recorded yet.</p>
+<?php else: ?>
+<?php foreach ($historyItems as $item): ?>
+<?= $partial('partials/access_history_event.php', ['item' => $item]) ?>
+<?php endforeach; ?>
+<?php endif; ?>
+  </article>
+<?php endif; ?>
 </section>

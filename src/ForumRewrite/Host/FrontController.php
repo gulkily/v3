@@ -60,6 +60,49 @@ final class FrontController
         $approvedMembersOnly = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
             ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
+        $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
+        if ($requestUri === '/internal/high-traffic/refresh') {
+            header('Cache-Control: no-store');
+            if ($approvedMembersOnly || $method !== 'POST' || (int)($_SERVER['CONTENT_LENGTH'] ?? 0)>2048
+                || (isset($_SERVER['HTTP_SEC_FETCH_SITE']) && $_SERVER['HTTP_SEC_FETCH_SITE'] !== 'same-origin')
+                || (isset($_SERVER['HTTP_ORIGIN']) && ($_SERVER['HTTP_ORIGIN'] !== ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? ''))))) {
+                http_response_code(403);return;
+            }
+            try { (new HighTrafficRefresh($highTraffic))->hint(is_string($_POST['route'] ?? null) ? $_POST['route'] : ''); }
+            catch (Throwable $error) { $highTraffic->report($error);http_response_code(503);return; }
+            http_response_code(204);return;
+        }
+        if (!$approvedMembersOnly && in_array($method,['GET','HEAD'],true) && empty($_SERVER['HTTP_AUTHORIZATION'])
+            && !str_contains($requestUri,'?') && HighTrafficRoute::canonical($requestUri) === null
+            && HighTrafficRoute::canonical(rtrim($requestUri,'/') . '/') !== null && $highTraffic->enabled()) {
+            header('Location: ' . rtrim($requestUri,'/') . '/',true,301);
+            header('Cache-Control: no-cache');
+            return;
+        }
+        if (!$approvedMembersOnly && in_array($method, ['GET', 'HEAD'], true)
+            && empty($_SERVER['HTTP_AUTHORIZATION']) && HighTrafficRoute::canonical($requestUri) !== null && $highTraffic->enabled()) {
+            try {
+                $html = $highTraffic->generate($requestUri);
+                if ($html !== null) {
+                    header('Content-Type: text/html; charset=utf-8');
+                    header('Cache-Control: public, no-cache, must-revalidate');
+                    http_response_code(200);
+                    if ($method !== 'HEAD') echo $html;
+                    return;
+                }
+            } catch (HighTrafficNotFound) {
+                header('Content-Type: text/html; charset=utf-8');
+                header('Cache-Control: no-store');
+                http_response_code(404);
+                if ($method !== 'HEAD') echo '<!doctype html><title>Not found</title><h1>Not found</h1>';
+                return;
+            } catch (Throwable $error) { $highTraffic->report($error); }
+            header('Retry-After: 5');
+            header('Cache-Control: no-store');
+            $this->sendHtml($this->renderBusyError(), 503);
+            return;
+        }
+
         $browserRuntimeAsset = $this->browserRuntimeAsset($method, $requestUri);
         if ($browserRuntimeAsset !== null) {
             $this->sendBrowserRuntimeAsset($browserRuntimeAsset['contents'], $browserRuntimeAsset['contentType'], $method);
@@ -250,6 +293,11 @@ final class FrontController
 
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
 
+        if (preg_match('~^/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.[A-Za-z0-9]+$~D', $path) && !str_contains($path, '..')) {
+            $cache = new HighTrafficCache($this->projectRoot,$this->repositoryRoot,$this->databasePath,$this->publicRoot);
+            $retained = $cache->root . '/assets' . $path;
+            if (is_file($retained)) return $retained;
+        }
         return AssetFingerprint::sourcePathForFingerprint($this->publicRoot, $path);
     }
 

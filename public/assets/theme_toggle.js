@@ -13,7 +13,7 @@
     var menu = document.querySelector("[data-role='theme-menu']");
     var cycleButton = menu ? menu.querySelector("[data-action='theme-cycle']") : null;
     var button = menu ? menu.querySelector("[data-action='theme-toggle']") : null;
-    var popover = menu ? menu.querySelector(".theme-menu__popover") : null;
+    var popover = menu ? menu.querySelector("#theme-menu-popover") : null;
     var options = popover
       ? Array.prototype.slice.call(popover.querySelectorAll("[data-theme-option]"))
       : [];
@@ -33,7 +33,7 @@
     var themeStylesheet = document.getElementById("theme-stylesheet");
     var themeStylesheetPaths = window.forumThemeStylesheetPaths || {};
     var themeLoadStates = {};
-    var pendingTheme = null;
+    var pendingSelection = null;
 
     function isExplicitTheme(theme) {
       return theme !== "auto" && themes.indexOf(theme) !== -1;
@@ -82,10 +82,19 @@
       }
     }
 
+    function hasThemeStyles(link) {
+      try {
+        // A failed initial request can leave a non-null, unreadable sheet.
+        return Boolean(link.sheet && link.sheet.cssRules.length);
+      } catch (error) {
+        return false;
+      }
+    }
+
     function ensureThemeStylesheet(theme, highPriority) {
       var path = themeStylesheetPaths[theme];
       if (!path) {
-        return { ready: true, promise: Promise.resolve() };
+        return { ready: true, promise: Promise.resolve(true) };
       }
       if (themeLoadStates[theme]) {
         if (highPriority) {
@@ -94,7 +103,7 @@
         return themeLoadStates[theme];
       }
 
-      var link = themeStylesheet && themeStylesheet.getAttribute("href") === path
+      var link = themeStylesheet && themeStylesheet.getAttribute("href") === path && hasThemeStyles(themeStylesheet)
         ? themeStylesheet
         : document.createElement("link");
       if (link !== themeStylesheet) {
@@ -105,17 +114,19 @@
       }
       link.setAttribute("fetchpriority", highPriority ? "high" : "low");
 
-      var state = { link: link, ready: Boolean(link.sheet), promise: null };
+      var state = { link: link, ready: hasThemeStyles(link), promise: null };
       state.promise = state.ready
-        ? Promise.resolve()
+        ? Promise.resolve(true)
         : new Promise(function (resolve) {
             link.addEventListener("load", function () {
               state.ready = true;
-              resolve();
+              resolve(true);
             }, { once: true });
             link.addEventListener("error", function () {
-              state.ready = true;
-              resolve();
+              // Keep the current theme usable and let the next selection retry.
+              delete themeLoadStates[theme];
+              link.remove();
+              resolve(false);
             }, { once: true });
           });
       themeLoadStates[theme] = state;
@@ -156,18 +167,34 @@
       return currentTheme;
     }
 
-    function syncButton(theme) {
+    function nextAppearance(theme) {
+      var index = paletteNames.indexOf(palette);
+      if (theme === 'lcd' && index >= 0 && index + 1 < paletteNames.length) {
+        return { theme: theme, palette: paletteNames[index + 1] };
+      }
       var next = nextTheme(theme);
+      return { theme: next, palette: next === 'lcd' ? paletteNames[0] : null };
+    }
+
+    function appearanceLabel(theme, selectedPalette) {
+      var option = paletteOptions[paletteNames.indexOf(selectedPalette)];
+      return labels[theme] + (theme === 'lcd' && option ? ' ' + option.textContent.trim() : '');
+    }
+
+    function syncButton(theme) {
+      var next = nextAppearance(theme);
+      var currentLabel = appearanceLabel(theme, palette);
+      var nextLabel = appearanceLabel(next.theme, next.palette);
 
       cycleButton.setAttribute("data-theme", resolvedTheme(theme));
       cycleButton.setAttribute("data-theme-mode", theme);
       cycleButton.setAttribute(
         "aria-label",
-        "Theme: " + labels[theme] + ". Activate to switch to " + labels[next] + "."
+        "Theme: " + currentLabel + ". Activate to switch to " + nextLabel + "."
       );
       cycleButton.setAttribute(
         "title",
-        "Theme: " + labels[theme] + ". Click to switch to " + labels[next] + "."
+        "Theme: " + currentLabel + ". Click to switch to " + nextLabel + "."
       );
     }
 
@@ -179,6 +206,7 @@
     }
 
     function openMenu() {
+      closePalette(false);
       popover.hidden = false;
       button.setAttribute("aria-expanded", "true");
       var checkedOption = options.filter(function (option) {
@@ -199,6 +227,77 @@
       return;
     }
 
+    var paletteControl = menu.querySelector("[data-role='lcd-palette']");
+    var paletteButton = paletteControl && paletteControl.querySelector('[data-action="lcd-palette-toggle"]');
+    var palettePopover = paletteControl && paletteControl.querySelector('[role="menu"]');
+    var paletteOptions = paletteControl ? Array.prototype.slice.call(paletteControl.querySelectorAll('[data-lcd-palette-option]')) : [];
+    var paletteNames = paletteOptions.map(function (option) { return option.getAttribute('data-lcd-palette-option'); });
+    var palette = document.documentElement.getAttribute('data-lcd-palette') || 'green';
+
+    function setPalette(value) {
+      palette = value;
+      document.documentElement.setAttribute('data-lcd-palette', palette);
+      try { localStorage.setItem(storageKey + '-lcd-palette', palette); } catch (error) {}
+    }
+
+    function closePalette(refocus) {
+      if (!palettePopover) return;
+      palettePopover.hidden = true;
+      paletteButton.setAttribute('aria-expanded', 'false');
+      if (refocus) paletteButton.focus();
+    }
+
+    function syncPalette() {
+      if (!paletteControl) return;
+      if (currentTheme !== 'lcd') {
+        var hadFocus = paletteControl.contains(document.activeElement);
+        closePalette(false);
+        if (hadFocus) cycleButton.focus();
+      }
+      var selected = paletteOptions.filter(function (option) {
+        var checked = option.getAttribute('data-lcd-palette-option') === palette;
+        option.setAttribute('aria-checked', String(checked));
+        return checked;
+      })[0];
+      if (selected) paletteButton.setAttribute('aria-label', 'Choose LCD palette: ' + selected.textContent.trim());
+    }
+
+    if (paletteButton) {
+      paletteButton.addEventListener('click', function () {
+        if (!palettePopover.hidden) { closePalette(false); return; }
+        closeMenu(false);
+        palettePopover.hidden = false;
+        paletteButton.setAttribute('aria-expanded', 'true');
+        (paletteOptions.filter(function (option) { return option.getAttribute('aria-checked') === 'true'; })[0] || paletteOptions[0]).focus();
+      });
+      paletteOptions.forEach(function (option) {
+        option.addEventListener('click', function () {
+          setPalette(option.getAttribute('data-lcd-palette-option'));
+          syncButton(currentTheme);
+          syncPalette();
+          closePalette(true);
+        });
+      });
+      paletteControl.addEventListener('keydown', function (event) {
+        if (palettePopover.hidden) return;
+        event.stopPropagation();
+        if (event.key === 'Escape') { event.preventDefault(); closePalette(true); return; }
+        var index = paletteOptions.indexOf(document.activeElement);
+        if (event.key === 'Tab') { closePalette(true); return; }
+        if (['ArrowDown', 'ArrowUp', 'Home', 'End'].indexOf(event.key) === -1) return;
+        event.preventDefault();
+        index = event.key === 'Home' ? 0 : event.key === 'End' ? paletteOptions.length - 1
+          : (index + (event.key === 'ArrowUp' ? -1 : 1) + paletteOptions.length) % paletteOptions.length;
+        paletteOptions[index].focus();
+      });
+      paletteControl.addEventListener('focusout', function (event) {
+        if (!paletteControl.contains(event.relatedTarget)) closePalette(false);
+      });
+      document.addEventListener('click', function (event) {
+        if (!paletteControl.contains(event.target)) closePalette(false);
+      });
+    }
+
     var currentTheme = readStoredTheme();
 
     applyTheme(currentTheme);
@@ -206,33 +305,37 @@
     ensureThemeStylesheet(resolvedTheme(currentTheme), true);
     syncButton(currentTheme);
     syncOptions(currentTheme);
+    syncPalette();
     scheduleThemeWarmup();
 
-    function applySelection(theme) {
-      pendingTheme = theme;
+    function applySelection(theme, selectedPalette) {
+      var selection = { theme: theme, palette: selectedPalette };
+      pendingSelection = selection;
       var state = ensureThemeStylesheet(resolvedTheme(theme), true);
       if (!state.ready) {
         document.documentElement.setAttribute("data-theme-loading", "true");
-        state.promise.then(function () {
-          if (pendingTheme !== theme) {
+        state.promise.then(function (ready) {
+          if (pendingSelection !== selection) {
             return;
           }
           document.documentElement.removeAttribute("data-theme-loading");
-          commitSelection(theme);
+          if (ready) commitSelection(theme, selectedPalette);
         });
         return;
       }
 
-      commitSelection(theme);
+      commitSelection(theme, selectedPalette);
     }
 
-    function commitSelection(theme) {
+    function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
       currentTheme = theme;
+      if (selectedPalette) setPalette(selectedPalette);
       applyTheme(currentTheme);
       syncResolvedTheme(currentTheme);
       syncButton(currentTheme);
       syncOptions(currentTheme);
+      syncPalette();
 
       try {
         localStorage.setItem(storageKey, currentTheme);
@@ -246,7 +349,8 @@
     }
 
     cycleButton.addEventListener("click", function () {
-      applySelection(nextTheme(currentTheme));
+      var next = nextAppearance(currentTheme);
+      applySelection(next.theme, next.palette);
     });
 
     button.addEventListener("click", function () {

@@ -5,13 +5,14 @@ $bodyRows = (int) ($bodyRows ?? 7);
 if ($bodyRows < 1) {
     $bodyRows = 7;
 }
+$bodyPlaceholder = (string) ($bodyPlaceholder ?? 'Reply body');
 $showBodyLabel = (bool) ($showBodyLabel ?? true);
 ?>
-<form method="post" action="/compose/reply" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply">
+<form method="post" action="/compose/reply" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply"<?= ($phoneReplyEnabled ?? false) ? ' data-phone-reply' : '' ?>>
 <?php if ($showBodyLabel): ?>
-  <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="Reply body"><?= $e($body) ?></textarea></label>
+  <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="<?= $e($bodyPlaceholder) ?>"><?= $e($body) ?></textarea></label>
 <?php else: ?>
-  <textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="Reply body" aria-label="Body"><?= $e($body) ?></textarea>
+  <textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="<?= $e($bodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
 <?php endif; ?>
   <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="body" hidden>
     <span data-role="compose-field-normalization-message"></span>

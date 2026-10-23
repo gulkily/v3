@@ -14,9 +14,9 @@
     <p class="meta">Parent post <?= $e($parentId) ?> could not be found for this thread.</p>
   </article>
 <?php endif; ?>
-  <article class="card">
+  <article class="card" data-reply-panel>
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
-<?= $indent($partial('partials/reply_form.php', ['showBodyLabel' => false]), 2) ?>
+<?= $indent($partial('partials/reply_form.php', ['showBodyLabel' => false, 'phoneReplyEnabled' => true]), 2) ?>
     <p class="meta" data-role="compose-identity-status" hidden></p>
   </article>
 </section>

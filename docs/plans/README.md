@@ -12,14 +12,31 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Markdown dependency removal](markdown_dependency_removal/)
 
+- [Standard Activity and shared pagination](activity_feed_pagination/)
+
+- [Thread-like Activity reporting](thread_like_activity/)
+
+- [Retraction effects and source-owned label cleanup](retraction_effects/)
+
+- [High-traffic mode](high_traffic_mode/)
+
+- [Reply composer focus and layout](reply_composer_focus_layout/)
+- [Access history in User Access](feature_flags_security_review_cleanup/)
+
+- [LCD color choices](lcd_color_choices/)
+
 - [Documentation discovery](docs_discovery/)
 - [Documentation landing page](docs_landing/) — follow-up to documentation discovery
 
 - [Markdown renderer](markdown_renderer/)
+- [Same-author collapse toggle](same_author_collapse_toggle/)
 
+- [Agent API docs and discovery](agent_api_docs/) · [Onboarding checklist](agent_api_onboarding_checklist.md)
 - [Shared Fastmod automatic-tagging flag](fastmod_tagging_flag/)
 
 - [Fastmod rubric actions — automatic meta tagging](fastmod_rubric_actions/)
+- [Legacy backup compatibility](legacy_backup_compatibility/)
+- [iPhone reply submit](iphone_reply_submit/)
 
 - [Theme-specific selected nav styling](nav_active_theme_override/)
 - [Hide retracted posts from listings](retracted_posts_hidden_from_listings/)
@@ -240,3 +257,5 @@ and repair its navigation and affected references. See the
 - [GPG agent leak](gpg_agent_leak/)
 
 - [Status frontend target](status_frontend_target/)
+
+- [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.

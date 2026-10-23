@@ -20,3 +20,4 @@ repository.tar.gz
 
 # Local testing approval opt-in
 /.test-self-approval
+/.test_self_approval

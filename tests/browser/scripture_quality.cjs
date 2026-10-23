@@ -19,7 +19,7 @@ const env = {...process.env, ...JSON.parse(readFileSync(join(directory, 'environ
     assert.ok(source, text);
     await page.goto(base + (process.argv.includes('--post')?'/posts/':'/threads/') + source);
     const automatic = process.argv.includes('--auto');
-    const trigger = page.locator('[data-inline-reply-trigger]').first();
+    const trigger = page.locator('[data-inline-reply-compose] textarea').first();
     if (await trigger.count()) await trigger.click();
     const draft = page.locator('textarea:not([readonly]):visible').first();
     if (await draft.count()) await draft.fill('Keep this unfinished draft.');

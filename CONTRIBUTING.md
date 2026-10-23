@@ -30,6 +30,14 @@ Before marking a UI change complete:
   implementation document for other UI work. Distinguish completed cleanup
   from unresolved layout or behavior issues.
 
+## Operator CLI
+
+Inspect comparable `v3` commands before designing a command. Use readable output
+by default and `--json` for automation. Include actionable setup/recovery guidance,
+keep top-level help current, and follow existing subcommand meanings: `cron`
+prints installation instructions; `run` executes the scheduled worker. Verify
+help, output modes and required next steps in the relevant implementation plan.
+
 ## Read-model schema changes
 
 `state/cache/post_index.sqlite3` is a disposable derived read model, rebuilt
@@ -78,3 +86,10 @@ Before completion, compare actual file/manifest/lock changes against the approve
 inventory and report the dependency delta, including zero. With Railspike, include
 the inventory and explicit approval record in the approved planning artifact; do not
 leave the decision solely in linked evaluation notes.
+
+## Pagination
+
+For new bounded lists, use the shared controls and position contract described
+in [Implementing pagination](docs/reference/pagination.md). Standard Activity is
+the worked example. Keep each list's query/access rules separate; existing list
+migrations require their own scoped review. Forte retains its append behavior.
