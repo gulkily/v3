@@ -36,6 +36,7 @@ final class PublicMarkdownRenderer
         $tableLines = [];
         $tableStandalone = true;
         $inComment = false;
+        $skipThrough = -1;
 
         $flushParagraph = static function () use (&$html, &$paragraph, $sourcePath, $projectRoot): void {
             if ($paragraph !== []) {
@@ -58,6 +59,7 @@ final class PublicMarkdownRenderer
             }
         };
         foreach ($lines as $lineNumber => $line) {
+            if ($lineNumber <= $skipThrough) { continue; }
             if (preg_match('/^\s*```([^`]*)$/', $line, $fence) === 1) {
                 $flushParagraph();
                 $flushList();
@@ -90,6 +92,18 @@ final class PublicMarkdownRenderer
             if ($start !== false) {
                 $line = substr($line, 0, $start);
                 $inComment = true;
+            }
+            if (self::listItem($line) !== null && self::listItem($line)['indent'] === 0
+                && preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) !== 1) {
+                [$block, $last] = self::listBlock($lines, $lineNumber);
+                $block[0] = $line;
+                $list = self::flatList($block, $sourcePath, $projectRoot);
+                if ($list !== null) {
+                    $flushParagraph(); $flushList(); $flushTable();
+                    $html[] = $list;
+                    $skipThrough = $last;
+                    continue;
+                }
             }
             if (preg_match('/^\s*<img\b[^>]*>\s*$/i', $line) === 1
                 && preg_match('/\balt\s*=\s*(["\'])(.*?)\1/is', $line, $alt) === 1) {
@@ -182,6 +196,67 @@ final class PublicMarkdownRenderer
         }
 
         return $metadata . implode("\n", $html);
+    }
+
+    private static function listItem(string $line): ?array
+    {
+        if (preg_match('/^( *)([-+*]|[0-9]+[.)])( +)(.*)$/', $line, $m) !== 1) { return null; }
+        $ordered = ctype_digit($m[2][0]);
+        return ['indent' => strlen($m[1]), 'column' => strlen($m[1] . $m[2] . $m[3]),
+            'kind' => $ordered ? substr($m[2], -1) : $m[2], 'tag' => $ordered ? 'ol' : 'ul',
+            'number' => $ordered ? substr($m[2], 0, -1) : null, 'text' => $m[4]];
+    }
+
+    /** Keep only adjacent items and indented continuations; standalone content stays outside. */
+    private static function listBlock(array $lines, int $start): array
+    {
+        $last = $start;
+        for ($i = $start + 1, $count = count($lines); $i < $count; $i++) {
+            $line = $lines[$i];
+            if (trim($line) === '') {
+                $next = $i + 1;
+                while ($next < $count && trim($lines[$next]) === '') { $next++; }
+                if ($next === $count || (self::listItem($lines[$next]) === null && preg_match('/^[ \t]+\S/', $lines[$next]) !== 1)) { break; }
+            } elseif (self::listItem($line) === null && preg_match('/^[ \t]+\S/', $line) !== 1) {
+                break;
+            }
+            if (preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) === 1) { break; }
+            $last = $i;
+        }
+        return [array_slice($lines, $start, $last - $start + 1), $last];
+    }
+
+    private static function flatList(array $lines, ?string $sourcePath, string $projectRoot): ?string
+    {
+        $html = ''; $kind = null; $tag = null; $openItem = false; $paragraph = []; $column = 0;
+        $flush = static function () use (&$html, &$paragraph, $sourcePath, $projectRoot): void {
+            if ($paragraph !== []) { $html .= '<p>' . self::inline(implode("\n", $paragraph), $sourcePath, $projectRoot) . '</p>'; $paragraph = []; }
+        };
+        foreach ($lines as $line) {
+            if (str_contains($line, '<!--') || str_contains($line, "\t")) { return null; }
+            if (trim($line) === '') { $flush(); continue; }
+            $item = self::listItem($line);
+            if ($item !== null) {
+                if ($item['indent'] !== 0 || strlen($item['number'] ?? '') > 9) { return null; }
+                $flush();
+                if ($openItem) { $html .= '</li>'; }
+                if ($kind !== $item['kind']) {
+                    if ($tag !== null) { $html .= '</' . $tag . '>'; }
+                    $tag = $item['tag']; $kind = $item['kind'];
+                    $html .= '<' . $tag . ($tag === 'ol' ? ' start="' . (int) $item['number'] . '"' : '') . '>';
+                }
+                $html .= '<li' . ($tag === 'ol' ? ' value="' . (int) $item['number'] . '"' : '') . '>';
+                $openItem = true; $column = $item['column']; $line = $item['text'];
+            } else {
+                $indent = strlen($line) - strlen(ltrim($line, ' '));
+                if ($indent < $column || $indent >= $column + 4) { return null; }
+                $line = substr($line, $column);
+            }
+            if (preg_match('/^(?:[|>#]|`{3}|~{3})/', ltrim($line)) === 1) { return null; }
+            $paragraph[] = $line;
+        }
+        $flush();
+        return $html . '</li></' . $tag . '>';
     }
 
     private static function table(array $lines, bool $standalone, ?string $sourcePath, string $projectRoot): string
