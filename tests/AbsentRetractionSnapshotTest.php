@@ -47,6 +47,52 @@ final class AbsentRetractionSnapshotTest
         assertSame(null, ExchangeRetractionState::snapshot($root));
     }
 
+    public function publicationFixture(string $target = 'target'): array
+    {
+        $root = $this->fixture($target);
+        $fixture = __DIR__ . '/fixtures/parity_minimal_v1';
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($fixture, FilesystemIterator::SKIP_DOTS)) as $file) {
+            $path = $root . substr($file->getPathname(), strlen($fixture));
+            if (!is_dir(dirname($path))) mkdir(dirname($path), 0700, true);
+            copy($file->getPathname(), $path);
+        }
+        // Build before deletion to deliberately retain stale target content in the source model.
+        $recordPath = $root . '/records/post-retractions/post-retraction-' . $target . '.txt';
+        $record = file_get_contents($recordPath); unlink($recordPath);
+        $rootId = 'root-001';
+        if ($target !== 'root-001') file_put_contents($root . '/records/posts/' . $target . '.txt',
+            "Post-ID: $target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nThread-ID: $rootId\nParent-ID: $rootId\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\nABSENT-SECRET\n");
+        $database = $root . '/source.sqlite3';
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root), 'absent_test'))->rebuild();
+        unlink($root . '/records/posts/' . $target . '.txt');
+        file_put_contents($recordPath, $record);
+        return [$root, $database];
+    }
+
+    public function testBasePublicationFiltersStaleReplyAndRetainsSource(): void
+    {
+        [$root, $database] = $this->publicationFixture();
+        $before = hash_file('sha256', $database);
+        $result = (new \ForumRewrite\Offline\OfflineSnapshotPublisher($root . '/static'))->publish($database);
+        $snapshot = new PDO('sqlite:' . $result['path']);
+        assertSame(0, (int) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id='target'")->fetchColumn());
+        assertSame(1, (int) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id='reply-001'")->fetchColumn());
+        assertSame(false, str_contains(file_get_contents($result['path']), 'ABSENT-SECRET'));
+        assertSame($before, hash_file('sha256', $database));
+        assertTrue(is_file($root . '/records/post-retractions/post-retraction-target.txt'));
+    }
+
+    public function testAbsentRootRetainsRepliesWithContentFreeThread(): void
+    {
+        [$root, $database] = $this->publicationFixture('root-001');
+        $result = (new \ForumRewrite\Offline\OfflineSnapshotPublisher($root . '/static'))->publish($database);
+        $snapshot = new PDO('sqlite:' . $result['path']);
+        assertSame(0, (int) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id='root-001'")->fetchColumn());
+        assertSame(1, (int) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id='reply-001'")->fetchColumn());
+        assertSame('', $snapshot->query("SELECT body_preview FROM threads WHERE root_post_id='root-001'")->fetchColumn());
+        assertSame(null, $snapshot->query("SELECT subject FROM threads WHERE root_post_id='root-001'")->fetchColumn());
+    }
+
     public function testMissingTrackedRetractionStillBlocks(): void
     {
         $root = $this->fixture();

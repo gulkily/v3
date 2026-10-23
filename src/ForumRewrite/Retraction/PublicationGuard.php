@@ -59,7 +59,17 @@ final class PublicationGuard
         if ($current !== $token['generation']) throw new RuntimeException('Retraction changed during publication; rebuild and retry.');
     }
 
+    public static function beginSnapshot(string $databasePath): ?array
+    {
+        return self::beginContext($databasePath, null, true);
+    }
+
     public static function begin(string $databasePath, ?string $repositoryRoot = null): ?array
+    {
+        return self::beginContext($databasePath, $repositoryRoot, false);
+    }
+
+    private static function beginContext(string $databasePath, ?string $repositoryRoot, bool $snapshot): ?array
     {
         $pdo = new PDO('sqlite:file:' . $databasePath . '?mode=ro');
         if ($repositoryRoot === null) {
@@ -67,19 +77,21 @@ final class PublicationGuard
             catch (\Throwable) { return null; } // Standalone legacy snapshots have no canonical repository.
         }
         if ($repositoryRoot === null || $repositoryRoot === '') return null;
-        $generation = self::generation($repositoryRoot);
+        $state = $snapshot ? ExchangeRetractionState::snapshot($repositoryRoot) : null;
+        if ($snapshot && $state === null) throw new RuntimeException('Cannot validate snapshot retractions; inspect canonical evidence and retry.');
+        $generation = $snapshot ? hash('sha256', json_encode([$state, \ForumRewrite\Canonical\LabelRemoval::all($repositoryRoot)], JSON_THROW_ON_ERROR)) : self::generation($repositoryRoot);
         $removals = \ForumRewrite\Canonical\LabelRemoval::all($repositoryRoot);
         if ($removals !== [] && (ReadModelMetadata::readMetadata($pdo)['source_removal_generation'] ?? null) !== \ForumRewrite\Canonical\LabelRemoval::generation($repositoryRoot)) {
             throw new RuntimeException('Read model needs source-removal refresh before publication.');
         }
-        $ids = ExchangeRetractionState::read($repositoryRoot);
+        $ids = $snapshot ? $state['ids'] : ExchangeRetractionState::read($repositoryRoot);
         foreach (array_keys($ids ?? []) as $id) {
             $q = $pdo->prepare('SELECT retracted_at FROM posts WHERE post_id=?');
             $q->execute([$id]);
             $row = $q->fetch(PDO::FETCH_ASSOC);
             if ($row !== false && ($row['retracted_at'] ?? null) === null) throw new RuntimeException('Read model needs retraction refresh before publication.');
         }
-        return ['root' => $repositoryRoot, 'generation' => $generation];
+        return ['root' => $repositoryRoot, 'generation' => $generation] + ($snapshot ? ['excluded' => $state['absent']] : []);
     }
 
     public static function publish(?array $token, string $path, callable $publish): void
