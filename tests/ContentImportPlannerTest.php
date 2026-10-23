@@ -9,6 +9,27 @@ use ForumRewrite\Import\ContentImportPlanner;
 
 final class ContentImportPlannerTest
 {
+    public function testOldArchiveCannotRestoreRemovedSourceOrItsOwnedLabels(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source', true); $target = $w->repository('target', true);
+        $w->git($target);
+        $record = \ForumRewrite\Canonical\LabelRemoval::prepare($target, 'root-001', 'delete', ['thread-label-20260415153000-ab12cd34']);
+        $path = \ForumRewrite\Canonical\LabelRemoval::store($target, $record);
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($target, $args);
+        $git(['add', $path]); $git(['rm', 'records/posts/root-001.txt', 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt']);
+        $git(['commit', '-qm', 'Accept source label cleanup root-001']);
+        $plan = (new ContentImportPlanner())->plan($source, $target);
+        assertSame('duplicate', $plan['records/posts/root-001.txt']['state']);
+        assertSame('excluded', $plan['records/thread-labels/thread-label-20260415153000-ab12cd34.txt']['state']);
+        assertSame('duplicate', $plan['records/posts/reply-001.txt']['state']);
+        // An archive receipt without the destination's trusted history is not authority.
+        $w->put($source . '/' . $path, file_get_contents($target . '/' . $path));
+        $empty = $w->repository('empty');
+        $fresh = (new ContentImportPlanner())->plan($source, $empty);
+        assertSame('invalid', $fresh[$path]['state']);
+    }
+
     public function testPublicCoverageKeepsSourceBytesAndExcludesAuthority(): void
     {
         $w = new ImportTestWorkspace();
