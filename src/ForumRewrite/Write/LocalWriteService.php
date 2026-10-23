@@ -155,11 +155,12 @@ class LocalWriteService
 
     /**
      * @param array<string, mixed> $input
+     * @param (callable(string): string)|null $signer returns a detached signature of the record by its author
      * @return array<string, string>
      */
-    public function createReply(array $input, ?array $agentResponse = null, ?callable $beforeWrite = null): array
+    public function createReply(array $input, ?array $agentResponse = null, ?callable $beforeWrite = null, ?callable $signer = null): array
     {
-        return $this->withTimedWriteLock(function () use ($input, $agentResponse, $beforeWrite): array {
+        return $this->withTimedWriteLock(function () use ($input, $agentResponse, $beforeWrite, $signer): array {
             $this->assertWritableRepository();
             if ($beforeWrite !== null) { $beforeWrite(); }
             $timings = [];
@@ -184,9 +185,10 @@ class LocalWriteService
                 if (($existing->agentResponse['expansion_of'] ?? null) !== $parentId || $existing->authorIdentityId !== $authorIdentityId) {
                     throw new RuntimeException('Expansion publication identity conflict.');
                 }
-                $dirty = trim($this->runGitCommand(['status', '--porcelain', '--', $existingPath], 'Unable to inspect expansion publication'));
+                $recoverPaths = is_file($this->repositoryRoot . '/' . $existingPath . '.asc') ? [$existingPath, $existingPath . '.asc'] : [$existingPath];
+                $dirty = trim($this->runGitCommand(['status', '--porcelain', '--', ...$recoverPaths], 'Unable to inspect expansion publication'));
                 $head = $dirty !== ''
-                    ? $this->commitCanonicalWrite([$existingPath], 'Recover expansion ' . $postId)['commit_sha']
+                    ? $this->commitCanonicalWrite($recoverPaths, 'Recover expansion ' . $postId)['commit_sha']
                     : trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
                 $this->refreshDerivedStateAfterCommit($head);
                 $this->invalidator()->invalidateReply($threadId, $postId);
@@ -200,15 +202,30 @@ class LocalWriteService
                 ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
+            $signature = null;
+            if ($signer !== null) {
+                if ($authorIdentityId === null) {
+                    throw new RuntimeException('A signed reply needs author_identity_id.');
+                }
+                $signature = $this->normalizeAsciiBody((string) $signer($contents), 'detached_signature');
+                [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+                $verification = $this->signatureVerifier->verifyDetached($publicKey, $contents, $signature, $expectedFingerprint);
+                if (!$verification['ok']) {
+                    throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+                }
+            }
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
+            if ($signature !== null) {
+                $this->writeFile($recordPath . '.asc', $signature);
+            }
             if ($threadLabels !== []) {
                 [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $phaseStartedAt = hrtime(true);
-            $writtenPaths = [$recordPath];
+            $writtenPaths = $signature !== null ? [$recordPath, $recordPath . '.asc'] : [$recordPath];
             if ($labelRecordPath !== null) {
                 $writtenPaths[] = $labelRecordPath;
             }

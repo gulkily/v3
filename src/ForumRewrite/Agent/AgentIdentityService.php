@@ -181,6 +181,46 @@ final class AgentIdentityService
         ];
     }
 
+    /**
+     * Detached, armored signature of $contents by the reply agent's private key. Fails rather
+     * than letting the agent post unsigned when the key is missing.
+     */
+    public function signAsReplyAgent(string $identityId, string $contents): string
+    {
+        $fingerprintLower = substr($identityId, strlen('openpgp:'));
+        $privateKeyPath = $this->privateKeyDirectory . '/reply-agent-openpgp-' . $fingerprintLower . '.private.asc';
+        if (!str_starts_with($identityId, 'openpgp:') || !is_file($privateKeyPath)) {
+            throw new RuntimeException('Reply-agent private key is missing; replies are not posted unsigned.');
+        }
+
+        $home = sys_get_temp_dir() . '/forum-rewrite-agent-gpg-' . bin2hex(random_bytes(6));
+        mkdir($home, 0700, true);
+        $homedir = escapeshellarg($home);
+        try {
+            $this->runShell(
+                'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir ' . $homedir
+                . ' --import ' . escapeshellarg($privateKeyPath),
+                $home,
+                'Unable to load reply-agent private key'
+            );
+            if (file_put_contents($home . '/record.txt', $contents) === false) {
+                throw new RuntimeException('Unable to stage reply for signing.');
+            }
+            $this->runShell(
+                'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir ' . $homedir
+                . ' --local-user ' . escapeshellarg(strtoupper($fingerprintLower))
+                . ' --armor --detach-sign --output record.txt.asc record.txt',
+                $home,
+                'Unable to sign reply as the reply agent'
+            );
+            $signature = (string) file_get_contents($home . '/record.txt.asc');
+        } finally {
+            GpgHomeCleaner::dispose($home);
+        }
+
+        return $signature;
+    }
+
     private function writePrivateKey(string $path, string $contents): void
     {
         $directory = dirname($path);

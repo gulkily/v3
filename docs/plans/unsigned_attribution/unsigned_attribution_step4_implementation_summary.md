@@ -98,6 +98,18 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
   - Parity test extended: with the flag on, a named `create_reply` returns the notice, an anonymous one does not, an unsigned thread tag returns it, a signed post tag does not.
   - `LlmsTxtRendererTest` (Attribution fact follows the flag) and `ApiRouteCatalogTest` updated and passing.
 
+## Stage 7 - The reply agent signs
+
+- Changes:
+  - `AgentIdentityService::signAsReplyAgent` signs a record with the agent's stored private key in a temporary GPG home (removed afterwards). A missing key throws "Reply-agent private key is missing; replies are not posted unsigned."; the task fails and can be retried.
+  - `LocalWriteService::createReply` takes an optional signer. The writer builds the record, gets the detached signature, verifies it against the author's public key, and commits the `.asc` with the post. Agent replies and scripture expansions pass the agent signer; other callers are unchanged. Expansion recovery also commits a left-over `.asc`.
+  - Applies regardless of the flag, so agent replies count as verified once an instance turns it on.
+- Verification:
+  - `AgentIdentityServiceTest::testReplyAgentSignsWithItsPrivateKeyAndRefusesWithoutIt`: signature verifies against the published key; temporary GPG home removed; missing key refused.
+  - `WriteApiSmokeTest::testGenerateAgentReplyCreatesCanonicalReplyAndIsIdempotent`: the posted agent reply has status `verified` and its `.asc` is in the commit.
+  - Scripture, agent reply and agent identity suites pass except `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts`, which fails identically before Stage 2 (pre-existing).
+- Release check: the production reply agent's private key must exist in its private key directory; without it, agent replies fail instead of posting unsigned.
+
 ## Enhancement Requests
 
 - **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** pending renewed Approved Step 2 and Approved Step 3. / **Outcome:** pending.

@@ -216,7 +216,7 @@ final class ScriptureExpansionService
             $write = $this->writer->createReply([
                 'thread_id' => $initial['thread_id'], 'parent_id' => $id,
                 'body' => $canonical?->body ?? $stored['response_text'], 'author_identity_id' => $identity['identity_id'],
-            ], $meta, $verify);
+            ], $meta, $verify, fn (string $contents): string => $this->identity->signAsReplyAgent((string) $identity['identity_id'], $contents));
             $this->store()->markPosted($id, $hash, $write['post_id'], $identity['identity_id'], $identity['profile_slug']);
             ScriptureTiming::record(dirname(__DIR__, 3), $id, 'publication_finished');
             return ['status' => 'ok', 'generation_status' => 'generated', 'agent_post_id' => $write['post_id']];

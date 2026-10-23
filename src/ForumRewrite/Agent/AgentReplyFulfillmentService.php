@@ -246,7 +246,7 @@ final class AgentReplyFulfillmentService
                 'type' => \ForumRewrite\Canonical\AgentResponseMetadata::SCRIPTURE,
                 'source_post_id' => (string) $post['post_id'],
                 'source_hash' => \ForumRewrite\Canonical\AgentResponseMetadata::postHash($post),
-            ] : null, $verify);
+            ] : null, $verify, fn (string $contents): string => $this->identityService->signAsReplyAgent((string) $identity['identity_id'], $contents));
             $posted = $this->generationStore->markPosted(
                 (string) $context['post_id'],
                 (string) $context['content_hash'],
