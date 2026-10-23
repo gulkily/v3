@@ -155,12 +155,16 @@ try {
       const keys = await (await holder.context().request.get(base + '/api/private_messages/recipient_keys?username_token=ilya')).json();
       assert.deepEqual(keys.keys.map(key => key.identity_id).sort(),
         [holderKey, requesterKey].map(key => 'openpgp:' + key.fingerprint.toLowerCase()).sort());
+      const rebuild = spawnSync(join(project, 'v3'), ['rebuild', join(root, 'repository'), join(root, 'read.sqlite3')], { encoding: 'utf8' });
+      assert.equal(rebuild.status, 0, rebuild.stderr);
+      const rebuilt = await (await holder.context().request.get(base + '/api/private_messages/recipient_keys?username_token=ilya')).json();
+      assert.deepEqual(rebuilt.keys.map(key => key.identity_id).sort(), keys.keys.map(key => key.identity_id).sort());
       await holder.goto(base + '/user/ilya');
       await assertNoOverflow(holder);
     }
     for (const page of [holder, requester, operator]) await page.context().close();
   }
-  console.log('PASS holder: hidden when empty, lists requests, stale-request message, decline, accept joins /user/ilya');
+  console.log('PASS holder: hidden when empty, lists requests, stale-request message, decline, accept joins ilya and survives ./v3 rebuild');
 } catch (error) {
   console.error(logs);
   throw error;
