@@ -72,7 +72,7 @@ or the review establishes that the existing copy should remain.
   repeated selection instructions, while keeping the full prompts visible as explicitly requested. Check operator/read-only views, settings failures, and save feedback.
   Preserve the meaning of scores, the minimum-selection requirement, and access
   recovery. Source: `templates/pages/fastmod.php` and its browser feedback.
-- [ ] **Offline reading** — Review repeated “Showing saved…” success feedback
+- [x] **Offline reading** — Review repeated “Showing saved…” success feedback
   and overlapping missing-content notices. Check saved board, tags, thread,
   unavailable content, queued likes, and reconnect outcomes. Retain snapshot scope,
   freshness limitations, and actionable recovery. Sources:
@@ -275,3 +275,9 @@ These are observations for later rendered review, not approved removal decisions
 - User refinement: keep full Fastmod prompts on the page. Preserved the complete introduction and every rubric prompt, visible without expansion. Removed the enabled-score list repeated by checked controls and the extra selection explanation; retained minimum selection, score semantics in the prompts, read-only access guidance and recovery. Hid initially empty status; removed the transient Saved notice before reload.
 - Verification: three rubric checks and the existing real signed-save/scoring browser suite passed (including rejected empty selection, selected-rubric persistence, no scoring on save and scoring retry). Controlled production-template/script Chromium checks covered operator/read-only/settings-error views, full prompt equality/visibility, validation/signing recovery and overflow in Light/Word97/Chicago/Midnight at 390px/1280px. Inspected Word97 phone screenshot. Syntax/diff checks passed. Physical devices and production unverified; no dependencies changed.
 - Bookmarklets follow-up: four-theme 375px/1280px page-overflow checks passed. Its task commit is `88b02d864`.
+
+## Offline reader copy cleanup — October 23, 2026
+
+- Removed routine saved-content success strings (already hidden by existing status policy), duplicate missing-tag status/count and duplicate missing-thread paragraph. Missing content retains one reconnect instruction; saved-image scope and archive indicators remain. Explicit queued-Like and reconnect-processing outcomes are now visible rather than hidden with routine load successes, preserving delivery uncertainty and the Outbox recovery path.
+- Verification: 19 existing snapshot presentation/thread/cache-worker checks passed. Chromium loaded the production reader template/script and real SQLite runtime with isolated loaded/empty snapshots; board, tags, existing/missing tag and existing/missing thread states passed. Checked single missing-content recovery, queued Like/Outbox access, reconnect outcome and four-theme 390px/1280px overflow. Inspected Midnight queued-Like screenshot. An initial browser probe lacked UTF-8 metadata; corrected the temporary fixture before the successful run. Real network reconnection/delivery, physical devices and deployment remain unverified. Syntax/diff passed; dependencies unchanged.
+- Previous task commit: Fastmod `0e2663ba3`.
