@@ -278,3 +278,35 @@
   overflow-wrap: anywhere;
   min-width: 0;
 }
+
+@media (max-width: 1024px) and (pointer: coarse) {
+  :root [data-reply-panel][data-reply-panel].reply-panel-reading {
+    position: fixed;
+    left: var(--reply-panel-left);
+    width: var(--reply-panel-width);
+    bottom: max(var(--reply-panel-bottom, 8px), env(safe-area-inset-bottom));
+    z-index: 20;
+    box-sizing: border-box;
+    background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+    padding: 8px;
+    border: 1px solid currentColor;
+    margin: 0;
+  }
+  :root [data-reply-panel][data-reply-reading="1"] form > :not(textarea) {
+    display: none;
+  }
+  :root [data-reply-panel][data-reply-reading="1"] textarea[name="body"] {
+    height: 4.75rem;
+    min-height: 4.75rem;
+    max-height: 4.75rem;
+    margin: 0;
+    resize: none;
+  }
+}
+
+@media (max-width: 1024px) and (pointer: coarse) {
+  :root [data-reply-panel][data-reply-reading="1"] > *,
+  :root [data-reply-panel][data-reply-reading="1"] form > textarea {
+    margin: 0;
+  }
+}

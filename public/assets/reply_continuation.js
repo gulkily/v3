@@ -158,10 +158,19 @@
         body.value = '';
         api.clearDraft(form);
         body.dispatchEvent(new Event('input', {bubbles:true}));
-        body.focus({preventScroll:true});
         stack.scrollTop = stack.scrollHeight;
-        // Keep the editor at its writing position as the local stack appears.
-        window.scrollBy(0, body.getBoundingClientRect().top - editorTop);
+        if (window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches) {
+          form.dispatchEvent(new Event('forum:reply-sent'));
+          // Reading mode owns keyboard dismissal; reveal the sent card above its bar.
+          requestAnimationFrame(() => {
+            stack.style.scrollMarginBottom = (window.innerHeight - panel.getBoundingClientRect().top + 24) + 'px';
+            stack.scrollIntoView({block:'end'});
+          });
+        } else {
+          body.focus({preventScroll:true});
+          // Keep the editor at its writing position as the local stack appears.
+          window.scrollBy(0, body.getBoundingClientRect().top - editorTop);
+        }
         void view.deliver();
       }
     };

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -179,6 +179,37 @@ try {
  assert.equal(page.url(),dedicatedUrl);
  await dedicatedBody.fill('Long newer draft '+('word '.repeat(300)));
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ const phoneContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',hasTouch:true,viewport:{width:390,height:844}});
+ const phonePage=await phoneContext.newPage();phonePage.on('pageerror',e=>errors.push(e.message));
+ if(process.env.REPLY_CONTINUATION_SCREENSHOTS)await mkdir(process.env.REPLY_CONTINUATION_SCREENSHOTS,{recursive:true});
+ for(const entry of ['inline','dedicated'])for(const theme of ['light','word97','chicago','midnight']) {
+  await phonePage.goto(entry==='inline'?threadUrl:dedicatedUrl);
+  await phonePage.evaluate(t=>document.documentElement.dataset.theme=t,theme);
+  await phonePage.addStyleTag({content:readFileSync(join(project,'public/assets/theme-'+theme+'.css'),'utf8')});
+  const pf=phonePage.locator('[data-phone-reply]'),pb=pf.locator('[name="body"]');
+  let resume;const gate=new Promise(resolve=>resume=resolve);
+  await phonePage.route('**/api/prepare_reply',async route=>{await gate;await route.continue();});
+  await pb.fill('Phone '+entry+' '+theme+' visible previous reply');
+  await pf.evaluate(el=>el.requestSubmit(el.querySelector('.compose-form-actions > button')));
+  await phonePage.locator('[data-reply-reading="1"]').waitFor();
+  await phonePage.waitForFunction(()=>document.querySelector('[data-reply-reading="1"]').getBoundingClientRect().bottom<=innerHeight);
+  assert.equal(await pb.inputValue(),'');assert.equal(await pb.evaluate(el=>el===document.activeElement),false);
+  await phonePage.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const reading=await phonePage.locator('[data-reply-reading="1"]').boundingBox();
+  assert.ok(reading.y>=0 && reading.y+reading.height<=844,'compact phone entry stays within viewport');
+  const card=phonePage.locator('[data-reply-operation]').last();
+  const cardBox=await card.boundingBox();
+  if(process.env.REPLY_CONTINUATION_SCREENSHOTS)await phonePage.screenshot({path:process.env.REPLY_CONTINUATION_SCREENSHOTS+'/'+entry+'-'+theme+'-reading.png'});
+  assert.ok(cardBox.y+cardBox.height<=reading.y+2 && cardBox.y+cardBox.height>0,'previous reply visible above compact entry '+JSON.stringify({theme,entry,cardBox,reading}));
+  assert.equal(await phonePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  if(process.env.REPLY_CONTINUATION_SCREENSHOTS)await phonePage.screenshot({path:process.env.REPLY_CONTINUATION_SCREENSHOTS+'/'+entry+'-'+theme+'-reading.png'});
+  await pb.tap();assert.equal(await pb.evaluate(el=>el===document.activeElement),true);
+  assert.equal(await phonePage.locator('[data-reply-reading="1"]').count(),0);
+  await pb.fill('Next phone draft');resume();
+  await card.locator('a').waitFor();assert.equal(await pb.inputValue(),'Next phone draft');
+  await phonePage.unroute('**/api/prepare_reply');
+ }
+ await phoneContext.close();
  assert.deepEqual(errors,[]);
  console.log('PASS immediate text reply before network, focus, captured failure/retry, newer draft isolation, storage failure');
 } catch(error){console.error(log);throw error;} finally {await browser?.close();server.kill();await once(server,'exit').catch(()=>{});await rm(root,{recursive:true,force:true});}
