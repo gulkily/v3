@@ -55,3 +55,23 @@ No supported findings.
 ### Uncertain assessments
 
 - Required stage fields and study metadata make the one-page target dependent on print layout; concise fields cover all required boundaries, with two roughly hour-sized stages. Consider distinguishing planning content from mandatory administrative metadata in the length guidance.
+
+## 2026-10-23 — Step 4 completed-step report
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate: planning commit `4e176747` preceded runtime edits; cycle documents were organized separately from the unapproved reading follow-up. Retain the boundary.
+- `step4_implementation_do.md`, Stage Boundary Protocol: Stage 1 `2224e68c` and Stage 2 `2becabfd` each contain their summary, with verified thread behavior before broader acceptance. Retain.
+- `step4_implementation_after.md`, Final Verification: production/physical-device acceptance and full suite remain explicitly unverified despite focused browser/PHP passes. Retain the evidence distinction.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- The stage summary/ledger bookkeeping is larger than this small runtime removal. It preserves the required study and split history; whether its cost merits a lighter small-change path requires maintainer review, not unilateral omission.
+
+### Closeout references
+
+Planning `4e176747`; Stage 1 `2224e68c`; Stage 2/final implementation revision `2becabfd`. Final report saved after both stages in the required log-only handoff commit. Scope v2 delivered locally; production and maintainer acceptance remain pending.
