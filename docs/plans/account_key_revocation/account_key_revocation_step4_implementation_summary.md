@@ -4,7 +4,7 @@ Debug mode: enabled
 
 Effort study: `railspike-effort / v3/account_key_revocation` — [P2 ledger](../effort_estimation_trial.md#cycle-v3account_key_revocation).
 
-Status: Stages 1–3 complete; Stage 4 next; no revocation capability released.
+Status: Stages 1–4 complete; Stage 5 next; no revocation capability released.
 
 ## Execution and study entry
 
@@ -30,3 +30,9 @@ Status: Stages 1–3 complete; Stage 4 next; no revocation capability released.
 - Changes: Added authenticated root-operator prepare/finalize APIs with no-store responses, exact reviewed cutoff/context binding, acceptance-time live checks and terminal root-target rejection. Reused atomic acceptance commit/cleanup; exact signed retries recover committed revocation without a duplicate. Retained claims require explicit operator replacement regardless of the cross-account flag; revoked keys cannot be reapproved, root-seeded or renamed, and unrelated renames cannot join a retained username.
 - Verification: Signed API test passed member denial, root-target denial, explicit cutoff preservation, one terminal event after exact retry, root-seed/reapproval denial and member/operator replacement policy. Existing committed-refresh approval recovery passed after shared atomic helper extraction. Policy/receipt/API-catalog regressions and signed invitation policy acceptance passed on focused rerun. `git diff --check` and PHP syntax passed.
 - Notes: Exact-retry test exposed command-output newline normalization for empty-body canonical records; committed evidence now compares Git blob IDs against exact file hashes. Stage 2 commit: `bc4c40198`. Broader session/private/signed-write denial is Stage 4; UI and complete race/fault/browser acceptance remain Stages 5–7. No deployment or dependency change.
+
+## Stage 4 - Current privilege denial
+
+- Changes: Canonical revocation checks now guard attributed identity resolution and stored signing-key access, covering signed/unsigned attributed writes and preparations; existing session profiles are overlaid with canonical revoked state. Fresh authentication refuses revoked keys, and revocation APIs explicitly start sessions on real HTTP POSTs. Messaging rejects revoked viewers and excludes revoked recipient keys. Current public browsing and historical content remain available under existing site policy.
+- Verification: 28 messaging/key-resolution/history-sync/page/signed revocation tests passed, then 16 policy/mailbox/signed-recovery tests passed after final stale-cache assertions. Signed revocation fixture verifies pre-revocation signed preparation rejection, new attributed write rejection, old-session auth-status/private-API denial, recipient exclusion and denial with an obsolete approved cache bit. Shared fake profile schemas were updated for schema 26 after three resolver fixtures initially failed on missing columns. `git diff --check` passed.
+- Notes: Stage 3 commit: `03bdc9930`. Current session denial is independent of a stale approval bit; invalid canonical authority evidence fails closed. Startup rebuild fails rather than serving private routes when authority projection cannot validate. Exact fresh-login browser recovery and affected-device presentation remain Stages 6–7. Already authorized in-flight reads/downloaded ciphertext cannot be recalled. No production/dependency changes.

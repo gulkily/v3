@@ -80,6 +80,13 @@ final class AuthApiController
             return;
         }
 
+        try {
+            \ForumRewrite\Security\KeyRevocations::assertCanAct($this->routeServices->repositoryRoot(), $identityId);
+        } catch (\RuntimeException $error) {
+            $this->routeServices->sendText("error=" . $error->getMessage() . "\ncode=key_revoked\n", 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+
         $fingerprint = strtoupper(trim((string) ($profile['signer_fingerprint'] ?? '')));
         $verification = (new OpenPgpSignatureVerifier())->verifyDetached(
             (string) ($profile['public_key'] ?? ''),

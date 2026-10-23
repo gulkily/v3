@@ -25,7 +25,7 @@ final class ApprovedUserKeyResolver
 
         $keys = [];
         foreach (ProfileRepository::byUsernameToken($pdo, $usernameToken) as $profile) {
-            if ((int) ($profile['is_approved'] ?? 0) !== 1) {
+            if ((int) ($profile['is_approved'] ?? 0) !== 1 || (int) ($profile['is_revoked'] ?? 0) === 1) {
                 continue;
             }
 

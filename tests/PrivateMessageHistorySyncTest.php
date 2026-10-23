@@ -8,7 +8,7 @@ final class PrivateMessageHistorySyncTest
     {
         $profiles=new PDO('sqlite::memory:');
         $profiles->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
-        $profiles->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, profile_slug TEXT, username TEXT, username_token TEXT, fallback_label TEXT, signer_fingerprint TEXT, bootstrap_post_id TEXT, bootstrap_thread_id TEXT, public_key TEXT, is_approved INTEGER, approved_by_identity_id TEXT, approved_by_profile_slug TEXT, approved_by_label TEXT, post_count INTEGER, thread_count INTEGER)');
+        $profiles->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, profile_slug TEXT, username TEXT, username_token TEXT, fallback_label TEXT, signer_fingerprint TEXT, bootstrap_post_id TEXT, bootstrap_thread_id TEXT, public_key TEXT, is_approved INTEGER, was_approved INTEGER NOT NULL DEFAULT 0, is_revoked INTEGER NOT NULL DEFAULT 0, revoked_at TEXT NULL, revocation_cutoff TEXT NULL, revoked_by_identity_id TEXT NULL, revocation_source_path TEXT NULL, approved_by_identity_id TEXT, approved_by_profile_slug TEXT, approved_by_label TEXT, post_count INTEGER, thread_count INTEGER)');
         foreach (['a'=>'alice','b'=>'alice','c'=>'bob','d'=>'mallory'] as $key=>$account) {
             $fp=str_repeat($key,40);
             $q=$profiles->prepare('INSERT INTO profiles (identity_id,profile_slug,username,username_token,public_key,is_approved) VALUES (?,?,?,?,?,1)');

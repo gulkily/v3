@@ -3238,6 +3238,7 @@ class LocalWriteService
      */
     private function publicKeyForIdentity(string $authorIdentityId): array
     {
+        \ForumRewrite\Security\KeyRevocations::assertCanAct($this->repositoryRoot, $authorIdentityId);
         $fingerprintLower = substr($authorIdentityId, strlen('openpgp:'));
         $identity = $this->canonicalRepository->loadIdentity(CanonicalPathResolver::identity($fingerprintLower));
         $publicKeyPath = CanonicalPathResolver::publicKey($identity->signerFingerprint);
@@ -3693,6 +3694,7 @@ class LocalWriteService
 
     private function isApprovedIdentity(string $identityId): bool
     {
+        \ForumRewrite\Security\KeyRevocations::assertCanAct($this->repositoryRoot, $identityId);
         $stmt = $this->readModelPdo()->prepare('SELECT is_approved FROM profiles WHERE identity_id = :identity_id');
         $stmt->execute(['identity_id' => $identityId]);
         $value = $stmt->fetchColumn();
@@ -3840,6 +3842,7 @@ class LocalWriteService
             throw new RuntimeException("{$field} does not resolve to a known identity.");
         }
 
+        \ForumRewrite\Security\KeyRevocations::assertCanAct($this->repositoryRoot, $identityId);
         return $identityId;
     }
 

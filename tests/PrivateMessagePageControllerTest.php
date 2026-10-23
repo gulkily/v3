@@ -23,7 +23,7 @@ final class PrivateMessagePageControllerTest
                 identity_id TEXT PRIMARY KEY, profile_slug TEXT NOT NULL, username TEXT NOT NULL,
                 username_token TEXT NOT NULL, fallback_label TEXT NOT NULL, signer_fingerprint TEXT NOT NULL,
                 bootstrap_post_id TEXT NOT NULL, bootstrap_thread_id TEXT NOT NULL, public_key TEXT NOT NULL,
-                is_approved INTEGER NOT NULL, approved_by_identity_id TEXT NULL, approved_by_profile_slug TEXT NULL,
+                is_approved INTEGER NOT NULL, was_approved INTEGER NOT NULL DEFAULT 0, is_revoked INTEGER NOT NULL DEFAULT 0, revoked_at TEXT NULL, revocation_cutoff TEXT NULL, revoked_by_identity_id TEXT NULL, revocation_source_path TEXT NULL, approved_by_identity_id TEXT NULL, approved_by_profile_slug TEXT NULL,
                 approved_by_label TEXT NULL, post_count INTEGER NOT NULL, thread_count INTEGER NOT NULL
             )');
             $this->addProfile($pdo, 'openpgp:alice', 'alice');
@@ -60,7 +60,7 @@ final class PrivateMessagePageControllerTest
                 identity_id TEXT PRIMARY KEY, profile_slug TEXT NOT NULL, username TEXT NOT NULL,
                 username_token TEXT NOT NULL, fallback_label TEXT NOT NULL, signer_fingerprint TEXT NOT NULL,
                 bootstrap_post_id TEXT NOT NULL, bootstrap_thread_id TEXT NOT NULL, public_key TEXT NOT NULL,
-                is_approved INTEGER NOT NULL, approved_by_identity_id TEXT NULL, approved_by_profile_slug TEXT NULL,
+                is_approved INTEGER NOT NULL, was_approved INTEGER NOT NULL DEFAULT 0, is_revoked INTEGER NOT NULL DEFAULT 0, revoked_at TEXT NULL, revocation_cutoff TEXT NULL, revoked_by_identity_id TEXT NULL, revocation_source_path TEXT NULL, approved_by_identity_id TEXT NULL, approved_by_profile_slug TEXT NULL,
                 approved_by_label TEXT NULL, post_count INTEGER NOT NULL, thread_count INTEGER NOT NULL
             )');
             $this->addProfile($pdo, 'openpgp:alice', 'alice');

@@ -63,6 +63,22 @@ final class KeyRevocations
         return $rows;
     }
 
+    public static function assertCanAct(string $root, string $identity): void
+    {
+        if (isset(self::all($root)[$identity])) throw new RuntimeException('This account key was revoked. Use another approved key or ask an operator to approve a replacement key.');
+    }
+
+    public static function currentProfile(string $root, ?array $profile): ?array
+    {
+        if ($profile === null) return null;
+        $revoked = self::all($root)[$profile['identity_id']] ?? null;
+        if ($revoked !== null) {
+            $profile['is_approved'] = 0; $profile['is_revoked'] = 1;
+            $profile['revoked_at'] = $revoked['accepted_at']; $profile['revocation_cutoff'] = $revoked['revocation_cutoff'];
+        }
+        return $profile;
+    }
+
     /** Apply only after historical attribution/scoring; do not remove sponsors from the graph. */
     public static function project(PDO $pdo, string $root): void
     {

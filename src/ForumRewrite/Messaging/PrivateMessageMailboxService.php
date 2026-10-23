@@ -136,6 +136,7 @@ final class PrivateMessageMailboxService
     private function approvedViewer(array $viewer): array
     {
         if (((int) ($viewer['is_approved'] ?? 0)) !== 1
+            || (int) ($viewer['is_revoked'] ?? 0) === 1
             || trim((string) ($viewer['identity_id'] ?? '')) === ''
             || trim((string) ($viewer['username_token'] ?? '')) === '') {
             throw new RuntimeException('An approved authenticated identity is required.');

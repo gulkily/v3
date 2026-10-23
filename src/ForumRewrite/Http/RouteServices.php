@@ -106,6 +106,8 @@ final class RouteServices
             (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
     }
 
+    public function repositoryRoot(): string { return $this->repositoryRoot; }
+
     public function databasePath(): string
     {
         return $this->databasePath;

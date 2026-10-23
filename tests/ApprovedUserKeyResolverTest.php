@@ -62,7 +62,7 @@ final class ApprovedUserKeyResolverTest
             bootstrap_thread_id TEXT NOT NULL,
             public_key TEXT NOT NULL,
             is_approved INTEGER NOT NULL,
-            approved_by_identity_id TEXT NULL,
+            was_approved INTEGER NOT NULL DEFAULT 0, is_revoked INTEGER NOT NULL DEFAULT 0, revoked_at TEXT NULL, revocation_cutoff TEXT NULL, revoked_by_identity_id TEXT NULL, revocation_source_path TEXT NULL, approved_by_identity_id TEXT NULL,
             approved_by_profile_slug TEXT NULL,
             approved_by_label TEXT NULL,
             post_count INTEGER NOT NULL,

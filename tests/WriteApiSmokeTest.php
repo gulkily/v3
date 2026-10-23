@@ -43,6 +43,9 @@ final class WriteApiSmokeTest
             $p = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $target['identity_id']);
             $writer->approveUser(['approver_identity_id' => $operator['identity_id'], 'target_identity_id' => $target['identity_id'], 'target_profile_slug' => $p['profile_slug'], 'thread_id' => $p['bootstrap_thread_id'], 'parent_id' => $p['bootstrap_post_id']]);
         }
+        $pendingPost = $writer->prepareThread(['author_identity_id' => $bob['identity_id'], 'subject' => 'Old prepared post', 'body' => 'Do not accept after revocation', 'board_tags' => 'general']);
+        $pendingPost['author_identity_id'] = $bob['identity_id'];
+        $pendingPost['detached_signature'] = $this->signCanonicalRecord($bob['home'], $pendingPost['canonical_record']);
         $_POST = ['target_identity_id' => $bob['identity_id']]; $_SESSION['authenticated_identity_id'] = $member['identity_id'];
         $denied = json_decode($this->renderMethod($app, 'POST', '/api/prepare_key_revocation'), true); assertSame('error', $denied['status']);
         $_SESSION['authenticated_identity_id'] = $operator['identity_id'];
@@ -62,6 +65,23 @@ final class WriteApiSmokeTest
         $failed = false; try { $policy->evaluate($operator['identity_id'], $bob['identity_id']); } catch (RuntimeException) { $failed = true; } assertSame(true, $failed);
         $_POST = ['target_identity_id' => $operator['identity_id']];
         $rootDenied = json_decode($this->renderMethod($app, 'POST', '/api/prepare_key_revocation'), true); assertSame('error', $rootDenied['status']);
+        foreach ([fn () => $writer->createPreparedPost($pendingPost),
+            fn () => $writer->prepareThread(['author_identity_id' => $bob['identity_id'], 'subject' => 'Denied', 'body' => 'Denied']),
+            fn () => $writer->createThread(['author_identity_id' => $bob['identity_id'], 'subject' => 'Denied', 'body' => 'Denied'])] as $attempt) {
+            $failed = false; try { $attempt(); } catch (RuntimeException $error) { $failed = str_contains($error->getMessage(), 'revoked'); } assertSame(true, $failed);
+        }
+        $_SESSION['authenticated_identity_id'] = $bob['identity_id']; $_POST = [];
+        assertStringContains('status=unauthenticated', $this->renderMethod($app, 'GET', '/api/auth_status'));
+        $privateDenied = json_decode($this->renderMethod($app, 'GET', '/api/private_messages/recipient_keys?username_token=revoked-account'), true);
+        assertSame('error', $privateDenied['status']);
+        assertSame([], (new \ForumRewrite\Messaging\ApprovedUserKeyResolver())->keysForUsernameToken($pdo, 'revoked-account'));
+        // Even an obsolete approved bit must not restore session or signed-write authority.
+        $pdo->prepare('UPDATE profiles SET is_approved = 1 WHERE identity_id = ?')->execute([$bob['identity_id']]);
+        assertStringContains('status=unauthenticated', $this->renderMethod($app, 'GET', '/api/auth_status'));
+        assertSame([], (new \ForumRewrite\Messaging\ApprovedUserKeyResolver())->keysForUsernameToken($pdo, 'revoked-account'));
+        $failed = false; try { $writer->createPreparedPost($pendingPost); } catch (RuntimeException $error) { $failed = str_contains($error->getMessage(), 'revoked'); } assertSame(true, $failed);
+        $builder->rebuild();
+
         $_POST = []; unset($_SESSION['authenticated_identity_id']);
     }
 
