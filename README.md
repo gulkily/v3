@@ -469,6 +469,12 @@ curl -X POST --data-urlencode "public_key@tests/fixtures/parity_minimal_v1/recor
 
 Account-key approval uses explicit account/key review, durable acceptance receipts, and classic/Forte account history. `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` defaults to enabled; disabling it restricts future member cross-account grants while preserving sponsorship, own-account additions, operator authority, and previously accepted keys. Authenticated root-approved operators can correlate grants and signed policy changes at `/activity/?view=security`. See the [rollout and recovery runbook](docs/runbooks/account_key_approval_safety.md).
 
+Operators can revoke ordinary account keys from Tools → User Access. The signed
+request contains an explicit cutoff timestamp, separately from server acceptance
+and commit times. Revocation removes future privileges while preserving earlier
+posts, accepted sponsorships, evidence and username ownership. Root-key rotation
+and owner self-service remain separate. See [revocation and replacement recovery](docs/runbooks/account_key_revocation.md).
+
 Approval helper examples:
 
 ```bash
@@ -519,12 +525,12 @@ derived from invitations. Root-seeded, operator-approved, same-username, and
 cross-username grants are separated. Cross-username grants on accounts with multiple
 approved keys, plus unknown attribution, are review candidates. They are not proven
 violations: the audit does not reconstruct which key was first or operator/flag
-state at approval time, enumerate every historical approval, or reverify signatures.
+state at approval time, enumerate every historical approval, or reverify approval signatures. Terminal revocations are reported separately and their evidence is validated.
 Operator classification uses canonical root seeds, not display labels. Warnings
 identify stale or unverifiable read-model metadata. `--review-only` filters rows;
 summary counts remain totals for the whole audit. `--summary` shows totals,
 warnings, and limitations without individual key rows. It also works with `--json`,
-omitting the `rows` field; combining it with `--review-only` leaves totals unchanged.
+omitting the `rows` and `revocations` fields; combining it with `--review-only` leaves totals unchanged.
 Exit status is 0 for a completed
 audit, including findings, or 1 for an error.
 

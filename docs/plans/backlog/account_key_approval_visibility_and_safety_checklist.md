@@ -1,6 +1,6 @@
 # Account key approval visibility and safety checklist
 
-Status: Approved priorities 1–3 are implemented and locally release-verified. All six stages of the combined cycle are complete, including operator documentation and deployment/recovery rehearsal. Community-visible events, notifications, device pairing, and revocation remain deferred follow-up work. Checked items describe completed work or decisions, not production deployment.
+Status: Approved priorities 1–3 are implemented and locally release-verified. All six stages of the combined cycle are complete, including operator documentation and deployment/recovery rehearsal. Operator-controlled ordinary-key revocation and replacement recovery are also implemented and locally verified in the [revocation cycle](../account_key_revocation/account_key_revocation_step4_implementation_summary.md). Community-visible events, notifications, device pairing, owner self-service and root-key recovery remain deferred follow-up work. Checked items describe completed work or decisions, not production deployment.
 
 Reduce easy account impersonation while preserving open registration, member sponsorship, and convenient device setup. Prioritize the cross-account approval restriction, clear approval wording, and visible account-key history. Notifications and device pairing can follow as separately scoped features.
 
@@ -56,7 +56,7 @@ Historical policy context is useful audit evidence. It is not required to re-eva
 - [ ] Use available notification channels without requiring every member to provide an email address.
 - [ ] If an independent channel already exists, consider sending the notice there as well; an in-account notice alone depends on the owner returning to that account.
 - [ ] Define a practical way to report an unfamiliar key and reach an operator.
-- [ ] Plan effective key revocation and session invalidation as a separate response capability. Do not present a report or dismissal action as if it removes access.
+- [x] Plan and implement effective ordinary-key revocation and subsequent session-access denial as a separate operator-controlled response capability. See the [revocation runbook](../../runbooks/account_key_revocation.md). Do not present a report or dismissal action as if it removes access.
 - [ ] Keep the limitation explicit: notification can reveal unexpected access, but cannot undo private information already read.
 
 Notifying users when authentication factors change is consistent with [OWASP factor-change guidance](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html).
@@ -77,7 +77,7 @@ The goal is to make adding your own device easier than asking another member to 
 - [x] Choose the initial visibility scope: approved Step 2 includes account history and a root-approved operator view, with no new public feed. Community-visible events remain a follow-up consideration.
 - [ ] Choose notification channels and how existing devices recognize and acknowledge new-key notices.
 - [x] Define the historical evidence available for older approvals and how uncertain classifications are presented.
-- [ ] Scope a revocation response before promising users they can disable an unfamiliar key.
+- [x] Scope a revocation response before promising users they can disable an unfamiliar key. Operator-only ordinary-key revocation is implemented; member self-service remains deferred.
 - [x] Review the combined Step 1 scope and select its FDP cycle: approved Option B groups priorities 1–3; notifications, pairing, and revocation remain deferred.
 
 ## Verification for selected work
@@ -94,3 +94,5 @@ Enforcement verification: `php tests/run.php ApprovalPolicyTest` passed all six 
 Verification evidence: Stages 1–2 cover permission, stale-context, target-binding, and concurrent-claim checks; Stages 3–4 cover acceptance snapshots, invitation/archive replay, history, and membership boundaries; Stages 5–6 cover authenticated operator access, cache/offline boundaries, signed browser flows on desktop/mobile, and local deployment rehearsal. See the [implementation summary](../account_key_approval_safety/account_key_approval_safety_step4_implementation_summary.md) for exact commands, results, and limitations. No application, dependency, or production changes were made during checklist reconciliation.
 
 Visibility supports detection and accountability. Enforcing who may grant account access remains the primary prevention measure.
+
+Revocation verification: the separate cycle records signed terminal denial, retained posts/direct/invitation sponsorship and username claims, explicit cutoff versus acceptance, stale review, committed retry, schema-25 startup recovery, current archive restore/rebuild, CLI output, and phone/desktop browser checks across 16 themes. No production rollout or custom historical cutoff behavior is claimed.

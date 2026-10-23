@@ -61,6 +61,14 @@ general-purpose "canonicalize any URL" cleanup is its own open-ended feature:
 
 continue with docs/plans/backlog/account_key_approval_visibility_and_safety_checklist.md;
 
+account key revocation follow-ups
+	Option B: same-account owner revocation alongside operator intervention.
+		Define malicious-key races, last-key protection, and recovery first.
+	Consider cross-user revocation: define who may revoke another user's key,
+		what authority/evidence is required, and safeguards against abuse.
+		Separate from the operator-controlled revocation cycle already planned.
+	Assessment: docs/plans/account_key_revocation/account_key_revocation_step1_solution_assessment.md
+
 when we import another instance, we end up with a lot of unapproved accounts
     this is because root approvals are gone
         we need to figure out a way to make this process smoother

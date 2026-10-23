@@ -107,7 +107,13 @@ One row per identity with a bootstrapped profile.
 | `bootstrap_post_id` | TEXT | |
 | `bootstrap_thread_id` | TEXT | |
 | `public_key` | TEXT | |
-| `is_approved` | INTEGER | default 0 |
+| `is_approved` | INTEGER | Current privilege; default 0 |
+| `was_approved` | INTEGER | Historical approval used for attribution/sponsorship; default 0 |
+| `is_revoked` | INTEGER | Terminal current-access revocation; default 0 |
+| `revoked_at` | TEXT NULL | Server acceptance time |
+| `revocation_cutoff` | TEXT NULL | Explicit operator-signed UTC cutoff |
+| `revoked_by_identity_id` | TEXT NULL | Root-approved authorizer |
+| `revocation_source_path` | TEXT NULL | Signed canonical revocation record |
 | `approved_by_identity_id` | TEXT NULL | |
 | `approved_by_profile_slug` | TEXT NULL | |
 | `approved_by_label` | TEXT NULL | |

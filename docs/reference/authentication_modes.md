@@ -85,3 +85,13 @@ Evidence: [PHP session policy](https://github.com/gulkily/v3/blob/7948badf6555aa
 ## Evidence Boundary
 
 Source and test links identify the reviewed repository revision, rather than silently following future changes. The access model is an account of current code, not a deployment security audit or a promise that every endpoint has identical permissions. Host-specific session retention and a visitor's actual browser storage availability remain environment-dependent. The [implementation summary](../plans/authentication_modes_documentation/authentication_modes_documentation_step4_implementation_summary.md) records which checks were executed and which behavior was inspected only. The [session design history](../plans/session_reauthentication_reference.md) retains earlier alternatives; they are not additional supported authentication modes.
+
+## Account-key revocation
+
+A root-approved operator can revoke an ordinary account key through User Access.
+Revoked keys lose subsequent protected-request and attributed-write privileges;
+a fresh valid signature cannot restore access. Existing posts and sponsored members
+remain intact. The explicit signed cutoff is distinct from acceptance/commit times;
+it does not retroactively invalidate historical content. The username stays reserved,
+including after last-key revocation. Use another approved device or obtain explicit
+operator approval for a different replacement key. See the [revocation runbook](../runbooks/account_key_revocation.md).

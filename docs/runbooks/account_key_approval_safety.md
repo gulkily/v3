@@ -6,7 +6,7 @@ This release adds explicit approval review, durable acceptance receipts, account
 
 Use Tools → Feature Flags to inspect the effective setting and its source. An environment override takes precedence over site settings. In restricted mode, members may sponsor a new username or add a key to their own username. A canonically root-seeded operator can authorize another existing account. A display label of “root” does not confer this authority.
 
-Profile and `/user/<username>#account-keys` pages show paginated approved keys and available acceptance evidence in classic and Forte. New approvals show their authorizer, acceptance time, classification, count, authority, and policy snapshot. Unknown historical facts stay unknown, including root-seed acceptance dates. Current audit review candidates do not establish a policy violation.
+Profile and `/user/<username>#account-keys` pages show paginated approved and revoked keys and available acceptance evidence in classic and Forte. New approvals show their authorizer, acceptance time, classification, count, authority, and policy snapshot. Unknown historical facts stay unknown, including root-seed acceptance dates. Current audit review candidates do not establish a policy violation.
 
 Authenticated root-approved operators can open `/activity/?view=security` or `/forte/activity/?view=security`, also linked from Feature Flags. Authenticate with the operator key from Account Key first; an identity hint alone is insufficient. Review grants beside recorded signed policy changes and follow account, grant, receipt, and commit evidence. Missing environment/deployment change history remains unknown. Use source commits when second-resolution timestamps tie. These views and their APIs use no-store; no security RSS feed is published.
 
@@ -59,6 +59,6 @@ A failed commit removes incomplete grant/signature/receipt files in the handled 
 
 Preserve all committed grants, signatures, and receipts. Rolling back application code does not revoke keys. Older code may ignore the restriction, omit receipts for new grants, or remove expired invitation grants during rebuild. Keep all canonical approval/invitation and legacy generic writers stopped during an unsafe rollback. Do not let an older reader rebuild the live model or publish regenerated artifacts without first verifying receipt/expiry compatibility on a copy. Prefer restoring this compatible release and repairing projections.
 
-Notifications, unfamiliar-key reporting, revocation/session invalidation, pairing, and recovery remain separate work. Neither a policy toggle nor hiding a history entry removes access already granted.
+Operator-controlled ordinary-key revocation and replacement-key recovery are covered by the [revocation runbook](account_key_revocation.md). Notifications, unfamiliar-key reporting, owner self-service revocation, pairing and social/root-key recovery remain separate work. Neither a policy toggle nor hiding a history entry removes access already granted.
 
 Receipt format: [approval acceptance receipt v1](../specs/approval_acceptance_record_v1.md). Related guidance: [authentication modes](../reference/authentication_modes.md) and [instance content import](instance_content_import.md).

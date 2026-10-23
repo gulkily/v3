@@ -99,7 +99,7 @@ These are candidates for later FDP cycles, not prerequisites or approved commitm
 
 - [ ] Independently configurable approval permissions and named presets.
 - [ ] Stable account IDs, durable username claims, and rename/name-reuse rules.
-- [ ] Historical key review and effective key/session revocation.
+- [x] Historical key review and effective operator-controlled ordinary-key/session-access revocation. See the [revocation cycle](../account_key_revocation/account_key_revocation_step4_implementation_summary.md); owner self-service and root-key recovery remain deferred.
 - [ ] Recovery approver configuration after choosing guardians or a site-wide recovery group.
 - [ ] Quorum recovery with expiry, cancellation, and explicit old-key handling.
 - [ ] Broader operator-role lifecycle and historical policy/audit redesign.

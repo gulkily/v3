@@ -40,3 +40,5 @@ Account history and receipt source links follow existing profile/source membersh
 Trusted `import-repository` restores recognize and validate the receipt family, preserving grant bytes and receipt facts across a rebuild. Remote `import-instance` content imports exclude approvals, invitations, seeds, and acceptance receipts as authority records. Preserve receipts and adjacent grant signatures with repository backups.
 
 Implementation: [ApprovalAcceptance](../../src/ForumRewrite/Security/ApprovalAcceptance.php), [InvitationApprovalReplay](../../src/ForumRewrite/Invitation/InvitationApprovalReplay.php), and [ApprovalHistory](../../src/ForumRewrite/ReadModel/ApprovalHistory.php). See the [operator runbook](../runbooks/account_key_approval_safety.md).
+
+Account-key revocation uses a [separate signed record and acceptance receipt](key_revocation_record_v1.md); these approval receipts retain their original facts after revocation.
