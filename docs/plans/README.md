@@ -259,3 +259,5 @@ and repair its navigation and affected references. See the
 - [Status frontend target](status_frontend_target/)
 
 - [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.
+
+- [Unsigned attribution](./unsigned_attribution/unsigned_attribution_step1_solution_assessment.md) — accept unsigned posts and votes as unverified; only signed items count; instance flag to refuse unsigned content.
