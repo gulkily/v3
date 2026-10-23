@@ -348,3 +348,12 @@ upgrade schema 3 metadata columns, replace complete updated threads, and remove
 unavailable expansion IDs even when their source thread is outside the update's
 recent-thread window. The reader shows stored expansion beneath its initial
 answer without generation controls; legacy snapshots remain readable.
+
+### Source-removal placeholders (schema version 23)
+
+No columns are added. Version 23 requires rebuilding old derived rows: accepted
+physical source removals materialize content-free post placeholders using retained
+thread/parent identity, creation time and author identity. Existing retraction
+columns mark operator removal; no reply prose is promoted into a missing root.
+Generated labels with proven removed/retracted sources are excluded from label,
+score, vote and activity aggregation; surviving independent labels remain active.

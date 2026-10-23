@@ -80,6 +80,22 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion22StartupRebuildsBeforeServingLabelRemovalQueries(): void
+    {
+        $database = sys_get_temp_dir() . '/label-startup-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='22' WHERE key='schema_version'");
+            $pdo->exec("UPDATE threads SET thread_labels_json='[\"pinned\"]' WHERE root_post_id='root-001'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('["bug","needs-review"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
+
     public function testVersion18StartupRebuildsRetractionAttributionBeforeServingPage(): void
     {
         $directory = sys_get_temp_dir() . '/forum-retraction-schema-' . bin2hex(random_bytes(6));

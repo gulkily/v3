@@ -544,12 +544,19 @@ class LocalWriteService
 
     private function assertReplyTarget(string $threadId, string $parentId): void
     {
-        $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
-        $parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId));
-        $parentThreadId = $parent->threadId ?? $parent->postId;
-        if ($thread->postId !== $threadId || $parentThreadId !== $threadId) {
-            throw new RuntimeException('Parent post must belong to the target thread.');
+        $rootRemoval = \ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $threadId);
+        if (($rootRemoval['operation'] ?? null) === 'delete') {
+            if ($rootRemoval['post']['thread_id'] !== $threadId || $rootRemoval['post']['parent_id'] !== null) {
+                throw new RuntimeException('Target is not a thread root.');
+            }
+        } else {
+            $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+            if ($thread->threadId !== null) throw new RuntimeException('Target is not a thread root.');
         }
+        $parentRemoval = \ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $parentId);
+        $parentThreadId = ($parentRemoval['operation'] ?? null) === 'delete'
+            ? $parentRemoval['post']['thread_id'] : (($parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId)))->threadId ?? $parent->postId);
+        if ($parentThreadId !== $threadId) throw new RuntimeException('Parent post must belong to the target thread.');
     }
 
     /**

@@ -136,6 +136,27 @@ final class ReadModelPostRetractionsTest
         assertSame('Reply that stays visible.', trim($pdo->query("SELECT body FROM posts WHERE post_id='reply-to-gone'")->fetchColumn()));
     }
 
+    public function testPhysicalRootRemovalKeepsContentFreeRootAndRepliesAfterReimport(): void
+    {
+        $root = $this->fixtureWithThread();
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($root, $args);
+        $git(['init', '-q']); $git(['config', 'user.name', 'Test']); $git(['config', 'user.email', 'test@example.test']);
+        $git(['add', 'records']); $git(['commit', '-qm', 'Fixture']);
+        $original = file_get_contents($root . '/records/posts/thread-gone.txt');
+        $record = \ForumRewrite\Canonical\LabelRemoval::prepare($root, 'thread-gone', 'delete');
+        $path = \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
+        $git(['add', $path]); $git(['rm', 'records/posts/thread-gone.txt']);
+        $git(['commit', '-qm', 'Accept source label cleanup thread-gone']);
+        foreach ([false, true] as $reimport) {
+            if ($reimport) file_put_contents($root . '/records/posts/thread-gone.txt', $original);
+            $pdo = $this->rebuild($root);
+            assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id='thread-gone'")->fetchColumn());
+            assertSame(null, $pdo->query("SELECT subject FROM threads WHERE root_post_id='thread-gone'")->fetchColumn());
+            assertSame('Reply that stays visible.', trim($pdo->query("SELECT body FROM posts WHERE post_id='reply-to-gone'")->fetchColumn()));
+            assertSame('thread-gone', ThreadRepository::byId($pdo, 'thread-gone')['root_post_id'] ?? null);
+        }
+    }
+
     private function fixtureWithThread(): string
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-retraction-' . bin2hex(random_bytes(6));
