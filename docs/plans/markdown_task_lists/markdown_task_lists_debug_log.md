@@ -117,3 +117,26 @@ No new component/dependency, ordered-task extension, counter implementation, wid
 - Corpus classification is structural and source/state accounting, not exhaustive individual screenshot review. Future ordered/malformed/empty/source-only forms retain the approved literal boundary.
 
 No new feature request or split. Counter remains only the separately authorized todo note `ee0f5b173`, unchanged. Unrelated research hashes remain unchanged; no research artifacts were committed. Exact frozen R1 sources reverified at closeout, same exposed single rater; no independent rating, measured labor, acceptance or accepted-count increment.
+
+## Step 4 UAT correction handoff — 2026-10-23
+
+Debug remains enabled. User reported barely distinguishable states and requested a consolidated relevance-sorted Markdown checklist. Existing approved legibility/contrast requirement reopened; correction committed as `fa1d750db`, without amending completed stages or starting an optional-feature cycle.
+
+### Necessary/useful instructions
+
+- Enhancement disposition before dependent work bounded this as the requested in-scope UAT correction. Native disabled inputs/labels remained canonical; only CSS painting changed. Counter/layout/optional syntax and recovery disposal stayed outside implementation.
+- CONTRIBUTING rendered verification exposed Arena's transparent-panel tick failure; opaque page-color ticks resolved it. All 16 themes, Auto light/dark, LCD palettes and forced colors at phone/desktop passed 46 dynamic plus 46 generated cases. All state pairs inspected and generated pairs pixel-identical. Eight final generated reader regressions, 52 PHP cases and actual shared CLI refresh passed. Preserve prior native-paint failure alongside renewed evidence rather than erase it.
+- Checklist distinguishes implemented work, pending user acceptance/publication, explicit requests, optional decisions and retained history/recovery limits. Plan index/local links and corrected runbook verified. No todo edit or dependency delta.
+- Study identity/reference and score preservation retained: same v3/markdown_task_lists/v1 clarified/R1/P2, baseline, exposed single rater; canonical R1 hashes verified. Projected 0.35 and separate retrospective 0.40 reaffirmed including ordinary correction. User visual failure is recorded; no invented acceptance, measured labor or accepted-count increment.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+No new parser/dependency/component, task editing/counter, wider layout, schema/navigation change, source rewrite, merge/push, production deployment or recovery deletion. No new planning approval gate applies to this explicitly requested in-scope correction. Existing stage commits remain intact; this is the separate log-only handoff after the correction/summary commit.
+
+### Uncertain assessments and corrections
+
+The first expanded harness stalled in addStyleTag with JavaScript disabled; replaced it with the existing reader harness's explicit style-node insertion. The first expanded theme sweep then correctly detected Arena's transparent tick. Both were resolved before final 92-case evidence. Initial dynamic reader regression predates the Arena tick refinement; final generated reader regression and both final contrast sweeps use corrected CSS. Computed fixture contrast/Chromium screenshots do not establish general accessibility certification, full-suite success, physical-device/AT behavior or user acceptance. Those remain open, together with merge/publication and maintainer comfortable-fit judgment.
