@@ -173,6 +173,9 @@ final class TemplateRenderer
         if (array_filter($scriptPaths, static fn (string $path): bool => str_starts_with($path, '/assets/private_message'))) {
             array_unshift($scriptPaths, '/assets/private_message_availability.js');
         }
+        if (in_array('/assets/browser_signing.js', $scriptPaths, true)) {
+            $scriptPaths[] = '/assets/reply_continuation.js';
+        }
         $scriptPaths = array_values(array_unique($scriptPaths));
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
             array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');

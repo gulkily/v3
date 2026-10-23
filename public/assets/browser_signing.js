@@ -3702,6 +3702,21 @@
 
     form.addEventListener("keydown", submitComposeFromKeyboard);
 
+    const continuation = isReplyComposeForm(form) && !location.pathname.startsWith('/forte') && window.ForumReplyContinuation
+      ? window.ForumReplyContinuation.bind(form, root, {
+        card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
+        prepare: async function (fields) {
+          await ensureActionIdentity(null, null);
+          const identity = currentAuthorIdentityId();
+          if (fields.author_identity_id && fields.author_identity_id !== identity) throw new Error("The signing identity changed. Restore that identity and retry.");
+          fields.author_identity_id = identity;
+          const response = await submitUrlEncoded('/api/prepare_reply', fields);
+          const prepared = parsePreparedPostJsonResponse(response.text, response.serverTiming, "Unable to prepare reply.");
+          if (!prepared.ok) throw new Error(prepared.error);
+          return {fields: Object.assign({}, fields), prepared};
+        },
+        finalize: delivery => finalizeOutboxPost(delivery.fields, delivery.prepared)
+      }) : null;
     let submitInFlight = false;
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
@@ -3731,6 +3746,16 @@
           markFirstFeedback(timing);
           completeActionTiming(timing, "submit");
           form.submit();
+          return;
+        }
+
+        if (continuation && !composeImageFile(form)) {
+          const fields = collectReplySubmitFields(form);
+          if (!fields.body.trim()) throw new Error("Write a reply before posting.");
+          continuation.send(fields);
+          setStatus(statusNode, "", "ok");
+          restoreComposeUiState();
+          completeActionTiming(timing, "queued");
           return;
         }
 
