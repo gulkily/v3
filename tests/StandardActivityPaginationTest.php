@@ -150,6 +150,60 @@ final class StandardActivityPaginationTest
         assertSame($expected, array_column($service->fetchActivityPage('all', $first['next'])['items'], 'action_key'));
     }
 
+    public function testActualStaticPublicationAndPositionRoutingDoNotSubstituteFirstPage(): void
+    {
+        [$app, $pdo, $service, $database] = $this->environment();
+        $root = sys_get_temp_dir() . '/activity-serving-' . bin2hex(random_bytes(6));
+        mkdir($root . '/public', 0700, true);
+        mkdir($root . '/static', 0700, true);
+        $repository = __DIR__ . '/fixtures/parity_minimal_v1';
+        $builder = new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $repository, $database, $root . '/public');
+        assertTrue($builder->buildSingleRoute('/activity/'));
+        $published = (string) file_get_contents($root . '/public/activity.html');
+        assertStringContains('record-204', $published);
+        $next = $this->nextLink($published);
+        assertTrue(is_string($next));
+        assertSame(false, $builder->buildSingleRoute($next));
+        $controller = new \ForumRewrite\Host\FrontController(dirname(__DIR__), $repository, $database, $root . '/static', $root . '/public');
+        $render = static function (string $url, array $cookies = []) use ($controller): string {
+            ob_start();
+            $controller->handle('GET', $url, $cookies);
+            return (string) ob_get_clean();
+        };
+        assertStringContains('record-204', $render('/activity/'));
+        foreach ([[], ['theme_hint' => 'light']] as $cookies) {
+            $second = $render($next, $cookies);
+            assertStringContains('record-104', $second);
+            assertStringNotContains('record-204', $second);
+        }
+        assertStringContains('record-004', $render('/activity/?view=bootstrap'));
+        $denied = $render('/activity/?view=security');
+        assertStringContains('Authenticated root-approved operator access required.', $denied);
+        assertStringNotContains('record-204', $denied);
+        (new \ForumRewrite\Write\StaticArtifactInvalidator($root . '/public'))->invalidateReply('root-001', 'reply-001');
+        assertSame(false, is_file($root . '/public/activity.html'));
+        assertStringContains('record-204', $render('/activity/'));
+    }
+
+    public function testCurrentVisibilityAndSecurityEnrichmentApplyToStandardPages(): void
+    {
+        [$app, $pdo, $service, $database] = $this->environment();
+        $pdo->exec("UPDATE activity SET post_id='root-001' WHERE action_key='record-204'");
+        $pdo->exec("UPDATE posts SET retracted_at='2026-10-23T01:00:00Z' WHERE post_id='root-001'");
+        assertSame('record-203', $service->fetchActivityPage('content')['items'][0]['action_key']);
+        $pdo->exec("UPDATE activity SET kind='approval' WHERE action_key='record-203'");
+        $secure = new ActivityService(static fn (): PDO => $pdo, __DIR__ . '/fixtures/parity_minimal_v1', $database, false, static fn (): bool => true);
+        $securityPage = $secure->fetchActivityPage('security');
+        assertSame(1, count($securityPage['items']));
+        assertTrue(array_key_exists('security_review', $securityPage['items'][0]));
+        try {
+            $service->fetchActivityPage('security');
+            throw new RuntimeException('Unauthenticated security page was allowed.');
+        } catch (RuntimeException $error) {
+            assertSame('Authenticated root-approved operator access required.', $error->getMessage());
+        }
+    }
+
     public function testNavigationContractIsIndependentOfActivity(): void
     {
         $links = PageNavigation::links('/example/', ['filter' => 'a & b'], 'example:a & b', null, ['key' => 'entry-9']);
