@@ -9,7 +9,8 @@ use ForumRewrite\Checkouts\CheckoutManager;
 const CHECKOUT_HELP = <<<'HELP'
 Usage: ./v3 checkouts [command] [argument] [options]
   add <path>       Register an existing clone (--remote=origin --target=main)
-  preview         Fetch selected sources and save an update preview (default)
+  overview        Show cached checkout observations (default)
+  preview         Fetch selected sources and save an update preview
   apply <id>      Apply a saved preview (--sessions-paused required)
   list            List registered clones
   remove <path>   Forget a path; never deletes its files
@@ -45,13 +46,13 @@ try {
             $positionals[] = $arg;
         }
     }
-    $command = $positionals[0] ?? 'preview';
-    if (count($positionals) > 2 || (in_array($command, ['list', 'preview'], true) && count($positionals) > 1)) {
+    $command = $positionals[0] ?? 'overview';
+    if (count($positionals) > 2 || (in_array($command, ['list', 'preview', 'overview'], true) && count($positionals) > 1)) {
         throw new RuntimeException('Unexpected argument; run ./v3 checkouts --help.');
     }
     $allowed = ['registry', 'state-dir', 'json', ...match ($command) {
         'add' => ['remote', 'target', 'role'],
-        'preview' => ['path'],
+        'preview', 'overview' => ['path'],
         'apply' => ['sessions-paused'],
         default => [],
     }];

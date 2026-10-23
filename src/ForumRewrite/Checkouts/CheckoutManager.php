@@ -27,6 +27,9 @@ final class CheckoutManager
         if ((fileperms($this->state) & 0077) !== 0) {
             throw new RuntimeException('State directory must be private; use a dedicated directory with mode 0700.');
         }
+        if ($command === 'overview') {
+            return $this->overview($options);
+        }
         $lock = fopen($this->state . '/registry.lock', 'c');
         if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
             throw new RuntimeException('Another checkout command is running; retry when it finishes.');
@@ -328,6 +331,70 @@ final class CheckoutManager
             $action = 'merge'; $reason = 'Merge fetched source into the feature branch.';
         }
         return ['action' => $action, 'reason' => $reason, 'snapshot' => $after];
+    }
+
+    private function cacheKey(array $registry, array $options): string
+    {
+        return hash('sha256', json_encode($registry, JSON_THROW_ON_ERROR) . "\n" . ($options['path'] ?? ''));
+    }
+
+    private function cachePath(string $key): string
+    {
+        return $this->state . '/overview-' . $key . '.json';
+    }
+
+    private function readCache(string $key): ?array
+    {
+        if (!is_file($this->cachePath($key))) {
+            return null;
+        }
+        try {
+            $cache = $this->readJson($this->cachePath($key));
+            if (($cache['version'] ?? null) !== 1 || ($cache['key'] ?? null) !== $key
+                || !is_int($cache['observed_at'] ?? null) || !is_array($cache['checkouts'] ?? null)) {
+                return null;
+            }
+            return $cache;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function overview(array $options): array
+    {
+        $registry = $this->readRegistry();
+        if (isset($options['path'])) {
+            $options['path'] = realpath($options['path']) ?: $options['path'];
+            if (!array_filter($registry['checkouts'], fn ($entry) => $entry['path'] === $options['path'])) {
+                throw new RuntimeException('Selected path is not registered; use checkouts list or add.');
+            }
+        }
+        $key = $this->cacheKey($registry, $options);
+        $cache = $this->readCache($key);
+        $stored = [];
+        foreach ($cache['checkouts'] ?? [] as $row) {
+            if (is_array($row) && is_string($row['path'] ?? null) && is_string($row['action'] ?? null)) {
+                $stored[$row['path']] = $row;
+            }
+        }
+        $rows = [];
+        foreach ($registry['checkouts'] as $entry) {
+            if ((isset($options['path']) && $entry['path'] !== $options['path'])
+                || (!isset($options['path']) && $entry['role'] !== 'development')) {
+                $rows[] = $entry + ['action' => 'excluded', 'reason' => 'Not selected; test/server roles require --path.'];
+            } else {
+                $rows[] = $stored[$entry['path']] ?? ($entry + [
+                    'action' => 'unchecked', 'reason' => 'No valid cached observation; run ./v3 checkouts refresh.',
+                    'observed_at' => null,
+                ]);
+            }
+        }
+        return ['command' => 'overview', 'cached' => true, 'cache_key' => $key, 'checkouts' => $rows,
+            'observed_at' => $cache['observed_at'] ?? null,
+            'age_seconds' => isset($cache['observed_at']) ? max(0, time() - $cache['observed_at']) : null,
+            'refresh' => ['state' => 'needed'],
+            'notice' => $rows === [] ? 'No clones registered. Use ./v3 checkouts add <path>.' : 'Cached observations; use preview for a fresh update plan.',
+            'exit_code' => $this->attention($rows) ? 2 : 0];
     }
 
     private function preview(array $options): array

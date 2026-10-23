@@ -441,7 +441,7 @@ class CheckoutsTest(unittest.TestCase):
         self.assertIn('interrupted', self.apply(preview, code=1)['error'])
         self.assertIn(self.preview()['checkouts'][0]['action'], ['busy', 'dirty'])
 
-    def test_default_command_previews_with_one_line_per_checkout(self):
+    def test_explicit_preview_with_one_line_per_checkout(self):
         self.add()
         other = self.base / 'other'
         self.git(self.base, 'clone', '-q', str(self.up), str(other))
@@ -449,10 +449,10 @@ class CheckoutsTest(unittest.TestCase):
         old = self.git(self.clone, 'rev-parse', 'HEAD')
         target = self.commit(self.up, 'new', 'new source')
         (other / 'unfinished').write_text('unfinished')
-        result = self.cli(code=2)
+        result = self.cli('preview', code=2)
         self.assertEqual('preview', result['command'])
         self.assertEqual(['fast-forward', 'dirty'], [r['action'] for r in result['checkouts']])
-        output = self.cli(raw=True, code=2)
+        output = self.cli('preview', raw=True, code=2)
         rows = [line for line in output.splitlines() if line.startswith(str(self.base))]
         self.assertEqual(2, len(rows))
         self.assertIn('fast-forward', rows[0])
@@ -462,6 +462,33 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual(5, len(output.splitlines()))
         self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
         self.assertEqual(target, self.git(self.clone, 'rev-parse', 'origin/main'))
+
+    def test_overview_cold_read_never_fetches_or_waits_on_manager_lock(self):
+        import fcntl
+        import time
+        self.add()
+        self.up.rename(self.base / 'offline')
+        with (self.state / 'registry.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            start = time.monotonic()
+            result = self.cli(code=2)
+            self.assertLess(time.monotonic() - start, 1)
+        self.assertEqual('overview', result['command'])
+        self.assertEqual('unchecked', result['checkouts'][0]['action'])
+        self.assertNotIn('preview_id', result)
+        self.assertFalse((self.state / 'previews').exists())
+
+    def test_overview_invalid_cache_and_registry_changes_do_not_reuse_rows(self):
+        self.add()
+        first = self.cli(code=2)
+        cache = self.state / ('overview-' + first['cache_key'] + '.json')
+        cache.write_text('{broken')
+        self.assertEqual('unchecked', self.cli(code=2)['checkouts'][0]['action'])
+        self.cli('remove', self.clone)
+        self.assertEqual([], self.cli()['checkouts'])
+        self.add(role='test')
+        self.assertEqual('excluded', self.cli()['checkouts'][0]['action'])
+        self.assertEqual('unchecked', self.cli('--path=' + str(self.clone), code=2)['checkouts'][0]['action'])
 
 
 if __name__ == '__main__':
