@@ -245,9 +245,9 @@ final class PlatformDocsPageTest
         $html = PublicMarkdownRenderer::render($source);
         assertStringContains('id="same"', $html);
         assertStringContains('id="same-1"', $html);
-        // Restored parser: task markers/reference forms stay readable, nested lists flatten.
+        // Task markers/reference forms stay readable; supported nested lists retain their parent.
         assertStringContains('[x] Done', $html);
-        assertSame(1, substr_count($html, '<ul>'));
+        assertSame(2, substr_count($html, '<ul>'));
         assertStringContains('~~old~~', $html);
         assertStringContains('_emphasis_', $html);
         assertStringContains('[ref][r]', $html);

@@ -97,7 +97,7 @@ final class PublicMarkdownRenderer
                 && preg_match('/^\s*(?:[-*_]\s*){3,}$/', $line) !== 1) {
                 [$block, $last] = self::listBlock($lines, $lineNumber);
                 $block[0] = $line;
-                $list = self::flatList($block, $sourcePath, $projectRoot);
+                $list = self::structuredList($block, $sourcePath, $projectRoot);
                 if ($list !== null) {
                     $flushParagraph(); $flushList(); $flushTable();
                     $html[] = $list;
@@ -226,37 +226,61 @@ final class PublicMarkdownRenderer
         return [array_slice($lines, $start, $last - $start + 1), $last];
     }
 
-    private static function flatList(array $lines, ?string $sourcePath, string $projectRoot): ?string
+    private static function structuredList(array $lines, ?string $sourcePath, string $projectRoot): ?string
     {
-        $html = ''; $kind = null; $tag = null; $openItem = false; $paragraph = []; $column = 0;
-        $flush = static function () use (&$html, &$paragraph, $sourcePath, $projectRoot): void {
-            if ($paragraph !== []) { $html .= '<p>' . self::inline(implode("\n", $paragraph), $sourcePath, $projectRoot) . '</p>'; $paragraph = []; }
-        };
-        foreach ($lines as $line) {
-            if (str_contains($line, '<!--') || str_contains($line, "\t")) { return null; }
-            if (trim($line) === '') { $flush(); continue; }
-            $item = self::listItem($line);
-            if ($item !== null) {
-                if ($item['indent'] !== 0 || strlen($item['number'] ?? '') > 9) { return null; }
-                $flush();
-                if ($openItem) { $html .= '</li>'; }
-                if ($kind !== $item['kind']) {
-                    if ($tag !== null) { $html .= '</' . $tag . '>'; }
-                    $tag = $item['tag']; $kind = $item['kind'];
-                    $html .= '<' . $tag . ($tag === 'ol' ? ' start="' . (int) $item['number'] . '"' : '') . '>';
-                }
-                $html .= '<li' . ($tag === 'ol' ? ' value="' . (int) $item['number'] . '"' : '') . '>';
-                $openItem = true; $column = $item['column']; $line = $item['text'];
-            } else {
-                $indent = strlen($line) - strlen(ltrim($line, ' '));
-                if ($indent < $column || $indent >= $column + 4) { return null; }
-                $line = substr($line, $column);
+        $index = 0;
+        $html = self::listLevel($lines, $index, 0, 1, $sourcePath, $projectRoot);
+        return $index === count($lines) ? $html : null;
+    }
+
+    private static function listLevel(array $lines, int &$index, int $indent, int $depth, ?string $sourcePath, string $projectRoot): ?string
+    {
+        if ($depth > 8) { return null; }
+        $html = ''; $kind = null; $tag = null;
+        while ($index < count($lines)) {
+            $item = self::listItem($lines[$index]);
+            if ($item === null || $item['indent'] !== $indent) { break; }
+            if (strlen($item['number'] ?? '') > 9) { return null; }
+            if ($kind !== $item['kind']) {
+                if ($tag !== null) { $html .= '</' . $tag . '>'; }
+                $tag = $item['tag']; $kind = $item['kind'];
+                $html .= '<' . $tag . ($tag === 'ol' ? ' start="' . (int) $item['number'] . '"' : '') . '>';
             }
-            if (preg_match('/^(?:[|>#]|`{3}|~{3})/', ltrim($line)) === 1) { return null; }
-            $paragraph[] = $line;
+            $html .= '<li' . ($tag === 'ol' ? ' value="' . (int) $item['number'] . '"' : '') . '>';
+            $paragraph = []; $childIndent = null;
+            $flush = static function () use (&$html, &$paragraph, $sourcePath, $projectRoot): void {
+                if ($paragraph !== []) { $html .= '<p>' . self::inline(implode("\n", $paragraph), $sourcePath, $projectRoot) . '</p>'; $paragraph = []; }
+            };
+            $line = $item['text'];
+            $index++;
+            while (true) {
+                if (str_contains($line, '<!--') || str_contains($line, "\t") || preg_match('/^(?:[|>#]|`{3}|~{3})/', ltrim($line)) === 1) { return null; }
+                if (trim($line) !== '') { $paragraph[] = $line; } else { $flush(); }
+                if ($index >= count($lines)) { break; }
+                $line = $lines[$index];
+                $next = self::listItem($line);
+                if ($next !== null && $next['indent'] <= $indent) { break; }
+                if ($next !== null) {
+                    if ($next['indent'] < $item['column'] || ($childIndent !== null && $childIndent !== $next['indent'])) { return null; }
+                    $childIndent = $next['indent']; $flush();
+                    $child = self::listLevel($lines, $index, $childIndent, $depth + 1, $sourcePath, $projectRoot);
+                    if ($child === null) { return null; }
+                    $html .= $child;
+                    // Re-enter without manufacturing a paragraph after the child list.
+                    $line = '';
+                    continue;
+                }
+                if (trim($line) !== '') {
+                    $spaces = strlen($line) - strlen(ltrim($line, ' '));
+                    if ($spaces <= $indent) { break; }
+                    if ($spaces !== $item['column']) { return null; }
+                    $line = substr($line, $item['column']);
+                }
+                $index++;
+            }
+            $flush(); $html .= '</li>';
         }
-        $flush();
-        return $html . '</li></' . $tag . '>';
+        return $tag === null ? null : $html . '</' . $tag . '>';
     }
 
     private static function table(array $lines, bool $standalone, ?string $sourcePath, string $projectRoot): string

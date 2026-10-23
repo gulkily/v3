@@ -27,6 +27,31 @@ final class MarkdownListStructureTest
         assertStringContains('<ol start="1">', $html);
     }
 
+    public function testMixedNestingAndParentParagraphAfterChildren(): void
+    {
+        $html = PublicMarkdownRenderer::render("- Parent\n  3. Child\n     wrapped\n     - Grandchild\n  8. Second child\n\n  Parent again.\n- Sibling");
+        assertStringContains('<li><p>Parent</p><ol start="3">', $html);
+        assertStringContains('<li value="3"><p>Child' . "\nwrapped</p><ul><li><p>Grandchild</p></li></ul></li>", $html);
+        assertStringContains('<li value="8"><p>Second child</p></li></ol><p>Parent again.</p></li>', $html);
+        assertStringContains('<li><p>Sibling</p></li></ul>', $html);
+    }
+
+    public function testNumberWidthAndEightLevels(): void
+    {
+        $html = PublicMarkdownRenderer::render("10. Parent\n    - Child\n      text\n    + Other child\n11. Next");
+        assertStringContains('<li value="10"><p>Parent</p><ul>', $html);
+        assertStringContains('<li value="11"><p>Next</p></li>', $html);
+        $source = '';
+        for ($depth = 0; $depth < 8; $depth++) { $source .= str_repeat('  ', $depth) . '- Level ' . $depth . "\n"; }
+        assertSame(8, substr_count(PublicMarkdownRenderer::render($source), '<ul>'));
+    }
+
+    public function testAccountPlanRiskBulletsHaveAnOwner(): void
+    {
+        $html = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/plans/account_key_page_redesign/account_key_page_redesign_step3_development_plan.md'));
+        assertStringContains('<li><p>Risks or open questions:</p><ul><li><p>Impact:', $html);
+    }
+
     public function testRetractionGuideKeepsSixProcedureParagraphs(): void
     {
         $html = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'), 'docs/reference/author_post_retraction.md');
