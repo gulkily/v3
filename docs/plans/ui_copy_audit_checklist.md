@@ -318,6 +318,12 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Verification: production TemplateRenderer/shared partials rendered signed, unsigned, unavailable-commit, retracted and bootstrap-identity states in Chromium. Verified one source presentation, visible score, signed key/signature links, explicit unavailable history, retraction notice and expanded identity key; keyboard Source navigation passed. Light/Word97/Chicago/Midnight at 390px/1280px passed overflow checks; inspected Word97 phone signed screenshot. Two existing post-exchange/retraction API checks passed. Evidence links used controlled local destinations, not live Git/signature verification. Physical devices and production unverified; dependencies unchanged.
 - Previous item commit: analysis no-finding cleanup `526dde43f`.
 
+## LLM Exchanges introduction review — October 23, 2026
+
+- Removed “newest first” from the introduction; descending time order is visible in the table. Retained “Private provider conversations.” because private-data scope is not conveyed by the title or columns. Empty feedback, record links, statuses and access/visibility policy are unchanged.
+- Verification: eight existing exchange-recorder/store and post-exchange/retraction API checks passed, including visibility filtering and provider transport failures. Production-rendered loaded/empty list states passed four-theme 390px/1280px Chromium overflow checks with visible post/exchange links; inspected Midnight phone list screenshot. Syntax/diff passed. Browser fixtures used controlled rows; actual provider calls, physical devices and deployment unverified. Dependencies unchanged.
+- Previous item commit: evidence retention review `48d4f7f95`.
+
 ## Current phase — October 23, 2026
 
 These are observations for later rendered review, not approved removal decisions.
@@ -325,7 +331,7 @@ These are observations for later rendered review, not approved removal decisions
 - [x] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
 - [x] **Post analysis no-risk fields** — Review routine “Recommended action: none,” “Unicode risk: none” and script inventories in expanded analysis. Check benign and risky posts; retain actual warnings, moderation consequences and useful evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
 - [x] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
-- [ ] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
+- [x] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
 - [ ] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
 
 ## Next phase — new candidates
@@ -337,3 +343,5 @@ These observations need rendered review before deciding what to remove. Keep thi
 - [ ] **Analysis response assessments** — Review numeric Respondability, “generate yes/no,” Response value and Response reason together for overlap. Check why a reply was generated or skipped and what moderators need; preserve meaningful decision explanations. Sources: shared root/reply analysis templates.
 
 - [ ] **Post-detail Reply duplication** — Review the header's “Reply to this post” link against the card's Reply action. Check long evidence headers, root/reply details and retracted posts; retain an easy-to-find reply action. Source: `templates/pages/post.php`, `templates/partials/post_card.php`.
+
+- [ ] **LLM Exchange absent request ID** — Review the routine “Request ID: unavailable” field on detail pages when no provider identifier exists. Check completed, provider-error and transport-error records; retain available trace IDs and error evidence. Source: `templates/pages/llm_exchange.php`.
