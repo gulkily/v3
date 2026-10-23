@@ -56,3 +56,10 @@ When making a read-model schema change, the same change set must:
 
 Do not rely on a repository-head change to rebuild deployed read models: the
 canonical-record repository and application code can be deployed separately.
+
+## Pagination
+
+For new bounded lists, use the shared controls and position contract described
+in [Implementing pagination](docs/reference/pagination.md). Standard Activity is
+the worked example. Keep each list's query/access rules separate; existing list
+migrations require their own scoped review. Forte retains its append behavior.

@@ -5285,7 +5285,7 @@ NODE;
         $pdo->exec("UPDATE metadata SET value='23' WHERE key='schema_version'");
         $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
         assertStringContains('Labels added: like', $this->renderMethod($app, 'GET', '/activity/'));
-        assertSame('24', $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+        assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
         assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
         $output = [];
         exec(escapeshellarg(dirname(__DIR__) . '/v3') . ' rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($database) . ' 2>&1', $output, $exitCode);

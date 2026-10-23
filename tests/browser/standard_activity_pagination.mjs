@@ -1,0 +1,108 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
+import { once } from 'node:events';
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-core');
+const project = resolve(new URL('../..', import.meta.url).pathname);
+const root = await mkdtemp(join(tmpdir(), 'standard-activity-browser-'));
+const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', SIGNED_REACTION_TEST_ROOT: root,
+  FORUM_SECRETS_PATH: join(root, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') };
+const seed = spawnSync('php', [join(project, 'tests/Support/standard_activity_pagination_fixture.php'), root], { env, encoding: 'utf8' });
+assert.equal(seed.status, 0, seed.stderr);
+const { themes } = JSON.parse(seed.stdout);
+const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening');
+const port = socket.address().port; await new Promise(resolve => socket.close(resolve));
+const base = `http://127.0.0.1:${port}`;
+const server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/signed_reaction_browser_router.php')], { env, stdio: ['ignore', 'ignore', 'pipe'] });
+let logs = ''; server.stderr.on('data', data => { logs += data; });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
+const rowLinks = 'article.card a[href^="/posts/page-"]';
+try {
+  for (let i = 0; i < 60; i++) { try { await fetch(base + '/api/version'); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
+  for (const javaScriptEnabled of [false, true]) {
+    const context = await browser.newContext({ javaScriptEnabled, serviceWorkers: 'block', viewport: { width: 390, height: 900 } });
+    try {
+      const page = await context.newPage();
+      await page.goto(base + '/activity/?view=all');
+      assert.equal(await page.locator(rowLinks).count(), 100);
+      const firstKeys = await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));
+      const next = page.getByRole('link', { name: 'Next', exact: true });
+      await next.focus(); await page.keyboard.press('Enter'); await page.waitForURL(/position=/);
+      await page.waitForLoadState('load');
+      const secondUrl = page.url();
+      const secondKeys = await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));
+      assert.equal(secondKeys.length, 100);
+      assert.equal(firstKeys.some(key => secondKeys.includes(key)), false);
+      const source = page.locator('a[href^="/source/current/records/posts/page-"]').first();
+      assert.equal((await context.request.get(base + await source.getAttribute('href'))).status(), 200);
+      await page.getByRole('link', { name: 'Next', exact: true }).click(); await page.waitForLoadState('load');
+      assert.equal(await page.locator(rowLinks).count(), 5);
+      assert.equal(await page.getByRole('link', { name: 'Next', exact: true }).count(), 0);
+      await page.getByRole('link', { name: 'Previous', exact: true }).click(); await page.waitForLoadState('load');
+      assert.deepEqual(await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), secondKeys);
+      await page.reload();
+      await page.goBack(); await page.goForward(); await page.waitForLoadState('load');
+      assert.equal(await page.locator(rowLinks).count(), 100);
+      await page.goto(secondUrl);
+      await page.getByRole('link', { name: 'Approvals', exact: true }).click(); await page.waitForLoadState('load');
+      assert.equal(new URL(page.url()).searchParams.has('position'), false);
+      await page.getByText('No activity.', { exact: true }).waitFor();
+      await page.goto(base + '/activity/?position=invalid');
+      await page.getByRole('alert').waitFor();
+      await page.getByRole('link', { name: 'First page', exact: true }).click(); await page.waitForLoadState('load');
+      assert.equal(await page.locator(rowLinks).count(), 100);
+      // Native HTTP failure retains its requested URL; browser Reload retries it.
+      await page.route('**/activity/?**position=**', route => route.fulfill({ status: 503, contentType: 'text/html', body: '<p>Temporarily unavailable</p>' }));
+      await page.getByRole('link', { name: 'Next', exact: true }).click(); await page.waitForLoadState('load');
+      await page.getByText('Temporarily unavailable').waitFor();
+      const failedUrl = page.url();
+      await page.unroute('**/activity/?**position=**');
+      await page.reload();
+      assert.equal(page.url(), failedUrl);
+      assert.deepEqual(await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), secondKeys);
+      console.log(`PASS standard Activity JavaScript=${javaScriptEnabled}: keyboard links, all boundaries, evidence, history, reset, invalid position and HTTP retry`);
+      if (javaScriptEnabled) {
+        for (const width of [390, 1280]) for (const theme of themes) {
+          await page.evaluate(theme => localStorage.setItem('forum-zenmemes-theme', theme), theme);
+          const themed = await context.newPage();
+          try {
+            await themed.setViewportSize({ width, height: 900 });
+            await themed.goto(secondUrl);
+            assert.equal(await themed.locator('html').getAttribute('data-resolved-theme'), theme);
+            assert.equal(await themed.locator(rowLinks).count(), 100);
+            await themed.getByRole('navigation', { name: 'Pagination', exact: true }).scrollIntoViewIfNeeded();
+            assert.equal(await themed.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${theme} ${width}: page overflow`);
+            if (['word97', 'chicago', 'midnight'].includes(theme)) await themed.screenshot({ path: `/tmp/activity-pagination-${theme}-${width}.png` });
+          } finally { await themed.close(); }
+        }
+        console.log(`PASS standard Activity ${themes.length} themes at 390/1280: long subjects/source paths and native controls without page overflow`);
+      }
+    } finally { await context.close(); }
+  }
+  // Actual unchanged Forte production flow: append rather than replace.
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await context.newPage();
+    await page.goto(base + '/forte/activity/');
+    const rows = page.locator('[data-paned-activity-id]:visible');
+    const before = await rows.count();
+    await page.locator('[data-paned-activity-load-more][data-paned-activity-view="all"]').click();
+    await page.waitForFunction(before => [...document.querySelectorAll('[data-paned-activity-id]')].filter(n => !n.hidden).length > before, before);
+    const selected = rows.nth(before);
+    const id = await selected.getAttribute('data-paned-activity-id');
+    await selected.click();
+    await page.locator(`[data-paned-activity-content-item-id="${id}"]:visible`).waitFor();
+    await page.goto(base + '/forte/activity/?view=commits');
+    const commits = page.locator('[data-paned-activity-commit-sha]:visible');
+    assert.equal(await commits.count(), 100);
+    await page.locator('[data-paned-activity-load-more][data-paned-activity-view="commits"]').click();
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-paned-activity-commit-sha]')].filter(n => !n.hidden).length > 100);
+    await commits.last().click();
+    await page.locator('[data-paned-activity-commit-detail]:visible').waitFor();
+    console.log('PASS unchanged Forte Activity/Commits: real append, appended-row selection and details');
+  } finally { await context.close(); }
+} catch (error) { console.error(logs.slice(-4000)); throw error; }
+finally { await browser.close(); server.kill(); await once(server, 'exit'); await rm(root, { recursive: true, force: true }); }

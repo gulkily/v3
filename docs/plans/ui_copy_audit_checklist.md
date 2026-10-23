@@ -1,5 +1,11 @@
 # UI copy audit checklist
 
+## Standard Activity pagination — October 23, 2026
+
+- [x] Add only Previous/Next navigation, an empty state and actionable First page recovery for invalid/expired positions. Use native link and browser retry behavior; no routine success notice or help panel.
+- Verified real standard Activity navigation with JavaScript enabled/disabled, empty/invalid/HTTP-failure/retry states, source evidence, keyboard links and history. All 13 standard themes passed at 390px/1280px with long subjects/paths and no page overflow; Word97 phone and Midnight desktop screenshots inspected. Forte production controls/copy remain unchanged; real append/detail/Commits and existing shared-reader/signed-button checks passed.
+- Physical devices and production deployment remain unverified. [Implementation summary](activity_feed_pagination/activity_feed_pagination_step4_implementation_summary.md).
+
 ## Source-owned label removal — October 22, 2026
 
 - [x] Keep legacy label uncertainty actionable after accepted retraction: the existing reload acknowledgment displays operator-review guidance only when ownership candidates remain unresolved. No new navigation, confirmation or routine explanatory panel.
