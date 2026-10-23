@@ -245,9 +245,9 @@ final class PlatformDocsPageTest
         $html = PublicMarkdownRenderer::render($source);
         assertStringContains('id="same"', $html);
         assertStringContains('id="same-1"', $html);
-        // Restored parser: task markers/reference forms stay readable, nested lists flatten.
+        // Task markers/reference forms stay readable; supported nested lists retain their parent.
         assertStringContains('[x] Done', $html);
-        assertSame(1, substr_count($html, '<ul>'));
+        assertSame(2, substr_count($html, '<ul>'));
         assertStringContains('~~old~~', $html);
         assertStringContains('_emphasis_', $html);
         assertStringContains('[ref][r]', $html);
@@ -256,7 +256,8 @@ final class PlatformDocsPageTest
         assertSame(4, substr_count($guide, '<table>'));
         assertSame(0, substr_count($guide, 'aria-label="Table source"'));
         // Continuations retain their source numbers rather than restarting each step at 1.
-        foreach (range(1, 6) as $number) { assertStringContains('<ol start="' . $number . '">', $guide); }
+        foreach (range(1, 6) as $number) { assertStringContains('<li value="' . $number . '">', $guide); }
+        assertStringContains('<li value="1"><p>Open', $guide);
     }
 
     public function testRestoredInlineLinksKeepCurrentSafetyBoundary(): void
