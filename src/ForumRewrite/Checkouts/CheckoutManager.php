@@ -530,6 +530,7 @@ final class CheckoutManager
             }
             $this->writeJson($journalPath, $journal);
         }
+        $journal['result_file'] = $journalPath;
         $journal['complete'] = true;
         $journal['exit_code'] = $this->attention($journal['checkouts']) ? 2 : 0;
         $journal['notice'] = 'Only selected checked-out branches were considered. Other branches, stashes and linked worktrees stay untouched. Run a fresh preview after recovery.';

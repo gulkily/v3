@@ -453,13 +453,13 @@ class CheckoutsTest(unittest.TestCase):
         self.assertEqual('preview', result['command'])
         self.assertEqual(['fast-forward', 'dirty'], [r['action'] for r in result['checkouts']])
         output = self.cli('preview', raw=True, code=2)
-        rows = [line for line in output.splitlines() if line.startswith(str(self.base))]
+        rows = [line for line in output.splitlines() if line.startswith(('clone ', 'other '))]
         self.assertEqual(2, len(rows))
         self.assertIn('fast-forward', rows[0])
         self.assertIn('dirty', rows[1])
         self.assertIn('preserve changes', rows[1])
         self.assertNotIn('Source:', output)
-        self.assertEqual(5, len(output.splitlines()))
+        self.assertEqual(6, len(output.splitlines()))
         self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
         self.assertEqual(target, self.git(self.clone, 'rev-parse', 'origin/main'))
 
@@ -489,6 +489,38 @@ class CheckoutsTest(unittest.TestCase):
         self.add(role='test')
         self.assertEqual('excluded', self.cli()['checkouts'][0]['action'])
         self.assertEqual('unchecked', self.cli('--path=' + str(self.clone), code=2)['checkouts'][0]['action'])
+
+    def test_columns_width_labels_controls_and_full_json(self):
+        self.add()
+        other_parent = self.base / 'another-parent'
+        other_parent.mkdir()
+        other = other_parent / 'clone'
+        self.git(self.base, 'clone', '-q', str(self.up), str(other))
+        self.add(other)
+        self.env['COLUMNS'] = '80'
+        result = self.cli(code=2)
+        self.assertEqual(str(other), result['checkouts'][1]['path'])
+        for width in [30, 80, 120]:
+            self.env['COLUMNS'] = str(width)
+            output = self.cli(raw=True, code=2)
+            lines = output.splitlines()
+            self.assertIn('ACTION', lines[0])
+            self.assertLessEqual(len(lines[0]), width)
+            self.assertEqual(2, sum('unchecked' in line for line in lines[1:3]))
+            self.assertNotEqual(lines[1].split()[0], lines[2].split()[0])
+            self.assertTrue(all(len(line) <= width for line in lines[:3]))
+
+    def test_renderer_sanitizes_values_and_retains_json_independently(self):
+        program = r"""require 'autoload.php';
+        $row=['path'=>'/one/界界界界界界/clone', 'role'=>'development', 'remote'=>'origin', 'target'=>'main',
+        'action'=>'conflict', 'reason'=>'full recovery', 'snapshot'=>['branch'=>"feature/long\n\033[31mname"]];
+        echo json_encode((new ForumRewrite\Checkouts\CheckoutRenderer(80))->render([$row]));"""
+        result = subprocess.run(['php', '-r', program], cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        rendered = json.loads(result.stdout)
+        self.assertEqual(2, len(rendered['lines']))
+        self.assertNotIn('\n', rendered['lines'][1])
+        self.assertNotIn('\x1b', rendered['lines'][1])
 
 
 if __name__ == '__main__':

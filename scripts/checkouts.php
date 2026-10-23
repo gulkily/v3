@@ -5,6 +5,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Checkouts\CheckoutManager;
+use ForumRewrite\Checkouts\CheckoutRenderer;
 
 const CHECKOUT_HELP = <<<'HELP'
 Usage: ./v3 checkouts [command] [argument] [options]
@@ -65,25 +66,15 @@ try {
     if ($options['json'] ?? false) {
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
     } else {
-        foreach ($result['checkouts'] ?? [] as $entry) {
-            $branch = $entry['snapshot']['branch'] ?? '[' . $entry['role'] . ']';
-            $action = $entry['action'] ?? $entry['remote'] . '/' . $entry['target'];
-            $hint = match ($action) {
-                'dirty' => 'preserve changes, then preview again',
-                'busy' => 'finish or abort Git operation',
-                'migration-required' => str_starts_with($entry['reason'], 'Divergent')
-                    ? 'unproven divergence; reconcile history first'
-                    : 'rewritten upstream; reconcile history first',
-                'diverged' => 'reconcile main manually',
-                'excluded' => str_starts_with($entry['reason'], 'Not selected')
-                    ? 'not selected' : $entry['reason'],
-                'current', 'ahead', 'fast-forward', 'merge', 'updated' => '',
-                default => $entry['reason'] ?? '',
-            };
-            $line = $entry['path'] . '  ' . $branch . '  ' . $action . ($hint !== '' ? ' — ' . $hint : '');
-            echo preg_replace('/[\r\n\t]+/', ' ', $line) . "\n";
+        $width = filter_var(getenv('COLUMNS'), FILTER_VALIDATE_INT) ?: 80;
+        $rendered = (new CheckoutRenderer($width))->render($result['checkouts'] ?? []);
+        foreach ($rendered['lines'] as $line) {
+            echo $line . "\n";
         }
-        if (in_array($command, ['preview', 'apply'], true)) {
+        if ($rendered['abridged']) {
+            echo isset($result['result_file']) ? 'Full recovery: ' . $result['result_file'] . "\n" : "Full paths/recovery: use --json.\n";
+        }
+        if (in_array($command, ['preview', 'apply', 'overview'], true)) {
             $counts = [];
             foreach ($result['checkouts'] as $entry) {
                 $counts[$entry['action']] = ($counts[$entry['action']] ?? 0) + 1;
@@ -91,9 +82,14 @@ try {
             echo implode(' · ', array_map(fn ($action, $count) => $count . ' ' . $action, array_keys($counts), array_values($counts))) . "\n";
         }
         if (isset($result['notice'])) {
+            if ($command === 'overview') {
+                echo ($result['age_seconds'] === null ? 'Unchecked' : 'Checked ' . $result['age_seconds'] . 's ago')
+                    . ' · ' . $result['refresh']['state'] . ' · cached observations' . "\n";
+            } else {
             echo ($command === 'preview'
                 ? 'Fetched refs; no checked-out files changed. Pause sessions before apply.'
                 : 'Other branches, stashes and linked worktrees unchanged. Preview again after recovery.') . "\n";
+            }
         }
         if ($command === 'preview' && isset($result['preview_id'])) {
             $apply = 'Apply: ./v3 checkouts apply ' . $result['preview_id'] . ' --sessions-paused';
