@@ -84,3 +84,26 @@ One-page rendering depends on layout; concurrent recovery and required study boo
 +
 +- Final application/closeout revision `0582fb867`; planning plus six stage commits confirmed, each stage includes its implementation-summary update. Debug state remains enabled. This diagnostic addition is a separate log-only handoff commit, without amendment.
 +- Focused PHP 93/93; Chromium 16-theme both-route desktop/phone flow, Firefox/WebKit four-theme both-route flow, targeted identity recovery, and existing image/viewport/focus/board/layout/readiness regressions pass. JS/PHP syntax, diff and feature file-link checks pass. Physical iPhone, full suite, deployment and maintainer comfortable-fit acceptance remain pending.
+
+## Step 4 corrective handoff — 2026-10-23
+
+### Necessary/useful instructions
+
+- Canonical-component reuse exposed a missed obligation in the first handoff: the normal post card, not merely a persisted-post ID plus pending-card body, is the accepted result. Correction `a209befa0` imports the canonical thread card, binds its actions and verifies body HTML against the server output. Retain this explicit rendered-result requirement in acceptance checks.
+- Recovery separation preserves an accepted publication when its full rendering fetch fails: Retry reloads rendering and never republishes. Real browser tests verify zero additional finalization requests and an untouched newer draft/selection.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Fresh feature/step approvals are not required for this correction to the already approved canonical reconciliation contract. No new dependency, schema, deployment or unrelated .test* file change is included.
+
+### Uncertain assessments
+
+The original test matrix was broad but accepted stripped placeholders; it did not establish full normal-post rendering. Browser/theme counts alone were insufficient evidence. Full-card regression assertions now include canonical HTML, long-tail content, working signed actions and rendering-only failure recovery.
+
+### Handoff
+
+Correction `a209befa0`; Chromium/Firefox/WebKit both-route full-card tests, Chromium phone/four-theme checks, focused existing recovery checks and four PHP route/lazy-loader checks pass. Physical iPhone and production acceptance remain pending. Same scope/R1/P2 and 0.95 projected/retrospective assessments; no additional accepted study outcome.
