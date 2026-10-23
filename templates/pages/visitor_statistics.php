@@ -30,9 +30,6 @@
       <div><dt>Estimated clients</dt><dd><?= $e(number_format($totals['clients'])) ?></dd></div>
       <div><dt>Authenticated users</dt><dd><?= $e(number_format($totals['authenticated_users'])) ?></dd></div>
     </dl>
-<?php if ($buckets === []): ?>
-    <p class="meta">No eligible requests were observed in this period.</p>
-<?php endif; ?>
 <?php $maxVisits = $buckets === [] ? 0 : max(array_map(static fn (array $bucket): int => $bucket['visits'], $buckets)); ?>
 <?php $plotWidth = 700; $plotHeight = 160; $barWidth = max(2, min(18, (int) floor($plotWidth / max(1, count($buckets))))); ?>
 <?php $periodStartTimestamp = (new \DateTimeImmutable($dashboard['period_start']))->getTimestamp(); ?>

@@ -365,13 +365,20 @@ Reviewed candidates; decisions and verification are recorded above.
 - Omitted Request ID when it is missing, null or empty; available identifiers remain beside provider/model. Status, prompt/response, raw JSON, missing-response feedback and error evidence remain unchanged.
 - Verification: eight existing recorder/store/post-exchange/retraction checks passed, including updated actual-route assertions for absent and available IDs and unchanged rows through retraction. Production-rendered completed, provider-error and transport-error fixtures covered present/missing/null/empty IDs, keyboard raw-evidence expansion and four-theme 390px/1280px overflow. Inspected Midnight phone transport-error screenshot (`/tmp/copy-exchange-after-transport-error.png`). Controlled provider records; real provider calls, physical devices and deployment unverified. Syntax/diff passed; dependencies unchanged.
 
-## How to continue this audit
+## Visitor statistics zero-request period — October 23, 2026
 
-Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
+- Removed “No eligible requests were observed in this period” beside the five zero totals and empty trend/table. Initialization and unavailable recovery remain distinct; incomplete collection still displays its warning, including zero-request periods. Privacy/counting limits remain in the existing disclosure.
+- Verification: ten existing statistics configuration/store/observer/page checks and the core-route smoke passed. Current production renderer covered initialized zero traffic, loaded, initializing, unavailable, partial and partial-with-zero-traffic states; Chromium checked zero totals, empty rows, retained warnings/recovery and expanded privacy details across Light/Word97/Chicago/Midnight at 390px/1280px without page overflow. Inspected Midnight phone zero/partial-zero screenshots (`/tmp/copy-phase-visitor_statistics-*.png`). Controlled dashboard data; real collection interruptions, physical devices and deployment unverified. Syntax/diff passed; dependencies unchanged.
 
-## Next phase — new candidates
+## Third audit pass closeout — October 23, 2026
 
-These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
+- Closed the five next-phase candidates below: four copy reductions and one evidence-retention decision. Individual commits include each item’s checklist record. Outbox rows: `f9841409c`; analysis review: `1522ff68c`; post-detail Reply: `2d548631e`; absent request IDs: `2ac8ce8f9`.
+- Targeted regression checks and controlled rendered phone/desktop checks passed as recorded per item. No new dependencies, navigation destinations, icon mappings, Fastmod prompt edits, generated assets or `todo.txt` changes. Full suite, physical devices and live deployment remain unverified; existing production acceptance and original feedback-comment follow-ups remain open.
+- Collected three further source observations for a future pass at the bottom of this file; none is an approved removal decision.
+
+## Third audit phase — October 23, 2026
+
+Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **Outbox row labels** — Review action/state prefixes and generic “Local action” fallbacks against meaningful saved titles. Check long titles, reactions, untitled drafts and unknown states; preserve delivery-state distinctions. Source: `public/assets/outbox.js`.
 
@@ -381,4 +388,18 @@ These observations need rendered review before deciding what to remove. Keep thi
 
 - [x] **LLM Exchange absent request ID** — Review the routine “Request ID: unavailable” field on detail pages when no provider identifier exists. Check completed, provider-error and transport-error records; retain available trace IDs and error evidence. Source: `templates/pages/llm_exchange.php`.
 
-- [ ] **Visitor statistics zero-request period** — Review the “No eligible requests” paragraph alongside zero totals and an empty chart/table. Distinguish no traffic from initialization, collection gaps and failures; retain privacy/counting limits. Source: `templates/pages/visitor_statistics.php`.
+- [x] **Visitor statistics zero-request period** — Review the “No eligible requests” paragraph alongside zero totals and an empty chart/table. Distinguish no traffic from initialization, collection gaps and failures; retain privacy/counting limits. Source: `templates/pages/visitor_statistics.php`.
+
+## How to continue this audit
+
+Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
+
+## Next phase — new candidates
+
+These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
+
+- [ ] **Offline health checking feedback** — Review “CHECKING” alongside “Checking offline reading status…” in initial and repeat checks. Preserve pending feedback, offline readiness, storage failures and actionable recovery. Sources: `templates/pages/offline_health.php`, `public/assets/offline_health.js`.
+
+- [ ] **LLM Exchange missing content** — Review “No prompt content extracted” and “No response body was recorded” alongside raw request/response disclosures and errors. Check empty, non-text, provider-error and transport-error records; retain the distinction between extraction limits and absent provider output. Source: `templates/pages/llm_exchange.php`.
+
+- [ ] **Analysis quality fallbacks** — Review “Quality: unknown” when only good-faith likelihood is present, and other conditional unknown values. Check partially populated historical analyses alongside complete assessments; preserve meaningful quality and moderation evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
