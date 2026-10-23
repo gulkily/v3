@@ -14,8 +14,19 @@ escaped front matter, code language captions and keyboard-accessible code region
 Ordered-list source numbers are preserved across continuation paragraphs. Nested
 lists flatten; loose lists and continuations split. Task markers, reference links,
 autolinks, underscore emphasis, strikethrough and unsupported fences remain readable
-source. Pipe tables appear as horizontally scrollable escaped source, not HTML
-tables; cell destinations remain literal source. Mermaid remains labeled source;
+source. Standalone pipe tables render with semantic column headers, existing safe
+inline formatting/links, optional outer pipes, two or more columns and delimiter
+alignment (`:---`, `:---:`, `---:`). Header and body widths must match; empty cells,
+escaped pipes and pipes inside single-backtick inline code are supported. Tables
+scroll horizontally in a keyboard-focusable region without widening the page.
+
+Malformed/uneven tables, uncertain or multi-backtick code spans, and nested/list
+or quote table forms retain readable source. Two-or-more-space-indented pipe
+blocks use the source fallback; multiline/merged cells and nested tables are not
+implemented. A recognized table block falls back as a whole, keeping every cell;
+ordinary prose and fenced examples remain separate. Unrecognized pipe prose is
+not a table. Cell links retain the same unavailable-link alternative and document
+boundaries as prose; images still never load. Mermaid remains labeled source;
 there is no diagram, math, slideshow or syntax-highlighting engine.
 
 Raw HTML is escaped, prose comments are hidden, and standalone image markup has an
@@ -26,8 +37,10 @@ and source ambiguities remain explicit limitations. See the [frozen baseline and
 counting method](../plans/markdown_dependency_removal/render_metrics.md), [restored
 comparison](../plans/markdown_dependency_removal/render_comparison.md), and
 [rare-syntax decision table](../plans/markdown_dependency_removal/rare_syntax_decisions.md).
-Extensions are deferred to a separate reviewed cycle; no external component may be
-added without the dependency-consent policy in CONTRIBUTING.
+The [pipe-table extension](../plans/markdown_renderer_extension/markdown_renderer_extension_step4_implementation_summary.md)
+records its supported/fallback corpus classification and delivery evidence. Other
+syntax extensions remain deferred. No external component may be added without
+the dependency-consent policy in CONTRIBUTING.
 
 ## Library inventory and search
 

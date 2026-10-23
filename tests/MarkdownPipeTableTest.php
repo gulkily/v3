@@ -82,6 +82,15 @@ MD);
         }
     }
 
+    public function testBlankLinesEndTablesWithoutDroppingOrphanRows(): void
+    {
+        $html = PublicMarkdownRenderer::render("| A | B |\n| --- | --- |\n| one | two |\n\n| orphan | row |\n\nAfter");
+        assertSame(1, substr_count($html, '<table>'));
+        assertSame(1, substr_count($html, 'aria-label="Table source"'));
+        assertStringContains('| orphan | row |', $html);
+        assertStringContains('<p>After</p>', $html);
+    }
+
     public function testCellLinksUseCanonicalPolicyWithoutFetchingImages(): void
     {
         $source = <<<'MD'
