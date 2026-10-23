@@ -258,16 +258,6 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Removed the unlinked duplicate action summary, unchanged Last updated timestamp, absent signed/integration timestamps, and routine queued/accepted/cancelled explanations. Retained linked targets, actual signed/integration times, draft locality, sending uncertainty, failures and recovery controls. Empty status elements are hidden.
 - Verification: six existing Outbox presentation/state/storage checks passed. Chromium production-script fixture covered nine expanded states, empty state, keyboard disclosure, Queue transition and failed Send feedback with retry control; Light/Word97/Chicago/Midnight at 390px/1280px passed overflow checks. Inspected Midnight phone screenshot (`/tmp/copy-outbox-midnight-390.png`). Local controlled browser fixture; actual server delivery, physical devices and production deployment were not exercised. No dependencies added or changed.
 
-## Next phase — new candidates
-
-These are observations for later rendered review, not approved removal decisions.
-
-- [ ] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
-- [ ] **Post analysis no-risk fields** — Review routine “Recommended action: none,” “Unicode risk: none” and script inventories in expanded analysis. Check benign and risky posts; retain actual warnings, moderation consequences and useful evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
-- [ ] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
-- [ ] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
-- [ ] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
-
 
 ## Bookmarklets copy cleanup — October 23, 2026
 
@@ -310,3 +300,13 @@ These are observations for later rendered review, not approved removal decisions
 - All seven original Next audit candidates now have individual cleanup/verification records and task commits, each including this checklist. The initial tracking review was committed as `9e0225c47`; earlier task hashes are recorded in subsequent entries. `git log -- docs/plans/ui_copy_audit_checklist.md` identifies each task's own commit.
 - Final core-route and Bookmarklets/compose-prefill smoke checks passed (2/2). Feature Flags targeted PHP checks passed (25/25). No new or updated dependencies, navigation destinations, icon mappings, generated assets or `todo.txt` changes.
 - Newly observed candidates remain unchecked under Next phase. These local changes have not been deployed or verified on the live instance; existing production acceptance and source-comment follow-ups remain open. Temporary browser scripts/screenshots are under `/tmp/`; no full-suite or physical-device acceptance is claimed.
+
+## Next phase — new candidates
+
+These are observations for later rendered review, not approved removal decisions.
+
+- [ ] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
+- [ ] **Post analysis no-risk fields** — Review routine “Recommended action: none,” “Unicode risk: none” and script inventories in expanded analysis. Check benign and risky posts; retain actual warnings, moderation consequences and useful evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
+- [ ] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
+- [ ] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
+- [ ] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
