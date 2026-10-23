@@ -15,6 +15,8 @@
   </article>
 <?php if ($paginationError !== null): ?>
   <p role="alert"><?= $e($paginationError) ?></p>
+<?php elseif ($items === []): ?>
+  <p>No activity.</p>
 <?php endif; ?>
 <?php foreach ($items as $item): ?>
 <?php $href = $item['link']['href']; ?>

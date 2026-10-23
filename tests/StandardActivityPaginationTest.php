@@ -66,6 +66,90 @@ final class StandardActivityPaginationTest
         assertStringContains('Load more', $this->render($app, '/forte/activity/'));
     }
 
+    public function testTiedTimesTraverseAndReturnWithoutSkippingAfterArrivalsOrReindexing(): void
+    {
+        [$app, $pdo, $service] = $this->environment();
+        $first = $service->fetchActivityPage('all');
+        $second = $service->fetchActivityPage('all', $first['next']);
+        $third = $service->fetchActivityPage('all', $second['next']);
+        $keys = array_merge(array_column($first['items'], 'action_key'), array_column($second['items'], 'action_key'), array_column($third['items'], 'action_key'));
+        assertSame(205, count($keys));
+        assertSame(205, count(array_unique($keys)));
+        assertSame(null, $first['previous']);
+        assertSame(null, $third['next']);
+        $back = $service->fetchActivityPage('all', $second['previous'], 'previous');
+        assertSame(array_column($first['items'], 'action_key'), array_column($back['items'], 'action_key'));
+        $backAgain = $service->fetchActivityPage('all', $third['previous'], 'previous');
+        assertSame(array_column($second['items'], 'action_key'), array_column($backAgain['items'], 'action_key'));
+        $pdo->exec("INSERT INTO activity (created_at,kind,action_key,label,board_tags_json,author_label) VALUES ('2026-10-24T00:00:00Z','test','new-arrival','New arrival','[]','guest')");
+        $pdo->exec('UPDATE activity SET id=id+1000');
+        assertSame(array_column($second['items'], 'action_key'), array_column($service->fetchActivityPage('all', $first['next'])['items'], 'action_key'));
+        assertSame('new-arrival', $service->fetchActivityPage('all')['items'][0]['action_key']);
+        $pdo->prepare('DELETE FROM activity WHERE action_key=?')->execute([$first['next']['action_key']]);
+        assertSame(array_column($second['items'], 'action_key'), array_column($service->fetchActivityPage('all', $first['next'])['items'], 'action_key'));
+    }
+
+    public function testEmptyDeletedPageAndMalformedOrMismatchedPositionsHaveRecovery(): void
+    {
+        [$app, $pdo, $service] = $this->environment();
+        $next = $this->nextLink($this->render($app, '/activity/?view=all'));
+        $pdo->exec("DELETE FROM activity WHERE action_key < 'record-105'");
+        $empty = $this->render($app, $next);
+        assertStringContains('No activity.', $empty);
+        assertStringContains('>Previous</a>', $empty);
+        assertStringContains('>First page</a>', $empty);
+        foreach (['/activity/?position=garbage', '/activity/?position[]=x', str_replace('view=all', 'view=content', $next)] as $url) {
+            $html = $this->render($app, $url);
+            assertStringContains('role="alert"', $html);
+            assertStringContains('>First page</a>', $html);
+            assertStringNotContains('record-204', $html);
+        }
+        $last = $service->fetchActivityPage('all');
+        assertSame(null, $last['next']);
+        assertStringNotContains('position=', $this->render($app, '/activity/?view=approval'));
+    }
+
+    public function testSourceLessEventsAreIncludedAndStaleLocalPositionsRestart(): void
+    {
+        [$app, $pdo, $service] = $this->environment();
+        $pdo->exec("INSERT INTO activity (created_at,kind,label,board_tags_json,author_label) VALUES ('2026-10-24T00:00:00Z','codex_handoff','Local handoff','[]','guest')");
+        $first = $service->fetchActivityPage('all');
+        assertSame('Local handoff', $first['items'][0]['label']);
+        $next = $this->nextLink($this->render($app, '/activity/'));
+        assertTrue(is_string($next));
+        $pdo->exec('UPDATE activity SET id=id+1000 WHERE action_key IS NULL');
+        $expired = $this->render($app, $next);
+        assertStringContains('This page position has expired.', $expired);
+        assertStringContains('>First page</a>', $expired);
+        assertStringContains('Local handoff', $this->render($app, '/activity/'));
+    }
+
+    public function testCanonicalPositionsSurviveFullRebuildWithDifferentRowIds(): void
+    {
+        $root = sys_get_temp_dir() . '/activity-rebuild-' . bin2hex(random_bytes(6));
+        mkdir($root, 0700);
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__ . '/fixtures/parity_minimal_v1', FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($iterator as $file) {
+            $destination = $root . '/' . $iterator->getSubPathname();
+            $file->isDir() ? mkdir($destination, 0700, true) : copy($file->getPathname(), $destination);
+        }
+        for ($i = 0; $i < 205; $i++) {
+            $id = sprintf('page-%03d', $i);
+            file_put_contents($root . '/records/posts/' . $id . '.txt', "Post-ID: $id\nCreated-At: 2026-10-23T00:00:00Z\nBoard-Tags: general\nSubject: $id\n\nPage body.\n");
+        }
+        $database = $root . '/read.sqlite3';
+        $repository = new \ForumRewrite\Canonical\CanonicalRecordRepository($root);
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, $repository))->rebuild();
+        $pdo = new PDO('sqlite:' . $database);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $service = new ActivityService(static fn (): PDO => $pdo, $root, $database);
+        $pdo->exec('UPDATE activity SET id=id+1000');
+        $first = $service->fetchActivityPage('all');
+        $expected = array_column($service->fetchActivityPage('all', $first['next'])['items'], 'action_key');
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, $repository))->rebuild();
+        assertSame($expected, array_column($service->fetchActivityPage('all', $first['next'])['items'], 'action_key'));
+    }
+
     public function testNavigationContractIsIndependentOfActivity(): void
     {
         $links = PageNavigation::links('/example/', ['filter' => 'a & b'], 'example:a & b', null, ['key' => 'entry-9']);

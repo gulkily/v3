@@ -93,31 +93,51 @@ final class ActivityService
     {
         $view = $this->normalizeActivityView($view);
         [$where, $parameters] = $this->activityViewSql($view);
-        $keySql = "COALESCE(activity.action_key, 'local:' || activity.id)";
         $limit = max(1, min(100, $limit));
-        if ($direction !== 'next') throw new \InvalidArgumentException('This page position is invalid.');
+        if (!in_array($direction, ['next', 'previous'], true)) throw new \InvalidArgumentException('This page position is invalid.');
+        // Source-less local events have no canonical key. Never silently use
+        // an old local row id after those events are changed or re-indexed.
+        $localRows = $this->pdo()->query('SELECT id, created_at, kind, post_id, thread_id, label, author_identity_id
+            FROM activity WHERE action_key IS NULL ORDER BY id')->fetchAll();
+        $localRevision = $localRows === [] ? '' : hash('sha256', json_encode($localRows, JSON_THROW_ON_ERROR));
         if ($position !== null) {
-            if (array_keys($position) !== ['created_at', 'action_key'] || $position['created_at'] === '' || $position['action_key'] === '') {
+            if (!isset($position['created_at'], $position['action_key']) || !is_string($position['created_at'])
+                || !is_string($position['action_key']) || $position['created_at'] === '' || $position['action_key'] === ''
+                || array_diff(array_keys($position), ['created_at', 'action_key', 'local_revision']) !== []) {
                 throw new \InvalidArgumentException('This page position is invalid.');
             }
-            $where .= ' AND (activity.created_at < :page_time OR (activity.created_at = :page_time AND ' . $keySql . ' < :page_key))';
-            $parameters['page_time'] = $position['created_at'];
-            $parameters['page_key'] = $position['action_key'];
+            if (($position['local_revision'] ?? '') !== $localRevision) {
+                throw new \InvalidArgumentException('This page position has expired.');
+            }
         }
-        $statement = $this->pdo()->prepare('SELECT activity.*, ' . $keySql . ' AS page_key FROM activity
-            LEFT JOIN posts ON posts.post_id = activity.post_id WHERE 1=1 ' . $where . '
-            ORDER BY activity.created_at DESC, ' . $keySql . ' DESC LIMIT :page_limit');
-        foreach ($parameters as $key => $value) $statement->bindValue($key, $value);
-        $statement->bindValue('page_limit', $limit + 1, PDO::PARAM_INT);
-        $statement->execute();
-        $rows = $statement->fetchAll();
-        $hasMore = count($rows) > $limit;
-        $rows = array_slice($rows, 0, $limit);
-        $last = $rows[count($rows) - 1] ?? null;
+        $keySql = "COALESCE(activity.action_key, 'local:' || activity.id)";
+        $read = function (?array $boundary, string $toward, int $size) use ($where, $parameters, $keySql): array {
+            $comparison = $toward === 'previous' ? '>' : '<';
+            $order = $toward === 'previous' ? 'ASC' : 'DESC';
+            $clause = $where;
+            if ($boundary !== null) {
+                $clause .= ' AND (activity.created_at ' . $comparison . ' :page_time OR (activity.created_at = :page_time AND ' . $keySql . ' ' . $comparison . ' :page_key))';
+                $parameters['page_time'] = $boundary['created_at'];
+                $parameters['page_key'] = $boundary['action_key'];
+            }
+            $statement = $this->pdo()->prepare('SELECT activity.*, ' . $keySql . ' AS page_key FROM activity
+                LEFT JOIN posts ON posts.post_id = activity.post_id WHERE 1=1 ' . $clause . '
+                ORDER BY activity.created_at ' . $order . ', ' . $keySql . ' ' . $order . ' LIMIT :page_limit');
+            foreach ($parameters as $key => $value) $statement->bindValue($key, $value);
+            $statement->bindValue('page_limit', $size, PDO::PARAM_INT);
+            $statement->execute();
+            return $statement->fetchAll();
+        };
+        $rows = $read($position, $direction, $limit);
+        if ($direction === 'previous') $rows = array_reverse($rows);
+        $boundary = static fn (array $row): array => ['created_at' => $row['created_at'], 'action_key' => $row['page_key']]
+            + ($localRevision === '' ? [] : ['local_revision' => $localRevision]);
+        $first = $rows === [] ? $position : $boundary($rows[0]);
+        $last = $rows === [] ? $position : $boundary($rows[count($rows) - 1]);
         return [
-            'items' => array_map(fn (array $row): array => $this->enrichActivityItem($row), $rows),
-            'previous' => null,
-            'next' => $hasMore && $last !== null ? ['created_at' => $last['created_at'], 'action_key' => $last['page_key']] : null,
+            'items' => array_map(fn (array $row): array => $this->enrichActivityItem($view === 'security' ? $this->securityReviewItem($row) : $row), $rows),
+            'previous' => $first !== null && $read($first, 'previous', 1) !== [] ? $first : null,
+            'next' => $last !== null && $read($last, 'next', 1) !== [] ? $last : null,
         ];
     }
 
