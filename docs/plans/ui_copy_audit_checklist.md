@@ -312,13 +312,19 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 - Verification: three targeted write-API checks passed for benign/idempotent analysis, missing configuration and mixed-script risk. Updated benign assertions and added risky thread coverage alongside risky post detail. Chromium replayed actual rendered benign/risky root/detail and anonymous outputs, checking keyboard disclosures, retained risk attribution/evidence, omitted no-finding fields and Light/Word97/Chicago/Midnight overflow at 390px/1280px. Inspected Midnight phone risky detail screenshot (`/tmp/copy-analysis-risk-detail-midnight-390.png`). Syntax/diff passed; physical devices, live provider generation and deployment unverified. No dependencies changed.
 - Previous item commit: Outbox aggregate summary `ed7f14f33`.
 
+## Post-detail evidence review — October 23, 2026
+
+- Decision: retain the evidence header. Thread is the return path, Score is the post's score, Source opens its canonical record, Commit exposes history, and Signature distinguishes signed/unsigned provenance. Public key links open the key record; the bootstrap-only Advanced disclosure instead exposes raw public-key contents. These serve distinct navigation/provenance purposes; this review found no safe duplicate evidence to remove. No product changes in this item.
+- Verification: production TemplateRenderer/shared partials rendered signed, unsigned, unavailable-commit, retracted and bootstrap-identity states in Chromium. Verified one source presentation, visible score, signed key/signature links, explicit unavailable history, retraction notice and expanded identity key; keyboard Source navigation passed. Light/Word97/Chicago/Midnight at 390px/1280px passed overflow checks; inspected Word97 phone signed screenshot. Two existing post-exchange/retraction API checks passed. Evidence links used controlled local destinations, not live Git/signature verification. Physical devices and production unverified; dependencies unchanged.
+- Previous item commit: analysis no-finding cleanup `526dde43f`.
+
 ## Current phase — October 23, 2026
 
 These are observations for later rendered review, not approved removal decisions.
 
 - [x] **Outbox loaded summary** — Assess whether the total/attention count adds value above the visible state-labelled rows, especially with many completed items. Retain actionable storage failures and empty-state feedback.
 - [x] **Post analysis no-risk fields** — Review routine “Recommended action: none,” “Unicode risk: none” and script inventories in expanded analysis. Check benign and risky posts; retain actual warnings, moderation consequences and useful evidence. Sources: `templates/partials/post_card.php`, `templates/partials/thread_root_card.php`.
-- [ ] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
+- [x] **Post-detail evidence header** — Review whether the Thread/Score/Source/Commit/Signature block repeats nearby post identity/evidence disclosures. Check signed, unsigned, unavailable-history and retracted posts before deciding; preserve provenance and recovery. Source: `templates/pages/post.php` and shared identity details.
 - [ ] **LLM Exchanges introduction** — Review whether “Private provider conversations, newest first” adds information beyond the title, access context and time-ordered table. Preserve private-data scope and empty/error feedback. Source: `templates/pages/llm_exchanges.php`.
 - [ ] **Visitor statistics initialization** — Review the two-sentence initialization notice for repetition and whether unavailable/initializing states need different recovery. Retain request scope and privacy limitations. Source: `templates/pages/visitor_statistics.php`.
 
@@ -329,3 +335,5 @@ These observations need rendered review before deciding what to remove. Keep thi
 - [ ] **Outbox row labels** — Review action/state prefixes and generic “Local action” fallbacks against meaningful saved titles. Check long titles, reactions, untitled drafts and unknown states; preserve delivery-state distinctions. Source: `public/assets/outbox.js`.
 
 - [ ] **Analysis response assessments** — Review numeric Respondability, “generate yes/no,” Response value and Response reason together for overlap. Check why a reply was generated or skipped and what moderators need; preserve meaningful decision explanations. Sources: shared root/reply analysis templates.
+
+- [ ] **Post-detail Reply duplication** — Review the header's “Reply to this post” link against the card's Reply action. Check long evidence headers, root/reply details and retracted posts; retain an easy-to-find reply action. Source: `templates/pages/post.php`, `templates/partials/post_card.php`.
