@@ -5339,6 +5339,17 @@ NODE;
         assertSame($before, $pdo->query("SELECT score_total, vote_count, thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetch(PDO::FETCH_ASSOC));
         assertSame('no', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $other['identity_id']])['wrote_record']);
         assertSame(3, count($pdo->query($query)->fetchAll(PDO::FETCH_ASSOC)));
+        // A restored archive can have canonical records without Git history.
+        rename($root . '/.git', $root . '/saved-git');
+        try {
+            (new IncrementalReadModelUpdater($database, $root))->applyThreadLabelWrite('root-001', str_repeat('a', 40));
+            $withoutHistory = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+            assertSame([null, null, null], array_column($withoutHistory, 'source_commit_sha'));
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame($withoutHistory, $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC));
+        } finally {
+            rename($root . '/saved-git', $root . '/.git');
+        }
     }
 
     public function testApprovedLikeTagAddsScoreAndDoesNotDoubleCountForSameIdentity(): void
