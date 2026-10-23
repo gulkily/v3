@@ -154,3 +154,31 @@ No supported findings.
 
 - Durable removal acceptance and legacy resolution are the highest sizing risks; staged trust-contract validation must precede mutation. Planned one-hour bounds are not measured estimates or proof of fit.
 - Frozen R1 report/diff recovery remains unresolved; the numeric projected total is unavailable rather than fabricated.
+
+## 2026-10-23 — Step 4 completed-step handoff
+
+### Necessary/useful instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_before.md`, Planning Docs Commit Gate: planning commit `43ed5860` preceded summary/application changes and excluded the accumulated ledger. Retain this review boundary.
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol: eight separate summary-bearing stage commits make provenance, evidence trust, retraction, structure, deletion/repair, imports, concurrency and acceptance independently reviewable. Retain stage verification before dependent mutation.
+- `docs/railspike/docs/workflow/step4_implementation_after.md`, Final Verification: distinguishes final 98-test focused pass, additional 48-test source-evidence/parser pass, real browser/theme passes and an incomplete broad suite with baseline-reproduced missing-GD failures. Retain these evidence distinctions and pending production/maintainer acceptance.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- New navigation icon mapping is inapplicable: no destination was added or renamed. Existing menu and theme verification applies to the operator-review feedback instead.
+- Production deployment is outside the requested implementation/push scope. No remote site mutation, outbound communication to another person or maintainer acceptance is implied.
+
+### Uncertain assessments
+
+- Frozen R1 calibration report/diff are still unavailable. Numeric prospective/retrospective ratings remain unavailable; no active-work time or independent child outcome is inferred. The original all-effects parent remains incomplete.
+- Default Git whitespace checks flag the required blank header/body delimiters at EOF in two exact empty-body canonical incident records. Preserve valid canonical bytes; `git -c core.whitespace=-blank-at-eof diff e960f666..HEAD --check` passes. The summary's earlier blanket whitespace statement was corrected in `7504351f` without amending history.
+
+### Final revision and delivery record
+
+- Original baseline `e960f666e1146d26b2f9435d98a447c2594b9883`; final production-code/stage-8 revision `8e109c20`; verification-document correction `7504351f`. Planning plus eight stages are present; this entry is a separate debug-only handoff commit.
+- Branch `feat/retraction-effects`. User explicitly requested pushing it to origin after completion; push and exact remote-tip verification follow this commit. This is code delivery, not deployment or merge.
+- Unrelated pending unpin ledger row remains local/unstaged rather than entering this cycle's closeout commit; the relevant retraction-cycle ledger and all implementation artifacts are committed.
