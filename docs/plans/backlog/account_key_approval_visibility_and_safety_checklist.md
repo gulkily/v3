@@ -1,14 +1,14 @@
 # Account key approval visibility and safety checklist
 
-Status: Partially implemented. Priorities 1–3 are covered by the approved combined cycle; Stages 1–5 enforcement, approval review, acceptance evidence, account history, and operator review are complete; Stage 6 release verification and documentation remain. Notifications and device pairing remain deferred follow-up work. Checked items describe completed work or decisions, not release completion or production deployment.
+Status: Approved priorities 1–3 are implemented and locally release-verified. All six stages of the combined cycle are complete, including operator documentation and deployment/recovery rehearsal. Community-visible events, notifications, device pairing, and revocation remain deferred follow-up work. Checked items describe completed work or decisions, not production deployment.
 
 Reduce easy account impersonation while preserving open registration, member sponsorship, and convenient device setup. Prioritize the cross-account approval restriction, clear approval wording, and visible account-key history. Notifications and device pairing can follow as separately scoped features.
 
-The [combined Step 1 assessment](../account_key_approval_safety/account_key_approval_safety_step1_solution_assessment.md) and [Step 2 feature description](../account_key_approval_safety/account_key_approval_safety_step2_feature_description.md) are approved for Option B, grouping priorities 1–3 with a default-enabled flag. The [Step 3 development plan](../account_key_approval_safety/account_key_approval_safety_step3_development_plan.md) is approved; Stage 1 was implemented in commit `c7ba748b` on `feature/account-key-approval-safety`. The [Step 4 implementation summary](../account_key_approval_safety/account_key_approval_safety_step4_implementation_summary.md) records completed enforcement and the remaining stages. The [approval policy FDP checklist](account_key_approval_policy_fdp_checklist.md) supplies the narrower flag requirements within that scope. See also the [findings and recommendations](account_key_approval_policy_findings_and_recommendations.md). Select and scope work through the [Feature Development Process](../../fdp/FEATURE_DEVELOPMENT_PROCESS.md).
+The [combined Step 1 assessment](../account_key_approval_safety/account_key_approval_safety_step1_solution_assessment.md) and [Step 2 feature description](../account_key_approval_safety/account_key_approval_safety_step2_feature_description.md) are approved for Option B, grouping priorities 1–3 with a default-enabled flag. The [Step 3 development plan](../account_key_approval_safety/account_key_approval_safety_step3_development_plan.md) is approved; Stage 1 was implemented in commit `c7ba748b` on `feature/account-key-approval-safety`. The [Step 4 implementation summary](../account_key_approval_safety/account_key_approval_safety_step4_implementation_summary.md) records all six completed stages and their verification limits. Stage 6 was committed as `e48ac882b`; the cycle was subsequently merged in `382b2d652`. The [approval policy FDP checklist](account_key_approval_policy_fdp_checklist.md) supplies the narrower flag requirements within that scope. See also the [findings and recommendations](account_key_approval_policy_findings_and_recommendations.md). Select and scope work through the [Railspike workflow](../../railspike/RAILSPIKE.md).
 
 ## Priority 1 Prevent unintended access and clarify approvals
 
-- [x] Implement the default-enabled restriction flag, including invitation enforcement and acceptance-time checks. Release handoff remains pending in the combined cycle.
+- [x] Implement the default-enabled restriction flag, including invitation enforcement and acceptance-time checks. Local release handoff is complete; instance-specific production rollout remains separately authorized work.
 - [x] Preserve member sponsorship of new usernames, approval of additional keys for the approver's own username, and root-approved operator authority when the restriction is active.
 - [x] Use action-specific approval wording instead of a generic approval button.
 
@@ -37,7 +37,7 @@ Meaningful authorization prompts should identify the consequential details the u
 - [x] Keep IP addresses and device details out of public events, and respect the site's membership/access boundary when exposing history.
 - [x] Include invitation-derived grants in the same history and classification rules.
 
-Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, and Stage 3 persists these facts in grant-bound acceptance receipts. Account-wide history is implemented in Stage 4; Stage 5 supplies the authenticated operator security view.
+Existing foundations: individual profiles show approval attribution, and the CLI audit includes invitation-derived grants, unknown attribution, and explicit warnings that review candidates are not proven violations. Policy evaluation computes classification/count/authority, and Stage 3 persists these facts in grant-bound acceptance receipts. Account-wide history is implemented in Stage 4; Stage 5 supplies the authenticated operator security view. Stage 6 supplies the [acceptance-evidence specification](../../specs/approval_acceptance_record_v1.md) and [deployment, recovery, and rollback runbook](../../runbooks/account_key_approval_safety.md).
 
 ## Priority 3 Make approval policy changes visible
 
@@ -82,13 +82,15 @@ The goal is to make adding your own device easier than asking another member to 
 
 ## Verification for selected work
 
-Enforcement verification: `php tests/run.php ApprovalPolicyTest` passed all six tests, and `php tests/run.php WriteApiSmokeTest::testSignedInvitationRedemptionRechecksPolicyBeforeAcceptance` passed during the checkout review. These cover the permission matrix, live policy changes, competing claims, stale state, protocol bypass attempts, operator authority, and invitation acceptance. They do not complete the browser/history/release checks below.
+Enforcement verification: `php tests/run.php ApprovalPolicyTest` passed all six tests, and `php tests/run.php WriteApiSmokeTest::testSignedInvitationRedemptionRechecksPolicyBeforeAcceptance` passed during the checkout review. These cover the permission matrix, live policy changes, competing claims, stale state, protocol bypass attempts, operator authority, and invitation acceptance. The completed Stage 6 summary records additional signed API, browser, history, access-boundary, archive/rebuild, and local release checks. The checks below reflect that recorded evidence; they were not rerun during the October 23 checklist reconciliation. The full repository suite is not claimed to pass; the summary preserves prior failures and startup-timeout rerun results.
 
-- [ ] Confirm onboarding stays straightforward while additional-key approval clearly communicates account access.
-- [ ] Confirm approval prompts match the signed target and the final accepted action, including stale or concurrent requests.
-- [ ] Confirm direct approvals, invitations, and operator overrides receive consistent history and visibility treatment.
-- [ ] Confirm previously accepted grants retain their historical classification when current key counts or the flag change.
-- [ ] Confirm audiences cannot see account or device information beyond their authorized scope.
-- [ ] Confirm any pairing flow rejects expired/replayed requests and cannot substitute a different account or key.
+- [x] Confirm onboarding stays straightforward while additional-key approval clearly communicates account access.
+- [x] Confirm approval prompts match the signed target and the final accepted action, including stale or concurrent requests.
+- [x] Confirm direct approvals, invitations, and operator overrides receive consistent history and visibility treatment.
+- [x] Confirm previously accepted grants retain their historical classification when current key counts or the flag change.
+- [x] Confirm audiences cannot see account or device information beyond their authorized scope.
+- [ ] Confirm any pairing flow rejects expired/replayed requests and cannot substitute a different account or key. Deferred with Priority 5; no pairing flow is included in this release.
+
+Verification evidence: Stages 1–2 cover permission, stale-context, target-binding, and concurrent-claim checks; Stages 3–4 cover acceptance snapshots, invitation/archive replay, history, and membership boundaries; Stages 5–6 cover authenticated operator access, cache/offline boundaries, signed browser flows on desktop/mobile, and local deployment rehearsal. See the [implementation summary](../account_key_approval_safety/account_key_approval_safety_step4_implementation_summary.md) for exact commands, results, and limitations. No application, dependency, or production changes were made during checklist reconciliation.
 
 Visibility supports detection and accountability. Enforcing who may grant account access remains the primary prevention measure.
