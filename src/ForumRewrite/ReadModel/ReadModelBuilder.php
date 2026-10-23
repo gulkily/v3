@@ -87,6 +87,7 @@ final class ReadModelBuilder
             $this->measure('index_post_reactions', fn (): mixed => $this->indexPostReactions($pdo, $approvalState));
             $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
+            $this->measure('mark_activity_attribution', fn (): mixed => VerifiedAttribution::markActivity($pdo, $this->repositoryRoot, $this->attributionCutoff, false));
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
             ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot);
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));

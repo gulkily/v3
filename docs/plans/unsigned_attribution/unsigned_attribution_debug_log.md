@@ -174,3 +174,18 @@
 ### Uncertain assessments
 
 - Stage 3 was committed with a defect that Stage 4 fixed in the same unreleased schema version. Railspike does not say whether a later stage fixing an earlier stage's committed gap should be recorded as an enhancement request; it is recorded in the Stage 4 summary instead.
+
+## 2026-10-23T20:00Z · Step 4 Stage 5 (show unverified items)
+
+### Necessary/useful instructions
+
+- `CONTRIBUTING.md` UI verification across themes: the Word97 screenshot showed the mark nearly invisible on the title bar, a defect the existing `(unapproved)` mark shared. Retain.
+- `AGENTS.md` UI copy "favor removing UI text": reusing the existing `(unapproved)` pattern and the existing word "unsigned" avoided new explanatory copy. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Step 2 named an "existing unverified signature status" that does not exist; the existing word is "unsigned". Treated as a wording correction under Step 2's own decision ("reuse the existing signature status wording"), not a scope change.

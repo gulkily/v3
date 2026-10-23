@@ -173,6 +173,8 @@ Feed of indexed activity entries (see `docs/specs/php_forum_rewrite_spec_v1.md`
 | `author_is_approved` | INTEGER | default 0 |
 | `source_path` | TEXT NULL | |
 | `source_commit_sha` | TEXT NULL | |
+| `attribution_verified` | INTEGER | default 1; for post, label and reaction rows naming an identity: whether the underlying record counts under verified attribution (schema 26) |
+| `attribution_counted` | INTEGER | default 1; effective, as on `posts`. With 0 the author renders unlinked with `(unsigned)` (schema 26) |
 
 Indexes: `activity_recent_idx (created_at DESC, post_id DESC, id DESC)`,
 `activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`.
@@ -316,6 +318,9 @@ in use and `attribution_cutoff_at` the cutoff the verified totals were derived
 with; startup swaps the set if the flag changed outside the repository, and a
 change of cutoff rebuilds. `vote_count` is unchanged by the flag. Startup
 rebuilds a version 25 cache before serving queries that use the new columns.
+Activity rows for posts, labels and reactions carry the same markers, so an
+uncounted item renders its claimed name unlinked with `(unsigned)` in cards,
+Activity and record details.
 
 ## Operator retraction attribution
 

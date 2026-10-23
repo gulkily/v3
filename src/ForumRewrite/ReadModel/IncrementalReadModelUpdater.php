@@ -140,6 +140,7 @@ class IncrementalReadModelUpdater
             }
 
             $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson, $commitSha));
+            $this->measure($timings, 'mark_activity_attribution', fn (): mixed => $this->markActivityAttribution($pdo, $record->threadId ?? $record->postId));
 
             if ($record->authorIdentityId !== null && !$hidden) {
                 $this->measure($timings, 'update_profile_counts', fn (): mixed => $this->updateProfileCounts($pdo, $record, $verified));
@@ -188,6 +189,7 @@ class IncrementalReadModelUpdater
                 'refresh_thread_label_activity',
                 fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'])
             );
+            $this->measure($timings, 'mark_activity_attribution', fn (): mixed => $this->markActivityAttribution($pdo, $threadId));
             ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot, 'thread-labels');
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
@@ -272,6 +274,7 @@ class IncrementalReadModelUpdater
                 'refresh_post_reaction_activity',
                 fn (): mixed => $this->refreshPostReactionActivity($pdo, $post, $records, $commitSha)
             );
+            $this->measure($timings, 'mark_activity_attribution', fn (): mixed => $this->markActivityAttribution($pdo, $post['thread_id']));
             ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot, 'post-reactions');
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
@@ -379,8 +382,10 @@ class IncrementalReadModelUpdater
                 'insert_post',
                 fn (): mixed => $this->insertPostRow($pdo, $record, $author, $sequenceNumber, $boardTagsJson)
             );
+            $this->markPostAttribution($pdo, $record);
             $this->measure($timings, 'update_thread', fn (): mixed => $this->updateThreadForReply($pdo, $record));
             $this->measure($timings, 'upsert_activity', fn (): mixed => $this->insertActivity($pdo, $record, $boardTagsJson, $commitSha));
+            $this->markActivityAttribution($pdo, $record->threadId ?? $record->postId);
             $this->refreshApprovalDerivedState($pdo, $timings);
 
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
@@ -1146,6 +1151,11 @@ class IncrementalReadModelUpdater
         sort($paths);
 
         return $paths;
+    }
+
+    private function markActivityAttribution(PDO $pdo, string $threadId): void
+    {
+        VerifiedAttribution::markActivity($pdo, $this->repositoryRoot, VerifiedAttribution::storedCutoff($pdo), VerifiedAttribution::storedEnabled($pdo) ?? false, $threadId);
     }
 
     /** Sets the new post's verified marker and, with the flag on, drops the profile link of an unverified post. */

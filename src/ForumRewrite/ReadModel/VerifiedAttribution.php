@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\ReadModel;
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\CanonicalRecordParseException;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\LabelOwnership;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\Security\AttributionCutoff;
@@ -75,6 +77,43 @@ final class VerifiedAttribution
             || self::counts($repositoryRoot, $cutoffAt, $sourcePath, $authorIdentityId, $createdAt);
     }
 
+    /**
+     * Marks activity rows for posts, labels and reactions naming an identity. Post rows follow
+     * the post; label and reaction rows follow their own record. Optionally limited to a thread.
+     */
+    public static function markActivity(PDO $pdo, string $repositoryRoot, ?string $cutoffAt, bool $enabled, ?string $threadId = null): void
+    {
+        $scope = $threadId === null ? '' : ' AND thread_id = :thread_id';
+        $bind = $threadId === null ? [] : ['thread_id' => $threadId];
+        $pdo->prepare(
+            "UPDATE activity
+             SET attribution_verified = COALESCE((SELECT posts.attribution_verified FROM posts WHERE posts.post_id = activity.post_id), 1)
+             WHERE source_path LIKE 'records/posts/%'" . $scope
+        )->execute($bind);
+
+        $rows = $pdo->prepare(
+            "SELECT id, record_family, source_path, author_identity_id FROM activity
+             WHERE record_family IN ('thread_label', 'post_reaction') AND author_identity_id IS NOT NULL" . $scope
+        );
+        $rows->execute($bind);
+        $mark = $pdo->prepare('UPDATE activity SET attribution_verified = ? WHERE id = ?');
+        $repository = new CanonicalRecordRepository($repositoryRoot);
+        foreach ($rows->fetchAll() as $row) {
+            $path = (string) $row['source_path'];
+            try {
+                $verified = $row['record_family'] === 'thread_label'
+                    ? self::countsThreadLabel($repositoryRoot, $cutoffAt, $repository->loadThreadLabel($path))
+                    : self::counts($repositoryRoot, $cutoffAt, $path, (string) $row['author_identity_id'], $repository->loadPostReaction($path)->createdAt);
+            } catch (CanonicalRecordParseException) {
+                $verified = true;
+            }
+            $mark->execute([$verified ? 1 : 0, (int) $row['id']]);
+        }
+        $pdo->prepare(
+            'UPDATE activity SET attribution_counted = ' . ($enabled ? 'attribution_verified' : '1') . ' WHERE 1 = 1' . $scope
+        )->execute($bind);
+    }
+
     public static function storedCutoff(PDO $pdo): ?string
     {
         $stmt = $pdo->prepare('SELECT value FROM metadata WHERE key = ?');
@@ -124,6 +163,7 @@ final class VerifiedAttribution
              WHERE author_identity_id IS NOT NULL"
         );
         $pdo->exec("UPDATE profiles SET post_count = {$set}_post_count, thread_count = {$set}_thread_count");
+        $pdo->exec('UPDATE activity SET attribution_counted = ' . ($enabled ? 'attribution_verified' : '1'));
         $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')->execute([self::METADATA_ENABLED, $enabled ? '1' : '0']);
     }
 

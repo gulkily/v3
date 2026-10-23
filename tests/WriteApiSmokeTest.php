@@ -4997,6 +4997,7 @@ NODE;
                     $pdo->query("SELECT score_total, claimed_score_total, verified_score_total FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetch(\PDO::FETCH_NUM),
                     $pdo->query('SELECT post_id, attribution_verified, attribution_counted, author_profile_slug FROM posts ORDER BY post_id')->fetchAll(\PDO::FETCH_NUM),
                     $pdo->query('SELECT identity_id, post_count, thread_count, claimed_post_count, verified_post_count, claimed_thread_count, verified_thread_count FROM profiles ORDER BY identity_id')->fetchAll(\PDO::FETCH_NUM),
+                    $pdo->query('SELECT source_path, label, attribution_verified, attribution_counted FROM activity WHERE source_path IS NOT NULL AND author_identity_id IS NOT NULL ORDER BY source_path, label')->fetchAll(\PDO::FETCH_NUM),
                 ];
             };
             $rebuilt = function () use ($root, $columns): array {
@@ -5044,6 +5045,10 @@ NODE;
             $profileIds = array_column(\ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts((new ReadModelConnection($database))->open(), [$identity]), 'post_id');
             assertTrue(in_array($signedReply, $profileIds, true));
             assertFalse(in_array($unsignedReply, $profileIds, true));
+            $render = fn (string $path): string => $this->renderMethod(new Application(dirname(__DIR__), $root, $database, $artifacts), 'GET', $path);
+            assertSame(1, substr_count($render('/threads/thread-zenmemes-rules'), '(unsigned)'), 'Only the unverified reply is marked');
+            assertStringContains('(unsigned)', $render('/activity/?view=all'));
+            assertSame([0, 0], array_slice(array_values(array_filter($columns($database)[5], static fn (array $row): bool => str_contains($row[0], $unsignedReply)))[0], 2), 'Activity marks the unverified reply');
             assertSame($rebuilt(), $columns($database), 'Incremental equals rebuild');
 
             $metadata = static fn (): array => ReadModelMetadata::readMetadata((new ReadModelConnection($database))->open());
@@ -5053,6 +5058,7 @@ NODE;
             $postsById = array_column($columns($database)[3], null, 0);
             assertSame(1, $postsById[$unsignedReply][2], 'Flag off: the reply counts again');
             assertTrue($postsById[$unsignedReply][3] !== null, 'Flag off: the reply links again');
+            assertSame(0, substr_count($this->renderMethod(new Application(dirname(__DIR__), $root, $database, $artifacts), 'GET', '/threads/thread-zenmemes-rules'), '(unsigned)'), 'Flag off: no marks');
             assertSame($rebuilt(), $columns($database));
             $flag(true);
             assertSame($cutoff, AttributionCutoff::resolve($root)['cutoff_at'], 'Off and on keeps the cutoff');

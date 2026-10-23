@@ -74,6 +74,21 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
   - Parity test extended: after the cutoff a signed reply and its `#upvote` count; an unsigned reply naming the member is unlinked, uncounted, absent from the profile list, and its `#downvote` is claimed only; turning the flag off links and counts it again; every step equals a full rebuild.
   - zenmemes backup copy: compared with the pre-Stage-3 rebuild, 0 threads, 0 posts (score, flags, hidden, profile link) and 0 profiles (post and thread counts) differ; no post is unverified without a cutoff.
 
+## Stage 5 - Show unverified items
+
+- Changes:
+  - The shared author renderer shows an uncounted item's claimed name unlinked, followed by `(unsigned)`, in the same style as the existing `(unapproved)` mark. It covers post, thread, quote and board cards, Forte views, profile lists and Activity. Counted items, including unsigned items before the cutoff, look as they do today.
+  - Wording: Step 2 said to reuse the existing signature status wording. The existing word is "unsigned" (record details show "Record signature: legacy unsigned"); no "unverified" wording existed, so none was added.
+  - Activity rows gain `attribution_verified` and `attribution_counted` (same schema 26): post rows follow the post; label and reaction rows follow their record (body labels follow their source post). Builder and incremental post, approval, label and reaction writes mark them; the flag swap updates them.
+  - Word97: author marks inside the blue post title bar were gray on blue and nearly invisible; they now use light text. This also fixes the existing `(unapproved)` mark there.
+  - Docs: `read_model_schema_v1.md` activity columns.
+- Verification:
+  - Parity test extended: with the flag on, the thread page marks only the unverified reply and Activity shows the mark; activity markers equal a full rebuild; with the flag off no mark renders.
+  - Browser (Chromium, local server on a fixture read model with one reply marked uncounted): the thread card and Activity in Light, Word97, Chicago and Midnight at 375 and 1150 px show `(unsigned)` visibly, the name unlinked, no page overflow or clipped mark; screenshots reviewed before and after the Word97 fix.
+- Limitations:
+  - The public offline snapshot copies the cleared profile link but has no `(unsigned)` mark.
+  - Same-author collapsing and the reply-agent card style still key on the author name, so an unsigned post naming the reply agent's identity gets agent styling, and one naming a member collapses with that member's posts. Recorded for the follow-up.
+
 ## Enhancement Requests
 
 - **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** pending renewed Approved Step 2 and Approved Step 3. / **Outcome:** pending.

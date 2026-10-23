@@ -122,7 +122,9 @@ final class ReadModelSchema
                 author_label TEXT NOT NULL,
                 author_is_approved INTEGER NOT NULL DEFAULT 0,
                 source_path TEXT NULL,
-                source_commit_sha TEXT NULL
+                source_commit_sha TEXT NULL,
+                attribution_verified INTEGER NOT NULL DEFAULT 1,
+                attribution_counted INTEGER NOT NULL DEFAULT 1
             )',
             'CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)',
             'CREATE INDEX activity_post_id_idx ON activity (post_id)',

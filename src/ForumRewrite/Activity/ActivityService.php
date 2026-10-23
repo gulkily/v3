@@ -184,7 +184,7 @@ final class ActivityService
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
                     activity.source_path, activity.source_commit_sha,
-                    activity.id, activity.author_label, activity.author_profile_slug,
+                    activity.id, activity.author_label, activity.author_profile_slug, activity.attribution_counted,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
@@ -239,7 +239,7 @@ final class ActivityService
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
                     activity.source_path, activity.source_commit_sha,
-                    activity.id, activity.author_label, activity.author_profile_slug,
+                    activity.id, activity.author_label, activity.author_profile_slug, activity.attribution_counted,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
              LEFT JOIN posts ON posts.post_id = activity.post_id
@@ -288,6 +288,7 @@ final class ActivityService
             'author_profile_slug' => $post['author_profile_slug'],
             'author_username_token' => $post['author_username_token'],
             'author_is_approved' => (int) $post['author_is_approved'],
+            'attribution_counted' => (int) ($post['attribution_counted'] ?? 1),
         ];
         if (array_key_exists('security_review', $post)) $item['security_review'] = $post['security_review'];
         if (isset($post['security_account'])) $item['security_account'] = $post['security_account'];
