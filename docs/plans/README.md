@@ -11,6 +11,7 @@ checklists, and proposals remain at the top level or in the collections below.
 ## Feature folders
 
 - [Markdown dependency removal](markdown_dependency_removal/)
+- [Markdown renderer tables](markdown_renderer_extension/)
 
 - [Standard Activity and shared pagination](activity_feed_pagination/)
 
