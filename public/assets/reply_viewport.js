@@ -11,6 +11,7 @@
       const menu = actions.querySelector('.compose-action-menu');
       const spacer = document.createElement('div');
       spacer.setAttribute('aria-hidden', 'true');
+      spacer.setAttribute('data-reply-flow-spacer', '');
       let frame = 0;
       let interacting = false;
       let userEditing = false;

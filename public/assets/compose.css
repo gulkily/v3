@@ -266,14 +266,7 @@
   object-fit: contain;
 }
 
-.reply-continuation-stack:not([hidden]) {
-  height: min(42vh, 28rem);
-  overflow: auto;
-  overscroll-behavior: contain;
-  overflow-anchor: none;
-  align-content: start;
-}
-.reply-continuation-stack .reply-operation-placeholder .body {
+.reply-operation-placeholder .body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   min-width: 0;

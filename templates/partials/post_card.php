@@ -72,7 +72,7 @@ $hoverTimeLabel = $isRunTail ? '' : $postTimeLabel;
 // byline-above-body order.
 $metaLine = '';
 if ($isRunTail) {
-    $metaLine = '<p class="meta">' . $contentMeta($post, 'created_at', '');
+    $metaLine = '<p class="meta" data-post-byline>' . $contentMeta($post, 'created_at', '');
     if ($showRootMetaExtras) {
         if ($thread['thread_labels'] !== []) {
             $metaLine .= ' · Labels: ' . $e(implode(', ', $thread['thread_labels']));

@@ -262,6 +262,8 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 - Reply continuation correction, October 23: removed the accepted placeholder's “Open reply” presentation. Reconcile the full canonical body/metadata/actions in place; pending and rendering-failure recovery remain distinct from publication. Verified complete long reply HTML, signed Like, draft isolation and rendering-only Retry in three engines; phone four-theme layout/one-tap checks and representative Midnight/Word97 screenshots pass. This corrects an omission in the original acceptance coverage.
 
+- Ordinary-flow correction: removed the separate “Your replies” region and its fixed-height/inner-scroll styling. Posted cards are direct siblings in the existing page, with canonical same-author grouping, bylines and counts reconciled in place. No new help text or navigation was added. Full-card/reload parity and phone reading/re-entry pass on both routes in Chromium/Firefox/WebKit (four themes); Chromium continuation/recovery also passes all 16 desktop/phone themes. Shared restoration fetches prevent the long-history request burst exposed by the first sweep. Device/deployment limits remain in the implementation summary.
+
 ## Outbox copy cleanup — October 23, 2026
 
 - Removed the unlinked duplicate action summary, unchanged Last updated timestamp, absent signed/integration timestamps, and routine queued/accepted/cancelled explanations. Retained linked targets, actual signed/integration times, draft locality, sending uncertainty, failures and recovery controls. Empty status elements are hidden.
