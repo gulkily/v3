@@ -29,6 +29,42 @@ use ForumRewrite\Write\LocalWriteService;
 
 final class WriteApiSmokeTest
 {
+    public function testSignedKeyRevocationAcceptsOnceAndProtectsRetainedClaim(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $operator = $this->linkSigningIdentity($app, 'revoker'); $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $bob = $this->linkSigningIdentity($app, 'revoked-account');
+        $member = $this->linkSigningIdentity($app, 'ordinary-member');
+        $builder = new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)); $builder->rebuild();
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $pdo = new PDO('sqlite:' . $db); $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        foreach ([$bob, $member] as $target) {
+            $p = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $target['identity_id']);
+            $writer->approveUser(['approver_identity_id' => $operator['identity_id'], 'target_identity_id' => $target['identity_id'], 'target_profile_slug' => $p['profile_slug'], 'thread_id' => $p['bootstrap_thread_id'], 'parent_id' => $p['bootstrap_post_id']]);
+        }
+        $_POST = ['target_identity_id' => $bob['identity_id']]; $_SESSION['authenticated_identity_id'] = $member['identity_id'];
+        $denied = json_decode($this->renderMethod($app, 'POST', '/api/prepare_key_revocation'), true); assertSame('error', $denied['status']);
+        $_SESSION['authenticated_identity_id'] = $operator['identity_id'];
+        $prepared = json_decode($this->renderMethod($app, 'POST', '/api/prepare_key_revocation'), true); assertSame('ok', $prepared['status']);
+        assertSame(1, $prepared['revocation_review']['active_key_count']);
+        assertStringContains('Revocation-Cutoff: ' . $prepared['revocation_review']['revocation_cutoff'], $prepared['canonical_record']);
+        $signed = ['prepare_token' => $prepared['prepare_token'], 'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'], 'detached_signature' => $this->signCanonicalRecord($operator['home'], $prepared['canonical_record'])];
+        $_POST = $signed; $accepted = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_key_revocation'), true); assertSame('ok', $accepted['status']);
+        assertSame($prepared['revocation_review']['revocation_cutoff'], $accepted['revocation_cutoff']);
+        $_POST = $signed; $again = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_key_revocation'), true); if (($again['status'] ?? '') !== 'ok') throw new RuntimeException(json_encode($again)); assertSame(true, $again['recovered']);
+        assertSame(1, count(glob($root . '/records/key-revocations/*.txt')));
+        $failed = false; try { $writer->seedApprovedIdentity($bob['identity_id'], 'cannot restore'); } catch (RuntimeException) { $failed = true; } assertSame(true, $failed);
+        $_POST = []; $replacement = $this->linkSigningIdentity($app, 'revoked-account');
+        $policy = new \ForumRewrite\Security\ApprovalPolicy($pdo, $root);
+        assertSame(false, $policy->evaluate($member['identity_id'], $replacement['identity_id'])['allowed']);
+        assertSame(true, $policy->evaluate($operator['identity_id'], $replacement['identity_id'])['allowed']);
+        $failed = false; try { $policy->evaluate($operator['identity_id'], $bob['identity_id']); } catch (RuntimeException) { $failed = true; } assertSame(true, $failed);
+        $_POST = ['target_identity_id' => $operator['identity_id']];
+        $rootDenied = json_decode($this->renderMethod($app, 'POST', '/api/prepare_key_revocation'), true); assertSame('error', $rootDenied['status']);
+        $_POST = []; unset($_SESSION['authenticated_identity_id']);
+    }
+
     public function testSignedRevocationProjectionPreservesSponsorHistoryAndCutoff(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

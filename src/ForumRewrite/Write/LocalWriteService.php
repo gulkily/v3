@@ -1223,6 +1223,17 @@ class LocalWriteService
         });
     }
 
+    private function assertRevocationNameAllowed(string $identity, string $name): void
+    {
+        foreach (\ForumRewrite\Security\KeyRevocations::all($this->repositoryRoot) as $revoked) {
+            if ($revoked['identity_id'] === $identity) throw new RuntimeException('This account key was revoked. Use another approved key or ask an operator for a replacement.');
+            if ($revoked['username'] === $name) {
+                $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->requireFreshAccessState(), $identity);
+                if (!$profile || $profile['username_token'] !== $name) throw new RuntimeException('This username is reserved. Ask an operator to approve a replacement key.');
+            }
+        }
+    }
+
     private function assertUsernameChangesEnabled(): void
     {
         if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)) {
@@ -1240,6 +1251,7 @@ class LocalWriteService
             $this->publicKeyForIdentity($identity);
             $name = strtolower(trim((string) ($input['username'] ?? '')));
             if (preg_match('/^[a-z0-9._-]{1,80}$/D', $name) !== 1) throw new RuntimeException('Invalid profile name.');
+            $this->assertRevocationNameAllowed($identity, $name);
             $id = 'profile-name-' . bin2hex(random_bytes(16));
             $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
             $createdAt = gmdate('Y-m-d\TH:i:s\Z', max(time(), $latest === null ? 0 : strtotime($latest['Created-At']) + 1));
@@ -1271,6 +1283,7 @@ class LocalWriteService
             if ($record['Author-Identity-ID'] !== $identity || $path !== 'records/profile-names/' . $record['Record-ID'] . '.txt') {
                 throw new RuntimeException('Prepared profile name metadata mismatch.');
             }
+            $this->assertRevocationNameAllowed($identity, $record['Username']);
             [$key, $fingerprint] = $this->publicKeyForIdentity($identity);
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
             if (!$this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint)['ok']) {
@@ -1492,6 +1505,7 @@ class LocalWriteService
     public function seedApprovedIdentity(string $identityId, string $seedReason): array
     {
         return $this->withTimedWriteLock(function () use ($identityId, $seedReason): array {
+            if (isset(\ForumRewrite\Security\KeyRevocations::all($this->repositoryRoot)[$identityId])) throw new RuntimeException('This account key was revoked and cannot be approved again.');
             $this->assertWritableRepository();
             if (!preg_match('/^openpgp:[a-f0-9]{40}$/', $identityId) || preg_match('/[\r\n]/', $seedReason)) {
                 throw new RuntimeException('Invalid seed identity or reason. Seed not written.');
@@ -1684,6 +1698,69 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    public function prepareKeyRevocation(array $input, string $operator): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operator): array {
+            $this->assertWritableRepository();
+            $pdo = $this->requireFreshAccessState();
+            $target = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            $context = \ForumRewrite\Security\KeyRevocationPolicy::context($pdo, $this->repositoryRoot, $operator, $target);
+            if (isset($input['revocation_cutoff'])) throw new RuntimeException('Custom revocation cutoffs are not available.');
+            $cutoff = $this->canonicalTimestampNow(); $id = 'key-revocation-' . bin2hex(random_bytes(16));
+            $contents = "Record-ID: {$id}\nOperation: revoke-key\nAuthor-Identity-ID: {$operator}\nTarget-Identity-ID: {$target}\nUsername: {$context['username']}\nRevocation-Cutoff: {$cutoff}\nReview-Context: " . \ForumRewrite\Security\KeyRevocationPolicy::digest($context) . "\n\n";
+            (new \ForumRewrite\Canonical\KeyRevocationRecordParser())->parse($contents);
+            $path = \ForumRewrite\Security\KeyRevocations::path($id);
+            return $this->storePreparedPost($path, $contents, ['kind' => 'key-revocation', 'revocation_context' => $context, 'author_identity_id' => $operator])
+                + ['status' => 'ok', 'record_path' => $path, 'canonical_record' => $contents, 'revocation_review' => $context + ['revocation_cutoff' => $cutoff]];
+        });
+    }
+
+    public function finalizePreparedKeyRevocation(array $input, string $operator): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operator): array {
+            $this->assertWritableRepository();
+            $contents = (string) ($input['canonical_record'] ?? '');
+            $h = (new \ForumRewrite\Canonical\KeyRevocationRecordParser())->parse($contents);
+            $path = \ForumRewrite\Security\KeyRevocations::path($h['Record-ID']);
+            if ($operator !== $h['Author-Identity-ID'] || ($input['record_path'] ?? '') !== $path) throw new RuntimeException('Revocation signer or path mismatch.');
+            [$key, $fingerprint] = $this->publicKeyForIdentity($operator);
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            if (!$this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint)['ok']) throw new RuntimeException('Revocation signature verification failed.');
+            $receiptPath = \ForumRewrite\Security\KeyRevocations::receiptPath($h['Record-ID']);
+            if (is_file($this->repositoryRoot . '/' . $path)) {
+                if (file_get_contents($this->repositoryRoot . '/' . $path) !== $contents) throw new RuntimeException('Revocation retry bytes changed.');
+                $row = \ForumRewrite\Security\KeyRevocations::read($this->repositoryRoot, $h['Record-ID']);
+                foreach ([$path, $path . '.asc', $receiptPath] as $file) {
+                    $committed = trim($this->runGitCommand(['rev-parse', 'HEAD:' . $file], 'Revocation is not committed'));
+                    if ($committed !== trim($this->runGitCommand(['hash-object', '--', $file], 'Unable to verify revocation bytes'))) throw new RuntimeException('Committed revocation evidence changed.');
+                }
+                $head = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+                $this->refreshDerivedStateAfterCommit($head);
+                try { $this->invalidator()->invalidateAllGeneratedPresentation(); }
+                catch (\Throwable $e) { throw new RuntimeException('Revocation already committed, but cached-view refresh failed. Reload or rebuild access data.', 0, $e); }
+                return ['status' => 'ok', 'recovered' => true, 'record_path' => $path, 'commit_sha' => $head] + $row;
+            }
+            $prepared = $this->loadPreparedPost($this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token'));
+            if (($prepared['kind'] ?? '') !== 'key-revocation' || strtotime($prepared['expires_at']) < time()
+                || ($prepared['canonical_sha256'] ?? '') !== hash('sha256', $contents)
+                || ($prepared['record_path'] ?? '') !== $path || ($prepared['author_identity_id'] ?? '') !== $operator) {
+                throw new RuntimeException('Prepared revocation changed or expired. Review again.');
+            }
+            $context = \ForumRewrite\Security\KeyRevocationPolicy::context($this->requireFreshAccessState(), $this->repositoryRoot, $operator, $h['Target-Identity-ID']);
+            if (($prepared['revocation_context'] ?? null) !== $context || $h['Review-Context'] !== \ForumRewrite\Security\KeyRevocationPolicy::digest($context)) {
+                throw new RuntimeException('Account access changed. Refresh and review the revocation again.');
+            }
+            $acceptedAt = $this->canonicalTimestampNow();
+            $files = [$path => $contents, $path . '.asc' => $signature, $receiptPath => \ForumRewrite\Security\KeyRevocations::encodeReceipt($contents, $acceptedAt)];
+            $commit = $this->commitAcceptanceFiles($files, fn () => \ForumRewrite\Security\KeyRevocations::read($this->repositoryRoot, $h['Record-ID']), 'Revoke account key ' . $h['Target-Identity-ID']);
+            $this->refreshDerivedStateAfterCommit($commit['commit_sha']);
+            try { $this->invalidator()->invalidateAllGeneratedPresentation(); }
+            catch (\Throwable $e) { throw new RuntimeException('Revocation already committed, but cached-view refresh failed. Reload or rebuild access data.', 0, $e); }
+            $this->deletePreparedPost((string) $input['prepare_token']);
+            return ['status' => 'ok', 'record_path' => $path, 'commit_sha' => $commit['commit_sha'], 'revocation_cutoff' => $h['Revocation-Cutoff'], 'accepted_at' => $acceptedAt, 'profile_slug' => $context['profile_slug']];
+        });
+    }
+
     public function prepareApproval(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
@@ -2774,6 +2851,17 @@ class LocalWriteService
 
     private function approvalContext(string $actorId, string $targetId, string $threadId, string $parentId): array
     {
+        $pdo = $this->requireFreshAccessState();
+        $context = (new ApprovalPolicy($pdo, $this->repositoryRoot))->evaluate($actorId, $targetId);
+        ApprovalPolicy::assertAllowed($context);
+        if ($context['target_thread_id'] !== $threadId || $context['target_post_id'] !== $parentId) {
+            throw new RuntimeException('Approval target bootstrap thread is invalid.');
+        }
+        return $context;
+    }
+
+    private function requireFreshAccessState(): \PDO
+    {
         if (!is_file($this->databasePath) || $this->staleMarker()->exists()) {
             throw new RuntimeException('Approval state is stale. Refresh or rebuild the read model before retrying.');
         }
@@ -2784,12 +2872,7 @@ class LocalWriteService
             || ($metadata['repository_head'] ?? '') !== ReadModelMetadata::repositoryHead($this->repositoryRoot)) {
             throw new RuntimeException('Approval state is stale. Refresh or rebuild the read model before retrying.');
         }
-        $context = (new ApprovalPolicy($pdo, $this->repositoryRoot))->evaluate($actorId, $targetId);
-        ApprovalPolicy::assertAllowed($context);
-        if ($context['target_thread_id'] !== $threadId || $context['target_post_id'] !== $parentId) {
-            throw new RuntimeException('Approval target bootstrap thread is invalid.');
-        }
-        return $context;
+        return $pdo;
     }
 
     private function readModelPdo(): \PDO
@@ -2936,6 +3019,11 @@ class LocalWriteService
         if ($expiresAt !== null && strtotime($expiresAt) <= strtotime($acceptedAt)) throw new RuntimeException('Invitation has expired.');
         $files = [$path => $contents, $receiptPath => ApprovalAcceptance::encode($contents, $context, $acceptedAt, $kind)];
         if ($signature !== null) $files[$path . '.asc'] = $signature;
+        return $this->commitAcceptanceFiles($files, fn () => ApprovalAcceptance::read($this->repositoryRoot, $path), $message);
+    }
+
+    private function commitAcceptanceFiles(array $files, callable $validate, string $message): array
+    {
         foreach ($files as $relative => $bytes) {
             if (file_exists($this->repositoryRoot . '/' . $relative) || is_link($this->repositoryRoot . '/' . $relative)) {
                 throw new RuntimeException('Approval acceptance target already exists.');
@@ -2948,14 +3036,14 @@ class LocalWriteService
                 $written[] = $relative;
                 $this->writeFile($relative, $bytes);
             }
-            ApprovalAcceptance::read($this->repositoryRoot, $path);
+            $validate();
             return $this->commitCanonicalWrite(array_keys($files), $message);
         } catch (\Throwable $error) {
             $after = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to inspect acceptance outcome'));
             if ($after !== $before) {
                 // Never remove a committed grant because subsequent reporting failed.
                 foreach ($files as $relative => $bytes) {
-                    if ($this->runGitCommand(['show', 'HEAD:' . $relative], 'Unable to verify committed acceptance') !== rtrim($bytes, "\n")) throw $error;
+                    if (trim($this->runGitCommand(['rev-parse', 'HEAD:' . $relative], 'Unable to verify committed acceptance')) !== trim($this->runGitCommand(['hash-object', '--', $relative], 'Unable to hash committed acceptance'))) throw $error;
                 }
                 return ['commit_sha' => $after, 'timings' => []];
             }

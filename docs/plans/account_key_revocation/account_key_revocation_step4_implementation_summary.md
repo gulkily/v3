@@ -4,7 +4,7 @@ Debug mode: enabled
 
 Effort study: `railspike-effort / v3/account_key_revocation` — [P2 ledger](../effort_estimation_trial.md#cycle-v3account_key_revocation).
 
-Status: Stages 1–2 complete; Stage 3 next; no revocation capability released.
+Status: Stages 1–3 complete; Stage 4 next; no revocation capability released.
 
 ## Execution and study entry
 
@@ -24,3 +24,9 @@ Status: Stages 1–2 complete; Stage 3 next; no revocation capability released.
 - Changes: Added signed-request/acceptance-receipt validation and terminal current-access overlay; retained historical approval separately for attribution, scoring and sponsorship. Schema 26 adds profile revocation facts and historical approval; profile lookup, trusted archive catalog and remote authority exclusions updated. Full/incremental metadata writes project the same evidence.
 - Verification: 24 focused policy/receipt/history/archive-validation/content-import tests passed. Two additional tests passed: signed revocation preserves Bob's existing post and Casey's sponsored approval across full/incremental projection, retains distinct signed cutoff/acceptance times and rejects altered evidence; normal application startup from schema 25 with removed revocation columns rebuilds before profile lookup. `./v3 rebuild tests/fixtures/parity_minimal_v1 /tmp/account-key-revocation-stage2.sqlite3` passed; normal thread/profile lookup passed through the signed fixture. PHP syntax and `git diff --check` passed.
 - Notes: An initial signed parity test found overlay wiring only in the no-Git incremental branch; moved projection to the shared metadata write and the rerun passed. Stage 1 commit: `f49f9fe6d`. Actual signed revocation API, reserved-claim checks and full privilege enforcement remain Stages 3–4. Trusted archive catalog validation is covered here; complete revocation archive restore/release rehearsal remains Stage 7. No production changes; dependency delta zero.
+
+## Stage 3 - Signed operator acceptance and retained-claim protection
+
+- Changes: Added authenticated root-operator prepare/finalize APIs with no-store responses, exact reviewed cutoff/context binding, acceptance-time live checks and terminal root-target rejection. Reused atomic acceptance commit/cleanup; exact signed retries recover committed revocation without a duplicate. Retained claims require explicit operator replacement regardless of the cross-account flag; revoked keys cannot be reapproved, root-seeded or renamed, and unrelated renames cannot join a retained username.
+- Verification: Signed API test passed member denial, root-target denial, explicit cutoff preservation, one terminal event after exact retry, root-seed/reapproval denial and member/operator replacement policy. Existing committed-refresh approval recovery passed after shared atomic helper extraction. Policy/receipt/API-catalog regressions and signed invitation policy acceptance passed on focused rerun. `git diff --check` and PHP syntax passed.
+- Notes: Exact-retry test exposed command-output newline normalization for empty-body canonical records; committed evidence now compares Git blob IDs against exact file hashes. Stage 2 commit: `bc4c40198`. Broader session/private/signed-write denial is Stage 4; UI and complete race/fault/browser acceptance remain Stages 5–7. No deployment or dependency change.

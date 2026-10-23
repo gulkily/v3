@@ -489,6 +489,11 @@ final class Application
             return;
         }
 
+        if (in_array($path, ['/api/prepare_key_revocation', '/api/create_prepared_key_revocation'], true)) {
+            $this->identityApprovalAndInvitationApiController()->keyRevocation($method, $query, $path === '/api/create_prepared_key_revocation');
+            return;
+        }
+
         if ($path === '/api/prepare_approval') {
             $this->identityApprovalAndInvitationApiController()->prepareApproval($method, $query);
             return;

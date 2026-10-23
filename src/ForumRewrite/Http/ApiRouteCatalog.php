@@ -64,6 +64,8 @@ final class ApiRouteCatalog
             ['POST', '/api/apply_post_tag', 'hint', 'text', 'Tag a post.'],
             ['POST', '/api/apply_signed_reaction', 'signed', 'text', 'Apply a reaction with a detached signature.'],
             // Approval and invitations
+            ['POST', '/api/prepare_key_revocation', 'operator', 'json', 'Prepare an exact-key revocation with an explicit signed cutoff.'],
+            ['POST', '/api/create_prepared_key_revocation', 'operator', 'json', 'Accept an operator-signed terminal key revocation.'],
             ['POST', '/api/prepare_approval', 'signed', 'json', 'Prepare a signed approval of profile_slug.'],
             ['POST', '/api/create_prepared_approval', 'signed', 'json', 'Publish a prepared approval.'],
             ['POST', '/api/prepare_invitation', 'member', 'json', 'Prepare an invitation to sign.'],

@@ -43,6 +43,7 @@ final class ApprovalPolicy
         if ($target === null) {
             throw new RuntimeException('Approval target profile not found.');
         }
+        if ((int) ($target['is_revoked'] ?? 0) === 1) throw new RuntimeException('This account key was revoked and cannot be approved again.');
         if ($actorId === $targetId) {
             throw new RuntimeException('Self-approval is not allowed.');
         }
@@ -56,6 +57,10 @@ final class ApprovalPolicy
         $query->execute([$target['username_token']]);
         $count = (int) $query->fetchColumn();
         $operator = self::isOperator($this->repositoryRoot, $actorId);
+        $reserved = false;
+        foreach (KeyRevocations::all($this->repositoryRoot) as $revoked) {
+            if ($revoked['username'] === $target['username_token']) $reserved = true;
+        }
         $sameUsername = $actor['username_token'] === $target['username_token'];
         // Always re-read the live setting, including after a prepared request waited for the write lock.
         $enabled = FeatureFlagEvaluator::forRepository($this->repositoryRoot)
@@ -69,10 +74,11 @@ final class ApprovalPolicy
             'target_thread_id' => (string) $target['bootstrap_thread_id'],
             'target_post_id' => (string) $target['bootstrap_post_id'],
             'existing_key_count' => $count,
-            'classification' => $count === 0 ? 'new_account' : ($sameUsername ? 'own_account_key' : 'cross_account_key'),
+            'classification' => $count === 0 && !$reserved ? 'new_account' : ($sameUsername ? 'own_account_key' : 'cross_account_key'),
             'actor_is_operator' => $operator,
             'cross_account_allowed' => $enabled,
-            'allowed' => $operator || $enabled || $count === 0 || $sameUsername,
+            'retained_claim' => $reserved,
+            'allowed' => $reserved ? $operator : ($operator || $enabled || $count === 0 || $sameUsername),
         ];
     }
 
@@ -96,6 +102,7 @@ final class ApprovalPolicy
     public static function assertAllowed(array $context): void
     {
         if (!$context['allowed']) {
+            if ($context['retained_claim'] ?? false) throw new RuntimeException('This username is reserved after key revocation. A root-approved operator must approve the replacement key.');
             throw new RuntimeException('This username already has an approved key. An additional key needs approval from the same username or a root-approved operator.');
         }
     }

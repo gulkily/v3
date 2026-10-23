@@ -40,6 +40,24 @@ final class IdentityApprovalAndInvitationApiController
     ) {
     }
 
+    public function keyRevocation(string $method, array $query, bool $finalize): void
+    {
+        $headers = $this->routeServices->noStoreHeaders();
+        if ($method !== 'POST') { $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headers); return; }
+        try {
+            $viewer = ($this->authenticatedViewerProfile)();
+            if (!$viewer || (int) $viewer['is_approved'] !== 1 || !$this->routeServices->securityReviewAllowed()) {
+                $this->routeServices->sendJson(['status' => 'error', 'error' => 'Sign in with an approved root operator to revoke account keys.'], 403, $headers); return;
+            }
+            $input = $this->routeServices->requestData($query);
+            $writer = $this->routeServices->writer();
+            $result = $finalize ? $writer->finalizePreparedKeyRevocation($input, $viewer['identity_id']) : $writer->prepareKeyRevocation($input, $viewer['identity_id']);
+            $this->routeServices->sendJson($result, 200, $headers);
+        } catch (RuntimeException $e) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $e->getMessage()], 400, $headers);
+        }
+    }
+
     public function approveUser(string $method): void
     {
         if ($method !== 'POST') {
