@@ -176,3 +176,12 @@ No-JavaScript basic access — plan set aside
 	Revalidate against current code before resuming plan review.
 
 add a note to the devs that todo.txt should be appended to... do not insert things in the middle of the file o_O
+
+Markdown checkbox counter
+	show an in-page checked/total count for Markdown checkboxes
+	deferred follow-up to read-only Docs task-list rendering
+
+Site-wide "Skip to content" link
+	No skip link exists; add one to templates/layout.php targeting <main>, visually hidden until focused
+	Shared chrome on every page: verify focus visibility and header layout in each theme
+	Raised by the docs_landing reviewer brief; deferred from that cycle (docs/plans/docs_landing/docs_landing_step3_development_plan.md)

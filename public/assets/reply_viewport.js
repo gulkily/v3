@@ -11,19 +11,37 @@
       const menu = actions.querySelector('.compose-action-menu');
       const spacer = document.createElement('div');
       spacer.setAttribute('aria-hidden', 'true');
+      spacer.setAttribute('data-reply-flow-spacer', '');
       let frame = 0;
       let interacting = false;
       let userEditing = false;
+      let reading = false;
       function restore() {
-        panel.classList.remove('reply-panel-active');
+        panel.classList.remove('reply-panel-active', 'reply-panel-reading');
+        delete panel.dataset.replyReading;
         form.classList.remove('reply-viewport-active');
-        for (const key of ['top', 'left', 'width', 'height', 'menu-space', 'menu-height']) {
+        for (const key of ['top', 'left', 'width', 'height', 'bottom', 'menu-space', 'menu-height']) {
           panel.style.removeProperty('--reply-panel-' + key);
         }
         spacer.remove();
       }
       function update() {
         frame = 0;
+        if (reading && phone.matches && viewport.scale === 1 && viewport.height >= 200) {
+          const alreadyReading = panel.classList.contains('reply-panel-reading');
+          if (!alreadyReading) restore();
+          const rect = (alreadyReading ? spacer : panel).getBoundingClientRect();
+          const statusBar = document.querySelector('.site-status-bar');
+          const footerHeight = statusBar && getComputedStyle(statusBar).position === 'fixed' ? statusBar.getBoundingClientRect().height : 0;
+          panel.style.setProperty('--reply-panel-bottom', (footerHeight + 8) + 'px');
+          panel.style.setProperty('--reply-panel-left', Math.max(8, rect.left) + 'px');
+          panel.style.setProperty('--reply-panel-width', Math.min(rect.width, window.innerWidth - 16) + 'px');
+          panel.classList.add('reply-panel-reading');
+          panel.dataset.replyReading = '1';
+          spacer.style.height = (panel.getBoundingClientRect().height + footerHeight + 24) + 'px';
+          if (!spacer.isConnected) panel.before(spacer);
+          return;
+        }
         const active = document.activeElement;
         const editing = interacting || panel.contains(active) || form.__imagePickerOpen ||
           (menu && menu.open && active === document.body && panel.classList.contains('reply-panel-active'));
@@ -64,6 +82,15 @@
       function schedule() {
         if (!frame) frame = window.requestAnimationFrame(update);
       }
+      form.addEventListener('forum:reply-sent', function () {
+        reading = true; userEditing = false; interacting = false;
+        if (menu) menu.open = false;
+        if (panel.contains(document.activeElement)) document.activeElement.blur();
+        update();
+      });
+      body.addEventListener('focus', function () {
+        if (reading) { reading = false; restore(); userEditing = true; schedule(); }
+      });
       for (const event of ['pointerdown', 'keydown', 'input']) {
         body.addEventListener(event, function () { userEditing = true; schedule(); });
       }

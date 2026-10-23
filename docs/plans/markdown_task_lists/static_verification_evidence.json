@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "tests": 2,
+  "snapshot": "/tmp/markdown-tasks-static-pbmwppmc",
+  "code_sha256": {
+    "src/ForumRewrite/Docs/PublicMarkdownRenderer.php": "30de58cb6f23a02d4e96cc8e020a189d66febd827e73951ce874431cfe93462f",
+    "public/assets/platform_docs.css": "d6a242731315ae776d5e49dcf35a795507b31349f40effc42f2a45c96ab9f03f",
+    "tests/PlatformDocsStaticTest.php": "f795ea747c7a9c74d689b0efd3357e53e74d346138aef7c2d409195853194deb"
+  },
+  "isolation": "Complete local source/tests/docs snapshot, no Git/private configuration; normal full static inventory/on-demand tests ran against the snapshot so concurrent research writes cannot alter it."
+}

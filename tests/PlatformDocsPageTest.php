@@ -245,8 +245,8 @@ final class PlatformDocsPageTest
         $html = PublicMarkdownRenderer::render($source);
         assertStringContains('id="same"', $html);
         assertStringContains('id="same-1"', $html);
-        // Task markers/reference forms stay readable; supported nested lists retain their parent.
-        assertStringContains('[x] Done', $html);
+        // Task states and unsupported reference forms stay readable; nested lists retain their parent.
+        assertStringContains('<input type="checkbox" disabled checked>Done', $html);
         assertSame(2, substr_count($html, '<ul>'));
         assertStringContains('~~old~~', $html);
         assertStringContains('_emphasis_', $html);

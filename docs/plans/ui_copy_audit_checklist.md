@@ -7,6 +7,18 @@
 - Reconciled the stale Browser identity ready triage entry with its completed implementation record below. Local completion does not establish deployment to the live instance. Deployment/live verification and the original feedback-comment reply remain open, as does the separate production legacy-ownership acceptance task.
 - This review changed tracking only; no product changes, rendered checks, production inspection, or deployment were performed.
 
+## Image attachment copy reduction — October 23, 2026
+
+- [x] Attachment status now shows only dimensions and file size (for example, “175 × 68 · 2 KiB”). Removed the image description field from the shared composer and its unused field styling/visibility and lazy-signing selector. Existing preparation, error and recovery feedback remains.
+- Verification: `node tests/browser/image_content_browser.mjs` passed with updated assertions for dimensions/size-only status and absent description input. Covered phone/desktop theme geometry and overflow, keyboard removal, busy/failure/offline recovery, dedicated reply, Forte reply/new-thread, QDB and real signed upload/retry. Inspected Midnight desktop screenshot `/tmp/image-content-browser-ZsPuUf/remove-preview.png`; PHP/JavaScript syntax and diff checks passed. No dependencies changed; `todo.txt` untouched.
+- Limitations: local Chromium fixtures and emulated viewports; physical devices, other engines, production and full-suite checks were not performed.
+
+## Image preview removal — October 23, 2026
+
+- [x] Replaced the shared “Remove image” text button with an × in the preview’s upper-right corner. Retained its accessible name, tooltip, 44px target, keyboard focus, busy disabling, and separate “Remove attachment to post text” recovery action. Preparation/failure states retain removal even without a thumbnail. No dependencies added or updated; `todo.txt` unchanged.
+- Verification: `node tests/browser/image_content_browser.mjs` passed, including all available standard themes at 390px/1280px for preview/control geometry and page overflow, keyboard removal, busy disabling, invalid-image removal, offline recovery removal, dedicated reply, Forte reply/new-thread dialog, QDB attachment and real signed thread/reply publication/retry. PHP/JavaScript syntax and diff checks passed. Inspected Midnight desktop screenshot `/tmp/image-content-browser-8iZ8xk/remove-preview.png` (extremely wide one-pixel-high image fixture).
+- Limitations: local Chromium fixtures and emulated viewports; physical devices, other browser engines, production deployment and full suite were not checked.
+
 ## Standard Activity relevant evidence — October 23, 2026
 
 - [x] Replace repeated full-commit file lists with Relevant files for each standard Activity item; keep the complete list behind the existing commit link. Preserve unsigned status, identity/signature/key evidence and recovery controls. Forte copy/behavior stays unchanged.
@@ -252,6 +264,17 @@ Source review dated October 17, 2026 covered page templates, shared partials, an
 
 - Merged current remote main and LCD palette work, retaining both verification histories. Adapted restored home-page draft engagement to the shared composer binder while preserving inline-reply expansion behavior.
 - Passed `node tests/browser/lcd_palettes.mjs` and `node tests/browser/board_compose_focus.mjs` on merged code: Chromium phone/desktop palette, contrast, layout, persistence, keyboard, rotation/recovery, four-theme draft focus, failure/retry, signed publication and no-script checks. JavaScript/PHP syntax and diff checks passed. Existing blocked-storage composer errors remain separately identified by the LCD check. Full-suite, physical-device and production checks were not performed for this merge.
+
+## Consecutive reply continuation — October 23, 2026
+
+- [x] Keep routine identity/posting chatter out of the active composer. Pending/failed status and Retry belong to each captured reply; confirmed replies use the complete canonical post card and its normal actions. Phone re-entry uses the existing field without a help panel or new navigation control.
+- [x] Actual local signed text/image flows cover immediate display with requests held, concurrent/reversed completion, retained newer draft, lost-response/reload/two-tab/expiry/storage recovery, anonymous and no-script posting. Chromium phone/desktop rendered continuation passes both routes across all 16 explicit themes; Firefox and WebKit pass the same functional flow across Light/Word97/Chicago/Midnight. Long content stays within the local stack and page bounds; representative desktop Word97/Midnight and phone Word97/Midnight screenshots inspected in `/tmp/reply-continuation-review/`.
+- [x] Removed an initially hidden stack's first-paint spacing shift, corrected fixed theme status-bar overlap and preserved the desktop editor through the browser's cleared-caret rendering adjustment. Existing layout/readiness and image browser regressions pass; detailed commands and browser limits belong to the [implementation summary](reply_continuation/reply_continuation_step4_implementation_summary.md).
+- [ ] Physical iPhone Safari/Firefox keyboard, caret, rotation and one-tap re-entry acceptance; production rollout/F01 acceptance remain pending. No new/renamed navigation destination or external dependency.
+
+- Reply continuation correction, October 23: removed the accepted placeholder's “Open reply” presentation. Reconcile the full canonical body/metadata/actions in place; pending and rendering-failure recovery remain distinct from publication. Verified complete long reply HTML, signed Like, draft isolation and rendering-only Retry in three engines; phone four-theme layout/one-tap checks and representative Midnight/Word97 screenshots pass. This corrects an omission in the original acceptance coverage.
+
+- Ordinary-flow correction: removed the separate “Your replies” region and its fixed-height/inner-scroll styling. Posted cards are direct siblings in the existing page, with canonical same-author grouping, bylines and counts reconciled in place. No new help text or navigation was added. Full-card/reload parity and phone reading/re-entry pass on both routes in Chromium/Firefox/WebKit (four themes); Chromium continuation/recovery also passes all 16 desktop/phone themes. Shared restoration fetches prevent the long-history request burst exposed by the first sweep. Device/deployment limits remain in the implementation summary.
 
 ## Outbox copy cleanup — October 23, 2026
 
