@@ -51,6 +51,7 @@ try {
  await page.goto(base+'/compose/thread');await page.locator('[name="body"]').fill('Full reply reconciliation fixture');
  await page.locator('.compose-form-actions > button').click();await page.waitForURL(/\/threads\//);
  const threadUrl=base+new URL(page.url()).pathname,threadId=new URL(threadUrl).pathname.split('/').pop();
+ if(process.env.REPLY_CARD_SCREENSHOTS)await mkdir(process.env.REPLY_CARD_SCREENSHOTS,{recursive:true});
  for(const entry of ['inline','dedicated']) {
   await page.goto(entry==='inline'?threadUrl:base+'/compose/reply?thread_id='+threadId+'&parent_id='+threadId);
   const form=page.locator('[data-phone-reply]'),body=form.locator('[name="body"]');
@@ -68,10 +69,24 @@ try {
   const html=await (await context.request.get(threadUrl+'?created_post_id='+postId)).text();
   const canonicalBody=await page.evaluate(({html,postId})=>new DOMParser().parseFromString(html,'text/html').getElementById('post-'+postId).querySelector('.body').innerHTML,{html,postId});
   assert.equal(await full.locator('.body').innerHTML(),canonicalBody);
+  assert.equal(await page.locator('.reply-continuation-stack').count(),0,'no separate reply scrolling area');
+  assert.equal(await full.evaluate(el=>el.nextElementSibling?.matches('[data-compose-root], [data-reply-panel]')),true,'new reply is a normal sibling immediately before the composer');
+  if(entry==='inline') {
+   const parity=await page.evaluate(html=>{
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    return [...document.querySelectorAll('.post-card[data-post-id]')].map(live=>{
+     const expected=doc.getElementById(live.id);
+     return {id:live.id,actual:[live.classList.contains('continuation'),live.classList.contains('meta-deferred'),live.querySelector(':scope > [data-post-byline]')?.innerHTML||''],expected:[expected.classList.contains('continuation'),expected.classList.contains('meta-deferred'),expected.querySelector(':scope > [data-post-byline]')?.innerHTML||'']};
+    });
+   },html);
+   for(const row of parity)assert.deepEqual(row.actual,row.expected,'reload grouping/byline parity '+row.id);
+  }
+
   assert.match(await full.textContent(),/END OF COMPLETE REPLY/);
   assert.equal(await full.locator('.post-card-actions').count(),1);
   assert.equal(await full.getByRole('link',{name:'Open reply',exact:true}).count(),0);
   assert.equal(await body.inputValue(),'Newer draft stays here');assert.deepEqual(await body.evaluate(el=>[el.selectionStart,el.selectionEnd]),[3,8]);
+  if(process.env.REPLY_CARD_SCREENSHOTS)await page.screenshot({path:process.env.REPLY_CARD_SCREENSHOTS+'/'+entry+'-desktop.png'});
   await full.getByRole('button',{name:'Like',exact:true}).click();
   await full.getByRole('button',{name:'Liked',exact:true}).waitFor();
   await page.unroute('**/threads/**');
@@ -83,8 +98,27 @@ try {
   await failedRender.getByRole('button',{name:'Retry',exact:true}).click();
   await page.locator('[data-reply-rendered="1"]').filter({hasText:'Render recovery '+entry}).waitFor();assert.equal(sends,0);
   await page.unroute('**/api/create_prepared_post');await page.unroute('**/threads/**');
+  if(entry==='inline') {
+   const current=await (await context.request.get(threadUrl)).text();
+   const groups=await page.evaluate(html=>{
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    return [...document.querySelectorAll('.post-card[data-post-id]')].map(live=>{
+     const server=doc.getElementById(live.id);
+     return {id:live.id,actual:[live.classList.contains('continuation'),live.classList.contains('meta-deferred'),live.querySelector(':scope > [data-post-byline]')?.innerHTML||''],expected:[server.classList.contains('continuation'),server.classList.contains('meta-deferred'),server.querySelector(':scope > [data-post-byline]')?.innerHTML||'']};
+    });
+   },current);
+   for(const group of groups)assert.deepEqual(group.actual,group.expected,'multiple-send reload grouping '+group.id);
+  }
+
   console.log('PASS '+entry+': complete canonical body/actions, active draft/selection, signed Like, render-only retry without resend');
  }
+ // Restore multiple saved replies with one shared canonical page request.
+ const restore=await context.newPage();let restoreFetches=0;
+ await restore.route('**/threads/**',route=>{if(!route.request().isNavigationRequest())restoreFetches++;return route.continue();});
+ await restore.goto(base+'/compose/reply?thread_id='+threadId+'&parent_id='+threadId);
+ await restore.waitForFunction(()=>document.querySelectorAll('[data-reply-rendered="1"]').length===4);
+ assert.equal(restoreFetches,1,'saved replies share one canonical page fetch');
+ await restore.close();
  const phoneContext=await browser.newContext({storageState:await context.storageState(),hasTouch:true,viewport:{width:390,height:844},serviceWorkers:'block'});
  const phone=await phoneContext.newPage();phone.on('pageerror',e=>errors.push(e.message));
  if(process.env.REPLY_CARD_SCREENSHOTS)await mkdir(process.env.REPLY_CARD_SCREENSHOTS,{recursive:true});
@@ -101,7 +135,7 @@ try {
   assert.match(await full.locator('.body').textContent(),/END OF PHONE REPLY/);
   assert.equal(await full.locator('.post-card-actions').count(),1);
   const reading=await phone.locator('[data-reply-reading="1"]').boundingBox(),card=await full.boundingBox();
-  assert.ok(card.y+card.height<=reading.y+2 && card.y+card.height>0,'full phone card above re-entry '+entry+' '+theme);
+  assert.ok(card.y+card.height<=reading.y+2 && card.y+card.height>0,'full phone card above re-entry '+entry+' '+theme+' '+JSON.stringify({card,reading}));
   assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   if(process.env.REPLY_CARD_SCREENSHOTS)await phone.screenshot({path:process.env.REPLY_CARD_SCREENSHOTS+'/'+entry+'-'+theme+'.png'});
   await b.tap();assert.equal(await b.evaluate(el=>document.activeElement===el),true);

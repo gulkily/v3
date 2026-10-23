@@ -128,7 +128,7 @@ if (!$metaVisible) {
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
 <?php if ($metaVisible && !$isQdbQuoteRoot): ?>
-  <p class="meta"><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
+  <p class="meta" data-post-byline><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>
 <?= $partial('partials/scripture_expansion.php') ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
@@ -264,7 +264,7 @@ if (!is_array($postAnalysisLabels)) {
       <p><strong>Moderation summary:</strong> <?= $e($postAnalysisModeration['summary']) ?></p>
 <?php endif; ?>
 <?php if (isset($postAnalysisQuality['discussion_value']) || isset($postAnalysisQuality['good_faith_likelihood'])): ?>
-      <p><strong>Quality:</strong> <?= $e($postAnalysisQuality['discussion_value'] ?? 'unknown') ?><?php if (isset($postAnalysisQuality['good_faith_likelihood'])): ?>, good faith <?= $e($postAnalysisQuality['good_faith_likelihood']) ?><?php endif; ?></p>
+      <p><strong>Quality:</strong> <?= $e($postAnalysisQuality['discussion_value'] ?? '') ?><?php if (isset($postAnalysisQuality['good_faith_likelihood'])): ?><?= isset($postAnalysisQuality['discussion_value']) ? ', ' : '' ?>good faith <?= $e($postAnalysisQuality['good_faith_likelihood']) ?><?php endif; ?></p>
 <?php endif; ?>
 <?php if ($postAnalysisRespondability !== []): ?>
       <p><strong>Respondability:</strong> <?= $e($postAnalysisRespondability['overall_score'] ?? 'unknown') ?><?php if (isset($postAnalysisRespondability['best_response_mode'])): ?>, <?= $e($postAnalysisRespondability['best_response_mode']) ?><?php endif; ?><?php if (array_key_exists('should_generate_response', $postAnalysisRespondability)): ?>, generate <?= ((bool) $postAnalysisRespondability['should_generate_response']) ? 'yes' : 'no' ?><?php endif; ?></p>

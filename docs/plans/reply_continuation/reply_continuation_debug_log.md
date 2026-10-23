@@ -107,3 +107,26 @@ The original test matrix was broad but accepted stripped placeholders; it did no
 ### Handoff
 
 Correction `a209befa0`; Chromium/Firefox/WebKit both-route full-card tests, Chromium phone/four-theme checks, focused existing recovery checks and four PHP route/lazy-loader checks pass. Physical iPhone and production acceptance remain pending. Same scope/R1/P2 and 0.95 projected/retrospective assessments; no additional accepted study outcome.
+
+## Ordinary-page-flow corrective handoff — 2026-10-23
+
+### Necessary/useful instructions
+
+- User clarified that the final view should resemble a reload, exposing the remaining artificial scroll region. Canonical-component and rendered-verification guidance supported removing the wrapper entirely and checking direct sibling placement plus server grouping/byline parity, rather than styling the inner scroller differently.
+- Shared-consumer recovery testing caught the dedicated phone spacer insertion error and preserved native re-entry. The full long-history sweep exposed repeated canonical fetches; the corrected shared-request implementation has an explicit one-fetch-for-four-restored-items browser assertion.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Fresh planning approvals are not required for this correction to the normal-page reconciliation outcome. Concurrent effort-ledger/research edits remain outside this change and are preserved; no new dependency, schema or navigation destination is introduced.
+
+### Uncertain assessments
+
+The first broad theme sweep timed out from repeated thread rendering during restoration. Focused functional passes alone did not expose that load. The final sweep passes after sharing the in-flight canonical document; this is isolated local evidence, not physical-device or production acceptance.
+
+### Handoff
+
+Implementation/evidence commit `62aec7e21`, branch `fix/reply-page-flow`. Three-engine full-card and four-theme phone checks, Chromium all-16-theme continuation/recovery, focused PHP 93/93 and syntax/diff checks pass. Visual inspection covers ordinary-flow phone and desktop. No merge/push/deployment or new study outcome/rating is claimed; prior snapshots remain intact.

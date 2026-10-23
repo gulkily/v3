@@ -2,6 +2,11 @@
   'use strict';
   const prefix = 'forum-reply-continuation:';
   let lastCreatedAt = 0;
+  let scrollIntent = 0;
+  for (const event of ['wheel', 'touchmove']) window.addEventListener(event, () => { scrollIntent++; }, {passive:true});
+  window.addEventListener('keydown', event => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(event.key)) scrollIntent++;
+  });
   function save(item) {
     try { localStorage.setItem(prefix + item.id, JSON.stringify(item, (key, value) => key === 'imageFile' ? undefined : value)); }
     catch { throw new Error('Reply recovery storage is unavailable or full. Keep this page open, free browser storage and retry.'); }
@@ -36,11 +41,8 @@
     const threadId = form.querySelector('[name="thread_id"]').value;
     const parentId = form.querySelector('[name="parent_id"]').value;
     const views = new Map();
-    const stack = document.createElement('section');
-    stack.className = 'stack reply-continuation-stack';
-    stack.setAttribute('aria-label', 'Your replies');
-    stack.hidden = true;
     const panel = root.querySelector('[data-reply-panel]');
+    const anchor = root.querySelector('[data-inline-reply-compose]') ? root : panel;
     function matches(item) {
       return typeof item?.id === 'string' && typeof item?.fields?.body === 'string' &&
         item.fields.thread_id === threadId && item.fields.parent_id === parentId;
@@ -56,16 +58,13 @@
       const retry = document.createElement('button');
       retry.type = 'button'; retry.textContent = 'Retry';
       card.append(retry);
-      if (!stack.isConnected) {
-        if (root.querySelector('[data-inline-reply-compose]')) root.before(stack);
-        else panel.before(stack);
-      }
-      stack.hidden = false;
-      stack.append(card);
+      const flowAnchor = anchor.previousElementSibling?.hasAttribute('data-reply-flow-spacer') ? anchor.previousElementSibling : anchor;
+      flowAnchor.before(card);
       let running = false;
       let preview;
       let rendering = false;
       let rendered = false;
+      const initialScrollIntent = scrollIntent;
       async function hydrate() {
         if (rendering || rendered || !card.isConnected) return;
         rendering = true;
@@ -73,7 +72,9 @@
         try {
           const full = await api.renderPost(item.result.postId, item.fields.thread_id, item.result.commitSha);
           if (!card.isConnected) return;
-          const follow = stack.scrollHeight - stack.clientHeight - stack.scrollTop < 48;
+          const editorTop = body.getBoundingClientRect().top;
+          const flowAnchor = anchor.previousElementSibling?.hasAttribute('data-reply-flow-spacer') ? anchor.previousElementSibling : anchor;
+          const following = panel.dataset.replyReading === '1' && flowAnchor.previousElementSibling === card && scrollIntent === initialScrollIntent;
           full.dataset.replyOperation = item.id;
           full.dataset.replyState = 'accepted';
           full.dataset.replyRendered = '1';
@@ -81,7 +82,11 @@
           card.replaceWith(full);
           card = full; rendered = true;
           api.bindPost(full);
-          if (follow) stack.scrollTop = stack.scrollHeight;
+          if (document.activeElement === body) window.scrollBy(0, body.getBoundingClientRect().top - editorTop);
+          else if (following) {
+            full.style.scrollMarginBottom = (window.innerHeight - panel.getBoundingClientRect().top + 24) + 'px';
+            full.scrollIntoView({block:'end'});
+          }
         } catch {
           status.hidden = false;
           status.textContent = 'Reply posted. Retry loading its full view.';
@@ -99,7 +104,6 @@
       }
       if (item.hasImage) void showImage().catch(() => {});
       function update(next) {
-        const follow = stack.scrollHeight - stack.clientHeight - stack.scrollTop < 48;
         item = next;
         card.dataset.replyState = item.state;
         card.setAttribute('aria-busy', String(running));
@@ -114,7 +118,6 @@
           if (canonical && canonical !== card) {
             if (preview) URL.revokeObjectURL(preview.src);
             card.remove();
-            if (!stack.children.length) stack.hidden = true;
           }
           card.removeAttribute('data-pending-reply-id');
           card.classList.remove('pending-reply-card');
@@ -122,7 +125,6 @@
         } else {
           status.textContent = running ? 'Posting…' : item.error || 'Not confirmed. Check and retry.';
         }
-        if (follow) stack.scrollTop = stack.scrollHeight;
       }
       async function transmit() {
         // A second tab must reload the winning operation while holding the same lock.
@@ -185,7 +187,7 @@
       // between pointer down and click, or move a newer draft out of view.
       retry.addEventListener('pointerdown', event => event.preventDefault());
       retry.addEventListener('click', () => { if (item.state === 'accepted') void hydrate(); else void deliver(); });
-      const view = {card, update, deliver}; views.set(item.id, view); update(item);
+      const view = {get card() { return card; }, update, deliver}; views.set(item.id, view); update(item);
       return view;
     }
     // Restoring never silently submits. The user can check/retry each retained item.
@@ -211,17 +213,16 @@
         body.value = '';
         api.clearDraft(form);
         body.dispatchEvent(new Event('input', {bubbles:true}));
-        stack.scrollTop = stack.scrollHeight;
         if (window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches) {
           form.dispatchEvent(new Event('forum:reply-sent'));
           // Reading mode owns keyboard dismissal; reveal the sent card above its bar.
           requestAnimationFrame(() => {
-            stack.style.scrollMarginBottom = (window.innerHeight - panel.getBoundingClientRect().top + 24) + 'px';
-            stack.scrollIntoView({block:'end'});
+            view.card.style.scrollMarginBottom = (window.innerHeight - panel.getBoundingClientRect().top + 24) + 'px';
+            view.card.scrollIntoView({block:'end'});
           });
         } else {
           if (document.activeElement !== body) body.focus({preventScroll:true});
-          // Keep the editor at its writing position as the local stack appears.
+          // Keep the editor at its writing position as the reply enters the page.
           const preservePosition = () => {
             if (document.activeElement === body && !body.value) window.scrollBy(0, body.getBoundingClientRect().top - editorTop);
           };

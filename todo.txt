@@ -34,12 +34,22 @@ html pages should be marked up with the templates used to build them
 
 offline support feature stub
 Tracked in `docs/plans/backlog/offline_support_roadmap.md`.
+	alert the operator when offline snapshot publication stops working
+		include repeated failures, exhausted retries, and missing or stale snapshots
+		related: docs/plans/absent_retraction_snapshot_step1_solution_assessment.md
 	Next: snapshot lifecycle confidence and cache controls.
 		add an Offline Reading feature flag so availability can be enabled, disabled, and rolled out independently of snapshot publishing
 		make approved-members-only mode compatible with offline reading without exposing member-only content through a public snapshot
 			define its authentication, privacy, cache, and revocation model first
 	Later: broader read-only navigation, saved drafts, queued reactions, and
 	queued replies/threads with explicit sync, conflict, and security design.
+
+project-wide resilient processing
+	audit processes for abortive checks like retained retractions referencing deleted posts
+	prefer HTML-parser-like "ignore and keep going" failure modes: skip the affected
+		item, record/report the problem, and continue processing independent valid work
+	make degraded or incomplete results visible to the operator with actionable recovery
+	separate follow-up to docs/plans/absent_retraction_snapshot_step1_solution_assessment.md
 
 convert user-facing versioning to more human-readable
 	use either sequential version numbers (for things like js modules)
@@ -164,3 +174,8 @@ No-JavaScript basic access — plan set aside
 	Plan: docs/plans/nojs_basic_access_step3_development_plan.md
 	Steps 1 and 2 approved; Step 3 draft, implementation not started.
 	Revalidate against current code before resuming plan review.
+
+Site-wide "Skip to content" link
+	No skip link exists; add one to templates/layout.php targeting <main>, visually hidden until focused
+	Shared chrome on every page: verify focus visibility and header layout in each theme
+	Raised by the docs_landing reviewer brief; deferred from that cycle (docs/plans/docs_landing/docs_landing_step3_development_plan.md)

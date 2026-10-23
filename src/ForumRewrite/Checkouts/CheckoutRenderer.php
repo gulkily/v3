@@ -11,7 +11,7 @@ final class CheckoutRenderer
         $this->columns = max(20, min(240, $columns));
     }
 
-    public function render(array $rows): array
+    public function render(array $rows, bool $markEligible = false): array
     {
         if ($rows === []) {
             return ['lines' => [], 'abridged' => false];
@@ -53,7 +53,11 @@ final class CheckoutRenderer
             if ($narrow && $hint !== '') {
                 $abridged = true;
             }
-            $fields = [$labels[$index], $row['snapshot']['branch'] ?? '[' . $row['role'] . ']', $row['action'] ?? $row['remote'] . '/' . $row['target'], $hint];
+            $action = $row['action'] ?? $row['remote'] . '/' . $row['target'];
+            if ($markEligible && in_array($action, ['fast-forward', 'merge'], true)) {
+                $action = '*' . $action;
+            }
+            $fields = [$labels[$index], $row['snapshot']['branch'] ?? '[' . $row['role'] . ']', $action, $hint];
             $lines[] = $this->line(array_slice($fields, 0, count($widths)), $widths, $abridged);
         }
         return ['lines' => $lines, 'abridged' => $abridged];

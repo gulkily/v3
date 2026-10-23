@@ -3707,6 +3707,18 @@
 
     form.addEventListener("keydown", submitComposeFromKeyboard);
 
+    let replyRenderDocumentPromise = null;
+    let reconciledReplyDocument = null;
+    function loadReplyRenderDocument(url) {
+      if (!replyRenderDocumentPromise) {
+        replyRenderDocumentPromise = fetch(url, {credentials:'same-origin', cache:'no-store'})
+          .then(async response => {
+            if (!response.ok) throw new Error("Reply posted. Retry loading its full view.");
+            return new DOMParser().parseFromString(await response.text(), 'text/html');
+          }).finally(() => { replyRenderDocumentPromise = null; });
+      }
+      return replyRenderDocumentPromise;
+    }
     const continuation = isReplyComposeForm(form) && window.ForumReplyContinuation && !window.location.pathname.startsWith('/forte')
       ? window.ForumReplyContinuation.bind(form, root, {
         card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
@@ -3739,13 +3751,39 @@
           if (description) description.value = '';
         },
         renderPost: async function (postId, threadId, commitSha) {
-          const response = await fetch(canonicalReplyUrl({postId, threadId, commitSha:commitSha || ''}), {credentials:'same-origin', cache:'no-store'});
-          if (!response.ok) throw new Error("Reply posted. Retry loading its full view.");
-          const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+          const url = canonicalReplyUrl({postId, threadId, commitSha:commitSha || ''});
+          let doc = await loadReplyRenderDocument(url);
+          // An in-flight snapshot can predate another reply's confirmation.
+          if (!doc.getElementById('post-' + postId)) doc = await loadReplyRenderDocument(url);
           const post = doc.getElementById('post-' + postId);
           if (!post?.matches('.post-card[data-post-id]')) throw new Error("Reply posted. Retry loading its full view.");
           const catalog = doc.querySelector('[data-agent-response-mode-catalog]');
           if (catalog && !document.querySelector('[data-agent-response-mode-catalog]')) document.body.append(document.importNode(catalog, true));
+          // Reconcile grouping and bylines of earlier cards as a reload would,
+          // preserving their bound controls and the active composer itself.
+          const editor = form.querySelector('[name="body"]');
+          const editorTop = editor.getBoundingClientRect().top;
+          if (reconciledReplyDocument !== doc) {
+            reconciledReplyDocument = doc;
+            for (const canonical of doc.querySelectorAll('.post-card[data-post-id]')) {
+              const live = document.getElementById(canonical.id);
+              if (!live?.matches('.post-card[data-post-id]')) continue;
+              if (canonical.hasAttribute('data-replies')) live.setAttribute('data-replies', canonical.getAttribute('data-replies'));
+              for (const name of ['continuation', 'meta-deferred']) live.classList.toggle(name, canonical.classList.contains(name));
+              if (canonical.hasAttribute('data-time')) live.setAttribute('data-time', canonical.getAttribute('data-time'));
+              else live.removeAttribute('data-time');
+              const currentByline = live.querySelector(':scope > [data-post-byline]');
+              const byline = canonical.querySelector(':scope > [data-post-byline]');
+              if (currentByline?.outerHTML !== byline?.outerHTML) {
+                currentByline?.remove();
+                if (byline) {
+                  const index = Array.from(canonical.children).indexOf(byline);
+                  live.insertBefore(document.importNode(byline, true), live.children[index] || null);
+                }
+              }
+            }
+          }
+          if (document.activeElement === editor) window.scrollBy(0, editor.getBoundingClientRect().top - editorTop);
           return document.importNode(post, true);
         },
         bindPost: post => window.ForumThreadReactions?.bindWithin(post),
