@@ -96,6 +96,10 @@ try {
         fixture = await page.evaluate(() => ({width: innerWidth, scroll: document.documentElement.scrollWidth, alignment: [...document.querySelectorAll('table th')].map(e => getComputedStyle(e).textAlign)}));
         assert.ok(fixture.scroll <= width + 1);
         await page.screenshot({path: output + '/fixture-' + theme + '-' + width + '.png', fullPage: true});
+        await page.locator('table a[href="/docs/reference/v3_cli.md#delete-a-canonical-record"]').click();
+        assert.ok(page.url().endsWith('/docs/reference/v3_cli.md#delete-a-canonical-record'));
+        assert.equal(await page.locator('#delete-a-canonical-record').count(), 1);
+        fixture.cellLinkNavigation = 'passed';
       }
       evidence.push({ width, theme, javaScript: false, tables: 4, tableSources: 0, procedureItems: 6, keyboard: 'passed', cliFragment: 'passed', dimensions, fixture });
       await context.close();
