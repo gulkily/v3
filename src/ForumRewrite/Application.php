@@ -135,7 +135,7 @@ final class Application
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/api/private_messages/history_sync/')
             || str_starts_with($path, '/messages/conversation/')
-            || in_array($path, ['/api/profile_name_request', '/api/cancel_profile_name_request'], true)
+            || in_array($path, ['/api/profile_name_request', '/api/cancel_profile_name_request', '/api/profile_name_join_requests', '/api/decline_profile_name_request'], true)
         ) {
             $this->startViewerSession();
         } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
@@ -484,6 +484,22 @@ final class Application
         }
         if ($path === '/api/cancel_profile_name_request') {
             $this->profileNameJoinRequestApiController()->cancelOwnRequest($method);
+            return;
+        }
+        if ($path === '/api/profile_name_join_requests') {
+            $this->profileNameJoinRequestApiController()->answerableRequests($method);
+            return;
+        }
+        if ($path === '/api/decline_profile_name_request') {
+            $this->profileNameJoinRequestApiController()->declineRequest($method, $query);
+            return;
+        }
+        if ($path === '/api/prepare_profile_name_grant') {
+            $this->writePostAndIdentityApiController()->prepareProfileNameGrant($method, $query);
+            return;
+        }
+        if ($path === '/api/finalize_profile_name_grant') {
+            $this->writePostAndIdentityApiController()->finalizeProfileNameGrant($method, $query);
             return;
         }
 
@@ -1992,6 +2008,8 @@ final class Application
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
             || $path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name'
             || $path === '/api/profile_name_request' || $path === '/api/cancel_profile_name_request'
+            || $path === '/api/profile_name_join_requests' || $path === '/api/decline_profile_name_request'
+            || $path === '/api/prepare_profile_name_grant' || $path === '/api/finalize_profile_name_grant'
             || $path === '/api/inspect_invitation' || $path === '/api/prepare_invitation_redemption'
             || $path === '/api/create_prepared_invitation'
         ) {
@@ -2061,6 +2079,7 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name', '/api/profile_name_request', '/api/cancel_profile_name_request',
+            '/api/profile_name_join_requests', '/api/decline_profile_name_request', '/api/prepare_profile_name_grant', '/api/finalize_profile_name_grant',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',

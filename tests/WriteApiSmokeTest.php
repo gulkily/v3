@@ -261,9 +261,9 @@ final class WriteApiSmokeTest
             assertSame('other-held', $writer->profileNameJoinRequest($identity)['username']);
 
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
-            $_SESSION = [];
+            $this->actAs(null);
             assertStringContains('Authentication is required.', $this->renderMethod($app, 'GET', '/api/profile_name_request'));
-            $_SESSION = ['authenticated_identity_id' => $identity];
+            $this->actAs($identity);
             $status = json_decode($this->renderMethod($app, 'GET', '/api/profile_name_request'), true);
             assertSame('other-held', $status['request']['username']);
             assertSame(false, isset($status['request']['canonical_record']));
@@ -280,6 +280,7 @@ final class WriteApiSmokeTest
             assertSame(false, is_file($path));
         } finally {
             $_SESSION = $previousSession ?? [];
+            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
             foreach ([$holder, $other, $mover] as $key) {
                 $this->deleteTree($key['home']);
             }
@@ -321,6 +322,140 @@ final class WriteApiSmokeTest
             $this->deleteTree($holder['home']);
             $this->deleteTree($mover['home']);
         }
+    }
+
+    public function testHolderAcceptsJoinRequestAndOthersCannot(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $keys = [];
+        foreach (['ilya', 'guest', 'stranger'] as $name) {
+            $keys[$name] = $this->createSigningKey($name);
+        }
+        $previousSession = $_SESSION ?? null;
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $ids = $this->linkApprovedKeys($writer, $db, $keys);
+            $this->requestUsername($writer, $ids['guest'], $keys['guest'], 'ilya');
+
+            assertSame([], $writer->profileNameJoinRequestsFor($ids['stranger']));
+            assertThrowsRuntime(fn () => $writer->prepareProfileNameGrant(['author_identity_id' => $ids['stranger'], 'grantee_identity_id' => $ids['guest']]),
+                'Only an approved holder of this username or an operator can answer this request.');
+            assertThrowsRuntime(fn () => $writer->declineProfileNameJoinRequest($ids['stranger'], $ids['guest']),
+                'Only an approved holder of this username or an operator can answer this request.');
+
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $this->actAs($ids['ilya']);
+            $listed = json_decode($this->renderMethod($app, 'GET', '/api/profile_name_join_requests'), true)['requests'];
+            assertSame([$ids['guest']], array_column($listed, 'identity_id'));
+            assertSame('guest', $listed[0]['current_username']);
+
+            $prepared = $writer->prepareProfileNameGrant(['author_identity_id' => $ids['ilya'], 'grantee_identity_id' => $ids['guest']]);
+            $forged = $prepared + ['author_identity_id' => $ids['ilya'],
+                'detached_signature' => $this->signCanonicalRecord($keys['stranger']['home'], $prepared['canonical_record'])];
+            assertThrowsRuntime(fn () => $writer->finalizePreparedProfileNameGrant($forged), 'Grant signature verification failed.');
+            $signed = ['detached_signature' => $this->signCanonicalRecord($keys['ilya']['home'], $prepared['canonical_record'])] + $forged;
+            $accepted = $writer->finalizePreparedProfileNameGrant($signed);
+            assertSame('ilya', $accepted['username']);
+
+            $pdo = (new ReadModelConnection($db))->open();
+            assertSame('ilya', ProfileRepository::byIdentityId($pdo, $ids['guest'])['username']);
+            assertSame(1, (int) ProfileRepository::byIdentityId($pdo, $ids['guest'])['is_approved']);
+            assertSame(true, is_file($root . '/' . $prepared['record_path'] . '.asc'));
+            assertStringContains($prepared['record_path'], $this->gitOutput($root, 'show --name-only --format= HEAD'));
+            assertSame(null, $writer->profileNameJoinRequest($ids['guest']));
+            assertThrowsRuntime(fn () => $writer->finalizePreparedProfileNameGrant($signed), 'Prepared post not found.');
+        } finally {
+            $_SESSION = $previousSession ?? [];
+            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+            foreach ($keys as $key) {
+                $this->deleteTree($key['home']);
+            }
+        }
+    }
+
+    public function testJoinRequestDeclineStaleStateAndPendingOnlyNames(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $keys = [];
+        foreach (['holder', 'mover', 'operator'] as $name) {
+            $keys[$name] = $this->createSigningKey($name);
+        }
+        $lonely = $this->createSigningKey('lonely');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $ids = $this->linkApprovedKeys($writer, $db, $keys);
+            $this->seedApprovedIdentity($root, $ids['operator']);
+            $lonelyId = $writer->linkIdentity(['public_key' => $lonely['public_key']])['identity_id'];
+            $pdo = (new ReadModelConnection($db))->open();
+
+            $this->requestUsername($writer, $ids['mover'], $keys['mover'], 'holder');
+            assertSame(true, $writer->declineProfileNameJoinRequest($ids['holder'], $ids['mover'])['declined']);
+            assertSame(null, $writer->profileNameJoinRequest($ids['mover']));
+            assertSame('mover', ProfileRepository::byIdentityId($pdo, $ids['mover'])['username']);
+
+            $this->requestUsername($writer, $ids['mover'], $keys['mover'], 'holder');
+            $requestFile = dirname($db) . '/profile-name-join-requests/' . str_replace(':', '-', $ids['mover']) . '.json';
+            $held = (string) file_get_contents($requestFile);
+            sleep(1);
+            $this->requestUsername($writer, $ids['mover'], $keys['mover'], 'elsewhere');
+            file_put_contents($requestFile, $held);
+            $prepared = $writer->prepareProfileNameGrant(['author_identity_id' => $ids['holder'], 'grantee_identity_id' => $ids['mover']]);
+            assertThrowsRuntime(fn () => $writer->finalizePreparedProfileNameGrant($prepared + ['author_identity_id' => $ids['holder'],
+                'detached_signature' => $this->signCanonicalRecord($keys['holder']['home'], $prepared['canonical_record'])]),
+                'This member has changed username since asking. The request was removed.');
+            assertSame('elsewhere', ProfileRepository::byIdentityId($pdo, $ids['mover'])['username']);
+
+            $this->requestUsername($writer, $ids['mover'], $keys['mover'], 'holder');
+            $prepared = $writer->prepareProfileNameGrant(['author_identity_id' => $ids['holder'], 'grantee_identity_id' => $ids['mover']]);
+            $this->requestUsername($writer, $ids['holder'], $keys['holder'], 'moved-on');
+            assertThrowsRuntime(fn () => $writer->finalizePreparedProfileNameGrant($prepared + ['author_identity_id' => $ids['holder'],
+                'detached_signature' => $this->signCanonicalRecord($keys['holder']['home'], $prepared['canonical_record'])]),
+                'Only an approved holder of this username or an operator can answer this request.');
+
+            $this->requestUsername($writer, $ids['mover'], $keys['mover'], 'lonely');
+            assertSame([], $writer->profileNameJoinRequestsFor($lonelyId));
+            assertSame([$ids['mover']], array_column($writer->profileNameJoinRequestsFor($ids['operator']), 'identity_id'));
+            $prepared = $writer->prepareProfileNameGrant(['author_identity_id' => $ids['operator'], 'grantee_identity_id' => $ids['mover']]);
+            $writer->finalizePreparedProfileNameGrant($prepared + ['author_identity_id' => $ids['operator'],
+                'detached_signature' => $this->signCanonicalRecord($keys['operator']['home'], $prepared['canonical_record'])]);
+            assertSame('lonely', ProfileRepository::byIdentityId($pdo, $ids['mover'])['username']);
+        } finally {
+            foreach ([...array_values($keys), $lonely] as $key) {
+                $this->deleteTree($key['home']);
+            }
+        }
+    }
+
+    /**
+     * @param array<string, array{public_key:string}> $keys
+     * @return array<string, string>
+     */
+    private function linkApprovedKeys(LocalWriteService $writer, string $db, array $keys): array
+    {
+        $ids = [];
+        foreach ($keys as $name => $key) {
+            $ids[$name] = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $ids[$name]);
+            $this->approveIdentity($writer, $profile);
+        }
+
+        return $ids;
+    }
+
+    private function actAs(?string $identityId): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        $_SESSION = $identityId === null ? [] : ['authenticated_identity_id' => $identityId];
+    }
+
+    /** @param array{home:string} $key @return array<string, mixed> */
+    private function requestUsername(LocalWriteService $writer, string $identity, array $key, string $name): array
+    {
+        $prepared = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => $name]);
+        return $writer->finalizePreparedProfileName($prepared + ['author_identity_id' => $identity,
+            'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])]);
     }
 
     private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator

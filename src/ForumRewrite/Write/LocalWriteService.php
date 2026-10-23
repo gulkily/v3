@@ -1258,6 +1258,147 @@ class LocalWriteService
         return $request === null ? null : array_intersect_key($request, array_flip(['identity_id', 'username', 'created_at', 'expires_at']));
     }
 
+    /**
+     * Pending requests the viewer may answer, oldest first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function profileNameJoinRequestsFor(string $viewerIdentityId): array
+    {
+        $requests = [];
+        foreach (glob($this->joinRequestDirectory() . '/openpgp-*.json') ?: [] as $file) {
+            try {
+                $request = $this->loadJoinRequest('openpgp:' . substr(basename($file, '.json'), strlen('openpgp-')));
+            } catch (RuntimeException) {
+                continue; // Not an identity in this repository.
+            }
+            if ($request !== null && $request['identity_id'] !== $viewerIdentityId && $this->mayAnswerJoinRequest($viewerIdentityId, $request)) {
+                $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->readModelPdo(), (string) $request['identity_id']);
+                $requests[] = array_intersect_key($request, array_flip(['identity_id', 'username', 'created_at', 'expires_at'])) + [
+                    'current_username' => (string) ($profile['username'] ?? ''),
+                    'profile_slug' => (string) ($profile['profile_slug'] ?? ''),
+                ];
+            }
+        }
+        usort($requests, static fn (array $a, array $b): int => strcmp($a['created_at'], $b['created_at']));
+
+        return $requests;
+    }
+
+    /** @return array{status:string,declined:bool} */
+    public function declineProfileNameJoinRequest(string $viewerIdentityId, string $requesterIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($viewerIdentityId, $requesterIdentityId): array {
+            $this->assertUsernameChangesEnabled();
+            $this->requireAnswerableJoinRequest($viewerIdentityId, $requesterIdentityId);
+            return ['status' => 'ok', 'declined' => $this->deleteJoinRequest($requesterIdentityId)];
+        });
+    }
+
+    /** @param array<string, mixed> $input @return array<string, mixed> */
+    public function prepareProfileNameGrant(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertUsernameChangesEnabled();
+            $this->assertWritableRepository();
+            $grantor = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
+            $request = $this->requireAnswerableJoinRequest($grantor, (string) ($input['grantee_identity_id'] ?? ''));
+            $requestRecord = (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse((string) $request['canonical_record']);
+            $id = 'profile-name-grant-' . bin2hex(random_bytes(16));
+            $contents = "Record-ID: {$id}\nCreated-At: " . gmdate('Y-m-d\TH:i:s\Z') . "\nOperation: grant-name\nAuthor-Identity-ID: {$grantor}\n"
+                . 'Grantee-Identity-ID: ' . $request['identity_id'] . "\nUsername: " . $requestRecord['Username']
+                . "\nProfile-Name-Record-ID: " . $requestRecord['Record-ID'] . "\n\n";
+            (new \ForumRewrite\Canonical\ProfileNameGrantRecordParser())->parse($contents);
+            $path = CanonicalPathResolver::profileNameGrant($id);
+            return $this->storePreparedPost($path, $contents, [
+                'kind' => 'profile-name-grant', 'author_identity_id' => $grantor,
+            ]) + ['status' => 'ok', 'canonical_record' => $contents, 'record_path' => $path];
+        });
+    }
+
+    /**
+     * Saves the grant and the held rename in one commit after re-checking the
+     * request, the grantor's authority and the requester's current name.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedProfileNameGrant(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertUsernameChangesEnabled();
+            $this->assertWritableRepository();
+            $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($token);
+            $contents = (string) ($input['canonical_record'] ?? '');
+            if (($prepared['kind'] ?? '') !== 'profile-name-grant' || strtotime($prepared['expires_at']) < time()
+                || hash('sha256', $contents) !== $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared grant mismatch or expiry.');
+            }
+            $grantor = $this->requirePreparedMatch($input, $prepared, 'author_identity_id');
+            $grantPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $grant = (new \ForumRewrite\Canonical\ProfileNameGrantRecordParser())->parse($contents);
+            if ($grant['Author-Identity-ID'] !== $grantor || $grantPath !== CanonicalPathResolver::profileNameGrant($grant['Record-ID'])) {
+                throw new RuntimeException('Prepared grant metadata mismatch.');
+            }
+            [$grantorKey, $grantorFingerprint] = $this->publicKeyForIdentity($grantor);
+            $grantSignature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            if (!$this->signatureVerifier->verifyDetached($grantorKey, $contents, $grantSignature, $grantorFingerprint)['ok']) {
+                throw new RuntimeException('Grant signature verification failed.');
+            }
+
+            $request = $this->requireAnswerableJoinRequest($grantor, $grant['Grantee-Identity-ID']);
+            $nameContents = (string) $request['canonical_record'];
+            $name = (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($nameContents);
+            if ($name['Record-ID'] !== $grant['Profile-Name-Record-ID'] || $name['Username'] !== $grant['Username']) {
+                throw new RuntimeException('This request changed. Reload and try again.');
+            }
+            $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$name['Author-Identity-ID']] ?? null;
+            if ($latest !== null && $name['Created-At'] <= $latest['Created-At']) {
+                $this->deleteJoinRequest($name['Author-Identity-ID']);
+                throw new RuntimeException('This member has changed username since asking. The request was removed.');
+            }
+            [$requesterKey, $requesterFingerprint] = $this->publicKeyForIdentity($name['Author-Identity-ID']);
+            if (!$this->signatureVerifier->verifyDetached($requesterKey, $nameContents, (string) $request['detached_signature'], $requesterFingerprint)['ok']) {
+                throw new RuntimeException('Profile name signature verification failed.');
+            }
+
+            $namePath = (string) $request['record_path'];
+            $this->writeFile($grantPath, $contents);
+            $this->writeFile($grantPath . '.asc', $grantSignature);
+            $this->writeFile($namePath, $nameContents);
+            $this->writeFile($namePath . '.asc', (string) $request['detached_signature']);
+            $commit = $this->commitCanonicalWrite([$grantPath, $grantPath . '.asc', $namePath, $namePath . '.asc'],
+                'Grant username ' . $name['Username'] . ' to ' . $name['Author-Identity-ID']);
+            $this->refreshDerivedStateAfterCommit($commit['commit_sha']);
+            $this->invalidator()->invalidateAllGeneratedPresentation();
+            $this->deletePreparedPost($token);
+            $this->deleteJoinRequest($name['Author-Identity-ID']);
+            return ['status' => 'ok', 'identity_id' => $name['Author-Identity-ID'], 'username' => $name['Username'], 'commit_sha' => $commit['commit_sha']];
+        });
+    }
+
+    /** @param array<string, mixed> $request */
+    private function mayAnswerJoinRequest(string $viewerIdentityId, array $request): bool
+    {
+        return (new ApprovalPolicy($this->readModelPdo(), $this->repositoryRoot))
+            ->mayGrantUsername($viewerIdentityId, strtolower((string) $request['username']));
+    }
+
+    /** @return array<string, mixed> */
+    private function requireAnswerableJoinRequest(string $viewerIdentityId, string $requesterIdentityId): array
+    {
+        $request = $this->loadJoinRequest($this->requireOpenPgpIdentityId($requesterIdentityId, 'grantee_identity_id'));
+        if ($request === null) {
+            throw new RuntimeException('This request is no longer pending.');
+        }
+        if ($request['identity_id'] === $viewerIdentityId || !$this->mayAnswerJoinRequest($viewerIdentityId, $request)) {
+            throw new RuntimeException('Only an approved holder of this username or an operator can answer this request.');
+        }
+
+        return $request;
+    }
+
     /** @return array{status:string,cancelled:bool} */
     public function cancelProfileNameJoinRequest(string $identityId): array
     {

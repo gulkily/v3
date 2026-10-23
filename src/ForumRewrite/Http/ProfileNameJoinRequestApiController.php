@@ -8,7 +8,8 @@ use RuntimeException;
 
 /**
  * Join requests for renames into a held username: the signed-in key reads or
- * cancels its own pending request.
+ * cancels its own request, and a holder or operator lists or declines the
+ * requests it may answer. Accepting is a signed grant (WritePostAndIdentityApiController).
  */
 final class ProfileNameJoinRequestApiController
 {
@@ -32,6 +33,22 @@ final class ProfileNameJoinRequestApiController
     public function cancelOwnRequest(string $method): void
     {
         $this->respond($method, 'POST', fn (string $identityId): array => $this->routeServices->writer()->cancelProfileNameJoinRequest($identityId));
+    }
+
+    public function answerableRequests(string $method): void
+    {
+        $this->respond($method, 'GET', fn (string $identityId): array => [
+            'status' => 'ok',
+            'requests' => $this->routeServices->writer()->profileNameJoinRequestsFor($identityId),
+        ]);
+    }
+
+    /** @param array<string, mixed> $query */
+    public function declineRequest(string $method, array $query): void
+    {
+        $input = $this->routeServices->requestData($query);
+        $this->respond($method, 'POST', fn (string $identityId): array => $this->routeServices->writer()
+            ->declineProfileNameJoinRequest($identityId, (string) ($input['grantee_identity_id'] ?? '')));
     }
 
     /** @param callable(string): array<string, mixed> $handler */

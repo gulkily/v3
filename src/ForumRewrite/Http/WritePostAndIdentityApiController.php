@@ -253,6 +253,18 @@ final class WritePostAndIdentityApiController
     }
 
     /** @param array<string, mixed> $query */
+    public function prepareProfileNameGrant(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->prepareProfileNameGrant($input));
+    }
+
+    /** @param array<string, mixed> $query */
+    public function finalizeProfileNameGrant(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->finalizePreparedProfileNameGrant($input));
+    }
+
+    /** @param array<string, mixed> $query */
     public function prepareRetraction(string $method, array $query): void
     {
         $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->prepareRetraction($input));

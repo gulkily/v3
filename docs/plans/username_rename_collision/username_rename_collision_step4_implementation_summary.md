@@ -45,3 +45,25 @@ Effort study: `railspike-effort`, cycle `v3/username_rename_collision`; standing
 - Notes:
   - Incremental update check: not applicable. `IncrementalReadModelUpdater` only handles post, label, subject, reaction, identity and approval writes. Rename writes, and therefore grant writes, use a full rebuild (`refreshDerivedStateAfterCommit`), which the test covers.
   - Imports: `ArchiveRecordCatalog` already doesn't recognize `profile-names`, so grants are likewise reported as unsupported; no import change.
+
+## Stage 4 - Accept and decline join requests
+- Changes:
+  - `ApprovalPolicy::mayGrantUsername()`: an operator, or an approved key whose current token is the requested name. Names held only by pending profiles therefore need an operator. It deliberately ignores `ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL`, because joining a name requires that name's consent.
+  - `LocalWriteService`:
+    - `profileNameJoinRequestsFor()` lists answerable requests, oldest first, with the requester's current name and slug, and skips entries for unknown identities.
+    - `declineProfileNameJoinRequest()`.
+    - `prepareProfileNameGrant()` builds a grant naming the held record.
+    - `finalizePreparedProfileNameGrant()` verifies the grantor's signature, then under the write lock re-checks the request, the grantor's authority, the requester's latest name and the requester's signature. It commits the grant and the rename (plus their `.asc` files) in one commit, rebuilds, and clears the request.
+  - Endpoints:
+    - `GET /api/profile_name_join_requests` and `POST /api/decline_profile_name_request` (session).
+    - `POST /api/prepare_profile_name_grant` and `POST /api/finalize_profile_name_grant` (signed).
+    - Added to the routing, session-start and allowlists, and `ApiRouteCatalog`.
+  - Tests:
+    - `testHolderAcceptsJoinRequestAndOthersCannot`: stranger can't list, prepare or decline; holder lists over HTTP; forged grant signature refused; accept keeps approval; one commit holds the grant; replay refused.
+    - `testJoinRequestDeclineStaleStateAndPendingOnlyNames`: decline; requester renamed since asking; holder renamed away between prepare and finalize; pending-only name answered by an operator only.
+- Verification:
+  - Six username tests plus `ApprovalPolicyTest` and `ApiRouteCatalogTest`: 15/15 passed.
+- Notes:
+  - Found while testing: join requests are stored next to the database, which in tests is the shared temp directory, so files from other runs can appear. Listing now skips identities that aren't in this repository. Prepared posts already share this layout; in production the directory is per instance (`state/cache`).
+  - The Stage 2 endpoint test only passed because of the order tests ran in (once output has been sent, `session_start()` doesn't run). Both endpoint tests now start the session explicitly through an `actAs()` helper.
+  - Removed three leftover request files from earlier failed runs in `/tmp/profile-name-join-requests/`.

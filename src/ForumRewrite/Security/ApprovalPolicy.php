@@ -76,6 +76,21 @@ final class ApprovalPolicy
         ];
     }
 
+    /**
+     * Consent to another key joining a username: an operator, or an approved
+     * key that currently holds that username. Names held only by pending
+     * profiles therefore need an operator.
+     */
+    public function mayGrantUsername(string $actorId, string $usernameToken): bool
+    {
+        if (self::isOperator($this->repositoryRoot, $actorId)) {
+            return true;
+        }
+        $actor = ProfileRepository::byIdentityId($this->pdo, $actorId);
+
+        return $actor !== null && (int) $actor['is_approved'] === 1 && $actor['username_token'] === $usernameToken;
+    }
+
     public static function review(array $context): array
     {
         $username = (string) $context['target_username'];
