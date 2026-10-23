@@ -574,6 +574,19 @@
         var unavailable = update.exec("SELECT post_id FROM unavailable_expansions")[0];
         if (unavailable) unavailable.values.forEach(function (row) { database.run("DELETE FROM posts WHERE post_id = ?", [row[0]]); });
       }
+      var excludedTable = update.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'excluded_posts'")[0];
+      if (excludedTable) {
+        var excluded = update.exec("SELECT post_id FROM excluded_posts")[0];
+        if (excluded) excluded.values.forEach(function (row) {
+          var affected = database.exec("SELECT thread_id FROM posts WHERE post_id = ?", [row[0]])[0];
+          database.run("DELETE FROM posts WHERE post_id = ?", [row[0]]);
+          database.run("UPDATE threads SET subject = NULL, body_preview = '', author_label = '', author_profile_slug = NULL, thread_labels_json = '[]', score_total = 0 WHERE root_post_id = ?", [row[0]]);
+          if (affected) affected.values.forEach(function (thread) {
+            database.run("UPDATE threads SET reply_count = (SELECT COUNT(*) FROM posts WHERE thread_id = ? AND post_id <> ?), last_post_id = COALESCE((SELECT post_id FROM posts WHERE thread_id = ? ORDER BY sequence_number DESC, post_id DESC LIMIT 1), ''), last_activity_at = COALESCE((SELECT created_at FROM posts WHERE thread_id = ? ORDER BY sequence_number DESC, post_id DESC LIMIT 1), root_post_created_at) WHERE root_post_id = ?", [thread[0], thread[0], thread[0], thread[0], thread[0]]);
+          });
+        });
+        database.run("INSERT OR REPLACE INTO metadata (key, value) VALUES ('snapshot_version', '5')");
+      }
       database.run("COMMIT");
     } catch (error) { database.run("ROLLBACK"); throw error; }
   };

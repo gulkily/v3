@@ -194,3 +194,9 @@ thread content fails to load while offline:
 
 Clearing site data removes the saved reader and snapshot until the browser
 next refreshes them online.
+
+## Snapshot exclusion contract (version 5)
+
+Public base and update databases include `excluded_posts(post_id TEXT PRIMARY KEY)`. These IDs are temporary publication exclusions for valid retained retractions whose canonical target was confirmed absent at build entry; they do not grant permanent removal authority. The records themselves are not copied into public snapshots. Target reappearance stays excluded for that build and is validated normally by a later build. Canonical records are retained.
+
+The reader applies exclusions even when their threads are outside an update's bounded window, removes the matching cached post, clears excluded-root presentation and refreshes affected thread counts/activity while preserving surviving replies. Older snapshots without this table remain readable. Version 5 artifacts require the updated reader to enforce these exclusions when applying updates to older bases; refresh the existing reader/service-worker assets with the application release. Existing saved offline copies cannot be changed until the client reconnects and refreshes.

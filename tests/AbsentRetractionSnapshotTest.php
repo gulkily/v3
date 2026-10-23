@@ -93,6 +93,45 @@ final class AbsentRetractionSnapshotTest
         assertSame(null, $snapshot->query("SELECT subject FROM threads WHERE root_post_id='root-001'")->fetchColumn());
     }
 
+    public function testActualReaderAppliesExclusionsOutsideUpdateThreads(): void
+    {
+        foreach (['target', 'root-001'] as $target) {
+            [$root, $database] = $this->publicationFixture($target);
+            $record = $root . '/records/post-retractions/post-retraction-' . $target . '.txt';
+            rename($record, $record . '.bak');
+            $builder = new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder();
+            $builder->build($database, $root . '/base.sqlite3');
+            rename($record . '.bak', $record);
+            $builder->buildUpdate($database, $root . '/update.sqlite3');
+            $update = new PDO('sqlite:' . $root . '/update.sqlite3');
+            assertSame([$target], $update->query('SELECT post_id FROM excluded_posts')->fetchAll(PDO::FETCH_COLUMN));
+            // Exercise the bounded-window gap: no replacement of this base thread.
+            $update->exec("DELETE FROM threads WHERE root_post_id='root-001'; DELETE FROM posts WHERE thread_id='root-001'");
+            $script = <<<'JS'
+const fs = require('fs'), vm = require('vm');
+const project = process.argv[2], root = process.argv[3], target = process.argv[4];
+global.window = {}; global.document = {addEventListener(){}};
+vm.runInThisContext(fs.readFileSync(project + '/public/assets/offline_reader.js', 'utf8'));
+require(project + '/public/assets/sql-wasm.js')({locateFile: f => project + '/public/assets/' + f}).then(SQL => {
+  const base = new SQL.Database(fs.readFileSync(root + '/base.sqlite3'));
+  const update = new SQL.Database(fs.readFileSync(root + '/update.sqlite3'));
+  window.forumOfflineSnapshot.applyUpdate(base, update);
+  window.forumOfflineSnapshot.applyUpdate(base, update);
+  const count = id => base.exec('SELECT COUNT(*) FROM posts WHERE post_id = ?', [id])[0].values[0][0];
+  if (count(target) !== 0 || count('reply-001') !== 1) throw Error('exclusion or surviving reply failed');
+  const thread = base.exec("SELECT subject, body_preview FROM threads WHERE root_post_id='root-001'")[0].values[0];
+  if (target === 'root-001' && (thread[0] !== null || thread[1] !== '')) throw Error('stale root presentation');
+  update.run('DROP TABLE excluded_posts');
+  window.forumOfflineSnapshot.applyUpdate(base, update); // Legacy artifacts still work.
+  console.log('ok');
+}).catch(error => { console.error(error); process.exit(1); });
+JS;
+            file_put_contents($root . '/consume.cjs', $script);
+            exec('node ' . escapeshellarg($root . '/consume.cjs') . ' ' . escapeshellarg(dirname(__DIR__)) . ' ' . escapeshellarg($root) . ' ' . escapeshellarg($target) . ' 2>&1', $output, $code);
+            assertSame(0, $code, implode("\n", $output));
+        }
+    }
+
     public function testMissingTrackedRetractionStillBlocks(): void
     {
         $root = $this->fixture();

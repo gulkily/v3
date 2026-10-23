@@ -18,3 +18,9 @@ Step 3 approved. Planning commit `fd4fa3839`; branch `feat/absent-retraction-sna
 - Changes: builder uses a snapshot-only guard token and filters initially absent posts before expansion validation. An excluded root retains content-free thread metadata and surviving replies; thread last activity/counts use surviving posts. Source/canonical records stay unchanged. Generation is bound to the original scan to detect intervening unrelated evidence changes.
 - Verification: focused absent/base/publisher/builder checks passed 10/10; stale secret bytes absent, source database hash unchanged, root subject/preview cleared and surviving reply retained. Syntax checks passed.
 - Notes: Stage 1 commit 622adaf59. No core read-model query/schema changes; temporary filtering is applied after unchanged queries. Portable update exclusion follows in Stage 3.
+
+## Stage 3 - Remove stale base copies through updates
+
+- Changes: portable snapshot version 5 carries `excluded_posts`; actual reader applies exclusions outside included threads, clears excluded-root presentation and recomputes affected counts/activity without deleting surviving replies. Legacy snapshots without exclusion metadata remain supported. Runbook documents the artifact contract and required reader refresh.
+- Verification: 18/18 focused absent/builder/manifest/reader-presentation checks passed, including real SQL.js execution of generated base/update artifacts, repeated update application, excluded replies/roots outside replaced threads and legacy artifacts. Node syntax and diff checks passed. No new dependency was added; existing SQL.js is reused.
+- Notes: Stage 2 commit 5c7b6a3a0. Portable schema changed, not core read-model tables/queries. Browser-rendered acceptance remains Stage 5. Existing saved clients need the application reader refresh on reconnect.

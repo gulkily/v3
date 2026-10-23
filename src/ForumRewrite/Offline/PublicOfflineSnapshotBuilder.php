@@ -14,7 +14,7 @@ use RuntimeException;
  */
 final class PublicOfflineSnapshotBuilder
 {
-    public const SNAPSHOT_VERSION = '4';
+    public const SNAPSHOT_VERSION = '5';
     private ?array $sourcePostColumns = null;
     private array $metaToken = [];
     private array $excluded = [];
@@ -69,6 +69,8 @@ final class PublicOfflineSnapshotBuilder
 
         try {
             $this->createSchema($snapshot, $maxBytes);
+            $exclude = $snapshot->prepare('INSERT INTO excluded_posts (post_id) VALUES (?)');
+            foreach (array_keys($this->excluded) as $id) $exclude->execute([$id]);
             $generatedAt = gmdate('Y-m-d\TH:i:s\Z');
             $snapshotThreads = $this->snapshotThreadRows($source, $threadLimit);
             $this->writeMetadata($snapshot, [
@@ -207,6 +209,7 @@ final class PublicOfflineSnapshotBuilder
             author_profile_slug TEXT NULL,
             sequence_number INTEGER NOT NULL
         )');
+        $pdo->exec('CREATE TABLE excluded_posts (post_id TEXT PRIMARY KEY)');
         $pdo->exec('CREATE TABLE unavailable_expansions (post_id TEXT PRIMARY KEY)');
         $pdo->exec('CREATE TABLE public_keys (
             identity_id TEXT PRIMARY KEY,
