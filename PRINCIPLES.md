@@ -9,6 +9,7 @@ If a change seems to need an exception, raise it before building.
 ### What the platform enables
 
 - You can participate right away, without any barriers or special setup.
+- Accommodating people comes before verifying them; verification can happen later.
 - The community transparently decides the rules and whom to let in.
 - People and agents are accommodated in whatever they need to access the resource.
 - Your secret keys stay on your devices, in your custody.
@@ -35,6 +36,16 @@ keep, not a path to phase out. Close abuse by recording how much trust an
 action carries, not by turning people away.
 
 - Rules out: "require a key or account" as the fix for impersonation.
+- Source: maintainer, unsigned attribution review (2026-10-23).
+
+### Accommodate first, verify later
+
+When verifying trust would turn someone away or block what they are doing,
+accept the action and record it as unverified. Verification can follow later,
+and only verified actions count where trust matters (scores, profiles,
+membership).
+
+- Rules out: refusing a person's post or vote because it can't be verified yet.
 - Source: maintainer, unsigned attribution review (2026-10-23).
 
 ### Identity, access and approval are separate
