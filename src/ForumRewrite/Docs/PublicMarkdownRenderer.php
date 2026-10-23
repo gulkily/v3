@@ -222,14 +222,16 @@ final class PublicMarkdownRenderer
 
     private static function structuredList(array $lines, ?string $sourcePath, string $projectRoot): ?string
     {
-        $index = 0;
-        $html = self::listLevel($lines, $index, 0, 1, $sourcePath, $projectRoot);
-        return $index === count($lines) ? $html : null;
+        $index = 0; $maximumDepth = 0;
+        $html = self::listLevel($lines, $index, 0, 1, $sourcePath, $projectRoot, $maximumDepth);
+        if ($index !== count($lines) || $html === null) { return null; }
+        return $maximumDepth < 5 ? $html : '<div class="docs-list-scroll" tabindex="0" role="region" aria-label="Nested list">' . $html . '</div>';
     }
 
-    private static function listLevel(array $lines, int &$index, int $indent, int $depth, ?string $sourcePath, string $projectRoot): ?string
+    private static function listLevel(array $lines, int &$index, int $indent, int $depth, ?string $sourcePath, string $projectRoot, int &$maximumDepth): ?string
     {
         if ($depth > 8) { return null; }
+        $maximumDepth = max($maximumDepth, $depth);
         $html = ''; $kind = null; $tag = null;
         while ($index < count($lines)) {
             $item = self::listItem($lines[$index]);
@@ -258,7 +260,7 @@ final class PublicMarkdownRenderer
                 if ($next !== null) {
                     if ($next['indent'] < $item['column'] || ($childIndent !== null && $childIndent !== $next['indent'])) { return null; }
                     $childIndent = $next['indent']; $flush();
-                    $child = self::listLevel($lines, $index, $childIndent, $depth + 1, $sourcePath, $projectRoot);
+                    $child = self::listLevel($lines, $index, $childIndent, $depth + 1, $sourcePath, $projectRoot, $maximumDepth);
                     if ($child === null) { return null; }
                     $html .= $child;
                     // Re-enter without manufacturing a paragraph after the child list.
