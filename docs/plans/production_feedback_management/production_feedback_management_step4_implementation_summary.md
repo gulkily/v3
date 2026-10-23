@@ -16,3 +16,9 @@ Branch: `docs/production-feedback-management`. Planning commit: `0c93edaa9`. App
 - Changes: guide and F01–F03 register records; permanent aliases, source/evidence separation and recovery walkthroughs.
 - Verification: all three source/estimate/alias mappings compared with summary/triage; F02 remains local-only with deployment pending. Add/match/update/reopen examples reviewed; local document paths and diff integrity checked.
 - Notes: runtime/UI/deployment checks inapplicable; no dependencies. Planning commit `0c93edaa9`; no production actions.
+
+## Stage 2 - Remaining feature requests
+
+- Changes: F04–F11 records and proposed next-work list; shared-source query requests remain separate. F06 explicitly reconciles historical proposed work with later local evidence, retaining pending deployment.
+- Verification: all 11 feature aliases/sources/estimates checked against source rows; completion checks retained from triage. Local referenced paths and `git diff --check` passed.
+- Notes: Stage 1 commit `367bf407f`; no inherited estimate replaced with a new forecast, no implementation or production claims. Runtime/UI checks inapplicable.

@@ -28,3 +28,73 @@ Workflow and delivery evidence are independent. No entry is closed by this migra
 - **Request:** Brainstorm text-entry macros for prompts, the current date, the current commit, and similar insertions. **Reports:** [reply-20261021180225-ffc44b89](https://zenmemes.com/posts/reply-20261021180225-ffc44b89). **Inherited estimate:** 0.5 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** Agree a small macro set; insertion preserves surrounding text, selection, and undo. **Next action:** Agree the smallest macro set and entry points before planning insertion/undo behavior.
 - **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Insertion rules, selection handling, and intended entry points are undefined. [Source](../../templates/partials/thread_compose_form.php).
+
+## Proposed next work
+
+Recommendations only; confirm current behavior and authorization before starting.
+
+- **F07:** bounded default-port fallback could remove local startup friction at low inherited effort (0.2); verify it is still missing.
+- **F09:** compact query controls are a small consistency improvement (0.15), after confirming surfaces and overlap with F08.
+- **B05:** move availability investigation ahead of polish if QDB is currently unavailable; cause and scope remain uncertain (0.75). No fresh live check was performed.
+
+Coordinate F01/B01/B02/B04 with existing reply work before scoping. F08/F09/F10 share a report but have different completion checks.
+
+## PF-20261021-F04 — Simple recent activity
+
+- **Alias:** `2026-10-21/F04` (Feature 04); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Provide a simple, nontechnical “most recent activity” page. **Reports:** [reply-20261021180354-1a31022c](https://zenmemes.com/posts/reply-20261021180354-1a31022c). **Inherited estimate:** 0.5 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Ordinary readers can find recent content and open it without technical detail. **Next action:** Choose the intended audience and useful events before scoping a reader-facing Activity view.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Existing Activity exposes record kinds and source metadata; choose audience and useful events before redesign. [Source](../../templates/pages/activity.php).
+
+## PF-20261021-F05 — QR appearance
+
+- **Alias:** `2026-10-21/F05` (Feature 05); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Make QR codes stand out slightly while matching the site theme; explore a background roughly 20% lighter than the page background (prefer lighter over darker). **Reports:** [reply-20261021180542-57b8fc3f](https://zenmemes.com/posts/reply-20261021180542-57b8fc3f). **Inherited estimate:** 0.25 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** QR stands out across themes and phone/desktop; quiet zone and scanning still work. **Next action:** Confirm the reported QR surface, then scope visual and scan checks.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Invitation QR currently draws black on white; first confirm the reported QR surface, then bound the visual change. [Source](../../public/assets/invite_issuance.js).
+
+## PF-20261021-F06 — LCD color choices
+
+- **Alias:** `2026-10-21/F06` (Feature 06); **workflow state:** blocked; **delivery evidence:** locally verified; deployment/production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Explore adding a few color choices to the LCD theme. **Reports:** [reply-20261021181124-47b0956c](https://zenmemes.com/posts/reply-20261021181124-47b0956c). **Inherited estimate:** 0.4 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Chosen palettes remain readable; selection persists and existing themes work. **Next action:** Verify deployment and palette behavior in production; retain local browser/contrast evidence.
+- **Recorded evidence/context:** Implemented and locally verified — [Railspike summary](lcd_color_choices/lcd_color_choices_step4_implementation_summary.md); deployment pending. **Triage context:** LCD has a fixed palette; choose palette scope and preference behavior before adding controls. [Source](../../public/assets/theme-lcd.css).
+
+## PF-20261021-F07 — Default port fallback
+
+- **Alias:** `2026-10-21/F07` (Feature 07); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Make local `./v3 start` try a few successive ports after 8000 before giving up by default. **Reports:** [reply-20261021180905-9bf88f1f](https://zenmemes.com/posts/reply-20261021180905-9bf88f1f). **Inherited estimate:** 0.2 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Occupied default ports advance within a fixed range; actual URL, exhaustion, and shutdown behave correctly. **Next action:** Confirm current default/explicit port behavior, then scope bounded fallback and exhaustion checks.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Startup selects one address; bounded retries can preserve explicit-address behavior. [Source](../../v3).
+
+## PF-20261021-F08 — View query coverage
+
+- **Alias:** `2026-10-21/F08` (Feature 08); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Expand “View query” availability to more pages; assess coverage for every page that includes database data. **Reports:** [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5). **Inherited estimate:** 0.6 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Coverage and exclusions are documented; each added control opens the correct read-only query. **Next action:** Inventory database-backed pages and explicit exclusions before choosing additions.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Broad audit across database-backed pages; stage the inventory and bounded additions. [Source](../../templates/partials/query_action.php).
+
+## PF-20261021-F09 — Compact query buttons
+
+- **Alias:** `2026-10-21/F09` (Feature 09); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Use the same small square “View query” button as `/tools/codebase`. **Reports:** [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5). **Inherited estimate:** 0.15 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Consistent square buttons retain accessible names and open the correct query across affected themes. **Next action:** Agree surfaces using compact controls; coordinate with F08 without conflating outcomes.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Shared query partial already supports compact buttons; reuse it on agreed surfaces. [Source](../../templates/partials/query_action.php).
+
+## PF-20261021-F10 — Query-dialog improvements
+
+- **Alias:** `2026-10-21/F10` (Feature 10); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Improve the “View query” dialog; review its current problems before defining the changes. **Reports:** [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5). **Inherited estimate:** 0.75 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Record reproduced problems and verify their fixes, including keyboard, phone layout, and recovery. **Next action:** Collect specific dialog failures before selecting changes; coordinate with F08/F09.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** The report does not identify specific dialog failures; reproduce before choosing changes. [Source](../../public/assets/sqlite_dialog.js).
+
+## PF-20261021-F11 — Easy-op discovery
+
+- **Alias:** `2026-10-21/F11` (Feature 11); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+- **Request:** Make it easy to discover how to enable “easy-op” via its flag file, including the button that elevates the operator to approved. **Reports:** [reply-20261021181246-675f949e](https://zenmemes.com/posts/reply-20261021181246-675f949e). **Inherited estimate:** 0.25 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Done when:** Identify the intended flag; expose one useful discovery path while preserving approval restrictions. **Next action:** Identify the intended easy-op flag and authority model before proposing discovery changes.
+- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** An Account approval button and `.test-self-approval` exist, but their equivalence to “easy-op” is unconfirmed. [Source](../../src/ForumRewrite/Support/TestingSelfApproval.php).
+
+### F06 evidence reconciliation
+
+Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection as future work. The later source summary links the [local implementation record](lcd_color_choices/lcd_color_choices_step4_implementation_summary.md), which reports browser/persistence/contrast checks. Local implementation is recorded here; deployment and production acceptance remain pending. This is document reconciliation, not a new test.
