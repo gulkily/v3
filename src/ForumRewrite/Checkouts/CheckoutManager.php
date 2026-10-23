@@ -33,6 +33,7 @@ final class CheckoutManager
                 'add' => $this->add($argument, $options),
                 'list' => ['command' => 'list', 'checkouts' => $this->readRegistry()['checkouts']],
                 'remove' => $this->remove($argument),
+                'preview' => $this->preview($options),
                 default => throw new RuntimeException('Unknown checkouts command; run ./v3 checkouts --help.'),
             };
         } finally {
@@ -196,6 +197,144 @@ final class CheckoutManager
         $registry['checkouts'][] = $entry;
         $this->writeJson($this->registry, $registry);
         return ['command' => 'add', 'checkouts' => [$entry]];
+    }
+
+    private function ancestor(string $path, string $old, string $new): bool
+    {
+        [$code] = $this->git($path, ['merge-base', '--is-ancestor', $old, $new], true);
+        if (!in_array($code, [0, 1], true)) {
+            throw new RuntimeException('Cannot establish ancestry; reconcile history before retrying.');
+        }
+        return $code === 0;
+    }
+
+    private function operation(string $path): bool
+    {
+        foreach (['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer', 'index.lock', 'HEAD.lock'] as $marker) {
+            $location = $this->git($path, ['rev-parse', '--path-format=absolute', '--git-path', $marker])[1];
+            if (file_exists($location)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function tracking(array $entry): string
+    {
+        return 'refs/remotes/' . $entry['remote'] . '/' . $entry['target'];
+    }
+
+    private function revision(string $path, string $ref): ?string
+    {
+        [$code, $oid] = $this->git($path, ['rev-parse', '--verify', $ref . '^{commit}'], true);
+        return $code === 0 ? $oid : null;
+    }
+
+    private function snapshot(array $entry): array
+    {
+        $identity = $this->identity($entry['path'], $entry['remote']);
+        foreach (['path', 'common', 'source'] as $field) {
+            if ($identity[$field] !== $entry[$field]) {
+                throw new RuntimeException('Registered source or checkout identity changed; review and remove/re-add the entry.');
+            }
+        }
+        return $identity + [
+            'branch' => $this->git($entry['path'], ['symbolic-ref', '--quiet', '--short', 'HEAD'], true)[1],
+            'head' => $this->revision($entry['path'], 'HEAD'),
+            'target' => $this->revision($entry['path'], $this->tracking($entry)),
+            'dirty' => $this->git($entry['path'], ['status', '--porcelain=v1', '--untracked-files=all'])[1] !== '',
+            'busy' => $this->operation($entry['path']),
+        ];
+    }
+
+    private function evidencePath(array $entry): string
+    {
+        return $this->state . '/history-' . hash('sha256', $entry['common'] . "\n" . $entry['source'] . "\n" . $this->tracking($entry)) . '.json';
+    }
+
+    private function inspect(array $entry): array
+    {
+        $path = $entry['path'];
+        $before = $this->snapshot($entry);
+        if ($before['busy']) {
+            return ['action' => 'busy', 'reason' => 'Git operation in progress; finish or abort it, then preview again.', 'snapshot' => $before];
+        }
+        // Fetch just the registered branch; do not fetch tags or unrelated remotes.
+        $this->git($path, ['fetch', '--no-tags', '--no-recurse-submodules', $entry['remote'], '+refs/heads/' . $entry['target'] . ':' . $this->tracking($entry)]);
+        $after = $this->snapshot($entry);
+        foreach (['head', 'branch', 'dirty'] as $field) {
+            if ($before[$field] !== $after[$field]) {
+                return ['action' => 'stale', 'reason' => 'Checkout changed during fetch; pause coding sessions and preview again.', 'snapshot' => $after];
+            }
+        }
+        if ($after['head'] === null || $after['target'] === null) {
+            throw new RuntimeException('Missing head or update target; restore the branch or correct registration.');
+        }
+        $historyPath = $this->evidencePath($entry);
+        $history = is_file($historyPath) ? $this->readJson($historyPath) : [];
+        $baseline = $history['baseline'] ?? null;
+        $sourceRewritten = ($history['blocked'] ?? false)
+            || ($before['target'] !== null && !$this->ancestor($path, $before['target'], $after['target']))
+            || ($baseline !== null && !$this->ancestor($path, $baseline, $after['target']));
+        if ($sourceRewritten) {
+            $this->writeJson($historyPath, ['baseline' => $baseline, 'blocked' => true, 'observed' => $after['target']]);
+            return ['action' => 'migration-required', 'reason' => 'Upstream history changed non-forward; follow the rewrite migration runbook. Review recovery before remove/re-add enrollment.', 'snapshot' => $after];
+        }
+        $behind = $this->ancestor($path, $after['head'], $after['target']);
+        $ahead = $this->ancestor($path, $after['target'], $after['head']);
+        $proven = $baseline !== null && $this->ancestor($path, $baseline, $after['head']);
+        if (!$behind && !$ahead && !$proven) {
+            return ['action' => 'migration-required', 'reason' => 'Divergent history has no validated baseline; reconcile with current source before enrollment. Shared ancestry alone is insufficient.', 'snapshot' => $after];
+        }
+        // Advance evidence only where the branch also descends from the fetched target.
+        // Keep an older baseline for a diverged feature until its merge completes.
+        $this->writeJson($historyPath, ['baseline' => $ahead ? $after['target'] : ($baseline ?? $after['head']), 'blocked' => false]);
+        if ($after['busy']) {
+            $action = 'busy'; $reason = 'Git operation in progress; finish or abort it.';
+        } elseif ($after['dirty']) {
+            $action = 'dirty'; $reason = 'Uncommitted or untracked work; preserve or finish it, then preview again.';
+        } elseif ($after['branch'] === '') {
+            $action = 'excluded'; $reason = 'Detached HEAD; select a retained branch manually before previewing.';
+        } elseif ($after['head'] === $after['target']) {
+            $action = 'current'; $reason = 'Already current.';
+        } elseif ($behind) {
+            $action = 'fast-forward'; $reason = 'Fast-forward to fetched source.';
+        } elseif ($ahead) {
+            $action = 'ahead'; $reason = 'Locally ahead; local commits preserved.';
+        } elseif ($after['branch'] === $entry['target']) {
+            $action = 'excluded'; $reason = 'Main branch diverged; reconcile local commits manually (main updates are fast-forward only).';
+        } else {
+            $action = 'merge'; $reason = 'Merge fetched source into the feature branch.';
+        }
+        return ['action' => $action, 'reason' => $reason, 'snapshot' => $after];
+    }
+
+    private function preview(array $options): array
+    {
+        $registry = $this->readRegistry();
+        $rows = [];
+        $seen = [];
+        $selected = isset($options['path']) ? (realpath($options['path']) ?: $options['path']) : null;
+        foreach ($registry['checkouts'] as $entry) {
+            $row = $entry;
+            if (($selected !== null && $selected !== $entry['path']) || ($entry['role'] !== 'development' && $selected === null)) {
+                $row += ['action' => 'excluded', 'reason' => 'Not selected; test/server roles require --path.'];
+            } elseif (isset($seen[$entry['common']])) {
+                $row += ['action' => 'excluded', 'reason' => 'Shared Git storage already selected.'];
+            } else {
+                $seen[$entry['common']] = true;
+                try {
+                    $row += $this->inspect($entry);
+                } catch (\Throwable $error) {
+                    $row += ['action' => 'unavailable', 'reason' => $error->getMessage()];
+                }
+            }
+            $rows[] = $row;
+        }
+        if ($selected !== null && !array_filter($rows, fn ($row) => $row['path'] === $selected)) {
+            throw new RuntimeException('Selected path is not registered; use checkouts list or add.');
+        }
+        return ['command' => 'preview', 'checkouts' => $rows];
     }
 
     private function remove(?string $path): array

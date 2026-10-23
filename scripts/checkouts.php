@@ -28,7 +28,7 @@ try {
         }
         if ($arg === '--json') {
             $options['json'] = true;
-        } elseif (preg_match('/^--(registry|state-dir|remote|target|role)=(.+)$/', $arg, $match)) {
+        } elseif (preg_match('/^--(registry|state-dir|remote|target|role|path)=(.+)$/', $arg, $match)) {
             $options[$match[1]] = $match[2];
         } elseif (str_starts_with($arg, '-')) {
             throw new RuntimeException('Unknown option; run ./v3 checkouts --help.');
@@ -37,7 +37,7 @@ try {
         }
     }
     $command = $positionals[0] ?? 'list';
-    if (count($positionals) > 2 || ($command === 'list' && count($positionals) > 1)) {
+    if (count($positionals) > 2 || (in_array($command, ['list', 'preview'], true) && count($positionals) > 1)) {
         throw new RuntimeException('Unexpected argument; run ./v3 checkouts --help.');
     }
     $result = (new CheckoutManager($options['registry'] ?? null, $options['state-dir'] ?? null))->run($command, $positionals[1] ?? null, $options);

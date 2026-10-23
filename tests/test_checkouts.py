@@ -83,6 +83,59 @@ class CheckoutsTest(unittest.TestCase):
         self.assertNotIn('secret', json.dumps(response))
         self.assertFalse(self.registry.exists())
 
+    def preview(self, **options):
+        return self.cli('preview', *[f'--{key}={value}' for key, value in options.items()])
+
+    def test_history_forward_and_ahead(self):
+        self.add()
+        self.assertEqual('current', self.preview()['checkouts'][0]['action'])
+        self.commit(self.up, 'new.txt', 'new')
+        old = self.git(self.clone, 'rev-parse', 'HEAD')
+        self.assertEqual('fast-forward', self.preview()['checkouts'][0]['action'])
+        self.assertEqual(old, self.git(self.clone, 'rev-parse', 'HEAD'))
+
+    def test_unknown_divergence_blocks_but_known_feature_can_merge(self):
+        self.add()
+        self.preview()
+        self.git(self.clone, 'switch', '-qc', 'feature')
+        self.commit(self.clone, 'local.txt', 'local')
+        self.commit(self.up, 'remote.txt', 'remote')
+        self.assertEqual('merge', self.preview()['checkouts'][0]['action'])
+        for file in self.state.glob('history-*.json'):
+            file.unlink()
+        self.assertEqual('migration-required', self.preview()['checkouts'][0]['action'])
+
+    def test_rewrite_detected_and_remains_blocked_after_fetch(self):
+        self.add()
+        self.preview()
+        self.commit(self.up, 'old.txt', 'old history')
+        self.preview()
+        self.git(self.up, 'reset', '--hard', 'HEAD~1')
+        self.commit(self.up, 'replacement.txt', 'rewritten history')
+        for _ in range(2):
+            self.assertEqual('migration-required', self.preview()['checkouts'][0]['action'])
+
+    def test_already_fetched_rewrite_without_baseline_blocks(self):
+        self.commit(self.up, 'old.txt', 'old')
+        self.git(self.clone, 'pull', '--ff-only')
+        self.git(self.up, 'reset', '--hard', 'HEAD~1')
+        self.commit(self.up, 'replacement.txt', 'replacement')
+        self.git(self.clone, 'fetch', 'origin')
+        self.add()
+        self.assertEqual('migration-required', self.preview()['checkouts'][0]['action'])
+
+    def test_source_dirty_busy_and_test_exclusion(self):
+        self.add(role='test')
+        self.assertEqual('excluded', self.preview()['checkouts'][0]['action'])
+        self.assertEqual('current', self.preview(path=self.clone)['checkouts'][0]['action'])
+        (self.clone / 'untracked').write_text('unfinished')
+        self.assertEqual('dirty', self.preview(path=self.clone)['checkouts'][0]['action'])
+        (self.clone / '.git' / 'MERGE_HEAD').write_text(self.git(self.clone, 'rev-parse', 'HEAD'))
+        self.assertEqual('busy', self.preview(path=self.clone)['checkouts'][0]['action'])
+        (self.clone / '.git' / 'MERGE_HEAD').unlink()
+        self.git(self.clone, 'remote', 'set-url', 'origin', str(self.base / 'different'))
+        self.assertEqual('unavailable', self.preview(path=self.clone)['checkouts'][0]['action'])
+
 
 if __name__ == '__main__':
     unittest.main()

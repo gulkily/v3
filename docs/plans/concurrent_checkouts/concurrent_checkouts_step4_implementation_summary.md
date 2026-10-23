@@ -9,3 +9,9 @@ Effort study: `railspike-effort / v3/concurrent_checkouts`; [ledger](../effort_e
 - Changes: private atomic shared registry, add/list/remove, source/path validation and shared-storage duplicate rejection; `v3` dispatcher and human/JSON entry.
 - Verification: `python3 tests/test_checkouts.py`: initial run had 4 passes and a JSON error-mode failure; corrected option pre-detection, then 5 real-Git cases passed (lifecycle/permissions, aliases/shared storage, malformed/missing paths, roles/help, credential rejection); PHP syntax checks passed.
 - Notes: no live checkout registrations; stages 2–7 pending. Other local planning-ledger changes remain pending and outside the initial planning commit.
+
+## Stage 2 - Fetch and history evidence
+
+- Changes: selected-source fetch without tags/submodules, identity/state inspection, persistent validated ancestry baselines and sticky rewrite blocks, conservative unknown-divergence handoff, role/path selection.
+- Verification: `python3 tests/test_checkouts.py`: 10 real-Git tests passed, including observed and already-fetched rewrites, unknown versus validated feature divergence, dirty/busy and source mismatch. Working HEAD remains unchanged by preview.
+- Notes: Stage 1 commits `5c296bac3`, correction `3bd230353`; initial stage check failure is recorded. A baseline proves continuity from observed enrollment, not universal history authenticity; uncertain branches block. Saved preview/UI pending Stage 3.
