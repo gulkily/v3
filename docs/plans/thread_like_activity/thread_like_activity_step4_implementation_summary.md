@@ -12,7 +12,7 @@ Effort study: `railspike-effort`, `v3/thread_like_activity`; [ledger](../effort_
 
 ## Stage 1 — completed
 
-Full and incremental derivation now emit one event per eligible like-bearing record, retaining mixed-label grouping and existing score deduplication. Normal signed writes, duplicate retry, distinct same-author comments and rebuild parity passed; existing retraction coverage confirms withdrawn contributions stay excluded. Focused verification: 10 tests passed. No eligibility or vote calculation changed.
+Full and incremental derivation now emit one event per eligible like-bearing record, retaining mixed-label grouping and existing score deduplication. Normal writes, duplicate retry, distinct same-author comments and rebuild parity passed; existing retraction coverage confirms withdrawn contributions stay excluded. Focused verification: 10 tests passed. No eligibility or vote calculation changed.
 
 ## Stage 2 — completed
 
