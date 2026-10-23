@@ -350,6 +350,11 @@ Reviewed candidates; decisions and verification are recorded above.
 - Removed the generic “Local action” suffix when a row has no saved title. Retained action and state: a thread subject alone does not identify the operation, and delivery state is necessary before expansion. Saved titles and linked target text remain unchanged.
 - Verification: six existing Outbox presentation/state/storage checks passed. Production-script Chromium fixture covered all nine states plus an unknown state, untitled draft, long title, reaction, expanded controls, keyboard disclosure, Queue, failed Send/recovery and empty state. Light/Word97/Chicago/Midnight at 390px/1280px passed overflow checks; inspected Midnight phone screenshot (`/tmp/copy-outbox-midnight-390.png`). Controlled storage/sender fixtures; real delivery, physical devices and production unverified. Syntax/diff passed; dependencies unchanged.
 
+## Analysis response assessments review — October 23, 2026
+
+- Decision: retain the expanded assessments. Generation recommendation, numeric score and response risk are independent inputs to automatic-reply gates; a positive recommendation can still accompany a skipped reply. Audience/author benefit and the response reason explain the assessment, while the actual reply status remains separate. Removing these would hide useful decision evidence. No product changes.
+- Verification: current production templates rendered root/reply/detail cards with generated, low-score, declined and high-risk assessments. Chromium checked visible distinct assessments, keyboard expansion/collapse and four-theme (Light/Word97/Chicago/Midnight) 390px/1280px overflow. Inspected `/tmp/copy-assessment-root-high-risk.png`. Two existing API checks passed for idempotent generated analysis and low-score skip/visibility. The first temporary root fixture lacked its title; corrected that setup and reran successfully. Controlled assessment data does not establish live provider behavior; physical devices and deployment unverified. Dependencies unchanged.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -360,7 +365,7 @@ These observations need rendered review before deciding what to remove. Keep thi
 
 - [x] **Outbox row labels** — Review action/state prefixes and generic “Local action” fallbacks against meaningful saved titles. Check long titles, reactions, untitled drafts and unknown states; preserve delivery-state distinctions. Source: `public/assets/outbox.js`.
 
-- [ ] **Analysis response assessments** — Review numeric Respondability, “generate yes/no,” Response value and Response reason together for overlap. Check why a reply was generated or skipped and what moderators need; preserve meaningful decision explanations. Sources: shared root/reply analysis templates.
+- [x] **Analysis response assessments** — Review numeric Respondability, “generate yes/no,” Response value and Response reason together for overlap. Check why a reply was generated or skipped and what moderators need; preserve meaningful decision explanations. Sources: shared root/reply analysis templates.
 
 - [ ] **Post-detail Reply duplication** — Review the header's “Reply to this post” link against the card's Reply action. Check long evidence headers, root/reply details and retracted posts; retain an easy-to-find reply action. Source: `templates/pages/post.php`, `templates/partials/post_card.php`.
 
