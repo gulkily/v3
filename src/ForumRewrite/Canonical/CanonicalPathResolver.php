@@ -75,6 +75,11 @@ final class CanonicalPathResolver
         return 'records/feature-flag-changes/' . $recordId . '.txt';
     }
 
+    public static function profileNameGrant(string $recordId): string
+    {
+        return 'records/profile-name-grants/' . $recordId . '.txt';
+    }
+
     public static function instancePublic(): string
     {
         return 'records/instance/public.txt';

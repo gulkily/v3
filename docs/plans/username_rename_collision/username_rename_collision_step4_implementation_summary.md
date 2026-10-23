@@ -33,3 +33,15 @@ Effort study: `railspike-effort`, cycle `v3/username_rename_collision`; standing
 - Notes:
   - Deviation from the plan wording: requests are stored in their own directory beside `prepared-posts`, not as a kind inside it, so one-per-key lookup and listing don't need to scan short-lived prepared posts. Same private, non-canonical state as planned.
   - Status and cancel use the signed-in session rather than a signature, the same way the private-message endpoints work.
+
+## Stage 3 - Audit-only grant record family
+- Changes:
+  - `ProfileNameGrantRecordParser`: `Record-ID: profile-name-grant-<32 hex>`, `Created-At`, `Operation: grant-name`, `Author-Identity-ID` (grantor), `Grantee-Identity-ID` (must differ), `Username`, `Profile-Name-Record-ID` (the held `set-name` record), empty body.
+  - `CanonicalPathResolver::profileNameGrant()` gives `records/profile-name-grants/<id>.txt`. `SourcePathValidator` accepts the record and its `.asc`.
+  - `ActivityService` labels the path "profile name grant record" and attributes it to the grantor in commit manifests.
+  - New test `testProfileNameGrantRecordIsAuditOnly`: parser valid/invalid cases, path validation, and identical `profiles` rows (name, token, approval) from a full rebuild before and after committing a signed grant.
+- Verification:
+  - New test plus `CanonicalRecordParsersTest`, `ContentImportPlannerTest` and the Stage 2 test: 59/59 passed.
+- Notes:
+  - Incremental update check: not applicable. `IncrementalReadModelUpdater` only handles post, label, subject, reaction, identity and approval writes. Rename writes, and therefore grant writes, use a full rebuild (`refreshDerivedStateAfterCommit`), which the test covers.
+  - Imports: `ArchiveRecordCatalog` already doesn't recognize `profile-names`, so grants are likewise reported as unsupported; no import change.

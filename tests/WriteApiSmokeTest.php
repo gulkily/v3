@@ -286,6 +286,43 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testProfileNameGrantRecordIsAuditOnly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $holder = $this->createSigningKey('held-name');
+        $mover = $this->createSigningKey('mover');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $holderId = $writer->linkIdentity(['public_key' => $holder['public_key']])['identity_id'];
+            $moverId = $writer->linkIdentity(['public_key' => $mover['public_key']])['identity_id'];
+            $id = 'profile-name-grant-' . str_repeat('a', 32);
+            $grant = "Record-ID: {$id}\nCreated-At: 2026-10-23T12:00:00Z\nOperation: grant-name\nAuthor-Identity-ID: {$holderId}\n"
+                . "Grantee-Identity-ID: {$moverId}\nUsername: held-name\nProfile-Name-Record-ID: profile-name-" . str_repeat('b', 32) . "\n\n";
+            assertSame($moverId, (new \ForumRewrite\Canonical\ProfileNameGrantRecordParser())->parse($grant)['Grantee-Identity-ID']);
+            foreach ([str_replace('grant-name', 'set-name', $grant), str_replace($moverId, $holderId, $grant), $grant . "body\n"] as $invalid) {
+                assertThrowsRuntime(fn () => (new \ForumRewrite\Canonical\ProfileNameGrantRecordParser())->parse($invalid), 'Invalid profile name grant record.');
+            }
+            $path = CanonicalPathResolver::profileNameGrant($id);
+            assertSame(true, \ForumRewrite\Canonical\SourcePathValidator::isValidCanonicalRecordPath($path));
+            assertSame(true, \ForumRewrite\Canonical\SourcePathValidator::isValidCanonicalDetachedSignaturePath($path . '.asc'));
+
+            $snapshot = static fn (): array => (new ReadModelConnection($db))->open()
+                ->query('SELECT identity_id, username, username_token, is_approved FROM profiles ORDER BY identity_id')->fetchAll(PDO::FETCH_ASSOC);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $before = $snapshot();
+            mkdir(dirname($root . '/' . $path), 0777, true);
+            file_put_contents($root . '/' . $path, $grant);
+            file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($holder['home'], $grant));
+            $this->runCommand($root, 'git add records && git commit -q -m grant');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame($before, $snapshot());
+        } finally {
+            $this->deleteTree($holder['home']);
+            $this->deleteTree($mover['home']);
+        }
+    }
+
     private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
     {
         return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);
