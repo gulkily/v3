@@ -70,3 +70,7 @@ Verification: Step 2 checked against approved Option A and prior source boundary
 - Stage sizing is a forecast. Legacy reference ownership and standalone renderer/publication stages require splitting/replanning before execution if they exceed the stated target; no measured effort claim.
 
 Verification: read Application startup, anonymous rendering context, docs/full/shared publication, FrontController resource/assets, invalidation/sweeps and existing CLI/runbook/test contracts. All eight stages include six required fields, resolve material risks before dependent work and cover the approved operator/reader outcome. R1 hashes verified. Local links/whitespace/planning-only scope checked at handoff. No runtime tests, application changes, branch creation or commits; await Approved Step 3.
+
+## Step 4 inherited-state restoration and Stage 7 checkpoint
+
+Restored approved Step 3, enabled debug mode, branch/planning and six completed stage commits, summary, standing P2/R1 enrollment, pending ledger/predecessor bookkeeping and isolated acceptance snapshots. The eight-stage contract remains unchanged; no new request, approval or dependency delta. Stages 1–6 records are in the summary. Complete-library regression finished 60/60; independent browser/CLI acceptance passed. Continue only Stage 8 documentation/closeout after this stage commit. Final Step 4 diagnostic report remains due once all stages are committed.
