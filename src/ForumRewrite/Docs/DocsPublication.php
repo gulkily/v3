@@ -23,6 +23,7 @@ final class DocsPublication
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
+        private readonly bool $independent = false,
     ) {
     }
 
@@ -74,14 +75,14 @@ final class DocsPublication
             'files' => $files,
             'profile' => SiteProfileRegistry::active(),
             'flags' => $flags,
-            'retractions' => PublicationGuard::generation($this->repositoryRoot),
-            'meta' => FastmodMetaPublication::token($this->projectRoot)['generation'],
+            'retractions' => $this->independent ? null : PublicationGuard::generation($this->repositoryRoot),
+            'meta' => $this->independent ? null : FastmodMetaPublication::token($this->projectRoot)['generation'],
         ], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
     }
 
     public function version(): string
     {
-        return ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        return $this->independent ? $this->inputSignature() : ReadModelMetadata::repositoryHead($this->repositoryRoot);
     }
 
     /** Record only complete output belonging to the inputs captured before rendering. */
@@ -211,6 +212,15 @@ final class DocsPublication
                 $assets[ltrim($favicon, '/')] = hash_file('sha256', $this->projectRoot . '/public' . $favicon);
             }
         }
+        if ($this->independent) {
+            $worker = file_get_contents($this->projectRoot . '/public/service_worker.js');
+            if ($worker === false) {
+                throw new RuntimeException('Cannot read documentation runtime assets.');
+            }
+            $profile = SiteProfileRegistry::active();
+            $assets['service_worker.js'] = hash('sha256', \ForumRewrite\Host\BrowserRuntimeAssetRenderer::serviceWorker($worker, $profile));
+            $assets['manifest.webmanifest'] = hash('sha256', \ForumRewrite\Host\BrowserRuntimeAssetRenderer::manifest($profile));
+        }
         foreach ($assets as $path => $expected) {
             if (hash_file('sha256', $this->file($root, $path)) !== $expected) {
                 throw new RuntimeException('Missing or damaged documentation asset: ' . $path);
@@ -251,8 +261,12 @@ final class DocsPublication
         preg_match_all('~<meta\b[^>]*\bname\s*=\s*["\']?app-version(?:-endpoint)?(?=["\'\s/>])[^>]*>~i', $contents, $markers);
         if (count($markers[0]) !== ($enabled ? 2 : 0)
             || ($enabled && (substr_count($contents, '<meta name="app-version" content="' . $version . '">') !== 1
-                || substr_count($contents, '<meta name="app-version-endpoint" content="/api/version">') !== 1))) {
+                || substr_count($contents, '<meta name="app-version-endpoint" content="' . ($this->independent ? '/api/docs-version' : '/api/version') . '">') !== 1))) {
             throw new RuntimeException('Missing, malformed or unexpected documentation version marker.');
+        }
+        if ($this->independent && substr_count($contents,
+            '<meta name="app-version-storage-key" content="forum_pending_docs_version">') !== ($enabled ? 1 : 0)) {
+            throw new RuntimeException('Invalid documentation notification identity.');
         }
     }
 

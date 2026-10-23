@@ -70,6 +70,8 @@ final class TemplateRenderer
         private readonly string $appVersion = 'unknown',
         private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
         private readonly MediaEmbedRenderer $mediaEmbedRenderer = new MediaEmbedRenderer(),
+        private readonly string $versionEndpoint = '/api/version',
+        private readonly string $versionStorageKey = 'forum_pending_app_version',
     ) {
     }
 
@@ -207,6 +209,8 @@ final class TemplateRenderer
             'showThreadDensityToggle' => $showThreadDensityToggle,
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
+            'versionEndpoint' => $this->versionEndpoint,
+            'versionStorageKey' => $this->versionStorageKey,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'navIconsCssPath' => $this->assetPath('/assets/theme-nav-icons.css'),
