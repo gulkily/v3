@@ -115,3 +115,18 @@
 ### Uncertain assessments
 
 - `step3_development_plan_do.md` asks for a plan of at most one page and also eight fully specified stages with six fields each. With eight stages, both limits can't be met; the plan stays at eight terse stages and runs slightly over a page.
+
+## 2026-10-23T15:20Z · Step 2 revisions 2 and 3 (changed scope during Step 4)
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md` changed-scope rule (return to the earliest affected step): the cutoff, and then the default-off flag, each altered core Step 2 requirements after Stage 1, so implementation paused and Step 2 was revised before Step 3. Retain.
+- Step 3's Stage 1 review gate: the audit surfaced that the planned rule would unverify most of zenmemes' history, before any scoring change shipped. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Two scope changes arrived in quick succession at the same gate. Each got its own revision and effort snapshot; Railspike does not say whether back-to-back revisions before re-approval need separate snapshots.
