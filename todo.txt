@@ -164,3 +164,8 @@ No-JavaScript basic access — plan set aside
 	Plan: docs/plans/nojs_basic_access_step3_development_plan.md
 	Steps 1 and 2 approved; Step 3 draft, implementation not started.
 	Revalidate against current code before resuming plan review.
+
+Site-wide "Skip to content" link
+	No skip link exists; add one to templates/layout.php targeting <main>, visually hidden until focused
+	Shared chrome on every page: verify focus visibility and header layout in each theme
+	Raised by the docs_landing reviewer brief; deferred from that cycle (docs/plans/docs_landing/docs_landing_step3_development_plan.md)
