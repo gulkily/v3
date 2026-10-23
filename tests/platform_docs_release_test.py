@@ -22,6 +22,7 @@ for name in ["autoload.php", "v3", "README.md", "CONTRIBUTING.md", "AGENTS.md", 
     shutil.copy2(project / name, package / name)
 shutil.copytree(project / "tests/fixtures/parity_minimal_v1", root / "repository")
 shutil.copy2(project / "tests/fixtures/markdown_table_reader.md", package / "docs/examples/markdown_table_fixture.md")
+shutil.copy2(project / "tests/fixtures/markdown_list_reader.md", package / "docs/examples/markdown_list_fixture.md")
 (package / "docs/examples/removed_table_fixture.md").write_text("| A | B |\n| --- | --- |\n| x | y |\n")
 database = root / "read.sqlite3"
 static = root / "static"
@@ -91,6 +92,13 @@ try:
     assert get('/docs/examples/removed_table_fixture.md')[0] == 200
     (package / "docs/examples/removed_table_fixture.md").unlink()
 
+    list_path = "/docs/examples/markdown_list_fixture.md"
+    list_dynamic, list_static = get(list_path + "?dynamic=1")[1], get(list_path)[1]
+    assert content(list_dynamic) == content(list_static), "List/fallback publication differs"
+    assert '<ol start="3">' in list_static and '<li value="8">' in list_static
+    assert list_static.count('aria-label="List source"') == 2
+    assert 'class="docs-list-scroll"' in list_static
+
     prior = (static / "current").resolve()
     (prior / artifact).write_text("<h1>STALE DOCS FIXTURE</h1>")
     assert "STALE DOCS FIXTURE" in get(path)[1]
@@ -120,6 +128,7 @@ final class PublicMarkdownRenderer {
     build(shared=True, expect=1)
     assert (static / "current").resolve() == recovered, "Failed build replaced active release"
     assert get(path)[1].count('<table>') == 4, "Failed build damaged active page"
+    assert get(list_path)[1].count('aria-label="List source"') == 2, "Failed build damaged published list fallback"
     renderer.write_bytes(original)
     build(shared=True)
     assert get(path + "?dynamic=1")[0] == 200
@@ -127,7 +136,7 @@ final class PublicMarkdownRenderer {
     assert not (package / "third_party/markdown").exists()
 
     # Actual generated delivery through FrontController, not a file-only probe.
-    browser_env = dict(env, DOCS_BASE_URL=base, DOCS_EVIDENCE_ROOT=str(root / "browser"), DOCS_TABLE_FIXTURE_PATH=fixture_path)
+    browser_env = dict(env, DOCS_BASE_URL=base, DOCS_EVIDENCE_ROOT=str(root / "browser"), DOCS_TABLE_FIXTURE_PATH=fixture_path, DOCS_LIST_FIXTURE_PATH=list_path)
     browser = subprocess.run(["node", str(project / "tests/browser/platform_docs.mjs")],
                              cwd=project, env=browser_env, capture_output=True, text=True, timeout=300)
     assert browser.returncode == 0, browser.stdout + browser.stderr
@@ -137,7 +146,7 @@ final class PublicMarkdownRenderer {
         capture_output=True, text=True, timeout=300)
     assert discovery.returncode == 0, discovery.stdout + discovery.stderr
     php = subprocess.check_output(["php", "-r", "echo PHP_VERSION;"], text=True)
-    report = {"php": php, "composerAtRuntime": False, "dynamicStaticParity": "passed", "tableAndFallbackParity": "passed", "cellLinkDestination": "passed", "removedReaderRefresh": "passed",
+    report = {"php": php, "composerAtRuntime": False, "dynamicStaticParity": "passed", "tableAndFallbackParity": "passed", "listAndFallbackParity": "passed", "literalNumberingAndDeepRegion": "passed", "cellLinkDestination": "passed", "removedReaderRefresh": "passed",
               "staleSharedRefreshRetry": "passed", "rendererFailure503": "passed", "markdownVendorAbsent": True, "failedBuildRetainsActiveRelease": "passed",
               "completePackageRollbackAndRegeneration": "passed", "staticBrowserScenarios": 8, "staticDiscoveryScenarios": 8,
               "root": str(root)}
