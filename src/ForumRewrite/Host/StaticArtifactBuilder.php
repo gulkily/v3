@@ -23,6 +23,7 @@ final class StaticArtifactBuilder
 {
     private ?array $retractionToken = null;
     private array $metaToken = [];
+    private ?array $docsInputs = null;
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
@@ -89,6 +90,7 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/offline/snapshot.sqlite3',
         );
         $this->reportProgress('Fingerprinting and copying referenced assets complete.');
+        $this->assertDocumentationInputs();
     }
 
     /**
@@ -106,6 +108,7 @@ final class StaticArtifactBuilder
         }
 
         $this->buildSharedPages($this->application());
+        $this->assertDocumentationInputs();
     }
 
     /** Run only in an isolated renderer process: no visitor globals or active session. */
@@ -159,6 +162,7 @@ final class StaticArtifactBuilder
             }
         }
         $version = $publication->version();
+        $this->docsInputs = $signature === null ? null : [$signature, $version];
         PlatformDocsCatalog::withSnapshot($this->projectRoot, function () use ($application, $publication, $signature, $version): void {
             $this->renderSharedPages($application);
             if ($signature !== null && $this->docsReuseSource !== null
@@ -172,6 +176,13 @@ final class StaticArtifactBuilder
                 $publication->recordPublication($this->artifactRoot, $signature, $version);
             }
         });
+    }
+
+    private function assertDocumentationInputs(): void
+    {
+        if ($this->docsInputs !== null) {
+            (new DocsPublication($this->projectRoot, $this->repositoryRoot))->assertInputs(...$this->docsInputs);
+        }
     }
 
     private function renderSharedPages(Application $application): void

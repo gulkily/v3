@@ -254,11 +254,21 @@ final class DocsPublication
         return $contents;
     }
 
-    private function assertInputs(string $signature, string $version): void
+    public function assertInputs(string $signature, string $version): void
     {
         if ($this->inputSignature() !== $signature || $this->version() !== $version) {
             throw new RuntimeException('Documentation inputs changed during publication; retry the build.');
         }
+    }
+
+    public function assertPublicationInputs(string $root): void
+    {
+        $manifest = json_decode($this->read($root, self::MANIFEST), true, flags: JSON_THROW_ON_ERROR);
+        if (!is_array($manifest) || ($manifest['format'] ?? null) !== self::FORMAT
+            || !is_string($manifest['input'] ?? null) || !is_string($manifest['version'] ?? null)) {
+            throw new RuntimeException('Invalid documentation publication evidence; rebuild and retry.');
+        }
+        $this->assertInputs($manifest['input'], $manifest['version']);
     }
 
     private function read(string $root, string $relative): string

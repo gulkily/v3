@@ -58,6 +58,9 @@ final class StaticArtifactReleasePublisher
         if (!str_starts_with($releasePath, $releaseDirectory) || !is_dir($releasePath)) {
             throw new RuntimeException('Static artifact release must be an existing release under the static root.');
         }
+        if (file_exists($releasePath . '/' . \ForumRewrite\Docs\DocsPublication::MANIFEST)) {
+            (new \ForumRewrite\Docs\DocsPublication($this->projectRoot, $this->repositoryRoot))->assertPublicationInputs($releasePath);
+        }
 
         $pendingLink = $this->staticHtmlRoot . '/.current-' . bin2hex(random_bytes(8));
         $relativeReleasePath = 'releases/' . basename($releasePath);

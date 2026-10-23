@@ -13,6 +13,105 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 
 final class DocsPublicationFlowTest
 {
+    public function testCliFailedDocumentationFallbackResumesWithoutAnotherCommitOrRemote(): void
+    {
+        [$w, $project, $target, $database, $static, $publisher] = $this->destination();
+        $release = $publisher->build($database);
+        $publisher->activate($release);
+        $before = file_get_contents($release . '/docs/guide.md.html');
+        $source = $w->repository('source');
+        $w->put($source . '/records/posts/recovery.txt', $w->post('recovery'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        file_put_contents($release . '/' . DocsPublication::MANIFEST, 'damaged evidence');
+        $template = $project . '/templates/pages/platform_docs_document.php';
+        $originalTemplate = file_get_contents($template);
+        file_put_contents($template, '<?php throw new RuntimeException("Injected documentation rebuild failure");');
+        $options = ['--repository-root=' . $target, '--database-path=' . $database, '--static-html-root=' . $static];
+        [$code, $out] = $w->command([$project . '/v3', 'import-instance', $server->url, ...$options]);
+        assertSame(1, $code, $out);
+        assertStringContains('--resume', $out);
+        assertTrue(is_file($target . '/records/posts/recovery.txt'));
+        assertTrue(is_file($target . '/.git/instance-import/pending.json'));
+        $head = trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+        clearstatcache(true);
+        assertSame($release, realpath($static . '/current'));
+        assertSame($before, file_get_contents($release . '/docs/guide.md.html'));
+        assertSame([], glob($static . '/.candidate-*'));
+        file_put_contents($template, $originalTemplate);
+        unset($server);
+        [$code, $out] = $w->command([$project . '/v3', 'import-instance', '--resume', ...$options]);
+        assertSame(0, $code, $out);
+        assertStringContains('Import result: complete', $out);
+        clearstatcache(true);
+        assertSame($head, trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]));
+        assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+        assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
+        assertStringContains('Imported recovery', file_get_contents($static . '/current/tags/general.html'));
+        assertStringContains('content="' . $head . '"', file_get_contents($static . '/current/docs/guide.md.html'));
+    }
+
+    public function testLateInputChangesRejectCandidatesAndActivation(): void
+    {
+        foreach (['document', 'version'] as $case) {
+            [$w, $project, $target, $database, $static, $publisher] = $this->destination();
+            $release = $publisher->build($database);
+            $publisher->activate($release);
+            $mutated = false;
+            try {
+                $publisher->build($database, function ($line) use ($w, $project, $target, $case, &$mutated): void {
+                    if (!$mutated && str_starts_with($line, 'Rendering tag pages')) {
+                        $mutated = true;
+                        if ($case === 'document') {
+                            $w->put($project . '/docs/guide.md', '# Changed after docs reuse');
+                        } else {
+                            $w->git($target);
+                        }
+                    }
+                });
+                throw new LogicException('Expected late publication failure');
+            } catch (RuntimeException $error) {
+                assertStringContains('inputs changed', $error->getMessage());
+            }
+            assertTrue($mutated);
+            assertSame($release, realpath($static . '/current'));
+            assertSame([], glob($static . '/.candidate-*'));
+            $candidate = $publisher->build($database);
+            $w->put($project . '/docs/guide.md', '# Changed after candidate completion');
+            try {
+                $publisher->activate($candidate);
+                throw new LogicException('Expected stale activation failure');
+            } catch (RuntimeException $error) {
+                assertStringContains('inputs changed', $error->getMessage());
+            }
+            assertSame($release, realpath($static . '/current'));
+        }
+    }
+
+    public function testPrivateCliImportKeepsPublicArtifactsAbsent(): void
+    {
+        [$w, $project, $target, $database, $static, $publisher] = $this->destination();
+        $source = $w->repository('source');
+        $w->put($source . '/records/posts/private.txt', $w->post('private'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $old = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        try {
+            [$code, $out] = $w->command([$project . '/v3', 'import-instance', $server->url,
+                '--repository-root=' . $target, '--database-path=' . $database, '--static-html-root=' . $static]);
+            assertSame(0, $code, $out);
+            assertStringContains('Private destination: public static/offline publication skipped', $out);
+            assertTrue(is_file($target . '/records/posts/private.txt'));
+            assertTrue(!file_exists($static . '/current'));
+            assertTrue(!file_exists($static . '/offline/snapshot.sqlite3'));
+        } finally {
+            putenv($old === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $old);
+        }
+    }
+
     public function testSharedRefreshUsesTheSamePolicyAndKeepsActiveReleaseIndependent(): void
     {
         [$w, $project, $target, $database, $static, $publisher] = $this->destination();
