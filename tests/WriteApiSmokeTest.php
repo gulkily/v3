@@ -3832,6 +3832,27 @@ NODE;
         assertSame('complete', $repeat['retraction_status']);
     }
 
+    public function testPhysicallyDeletedRootStillAcceptsRepliesAndPreservesPrivacyState(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $author = $this->createAuthoredThread($app, 'physical-root-reply', "Removed prose\n#pinned");
+        $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+        $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'], 'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        try { $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR); }
+        finally { $_POST = []; }
+        assertSame('ok', $result['status']);
+        \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, $author['thread_id'], false, [], $artifacts);
+        assertSame(true, \ForumRewrite\Llm\ExchangeRetractionState::read($root)[$author['thread_id']] ?? false);
+        $response = $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $author['thread_id'] . '&parent_id=' . $author['thread_id'] . '&body=Preserved%20conversation');
+        assertStringContains('status=ok', $response);
+        $page = $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']);
+        assertStringContains('Preserved conversation', $page);
+        assertStringNotContains('Removed prose', $page);
+    }
+
     public function testLegacyLabelRetractionReportsOperatorReviewWithoutGuessingOwnership(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();

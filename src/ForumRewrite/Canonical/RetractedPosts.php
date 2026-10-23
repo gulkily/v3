@@ -68,6 +68,9 @@ final class RetractedPosts
             }
         }
 
+        foreach (LabelRemoval::all($repositoryRoot) as $id => $removal) {
+            if ($removal['operation'] === 'delete') $ids[$id] = 'operator';
+        }
         return $ids;
     }
 

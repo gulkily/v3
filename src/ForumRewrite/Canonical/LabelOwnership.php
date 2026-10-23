@@ -42,7 +42,12 @@ final class LabelOwnership
             try { $label = (new CanonicalRecordRepository($root))->loadThreadLabel($relative); }
             catch (CanonicalRecordParseException) { continue; }
             $source = $label->sourcePostId;
-            if ($source !== null && isset($removed[$source]) && self::inspect($label, $root)['status'] === 'proven') {
+            $deleted = $source === null ? null : ($evidence[$source] ?? null);
+            $deletionBound = ($deleted['operation'] ?? null) === 'delete'
+                && $label->sourcePostSha256 === $deleted['source_hash']
+                && $label->threadId === $deleted['post']['thread_id']
+                && $label->authorIdentityId === $deleted['post']['author_identity_id'];
+            if ($source !== null && isset($removed[$source]) && ($deletionBound || self::inspect($label, $root)['status'] === 'proven')) {
                 $inactive[$label->recordId] = true;
             }
             foreach ($evidence as $id => $entry) {

@@ -495,6 +495,39 @@ the site instead; see [Author post retraction](author_post_retraction.md).
 - `database_path` — SQLite file to rebuild after deletion
 - `artifact_root` — static HTML output directory to rebuild after deletion
 
+### Source-post deletion and label repair
+
+Deleting a post also removes its proven generated thread-label records and their
+signatures, retains content-free root/parent placeholders for surviving replies,
+and invalidates generated presentation. Independent label actions remain active.
+Source-owned labels also stop applying after signed browser retraction. When a
+prebuilt static release is required, run `./v3 build-static` with the deployment's
+normal repository/database/artifact settings after deletion.
+
+Source-post operations accept `--inspect`, `--repair-labels`, repeatable
+`--resolve-label=<label-id>`, and `--json`. Inspection is read-only; JSON reports
+acceptance separately from `label_cleanup_status` and unresolved legacy records.
+Repair does not delete a live source. An already deleted source is represented
+by retained structural removal evidence. Example:
+
+```bash
+./v3 delete-record <source-post-id> [repository_root] [database_path] --inspect --json
+./v3 delete-record <source-post-id> [repository_root] [database_path] --repair-labels --resolve-label=<label-record-id> --json
+```
+
+A legacy candidate is **not proof of ownership**. Review the source text, target
+thread and trusted history before explicitly resolving a label. Timestamp/author
+matches and a shared bulk-import commit alone do not establish ownership. Repair
+can use an original source recovered from Git history; if history or necessary
+legacy timestamp evidence is unavailable, restore it before repairing.
+
+Repeat the same command after an interrupted commit or failed refresh. The private
+Git-directory journal resumes accepted work, and already accepted deletions do
+not need another acceptance commit. Changed source/label bytes require inspection
+rather than blind retry. Preserve `records/post-removals/` and trusted Git history
+in backups: copied JSON alone does not establish removal authority. Imports reject
+foreign removal claims and do not restore locally removed sources or labels.
+
 ## Backfill Unicode-risk analysis for posts
 
 ```

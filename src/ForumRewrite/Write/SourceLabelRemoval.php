@@ -29,14 +29,16 @@ final class SourceLabelRemoval
                 $commit = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
                 LabelRemoval::read($root, $id);
                 try {
-                    (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
                     (new StaticArtifactInvalidator($artifactRoot))->invalidateAllGeneratedPresentation();
+                    (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+                    (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->clear();
                 } catch (\Throwable $error) {
                     (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->mark(['reason' => 'source_removal_refresh_failed', 'commit_sha' => $commit]);
                     throw new RuntimeException('Removal accepted at ' . $commit . '; refresh incomplete. Retry the same command: ' . $error->getMessage(), 0, $error);
                 }
                 $inspection = LabelRemoval::inspect($root, $id);
                 return ['status' => 'ok', 'source_id' => $id, 'commit' => $commit,
+                    'label_cleanup_status' => $inspection['review_candidates'] === [] ? 'complete' : 'unresolved',
                     'removed_labels' => array_keys($record['labels']), 'unresolved_labels' => array_values(array_diff($inspection['unresolved'], array_keys($record['labels'])))];
             })
         );

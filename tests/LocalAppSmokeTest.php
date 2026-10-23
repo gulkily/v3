@@ -1406,6 +1406,11 @@ PHP;
         $html = $this->render($app, '/threads/root-001');
         assertStringContains('Deleted post', $html);
         assertStringContains('Reply body', $html);
+        assertStringContains('"operation": "delete"', $this->render($app, '/source/current/records/post-removals/root-001.json'));
+        $forte = json_decode($this->render($app, '/api/forte_thread_detail?thread_id=root-001'), true);
+        assertSame('ok', $forte['status']);
+        assertStringContains('Reply body', $forte['html']);
+        assertStringNotContains('Hello world', $forte['html']);
         $head = \ForumRewrite\Canonical\LabelRemoval::git($root, ['rev-parse', 'HEAD']);
         exec($command, $repeatOutput, $repeatStatus);
         assertSame(0, $repeatStatus);
@@ -1454,6 +1459,36 @@ PHP;
         catch (RuntimeException) { $staleRejected = true; }
         assertTrue($staleRejected);
         assertTrue(\ForumRewrite\Retraction\PublicationGuard::begin($database, $root) !== null);
+    }
+
+    public function testZenMemesDeletedPinRepliesRepairWithoutRemovingConversation(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        $this->copyDirectory(__DIR__ . '/fixtures/retraction_pin_legacy/records', $root . '/records');
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($root, $args);
+        $git(['add', 'records']); $git(['commit', '-qm', 'Bulk import reported ZenMemes fixture']);
+        $sources = ['reply-20260526032118-654b2b08' => 'thread-label-20260526032118-3bdb37fe',
+            'reply-20260526032816-a1447d49' => 'thread-label-20260526032816-141bcd4a'];
+        foreach ($sources as $source => $label) $git(['rm', 'records/posts/' . $source . '.txt']);
+        $git(['commit', '-qm', 'Legacy source-only deletion']);
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame('["pin","pinned"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-20260526032027-014695b3'")->fetchColumn());
+        foreach ($sources as $source => $label) {
+            $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', $source, $root, $database, $artifacts, '--repair-labels', '--resolve-label=' . $label, '--json']));
+            exec($command . ' 2>&1', $output, $status); assertSame(0, $status);
+        }
+        $pdo = new PDO('sqlite:' . $database);
+        assertSame('[]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-20260526032027-014695b3'")->fetchColumn());
+        $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $html = $this->render($app, '/threads/thread-20260526032027-014695b3');
+        assertStringContains('Independent reply survives pin-source removal.', $html);
+        $board = $this->render($app, '/threads/?view=all');
+        preg_match_all('#<article\b[^>]*>.*?</article>#s', $board, $cards);
+        $targetCard = '';
+        foreach ($cards[0] as $card) if (str_contains($card, '/threads/thread-20260526032027-014695b3')) $targetCard = $card;
+        assertStringContains('The Rules of ZenMemes.com', $targetCard);
+        assertStringNotContains('pinned-thread-marker', $targetCard);
     }
 
     public function testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState(): void

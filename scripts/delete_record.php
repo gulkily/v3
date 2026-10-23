@@ -333,19 +333,27 @@ function usage(): string
     return <<<TEXT
 Usage:
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
+  ./v3 delete-record <source-post-id> [repository_root] [database_path] [artifact_root] [--inspect] [--repair-labels --resolve-label=<label-id>] [--json]
 
-Deletes a canonical file under records/ with git rm, commits the removal,
-rebuilds the read model, and rebuilds static artifacts when artifact_root or
-FORUM_PUBLIC_ARTIFACT_ROOT is present.
+Deletes and commits a canonical record, then refreshes derived state.
+Post deletion also removes proven source-owned labels, preserves replies under
+placeholders, and invalidates generated presentation. Rebuild static artifacts
+with ./v3 build-static when a prebuilt release is required. Other record families
+retain their existing static rebuild behavior when artifact_root is supplied.
 
-record_path_or_id may be a relative path like:
-  --inspect --json: inspect source ownership without mutation
-  --repair-labels --resolve-label=<label-id>: record explicit operator ownership resolution
-  Repeat a source deletion command to recover an incomplete refresh.
+Source-post options:
+  --inspect                 Read-only ownership and legacy-candidate report.
+  --repair-labels            Repair label effects without deleting a live source.
+  --resolve-label=<label-id> Explicit operator ownership resolution (repeatable).
+  --json                    Structured source-post output.
 
+Legacy candidates are not proof. Inspect the original post/history before
+resolving ownership. Missing sources are recovered from trusted Git history.
+Repeat the same source command to resume interrupted acceptance or refresh.
+A files-only receipt cannot replace trusted local acceptance history.
+
+Record examples:
   records/thread-labels/thread-label-20260530000001-zenrules.txt
-
-or an unambiguous filename stem like:
   thread-label-20260530000001-zenrules
 
 TEXT;

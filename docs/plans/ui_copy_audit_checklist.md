@@ -1,5 +1,11 @@
 # UI copy audit checklist
 
+## Source-owned label removal — October 22, 2026
+
+- [x] Keep legacy label uncertainty actionable after accepted retraction: the existing reload acknowledgment displays operator-review guidance only when ownership candidates remain unresolved. No new navigation, confirmation or routine explanatory panel.
+- Verified real signed author/operator/account and partial-retry browser flows; legacy warning in all 13 themes at 390px/1280px without warning/page overflow. Inspected Word97/Chicago phone and Midnight desktop screenshots; existing menu keyboard/Escape/touch check passed. Fixture also verifies physical root deletion preserves conversation. Screenshots are local `/tmp/retraction-browser-evidence/` evidence, not deployment artifacts.
+- [ ] Production ZenMemes rollout and live legacy ownership resolution remain operator acceptance tasks; missing historical proof is not silently inferred. [Implementation record](retraction_effects/retraction_effects_step4_implementation_summary.md).
+
 ## Browser identity ready notice — October 21, 2026 triage
 
 - [ ] Remove the routine “Browser identity ready” notice and hide its empty status element; retain necessary pending/failure/recovery feedback and explicit Account results. [Triage and acceptance](browser_identity_ready_triage_2026-10-21.md).

@@ -23,6 +23,15 @@ final class ContentImportPlannerTest
         assertSame('duplicate', $plan['records/posts/root-001.txt']['state']);
         assertSame('excluded', $plan['records/thread-labels/thread-label-20260415153000-ab12cd34.txt']['state']);
         assertSame('duplicate', $plan['records/posts/reply-001.txt']['state']);
+        $database = $w->root . '/read.sqlite3';
+        $run = (new \ForumRewrite\Import\ContentImportRunner($target, $database))->run($source, static function () use ($target, $database): void {
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($target, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($target)))->rebuild();
+        });
+        assertSame('complete', $run['status']);
+        assertSame(false, is_file($target . '/records/posts/root-001.txt'));
+        assertSame(false, is_file($target . '/records/thread-labels/thread-label-20260415153000-ab12cd34.txt'));
+        assertSame("Reply body.\nSecond line for context.", trim((new PDO('sqlite:' . $database))->query("SELECT body FROM posts WHERE post_id='reply-001'")->fetchColumn()));
+
         // An archive receipt without the destination's trusted history is not authority.
         $w->put($source . '/' . $path, file_get_contents($target . '/' . $path));
         $empty = $w->repository('empty');

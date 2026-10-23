@@ -215,7 +215,7 @@ final class ReadModelBuilder
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
                 'retracted_at' => $removal['accepted_at'], 'retraction_class' => 'operator', 'retraction_attribution' => 'operator',
-                'board_tags_json' => '[]', 'thread_type' => null, 'agent_response_json' => null,
+                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
                 'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
                 'source_path' => \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,

@@ -60,6 +60,10 @@ final class LabelRemoval
     public static function all(string $root): array
     {
         $records = [];
+        if (file_exists($root . '/.git')) {
+            $tracked = preg_split('/\n/', trim(self::git($root, ['ls-tree', '-r', '--name-only', 'HEAD', '--', 'records/post-removals'])));
+            foreach ($tracked as $path) if ($path !== '' && !is_file($root . '/' . $path)) throw new RuntimeException('Tracked removal evidence missing; restore trusted repository: ' . $path);
+        }
         foreach (glob($root . '/records/post-removals/*.json') ?: [] as $path) {
             $id = basename($path, '.json');
             $records[$id] = self::read($root, $id);
@@ -135,11 +139,12 @@ final class LabelRemoval
             $labels[$path] = hash_file('sha256', $root . '/' . $path);
         }
         ksort($labels);
+        $effectiveOperation = ($existing['operation'] ?? null) === 'delete' ? 'delete' : $operation;
         return ['source_id' => $id, 'source_hash' => $inspection['source_hash'],
-            'operation' => $existing['operation'] ?? $operation, 'accepted_at' => $existing['accepted_at'] ?? gmdate('Y-m-d\TH:i:s\Z'),
+            'operation' => $effectiveOperation, 'accepted_at' => ($existing['operation'] ?? null) === $effectiveOperation ? $existing['accepted_at'] : gmdate('Y-m-d\TH:i:s\Z'),
             'actor' => 'local-operator', 'labels' => $labels,
             'post' => ['post_id' => $id, 'thread_id' => $post->threadId ?? $id, 'parent_id' => $post->parentId,
-                'created_at' => $post->createdAt, 'author_identity_id' => $post->authorIdentityId]];
+                'created_at' => $post->createdAt, 'author_identity_id' => $post->authorIdentityId, 'thread_type' => $post->threadType]];
     }
 
     public static function store(string $root, array $record): string

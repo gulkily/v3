@@ -357,3 +357,12 @@ thread/parent identity, creation time and author identity. Existing retraction
 columns mark operator removal; no reply prose is promoted into a missing root.
 Generated labels with proven removed/retracted sources are excluded from label,
 score, vote and activity aggregation; surviving independent labels remain active.
+
+The `source_removal_generation` metadata key binds rebuilt aggregation to the
+accepted source-removal/resolution records. Static/offline publication rejects a
+source model with a missing or different generation while such evidence exists.
+Evidence lives in `records/post-removals/<source-id>.json`: operation, content hash,
+structural post identity, exact label-file hashes, acceptance time and local actor.
+It contains no source prose and is effective only with an exact trusted local
+`Accept source label cleanup <source-id>` commit. Importing an archive receipt
+alone grants no authority. Preserve trusted repository history for restoration.

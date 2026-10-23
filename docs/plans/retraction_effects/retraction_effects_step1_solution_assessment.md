@@ -10,7 +10,7 @@ Can you write Step 1 for just making sure that when something is retracted all i
 
 ## Understood Intent
 
-Retracting an item should withdraw the effects it introduced, including labels created through a reply. The motivating example is retracting a pinning reply and finding that the thread remains pinned after rebuilding. The user subsequently confirmed deleting the source reply with `delete-record <reply-id>`; its separate `pin` and `pinned` label records survived. Both signed retraction and physical deletion through `delete-record` are now in scope. This is a separate assessment from [explicit web unpinning](../thread_unpin_web_ui_step1_solution_assessment.md).
+Retracting an item should withdraw the effects it introduced, including labels created through a reply. The motivating example is retracting a pinning reply and finding that the thread remains pinned after rebuilding. The user subsequently confirmed deleting the source reply with `delete-record <reply-id>`; its separate `pin` and `pinned` label records survived. Both signed retraction and physical deletion through `delete-record` are now in scope. This is a separate assessment from the earlier explicit web-unpin proposal (its separate artifact is unavailable in this checkout).
 
 ## Problem
 
