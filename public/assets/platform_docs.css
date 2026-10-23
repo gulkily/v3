@@ -385,17 +385,41 @@
   font-weight: inherit;
 }
 .docs-content .docs-task-label > input[type="checkbox"] {
-  appearance: auto;
-  width: 1rem;
-  height: 1rem;
-  margin: 0 0.25rem 0 -1.25rem;
+  /* Keep the native disabled semantics without the browser's faint disabled paint. */
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0 0.125rem 0 -1.25rem;
   padding: 0;
-  border: initial;
-  border-radius: initial;
-  background: initial;
+  border: 2px solid var(--ink);
+  border-radius: 0.125rem;
+  background: var(--panel);
   vertical-align: -0.1em;
-  accent-color: var(--ink);
   opacity: 1;
+}
+.docs-content .docs-task-label > input[type="checkbox"]:checked {
+  background: var(--ink);
+}
+.docs-content .docs-task-label > input[type="checkbox"]:checked::before {
+  content: "";
+  width: 0.75rem;
+  height: 0.75rem;
+  /* Page color stays opaque even in themes with transparent panels. */
+  background: var(--page-bg);
+  clip-path: polygon(14% 44%, 0 59%, 40% 100%, 100% 17%, 84% 0, 37% 69%);
+}
+
+@media (forced-colors: active) {
+  .docs-content .docs-task-label > input[type="checkbox"] {
+    forced-color-adjust: none;
+    border-color: CanvasText;
+    background: Canvas;
+  }
+  .docs-content .docs-task-label > input[type="checkbox"]:checked { background: CanvasText; }
+  .docs-content .docs-task-label > input[type="checkbox"]:checked::before { background: Canvas; }
 }
 
 .docs-content .docs-list-scroll {

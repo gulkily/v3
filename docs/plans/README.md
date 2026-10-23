@@ -8,6 +8,8 @@ feature even when only some steps were recorded; step numbers retain their origi
 workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
+[Markdown work checklist](markdown_work_checklist.md) — relevance-sorted completed work, acceptance, follow-ups and optional compatibility decisions.
+
 ## Feature folders
 
 - [Cached checkout overview](checkout_overview/)

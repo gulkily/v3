@@ -147,9 +147,9 @@ anonymous static host serves the active snapshot; personalized requests retain
 the existing dynamic-response policy.
 
 Reload `/docs/reference/author_post_retraction.md` after refresh. Verify four
-scrollable table-source regions, the six source-numbered procedure steps, emphasis
+rendered, scrollable tables, the six source-numbered procedure steps, emphasis
 and the working `v3_cli.md#delete-a-canonical-record` link. Check at desktop and
-390px widths, Tab to source/code regions and scroll with arrow keys. If a CDN or
+390px widths, Tab to table/source/code regions and scroll with arrow keys. If a CDN or
 browser serves older output, invalidate the affected URL and retry; do not delete
 the active release. Dynamic and generated document content must match.
 
