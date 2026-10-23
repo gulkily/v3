@@ -31,7 +31,7 @@ final class StaticArtifactReleasePublisher
                 $databasePath,
                 $candidatePath,
                 $progressReporter,
-                realpath($this->staticHtmlRoot . '/current') ?: null,
+                $this->staticHtmlRoot,
             ))->buildFromReadModel();
 
             $releaseDirectory = $this->staticHtmlRoot . '/releases';
@@ -57,9 +57,6 @@ final class StaticArtifactReleasePublisher
         $releaseDirectory = $this->staticHtmlRoot . '/releases/';
         if (!str_starts_with($releasePath, $releaseDirectory) || !is_dir($releasePath)) {
             throw new RuntimeException('Static artifact release must be an existing release under the static root.');
-        }
-        if (file_exists($releasePath . '/' . \ForumRewrite\Docs\DocsPublication::MANIFEST)) {
-            (new \ForumRewrite\Docs\DocsPublication($this->projectRoot, $this->repositoryRoot))->assertPublicationInputs($releasePath);
         }
         (new \ForumRewrite\Docs\DocsReleaseLocator($this->staticHtmlRoot))->preserveLegacy();
 
@@ -111,7 +108,7 @@ final class StaticArtifactReleasePublisher
                 $databasePath,
                 $candidatePath,
                 $progressReporter,
-                $activeReleasePath,
+                $this->staticHtmlRoot,
             ))->refreshSharedPagesFromReadModel();
 
             $releaseDirectory = $this->staticHtmlRoot . '/releases';

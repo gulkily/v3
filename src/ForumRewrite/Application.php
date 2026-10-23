@@ -107,7 +107,6 @@ final class Application
         private readonly ?string $artifactRoot = null,
         private readonly ?string $staticHtmlRoot = null,
         private readonly string $routeSource = 'php-fallback',
-        private readonly bool $separateDocsVersion = true,
     ) {
     }
 
@@ -128,7 +127,7 @@ final class Application
     public function handle(string $method, string $requestUri): void
     {
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
-        $docsPage = $this->separateDocsVersion && ($path === '/docs' || str_starts_with($path, '/docs/'));
+        $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
         if ($docsPage !== $this->docsPage) {
             $this->routeServices = null;
         }

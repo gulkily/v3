@@ -43,7 +43,7 @@ final class DocsReleaseLocator
         if ($metadata === null || filesize($metadata) > 4096) {
             return null;
         }
-        $record = json_decode((string) file_get_contents($metadata), true);
+        $record = json_decode((string) @file_get_contents($metadata), true);
         if (!is_array($record) || ($record['format'] ?? null) !== 1
             || !is_string($record['version'] ?? null) || !preg_match('/^[a-f0-9]{64}$/D', $record['version'])) {
             return null;
@@ -61,7 +61,7 @@ final class DocsReleaseLocator
         }
         $record = self::file($base, self::LEGACY);
         if ($record !== null && filesize($record) < 4096) {
-            $data = json_decode((string) file_get_contents($record), true);
+            $data = json_decode((string) @file_get_contents($record), true);
             $relative = is_array($data) && ($data['format'] ?? null) === 1 ? ($data['relative'] ?? null) : null;
             if (is_string($relative) && ($relative === '.' ||
                 (!str_contains($relative, '\\') && !str_contains($relative, "\0")
@@ -104,7 +104,7 @@ final class DocsReleaseLocator
         }
         $existing = self::file($base, self::LEGACY);
         if ($existing !== null && filesize($existing) < 4096) {
-            $record = json_decode((string) file_get_contents($existing), true);
+            $record = json_decode((string) @file_get_contents($existing), true);
             $relative = $releaseRoot === $base ? '.' : substr($releaseRoot, strlen($base) + 1);
             if (($record['relative'] ?? null) === $relative) {
                 return;

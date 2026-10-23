@@ -7,7 +7,6 @@ namespace ForumRewrite\Host;
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Docs\PlatformDocsCatalog;
-use ForumRewrite\Docs\DocsPublication;
 use ForumRewrite\Offline\PublicOfflineSnapshotBuilder;
 use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -23,7 +22,6 @@ final class StaticArtifactBuilder
 {
     private ?array $retractionToken = null;
     private array $metaToken = [];
-    private ?array $docsInputs = null;
     private array $copiedAssets = [];
     public function __construct(
         private readonly string $projectRoot,
@@ -31,7 +29,7 @@ final class StaticArtifactBuilder
         private readonly string $databasePath,
         private readonly string $artifactRoot,
         private readonly ?\Closure $progressReporter = null,
-        private readonly ?string $docsReuseSource = null,
+        private readonly ?string $forumStaticRoot = null,
     ) {
     }
 
@@ -92,7 +90,6 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/offline/snapshot.sqlite3',
         );
         $this->reportProgress('Fingerprinting and copying referenced assets complete.');
-        $this->assertDocumentationInputs();
     }
 
     /**
@@ -111,7 +108,6 @@ final class StaticArtifactBuilder
         }
 
         $this->buildSharedPages($this->application());
-        $this->assertDocumentationInputs();
     }
 
     /** Run only in an isolated renderer process: no visitor globals or active session. */
@@ -155,36 +151,9 @@ final class StaticArtifactBuilder
 
     private function buildSharedPages(Application $application): void
     {
-        $publication = new DocsPublication($this->projectRoot, $this->repositoryRoot);
-        $signature = null;
-        if ($publication->isReusableContext()) {
-            try {
-                $signature = $publication->inputSignature();
-            } catch (\RuntimeException) {
-                // Unknown input trees still get a complete render, without reuse evidence.
-            }
-        }
-        $version = $publication->version();
-        $this->docsInputs = $signature === null ? null : [$signature, $version];
-        PlatformDocsCatalog::withSnapshot($this->projectRoot, function () use ($application, $publication, $signature, $version): void {
-            $this->renderSharedPages($application);
-            if ($signature !== null && $this->docsReuseSource !== null
-                && $publication->reuseInto($this->docsReuseSource, $this->artifactRoot, $signature, $version)) {
-                $this->reportProgress('Reusing documentation (' . count(PlatformDocsCatalog::inventory($this->projectRoot)) . ' documents).');
-                return;
-            }
-            $publication->clearOwned($this->artifactRoot);
-            $this->renderDocumentation($application);
-            if ($signature !== null) {
-                $publication->recordPublication($this->artifactRoot, $signature, $version);
-            }
-        });
-    }
-
-    private function assertDocumentationInputs(): void
-    {
-        if ($this->docsInputs !== null) {
-            (new DocsPublication($this->projectRoot, $this->repositoryRoot))->assertInputs(...$this->docsInputs);
+        $this->renderSharedPages($application);
+        if ((new \ForumRewrite\Docs\DocsReleaseLocator($this->forumStaticRoot ?? $this->artifactRoot))->active() === null) {
+            $this->reportProgress('Static docs are not published; run ./v3 docs publish with the same destination/profile.');
         }
     }
 
@@ -227,57 +196,6 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/tags/index.html',
         ]);
         $this->reportProgress("Rendering shared pages complete ({$totalSharedPages}/{$totalSharedPages}).");
-    }
-
-    private function renderDocumentation(Application $application): void
-    {
-        $docsInventory = PlatformDocsCatalog::inventory($this->projectRoot);
-        $browseQueries = PlatformDocsCatalog::browseQueries($docsInventory, PlatformDocsCatalog::PAGE_SIZE);
-        $totalDocs = 3 + count($docsInventory) + count($browseQueries);
-        $this->reportProgress("Rendering documentation (0/{$totalDocs}).");
-        $this->reportProgress("Rendering documentation (1/{$totalDocs}): /docs/.");
-        $this->writeRouteArtifacts($application, '/docs/', [
-            $this->artifactRoot . '/docs.html',
-            $this->artifactRoot . '/docs/index.html',
-        ]);
-        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $index => $entry) {
-            $route = PlatformDocsCatalog::routeForPath($entry['path']);
-            if ($route === null) {
-                throw new RuntimeException('Unable to resolve platform docs route: ' . $entry['path']);
-            }
-
-            $completed = $index + 2;
-            $this->reportProgress("Rendering documentation ({$completed}/{$totalDocs}): {$route}.");
-            $this->writeRouteArtifact($application, $route, $this->artifactRoot . $entry['href'] . '.html');
-        }
-        $completed = count($docsInventory) + 2;
-        $this->reportProgress("Rendering documentation ({$completed}/{$totalDocs}): /docs/_missing.html.");
-        $this->writeRouteArtifact($application, '/docs/_missing.html', $this->artifactRoot . '/docs/_missing.html');
-        // Browse pages let readers without JavaScript filter and page the static library;
-        // anything else (search text, combined filters) is served the browser search shell.
-        $completed++;
-        $this->reportProgress("Rendering documentation ({$completed}/{$totalDocs}): /docs/_search.html.");
-        $this->writeRouteArtifact($application, '/docs/_search.html', $this->artifactRoot . '/docs/_search.html');
-        foreach ($browseQueries as $index => $browseQuery) {
-            $route = '/docs/?' . http_build_query($browseQuery);
-            $completed = 4 + count($docsInventory) + $index;
-            $this->reportProgress("Rendering documentation ({$completed}/{$totalDocs}): {$route}.");
-            $this->writeRouteArtifact($application, $route, $this->artifactRoot . PlatformDocsCatalog::browsePath($browseQuery));
-        }
-        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $entry) {
-            $source = PlatformDocsCatalog::resolveSource($this->projectRoot, $entry['path']);
-            $destination = $this->artifactRoot . '/docs/_download/' . $entry['path'] . '.bin';
-            if (!is_dir(dirname($destination))) { mkdir(dirname($destination), 0777, true); }
-            if ($source === null || !copy($source, $destination) || hash_file('sha256', $source) !== $entry['hash']
-                || hash_file('sha256', $destination) !== $entry['hash']) {
-                throw new RuntimeException('Documentation changed during publication; retry the build: ' . $entry['path']);
-            }
-        }
-        $index = json_encode(['entries' => PlatformDocsCatalog::inventory($this->projectRoot)], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
-        if (file_put_contents($this->artifactRoot . '/docs/_search.json', $index) === false) {
-            throw new RuntimeException('Unable to publish documentation search index.');
-        }
-        $this->reportProgress("Rendering documentation complete ({$totalDocs}/{$totalDocs}).");
     }
 
     private function buildQdbPages(Application $application): void
@@ -603,7 +521,6 @@ final class StaticArtifactBuilder
             $this->databasePath,
             null,
             routeSource: 'static-html',
-            separateDocsVersion: false,
         );
     }
 
