@@ -334,7 +334,56 @@ final class CheckoutManager
         if ($selected !== null && !array_filter($rows, fn ($row) => $row['path'] === $selected)) {
             throw new RuntimeException('Selected path is not registered; use checkouts list or add.');
         }
-        return ['command' => 'preview', 'checkouts' => $rows];
+        $id = bin2hex(random_bytes(12));
+        $plan = ['version' => 1, 'id' => $id, 'registry' => hash('sha256', json_encode($registry, JSON_THROW_ON_ERROR)),
+            'created' => gmdate('c'), 'checkouts' => $rows];
+        $this->directory($this->state . '/previews');
+        $this->writeJson($this->state . '/previews/' . $id . '.json', ['plan' => $plan, 'signature' => $this->signature($plan)]);
+        return ['command' => 'preview', 'preview_id' => $id, 'checkouts' => $rows,
+            'notice' => 'Fetched selected sources; no checked-out files changed. Pause coding/server sessions before apply.',
+            'exit_code' => $this->attention($rows) ? 2 : 0];
+    }
+
+    private function attention(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if (!in_array($row['action'], ['current', 'ahead', 'fast-forward', 'merge', 'excluded', 'updated'], true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function signature(array $plan): string
+    {
+        $path = $this->state . '/preview.key';
+        if (!is_file($path)) {
+            $this->writeJson($path, ['key' => bin2hex(random_bytes(32))]);
+        }
+        $key = $this->readJson($path)['key'] ?? '';
+        if (!is_string($key) || strlen($key) !== 64) {
+            throw new RuntimeException('Preview key is invalid; restore state or use fresh state and preview again.');
+        }
+        return hash_hmac('sha256', json_encode($plan, JSON_THROW_ON_ERROR), $key);
+    }
+
+    private function loadPreview(?string $id): array
+    {
+        if ($id === null || !preg_match('/^[a-f0-9]{24}$/D', $id)) {
+            throw new RuntimeException('apply requires a preview ID; run checkouts preview first.');
+        }
+        $path = $this->state . '/previews/' . $id . '.json';
+        if (!is_file($path)) {
+            throw new RuntimeException('Preview not found; use the same state directory and run a fresh preview.');
+        }
+        $envelope = $this->readJson($path);
+        $plan = $envelope['plan'] ?? [];
+        if (($plan['version'] ?? null) !== 1 || ($plan['id'] ?? null) !== $id
+            || !is_string($envelope['signature'] ?? null)
+            || !hash_equals($this->signature($plan), $envelope['signature'])) {
+            throw new RuntimeException('Preview is damaged or changed; run a fresh preview.');
+        }
+        return $plan;
     }
 
     private function remove(?string $path): array

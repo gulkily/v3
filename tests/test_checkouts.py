@@ -40,7 +40,10 @@ class CheckoutsTest(unittest.TestCase):
                                  '--registry=' + str(self.registry), '--state-dir=' + str(self.state),
                                  *([] if raw else ['--json'])], cwd=cwd or ROOT,
                                 env=self.env, text=True, capture_output=True)
-        self.assertEqual(code, result.returncode, result.stdout + result.stderr)
+        if code is None:
+            self.assertIn(result.returncode, [0, 2], result.stdout + result.stderr)
+        else:
+            self.assertEqual(code, result.returncode, result.stdout + result.stderr)
         return result.stdout if raw else json.loads(result.stdout)
 
     def add(self, path=None, **options):
@@ -84,7 +87,7 @@ class CheckoutsTest(unittest.TestCase):
         self.assertFalse(self.registry.exists())
 
     def preview(self, **options):
-        return self.cli('preview', *[f'--{key}={value}' for key, value in options.items()])
+        return self.cli('preview', *[f'--{key}={value}' for key, value in options.items()], code=None)
 
     def test_history_forward_and_ahead(self):
         self.add()
@@ -135,6 +138,27 @@ class CheckoutsTest(unittest.TestCase):
         (self.clone / '.git' / 'MERGE_HEAD').unlink()
         self.git(self.clone, 'remote', 'set-url', 'origin', str(self.base / 'different'))
         self.assertEqual('unavailable', self.preview(path=self.clone)['checkouts'][0]['action'])
+
+    def test_saved_preview_and_human_output(self):
+        self.add()
+        result = self.preview()
+        plan = self.state / 'previews' / (result['preview_id'] + '.json')
+        self.assertEqual(0o600, plan.stat().st_mode & 0o777)
+        self.assertEqual(result['preview_id'], json.loads(plan.read_text())['plan']['id'])
+        output = self.cli('preview', raw=True)
+        self.assertIn('Already current', output)
+        self.assertIn('no checked-out files changed', output)
+        self.assertIn('--sessions-paused', output)
+        (self.clone / 'new').write_text('dirty')
+        result = self.cli('preview', code=2)
+        self.assertEqual(2, result['exit_code'])
+
+    def test_missing_path_and_bad_selector_visible(self):
+        self.add()
+        self.clone.rename(self.base / 'moved')
+        result = self.cli('preview', code=2)
+        self.assertEqual('unavailable', result['checkouts'][0]['action'])
+        self.cli('preview', '--path=/not/registered', code=1)
 
 
 if __name__ == '__main__':

@@ -15,3 +15,9 @@ Effort study: `railspike-effort / v3/concurrent_checkouts`; [ledger](../effort_e
 - Changes: selected-source fetch without tags/submodules, identity/state inspection, persistent validated ancestry baselines and sticky rewrite blocks, conservative unknown-divergence handoff, role/path selection.
 - Verification: `python3 tests/test_checkouts.py`: 10 real-Git tests passed, including observed and already-fetched rewrites, unknown versus validated feature divergence, dirty/busy and source mismatch. Working HEAD remains unchanged by preview.
 - Notes: Stage 1 commits `5c296bac3`, correction `3bd230353`; initial stage check failure is recorded. A baseline proves continuity from observed enrollment, not universal history authenticity; uncertain branches block. Saved preview/UI pending Stage 3.
+
+## Stage 3 - Saved previews and output
+
+- Changes: private signed preview snapshots with registry/source/HEAD identity, opaque IDs, human actions/reasons and JSON parity; attention exit 2 and fetch side-effect notice. Source URLs/errors remain sanitized; selected/excluded roles visible.
+- Verification: `python3 tests/test_checkouts.py`: 12 cases passed, including private saved-preview permissions, human guidance, missing paths and invalid selectors; PHP syntax passed.
+- Notes: Stage 2 commit `8721d5963`. Apply and preview-consumption validation follow in Stage 4; no live pool touched.

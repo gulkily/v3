@@ -9,12 +9,14 @@ use ForumRewrite\Checkouts\CheckoutManager;
 const CHECKOUT_HELP = <<<'HELP'
 Usage: ./v3 checkouts <command> [argument] [options]
   add <path>       Register an existing clone (--remote=origin --target=main)
+  preview         Fetch selected sources and save an update preview
   list            List registered clones
   remove <path>   Forget a path; never deletes its files
 Options:
   --role=development|test|server  Role for add; defaults to development
   --registry=/path/file.json     Shared registry (default: XDG_CONFIG_HOME/v3/checkouts.json)
   --state-dir=/path              Private state (default: XDG_STATE_HOME/v3/checkouts)
+  --path=/checkout              Preview one registered path (required for test/server roles)
   --json                        Machine-readable output
 HELP;
 
@@ -45,7 +47,21 @@ try {
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
     } else {
         foreach ($result['checkouts'] ?? [] as $entry) {
-            echo $entry['path'] . '  [' . $entry['role'] . ']  ' . $entry['remote'] . '/' . $entry['target'] . "\n";
+            echo $entry['path'] . '  ' . ($entry['snapshot']['branch'] ?? '[' . $entry['role'] . ']')
+                . '  ' . ($entry['action'] ?? $entry['remote'] . '/' . $entry['target']) . "\n";
+            if (isset($entry['reason'])) {
+                echo '  ' . $entry['reason'] . "\n";
+            }
+            if (isset($entry['snapshot']['target'])) {
+                echo '  Source: ' . substr($entry['snapshot']['target'], 0, 12) . "\n";
+            }
+        }
+        if (isset($result['notice'])) {
+            echo $result['notice'] . "\n";
+        }
+        if (isset($result['preview_id'])) {
+            echo 'Apply: ./v3 checkouts apply ' . $result['preview_id'] . ' --sessions-paused' . "\n";
+            echo "Only selected checked-out branches are considered; other branches, stashes and linked worktrees stay untouched.\n";
         }
         if ($command === 'list' && !$result['checkouts']) {
             echo "No clones registered. Use ./v3 checkouts add <path>.\n";
@@ -53,6 +69,7 @@ try {
             echo 'Removed registration: ' . $result['path'] . "\n";
         }
     }
+    exit($result['exit_code'] ?? 0);
 } catch (Throwable $error) {
     if ($options['json'] ?? false) {
         echo json_encode(['error' => $error->getMessage()], JSON_THROW_ON_ERROR) . "\n";
