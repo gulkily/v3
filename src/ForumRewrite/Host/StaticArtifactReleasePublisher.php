@@ -61,6 +61,7 @@ final class StaticArtifactReleasePublisher
         if (file_exists($releasePath . '/' . \ForumRewrite\Docs\DocsPublication::MANIFEST)) {
             (new \ForumRewrite\Docs\DocsPublication($this->projectRoot, $this->repositoryRoot))->assertPublicationInputs($releasePath);
         }
+        (new \ForumRewrite\Docs\DocsReleaseLocator($this->staticHtmlRoot))->preserveLegacy();
 
         $pendingLink = $this->staticHtmlRoot . '/.current-' . bin2hex(random_bytes(8));
         $relativeReleasePath = 'releases/' . basename($releasePath);

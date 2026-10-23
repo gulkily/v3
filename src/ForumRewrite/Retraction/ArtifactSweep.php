@@ -12,6 +12,22 @@ final class ArtifactSweep
 
     public static function run(array $roots, string $generation, array $stack, int $limit, bool $preview = false): array
     {
+        $legacy = [];
+        foreach ($roots as $root) {
+            $base = realpath($root);
+            if ($base === false || is_link($root)) continue;
+            $locator = new \ForumRewrite\Docs\DocsReleaseLocator($root);
+            if (!$preview) $locator->preserveLegacy();
+            $pinned = $locator->legacy();
+            if ($pinned !== null) $legacy[] = ['prefix' => rtrim($root, '/'), 'base' => $base, 'root' => $pinned['root']];
+        }
+        $preserved = static function (string $path) use ($legacy): bool {
+            foreach ($legacy as $pin) {
+                if (($path === $pin['prefix'] || str_starts_with($path, $pin['prefix'] . '/'))
+                    && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($pin['root'], $pin['base'] . substr($path, strlen($pin['prefix'])))) return true;
+            }
+            return false;
+        };
         if ($stack === []) {
             foreach (array_unique($roots) as $root) {
                 if (is_link($root)) throw new RuntimeException('Artifact root must not be a symlink.');
@@ -36,6 +52,7 @@ final class ArtifactSweep
                 }
             }
             if (!$allowed || str_contains($frame['path'], '/..') || is_link($frame['path'])) throw new RuntimeException('Invalid artifact traversal state.');
+            if ($preserved($frame['path'])) { array_pop($stack); continue; }
             if (!is_dir($frame['path'])) { array_pop($stack); continue; }
             if (!isset($directories[$frame['path']])) {
                 $names = scandir($frame['path']);
@@ -49,6 +66,7 @@ final class ArtifactSweep
             $stack[$index]['after'] = $name;
             ++$examined;
             $path = $frame['path'] . '/' . $name;
+            if ($preserved($path)) continue;
             if ($name === 'current' && $frame['top']) {
                 if (is_link($path)) {
                     if (trim((string) @file_get_contents($path . '.retraction-generation')) !== $generation) {

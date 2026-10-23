@@ -144,11 +144,16 @@ final class StaticArtifactInvalidator
             if (!is_dir($root) || !is_readable($root)) {
                 throw new \RuntimeException('Unable to inspect approval artifacts: ' . $root);
             }
+            $docs = new \ForumRewrite\Docs\DocsReleaseLocator($root);
+            $docs->preserveLegacy();
+            $legacy = $docs->legacy();
             foreach (glob($root . '/*.html') ?: [] as $path) {
+                if ($legacy !== null && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($legacy['root'], realpath($root) . substr($path, strlen($root)))) continue;
                 $paths[] = substr($path, strlen($root));
             }
             foreach (['threads', 'posts', 'profiles', 'users', 'tags', 'activity', 'instance', 'tools', 'about', 'docs', 'latest', 'top', 'leetness', 'qdb'] as $family) {
                 $directory = $root . '/' . $family;
+                if ($legacy !== null && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($legacy['root'], realpath($root) . '/' . $family)) continue;
                 if (is_link($directory)) {
                     throw new \RuntimeException('Approval artifact directory must not be a symlink: ' . $directory);
                 }
@@ -203,6 +208,9 @@ final class StaticArtifactInvalidator
     private function deletePaths(array $paths, bool $strict = false): void
     {
         foreach ($this->artifactRoots as $root) {
+            $docs = new \ForumRewrite\Docs\DocsReleaseLocator($root);
+            $docs->preserveLegacy();
+            $legacy = $docs->legacy();
             // A release is an all-or-nothing snapshot. Removing its pointer is
             // safer than trying to edit files inside it after a canonical write.
             // The next anonymous request uses PHP until a new release is built.
@@ -217,6 +225,7 @@ final class StaticArtifactInvalidator
             }
 
             foreach ($paths as $path) {
+                if ($legacy !== null && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($legacy['root'], realpath($root) . $path)) continue;
                 $absolutePath = $root . $path;
                 if ($strict) {
                     clearstatcache(true, $absolutePath);

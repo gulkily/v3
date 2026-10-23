@@ -38,7 +38,7 @@ final class DocsReleasePublisher
             $pending = $root . '/.current-' . bin2hex(random_bytes(8));
             try {
                 $active = $this->locator->active();
-                if ($active === null || !$publication->reuseInto($active['root'], $candidate, $signature, $signature)) {
+                if ($active === null || $active['legacy'] || !$publication->reuseInto($active['root'], $candidate, $signature, $signature)) {
                     (new DocsArtifactBuilder($this->projectRoot, $this->repositoryRoot, $candidate, $signature, $progress))->build();
                     $publication->recordPublication($candidate, $signature, $signature);
                 } else {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Docs;
 
+use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\View\FaviconRegistry;
 
@@ -80,6 +81,10 @@ final class DocsResponder
             $name = substr($path, strlen('/docs/_assets/'));
             $file = preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/D', $name)
                 ? DocsReleaseLocator::file($release['root'], 'docs/_assets/' . $name) : null;
+            if ($file === null && $release['legacy'] && preg_match('/^favicon[A-Za-z0-9._-]*\.(?:ico|gif)$/D', $name)) {
+                $file = DocsReleaseLocator::file($release['root'], 'assets/' . $name)
+                    ?? DocsReleaseLocator::file($release['root'], $name);
+            }
         } elseif (str_starts_with($path, '/docs/_download/')) {
             $source = PlatformDocsCatalog::normalizePath(substr($path, strlen('/docs/_download/')));
             $file = $source === null ? null : DocsReleaseLocator::file($release['root'], 'docs/_download/' . $source . '.bin');
@@ -91,13 +96,13 @@ final class DocsResponder
             $file = $source === null ? null : DocsReleaseLocator::file($release['root'], ltrim(PlatformDocsCatalog::routeForPath($source), '/') . '.html');
         }
         if ($file !== null) {
-            return $this->send($file, $method);
+            return $this->send($file, $method, 200, $release);
         }
         $missing = DocsReleaseLocator::file($release['root'], 'docs/_missing.html');
-        return $missing !== null && $this->send($missing, $method, 404);
+        return $missing !== null && $this->send($missing, $method, 404, $release);
     }
 
-    private function send(string $file, string $method, int $status = 200): bool
+    private function send(string $file, string $method, int $status = 200, ?array $release = null): bool
     {
         $type = match (strtolower(pathinfo($file, PATHINFO_EXTENSION))) {
             'html' => 'text/html; charset=utf-8', 'json' => 'application/json; charset=utf-8',
@@ -105,14 +110,33 @@ final class DocsResponder
             'ico' => 'image/x-icon', 'gif' => 'image/gif', 'png' => 'image/png',
             'svg' => 'image/svg+xml', 'woff2' => 'font/woff2', default => 'application/octet-stream',
         };
+        $html = null;
+        if (($release['legacy'] ?? false) && str_ends_with($file, '.html')) {
+            $html = $this->legacyHtml((string) file_get_contents($file), $release['version']);
+        }
         http_response_code($status);
         header('Content-Type: ' . $type);
         header('X-Content-Type-Options: nosniff');
         header('Cache-Control: no-cache, must-revalidate');
-        header('Content-Length: ' . filesize($file));
+        header('Content-Length: ' . ($html === null ? filesize($file) : strlen($html)));
         if ($method !== 'HEAD') {
-            readfile($file);
+            if ($html !== null) echo $html;
+            else readfile($file);
         }
         return true;
+    }
+
+    /** Adapt one requested legacy page; never rewrite or scan the stored library. */
+    private function legacyHtml(string $html, string $version): string
+    {
+        if (str_contains($html, '<meta name="app-version" content="')) {
+            $html = preg_replace('~<meta name="app-version" content="[^"]*">~', '<meta name="app-version" content="' . $version . '">', $html);
+            $html = preg_replace('~<meta name="app-version-storage-key" content="[^"]*">~', '', $html);
+            $html = preg_replace('~<meta name="app-version-endpoint" content="[^"]*">~',
+                '<meta name="app-version-endpoint" content="/api/docs-version"><meta name="app-version-storage-key" content="forum_pending_docs_version">', $html);
+            $checker = AssetFingerprint::fingerprintedPath($this->projectRoot . '/public', '/assets/version_check.js');
+            $html = preg_replace('~/assets/version_check(?:\.[a-f0-9]{12})?\.js~', $checker, $html);
+        }
+        return preg_replace('~href="/(?:assets/)?(favicon[^"/]*\.(?:ico|gif))"~', 'href="/docs/_assets/$1"', $html);
     }
 }
