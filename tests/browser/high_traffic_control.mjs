@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, copyFile, utimes, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, copyFile, utimes, rm } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -19,7 +19,11 @@ const env={...process.env,FORUM_SITE_ID:'zenmemes',FORUM_APPROVED_MEMBERS_ONLY:'
 const seed=spawnSync('php',[join(project,'tests/Support/fastmod_browser_fixture.php'),root],{input:JSON.stringify(keys),encoding:'utf8',env});
 assert.equal(seed.status,0,seed.stderr);const {identity}=JSON.parse(seed.stdout);
 await writeFile(join(root,'repository/records/posts/traffic-visible.txt'),'Post-ID: traffic-visible\nCreated-At: 2026-04-10T12:00:00Z\nBoard-Tags: general\nSubject: Traffic browser fixture\n\nA visible public thread.\n');
-for(const args of [['add','records/posts/traffic-visible.txt'],['commit','-m','Seed a visible browser fixture thread']]) {
+await mkdir(join(root,'repository/records/post-retractions'),{recursive:true});
+for(const id of ['reply-20260526032118-654b2b08','reply-20260526032816-a1447d49']) {
+ await writeFile(join(root,`repository/records/post-retractions/post-retraction-${id}.txt`),`Record-ID: post-retraction-${id}\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: ${id}\nOperation: retract\nAuthor-Identity-ID: openpgp:${'a'.repeat(40)}\n\n`);
+}
+for(const args of [['add','records'],['commit','-m','Seed visible thread and absent production retraction targets']]) {
  const seeded=spawnSync('git',['-C',join(root,'repository'),...args],{encoding:'utf8'});assert.equal(seeded.status,0,seeded.stderr);
 }
 
@@ -53,6 +57,13 @@ try {
  assert.equal(posted.status(),200,await posted.text());
  await shared.goto(base+'/threads/traffic-visible/');await shared.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  assert.equal(await shared.locator('meta[name="v3-generated-at"]').count(),1);
+ await shared.getByText('A visible public thread.',{exact:true}).waitFor();
+ for(const width of [375,1150]) {
+  await shared.setViewportSize({width,height:850});
+  await shared.evaluate(()=>document.fonts.ready);
+  assert.equal(await shared.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`loaded thread ${width} overflow`);
+  await shared.screenshot({path:join(root,`absent-target-thread-${width}.png`),fullPage:true});
+ }
  const like=shared.locator('[data-action="apply-thread-tag"][data-tag="like"]').first();
  await like.locator('xpath=ancestor::article[1]').hover();
  const voted=shared.waitForResponse(r=>r.url().endsWith('/api/apply_thread_tag')&&r.request().method()==='POST');

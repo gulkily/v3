@@ -26,9 +26,9 @@ final class HighTrafficPublication
         return [
             'repository' => $repository,
             'state' => $state,
-            'head' => ReadModelMetadata::repositoryHead($repository),
-            // Include uncommitted edits, source reappearance and derived-input changes.
-            'fingerprint' => ReadModelMetadata::canonicalFingerprint($repository),
+            'head' => $state['absent'] === [] ? null : ReadModelMetadata::repositoryHead($repository),
+            // Excluded derivations pin all inputs; ordinary renders retain stale-tolerant writes.
+            'fingerprint' => $state['absent'] === [] ? null : ReadModelMetadata::canonicalFingerprint($repository),
         ];
     }
 
