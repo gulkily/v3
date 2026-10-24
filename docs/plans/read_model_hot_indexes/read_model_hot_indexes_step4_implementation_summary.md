@@ -66,3 +66,32 @@ None recorded.
   - The test drives the real `ReadModelBuilder->rebuild()` build path and the real identity gate (`hasExpectedSchemaIdentity` / `readMetadata`) rather than re-implementing the rebuild decision, satisfying the `CONTRIBUTING.md` "startup rebuilds from the prior schema version before the changed query runs" requirement at the unit level. The end-to-end startup/`./v3 rebuild` path is exercised in Stage 4.
   - Reuses the existing `RebuildHistoryFixture` (parity_minimal_v1, `root-001`).
 - Stage work: original ≈0.15 (driver: new harness seeding a stale-identity model and driving the real rebuild path; uncertainty: medium — how cleanly the gate could be exercised in a test). Revision: none to the estimate. Retrospective: ≈0.12 — slightly under; the existing `RebuildHistoryFixture` and the already-public `hasExpectedSchemaIdentity`/`readMetadata` API meant no new fixture or production seam was needed. Driving `Application::ensureReadModel()` directly proved unnecessary — asserting its exact gate predicate plus `rebuild()` covers the requirement without a heavier app-bootstrap harness.
+
+## Stage 4 - End-to-end query-plan + content verification
+- Changes: none to application source (verification-only stage).
+- Verification:
+  - `EXPLAIN QUERY PLAN` (read model built from `parity_minimal_v1`):
+    - Board listing (`ThreadRepository::boardRowsSql()`): `SCAN threads USING INDEX threads_last_activity_idx` — the `ORDER BY last_activity_at DESC, root_post_id DESC` is served by the index; no `USE TEMP B-TREE FOR ORDER BY`.
+    - Reply query (`replyPostsByThreadId`): `SEARCH posts USING INDEX posts_thread_sequence_idx (thread_id=?)` — targeted index search, not a full scan + filesort.
+  - Results unchanged: SHA-256 of `fetchThreads()` + `allReplyPostsByThreadId()` is identical with and without the three indexes (`bd5a19f2…`). Indexes change performance only.
+  - `./v3 rebuild <repo> <db>` via the launcher: succeeds end-to-end (candidate validate → promote → offline snapshot bootstrap); the rebuilt read model contains all three new indexes plus the pre-existing ones.
+  - Focused read-model/thread tests: `ReadModelSchemaTest`, `ReadModelMetadataTest`, `ReadModelHotIndexRebuildTest`, `ReadModelCandidateBuilderTest`, `ReadModelThreadLabelsTest`, `ReadModelThreadSubjectsTest`, `ReadModelPostReactionsTest`, `ReadModelPostRetractionsTest`, `BoardListingQueryTest`, `ThreadTitleTest`, `StandardActivityPaginationTest` — all pass.
+  - Not applicable / not run: full suite (not run in this environment); browser/UI checks (no presentation change — indexes only, content proven identical).
+- Notes:
+  - Pre-existing, unrelated failure: `ReadModelProvenanceTest::testBrokenGitHistoryRetainsNullLabelProvenance` and `testBrokenHistoryOmitsSignedFlagsAndKeepsNullReactionProvenance` fail with `fatal: not a git repository`. Verified these fail identically on the clean baseline commit `7f928218` (before any source change), so they are an environmental sandbox/CWD quirk in tests that build broken git histories — not a regression from this cycle.
+  - Environment: PHP 8.4.27 run as `LD_LIBRARY_PATH=/inner_container/usr/lib64 /root/.local/share/mise/installs/php/8.4/bin/php` (the mise `php` shim drops `LD_LIBRARY_PATH`). No repository change for this; documented for reproducibility.
+- Stage work: original ≈0.08 (driver: operator `./v3 rebuild` + query-plan inspection + before/after content comparison; owns shared deployment verification; uncertainty: low–medium). No revision. Retrospective: ≈0.10 — slightly over, due to diagnosing the sandbox PHP library linkage and confirming the two provenance failures were pre-existing rather than caused by the change.
+
+## Completion Contract — result
+
+- Normal entry / end-to-end outcome: met. Board/tags/RSS listing sort and the single-thread reply query are served by the new indexes; page content is proven byte-identical.
+- Required recovery: met. A stale/pre-26 model is detected by the same `hasExpectedSchemaIdentity` gate `Application::ensureReadModel()` uses (`schema_identity_mismatch`) and rebuilt on normal startup (Stage 3 regression test); `./v3 rebuild` verified (Stage 4).
+- Deployment/external verification: met. `./v3 rebuild` succeeds and `EXPLAIN QUERY PLAN` confirms index use.
+- Release condition: met. Schema-change checklist complete (version 25→26, spec updated, prior-version rebuild regression test added); affected focused tests green.
+
+## Retrospective scope assessment (study closeout)
+
+- Scope v1 delivered as planned across four stages; no scope change, no enhancement requests, no splits. Starting revision `611bcbb5`; branch `feat/read-model-hot-indexes`; planning commit `7f928218`; stage commits `4eb59792` (S1), `87fceacd` (S2), `cef85b1d` (S3), plus this S4 closeout commit.
+- Retrospective whole-cycle assessment: **≈0.30**, matching the Step 1–4 projection; independently judged, not the stage-work sum. The incidental sandbox PHP-linkage diagnosis added real time but is environmental, not cycle scope.
+- Verification performed: schema/metadata/rebuild unit tests, a proven regression guard (index removal → test fails), query-plan confirmation, byte-identical content proof, and `./v3 rebuild`. Omissions: full test suite and browser/UI checks not run (no presentation change). Two pre-existing environmental `ReadModelProvenanceTest` failures are unrelated to this change.
+- Maintainer comfortable-fit judgment: **pending** (not yet reviewed/merged). Study acceptance remains pending; technical completion and study-outcome acceptance are distinct. No measured effort or independent rating claimed; single exposed, non-blind rater, UTC 2026-10-24.
