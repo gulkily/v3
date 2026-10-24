@@ -27,6 +27,9 @@ final class RegistrationBenchmarkTest
             $observer = new PDO('sqlite:' . $database);
             $observer->exec('CREATE TABLE benchmark_profile_updates (identity_id TEXT NOT NULL)');
             $observer->exec('CREATE TRIGGER benchmark_profile_write AFTER UPDATE ON profiles BEGIN INSERT INTO benchmark_profile_updates VALUES (NEW.identity_id); END');
+            $observer->exec('CREATE TABLE benchmark_activity_updates (author_identity_id TEXT)');
+            $observer->exec('CREATE TRIGGER benchmark_activity_write AFTER UPDATE ON activity BEGIN INSERT INTO benchmark_activity_updates VALUES (NEW.author_identity_id); END');
+            $existingIdentities = $observer->query('SELECT identity_id FROM profiles')->fetchAll(PDO::FETCH_COLUMN);
             $observer = null;
             $hash = hash_file('sha256', $database);
             $source = new PDO('sqlite:' . $database);
@@ -53,6 +56,9 @@ final class RegistrationBenchmarkTest
                 $writes = (int) $observed->query('SELECT COUNT(*) FROM benchmark_profile_updates')->fetchColumn();
                 assertSame($name === 'fresh_signed' ? 0 : 1, $writes);
                 assertSame($writes, $case['identity_update_metrics']['profile_rows_updated']);
+                $updatedAuthors = $observed->query('SELECT author_identity_id FROM benchmark_activity_updates')->fetchAll(PDO::FETCH_COLUMN);
+                assertSame([], array_values(array_intersect($existingIdentities, $updatedAuthors)));
+                assertSame(true, $case['identity_update_metrics']['activity_update_statements'] <= 2);
                 $observed = null;
                 assertSame('incremental', $case['identity_update_metrics']['path']);
                 foreach (['profiles_considered', 'posts_considered', 'profile_rows_updated', 'activity_update_statements', 'activity_row_updates', 'process_peak_memory_bytes'] as $metric) {

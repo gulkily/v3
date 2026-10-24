@@ -150,6 +150,24 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion28StartupRebuildsBeforeTargetedActivityUpdates(): void
+    {
+        $database = sys_get_temp_dir() . '/activity-query-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $expected = $pdo->query('SELECT post_id, author_identity_id, author_label, author_is_approved FROM activity ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+            $pdo->exec("UPDATE metadata SET value='28' WHERE key='schema_version'");
+            $pdo->exec("UPDATE activity SET author_label='stale attribution'");
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame($expected, $pdo->query('SELECT post_id, author_identity_id, author_label, author_is_approved FROM activity ORDER BY id')->fetchAll(PDO::FETCH_ASSOC));
+        } finally { @unlink($database); }
+    }
+
     public function testVersion24StartupRebuildsBeforeServingStandardActivityPages(): void
     {
         $database = sys_get_temp_dir() . '/activity-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';

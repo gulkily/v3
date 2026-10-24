@@ -563,16 +563,20 @@ class IncrementalReadModelUpdater
     /**
      * @param array{identity_id:string,profile_slug:string,username:string,username_token:string,bootstrap_post_id:string,bootstrap_thread_id:string} $profile
      */
-    private function linkIdentityActivity(PDO $pdo, array $profile): void
+    private function linkIdentityActivity(PDO $pdo, array $profile, ?array $approval = null): void
     {
-        $approved = $this->loadProfileApprovalFields($pdo, $profile['identity_id']);
+        $approved = $approval ?? $this->loadProfileApprovalFields($pdo, $profile['identity_id']);
         $stmt = $pdo->prepare(
             'UPDATE activity
              SET author_profile_slug = :author_profile_slug,
                  author_username_token = :author_username_token,
                  author_label = :author_label,
                  author_is_approved = :author_is_approved
-             WHERE author_identity_id = :author_identity_id'
+             WHERE author_identity_id = :author_identity_id
+               AND (author_profile_slug IS NOT :author_profile_slug
+                 OR author_username_token IS NOT :author_username_token
+                 OR author_label IS NOT :author_label
+                 OR author_is_approved IS NOT :author_is_approved)'
         );
         $stmt->execute([
             'author_identity_id' => $profile['identity_id'],
@@ -636,14 +640,14 @@ class IncrementalReadModelUpdater
                 ]);
                 $this->identityUpdateMetrics['profile_rows_updated'] += $update->rowCount();
                 if ($update->rowCount() > 0) {
-                    $this->identityChangedProfiles[$identityId] = $profile;
+                    $this->identityChangedProfiles[$identityId] = $profile + ['is_approved' => isset($approvalState[$identityId]) ? 1 : 0];
                 }
             }
         });
 
-        $this->measure($timings, 'profile_activity_refresh', function () use ($pdo, $profiles): void {
-            foreach ($profiles as $identityId => $profile) {
-                $this->linkIdentityActivity($pdo, $profile);
+        $this->measure($timings, 'profile_activity_refresh', function () use ($pdo): void {
+            foreach ($this->identityChangedProfiles as $profile) {
+                $this->linkIdentityActivity($pdo, $profile, ['is_approved' => $profile['is_approved']]);
             }
         });
     }

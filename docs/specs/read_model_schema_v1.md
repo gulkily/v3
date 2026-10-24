@@ -182,6 +182,13 @@ all activity rows for each profile. Schema-25 databases are rebuilt at normal
 startup before serving the current application; this index is also present in
 manual rebuilds and candidate databases.
 
+Schema 29 limits registration activity refresh to the newly linked identity
+and profiles whose derived state changed. Attribution updates use NULL-safe
+changed-value comparisons and the computed approval state for those profiles;
+they no longer refresh every profile's activity. Normal startup rebuilds older
+derived models before the changed query path runs. Table/index shapes are
+unchanged from schema 27.
+
 ### `commits`
 
 Indexed git commit metadata, backing the `commits` activity view.
