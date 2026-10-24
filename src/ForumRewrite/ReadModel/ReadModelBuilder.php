@@ -88,7 +88,7 @@ final class ReadModelBuilder
             $this->measure('index_instance', fn (): mixed => $this->indexInstance($pdo));
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
-            ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot);
+            $this->measure('index_reaction_signatures', fn (): mixed => ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot));
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
             $this->measure('commit_read_model', fn (): bool => $pdo->commit());
         } catch (\Throwable $throwable) {

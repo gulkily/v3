@@ -91,6 +91,35 @@ final class HighTrafficTest
         }
     }
 
+    public function testRendererLimitErrorsNameTheLimitAndLastStage(): void
+    {
+        $tmp = sys_get_temp_dir() . '/v3-render-limits-' . bin2hex(random_bytes(6));
+        mkdir($tmp);
+        $wrapper = $tmp . '/php-wrapper';
+        $oldPhp = getenv('FORUM_PHP_CLI');
+        $cache = new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__), $tmp, $tmp . '/db', $tmp . '/public');
+        try {
+            putenv('FORUM_PHP_CLI=' . $wrapper);
+            foreach ([
+                ['usleep(500000);', 'time limit (0.05 seconds)', 0.05, 1048576],
+                ['fwrite(STDOUT, str_repeat("x", 100));', 'HTML output limit (100 bytes; maximum 16)', 30, 16],
+                ['fwrite(STDERR, str_repeat("x", 70000));', 'stderr output limit', 30, 1048576],
+            ] as [$operation, $expected, $seconds, $bytes]) {
+                file_put_contents($wrapper, "#!/usr/bin/env php\n<?php fwrite(STDERR, \"High-traffic stage: fixture operation\\n\"); " . $operation);
+                chmod($wrapper, 0755);
+                $cache->limits['render_seconds'] = $seconds;
+                $cache->limits['page_bytes'] = $bytes;
+                $message = '';
+                try { $cache->render('/', $tmp . '/assets'); } catch (RuntimeException $error) { $message = $error->getMessage(); }
+                assertStringContains($expected, $message);
+                assertStringContains('after ', $message);
+                assertStringContains('Last stage: fixture operation', $message);
+            }
+        } finally {
+            putenv($oldPhp === false ? 'FORUM_PHP_CLI' : 'FORUM_PHP_CLI=' . $oldPhp);
+        }
+    }
+
     public function testCanonicalSafetyRetainsRoutinePagesAndWithdrawsBeforeRestrictions(): void
     {
         $tmp=sys_get_temp_dir() . '/v3-safety-' . bin2hex(random_bytes(6));

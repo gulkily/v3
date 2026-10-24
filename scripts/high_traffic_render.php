@@ -7,12 +7,17 @@ try {
     [, $project, $repository, $database, $assets, $route] = $argv;
     $_COOKIE = $_GET = $_POST = $_REQUEST = $_SESSION = [];
     $_SERVER = ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => $route, 'HTTP_USER_AGENT' => 'v3-cache-bot'];
+    $report = static function (string $stage): void { fwrite(STDERR, 'High-traffic stage: ' . $stage . "\n"); };
+    $report('validating canonical evidence');
     $context = \ForumRewrite\Host\HighTrafficPublication::capture($repository);
     if (isset($argv[6]) && !hash_equals($argv[6], \ForumRewrite\Host\HighTrafficPublication::identity($context))) {
         throw new RuntimeException('High-traffic source changed before rendering; retry generation.');
     }
-    $database = \ForumRewrite\Host\HighTrafficRenderInput::prepare($context, $database, dirname($assets) . '/model');
-    $html = (new \ForumRewrite\Host\StaticArtifactBuilder($project, $repository, $database, $assets))->renderHighTrafficRoute($route);
+    $report('preparing isolated render input');
+    $database = \ForumRewrite\Host\HighTrafficRenderInput::prepare($context, $database, dirname($assets) . '/model', $report);
+    $report('rendering HTML and copying referenced assets');
+    $html = (new \ForumRewrite\Host\StaticArtifactBuilder($project, $repository, $database, $assets, $report))->renderHighTrafficRoute($route);
+    $report('validating rendered candidate');
     \ForumRewrite\Host\HighTrafficPublication::validate($context);
     fwrite(STDOUT, $html);
 } catch (Throwable $error) {

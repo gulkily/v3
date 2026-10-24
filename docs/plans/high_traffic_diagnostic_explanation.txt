@@ -1,0 +1,62 @@
+Why the UI and progress messages are verbose while diagnostics are terse
+
+The balance is backwards. The implementation and my communication should give
+operators useful failure details while keeping ordinary visitor copy and progress
+updates short. I failed to maintain that distinction in this incident.
+
+What happened
+
+1. The public-facing busy page deliberately hides implementation details and
+   presents one short recovery instruction. That can be appropriate for visitors,
+   but it is not enough for operators. It also describes persistent validation
+   failures as temporary load, which made this incident harder to understand.
+
+2. The original CLI collapsed several distinct refusals into "No generation
+   capacity or inactive mode." We have now separated page-lock contention,
+   occupied generator slots, cache-page limits, inactive/mismatched configuration
+   and ineligible routes. The operator should not have had to infer these causes.
+
+3. A separate renderer error still says "Shared render exceeded limits." Its
+   implementation checks three different ceilings: elapsed time (30 seconds by
+   default), HTML output size (1 MiB by default), and stderr size (64 KiB).
+   The message does not identify which ceiling was exceeded, its actual value,
+   elapsed time, or the current render stage. The production command taking
+   approximately 36 seconds points toward the worker timeout, but the existing
+   message does not prove that or identify where the time was spent.
+
+4. The absent-target fix builds a fresh, excluded read model so stale deleted
+   content cannot leak from the live database. It currently uses the general
+   rebuild machinery. That machinery includes history/activity/signature work
+   beyond what a public cached homepage needs. This is an engineering risk to
+   measure and reduce, not an established explanation of the production delay.
+   Local fixture, browser and Apache checks passed, and a local 1,794-post build
+   completed in about 3.2 seconds. Those results did not establish performance on
+   DreamHost. I stated that limit in the handoff, but should have made the risk
+   and operator diagnostics more concrete before release.
+
+5. My progress messages repeatedly described plans and successful checks, while
+   the actionable production commands and remaining unknowns received less
+   attention. That made the response verbose without supplying the diagnostic
+   detail that would have been useful. This was my communication choice, not a
+   technical requirement of the application or the user.
+
+The intended behavior
+
+- Visitors: concise failure feedback with an appropriate next action; no internal
+  paths, stack traces or detailed implementation exposition.
+- Operators: the precise failed operation, the specific limit or condition,
+  configured and observed values, elapsed time, last known stage and a practical
+  next diagnostic or recovery step. Keep sensitive payloads and credentials out
+  of diagnostics.
+- Agent progress: report the new finding, its implication and the next action in
+  a few sentences. Keep lengthy evidence and workflow records in project files.
+- Verification reports: separate local evidence from production acceptance and
+  distinguish a hypothesis from an established cause.
+
+Immediate follow-up
+
+Keep the evidence/publication checks intact. Identify the actual limiting stage,
+make renderer failures distinguish time, stdout size and stderr size, and expose
+bounded stage progress to the operator. Reduce unnecessary preparation work only
+where its irrelevance to public HTML and continued safety are demonstrated. Do
+not solve an unexplained delay merely by raising the timeout or removing guards.

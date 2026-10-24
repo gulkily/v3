@@ -121,6 +121,7 @@ final class StaticArtifactBuilder
             throw new RuntimeException('High-traffic rendering is unavailable on private instances.');
         }
         http_response_code(200);
+        $this->reportProgress('rendering public HTML');
         ob_start();
         try {
             $this->application()->handle('GET', $route);
@@ -143,6 +144,7 @@ final class StaticArtifactBuilder
         $configuredBytes=getenv('FORUM_HIGH_TRAFFIC_BYTES');
         $assetLimit=$configuredBytes!==false && ctype_digit($configuredBytes) && (int)$configuredBytes>0 ? min(2684354560,(int)$configuredBytes) : 268435456;
         if ($assetBytes>$assetLimit) throw new RuntimeException('Referenced assets exceed cache capacity.');
+        $this->reportProgress('copying referenced public assets');
         $this->copyReferencedAssets($html);
         $this->assertFingerprintReferencesAvailable($html);
         $stamp = '<meta name="v3-generated-at" content="' . gmdate('Y-m-d\TH:i:s\Z') . '">';

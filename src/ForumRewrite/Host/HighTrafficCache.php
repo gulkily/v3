@@ -153,7 +153,17 @@ final class HighTrafficCache
             do {
                 $body .= stream_get_contents($pipes[1]); $errors .= stream_get_contents($pipes[2]);
                 $status=proc_get_status($proc);
-                if (strlen($body)>$this->limits['page_bytes'] || strlen($errors)>65536 || microtime(true)-$start>($this->limits['render_seconds'] ?? 30)) { proc_terminate($proc,9); throw new RuntimeException('Shared render exceeded limits.'); }
+                $elapsed = microtime(true) - $start;
+                $limit = null;
+                if (strlen($body) > $this->limits['page_bytes']) $limit = 'HTML output limit (' . strlen($body) . ' bytes; maximum ' . $this->limits['page_bytes'] . ')';
+                elseif (strlen($errors) > 65536) $limit = 'stderr output limit (' . strlen($errors) . ' bytes; maximum 65536)';
+                elseif ($elapsed > ($this->limits['render_seconds'] ?? 30)) $limit = 'time limit (' . ($this->limits['render_seconds'] ?? 30) . ' seconds)';
+                if ($limit !== null) {
+                    proc_terminate($proc, 9);
+                    preg_match_all('/^High-traffic stage: ([^\r\n]+)$/m', $errors, $stages);
+                    $stage = $stages[1] === [] ? 'worker startup (no progress reported)' : end($stages[1]);
+                    throw new RuntimeException(sprintf('Shared render exceeded %s after %.2f seconds. Last stage: %s', $limit, $elapsed, $stage));
+                }
                 if (!$status['running']) { $exit=$status['exitcode']; break; }
                 usleep(10000);
             } while (true);
