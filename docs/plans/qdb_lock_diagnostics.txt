@@ -1,0 +1,60 @@
+QDB lock diagnostics — 2026-10-24
+
+Observed production status: current schema identity, stale read model, shared
+execution lock held, SQLite write lock held with reads working, no queued or
+running tasks. Frontend probe timed out after three seconds. The lock holders
+and whether they are progressing have not yet been identified.
+
+Application::ensureReadModel can rebuild the live database in a normal HTTP
+request while holding the execution lock. Such a rebuild is not registered in
+the task queue. This is a plausible explanation, not a confirmed process diagnosis.
+
+Local diagnostic corrections:
+- Empty queue no longer implies no rebuild is running.
+- Stale-model advice asks operators to identify existing lock holders before
+  starting another rebuild when either relevant lock is observed.
+- Frontend failures direct operators to their actual web server/PHP logs;
+  ./v3 start is identified as a local development command.
+- Status no longer claims it is acquiring/waiting for the execution lock.
+- Recovery runbook explains identifying holders and why unlinking is unsafe.
+
+Verification: HealthIndicatorsTest, StatusCommandTest and
+OperatorStatusCollectorTest: 21 tests passed. git diff --check passed.
+No runtime locking, rebuild, schema, dependency, or public UI changes.
+Production recovery still requires the host's lock/process listing; these
+diagnostic changes alone do not resolve the underlying contention.
+
+Follow-up production evidence:
+- Manual candidate rebuild completed successfully in 158.431 seconds, but a
+  subsequent status again reported stale metadata and both locks held.
+- Visible metadata later recorded write_incremental, repository head c9fa9fa,
+  rebuilt_at 2026-10-24T07:11:42Z; configured repository path matched.
+- Last five commits were signed identity registrations at 07:05:48, 07:07:48,
+  07:10:09, 07:12:12, and 07:15:01 UTC. The c9fa9fa commit-to-metadata interval
+  was 93 seconds. This is not a stage-specific runtime measurement.
+
+Confirmed code bottleneck:
+LocalWriteService::createIdentityBootstrap holds the execution/publication
+locks across commit and synchronizeIdentityDerivedState. Its incremental path
+calls IncrementalReadModelUpdater::applyIdentityLink, whose transaction calls
+refreshProfileState. That loads all profiles and posts, derives approval/counts,
+updates every profile and calls linkIdentityActivity for every profile.
+linkIdentityActivity updates activity WHERE author_identity_id = identity ID;
+ReadModelSchema has no index on that field. At the reported scale, each identity
+can cause roughly 3,835 scans of roughly 18,853 activity rows. Actual stage
+timings and current production lock-holder identity remain unverified.
+
+During the canonical-commit-to-metadata interval, ordinary read requests see
+a head mismatch and wait for the execution lock in ensureReadModel. They can
+time out before the registration completes even though SQLite reads work.
+Repeated full rebuilds are therefore not required to explain the outage.
+
+Immediate containment proposed: temporarily reject POST requests to
+/api/prepare_identity, /api/create_identity, /api/link_identity and /account/key
+(including its trailing-slash form) in Apache before PHP dispatch. Existing
+in-flight operations must finish; this does not release their locks. Preserve
+the restored QDB SetEnv configuration. No production change has been performed.
+
+Permanent fix should bound identity-update work and address the missing index,
+with required schema version/spec/startup regression changes for any index
+change. Approval propagation and existing-identity linking must remain correct.
