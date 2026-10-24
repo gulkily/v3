@@ -23,3 +23,24 @@ REG-05 commit: `ee5f0733d`. REG-06 audit confirmed the builder consumes the cano
 REG-06 commit: `dceb127c4`. REG-07 adds a NULL-safe changed-value predicate to profile updates and retains the changed profile set for REG-08. Schema 28, specification and schema-27 startup regression accompany the query change. SQLite AFTER UPDATE observer triggers independently verify no unrelated profile writes for fresh registration (zero profile updates) and one changed profile for historical linking. Actual isolated `./v3 rebuild` passed. The broader selection passed 18/19 tests; the remaining ApprovalSeedCommandTest assertion expects removed UI copy, "This is your profile." It reproduced unchanged in a clean worktree at pre-change `dceb127c4`. The identity parity, schema, instrumentation and other approval-seed checks passed. That unrelated pre-existing assertion is recorded, not silently fixed or counted as a pass. No dependencies or retraction behavior changed.
 
 REG-07 commit: `e5aea3c9c`. REG-08 replaces the all-profile activity iteration with the changed-profile set, passes derived approval values directly, and adds a NULL-safe activity changed-value predicate. The initial new-identity attribution pass remains; unchanged existing authors are not rewritten. SQLite observer triggers verify this independently of reported counters, and fixture statement counts are at most two. Schema 29/spec and schema-28 startup regression accompany the query change. Six focused checks passed, including identity/full-build parity and transitive approval-seed attribution; isolated `./v3 rebuild` completed. Full-site profile/post loading and approval derivation still remain for later items. No dependencies or retraction policy changed.
+
+
+REG-08 commit: `989385bb7`. REG-09 rebuilt an isolated schema-29 database from the exact pinned QDB canonical head with literal `./v3 rebuild`, then ran five independent pairs without in-process rebuilding. All ten writes were incremental, passed SQLite quick checks and preserved the source inputs. Both author-index query plans remain in use; post linking uses MULTI-INDEX OR. [Full samples and plans](profile_registration_targeted_results.json) include revision, source hash, counts and timing scope.
+
+| Local metric | Fresh signed | Historical link |
+| --- | ---: | ---: |
+| Original median wall time (3 runs), ms | 18,910.4 | 18,325.1 |
+| Targeted median wall time (5 runs), ms | 1,183.9 | 944.8 |
+| Median execution-lock hold, ms | 1,152.2 | 944.4 |
+| Maximum observed lock hold, ms | 1,694.0 | 1,004.8 |
+| Median profile loading, ms | 9.4 | 9.4 |
+| Median post loading, ms | 71.9 | 51.1 |
+| Median approval derivation, ms | 300.6 | 298.5 |
+| Median count derivation, ms | 12.5 | 8.1 |
+| Activity update statements | 1 | 2 |
+| Profile rows updated | 0 | 1 |
+| Process peak memory, MiB | 36 | 36 |
+
+Each operation still considers 3,846 profiles and 18,760/18,761 posts. Conditional profile updates avoid value writes but still execute per profile. Fresh registration misses the sub-second median target; all observed holds are below two seconds. Local Git cost also varies substantially. The packed benchmark clones, local scheduling/cache state, absence of concurrent readers and limited sample count prohibit treating these results as production acceptance. The historical case reports zero activity updates, which does not establish correct anonymous-bootstrap attribution; canonical/full-rebuild parity for that case remains required under REG-12/20. This checkpoint verifies intermediate cost reduction only. No dependencies or application behavior changed in REG-09.
+
+Reproduction: use the baseline runner with `--repository-root=state/benchmarks/qdb-20261024/matched-repository`, `--database-path=state/benchmarks/qdb-schema29/read_model.sqlite3`, `--site=qdb`, and a fresh `--output-dir` per run. The source database was built with `FORUM_SITE_ID=qdb FORUM_STATIC_HTML_ROOT="$PWD/state/benchmarks/qdb-schema29/static" ./v3 rebuild "$PWD/state/benchmarks/qdb-20261024/matched-repository" "$PWD/state/benchmarks/qdb-schema29/read_model.sqlite3"`. Original downloaded schema-25 data remains unchanged.
