@@ -13,7 +13,8 @@ $command=$arguments[0] ?? 'status';
 $usage="Usage: ./v3 high-traffic enable|disable|status|restore|purge [--json]\n"
     . "       ./v3 high-traffic refresh [/route/] [--json]\n"
     . "       ./v3 high-traffic cron|run [access.log] [--json]\n"
-    . "cron prints installation instructions; run refreshes pages once.\n";
+    . "cron prints installation instructions; run refreshes pages once.\n"
+    . "refresh/run stream elapsed progress to stderr; --json keeps results on stdout.\n";
 if (in_array($command,['help','--help','-h'],true)) { echo $usage;exit(0); }
 try {
     if (!in_array($command,['enable','disable','status','restore','purge','refresh','cron','run'],true)) throw new RuntimeException('Unknown high-traffic command.');
@@ -29,10 +30,17 @@ try {
     }
 } catch (Throwable $error) { fwrite(STDERR,$error->getMessage() . "\n" . $usage);exit(1); }
 
+$startedAt = microtime(true);
+$progress = in_array($command, ['refresh', 'run'], true)
+    ? static function (string $message) use ($startedAt): void { fwrite(STDERR, sprintf('[%6.2fs] %s' . "\n", microtime(true) - $startedAt, $message)); }
+    : null;
+$progress?->__invoke('Preparing high-traffic ' . $command);
 $repository=getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($project);
 $database=getenv('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($project);
 $public=getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $project . '/public';
-$cache=new HighTrafficCache($project,$repository,$database,$public);
+$cache=new HighTrafficCache($project,$repository,$database,$public,$progress);
+$progress?->__invoke('Repository: ' . $repository . '; database: ' . $database);
+$progress?->__invoke('Public root: ' . $public . '; cache: ' . $cache->root);
 $mode=new HighTrafficMode($cache);
 try {
     $result=match($command) {
@@ -54,4 +62,4 @@ try {
         }
         if (isset($result['cron_command'])) echo "\nFor automatic refresh, install a once-per-minute job (not installed by this command):\n  {$cron}\nSetup: ./v3 high-traffic cron /path/to/access.log\n";
     }
-} catch (Throwable $error) { fwrite(STDERR,$error->getMessage() . "\n");exit(1); }
+} catch (Throwable $error) { fwrite(STDERR,sprintf('High-traffic %s failed after %.2f seconds: %s' . "\n", $command, microtime(true) - $startedAt, $error->getMessage()));exit(1); }

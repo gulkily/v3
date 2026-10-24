@@ -109,13 +109,32 @@ final class HighTrafficPublicationTest
             foreach (['/about/', '/threads/', '/threads/visible/'] as $route) {
                 assertStringContains('v3-generated-at', (string) $cache->generate($route));
             }
+            $wrapper = $root . '/progress-php';
+            file_put_contents($wrapper, "#!/usr/bin/env php\n<?php fwrite(STDERR, \"High-traffic stage: CLI live-progress fixture\\n\"); usleep(500000); "
+                . '$proc=proc_open(array_merge([PHP_BINARY],array_slice($argv,1)),[STDIN,STDOUT,STDERR],$pipes); exit(proc_close($proc));');
+            chmod($wrapper, 0755);
             $proc = proc_open([PHP_BINARY, $project . '/scripts/high_traffic.php', 'refresh', '/', '--json'],
                 [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null,
-                array_merge(getenv(), ['FORUM_REPOSITORY_ROOT' => $root, 'FORUM_DATABASE_PATH' => $database, 'FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public']));
-            fclose($pipes[0]); $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]);
+                array_merge(getenv(), ['FORUM_REPOSITORY_ROOT' => $root, 'FORUM_DATABASE_PATH' => $database, 'FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public', 'FORUM_PHP_CLI' => $wrapper]));
+            fclose($pipes[0]);
+            stream_set_blocking($pipes[2], false);
+            $err = ''; $deadline = microtime(true) + 3;
+            do {
+                $err .= stream_get_contents($pipes[2]);
+                if (str_contains($err, 'Renderer: CLI live-progress fixture')) break;
+                usleep(1000);
+            } while (microtime(true) < $deadline);
+            assertStringContains('Renderer: CLI live-progress fixture', $err);
+            assertTrue(proc_get_status($proc)['running'], 'Progress must arrive before the worker finishes.');
+            stream_set_blocking($pipes[2], true);
+            $out = stream_get_contents($pipes[1]); $err .= stream_get_contents($pipes[2]);
             fclose($pipes[1]); fclose($pipes[2]);
             assertSame(0, proc_close($proc), $err);
             assertSame('/', json_decode($out, true)['refreshed']);
+            assertStringContains('Repository: ', $err);
+            assertStringContains('absent targets; deriving isolated read model', $err);
+            assertStringContains('Renderer: Read model:', $err);
+            assertStringContains('Published / (', $err);
             assertSame([], glob($cache->root . '/.render-*'));
             assertSame([], glob($cache->root . '/assets/*.sqlite3'), 'Private render models must never enter public assets.');
         } finally {

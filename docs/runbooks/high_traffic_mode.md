@@ -311,10 +311,28 @@ stderr-output byte limit. Each message includes the observed elapsed time and th
 last reported stage (evidence validation, isolated-model rebuild phase, candidate
 validation, public HTML rendering or asset copying). Read-model signature indexing
 is timed separately. Progress contains operation names/counts, not record payloads.
-Normal success output is unchanged; stderr progress is retained by the parent for
-failure diagnosis. If no stage arrived, the error says worker startup.
+Normal result stdout is unchanged. CLI `refresh` and `run` stream timestamped
+progress to stderr as work happens, including with `--json`; redirect stderr to a
+log when automating. The parent also retains worker progress for failure diagnosis. If no stage arrived, the error says worker startup.
 
 An approximately 30-second failure is not proof that a rebuild is the bottleneck.
 Use the reported stage to select the next check. Do not raise limits or relax
 publication guards to hide an unlocalized delay. The production 36.325-second
 refresh failure remains unresolved until stage-specific host evidence is available.
+
+CLI progress starts before repository/configuration resolution and identifies the
+selected repository, database, public root and cache directory. It then reports
+page/publication locks, generator admission, absent-target count, isolated-worker
+limits, rebuild stages, HTML rendering, asset copying, validation and publication.
+A quiet running renderer emits a heartbeat every five seconds with its current
+stage and HTML byte count. Failures report total command elapsed time; renderer
+failures additionally report their own elapsed time/limit and last stage. Website
+requests do not receive this CLI progress output.
+
+To capture both live diagnostics and the machine-readable result separately:
+
+```bash
+./v3 high-traffic refresh / --json > /tmp/high-traffic-result.json 2> /tmp/high-traffic-progress.log
+```
+
+For interactive diagnosis, run the command normally to see progress immediately.

@@ -60,3 +60,11 @@ make renderer failures distinguish time, stdout size and stderr size, and expose
 bounded stage progress to the operator. Reduce unnecessary preparation work only
 where its irrelevance to public HTML and continued safety are demonstrated. Do
 not solve an unexplained delay merely by raising the timeout or removing guards.
+
+Follow-up: live CLI progress
+
+The later correction makes refresh/run stream timestamped stage messages while
+working, not only attach a stage to the final error. Quiet workers emit a heartbeat
+every five seconds. CLI output states the selected paths and rendering limits;
+JSON results stay on stdout and diagnostic progress stays on stderr. This improves
+observability; it does not establish or repair the host-specific slow stage.

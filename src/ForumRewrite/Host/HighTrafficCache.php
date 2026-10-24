@@ -16,6 +16,7 @@ final class HighTrafficCache
         public readonly string $repositoryRoot,
         public readonly string $databasePath,
         public readonly string $publicRoot,
+        private readonly ?\Closure $progressReporter = null,
     ) {
         $this->root = $projectRoot . '/state/high_traffic/' . substr(hash('sha256', realpath($repositoryRoot) ?: $repositoryRoot), 0, 16);
         $defaults = ['lines'=>10000, 'read_bytes'=>16777216, 'line_bytes'=>16384, 'fresh_seconds'=>60, 'renders'=>50, 'run_seconds'=>45, 'generators'=>2, 'wait_ms'=>250, 'pages'=>1000, 'bytes'=>268435456, 'page_bytes'=>1048576, 'queue'=>1000];
@@ -66,20 +67,24 @@ final class HighTrafficCache
     public function generate(string $route, bool $force = false): ?string
     {
         $this->generationRefusal = null;
+        $this->progress('Refreshing ' . $route);
         if (HighTrafficRoute::canonical($route) === null) return $this->refuseGeneration('Route is not eligible for high-traffic caching: ' . $route);
         $this->initialize();
         $page = fopen($this->root . '/locks/' . substr(hash('sha256',$route),0,3) . '.lock','c');
         if ($page === false) throw new RuntimeException('Cannot open page lock.');
         $slot = null; $renderAssets = null; $renderWorkspace = null; $deadline = microtime(true) + $this->limits['wait_ms']/1000;
         try {
+            $this->progress('Acquiring page lock (wait up to ' . $this->limits['wait_ms'] . ' ms)');
             while (!flock($page, LOCK_EX | LOCK_NB)) {
                 if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
                 if (microtime(true) >= $deadline) return $this->refuseGeneration('Page generation is already running for ' . $route . '; retry after it finishes.');
                 usleep(10000);
             }
             if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
+            $this->progress('Checking active mode under publication lock');
             $token = \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, fn () => $this->state());
             if (!$this->enabled()) return $this->refuseGeneration('High-traffic mode is inactive or its profile/public-root link does not match; run ./v3 high-traffic status.');
+            $this->progress('Acquiring generator slot (' . $this->limits['generators'] . ' configured)');
             for ($i=0;$i<$this->limits['generators'];$i++) {
                 $candidate = fopen($this->root . '/locks/slot-' . $i,'c');
                 if ($candidate === false) throw new RuntimeException('Cannot open high-traffic generator slot ' . $i . '; check cache directory permissions.');
@@ -92,13 +97,16 @@ final class HighTrafficCache
                 foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages',\FilesystemIterator::SKIP_DOTS)) as $existing) if ($existing->isFile() && $existing->getExtension()==='html') $pageCount++;
                 if ($pageCount >= $this->limits['pages']) return $this->refuseGeneration('High-traffic cache page limit reached (' . $pageCount . '/' . $this->limits['pages'] . '); review cache usage and FORUM_HIGH_TRAFFIC_PAGES.');
             }
+            $this->progress('Validating canonical evidence and content fingerprint');
             $context = HighTrafficPublication::capture($this->repositoryRoot);
+            $this->progress('Validated ' . count($context['state']['absent']) . ' absent targets; ' . ($context['state']['absent'] === [] ? 'using live read model' : 'deriving isolated read model'));
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             $renderWorkspace=$this->root . '/.render-' . bin2hex(random_bytes(8));
             $renderAssets=$renderWorkspace . '/assets';
             $html = $this->render($route,$renderAssets,$context);
             $html = str_replace('</head>', '<meta name="v3-refresh-after" content="' . $this->limits['fresh_seconds'] . '"><meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
             if (strlen($html) > $this->limits['page_bytes']) throw new RuntimeException('Generated HTML exceeds page size limit.');
+            $this->progress('Validating candidate for publication (' . strlen($html) . ' HTML bytes)');
             \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$context,$meta,$renderAssets,$renderWorkspace): void {
             HighTrafficPublication::validate($context);
             if ($context['state']['absent'] === []) {
@@ -125,10 +133,12 @@ final class HighTrafficCache
                 $target=$this->path($route); $old=is_file($target) ? filesize($target) : 0;
                 if ((!is_file($target) && $count >= $this->limits['pages']) || $bytes-$old+strlen($html)>$this->limits['bytes']) throw new RuntimeException('High-traffic cache capacity reached; purge unused pages.');
                 foreach ($pendingAssets as $destination=>$source) $this->atomic($destination,(string)file_get_contents($source));
+                $this->progress('Publishing HTML to ' . $target);
                 $this->atomic($target,$html);
             });
             });
             });
+            $this->progress('Published ' . $route . ' (' . strlen($html) . ' bytes)');
             return $html;
         } finally { if ($renderWorkspace!==null) self::removeTemporaryTree($renderWorkspace); if (is_resource($slot)) { flock($slot,LOCK_UN); fclose($slot); } flock($page,LOCK_UN); fclose($page); }
     }
@@ -139,21 +149,39 @@ final class HighTrafficCache
     private function refuseGeneration(string $reason): ?string
     {
         $this->generationRefusal = $reason;
+        $this->progress('Generation refused: ' . $reason);
         return null;
     }
     public function render(string $route, string $assets, ?array $context = null): string
     {
         $arguments = [(getenv('FORUM_PHP_CLI') ?: PHP_BINDIR . '/php'), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route];
         if ($context !== null) $arguments[] = HighTrafficPublication::identity($context);
+        $this->progress('Starting isolated renderer (time limit ' . ($this->limits['render_seconds'] ?? 30) . ' seconds; HTML limit ' . $this->limits['page_bytes'] . ' bytes)');
         $proc=proc_open($arguments, [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
         if (!is_resource($proc)) throw new RuntimeException('Cannot start shared renderer.');
         fclose($pipes[0]); stream_set_blocking($pipes[1],false); stream_set_blocking($pipes[2],false);
         $body='';$errors='';$start=microtime(true);$exit=-1;
+        $progressBuffer = ''; $lastHeartbeat = $start; $stage = 'worker startup';
         try {
             do {
-                $body .= stream_get_contents($pipes[1]); $errors .= stream_get_contents($pipes[2]);
+                $body .= stream_get_contents($pipes[1]);
+                $chunk = stream_get_contents($pipes[2]);
+                $errors .= $chunk; $progressBuffer .= $chunk;
+                while (($newline = strpos($progressBuffer, "\n")) !== false) {
+                    $line = substr($progressBuffer, 0, $newline);
+                    $progressBuffer = substr($progressBuffer, $newline + 1);
+                    if (str_starts_with($line, 'High-traffic stage: ')) {
+                        $stage = substr($line, strlen('High-traffic stage: '));
+                        $this->progress('Renderer: ' . $stage);
+                        $lastHeartbeat = microtime(true);
+                    }
+                }
                 $status=proc_get_status($proc);
                 $elapsed = microtime(true) - $start;
+                if ($status['running'] && microtime(true) - $lastHeartbeat >= 5) {
+                    $this->progress(sprintf('Renderer still running (%.1f seconds; stage: %s; HTML %d bytes)', $elapsed, $stage, strlen($body)));
+                    $lastHeartbeat = microtime(true);
+                }
                 $limit = null;
                 if (strlen($body) > $this->limits['page_bytes']) $limit = 'HTML output limit (' . strlen($body) . ' bytes; maximum ' . $this->limits['page_bytes'] . ')';
                 elseif (strlen($errors) > 65536) $limit = 'stderr output limit (' . strlen($errors) . ' bytes; maximum 65536)';
@@ -169,9 +197,13 @@ final class HighTrafficCache
             } while (true);
             $body .= stream_get_contents($pipes[1]); $errors .= stream_get_contents($pipes[2]);
             if ($exit===4) throw new HighTrafficNotFound('Page not found.');
-            if ($exit!==0) throw new RuntimeException('Shared render failed: ' . substr($errors,0,1000));
+            if ($exit!==0) throw new RuntimeException('Shared render failed (exit ' . $exit . '; last stage: ' . $stage . '): ' . substr($errors,-1000));
             return $body;
         } finally { fclose($pipes[1]);fclose($pipes[2]);proc_close($proc); }
+    }
+    private function progress(string $message): void
+    {
+        $this->progressReporter?->__invoke($message);
     }
     public static function removeTemporaryTree(string $path): void
     {
