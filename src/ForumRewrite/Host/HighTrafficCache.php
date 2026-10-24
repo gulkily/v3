@@ -68,7 +68,7 @@ final class HighTrafficCache
         $this->initialize();
         $page = fopen($this->root . '/locks/' . substr(hash('sha256',$route),0,3) . '.lock','c');
         if ($page === false) throw new RuntimeException('Cannot open page lock.');
-        $slot = null; $renderAssets = null; $deadline = microtime(true) + $this->limits['wait_ms']/1000;
+        $slot = null; $renderAssets = null; $renderWorkspace = null; $deadline = microtime(true) + $this->limits['wait_ms']/1000;
         try {
             while (!flock($page, LOCK_EX | LOCK_NB)) {
                 if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
@@ -89,15 +89,21 @@ final class HighTrafficCache
                 foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages',\FilesystemIterator::SKIP_DOTS)) as $existing) if ($existing->isFile() && $existing->getExtension()==='html') $pageCount++;
                 if ($pageCount >= $this->limits['pages']) return null;
             }
-            $retraction = \ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot);
+            $context = HighTrafficPublication::capture($this->repositoryRoot);
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-            $renderAssets=$this->root . '/.render-' . bin2hex(random_bytes(8));
-            $html = $this->render($route,$renderAssets);
+            $renderWorkspace=$this->root . '/.render-' . bin2hex(random_bytes(8));
+            $renderAssets=$renderWorkspace . '/assets';
+            $html = $this->render($route,$renderAssets,$context);
             $html = str_replace('</head>', '<meta name="v3-refresh-after" content="' . $this->limits['fresh_seconds'] . '"><meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
             if (strlen($html) > $this->limits['page_bytes']) throw new RuntimeException('Generated HTML exceeds page size limit.');
-            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$retraction,$meta,$renderAssets): void {
-            if (\ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot) !== $retraction) throw new RuntimeException('Retraction changed during rendering.');
-            \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath,$this->repositoryRoot);
+            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$context,$meta,$renderAssets,$renderWorkspace): void {
+            HighTrafficPublication::validate($context);
+            if ($context['state']['absent'] === []) {
+                \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath,$this->repositoryRoot);
+            } else {
+                // Validate the excluded candidate, not the stale live model it replaces for this build.
+                \ForumRewrite\Retraction\PublicationGuard::beginSnapshot($renderWorkspace . '/model/read.sqlite3');
+            }
             \ForumRewrite\Scoring\FastmodMetaPublication::publish($meta,$this->path($route),function () use ($route,$html,$token,$renderAssets): void {
             $this->locked(function () use ($route,$html,$token,$renderAssets): void {
                 if (!$this->enabled() || $this->state() !== $token) throw new RuntimeException('Mode changed during generation.');
@@ -121,11 +127,13 @@ final class HighTrafficCache
             });
             });
             return $html;
-        } finally { if ($renderAssets!==null) self::removeTemporaryTree($renderAssets); if (is_resource($slot)) { flock($slot,LOCK_UN); fclose($slot); } flock($page,LOCK_UN); fclose($page); }
+        } finally { if ($renderWorkspace!==null) self::removeTemporaryTree($renderWorkspace); if (is_resource($slot)) { flock($slot,LOCK_UN); fclose($slot); } flock($page,LOCK_UN); fclose($page); }
     }
-    public function render(string $route, string $assets): string
+    public function render(string $route, string $assets, ?array $context = null): string
     {
-        $proc=proc_open([(getenv('FORUM_PHP_CLI') ?: PHP_BINDIR . '/php'), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route], [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
+        $arguments = [(getenv('FORUM_PHP_CLI') ?: PHP_BINDIR . '/php'), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route];
+        if ($context !== null) $arguments[] = HighTrafficPublication::identity($context);
+        $proc=proc_open($arguments, [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
         if (!is_resource($proc)) throw new RuntimeException('Cannot start shared renderer.');
         fclose($pipes[0]); stream_set_blocking($pipes[1],false); stream_set_blocking($pipes[2],false);
         $body='';$errors='';$start=microtime(true);$exit=-1;

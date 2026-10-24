@@ -9,7 +9,7 @@ final class HighTrafficTest
     {
         $tmp = sys_get_temp_dir() . '/v3-cache-' . bin2hex(random_bytes(6));
         mkdir($tmp . '/repo', 0755, true);
-        symlink(__DIR__ . '/fixtures/parity_minimal_v1/records', $tmp . '/repo/records');
+        exec('cp -R ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1/records') . ' ' . escapeshellarg($tmp . '/repo/records'));
         $cache = new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__), $tmp . '/repo', $tmp . '/read.sqlite3', $tmp . '/public');
         $cache->initialize();
         mkdir($tmp . '/public');

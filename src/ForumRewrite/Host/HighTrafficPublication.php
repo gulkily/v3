@@ -11,6 +11,11 @@ use RuntimeException;
 /** HTML-only admission. Absence is a build exclusion, never deletion authority. */
 final class HighTrafficPublication
 {
+    public static function identity(array $context): string
+    {
+        return hash('sha256', json_encode($context, JSON_THROW_ON_ERROR));
+    }
+
     public static function capture(string $repository): array
     {
         $state = ExchangeRetractionState::snapshot($repository);
