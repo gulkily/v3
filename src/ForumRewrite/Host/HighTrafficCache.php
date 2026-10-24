@@ -10,6 +10,7 @@ final class HighTrafficCache
 {
     public readonly string $root;
     public array $limits;
+    private ?string $generationRefusal = null;
     public function __construct(
         public readonly string $projectRoot,
         public readonly string $repositoryRoot,
@@ -64,7 +65,8 @@ final class HighTrafficCache
     /** Null means no capacity or no longer eligible; never fall through to unlimited rendering. */
     public function generate(string $route, bool $force = false): ?string
     {
-        if (HighTrafficRoute::canonical($route) === null) return null;
+        $this->generationRefusal = null;
+        if (HighTrafficRoute::canonical($route) === null) return $this->refuseGeneration('Route is not eligible for high-traffic caching: ' . $route);
         $this->initialize();
         $page = fopen($this->root . '/locks/' . substr(hash('sha256',$route),0,3) . '.lock','c');
         if ($page === false) throw new RuntimeException('Cannot open page lock.');
@@ -72,22 +74,23 @@ final class HighTrafficCache
         try {
             while (!flock($page, LOCK_EX | LOCK_NB)) {
                 if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
-                if (microtime(true) >= $deadline) return null;
+                if (microtime(true) >= $deadline) return $this->refuseGeneration('Page generation is already running for ' . $route . '; retry after it finishes.');
                 usleep(10000);
             }
             if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
             $token = \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, fn () => $this->state());
-            if (!$this->enabled()) return null;
+            if (!$this->enabled()) return $this->refuseGeneration('High-traffic mode is inactive or its profile/public-root link does not match; run ./v3 high-traffic status.');
             for ($i=0;$i<$this->limits['generators'];$i++) {
                 $candidate = fopen($this->root . '/locks/slot-' . $i,'c');
+                if ($candidate === false) throw new RuntimeException('Cannot open high-traffic generator slot ' . $i . '; check cache directory permissions.');
                 if ($candidate !== false && flock($candidate,LOCK_EX | LOCK_NB)) { $slot=$candidate; break; }
                 if (is_resource($candidate)) fclose($candidate);
             }
-            if ($slot === null) return null;
+            if ($slot === null) return $this->refuseGeneration('All ' . $this->limits['generators'] . ' high-traffic generator slots are occupied; retry after current renders finish.');
             if (!is_file($this->path($route))) {
                 $pageCount=0;
                 foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages',\FilesystemIterator::SKIP_DOTS)) as $existing) if ($existing->isFile() && $existing->getExtension()==='html') $pageCount++;
-                if ($pageCount >= $this->limits['pages']) return null;
+                if ($pageCount >= $this->limits['pages']) return $this->refuseGeneration('High-traffic cache page limit reached (' . $pageCount . '/' . $this->limits['pages'] . '); review cache usage and FORUM_HIGH_TRAFFIC_PAGES.');
             }
             $context = HighTrafficPublication::capture($this->repositoryRoot);
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
@@ -128,6 +131,15 @@ final class HighTrafficCache
             });
             return $html;
         } finally { if ($renderWorkspace!==null) self::removeTemporaryTree($renderWorkspace); if (is_resource($slot)) { flock($slot,LOCK_UN); fclose($slot); } flock($page,LOCK_UN); fclose($page); }
+    }
+    public function generationRefusalReason(): ?string
+    {
+        return $this->generationRefusal;
+    }
+    private function refuseGeneration(string $reason): ?string
+    {
+        $this->generationRefusal = $reason;
+        return null;
     }
     public function render(string $route, string $assets, ?array $context = null): string
     {

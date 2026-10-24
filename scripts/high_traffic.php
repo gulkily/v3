@@ -42,7 +42,7 @@ try {
         'restore'=>$mode->restore(),
         'status'=>$mode->status(),
         'purge'=>(function () use ($mode) { $mode->purge();return $mode->status(); })(),
-        'refresh'=>(function () use ($cache,$arguments) { $html=$cache->generate($arguments[1] ?? '/',true);if ($html===null) throw new RuntimeException('No generation capacity or inactive mode.');return ['refreshed'=>$arguments[1] ?? '/']; })(),
+        'refresh'=>(function () use ($cache,$arguments) { $html=$cache->generate($arguments[1] ?? '/',true);if ($html===null) throw new RuntimeException($cache->generationRefusalReason() ?? 'High-traffic generation returned no HTML.');return ['refreshed'=>$arguments[1] ?? '/']; })(),
         default=>throw new RuntimeException('Unsupported command.'),
     };
     if (in_array($command,['enable','status'],true)) $result['cron_command']=$cron;

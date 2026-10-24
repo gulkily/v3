@@ -32,10 +32,13 @@ final class HighTrafficTest
             $cache->limits['generators']=1;
             $slot=fopen($cache->root . '/locks/slot-0','c'); flock($slot, LOCK_EX);
             assertSame(null, $cache->generate('/'));
+            assertStringContains('All 1 high-traffic generator slots are occupied', $cache->generationRefusalReason());
             assertSame($html,$cache->generate('/about/'));
+            assertSame(null, $cache->generationRefusalReason());
             flock($slot,LOCK_UN);fclose($slot);
             $cache->limits['pages']=1;
             assertSame(null,$cache->generate('/'));
+            assertStringContains('page limit reached (1/1)', $cache->generationRefusalReason());
             assertSame(false,is_file($cache->path('/')));
             assertSame($html,file_get_contents($cache->path('/about/')));
             $cache->limits['bytes']=1;$failed=false;
@@ -45,6 +48,46 @@ final class HighTrafficTest
             assertSame([],glob($cache->root . '/.render-*'));
         } finally {
             exec('rm -rf ' . escapeshellarg($cache->root));
+        }
+    }
+
+    public function testRefreshCliReportsTheSpecificRefusal(): void
+    {
+        $tmp = sys_get_temp_dir() . '/v3-refusal-' . bin2hex(random_bytes(6));
+        mkdir($tmp . '/repo', 0755, true); mkdir($tmp . '/public');
+        $project = dirname(__DIR__);
+        $cache = new \ForumRewrite\Host\HighTrafficCache($project, $tmp . '/repo', $tmp . '/db', $tmp . '/public');
+        $cache->initialize();
+        symlink($cache->root . '/pages', $tmp . '/public/.high-traffic');
+        $cache->atomic($cache->root . '/state.json', json_encode(['enabled' => true, 'generation' => 'test']));
+        $run = static function (string $route, string $expected) use ($project, $tmp): void {
+            $env = array_merge(getenv(), ['FORUM_REPOSITORY_ROOT' => $tmp . '/repo', 'FORUM_DATABASE_PATH' => $tmp . '/db', 'FORUM_PUBLIC_ARTIFACT_ROOT' => $tmp . '/public', 'FORUM_HIGH_TRAFFIC_GENERATORS' => '1', 'FORUM_HIGH_TRAFFIC_PAGES' => '1']);
+            $proc = proc_open([PHP_BINARY, $project . '/scripts/high_traffic.php', 'refresh', $route, '--json'],
+                [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, $env);
+            fclose($pipes[0]); $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]);
+            fclose($pipes[1]); fclose($pipes[2]);
+            assertSame(1, proc_close($proc));
+            assertSame('', $out);
+            assertStringContains($expected, $err);
+            assertSame(false, str_contains($err, 'No generation capacity or inactive mode'));
+        };
+        $page = fopen($cache->root . '/locks/' . substr(hash('sha256', '/'), 0, 3) . '.lock', 'c');
+        $slot = fopen($cache->root . '/locks/slot-0', 'c');
+        try {
+            flock($page, LOCK_EX);
+            $run('/', 'Page generation is already running for /');
+            flock($page, LOCK_UN);
+            flock($slot, LOCK_EX);
+            $run('/', 'All 1 high-traffic generator slots are occupied');
+            flock($slot, LOCK_UN);
+            $cache->atomic($cache->path('/about/'), 'Cached page');
+            $run('/', 'page limit reached (1/1)');
+            unlink($tmp . '/public/.high-traffic');
+            $run('/', 'run ./v3 high-traffic status');
+            $run('/tools/', 'Route is not eligible');
+        } finally {
+            fclose($page); fclose($slot);
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($cache->root);
         }
     }
 

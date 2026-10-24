@@ -283,3 +283,23 @@ follow-up; this change does not weaken invalid-evidence checks. Local Apache and
 browser acceptance do not establish DreamHost acceptance: record the deployed
 revision, home/thread cache hits, refresh/cron results and rollback outcome on that
 host before calling production recovery verified.
+
+### Diagnosing a refused explicit refresh
+
+`./v3 high-traffic refresh /` reports the specific refusal on stderr and exits 1
+(including with `--json`), rather than combining inactive mode and capacity:
+
+- **Page generation is already running:** the route's bounded page-lock bucket is
+  occupied. Let that render finish, then retry; the default lock wait is 250 ms.
+- **All generator slots are occupied:** other cold/refresh renders hold every
+  configured slot. Retry after they finish; the default is two slots.
+- **Cache page limit reached:** inspect cache usage and `FORUM_HIGH_TRAFFIC_PAGES`;
+  the message includes the observed count and limit. Do not purge usable pages just
+  to diagnose this condition.
+- **Inactive or profile/public-root link mismatch:** inspect `./v3 high-traffic status`
+  in the same environment/user and correct the configuration before retrying.
+- **Route not eligible:** choose `/`, `/threads/`, `/about/` or a canonical visible
+  thread route. Query strings and tool pages are not cache-generation targets.
+
+Generator-slot file-open failures report a cache-permissions error separately.
+These diagnostics retain existing bounded admission and HTTP busy-page behavior.
