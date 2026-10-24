@@ -64,3 +64,43 @@ Production refresh reached `Shared render exceeded limits` after 36.325 seconds.
 Request: “Please fix the cli so that it reports useful information.” Small direct diagnostic correction: `refresh`/`run` now stream timestamped preparation, selected paths, locks/admission, absent-target count, isolated-renderer phases, publication and five-second quiet-worker heartbeats to stderr. Worker lines are forwarded while it runs, rather than retained only for a terminal error. JSON/result stdout remains unchanged. Worker failure now includes exit status, last stage and the final diagnostic tail instead of truncating away the actual error behind initial progress. Website callers do not install a progress callback. Focused checks passed 13/13, including live-before-exit observation in an actual CLI subprocess and JSON parsing; help and diff checks passed. Apache acceptance rechecked separately below. No new dependencies/configuration/schema or production-state changes. Production bottleneck remains unverified until the operator supplies live stage output; no performance fix claimed.
 
 Live-progress Apache acceptance passed: actual cached hits, cold/refresh/atomic publication, failure retention, ordinary concurrent writes, private/import withdrawal, both production absent targets and unchanged live SQLite. Existing 20-page refresh completed in 2.173 seconds in the isolated local fixture. This remains local evidence, not host recovery.
+
+## Serving-path rebuild correction — 2026-10-24T06:16:55+00:00
+
+Request: remove the full read-model rebuild from each excluded-target render after
+production timed out at `Read model: index thread subjects`. Disposition: corrective
+performance work in the existing production-recovery scope; earlier local completion
+is not production acceptance. Prior implementation and diagnostic-only follow-ups
+failed to establish an acceptable serving cost. Existing implementation and merge/push
+authorization retained; no new dependency, schema change, or canonical repair.
+
+Changes: `high-traffic prepare` explicitly prepares one private shared model, guarded
+by a nonblocking preparation lock and atomically replaced after validation. Repeated
+preparation with identical inputs reuses it. Render workers copy this SQLite model;
+they cannot invoke indexing or Application's automatic rebuild fallback. Ordinary
+content changes can serve an earlier prepared model while retraction/absence evidence
+remains identical; source-removal guards also remain enforced. Changed evidence rejects
+reuse with a maintenance command. The existing before/after source checks still reject
+in-flight races. Ordinary callers retain automatic rebuilding. The generated cron line
+runs preparation before bounded refresh, logging both commands. Existing installations
+must update their run-only cron lines. The expensive rebuild is outside serving and
+amortized across pages; it is not intrinsically faster or subject to the render timeout.
+
+Verification: focused PHP publication/renderer/candidate checks passed 20/20; broader
+retraction/offline/candidate checks passed 53/53. New coverage includes prepare CLI JSON,
+unchanged-input reuse, multiple renders without indexing, unsafe evidence rejection,
+preparation lock contention, failed-build preservation and missing-model failure with
+no implicit rebuild. Real Apache acceptance passed, including stale live SQLite with
+the two production targets, private-model hashes unchanged across cold/refresh requests,
+no-PHP warm hits, and prior race/capacity/private-mode checks. Browser acceptance passed
+real signed enable/disable, creating a post followed by cold navigation with an earlier
+safe prepared model, signed likes, and phone/desktop themed controls. An initial browser
+failure exposed over-strict content freshness; the correction preserves safe stale
+content while requiring unchanged retraction evidence. No UI layout/copy changed.
+
+Production limits: deploy while disabled, run `./v3 high-traffic prepare`, then enable
+and warm `/`. Measure first preparation and subsequent refresh on DreamHost. Preparation
+can still take more than 30 seconds and freshness depends on its runtime; the original
+one-to-two-minute target is unverified there. No production changes performed. Preserve
+P2/R1 scores and the failed production outcome; no new acceptance/comfortable-fit claim.
+Unrelated README and standalone investigation edits remain outside this commit.

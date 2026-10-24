@@ -99,7 +99,7 @@ final class HighTrafficCache
             }
             $this->progress('Validating canonical evidence and content fingerprint');
             $context = HighTrafficPublication::capture($this->repositoryRoot);
-            $this->progress('Validated ' . count($context['state']['absent']) . ' absent targets; ' . ($context['state']['absent'] === [] ? 'using live read model' : 'deriving isolated read model'));
+            $this->progress('Validated ' . count($context['state']['absent']) . ' absent targets; ' . ($context['state']['absent'] === [] ? 'using live read model' : 'using prepared shared read model'));
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             $renderWorkspace=$this->root . '/.render-' . bin2hex(random_bytes(8));
             $renderAssets=$renderWorkspace . '/assets';

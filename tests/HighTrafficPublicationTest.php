@@ -64,6 +64,8 @@ final class HighTrafficPublicationTest
         $hash = hash_file('sha256', $live);
         unlink($targetPath);
         $context = HighTrafficPublication::capture($root);
+        $this->rejects(fn () => \ForumRewrite\Host\HighTrafficRenderInput::prepare($context, $live, $root . '/missing'));
+        \ForumRewrite\Host\HighTrafficRenderInput::build($context, $live);
         $view = \ForumRewrite\Host\HighTrafficRenderInput::prepare($context, $live, $root . '/candidate');
         assertSame($hash, hash_file('sha256', $live));
         $pdo = new PDO('sqlite:' . $view);
@@ -79,6 +81,48 @@ final class HighTrafficPublicationTest
         assertSame($hash, hash_file('sha256', $live));
     }
 
+    public function testPreparedModelIsReusedAndStaleInputFailsWithoutIndexing(): void
+    {
+        $root = $this->fixture();
+        $live = $root . '/live.sqlite3';
+        $context = HighTrafficPublication::capture($root);
+        $shared = \ForumRewrite\Host\HighTrafficRenderInput::build($context, $live);
+        $hash = hash_file('sha256', $shared);
+        $lock = fopen($shared . '.lock', 'c');
+        flock($lock, LOCK_EX);
+        try { $this->rejects(fn () => \ForumRewrite\Host\HighTrafficRenderInput::build($context, $live)); }
+        finally { flock($lock, LOCK_UN); fclose($lock); }
+        $progress = [];
+        $report = static function (string $message) use (&$progress): void { $progress[] = $message; };
+        assertSame($shared, \ForumRewrite\Host\HighTrafficRenderInput::build($context, $live, $report));
+        foreach (range(1, 3) as $index) {
+            \ForumRewrite\Host\HighTrafficRenderInput::prepare($context, $live, $root . '/render-' . $index, $report);
+        }
+        assertSame($hash, hash_file('sha256', $shared));
+        assertSame(false, is_file($live));
+        assertSame(false, str_contains(implode("\n", $progress), 'Read model:'));
+        file_put_contents($root . '/records/posts/new.txt', "Post-ID: new\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\n\nNew body\n");
+        $routine = HighTrafficPublication::capture($root);
+        $oldView = \ForumRewrite\Host\HighTrafficRenderInput::prepare($routine, $live, $root . '/routine');
+        assertSame(0, (int) (new PDO('sqlite:' . $oldView))->query("SELECT count(*) FROM posts WHERE post_id='new'")->fetchColumn(), 'Routine changes may serve the earlier safe snapshot until preparation runs.');
+        $evidencePath = glob($root . '/records/post-retractions/*.txt')[0];
+        file_put_contents($evidencePath, str_replace('12:00:00', '12:01:00', file_get_contents($evidencePath)));
+        $changed = HighTrafficPublication::capture($root);
+        try {
+            \ForumRewrite\Host\HighTrafficRenderInput::prepare($changed, $live, $root . '/stale');
+            throw new LogicException('Stale prepared model was accepted');
+        } catch (RuntimeException $error) {
+            assertStringContains('./v3 high-traffic prepare', $error->getMessage());
+            assertStringContains('No rebuild was started', $error->getMessage());
+        }
+        assertSame(false, is_dir($root . '/stale'));
+        assertSame($hash, hash_file('sha256', $shared));
+        file_put_contents($root . '/records/posts/broken.txt', 'malformed');
+        $this->rejects(fn () => \ForumRewrite\Host\HighTrafficRenderInput::build(HighTrafficPublication::capture($root), $live));
+        assertSame($hash, hash_file('sha256', $shared));
+        assertSame([], glob($shared . '.candidate-*'));
+    }
+
     private function rejects(callable $callback): void
     {
         $failed = false;
@@ -92,6 +136,19 @@ final class HighTrafficPublicationTest
         file_put_contents($root . '/records/posts/visible.txt', "Post-ID: visible\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nSubject: Surviving thread\n\nSurviving body\n");
         $project = dirname(__DIR__);
         $database = $root . '/live.sqlite3';
+        $env = array_merge(getenv(), ['FORUM_REPOSITORY_ROOT' => $root, 'FORUM_DATABASE_PATH' => $database, 'FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public']);
+        foreach (range(1, 2) as $attempt) {
+            $proc = proc_open([PHP_BINARY, $project . '/scripts/high_traffic.php', 'prepare', '--json'],
+                [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, $env);
+            fclose($pipes[0]); $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]);
+            fclose($pipes[1]); fclose($pipes[2]);
+            assertSame(0, proc_close($proc), $err);
+            assertSame(\ForumRewrite\Host\HighTrafficRenderInput::sharedPath($database), json_decode($out, true)['prepared_model']);
+            if ($attempt === 2) {
+                assertStringContains('Reusing prepared model', $err);
+                assertSame(false, str_contains($err, 'Read model:'));
+            }
+        }
         mkdir($root . '/public');
         $cache = new \ForumRewrite\Host\HighTrafficCache($project, $root, $database, $root . '/public');
         $cache->initialize();
@@ -132,8 +189,9 @@ final class HighTrafficPublicationTest
             assertSame(0, proc_close($proc), $err);
             assertSame('/', json_decode($out, true)['refreshed']);
             assertStringContains('Repository: ', $err);
-            assertStringContains('absent targets; deriving isolated read model', $err);
-            assertStringContains('Renderer: Read model:', $err);
+            assertStringContains('absent targets; using prepared shared read model', $err);
+            assertSame(false, str_contains($err, 'Read model: index'));
+            assertStringContains('copying prepared SQLite model (no indexing)', $err);
             assertStringContains('Published / (', $err);
             assertSame([], glob($cache->root . '/.render-*'));
             assertSame([], glob($cache->root . '/assets/*.sqlite3'), 'Private render models must never enter public assets.');
@@ -146,6 +204,7 @@ final class HighTrafficPublicationTest
     {
         $root = $this->fixture();
         file_put_contents($root . '/records/posts/visible.txt', "Post-ID: visible\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nSubject: Visible thread\n\nIndependent body\n");
+        \ForumRewrite\Host\HighTrafficRenderInput::build(HighTrafficPublication::capture($root), $root . '/live.sqlite3');
         mkdir($root . '/public');
         $cache = new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__), $root, $root . '/live.sqlite3', $root . '/public');
         $cache->initialize();
@@ -177,6 +236,7 @@ final class HighTrafficPublicationTest
                 assertSame([], glob($cache->root . '/.render-*'));
                 putenv($oldPhp === false ? 'FORUM_PHP_CLI' : 'FORUM_PHP_CLI=' . $oldPhp);
                 if ($index === 0) {
+                    \ForumRewrite\Host\HighTrafficRenderInput::build(HighTrafficPublication::capture($root), $root . '/live.sqlite3');
                     $previous = $cache->generate('/threads/visible/', true);
                     assertStringContains('Reappeared independent source', $previous);
                 }

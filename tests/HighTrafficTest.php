@@ -15,6 +15,7 @@ final class HighTrafficTest
         mkdir($tmp . '/public');
         symlink($cache->root . '/pages', $tmp . '/public/.high-traffic');
         $cache->atomic($cache->root . '/state.json', json_encode(['enabled'=>true,'generation'=>'test']));
+        \ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture($tmp . '/repo'), $tmp . '/read.sqlite3');
         try {
             $html = $cache->generate('/about/');
             assertStringContains('v3-generated-at', (string)$html);
@@ -183,6 +184,11 @@ final class HighTrafficTest
             fclose($pipes[1]); fclose($pipes[2]);
             return [proc_close($proc), $body, $error];
         };
+        [$status, $html, $error] = $run($cmd);
+        assertSame(1, $status);
+        assertStringContains('Page rendering does not rebuild read models', $error);
+        assertSame(false, is_file($root . '/read.sqlite3'));
+        \ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture(__DIR__ . '/fixtures/parity_minimal_v1'), $root . '/read.sqlite3');
         [$status, $html, $error] = $run($cmd);
         assertSame(0, $status, $error);
         assertStringContains('name="v3-generated-at"', $html);

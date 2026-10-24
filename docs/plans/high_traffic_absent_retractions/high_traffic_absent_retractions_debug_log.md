@@ -82,3 +82,16 @@ Extended estimates were not selected. New-navigation/icon, UI-copy audit and cor
 Excluded builds derive a fresh view within worker limits; the local 1,794-post derivation took 3.187 seconds, but DreamHost may be slower. Warm hits bypass PHP and derivation, verified under Apache. Retain explicit enable/warm/rollback and cron verification in the operator handoff. Cycle retrospective 0.75 is a single exposed scope judgment, not measured labor or maintainer acceptance. Full suite and full-corpus publication are not claimed; bounded static/import coverage and focused runtime checks are identified in the summary.
 
 Final stage `c53e866de` completes the five-stage approved local scope. Production and study comfortable-fit acceptance remain pending. This log-only handoff commit records the exact final-stage reference without amending stage history.
+
+## 2026-10-24T06:16:55+00:00 — Step 4 revision: serving-path rebuild
+
+Supersedes the earlier architectural assumption that a full excluded read-model rebuild
+inside every 30-second render was acceptable. Production timed out during indexing;
+last-stage output does not establish that subject indexing alone consumed the budget.
+The full rebuild belongs in explicit reusable preparation. Renderer and Application
+fallback now prohibit rebuilding. Validation still checks retraction/evidence and
+source-removal state; older safe content can be served after routine posts, matching
+shared-cache semantics. Both exact-input freshness and safety identities are stored as
+metadata values in the existing metadata table; no core schema or dependency change.
+See the implementation summary for checks, the initial browser failure/correction,
+operator commands and outstanding production performance acceptance.

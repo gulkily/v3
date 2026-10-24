@@ -58,6 +58,7 @@ def request(path, method='GET', headers=None):
 def count():return len((root/'php-count').read_text().splitlines()) if (root/'php-count').exists() else 0
 server=None
 try:
+    cli('prepare')
     enabled=json.loads(cli('enable'))
     assert enabled['effective_mode']=='high-traffic' and 'high-traffic run' in enabled['cron_command']
     readable=subprocess.check_output(['php',str(project/'scripts/high_traffic.php'),'status'],env=env,text=True)
@@ -127,6 +128,7 @@ try:
         os.utime(cache_pages/f'threads/load-{i:02}/index.html',(1,1))
     subprocess.run(['git','-C',str(repo),'add','.'],check=True);subprocess.run(['git','-C',str(repo),'commit','-qm','Routine edits'],check=True)
     assert b'Initial body.' in request('/threads/load-00/')[2]
+    cli('prepare')
     started=time.monotonic();updated=json.loads(cli('run',str(logfile)))
     assert updated['rendered']==20,updated
     refresh_seconds=max(refresh_seconds,time.monotonic()-started)
@@ -214,6 +216,8 @@ try:
     for post_id in ids:
         (repo/f'records/posts/{post_id}.txt').unlink()
         (repo/f'records/post-retractions/post-retraction-{post_id}.txt').write_text(f'Record-ID: post-retraction-{post_id}\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: {post_id}\nOperation: retract\nAuthor-Identity-ID: openpgp:'+('a'*40)+'\n\n')
+    cli('prepare')
+    prepared_hash=hashlib.sha256((root/'read.sqlite3.high-traffic.sqlite3').read_bytes()).hexdigest()
     cli('enable')
     status,_,home=request('/')
     assert status==200 and b'v3-generated-at' in home and b'ABSENT-TARGET-SECRET' not in home
@@ -231,6 +235,7 @@ try:
     assert code==200 and headers.get('X-V3-High-Traffic')=='hit' and home!=old_home
     assert b'ABSENT-TARGET-SECRET' not in home
     assert live_hash==hashlib.sha256((root/'read.sqlite3').read_bytes()).hexdigest()
+    assert prepared_hash==hashlib.sha256((root/'read.sqlite3.high-traffic.sqlite3').read_bytes()).hexdigest()
     assert not list(cache_pages.parent.glob('.render-*'))
     cli('disable')
     assert request('/')[0]==200

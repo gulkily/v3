@@ -27,6 +27,8 @@ for(const args of [['add','records'],['commit','-m','Seed visible thread and abs
  const seeded=spawnSync('git',['-C',join(root,'repository'),...args],{encoding:'utf8'});assert.equal(seeded.status,0,seeded.stderr);
 }
 
+const prepared=spawnSync('php',[join(project,'scripts/high_traffic.php'),'prepare'],{encoding:'utf8',env});
+assert.equal(prepared.status,0,prepared.stderr);
 const normal=await readFile(join(project,'public/.htaccess'),'utf8');await writeFile(join(root,'public/.htaccess'),normal);
 const socket=createServer().listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
 const base=`http://127.0.0.1:${port}`;

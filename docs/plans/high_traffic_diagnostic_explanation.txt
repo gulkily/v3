@@ -68,3 +68,17 @@ working, not only attach a stage to the final error. Quiet workers emit a heartb
 every five seconds. CLI output states the selected paths and rendering limits;
 JSON results stay on stdout and diagnostic progress stays on stderr. This improves
 observability; it does not establish or repair the host-specific slow stage.
+
+Correction: rebuild placement
+
+The later production trace confirmed that rendering reached a read-model rebuild
+and exhausted the 30-second worker budget. Performing a full rebuild for every
+excluded-target render was a design mistake; tiny local fixtures did not validate
+that architecture for this host. More diagnostics alone did not fix it.
+
+The correction introduces explicit shared-model preparation, reused across routes
+and repeated refreshes. Preparation updates changed inputs; older content remains
+servable only while its retraction/absence evidence is still valid. Neither page rendering nor
+its Application fallback may rebuild a model. Preparation remains expensive and
+can exceed 30 seconds; it reports that work as maintenance, outside rendering.
+Production acceptance requires measuring preparation and refresh on the real host.

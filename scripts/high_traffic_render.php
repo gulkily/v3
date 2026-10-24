@@ -16,7 +16,7 @@ try {
     $report('preparing isolated render input');
     $database = \ForumRewrite\Host\HighTrafficRenderInput::prepare($context, $database, dirname($assets) . '/model', $report);
     $report('rendering HTML and copying referenced assets');
-    $html = (new \ForumRewrite\Host\StaticArtifactBuilder($project, $repository, $database, $assets, $report))->renderHighTrafficRoute($route);
+    $html = (new \ForumRewrite\Host\StaticArtifactBuilder($project, $repository, $database, $assets, $report))->renderHighTrafficRoute($route, allowStaleReadModel: $context['state']['absent'] !== []);
     $report('validating rendered candidate');
     \ForumRewrite\Host\HighTrafficPublication::validate($context);
     fwrite(STDOUT, $html);

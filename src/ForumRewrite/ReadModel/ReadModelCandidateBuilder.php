@@ -48,14 +48,14 @@ final class ReadModelCandidateBuilder
         }
     }
 
-    public static function assertValid(string $repositoryRoot, string $candidatePath): void
+    public static function assertValid(string $repositoryRoot, string $candidatePath, bool $requireCurrentHead = true): void
     {
         $pdo = (new ReadModelConnection($candidatePath))->open();
         $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(PDO::FETCH_KEY_PAIR);
         $expectedHead = ReadModelMetadata::repositoryHead($repositoryRoot);
         if (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
             || ($metadata['repository_root'] ?? null) !== $repositoryRoot
-            || ($metadata['repository_head'] ?? null) !== $expectedHead) {
+            || ($requireCurrentHead && ($metadata['repository_head'] ?? null) !== $expectedHead)) {
             throw new RuntimeException('Read-model candidate metadata does not match the current repository.');
         }
 

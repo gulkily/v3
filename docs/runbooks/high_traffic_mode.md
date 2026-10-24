@@ -39,6 +39,7 @@ application checkout with the same environment as PHP:
 
 ```bash
 ./v3 high-traffic status
+./v3 high-traffic prepare
 ./v3 high-traffic enable
 ```
 
@@ -64,7 +65,7 @@ page. If these checks fail, disable and correct host configuration before use.
 Configure cron every minute, using the deployment's normal environment:
 
 ```cron
-* * * * * cd /path/to/application && ./v3 high-traffic run /path/to/access.log >> /path/to/private/high-traffic-cron.log 2>&1
+* * * * * cd /path/to/application && { ./v3 high-traffic prepare && ./v3 high-traffic run /path/to/access.log; } >> /path/to/private/high-traffic-cron.log 2>&1
 ```
 
 The sysop owns log location, permissions, rotation, retention and cron monitoring.
@@ -206,23 +207,38 @@ they do not install or verify a schedule. Use the web app's environment and user
 
 ## Retained retractions with absent targets
 
-A valid retained retraction can outlive a physically deleted source. High-traffic
-HTML generation now classifies this as a build-local exclusion. For these builds,
-the isolated renderer derives a fresh disposable model from canonical records,
-excludes the absent targets and explicitly linked generated responses/labels, and
-recomputes summaries. It never publishes stale live-model prose or edits canonical
-records. A missing root retains a content-free structural row for surviving replies;
-existing retracted-thread board-listing policy still applies. Independent replies
-and independent label actions remain intact.
+A valid retained retraction can outlive a physically deleted source. Run
+`./v3 high-traffic prepare` before warming pages. It builds one private, reusable
+SQLite model that excludes absent targets and explicitly linked generated
+responses/labels and recomputes summaries. A missing root retains a content-free
+structural row for surviving replies. Independent replies and label actions remain
+intact. The live database and canonical records are unchanged by this preparation
+when absent targets exist.
 
-The parent and worker check matching evidence/content context before and after
-rendering and again at publication. Source reappearance or other canonical changes
-during an excluded build reject that attempt; retry validates the current state.
-Ordinary builds without absent targets retain stale-tolerant routine-write behavior.
-Warm hits do no model preparation. Cold/refresh builds with exclusions do more work
-inside the existing worker timeout; an exceeded limit is a reported failure, never
-an unbounded fallback. The private disposable model is removed with its workspace
-and is never copied into public assets.
+The prepared file is beside the configured live database, with suffix
+`.high-traffic.sqlite3`, and has mode 0600. Preparation atomically replaces it only
+after validation, preserves the previous model on failure, and rejects competing
+preparations. Repeating preparation with unchanged inputs reuses the file.
+Preparation is explicit maintenance: it can take longer than 30 seconds, streams
+indexing progress, and is outside the page-render timeout. This moves the expensive
+rebuild out of requests; it does not make that rebuild itself faster.
+
+Cold pages and forced refreshes copy the prepared SQLite model into a private
+workspace, validate it, render HTML, then remove the workspace. Neither the worker
+nor its Application fallback can rebuild a model. Missing/stale preparation fails
+with `./v3 high-traffic prepare` recovery guidance. Warm cached hits remain fast.
+The parent and worker retain their evidence/content checks before and after
+rendering and at publication. Changed retraction/absence evidence invalidates the prepared model. Routine
+content changes may continue using the earlier safe model until preparation
+updates it; run prepare before refreshing when new content must appear. The generated cron command now does both.
+Update an existing run-only cron line using `./v3 high-traffic cron /path/to/access.log`.
+Preparation time adds to freshness latency, so the one-to-two-minute target is not
+established on the affected production host.
+
+Without absent targets, prepare validates the live model and rebuilds/promotes it
+through the existing candidate workflow when necessary. Rendering uses that model
+but refuses an implicit rebuild. Ordinary in-flight routine-write tolerance is
+unchanged. No prepared SQLite file is published as an asset.
 
 Malformed, missing tracked, unreadable or unsafe evidence and untrusted removal
 records remain failures. Other strict publication consumers retain their existing
@@ -239,12 +255,13 @@ normal release process. Do not reset or modify the separate canonical repository
 Use the deployed checkout, web app's normal user/environment, PHP CLI and public-root
 configuration. For the observed host the checkout is `/home/dh_zsagad/v3`.
 
-First verify ordinary `/` and a surviving thread return HTTP 200. Then enable and
+First verify ordinary `/` and a surviving thread return HTTP 200. Then prepare, enable and
 explicitly warm the homepage; on generation failure immediately disable again:
 
 ```bash
 cd /home/dh_zsagad/v3
 ./v3 high-traffic status
+./v3 high-traffic prepare
 ./v3 high-traffic enable
 ./v3 high-traffic refresh /
 ```
@@ -308,22 +325,23 @@ These diagnostics retain existing bounded admission and HTTP busy-page behavior.
 
 Renderer failures distinguish the time limit, HTML-output byte limit and
 stderr-output byte limit. Each message includes the observed elapsed time and the
-last reported stage (evidence validation, isolated-model rebuild phase, candidate
+last reported stage (evidence validation, prepared SQLite copy, candidate
 validation, public HTML rendering or asset copying). Read-model signature indexing
 is timed separately. Progress contains operation names/counts, not record payloads.
-Normal result stdout is unchanged. CLI `refresh` and `run` stream timestamped
+Normal result stdout is unchanged. CLI `prepare`, `refresh` and `run` stream timestamped
 progress to stderr as work happens, including with `--json`; redirect stderr to a
 log when automating. The parent also retains worker progress for failure diagnosis. If no stage arrived, the error says worker startup.
 
 An approximately 30-second failure is not proof that a rebuild is the bottleneck.
 Use the reported stage to select the next check. Do not raise limits or relax
-publication guards to hide an unlocalized delay. The production 36.325-second
-refresh failure remains unresolved until stage-specific host evidence is available.
+publication guards to hide an unlocalized delay. The reported timeout during `Read model: index thread subjects` exposed a full
+rebuild inside rendering. That rebuild now belongs to explicit preparation;
+production recovery still requires host verification.
 
 CLI progress starts before repository/configuration resolution and identifies the
 selected repository, database, public root and cache directory. It then reports
 page/publication locks, generator admission, absent-target count, isolated-worker
-limits, rebuild stages, HTML rendering, asset copying, validation and publication.
+limits, SQLite copying, HTML rendering, asset copying, validation and publication.
 A quiet running renderer emits a heartbeat every five seconds with its current
 stage and HTML byte count. Failures report total command elapsed time; renderer
 failures additionally report their own elapsed time/limit and last stage. Website
