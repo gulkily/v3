@@ -71,6 +71,11 @@ One row per canonical post record (both thread roots and replies).
 | `retraction_attribution` | TEXT NULL | accepted display attribution: author or operator, independent of authorization |
 | `sequence_number` | INTEGER | |
 
+Indexes: `posts_thread_sequence_idx (thread_id, sequence_number)` backing the
+per-thread reply query (`ORDER BY sequence_number`); `posts_author_identity_idx
+(author_identity_id)` backing the `profiles` identity join used by the board and
+reply queries. Added in schema version 26.
+
 ### `threads`
 
 One row per thread (keyed by its root post).
@@ -91,6 +96,9 @@ One row per thread (keyed by its root post).
 | `retracted_at` | TEXT NULL | root retraction timestamp |
 | `retraction_class` | TEXT NULL | root author/operator authorization classification |
 | `retraction_attribution` | TEXT NULL | root accepted display attribution |
+
+Index: `threads_last_activity_idx (last_activity_at DESC, root_post_id DESC)`
+backing the board/tags/RSS listing sort. Added in schema version 26.
 
 ### `profiles`
 
@@ -385,3 +393,15 @@ by original activity time and canonical action key, independent of disposable
 SQLite row IDs. Version 25 rebuilds prior models at normal startup before the
 new query contract runs. Existing Forte and RSS queries/return shapes remain
 unchanged; canonical records and Activity membership are unaffected.
+
+### Hot-path indexes (schema version 26)
+
+No table shape changes. Version 26 adds three covering-free indexes to speed the
+hottest read paths: `posts_thread_sequence_idx (thread_id, sequence_number)` and
+`posts_author_identity_idx (author_identity_id)` on `posts`, and
+`threads_last_activity_idx (last_activity_at DESC, root_post_id DESC)` on
+`threads`. These remove full table scans and in-memory sorts from the single-thread
+reply query and the board/tags/RSS listing sort; query results and return shapes
+are unchanged. Normal startup rebuilds prior models before the indexed queries
+run. `posts_thread_sequence_idx` mirrors the index the public offline snapshot
+builder already creates, keeping the two models consistent.

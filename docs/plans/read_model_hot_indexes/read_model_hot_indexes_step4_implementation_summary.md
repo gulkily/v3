@@ -38,3 +38,15 @@ None recorded.
   - `posts_thread_sequence_idx` name matches the index `PublicOfflineSnapshotBuilder` already defines, keeping the two models consistent.
   - Adding to `statements()` changes `ReadModelSchema::fingerprint()`, which already causes a schema-identity mismatch → rebuild; the explicit `SCHEMA_VERSION` bump follows in Stage 2.
 - Stage work: original ≈0.05 (driver: three one-line index statements + known assertion edit; uncertainty: low). No revision. Retrospective: ≈0.05 — as scoped; the only incidental effort was sandbox PHP setup (environment, not stage scope).
+
+## Stage 2 - Bump schema version + update spec
+- Changes:
+  - `src/ForumRewrite/ReadModel/ReadModelMetadata.php`: `SCHEMA_VERSION` '25' → '26'.
+  - `docs/specs/read_model_schema_v1.md`: added `Index:` notes to the `posts` and `threads` sections and a new `### Hot-path indexes (schema version 26)` changelog entry describing all three indexes and the rebuild behavior.
+- Verification:
+  - `expectedSchemaIdentity()` now reports `version=26` with an updated fingerprint (`c009048cb4d04d80…`) — confirmed via a one-off script against `autoload.php`.
+  - `ReadModelMetadataTest` — PASS (2/2); `ReadModelSchemaTest` — PASS (2/2). Runner: 4 run, 4 passed, 0 failed.
+- Notes:
+  - The metadata tests validate the identity mechanism generically (not a hardcoded version literal), so the bump did not require test edits.
+  - Spec changelog follows the existing `### … (schema version N)` convention.
+- Stage work: original ≈0.07 (driver: constant bump + prose spec edit matching the index set; uncertainty: low). No revision. Retrospective: ≈0.06 — slightly under; spec edit was straightforward given the existing per-table `Index:` convention.
