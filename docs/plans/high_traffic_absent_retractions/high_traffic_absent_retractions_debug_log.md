@@ -59,3 +59,26 @@ Extended stage estimates not selected; ordinary R1/P2 checkpoint retained. No th
 ### Uncertain assessments
 
 HTML projection is the material remaining engineering risk; Stage 2 must demonstrate exclusion/independent-content preservation before downstream wiring. Five approximately-hour stages are provisional; split if discoveries exceed atomic size. Prior diagnosis is included in the revised total; no measured labor claimed.
+
+## 2026-10-24T05:23:19+00:00 — Step 4 handoff
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: planning `bf659506f` followed by summary-bearing commits `89f593d99`, `e8caa8b8c`, `75b8c876e`, `d4b41fe94`, `c53e866de` preserves reviewable evidence/isolation/wiring/race/acceptance boundaries. Retain.
+- `step4_implementation_after.md`, environment and verification limits: local Apache/browser acceptance and 108 focused checks are explicitly distinct from pending DreamHost deployment/cache-hit/cron checks. Retain.
+- Shared-component/approval constraints: HTML uses an isolated admission/render context; strict consumers and snapshot reappearance semantics are not globally relaxed. No new dependencies or core schema changes. Retain.
+- Planning-commit gate: isolated the feature index hunk from a concurrent unrelated README edit; substantive ledger changes entered stage documentation, not the planning-only commit. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Extended estimates were not selected. New-navigation/icon, UI-copy audit and core-schema migration requirements do not apply; no corresponding application change was made. Physical-device and production execution were not authorized verification environments.
+
+### Uncertain assessments
+
+Excluded builds derive a fresh view within worker limits; the local 1,794-post derivation took 3.187 seconds, but DreamHost may be slower. Warm hits bypass PHP and derivation, verified under Apache. Retain explicit enable/warm/rollback and cron verification in the operator handoff. Cycle retrospective 0.75 is a single exposed scope judgment, not measured labor or maintainer acceptance. Full suite and full-corpus publication are not claimed; bounded static/import coverage and focused runtime checks are identified in the summary.
+
+Final stage `c53e866de` completes the five-stage approved local scope. Production and study comfortable-fit acceptance remain pending. This log-only handoff commit records the exact final-stage reference without amending stage history.
