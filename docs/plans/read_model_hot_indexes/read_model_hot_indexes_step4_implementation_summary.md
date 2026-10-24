@@ -50,3 +50,19 @@ None recorded.
   - The metadata tests validate the identity mechanism generically (not a hardcoded version literal), so the bump did not require test edits.
   - Spec changelog follows the existing `### … (schema version N)` convention.
 - Stage work: original ≈0.07 (driver: constant bump + prose spec edit matching the index set; uncertainty: low). No revision. Retrospective: ≈0.06 — slightly under; spec edit was straightforward given the existing per-table `Index:` convention.
+
+## Stage 3 - Prior-version rebuild regression test
+- Changes:
+  - `tests/ReadModelHotIndexRebuildTest.php` (new): two tests.
+    - `testRebuildCreatesHotPathIndexes` — a fresh `ReadModelBuilder->rebuild()` creates all three hot-path indexes and stamps the current schema identity.
+    - `testStaleSchemaIdentityIsDetectedAndRebuildRestoresIndexes` — seeds a pre-26 model (drops the three indexes, stamps version `25` + a stale fingerprint), asserts `ReadModelMetadata::hasExpectedSchemaIdentity(...)` returns `false` (the exact gate `Application::ensureReadModel()` uses to set `schema_identity_mismatch`), then rebuilds and asserts the indexes are restored, the current identity is present, and `ThreadRepository::replyPostsByThreadId('root-001')` returns only non-root replies of the thread.
+  - `tests/run.php`: registered the new test file beside the other read-model tests.
+- Verification:
+  - New test — PASS (2/2).
+  - Regression guard proven: with the Stage 1 index statements temporarily removed from `ReadModelSchema`, both tests FAIL (Summary: 0 passed, 2 failed, exit 1); restored, both PASS. Confirms the test actually catches an unindexed/old-shaped model rather than passing vacuously.
+  - Read-model group `ReadModelSchemaTest ReadModelMetadataTest ReadModelHotIndexRebuildTest ReadModelCandidateBuilderTest` — 12 run, 12 passed, 0 failed.
+  - `git diff` on `ReadModelSchema.php` after the temporary revert experiment is empty (working tree matches HEAD).
+- Notes:
+  - The test drives the real `ReadModelBuilder->rebuild()` build path and the real identity gate (`hasExpectedSchemaIdentity` / `readMetadata`) rather than re-implementing the rebuild decision, satisfying the `CONTRIBUTING.md` "startup rebuilds from the prior schema version before the changed query runs" requirement at the unit level. The end-to-end startup/`./v3 rebuild` path is exercised in Stage 4.
+  - Reuses the existing `RebuildHistoryFixture` (parity_minimal_v1, `root-001`).
+- Stage work: original ≈0.15 (driver: new harness seeding a stale-identity model and driving the real rebuild path; uncertainty: medium — how cleanly the gate could be exercised in a test). Revision: none to the estimate. Retrospective: ≈0.12 — slightly under; the existing `RebuildHistoryFixture` and the already-public `hasExpectedSchemaIdentity`/`readMetadata` API meant no new fixture or production seam was needed. Driving `Application::ensureReadModel()` directly proved unnecessary — asserting its exact gate predicate plus `rebuild()` covers the requirement without a heavier app-bootstrap harness.
