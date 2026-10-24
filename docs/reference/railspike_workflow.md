@@ -122,24 +122,10 @@ Verification: all 17 upstream product files match the release byte-for-byte; `ph
 
 ## Upgrade — 2026-10-24
 
-Upgraded this checkout from `v0.2.1-beta.1` to the explicitly requested
-`v0.3.0-beta.1` (`c336536f88d1ce471b4f582a7d87203864f8526e`)
-using the supported squash subtree sync on `chore/railspike-0.3.0-beta.1`.
-The release adds optional extended option/stage estimates and exact frozen-source
-recovery guidance. Existing study enrollment does not enable extended estimates;
-existing cycle approvals and recorded estimates remain intact.
+User authorization: “Please upgrade to 0.3.0-beta.1.” This explicitly approves the Railspike dependency update from v0.2.1-beta.1 to v0.3.0-beta.1. This routine pinned update uses the direct maintenance path, without a new Railspike planning cycle.
 
-Dependency approval: the user explicitly requested this exact Railspike upgrade.
-Source: canonical `https://github.com/rlspk/railspike.git`, MIT license,
-Git subtree delivery to `docs/railspike/`. Inventory: 11 existing Markdown files
-changed, approximately 10 KB added; no new files, packages or transitive dependencies.
-Maintenance remains deliberate pinned-tag updates and host/upstream provenance
-verification. Retaining the prior installed release was the reduced-scope alternative.
-The CLI default pin, its existing test assertion and installation record were updated.
-Uncommitted retraction diagnostics plans and ledger work were preserved separately.
+Source: https://github.com/rlspk/railspike.git; MIT license; delivery: existing Git subtree at `docs/railspike/`. Verified product commit `c336536f88d1ce471b4f582a7d87203864f8526e` descends from the prior installed revision. Reviewed all upstream changes: 11 existing Markdown files, 116 insertions and one deletion (roughly 15 KB added text), with no new files, transitive dependencies, runtime packages, manifests or locks. The release adds optional option/stage estimates and exact frozen-reference recovery. The reduced-scope alternative was retaining the previous beta. Maintenance remains deliberate tag review, subtree sync and provenance verification.
 
-Verification: all 17 upstream files match the release byte-for-byte;
-`php tests/run.php RailspikeSyncCommandTest RailspikeWorkflowTest` passed
-20/20; shell syntax and `git diff --check` passed. Actual dependency delta
-matches the approved inventory: only the Railspike documentation upgrade,
-no package/manifest/lock changes. No UI or production changes.
+Updated the CLI default pin, help, reference and affected test assertion. Extended estimates remain off absent explicit cycle activation or host policy; existing standing study enrollment is preserved. The clean maintenance worktree keeps unrelated host edits intact. The prior installed state remains recoverable from the subtree merge's first parent.
+
+Verification: all 17 upstream product files match the release byte-for-byte; `php tests/run.php RailspikeSyncCommandTest RailspikeWorkflowTest` passed all 20 tests; shell syntax and `git diff --check` passed. Actual dependency delta matches the approved inventory: one existing instruction dependency upgraded, zero added packages or transitive dependencies. UI/runtime/deployment checks are inapplicable to this instruction-only upgrade.

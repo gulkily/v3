@@ -107,6 +107,8 @@ final class Application
         private readonly ?string $artifactRoot = null,
         private readonly ?string $staticHtmlRoot = null,
         private readonly string $routeSource = 'php-fallback',
+        private readonly bool $allowReadModelRebuild = true,
+        private readonly bool $requireCurrentReadModel = true,
     ) {
     }
 
@@ -1063,12 +1065,12 @@ final class Application
                 $metadata = $this->readMetadata($pdo);
                 $pdo = null;
 
-                $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+                $currentRepositoryHead = $this->requireCurrentReadModel ? ReadModelMetadata::repositoryHead($this->repositoryRoot) : null;
                 if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) {
                     $rebuildReason = 'repository_root_mismatch';
                 } elseif (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
                     $rebuildReason = 'schema_identity_mismatch';
-                } elseif (($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
+                } elseif ($this->requireCurrentReadModel && ($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
                     $rebuildReason = 'repository_head_mismatch';
                 } else {
                     return;
@@ -1077,6 +1079,10 @@ final class Application
                 $pdo = null;
                 $rebuildReason = 'metadata_unreadable';
             }
+        }
+
+        if (!$this->allowReadModelRebuild) {
+            throw new \RuntimeException('High-traffic read model needs maintenance (' . $rebuildReason . '). Run ./v3 high-traffic prepare with the configured repository/database and retry refresh. Page rendering does not rebuild read models.');
         }
 
         $this->executionLock()->withExclusiveLock(function () use ($rebuildReason): void {

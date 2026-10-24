@@ -11,6 +11,7 @@ $testFiles = [
     __DIR__ . '/IndependentDocsPublicationTest.php',
     __DIR__ . '/LegacyDocsMigrationTest.php',
     __DIR__ . '/DocsPublicationFlowTest.php',
+    __DIR__ . '/HighTrafficPublicationTest.php',
     __DIR__ . '/AbsentRetractionSnapshotTest.php',
     __DIR__ . "/HighTrafficTest.php",
     __DIR__ . "/AccessHistoryPresenterTest.php",

@@ -68,3 +68,11 @@ or `~/v3` working repository remain outside this change.
 Private validation copies/artifacts live under `/tmp`. Existing retraction planning
 and effort-study edits are unrelated and must stay outside any implementation
 commit. Dependency delta: **zero**.
+
+## Commit and integration verification
+
+Archive fix committed as `042e684a`. Integrated remote main at `8d51a177` before
+push, retaining its canonical Railspike upgrade provenance when duplicate local
+upgrade notes conflicted. No archive implementation conflict. All 20 focused
+export/image/import/backup/application checks passed again on the combined tree.
+Retraction planning remains separately preserved and uncommitted.

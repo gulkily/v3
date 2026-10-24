@@ -11,8 +11,6 @@ Local record, not an upstream file.
 - Retained local deviations: this installation record only; the prior effort-estimation patch is included upstream in this release.
 - Removed upstream (still in Git history): `.nojekyll`, `index.html`, `railspike-logo.png`, `scripts/`, `docs/plans/`, `docs/maintainers/`, `docs/research/`.
 
-- Previous upgrade verification: installed product files matched tag v0.2.1-beta.1 byte-for-byte; that prior state is recoverable from the first parent of merge commit 97d47b97.
-- Previous Railspike remote: https://github.com/gulkily/railspike.git; migrated to the recorded source for this upgrade.
-
-- 2026-10-24: explicitly requested upgrade from v0.2.1-beta.1; official v0.3.0-beta.1 changes 11 existing Markdown files, no additional components or transitive dependencies. Host CLI pin and focused assertion updated alongside the subtree.
-- Current upgrade verification: all 17 upstream files match v0.3.0-beta.1 byte-for-byte; focused sync/workflow tests passed 20/20, shell syntax and diff checks passed.
+- Previous installed release: v0.2.1-beta.1 (`b6c399424f75dc2e94af496411467480487cc319`).
+- Upgrade verification: all 17 upstream product files match v0.3.0-beta.1 byte-for-byte; the prior installed state remains recoverable from the upgrade subtree merge's first parent.
+- Canonical source explicitly selected during this upgrade to migrate the legacy configured remote.

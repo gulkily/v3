@@ -111,7 +111,7 @@ final class StaticArtifactBuilder
     }
 
     /** Run only in an isolated renderer process: no visitor globals or active session. */
-    public function renderHighTrafficRoute(string $route): string
+    public function renderHighTrafficRoute(string $route, bool $allowStaleReadModel = false): string
     {
         if (HighTrafficRoute::canonical($route) === null || $_COOKIE !== [] || session_status() === PHP_SESSION_ACTIVE) {
             throw new RuntimeException('Shared rendering requires an eligible route and isolated session context.');
@@ -121,9 +121,10 @@ final class StaticArtifactBuilder
             throw new RuntimeException('High-traffic rendering is unavailable on private instances.');
         }
         http_response_code(200);
+        $this->reportProgress('rendering public HTML');
         ob_start();
         try {
-            $this->application()->handle('GET', $route);
+            $this->application(allowReadModelRebuild: false, requireCurrentReadModel: !$allowStaleReadModel)->handle('GET', $route);
             $html = (string) ob_get_contents();
         } finally { ob_end_clean(); }
         if (http_response_code() !== 200 || !str_contains(strtolower($html), '</head>')) {
@@ -143,6 +144,7 @@ final class StaticArtifactBuilder
         $configuredBytes=getenv('FORUM_HIGH_TRAFFIC_BYTES');
         $assetLimit=$configuredBytes!==false && ctype_digit($configuredBytes) && (int)$configuredBytes>0 ? min(2684354560,(int)$configuredBytes) : 268435456;
         if ($assetBytes>$assetLimit) throw new RuntimeException('Referenced assets exceed cache capacity.');
+        $this->reportProgress('copying referenced public assets');
         $this->copyReferencedAssets($html);
         $this->assertFingerprintReferencesAvailable($html);
         $stamp = '<meta name="v3-generated-at" content="' . gmdate('Y-m-d\TH:i:s\Z') . '">';
@@ -513,7 +515,7 @@ final class StaticArtifactBuilder
         }
     }
 
-    private function application(): Application
+    private function application(bool $allowReadModelRebuild = true, bool $requireCurrentReadModel = true): Application
     {
         return new Application(
             $this->projectRoot,
@@ -521,6 +523,8 @@ final class StaticArtifactBuilder
             $this->databasePath,
             null,
             routeSource: 'static-html',
+            allowReadModelRebuild: $allowReadModelRebuild,
+            requireCurrentReadModel: $requireCurrentReadModel,
         );
     }
 
