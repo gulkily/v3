@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelMetadata;
@@ -12,9 +13,7 @@ require_once __DIR__ . '/Support/RebuildHistoryFixture.php';
 /**
  * Schema version 26 regression: a read model stamped with a prior schema
  * identity (older version/fingerprint and missing hot-path indexes) must be
- * detected as incompatible by the same gate Application::ensureReadModel()
- * uses, and a normal rebuild must recreate the indexes before the indexed
- * queries run.
+ * rebuilt by normal application startup before serving the thread page.
  */
 final class ReadModelHotIndexRebuildTest
 {
@@ -45,7 +44,7 @@ final class ReadModelHotIndexRebuildTest
         }
     }
 
-    public function testStaleSchemaIdentityIsDetectedAndRebuildRestoresIndexes(): void
+    public function testVersion25StartupRebuildsIndexesBeforeServingThread(): void
     {
         $fixture = new RebuildHistoryFixture(0);
         try {
@@ -63,14 +62,25 @@ final class ReadModelHotIndexRebuildTest
                 assertSame(false, $this->indexExists($stale, $index), "index {$index} should be absent on the stale model");
             }
 
-            // This is the exact gate Application::ensureReadModel() keys on to
-            // set rebuildReason = 'schema_identity_mismatch'.
             assertSame(false, ReadModelMetadata::hasExpectedSchemaIdentity(ReadModelMetadata::readMetadata($stale)));
+            // Keep repository identity unchanged so only schema mismatch triggers recovery.
+            $metadata = ReadModelMetadata::readMetadata($stale);
+            assertSame($fixture->repository, $metadata['repository_root']);
+            assertSame(ReadModelMetadata::repositoryHead($fixture->repository), $metadata['repository_head']);
+            $stale->exec("UPDATE posts SET body = 'stale reply before startup' WHERE post_id = 'reply-001'");
             $stale = null;
 
-            // A normal rebuild (what startup performs on mismatch) restores the
-            // indexes and the current identity before any indexed query runs.
-            $builder->rebuild();
+            $app = new Application(dirname(__DIR__), $fixture->repository, $livePath);
+            ob_start();
+            try {
+                $app->handle('GET', '/threads/root-001');
+                $html = (string) ob_get_contents();
+            } finally {
+                ob_end_clean();
+            }
+            assertStringContains('Hello world', $html);
+            assertStringContains('Reply body.', $html);
+            assertStringNotContains('stale reply before startup', $html);
 
             $rebuilt = new PDO('sqlite:' . $livePath);
             $rebuilt->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -78,10 +88,12 @@ final class ReadModelHotIndexRebuildTest
                 assertSame(true, $this->indexExists($rebuilt, $index), "index {$index} should be restored after rebuild");
             }
             assertSame(true, ReadModelMetadata::hasExpectedSchemaIdentity(ReadModelMetadata::readMetadata($rebuilt)));
+            assertSame('schema_identity_mismatch', ReadModelMetadata::readMetadata($rebuilt)['rebuild_reason']);
 
             // The indexed reply query still runs and returns correct rows:
             // every row is a non-root reply of the requested thread.
             $replies = ThreadRepository::replyPostsByThreadId($rebuilt, 'root-001');
+            assertTrue(count($replies) > 0);
             foreach ($replies as $row) {
                 assertSame('root-001', (string) $row['thread_id']);
                 assertSame(true, (string) $row['post_id'] !== 'root-001');

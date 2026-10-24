@@ -51,7 +51,7 @@ None recorded.
   - Spec changelog follows the existing `### … (schema version N)` convention.
 - Stage work: original ≈0.07 (driver: constant bump + prose spec edit matching the index set; uncertainty: low). No revision. Retrospective: ≈0.06 — slightly under; spec edit was straightforward given the existing per-table `Index:` convention.
 
-## Stage 3 - Prior-version rebuild regression test
+## Stage 3 - Prior-version rebuild regression test (original verification; corrected below)
 - Changes:
   - `tests/ReadModelHotIndexRebuildTest.php` (new): two tests.
     - `testRebuildCreatesHotPathIndexes` — a fresh `ReadModelBuilder->rebuild()` creates all three hot-path indexes and stamps the current schema identity.
@@ -63,9 +63,9 @@ None recorded.
   - Read-model group `ReadModelSchemaTest ReadModelMetadataTest ReadModelHotIndexRebuildTest ReadModelCandidateBuilderTest` — 12 run, 12 passed, 0 failed.
   - `git diff` on `ReadModelSchema.php` after the temporary revert experiment is empty (working tree matches HEAD).
 - Notes:
-  - The test drives the real `ReadModelBuilder->rebuild()` build path and the real identity gate (`hasExpectedSchemaIdentity` / `readMetadata`) rather than re-implementing the rebuild decision, satisfying the `CONTRIBUTING.md` "startup rebuilds from the prior schema version before the changed query runs" requirement at the unit level. The end-to-end startup/`./v3 rebuild` path is exercised in Stage 4.
+  - The test drives the real `ReadModelBuilder->rebuild()` build path and the real identity gate (`hasExpectedSchemaIdentity` / `readMetadata`) rather than re-implementing the rebuild decision, but this did not satisfy the `CONTRIBUTING.md` normal-startup regression requirement. Stage 4 verified the explicit rebuild command, not stale-model application startup. The review correction below closes that gap.
   - Reuses the existing `RebuildHistoryFixture` (parity_minimal_v1, `root-001`).
-- Stage work: original ≈0.15 (driver: new harness seeding a stale-identity model and driving the real rebuild path; uncertainty: medium — how cleanly the gate could be exercised in a test). Revision: none to the estimate. Retrospective: ≈0.12 — slightly under; the existing `RebuildHistoryFixture` and the already-public `hasExpectedSchemaIdentity`/`readMetadata` API meant no new fixture or production seam was needed. Driving `Application::ensureReadModel()` directly proved unnecessary — asserting its exact gate predicate plus `rebuild()` covers the requirement without a heavier app-bootstrap harness.
+- Stage work: original ≈0.15 (driver: new harness seeding a stale-identity model and driving the real rebuild path; uncertainty: medium — how cleanly the gate could be exercised in a test). Revision: none to the estimate. Retrospective: ≈0.12 — slightly under; the existing `RebuildHistoryFixture` and the already-public `hasExpectedSchemaIdentity`/`readMetadata` API meant no new fixture or production seam was needed. The original decision to substitute the predicate plus explicit rebuild for application startup was rejected in review; see the correction below. The original retrospective estimate is preserved as recorded.
 
 ## Stage 4 - End-to-end query-plan + content verification
 - Changes: none to application source (verification-only stage).
@@ -95,3 +95,11 @@ None recorded.
 - Retrospective whole-cycle assessment: **≈0.30**, matching the Step 1–4 projection; independently judged, not the stage-work sum. The incidental sandbox PHP-linkage diagnosis added real time but is environmental, not cycle scope.
 - Verification performed: schema/metadata/rebuild unit tests, a proven regression guard (index removal → test fails), query-plan confirmation, byte-identical content proof, and `./v3 rebuild`. Omissions: full test suite and browser/UI checks not run (no presentation change). Two pre-existing environmental `ReadModelProvenanceTest` failures are unrelated to this change.
 - Maintainer comfortable-fit judgment: **pending** (not yet reviewed/merged). Study acceptance remains pending; technical completion and study-outcome acceptance are distinct. No measured effort or independent rating claimed; single exposed, non-blind rater, UTC 2026-10-24.
+
+## Review correction — normal-startup regression (2026-10-24)
+
+- Replaced the explicit recovery rebuild in `ReadModelHotIndexRebuildTest` with a real `Application::handle('GET', '/threads/root-001')` request against a version-25 model missing all three indexes. Repository root and head remain current, isolating schema mismatch as the recovery trigger.
+- Seeded stale reply content and asserted the rendered page contains canonical root/reply content and excludes the stale reply. After the request, verified all three indexes, current schema identity, and `rebuild_reason = schema_identity_mismatch`; the reply-query assertion now also requires nonempty results.
+- Verification: `php tests/run.php ReadModelHotIndexRebuildTest ReadModelSchemaTest ReadModelMetadataTest ReadModelCandidateBuilderTest BoardListingQueryTest StandardActivityPaginationTest` — 25 passed, 0 failed (PHP 8.1.2).
+- Regression sensitivity: temporarily bypassing recovery in `Application::ensureReadModel()` caused the new startup test to fail on missing canonical reply content. Restored the production code and reran the hot-index tests: 2 passed, 0 failed. No production code change remains.
+- This replaces the original claim that a metadata predicate plus manual rebuild established startup behavior. Full suite and browser checks were not run for this test-only correction. Dependency delta: zero.
