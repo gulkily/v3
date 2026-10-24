@@ -95,3 +95,14 @@ shared-cache semantics. Both exact-input freshness and safety identities are sto
 metadata values in the existing metadata table; no core schema or dependency change.
 See the implementation summary for checks, the initial browser failure/correction,
 operator commands and outstanding production performance acceptance.
+
+## 2026-10-24T06:28:30+00:00 — Step 4 revision: six full-content scans per refresh
+
+Production now prepares in 47.965 seconds and publishes `/` in 22.273 seconds; repeated
+refresh remains approximately 20 seconds. Code inspection finds six complete canonical
+fingerprints per refresh, left over from per-render model derivation. Rendering now uses
+a prepared snapshot, so it needs current retraction/absence and publication evidence,
+not full content rereads. Preparation retains its original exact content identity and
+format; deployed prepared files remain reusable. Actual CLI/worker instrumentation
+fails on any full-record fingerprint and passes after this correction. See summary for
+54-test/Apache/browser evidence and separately observed public cache-hit recovery.

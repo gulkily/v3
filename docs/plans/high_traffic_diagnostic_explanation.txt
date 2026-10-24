@@ -82,3 +82,14 @@ servable only while its retraction/absence evidence is still valid. Neither page
 its Application fallback may rebuild a model. Preparation remains expensive and
 can exceed 30 seconds; it reports that work as maintenance, outside rendering.
 Production acceptance requires measuring preparation and refresh on the real host.
+
+Correction: repeated validation after preparation
+
+Successful preparation took 47.965 seconds; refresh still took 22.273 seconds.
+The refresh path was fingerprinting the entire canonical corpus six times. These
+checks were left over from rebuilding during every render. Rendering a prepared
+snapshot now checks retraction/absence and publication state without those full
+content scans. Preparation still uses full fingerprints to detect changed inputs.
+The original incident was caused by the retraction guard rejecting missing targets;
+my fixes introduced the repeated rebuild and hashing costs. Existing general
+read-model indexing also has substantial host latency, independently of refresh.

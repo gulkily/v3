@@ -227,8 +227,10 @@ Cold pages and forced refreshes copy the prepared SQLite model into a private
 workspace, validate it, render HTML, then remove the workspace. Neither the worker
 nor its Application fallback can rebuild a model. Missing/stale preparation fails
 with `./v3 high-traffic prepare` recovery guidance. Warm cached hits remain fast.
-The parent and worker retain their evidence/content checks before and after
-rendering and at publication. Changed retraction/absence evidence invalidates the prepared model. Routine
+The parent and worker recheck retraction evidence and repository HEAD before and
+after rendering and at publication. Whole-record fingerprints are computed only
+by preparation, never by refresh or a cold request. Existing prepared databases
+remain compatible with this optimization. Changed retraction/absence evidence invalidates the prepared model. Routine
 content changes may continue using the earlier safe model until preparation
 updates it; run prepare before refreshing when new content must appear. The generated cron command now does both.
 Update an existing run-only cron line using `./v3 high-traffic cron /path/to/access.log`.

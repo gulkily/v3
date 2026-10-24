@@ -1065,7 +1065,7 @@ final class Application
                 $metadata = $this->readMetadata($pdo);
                 $pdo = null;
 
-                $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+                $currentRepositoryHead = $this->requireCurrentReadModel ? ReadModelMetadata::repositoryHead($this->repositoryRoot) : null;
                 if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) {
                     $rebuildReason = 'repository_root_mismatch';
                 } elseif (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {

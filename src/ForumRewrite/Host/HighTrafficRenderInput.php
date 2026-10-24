@@ -16,6 +16,7 @@ final class HighTrafficRenderInput
     /** Maintenance only. Never call from an HTTP handler or render worker. */
     public static function build(array $context, string $liveDatabase, ?\Closure $progressReporter = null): string
     {
+        if (isset($context['scope'])) throw new RuntimeException('Model preparation requires a full canonical input identity.');
         HighTrafficPublication::validate($context);
         $path = self::sharedPath($liveDatabase);
         if (!is_dir(dirname($path)) && !mkdir(dirname($path), 0700, true) && !is_dir(dirname($path))) {
@@ -100,7 +101,13 @@ final class HighTrafficRenderInput
         try { $pdo = self::open($source); $safe = self::matches($pdo, $context, exact: false); }
         catch (\Throwable $error) { throw new RuntimeException('Cannot validate prepared model ' . $source . ': ' . $error->getMessage() . '. ' . $recovery, 0, $error); }
         if (!$safe) throw new RuntimeException('Prepared high-traffic model is unsafe to reuse: retraction evidence changed. ' . $recovery);
-        if (!self::matches($pdo, $context)) $progressReporter?->__invoke('Prepared model predates current records; run ./v3 high-traffic prepare to include latest content');
+        $metadata = ReadModelMetadata::readMetadata($pdo);
+        // Without scanning content, only a changed Git head proves the model is older.
+        // Uncommitted changes are detected by explicit preparation, never by page rendering.
+        $older = ($context['scope'] ?? null) === 'prepared-render'
+            ? ($metadata['repository_head'] ?? null) !== $context['head']
+            : !self::matches($pdo, $context);
+        if ($older) $progressReporter?->__invoke('Prepared model predates current records; run ./v3 high-traffic prepare to include latest content');
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) throw new RuntimeException('Cannot create render-model workspace.');
         $path = $directory . '/read.sqlite3';
         if (file_exists($path)) throw new RuntimeException('High-traffic candidate already exists; retry with a fresh workspace.');
@@ -109,7 +116,9 @@ final class HighTrafficRenderInput
         $pdo->exec('VACUUM INTO ' . $pdo->quote($path));
         $pdo = null;
         if (!chmod($path, 0600)) throw new RuntimeException('Cannot protect private render model permissions.');
+        $progressReporter?->__invoke('validating prepared SQLite copy integrity');
         ReadModelCandidateBuilder::assertValid($context['repository'], $path, requireCurrentHead: false);
+        $progressReporter?->__invoke('validating prepared copy retractions');
         PublicationGuard::beginSnapshot($path);
         HighTrafficPublication::validate($context);
         return $path;

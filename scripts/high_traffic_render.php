@@ -8,8 +8,8 @@ try {
     $_COOKIE = $_GET = $_POST = $_REQUEST = $_SESSION = [];
     $_SERVER = ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => $route, 'HTTP_USER_AGENT' => 'v3-cache-bot'];
     $report = static function (string $stage): void { fwrite(STDERR, 'High-traffic stage: ' . $stage . "\n"); };
-    $report('validating canonical evidence');
-    $context = \ForumRewrite\Host\HighTrafficPublication::capture($repository);
+    $report('validating retraction evidence (no full-record scan)');
+    $context = \ForumRewrite\Host\HighTrafficPublication::captureForRender($repository);
     if (isset($argv[6]) && !hash_equals($argv[6], \ForumRewrite\Host\HighTrafficPublication::identity($context))) {
         throw new RuntimeException('High-traffic source changed before rendering; retry generation.');
     }

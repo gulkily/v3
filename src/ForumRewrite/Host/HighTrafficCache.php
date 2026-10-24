@@ -97,8 +97,8 @@ final class HighTrafficCache
                 foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages',\FilesystemIterator::SKIP_DOTS)) as $existing) if ($existing->isFile() && $existing->getExtension()==='html') $pageCount++;
                 if ($pageCount >= $this->limits['pages']) return $this->refuseGeneration('High-traffic cache page limit reached (' . $pageCount . '/' . $this->limits['pages'] . '); review cache usage and FORUM_HIGH_TRAFFIC_PAGES.');
             }
-            $this->progress('Validating canonical evidence and content fingerprint');
-            $context = HighTrafficPublication::capture($this->repositoryRoot);
+            $this->progress('Validating retraction evidence and publication state (no full-record scan)');
+            $context = HighTrafficPublication::captureForRender($this->repositoryRoot);
             $this->progress('Validated ' . count($context['state']['absent']) . ' absent targets; ' . ($context['state']['absent'] === [] ? 'using live read model' : 'using prepared shared read model'));
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             $renderWorkspace=$this->root . '/.render-' . bin2hex(random_bytes(8));

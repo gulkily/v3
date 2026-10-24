@@ -104,3 +104,43 @@ can still take more than 30 seconds and freshness depends on its runtime; the or
 one-to-two-minute target is unverified there. No production changes performed. Preserve
 P2/R1 scores and the failed production outcome; no new acceptance/comfortable-fit claim.
 Unrelated README and standalone investigation edits remain outside this commit.
+
+## Repeated validation correction — 2026-10-24T06:28:30+00:00
+
+Request: explain and fix repeated 20–22-second refreshes after successful preparation.
+Disposition: in-scope correction to the same production recovery; implementation and
+merge/push remain authorized. Production evidence now establishes successful preparation
+(47.965 seconds) and homepage publication (22.273 seconds). Two independent GET checks
+returned HTTP 200, `X-V3-High-Traffic: hit`, and the same 96,940-byte cached object in
+0.667 and 0.693 seconds from this environment. This establishes observed cached-homepage
+recovery, not acceptable regeneration latency or end-to-end freshness at scale.
+
+Cause: the prior refresh still fingerprinted all canonical files six times: parent
+admission, worker admission, render-input entry, render-input exit, post-HTML validation,
+and final parent publication. That protection belonged to deriving a new model. The
+renderer now copies an already validated model; repeating full content fingerprints was
+unnecessary. Production preparation separately showed 27.568 seconds indexing posts
+(including 5.292 seconds legacy timestamps, 9.184 seconds source history, and 12.084
+seconds parsing), while thread-subject indexing was only 4.8 milliseconds. The earlier
+last-stage timeout never established subject indexing as the bottleneck.
+
+Changes: full preparation identity remains unchanged, preserving existing prepared
+files. Rendering uses a distinct context containing retraction/absence state and HEAD,
+with no whole-record fingerprint. Both parent and worker use that context; preparation
+rejects it as insufficient to build/stamp a model. Retraction reappearance, changed or
+unsafe evidence, missing tracked evidence, source-removal generation, mode changes,
+Fastmod generation and final locked publication checks remain. Routine uncommitted
+content changes can continue serving the prior safe SQLite snapshot; explicit preparation
+finds those changes and refreshes its content. Redundant HEAD subprocesses are skipped
+only where current HEAD is intentionally not required. Copy/integrity/retraction stages
+are separately reported. No schema, dependency or production mutation.
+
+Verification: focused PHP 21/21; broader retraction/offline/candidate checks 54/54;
+real Apache acceptance and signed browser/phone/desktop checks passed. The actual CLI
+parent and worker run under a test guard that throws if the read-model namespace hashes
+any canonical record; refresh succeeds. New context tests retain reappearance/evidence
+rejection and prevent using render-only validation for model preparation. Existing
+actual-worker post-render mutation tests retain old HTML on rejected publication.
+Remaining acceptance: deploy and measure refresh on DreamHost. No promised speedup
+number or inferred removal of all I/O latency. Dependency delta zero; preserve study
+scores and earlier failed outcomes. Unrelated workspace edits remain excluded.

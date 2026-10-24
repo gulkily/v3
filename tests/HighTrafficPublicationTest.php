@@ -35,6 +35,31 @@ final class HighTrafficPublicationTest
         $this->rejects(fn () => HighTrafficPublication::validate($context));
     }
 
+    public function testPreparedRenderContextIgnoresRoutineBytesButRejectsRetractionChanges(): void
+    {
+        $root = $this->fixture();
+        $context = HighTrafficPublication::captureForRender($root);
+        assertSame(null, $context['fingerprint']);
+        $this->rejects(fn () => \ForumRewrite\Host\HighTrafficRenderInput::build($context, $root . '/live.sqlite3'));
+        file_put_contents($root . '/records/posts/unrelated.txt', "Post-ID: unrelated\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\n\nNew ordinary content\n");
+        HighTrafficPublication::validate($context);
+        $target = array_key_first($context['state']['absent']);
+        $path = $root . '/records/posts/' . $target . '.txt';
+        file_put_contents($path, "Post-ID: $target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\n\nReappeared\n");
+        $this->rejects(fn () => HighTrafficPublication::validate($context));
+        unlink($path);
+        HighTrafficPublication::validate($context);
+        $evidence = glob($root . '/records/post-retractions/*.txt')[0];
+        $bytes = file_get_contents($evidence);
+        file_put_contents($evidence, str_replace('12:00:00', '12:01:00', $bytes));
+        $this->rejects(fn () => HighTrafficPublication::validate($context));
+        file_put_contents($evidence, 'malformed');
+        $this->rejects(fn () => HighTrafficPublication::validate($context));
+        unlink($evidence);
+        symlink('/nonexistent-evidence', $evidence);
+        $this->rejects(fn () => HighTrafficPublication::validate($context));
+    }
+
     public function testUnsafeEvidenceNeverBecomesConfirmedAbsence(): void
     {
         $root = $this->fixture();
@@ -166,11 +191,14 @@ final class HighTrafficPublicationTest
             foreach (['/about/', '/threads/', '/threads/visible/'] as $route) {
                 assertStringContains('v3-generated-at', (string) $cache->generate($route));
             }
+            $guard = $root . '/no-full-record-hashing.php';
+            file_put_contents($guard, '<?php namespace ForumRewrite\\ReadModel; function hash_file(...$args) { throw new \\RuntimeException("Refresh performed a full-record fingerprint"); }');
+            $workerPhp = var_export([PHP_BINARY, '-d', 'auto_prepend_file=' . $guard], true);
             $wrapper = $root . '/progress-php';
             file_put_contents($wrapper, "#!/usr/bin/env php\n<?php fwrite(STDERR, \"High-traffic stage: CLI live-progress fixture\\n\"); usleep(500000); "
-                . '$proc=proc_open(array_merge([PHP_BINARY],array_slice($argv,1)),[STDIN,STDOUT,STDERR],$pipes); exit(proc_close($proc));');
+                . '$proc=proc_open(array_merge(' . $workerPhp . ',array_slice($argv,1)),[STDIN,STDOUT,STDERR],$pipes); exit(proc_close($proc));');
             chmod($wrapper, 0755);
-            $proc = proc_open([PHP_BINARY, $project . '/scripts/high_traffic.php', 'refresh', '/', '--json'],
+            $proc = proc_open([PHP_BINARY, '-d', 'auto_prepend_file=' . $guard, $project . '/scripts/high_traffic.php', 'refresh', '/', '--json'],
                 [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null,
                 array_merge(getenv(), ['FORUM_REPOSITORY_ROOT' => $root, 'FORUM_DATABASE_PATH' => $database, 'FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public', 'FORUM_PHP_CLI' => $wrapper]));
             fclose($pipes[0]);
@@ -260,15 +288,19 @@ final class HighTrafficPublicationTest
         exec('git -C ' . escapeshellarg($root) . ' add records');
         exec('git -C ' . escapeshellarg($root) . ' -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm Fixture');
         $context = HighTrafficPublication::capture($root);
+        $renderContext = HighTrafficPublication::captureForRender($root);
         $path = glob($root . '/records/post-retractions/*.txt')[0];
         $bytes = file_get_contents($path);
         unlink($path);
         $this->rejects(fn () => HighTrafficPublication::validate($context));
+        $this->rejects(fn () => HighTrafficPublication::validate($renderContext));
         file_put_contents($path, $bytes);
         HighTrafficPublication::validate($context);
+        HighTrafficPublication::validate($renderContext);
         $id = array_key_first($context['state']['absent']);
         symlink('/nonexistent-source', $root . '/records/posts/' . $id . '.txt');
         $this->rejects(fn () => HighTrafficPublication::capture($root));
+        $this->rejects(fn () => HighTrafficPublication::validate($renderContext));
     }
 
     public function fixture(): string

@@ -52,7 +52,7 @@ final class ReadModelCandidateBuilder
     {
         $pdo = (new ReadModelConnection($candidatePath))->open();
         $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(PDO::FETCH_KEY_PAIR);
-        $expectedHead = ReadModelMetadata::repositoryHead($repositoryRoot);
+        $expectedHead = $requireCurrentHead ? ReadModelMetadata::repositoryHead($repositoryRoot) : null;
         if (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
             || ($metadata['repository_root'] ?? null) !== $repositoryRoot
             || ($requireCurrentHead && ($metadata['repository_head'] ?? null) !== $expectedHead)) {

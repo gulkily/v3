@@ -16,7 +16,18 @@ final class HighTrafficPublication
         return hash('sha256', json_encode($context, JSON_THROW_ON_ERROR));
     }
 
+    /** Full input identity is needed when deriving a new model, not when rendering one. */
     public static function capture(string $repository): array
+    {
+        return self::captureContext($repository, true);
+    }
+
+    public static function captureForRender(string $repository): array
+    {
+        return self::captureContext($repository, false) + ['scope' => 'prepared-render'];
+    }
+
+    private static function captureContext(string $repository, bool $fingerprintContents): array
     {
         $state = ExchangeRetractionState::snapshot($repository);
         if ($state === null) {
@@ -27,14 +38,16 @@ final class HighTrafficPublication
             'repository' => $repository,
             'state' => $state,
             'head' => $state['absent'] === [] ? null : ReadModelMetadata::repositoryHead($repository),
-            // Excluded derivations pin all inputs; ordinary renders retain stale-tolerant writes.
-            'fingerprint' => $state['absent'] === [] ? null : ReadModelMetadata::canonicalFingerprint($repository),
+            // Preparation pins every input. Rendering uses an already validated SQLite snapshot.
+            'fingerprint' => !$fingerprintContents || $state['absent'] === [] ? null : ReadModelMetadata::canonicalFingerprint($repository),
         ];
     }
 
     public static function validate(array $context): void
     {
-        if (self::capture($context['repository']) !== $context) {
+        $current = ($context['scope'] ?? null) === 'prepared-render'
+            ? self::captureForRender($context['repository']) : self::capture($context['repository']);
+        if ($current !== $context) {
             throw new RuntimeException('High-traffic source changed during rendering; retry generation.');
         }
     }
