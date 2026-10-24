@@ -38,6 +38,7 @@ final class ReadModelBuilder
     /** @var array<string, ?string> */
     private array $sourceCommitShaByPath = [];
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
+    private array $excludedPublicationPosts = [];
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -45,6 +46,7 @@ final class ReadModelBuilder
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly string $rebuildReason = 'manual',
         private readonly ?\Closure $progressReporter = null,
+        private readonly array $publicationExclusions = [],
     ) {
     }
 
@@ -69,6 +71,7 @@ final class ReadModelBuilder
         $this->postReactionActivityEvents = [];
         $this->profileNameActivityEvents = [];
         $this->sourceCommitShaByPath = [];
+        $this->excludedPublicationPosts = $this->publicationExclusions;
         $pdo->beginTransaction();
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
@@ -222,6 +225,10 @@ final class ReadModelBuilder
             ];
         }
 
+        if ($this->excludedPublicationPosts !== []) {
+            $parsedPosts = PublicationPostFilter::apply($parsedPosts, $this->excludedPublicationPosts);
+        }
+
         $this->measure('sort_posts', function () use (&$parsedPosts): void {
             usort($parsedPosts, static function (array $left, array $right): int {
                 if ($left['thread_id'] !== $right['thread_id']) {
@@ -354,6 +361,7 @@ final class ReadModelBuilder
         foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
                 $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+                if (isset($this->excludedPublicationPosts[$record->sourcePostId ?? ''])) continue;
                 if (!isset($inactive[$record->recordId])) $records[] = $record;
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadLabelRecordCount++;

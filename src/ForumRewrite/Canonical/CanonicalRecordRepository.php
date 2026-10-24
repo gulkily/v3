@@ -285,6 +285,9 @@ final class CanonicalRecordRepository
     private function read(string $relativePath): string
     {
         $path = $this->repositoryRoot . '/' . ltrim($relativePath, '/');
+        if (!is_file($path)) {
+            throw new CanonicalRecordParseException('Unable to read canonical record: ' . $relativePath);
+        }
         $contents = file_get_contents($path);
         if ($contents === false) {
             throw new CanonicalRecordParseException('Unable to read canonical record: ' . $relativePath);

@@ -19,6 +19,8 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Independent documentation publication](docs_independent_publication/)
 
 - [Documentation publication policy](docs_publication_policy/)
+- [High-traffic absent retractions](high_traffic_absent_retractions/)
+
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
 - [Reply continuation](reply_continuation/)

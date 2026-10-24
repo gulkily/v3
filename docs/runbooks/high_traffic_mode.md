@@ -203,3 +203,83 @@ CLI output is readable by default; use `--json` for automation.
 and crontab line; `run` executes one refresh. Existing schedules using `cron`
 as the worker must change to `run`. Enable/status also report the cron line;
 they do not install or verify a schedule. Use the web app's environment and user.
+
+## Retained retractions with absent targets
+
+A valid retained retraction can outlive a physically deleted source. High-traffic
+HTML generation now classifies this as a build-local exclusion. For these builds,
+the isolated renderer derives a fresh disposable model from canonical records,
+excludes the absent targets and explicitly linked generated responses/labels, and
+recomputes summaries. It never publishes stale live-model prose or edits canonical
+records. A missing root retains a content-free structural row for surviving replies;
+existing retracted-thread board-listing policy still applies. Independent replies
+and independent label actions remain intact.
+
+The parent and worker check matching evidence/content context before and after
+rendering and again at publication. Source reappearance or other canonical changes
+during an excluded build reject that attempt; retry validates the current state.
+Ordinary builds without absent targets retain stale-tolerant routine-write behavior.
+Warm hits do no model preparation. Cold/refresh builds with exclusions do more work
+inside the existing worker timeout; an exceeded limit is a reported failure, never
+an unbounded fallback. The private disposable model is removed with its workspace
+and is never copied into public assets.
+
+Malformed, missing tracked, unreadable or unsafe evidence and untrusted removal
+records remain failures. Other strict publication consumers retain their existing
+rules; successful HTML generation does not grant permanent deletion authority.
+Do not delete retraction evidence, restore removed prose, or purge remaining usable
+pages to silence a validation error. Inspect the reported cause and use disable or
+restore while correcting invalid evidence through the supported operator process.
+
+### zenmemes production recovery checklist
+
+Keep high-traffic mode **disabled during deployment**. Deploy the tested application
+revision, including its completed absent-target offline-snapshot changes, using the
+normal release process. Do not reset or modify the separate canonical repository.
+Use the deployed checkout, web app's normal user/environment, PHP CLI and public-root
+configuration. For the observed host the checkout is `/home/dh_zsagad/v3`.
+
+First verify ordinary `/` and a surviving thread return HTTP 200. Then enable and
+explicitly warm the homepage; on generation failure immediately disable again:
+
+```bash
+cd /home/dh_zsagad/v3
+./v3 high-traffic status
+./v3 high-traffic enable
+./v3 high-traffic refresh /
+```
+
+If either command fails, run `./v3 high-traffic disable`, inspect its error and verify
+ordinary `/` still returns 200. If managed routing is damaged, use
+`./v3 high-traffic restore`. Keep mode disabled while investigating. Deployment and
+production re-enablement are operator actions, not automatically performed by tests.
+
+After successful warming, request `https://zenmemes.com/` twice and a representative
+surviving thread twice. Confirm HTTP 200, `X-V3-High-Traffic: hit`, normal controls,
+surviving replies and absence of deleted content; a second request must avoid PHP
+in host instrumentation. The two incident targets were
+`reply-20260526032118-654b2b08` and `reply-20260526032816-a1447d49`. No source restoration
+or accepted-removal fabrication is needed for these valid absent-target retractions.
+
+Install refresh automation using the actual per-vhost access log path:
+
+```bash
+./v3 high-traffic cron /path/to/vhost-access.log
+```
+
+This **prints** installation instructions and the once-per-minute `run` command;
+it does not install cron. Add that printed line to the deployment user's crontab,
+retaining its normal environment. The production investigation found no such job.
+Verify a manual `run` and the subsequent scheduled run report successful refreshes
+in `refresh-status.json` and the private cron log. Age a test page only in an isolated
+fixture; on production wait for the configured freshness interval, run refresh and
+confirm the HTML `v3-generated-at` timestamp advances. A route seen only as 503 may
+not be selected by the popularity sampler; explicit `refresh /` ensures recovery.
+
+Confirm direct and queued offline snapshot publication through the existing
+snapshot runbook if those artifacts were previously failing. The separate
+uncaught-error handling of invalid-evidence offline HTTP bootstrap remains a
+follow-up; this change does not weaken invalid-evidence checks. Local Apache and
+browser acceptance do not establish DreamHost acceptance: record the deployed
+revision, home/thread cache hits, refresh/cron results and rollback outcome on that
+host before calling production recovery verified.

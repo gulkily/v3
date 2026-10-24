@@ -200,7 +200,41 @@ try:
     finally:public.chmod(0o755)
     cli('enable');(public/'.htaccess').write_text('InvalidDirective\n');cli('restore')
     assert request('/api/version')[0]==200
-    print(json.dumps({'status':'passed','checks':['Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
+    # Production replay: stale SQLite rows plus both retained, absent reply targets.
+    ids=['reply-20260526032118-654b2b08','reply-20260526032816-a1447d49']
+    for post_id in ids:
+        (repo/f'records/posts/{post_id}.txt').write_text(f'Post-ID: {post_id}\nCreated-At: 2026-04-10T12:20:00Z\nBoard-Tags: general\nThread-ID: load-00\nParent-ID: load-00\n\nABSENT-TARGET-SECRET\n')
+    request('/?view=all')  # Build a deliberately stale model before deleting the sources.
+    # Explicit rebuild also covers the no-metadata-change case on hosts using separate repositories.
+    rebuild=r'require $argv[1]."/autoload.php"; (new \ForumRewrite\ReadModel\ReadModelBuilder($argv[2],$argv[3],new \ForumRewrite\Canonical\CanonicalRecordRepository($argv[2])))->rebuild();'
+    subprocess.run(['php','-r',rebuild,str(project),str(repo),str(root/'read.sqlite3')],env=env,check=True)
+    import hashlib
+    live_hash=hashlib.sha256((root/'read.sqlite3').read_bytes()).hexdigest()
+    (repo/'records/post-retractions').mkdir(exist_ok=True)
+    for post_id in ids:
+        (repo/f'records/posts/{post_id}.txt').unlink()
+        (repo/f'records/post-retractions/post-retraction-{post_id}.txt').write_text(f'Record-ID: post-retraction-{post_id}\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: {post_id}\nOperation: retract\nAuthor-Identity-ID: openpgp:'+('a'*40)+'\n\n')
+    cli('enable')
+    status,_,home=request('/')
+    assert status==200 and b'v3-generated-at' in home and b'ABSENT-TARGET-SECRET' not in home
+    status,_,thread=request('/threads/load-00/')
+    assert status==200 and b'Updated body.' in thread and b'ABSENT-TARGET-SECRET' not in thread
+    before=count()
+    for route in ['/', '/threads/load-00/']:
+        code,headers,body=request(route)
+        assert code==200 and headers.get('X-V3-High-Traffic')=='hit' and b'ABSENT-TARGET-SECRET' not in body
+    assert count()==before,'absent-target warm hits invoked PHP'
+    old_home=home
+    time.sleep(1.05)
+    assert json.loads(cli('refresh','/'))['refreshed']=='/'
+    code,headers,home=request('/')
+    assert code==200 and headers.get('X-V3-High-Traffic')=='hit' and home!=old_home
+    assert b'ABSENT-TARGET-SECRET' not in home
+    assert live_hash==hashlib.sha256((root/'read.sqlite3').read_bytes()).hexdigest()
+    assert not list(cache_pages.parent.glob('.render-*'))
+    cli('disable')
+    assert request('/')[0]==200
+    print(json.dumps({'status':'passed','checks':['Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
 except Exception:
     print('Fixture:',root)
     if (root/'error.log').exists():print((root/'error.log').read_text()[-5000:])
