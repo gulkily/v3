@@ -24,6 +24,8 @@ class IncrementalReadModelUpdater
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
     /** @var array<string,int> Counts, not durations; kept outside Server-Timing. */
     private array $identityUpdateMetrics = [];
+    /** @var array<string,array<string,mixed>> Profiles whose derived values changed. */
+    private array $identityChangedProfiles = [];
 
     /** @return array<string,int> */
     public function identityUpdateMetrics(): array
@@ -74,6 +76,7 @@ class IncrementalReadModelUpdater
         $timings = [];
         $this->identityUpdateMetrics = ['profiles_considered' => 0, 'posts_considered' => 0,
             'profile_rows_updated' => 0, 'activity_update_statements' => 0, 'activity_row_updates' => 0];
+        $this->identityChangedProfiles = [];
         $pdo = (new ReadModelConnection($this->databasePath))->open();
         $pdo->beginTransaction();
 
@@ -606,7 +609,13 @@ class IncrementalReadModelUpdater
                      approved_by_label = :approved_by_label,
                      post_count = :post_count,
                      thread_count = :thread_count
-                 WHERE identity_id = :identity_id'
+                 WHERE identity_id = :identity_id
+                   AND (is_approved IS NOT :is_approved
+                     OR approved_by_identity_id IS NOT :approved_by_identity_id
+                     OR approved_by_profile_slug IS NOT :approved_by_profile_slug
+                     OR approved_by_label IS NOT :approved_by_label
+                     OR post_count IS NOT :post_count
+                     OR thread_count IS NOT :thread_count)'
             );
 
             foreach ($profiles as $identityId => $profile) {
@@ -626,6 +635,9 @@ class IncrementalReadModelUpdater
                     'identity_id' => $identityId,
                 ]);
                 $this->identityUpdateMetrics['profile_rows_updated'] += $update->rowCount();
+                if ($update->rowCount() > 0) {
+                    $this->identityChangedProfiles[$identityId] = $profile;
+                }
             }
         });
 

@@ -100,6 +100,12 @@ One row per thread (keyed by its root post).
 
 ### `profiles`
 
+Schema 28 changes identity-registration derived-state writes to update profile
+approval/attribution/count fields only when their values differ. Comparisons are
+NULL-safe (`IS NOT`), and the updater retains the changed profile identities for
+targeted downstream work. No columns or indexes change; the version increment
+and prior-schema startup check accompany this core query change.
+
 One row per identity with a bootstrapped profile.
 
 | Column | Type | Notes |

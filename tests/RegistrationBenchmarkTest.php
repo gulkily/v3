@@ -24,6 +24,10 @@ final class RegistrationBenchmarkTest
             }
             $database = $root . '/read_model.sqlite3';
             (new ReadModelBuilder($repository, $database, new CanonicalRecordRepository($repository), 'benchmark_fixture'))->rebuild();
+            $observer = new PDO('sqlite:' . $database);
+            $observer->exec('CREATE TABLE benchmark_profile_updates (identity_id TEXT NOT NULL)');
+            $observer->exec('CREATE TRIGGER benchmark_profile_write AFTER UPDATE ON profiles BEGIN INSERT INTO benchmark_profile_updates VALUES (NEW.identity_id); END');
+            $observer = null;
             $hash = hash_file('sha256', $database);
             $source = new PDO('sqlite:' . $database);
             $profiles = (int) $source->query('SELECT COUNT(*) FROM profiles')->fetchColumn();
@@ -45,6 +49,11 @@ final class RegistrationBenchmarkTest
                 assertSame(false, file_exists($root . '/run/' . $name . '/gnupg'));
                 $expectedPosts = $case['counts_before']['posts'] + ($name === 'fresh_signed' ? 1 : 0);
                 assertSame($expectedPosts, $case['counts_after']['posts']);
+                $observed = new PDO('sqlite:' . $root . '/run/' . $name . '/read_model.sqlite3');
+                $writes = (int) $observed->query('SELECT COUNT(*) FROM benchmark_profile_updates')->fetchColumn();
+                assertSame($name === 'fresh_signed' ? 0 : 1, $writes);
+                assertSame($writes, $case['identity_update_metrics']['profile_rows_updated']);
+                $observed = null;
                 assertSame('incremental', $case['identity_update_metrics']['path']);
                 foreach (['profiles_considered', 'posts_considered', 'profile_rows_updated', 'activity_update_statements', 'activity_row_updates', 'process_peak_memory_bytes'] as $metric) {
                     assertSame(true, is_int($case['identity_update_metrics'][$metric]));
