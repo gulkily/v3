@@ -85,6 +85,7 @@ final class Application
     private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
     private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
     private ?string $appVersion = null;
+    private bool $docsPage = false;
     private ?FeatureFlagEvaluator $featureFlags = null;
     private ?RouteServices $routeServices = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
@@ -126,6 +127,15 @@ final class Application
     public function handle(string $method, string $requestUri): void
     {
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
+        if ($docsPage !== $this->docsPage) {
+            $this->routeServices = null;
+        }
+        $this->docsPage = $docsPage;
+        if ($path === '/api/docs-version') {
+            (new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->docsStaticRoot()))->serve($method, $requestUri);
+            return;
+        }
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         $securityReviewRequest = ($query['view'] ?? '') === 'security'
@@ -1450,10 +1460,26 @@ final class Application
     {
         return new TemplateRenderer(
             $this->projectRoot . '/templates',
-            $this->appVersion(),
+            $this->docsPage ? $this->docsVersion() : $this->appVersion(),
             $this->featureFlags(),
             new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
+            versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
+            versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
         );
+    }
+
+    private function docsStaticRoot(): string
+    {
+        return $this->staticHtmlRoot ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($this->projectRoot, SiteProfileRegistry::active()));
+    }
+
+    private function docsVersion(): string
+    {
+        try {
+            return (new \ForumRewrite\Docs\DocsReleaseLocator($this->docsStaticRoot()))->active()['version'] ?? 'unpublished';
+        } catch (\Throwable) {
+            return 'unpublished';
+        }
     }
 
     private function featureFlags(): FeatureFlagEvaluator

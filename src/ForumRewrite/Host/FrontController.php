@@ -42,6 +42,9 @@ final class FrontController
      */
     public function handle(string $method, string $requestUri, array $cookies = []): void
     {
+        if ((new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->staticHtmlRoot))->serve($method, $requestUri)) {
+            return;
+        }
         // Keep discovery independent of sessions, read-model initialization and public caches.
         if ($method === 'GET' && parse_url($requestUri, PHP_URL_PATH) === \ForumRewrite\Support\FrontendInstance::PATH) {
             header('Cache-Control: no-store, private');

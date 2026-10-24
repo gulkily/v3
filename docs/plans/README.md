@@ -16,6 +16,9 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Independent documentation publication](docs_independent_publication/)
+
+- [Documentation publication policy](docs_publication_policy/)
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
 - [Reply continuation](reply_continuation/)

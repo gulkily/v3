@@ -105,7 +105,10 @@
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
   <meta name="app-version" content="<?= $e($appVersion) ?>">
-  <meta name="app-version-endpoint" content="/api/version">
+  <meta name="app-version-endpoint" content="<?= $e($versionEndpoint) ?>">
+<?php if ($versionStorageKey !== 'forum_pending_app_version'): ?>
+  <meta name="app-version-storage-key" content="<?= $e($versionStorageKey) ?>">
+<?php endif; ?>
 <?php endif; ?>
   <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
 <?php if (!$approvedMembersOnlyEnabled): ?>

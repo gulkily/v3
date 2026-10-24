@@ -125,6 +125,9 @@ final class AssetFingerprint
         }
 
         $targetAssetRoot = $targetPublicRoot . '/assets';
+        if (is_link($targetAssetRoot)) {
+            throw new \RuntimeException('Static asset destination must not be a symlink.');
+        }
         if (!is_dir($targetAssetRoot) && !mkdir($targetAssetRoot, 0777, true) && !is_dir($targetAssetRoot)) {
             return;
         }
@@ -149,8 +152,23 @@ final class AssetFingerprint
             }
 
             $targetPath = $targetPublicRoot . $fingerprintedPath;
-            if (!is_file($targetPath) && !copy($sourcePath, $targetPath)) {
+            if (is_file($targetPath) && !is_link($targetPath)
+                && hash_file('sha256', $sourcePath) === hash_file('sha256', $targetPath)) {
                 continue;
+            }
+            // Repair corrupt seeded assets and avoid writing through old hard links.
+            $temporary = tempnam($targetAssetRoot, '.asset-');
+            if ($temporary === false) {
+                throw new \RuntimeException('Unable to create static asset candidate.');
+            }
+            try {
+                if (!copy($sourcePath, $temporary) || !rename($temporary, $targetPath)) {
+                    throw new \RuntimeException('Unable to publish fingerprinted asset.');
+                }
+            } finally {
+                if (is_file($temporary)) {
+                    unlink($temporary);
+                }
             }
         }
     }

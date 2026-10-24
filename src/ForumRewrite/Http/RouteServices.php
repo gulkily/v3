@@ -74,6 +74,7 @@ final class RouteServices
         private readonly ?string $staticHtmlRoot,
         private readonly FeatureFlagEvaluator $featureFlags,
         private readonly \Closure $lenientViewerProfileResolver,
+        private readonly bool $readModelAccessAllowed = true,
     ) {
     }
 
@@ -102,6 +103,9 @@ final class RouteServices
 
     public function pdo(): PDO
     {
+        if (!$this->readModelAccessAllowed) {
+            throw new \LogicException('Documentation rendering must not access the forum read model.');
+        }
         return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
             (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
     }

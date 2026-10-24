@@ -570,8 +570,11 @@ controlled operator workflow.
 ```
 
 Downloads the source's public repository archive, merges supported public forum
-content while preserving destination settings/approval authority, and publishes
-local views. Hostnames use HTTPS; short names require a JSON object mapping names
+content while preserving destination settings/approval authority, refreshes the
+read model and public offline data, and withdraws stale static HTML. Import and
+`--resume` never render pages or fingerprint/copy presentation assets. PHP serves
+imported content; run `./v3 build-static` separately when static output is needed.
+Hostnames use HTTPS; short names require a JSON object mapping names
 to URLs in `--sources`. URLs may include an instance base path. Conflicts retain
 local records. Legacy creation dates are recovered from isolated source history
 and retained as hash-bound metadata without changing signed post bytes. See the
@@ -705,13 +708,41 @@ deterministic detection only.
 - `--with-llm` — also run the configured LLM provider, not just deterministic detection
 - `--deterministic-only` — explicitly disable LLM use (useful after `--with-llm` earlier in the same invocation)
 
+## Publish documentation independently
+
+```sh
+./v3 docs publish [--json] [--repository-root=/path/records] [--static-html-root=/path/static]
+```
+
+Publishes the complete eligible docs library, browse/search pages, downloads and
+assets atomically under `<static-root>-docs/releases/`, selected by its own
+`current` pointer. Use the site's normal `FORUM_SITE_ID` profile/environment.
+Options default to `FORUM_REPOSITORY_ROOT` (or `state/local_repository`) and
+`FORUM_STATIC_HTML_ROOT` (or the active profile's default static root).
+Readable output reports progress; `--json` returns status, docs root, release,
+version and document count, or an error with a next action and nonzero exit.
+`./v3 docs publish --help` describes setup and retry.
+
+Run separately for initial static docs setup or after docs/application/profile/
+asset changes. Failure retains the prior docs library; correct the reported cause
+and retry with the same destination/profile. Legacy combined-release docs remain
+available until successful migration. This command does not replace forum HTML,
+the read model or forum offline snapshot. `/api/docs-version` and docs reload
+notifications are independent of forum `/api/version`.
+
+Imports/resumes, full forum builds and shared refreshes do no docs rendering or
+bulk inventory/validation/copying. Missing/broken docs cannot block those commands.
+Without a docs publication, PHP readers remain available; static-only hosting
+needs this separate publication and its docs/asset routing.
+
 ## Build static HTML artifacts
 
 ```
 ./v3 build-static [repository_root] [database_path] [artifact_root]
 ```
 
-Builds and atomically activates a complete static HTML release. It creates the
+Builds and atomically activates a complete forum static HTML release. Docs use
+`./v3 docs publish` separately. It creates the
 candidate read model and HTML release before replacing either live pointer, so
 normal requests continue using the prior complete state while the command runs.
 

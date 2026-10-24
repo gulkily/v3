@@ -1,0 +1,53 @@
+{
+  "source": "f2d718a0",
+  "rendering_and_ownership_prototype": {
+    "canonical_controller_without_read_model": true,
+    "index_rendered": true,
+    "normal_application_initializes_read_model": true,
+    "prototype_retains_only_docs": true,
+    "prototype_sweep_examined": 7,
+    "docs_files_not_traversed": 1002
+  },
+  "profiles": {
+    "default": {
+      "rendered": true,
+      "database_created": false,
+      "hash": "c6e638f159093f6450a22cffb803594a7fb9093d8e2519bbeec9111789eca881"
+    },
+    "qdb": {
+      "rendered": true,
+      "database_created": false,
+      "hash": "bcb2ebb0cb0843cc7f6b28f6b95ec613e895aa13c1d9eb59039b1560ce887c9d"
+    },
+    "private": {
+      "rendered": true,
+      "database_created": false,
+      "hash": "0ffa22772d738c4bce5f418cbeca2c9e355298dc9d3abc1440d4174b8495ad27"
+    }
+  },
+  "baseline": {
+    "inventory": 1465,
+    "inventory_digest": "41302ba5246b76d17202badb6bed4de02850a2ed4861772279cf4d2207665c5e",
+    "same_stage1_inventory": true,
+    "cold_seconds": 91.81100416183472,
+    "cold_docs_callbacks": 1895,
+    "new_record_seconds": 62.267110109329224,
+    "new_record_docs_render_callbacks": 1896,
+    "new_record_reuse": false,
+    "duplicate_seconds": 7.176905870437622,
+    "duplicate_docs_render_callbacks": 0,
+    "duplicate_reuse": true,
+    "readme_equal_except_version": true,
+    "shared_seconds": 6.0852861404418945,
+    "shared_docs_render_callbacks": 0,
+    "target_head": "b276f9532e0c2bf08eb8151541f09258f8d8cbd0",
+    "target_commits": "2",
+    "project": "/tmp/docs-independent-baseline-app",
+    "root": "/tmp/docs-independent-baseline-state"
+  },
+  "notes": [
+    "Ownership experiment is an isolated prototype, not changed production cleanup code.",
+    "Changed-tree baseline appends whitespace to a rendering source after cold publication; documentation sources/inventory remain frozen.",
+    "Timings are local single-run observations under uncontrolled load."
+  ]
+}

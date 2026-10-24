@@ -48,7 +48,10 @@ One workable layout:
     private/
     static_html/
       releases/
-      current -> releases/release-...   active complete HTML release
+      current -> releases/release-...   active forum HTML release
+    static_html-docs/
+      releases/
+      current -> releases/docs-...      active complete docs library
     forum-rewrite.lock
     read_model_stale.json
 ```
@@ -85,6 +88,7 @@ The web user must be able to write:
 - the parent directory of `FORUM_DATABASE_PATH`
 - the lock file directory next to `FORUM_DATABASE_PATH`
 - `FORUM_STATIC_HTML_ROOT` and its `releases/` directory
+- its `-docs` sibling and `releases/` directory for the docs publisher
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
 - the parent directory of `VISITOR_STATISTICS_DATABASE_PATH` when visitor statistics are in use
@@ -93,7 +97,10 @@ The web user must be able to write:
 - the parent directories of `PRIVATE_MESSAGE_DATABASE_PATH` and `PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH` when private messaging is enabled
 Static HTML is derived state. A write removes the `current` release pointer, so
 subsequent public requests use PHP until a fresh complete release is published.
-Old release directories are retained and are never edited in place.
+Old release directories are retained and are never edited in place. Docs have
+a separate lock and pointer; forum writes, imports, builds and cleanup do not
+render or bulk scan/copy docs. A small legacy reference retains docs from an old
+combined release until independent publication succeeds.
 
 ## Environment Variables
 
@@ -113,7 +120,11 @@ FORUM_STATIC_HTML_ROOT=/srv/forum-rewrite/state/static_html
 
 `FORUM_STATIC_HTML_ROOT` defaults to `<application-root>/state/static_html`.
 It is not under `public/`; Apache continues to route content requests through
-PHP, which selects only the `current` release.
+PHP, which selects the forum `current` release or the independent docs release
+for `/docs/*`, its retained assets and `/api/docs-version`. Keep these routes
+through PHP, including requests with cookies and private-site profiles; docs are
+public anonymous content. Do not expose either release directory as a general
+public file tree.
 
 ### Content routing and image storage
 
@@ -134,7 +145,7 @@ image directory through Apache aliases, symlinks or a public CDN.
    This version deliberately ignores old sibling `public/*.html` files, so the
    application remains available through its dynamic path before the first new
    release is ready.
-2. From the deployed application directory, build and publish the complete
+2. From the deployed application directory, build and publish the forum
    snapshot:
 
    ```bash
@@ -157,6 +168,22 @@ image directory through Apache aliases, symlinks or a public CDN.
    It preserves the existing tag, thread, post, and profile pages, refreshes
    shared pages and their fingerprinted assets, and does not rebuild data. It
    is not a substitute for the complete build after content changes.
+
+   Publish the complete docs library separately on initial setup and after docs,
+   renderer, profile or asset changes, with the same destination/profile settings:
+
+   ```bash
+   time ./v3 docs publish
+   # Explicit destinations (also supports --json):
+   ./v3 docs publish --repository-root="$FORUM_REPOSITORY_ROOT" --static-html-root="$FORUM_STATIC_HTML_ROOT"
+   ```
+
+   Docs publication changes only the sibling docs release. Failure retains the
+   prior library, including a legacy combined-release library; fix the cause and
+   retry the same command. A forum build/shared refresh/import never repairs docs.
+   Check `/docs/`, a reader/download, and `/api/docs-version`; an open docs page
+   should offer Reload after docs publication, without prompting for forum imports.
+
 3. Smoke-test both an anonymous window and an existing signed-in browser:
    `/`, a thread, `/account/key/`, and `/invites/`. A normal reload must be
    sufficient; HTML revalidates with an ETag, while fingerprinted assets are
@@ -165,6 +192,7 @@ image directory through Apache aliases, symlinks or a public CDN.
 
    ```bash
    readlink "$FORUM_STATIC_HTML_ROOT/current"
+   readlink "${FORUM_STATIC_HTML_ROOT}-docs/current"
    ```
 
 If the publish command fails, the previous `current` release remains active.

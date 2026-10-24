@@ -1,0 +1,192 @@
+{
+  "cycle": "v3/docs_publication_policy",
+  "scope": "v2",
+  "environment": "local WSL; isolated record repositories and application snapshots; no deployment",
+  "production_source_sha256": {
+    "src/ForumRewrite/Docs/DocsPublication.php": "1db622b953c307b9dc0a9f5942e464d34d71f6f8bccf18c2d5d0bf64b1add4b3",
+    "src/ForumRewrite/Docs/PlatformDocsCatalog.php": "20cd74f601ef708c8fa0e2c3c821db6a94b1d064e672441a435fcc43b7f58a07",
+    "src/ForumRewrite/Host/StaticArtifactBuilder.php": "a9a81f0d199a13547edf4261850bcb8765c487ca578da46070339d2d5437c6c8",
+    "src/ForumRewrite/Host/StaticArtifactReleasePublisher.php": "933878a371aa164b42f4152b6d5b6f81920b45c5b0d9278c77e03f8661e1c280",
+    "src/ForumRewrite/Host/AssetFingerprint.php": "9165a7ecdc2b1f9ec04043aaec971cbffd3c03c2c692bb94002d346043a667c3"
+  },
+  "original_baseline": {
+    "source": "6e77d190",
+    "inventory": 1459,
+    "cold_seconds": 70.08979678153992,
+    "cold_docs_callbacks": 1886,
+    "import_seconds": 79.91569185256958,
+    "readme_equal_except_version": true,
+    "imported_record_exists": true,
+    "version_changed": true,
+    "before_version": "990590fcce53aae4554655a0f30b1151c142ca16",
+    "after_version": "7064004b5dc767e5db2302e48509fdd0668a4428",
+    "generation_stamp_present": false,
+    "probe": {
+      "zenmemes": {
+        "status": 200,
+        "hash": "36e5454a699a7b2653d89900ae50ec9e834e3c157970d037935139f4bd94d5fc",
+        "marker": true
+      },
+      "qdb": {
+        "status": 200,
+        "hash": "5f50635d381cbc5ffe1cc8a317b0e38318ca5a14cbda620534e4173b47bcb002",
+        "marker": true
+      },
+      "notifications_disabled": {
+        "status": 200,
+        "hash": "6cc0dbb1c274768832f9968ae2706653d92dda263b6d082aae405446e4594359",
+        "marker": false
+      }
+    }
+  },
+  "first_optimized_run": {
+    "inventory": 1459,
+    "inventory_digest": "83030e2d6206d10cb1366c6887468f75ab04fa392df004c19c59fb744f023796",
+    "same_stage1_inventory": true,
+    "cold_seconds": 71.41645407676697,
+    "cold_docs_callbacks": 1888,
+    "new_record_seconds": 10.237905979156494,
+    "new_record_docs_render_callbacks": 0,
+    "new_record_reuse": true,
+    "duplicate_seconds": 8.954854011535645,
+    "duplicate_docs_render_callbacks": 0,
+    "duplicate_reuse": true,
+    "readme_equal_except_version": true,
+    "shared_seconds": 8.658499956130981,
+    "shared_docs_render_callbacks": 0,
+    "target_head": "b27f2211ad5ec4ca0c0d2f0e235b377be5c283cc",
+    "target_commits": "2",
+    "project": "/tmp/v3-docs-reuse-acceptance",
+    "root": "/tmp/v3-docs-reuse-acceptance-state"
+  },
+  "final_optimized_run": {
+    "inventory": 1459,
+    "inventory_digest": "83030e2d6206d10cb1366c6887468f75ab04fa392df004c19c59fb744f023796",
+    "same_stage1_inventory": true,
+    "cold_seconds": 54.28431701660156,
+    "cold_docs_callbacks": 1888,
+    "new_record_seconds": 5.805989027023315,
+    "new_record_docs_render_callbacks": 0,
+    "new_record_reuse": true,
+    "duplicate_seconds": 6.117722988128662,
+    "duplicate_docs_render_callbacks": 0,
+    "duplicate_reuse": true,
+    "readme_equal_except_version": true,
+    "shared_seconds": 5.229701042175293,
+    "shared_docs_render_callbacks": 0,
+    "target_head": "49f95688a9fd3f0027cea41f924d9e11492d3f62",
+    "target_commits": "2",
+    "project": "/tmp/v3-docs-reuse-acceptance-final",
+    "root": "/tmp/v3-docs-reuse-acceptance-final-state"
+  },
+  "final_browser": [
+    {
+      "host": "dynamic",
+      "width": 1280,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "dynamic",
+      "width": 390,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "static",
+      "width": 1280,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "static",
+      "width": 390,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "dynamic",
+      "noJavaScript": true,
+      "widths": [
+        1280,
+        390
+      ],
+      "themes": [
+        "default",
+        "word97",
+        "chicago",
+        "midnight"
+      ],
+      "existingBrowserSuite": "passed"
+    },
+    {
+      "host": "static",
+      "noJavaScript": true,
+      "widths": [
+        1280,
+        390
+      ],
+      "themes": [
+        "default",
+        "word97",
+        "chicago",
+        "midnight"
+      ],
+      "existingBrowserSuite": "passed"
+    },
+    {
+      "versionMarkerCurrent": true,
+      "falsePrompt": false,
+      "nextImportDetected": true,
+      "reloadRecovery": true
+    },
+    {
+      "notificationsDisabled": "passed"
+    }
+  ],
+  "checks": {
+    "pre_streaming_full_inventory_regression": "45/45 passed",
+    "final_helper_and_flow": "15/15 passed, including 48 MiB download with 24 MiB PHP memory limit",
+    "final_catalog_reader_asset": "29/29 passed",
+    "existing_import_recovery_small_inventory": "14/14 passed",
+    "final_cli_rebuild_and_build_static": "passed; 1,909 HTML files, 47 asset files; 34.742 s build-static"
+  },
+  "limitations": [
+    "Single-machine observations; warm filesystem and concurrent workload were not controlled. No fixed speed ratio promised.",
+    "Benchmark documentation inventory is frozen at planning source 6e77d190 for comparable source hashes, rather than the changing cycle logs.",
+    "Full repository test suite and production deployment were outside this verification; focused checks are not a full-suite claim.",
+    "Screenshots/scripts/full logs are local /tmp artifacts; concise results and digests are preserved here."
+  ]
+}

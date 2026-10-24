@@ -134,7 +134,7 @@ final class ContentImportRunner
                 $this->verifyWrites($run['writes']);
                 $this->git(['merge-base', '--is-ancestor', $run['commit'], 'HEAD']);
                 // Publication is required even on duplicate-only runs and interrupted retries.
-                $this->say('Publishing read model, static pages, and applicable offline views...');
+                $this->say('Refreshing read model and applicable offline data...');
                 $publisher();
                 $this->at('published');
                 $run['phase'] = 'complete';
