@@ -7,7 +7,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 ## Provenance
 
-- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.2.1-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
+- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.3.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
 - The full upstream tree and license are retained, with the local experimental estimation patch described below. The upstream Ref/Commit identifies the imported baseline, not the locally patched contents.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
@@ -44,7 +44,7 @@ Before a future subtree update, inspect and preserve this patch in branch histor
 ## Update commands
 
 ```bash
-./v3 railspike sync                      # pinned v0.2.1-beta.1: no-op when installed
+./v3 railspike sync                      # pinned v0.3.0-beta.1: no-op when installed
 ./v3 railspike sync --ref=<newer-tag>    # deliberate upgrade
 ./v3 railspike sync --repository-root=/path/to/another/migrated/repository
 ```
@@ -119,3 +119,27 @@ Standing enrollment under [protocol P2](../plans/effort_estimation_trial.md#cont
 Upgraded to `v0.2.1-beta.1` (`b6c399424f75dc2e94af496411467480487cc319`) through a squash subtree merge. The release incorporates the installed effort-estimation contract and all eight checkpoint instruction files unchanged, so no local experiment patch remains. The historical patch notes above describe the pre-upgrade installation. Resolved the two README conflicts to the reviewed release versions; the product tree matches upstream except for the host installation record. Updated the CLI default pin and source record, and migrated the legacy `railspike` remote to `https://github.com/rlspk/railspike.git`.
 
 Verification: all 17 upstream product files match the release byte-for-byte; `php tests/run.php RailspikeSyncCommandTest RailspikeWorkflowTest` passed all 20 tests; shell syntax and `git diff --check` passed. No UI files changed.
+
+## Upgrade — 2026-10-24
+
+Upgraded this checkout from `v0.2.1-beta.1` to the explicitly requested
+`v0.3.0-beta.1` (`c336536f88d1ce471b4f582a7d87203864f8526e`)
+using the supported squash subtree sync on `chore/railspike-0.3.0-beta.1`.
+The release adds optional extended option/stage estimates and exact frozen-source
+recovery guidance. Existing study enrollment does not enable extended estimates;
+existing cycle approvals and recorded estimates remain intact.
+
+Dependency approval: the user explicitly requested this exact Railspike upgrade.
+Source: canonical `https://github.com/rlspk/railspike.git`, MIT license,
+Git subtree delivery to `docs/railspike/`. Inventory: 11 existing Markdown files
+changed, approximately 10 KB added; no new files, packages or transitive dependencies.
+Maintenance remains deliberate pinned-tag updates and host/upstream provenance
+verification. Retaining the prior installed release was the reduced-scope alternative.
+The CLI default pin, its existing test assertion and installation record were updated.
+Uncommitted retraction diagnostics plans and ledger work were preserved separately.
+
+Verification: all 17 upstream files match the release byte-for-byte;
+`php tests/run.php RailspikeSyncCommandTest RailspikeWorkflowTest` passed
+20/20; shell syntax and `git diff --check` passed. Actual dependency delta
+matches the approved inventory: only the Railspike documentation upgrade,
+no package/manifest/lock changes. No UI or production changes.

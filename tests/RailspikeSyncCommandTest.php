@@ -135,7 +135,7 @@ final class RailspikeSyncCommandTest
             [$code, $out, $err] = $this->command(['bash', dirname(__DIR__) . '/v3', 'railspike', 'sync',
                 '--repository-root=' . $host, '--remote-url=' . $up]);
             assertSame(1, $code, $out . $err);
-            assertStringContains('fetch of tag v0.2.1-beta.1 failed', $err);
+            assertStringContains('fetch of tag v0.3.0-beta.1 failed', $err);
             assertSame($before, $this->snapshot($host));
             assertSame('initial', file_get_contents($host . '/docs/railspike/content.txt'));
         });
