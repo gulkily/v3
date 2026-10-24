@@ -47,6 +47,12 @@ Single-row-per-key bookkeeping about the last rebuild.
 
 One row per canonical post record (both thread roots and replies).
 
+Schema 27 adds `posts_author_identity_idx (author_identity_id)`. Together with
+the primary-key index on `post_id`, it supports the identity-link predicate
+`post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id`
+using SQLite's multi-index OR plan, retaining single-update semantics when a
+row matches both branches. Normal startup rebuilds schema-26 and older models.
+
 | Column | Type | Notes |
 | --- | --- | --- |
 | `post_id` | TEXT PK | |

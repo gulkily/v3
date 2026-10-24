@@ -87,6 +87,7 @@ final class LocalAppSmokeTest
             (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
             $pdo = new PDO('sqlite:' . $database);
             $pdo->exec('DROP INDEX activity_author_identity_idx');
+            $pdo->exec('DROP INDEX IF EXISTS posts_author_identity_idx');
             $pdo->exec("UPDATE metadata SET value='25' WHERE key='schema_version'");
             $pdo->exec("UPDATE metadata SET value='1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce' WHERE key='schema_fingerprint'");
             $pdo = null;
@@ -97,6 +98,37 @@ final class LocalAppSmokeTest
             $plan = $pdo->query("EXPLAIN QUERY PLAN UPDATE activity SET author_label='test', author_is_approved=0 WHERE author_identity_id='openpgp:test'")->fetchAll(PDO::FETCH_ASSOC);
             assertStringContains('USING INDEX activity_author_identity_idx', implode(' ', array_column($plan, 'detail')));
             assertStringNotContains('SCAN activity', implode(' ', array_column($plan, 'detail')));
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion26StartupBuildsPostAuthorIndexAndPreservesOrSemantics(): void
+    {
+        $database = sys_get_temp_dir() . '/post-author-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('DROP INDEX posts_author_identity_idx');
+            $previous = array_values(array_filter(\ForumRewrite\ReadModel\ReadModelSchema::statements(), static fn (string $sql): bool => !str_contains($sql, 'posts_author_identity_idx')));
+            $pdo->exec("UPDATE metadata SET value='26' WHERE key='schema_version'");
+            $pdo->prepare("UPDATE metadata SET value=? WHERE key='schema_fingerprint'")->execute([hash('sha256', implode("\n", $previous))]);
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            $ids = $pdo->query('SELECT post_id FROM posts ORDER BY post_id LIMIT 2')->fetchAll(PDO::FETCH_COLUMN);
+            $pdo->prepare("UPDATE posts SET author_identity_id='openpgp:test', post_score_total=0 WHERE post_id IN (?,?)")->execute($ids);
+            $sql = "UPDATE posts SET post_score_total=post_score_total+1 WHERE post_id=? OR author_identity_id='openpgp:test'";
+            $plan = $pdo->prepare('EXPLAIN QUERY PLAN ' . $sql);
+            $plan->execute([$ids[0]]);
+            $details = implode(' ', array_column($plan->fetchAll(PDO::FETCH_ASSOC), 'detail'));
+            assertStringContains('MULTI-INDEX OR', $details);
+            assertStringContains('posts_author_identity_idx', $details);
+            assertStringNotContains('SCAN posts', $details);
+            $update = $pdo->prepare($sql);
+            $update->execute([$ids[0]]);
+            assertSame(2, $update->rowCount());
+            assertSame([1, 1], array_map('intval', $pdo->query("SELECT post_score_total FROM posts WHERE author_identity_id='openpgp:test' ORDER BY post_id")->fetchAll(PDO::FETCH_COLUMN)));
         } finally { @unlink($database); }
     }
 

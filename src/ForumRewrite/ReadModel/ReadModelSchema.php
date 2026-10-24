@@ -44,6 +44,7 @@ final class ReadModelSchema
                 retraction_attribution TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )',
+            'CREATE INDEX posts_author_identity_idx ON posts (author_identity_id)',
             'CREATE TABLE threads (
                 root_post_id TEXT PRIMARY KEY,
                 root_post_created_at TEXT NOT NULL,
