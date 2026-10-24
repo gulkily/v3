@@ -16,6 +16,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [High-traffic absent retractions](high_traffic_absent_retractions/)
+
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
 - [Reply continuation](reply_continuation/)
