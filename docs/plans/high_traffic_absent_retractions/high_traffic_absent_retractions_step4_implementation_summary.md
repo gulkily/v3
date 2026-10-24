@@ -24,3 +24,9 @@ Step 3 approved. Branch `fix/high-traffic-absent-retractions`, planning commit `
 - Changes: parent and isolated worker agree on a content/evidence identity; absent-target workers render the excluded disposable model, revalidate after rendering and before atomic publication, and clean model/assets workspace on exit. Unaffected strict publication remains strict. Private SQLite models never enter public asset copying.
 - Verification: `php tests/run.php HighTrafficTest HighTrafficPublicationTest` passed 9/9, including actual normal front-controller homepage with both production IDs, every eligible route class, configured CLI JSON refresh, no live-model mutation, private-model exclusion and temporary cleanup. Existing capacity/slot/atomic replacement checks pass.
 - Notes: Stage 2 commit `e8caa8b8c`. No unlimited fallback or production changes. Parent/worker mismatch rejects safely; existing per-render time/output limits remain. Five-stage plan and 0.75 projection unchanged.
+
+## Stage 4 - Races and shared-consumer recovery
+
+- Changes: deterministic real-worker wrappers mutate canonical sources/evidence or withdraw mode after rendering; rejected candidates preserve the previous page and leave no temporary model/assets. Tests cover later valid source reappearance, repaired evidence, worker failure and retry. Missing tracked retractions and unsafe source symlinks remain rejected.
+- Verification: focused high-traffic/retraction/snapshot/queue suites passed 55/55. Strengthened race suite passed 7/7. `python3 tests/high_traffic_publication_test.py` passed 2/2 import/static-publication interruption/private-destination regressions against real code with bounded frozen documentation inventory; not a full-corpus/full-suite claim.
+- Notes: Stage 3 commit `75b8c876e`. Strict source-removal and offline callers retain their contracts. No dependency/schema or production changes; 0.75 projected total preserved.

@@ -123,6 +123,75 @@ final class HighTrafficPublicationTest
         }
     }
 
+    public function testParentRejectsReappearanceAndModeChangeAfterWorkerRenderingAndCanRetry(): void
+    {
+        $root = $this->fixture();
+        file_put_contents($root . '/records/posts/visible.txt', "Post-ID: visible\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nSubject: Visible thread\n\nIndependent body\n");
+        mkdir($root . '/public');
+        $cache = new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__), $root, $root . '/live.sqlite3', $root . '/public');
+        $cache->initialize();
+        symlink($cache->root . '/pages', $root . '/public/.high-traffic');
+        $cache->atomic($cache->root . '/state.json', json_encode(['enabled' => true, 'generation' => 'test']));
+        $oldPhp = getenv('FORUM_PHP_CLI');
+        try {
+            $previous = $cache->generate('/threads/visible/');
+            $target = 'reply-20260526032118-654b2b08';
+            $path = $root . '/records/posts/' . $target . '.txt';
+            $bytes = "Post-ID: $target\nCreated-At: 2026-10-14T11:30:00Z\nBoard-Tags: general\nThread-ID: visible\nParent-ID: visible\n\nReappeared independent source\n";
+            $evidence = glob($root . '/records/post-retractions/*.txt')[0];
+            $originalEvidence = file_get_contents($evidence);
+            $mutations = [
+                'file_put_contents(' . var_export($path, true) . ', ' . var_export($bytes, true) . ');',
+                'unlink(' . var_export($root . '/public/.high-traffic', true) . '); file_put_contents(' . var_export($cache->root . '/state.json', true) . ', ' . var_export(json_encode(['enabled' => false, 'generation' => 'changed']), true) . ');',
+                'file_put_contents(' . var_export($evidence, true) . ', "malformed");',
+                'exit(1);',
+            ];
+            foreach ($mutations as $index => $mutation) {
+                $wrapper = $root . '/php-wrapper';
+                file_put_contents($wrapper, "#!/usr/bin/env php\n<?php\n"
+                    . '$proc=proc_open(array_merge([PHP_BINARY],array_slice($argv,1)),[STDIN,STDOUT,STDERR],$pipes);'
+                    . '$code=proc_close($proc); if ($code===0) {' . $mutation . '} exit($code);');
+                chmod($wrapper, 0755);
+                putenv('FORUM_PHP_CLI=' . $wrapper);
+                $this->rejects(fn () => $cache->generate('/threads/visible/', true));
+                assertSame($previous, file_get_contents($cache->path('/threads/visible/')));
+                assertSame([], glob($cache->root . '/.render-*'));
+                putenv($oldPhp === false ? 'FORUM_PHP_CLI' : 'FORUM_PHP_CLI=' . $oldPhp);
+                if ($index === 0) {
+                    $previous = $cache->generate('/threads/visible/', true);
+                    assertStringContains('Reappeared independent source', $previous);
+                }
+                if ($index === 1) {
+                    symlink($cache->root . '/pages', $root . '/public/.high-traffic');
+                    $cache->atomic($cache->root . '/state.json', json_encode(['enabled' => true, 'generation' => 'retry']));
+                }
+                if ($index === 2) file_put_contents($evidence, $originalEvidence);
+            }
+            assertStringContains('Reappeared independent source', (string) $cache->generate('/threads/visible/', true));
+        } finally {
+            putenv($oldPhp === false ? 'FORUM_PHP_CLI' : 'FORUM_PHP_CLI=' . $oldPhp);
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($cache->root);
+        }
+    }
+
+    public function testTrackedMissingEvidenceAndUnsafeSourcePathRejectHtmlAdmission(): void
+    {
+        $root = $this->fixture();
+        exec('git -C ' . escapeshellarg($root) . ' init -q');
+        exec('git -C ' . escapeshellarg($root) . ' add records');
+        exec('git -C ' . escapeshellarg($root) . ' -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm Fixture');
+        $context = HighTrafficPublication::capture($root);
+        $path = glob($root . '/records/post-retractions/*.txt')[0];
+        $bytes = file_get_contents($path);
+        unlink($path);
+        $this->rejects(fn () => HighTrafficPublication::validate($context));
+        file_put_contents($path, $bytes);
+        HighTrafficPublication::validate($context);
+        $id = array_key_first($context['state']['absent']);
+        symlink('/nonexistent-source', $root . '/records/posts/' . $id . '.txt');
+        $this->rejects(fn () => HighTrafficPublication::capture($root));
+    }
+
     public function fixture(): string
     {
         $root = sys_get_temp_dir() . '/v3-html-publication-' . bin2hex(random_bytes(6));
