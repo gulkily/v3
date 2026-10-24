@@ -38,6 +38,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Standard Activity and shared pagination](activity_feed_pagination/)
 
+- [Read-model hot indexes](read_model_hot_indexes/)
+
 - [Thread-like Activity reporting](thread_like_activity/)
 
 - [Retraction effects and source-owned label cleanup](retraction_effects/)

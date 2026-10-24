@@ -125,6 +125,9 @@ final class ReadModelSchema
                 file_count INTEGER NOT NULL
             )',
             'CREATE INDEX commits_committed_at_idx ON commits (committed_at DESC, id DESC)',
+            'CREATE INDEX posts_thread_sequence_idx ON posts (thread_id, sequence_number)',
+            'CREATE INDEX posts_author_identity_idx ON posts (author_identity_id)',
+            'CREATE INDEX threads_last_activity_idx ON threads (last_activity_at DESC, root_post_id DESC)',
         ];
     }
 
