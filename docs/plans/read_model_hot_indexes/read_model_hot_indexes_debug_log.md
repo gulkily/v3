@@ -74,3 +74,25 @@ Revision of the 2026-10-24 Step 3 entry above (does not supersede its findings; 
 ### Uncertain assessments
 - Stage 3's ≈0.15 is the least certain stage value: it depends on how cleanly `Application::ensureReadModel()` can be driven from a test harness without heavy fixtures; flagged as medium uncertainty in-plan.
 - The per-stage values are single exposed, non-blind rater judgments against R1; they are annotations, not measured effort.
+
+## 2026-10-24 UTC — Step 4 (Implementation) — completed-step report
+
+Single Step 4 report (not per stage). Stages 1–4 implemented and committed on `feat/read-model-hot-indexes`; planning `7f928218`, stages `4eb59792`/`87fceacd`/`cef85b1d`/`3a25919c`.
+
+### Necessary/useful instructions
+- Stage Boundary Protocol (finish → verify → update summary → `git status` → stage commit → `git log` → next): kept each stage independently committed with its own verification, and caught that the two unrelated debug logs must stay unstaged at every boundary. Retain — the explicit `git status` gate prevented cross-cycle leakage.
+- "A focused pass is never reported as a full-suite result" + "identify reproduced baseline failures": directly shaped the honest Stage 4 reporting of the two pre-existing `ReadModelProvenanceTest` git failures as reproduced-baseline, not regressions. Retain — load-bearing for an accurate handoff.
+- Extended-mode per-stage retrospective requirement: surfaced useful signal (Stage 3 came in under estimate because existing fixtures/public API avoided a heavier harness; Stage 4 ran over due to environmental PHP linkage). Retain.
+- `CONTRIBUTING.md` schema-change checklist (external to Railspike but referenced throughout): every clause mapped to a concrete stage/verification. Retain the cross-reference.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Documentation-only verification gates (`git diff --check`, allowed-file-scope): this was an application change; used runtime/test verification instead.
+- Known-user/environment recovery replay: none named in Step 2.
+- Browser/UI state matrix: no presentation change (indexes only; content proven byte-identical), recorded not-applicable with reason.
+
+### Uncertain assessments
+- The ≈0.30 cycle total and per-stage retrospectives are single exposed, non-blind rater judgments; not measured effort. Maintainer comfortable-fit judgment is pending (unreviewed/unmerged), so study outcome acceptance stays pending — explicitly not invented.
+- Whether Stage 4 should have been folded into Stage 3 remains a low-confidence call; keeping it separate gave the query-plan/rebuild evidence a clean auditable commit.
