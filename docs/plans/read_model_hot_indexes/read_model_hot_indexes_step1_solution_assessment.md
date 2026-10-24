@@ -4,6 +4,8 @@ Debug mode: enabled
 
 Effort study: `railspike-effort` / `v3/read_model_hot_indexes`; [ledger](../effort_estimation_trial.md), standing enrollment P2.
 
+Extended estimates: enabled (requested 2026-10-24, effective from Step 3; Steps 1–2 recorded no per-option estimates).
+
 ## Original Query
 
 please look for the lowest hanging fruit for improving performance and build a document with a list of them. [...] please write three Step 1 documents.
