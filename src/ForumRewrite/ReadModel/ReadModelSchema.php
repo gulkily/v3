@@ -115,6 +115,7 @@ final class ReadModelSchema
             'CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)',
             'CREATE INDEX activity_post_id_idx ON activity (post_id)',
             'CREATE INDEX activity_action_key_idx ON activity (action_key)',
+            'CREATE INDEX activity_author_identity_idx ON activity (author_identity_id)',
             'CREATE TABLE commits (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 sha TEXT NOT NULL UNIQUE,

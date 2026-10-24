@@ -163,7 +163,12 @@ Feed of indexed activity entries (see `docs/specs/php_forum_rewrite_spec_v1.md`
 | `source_commit_sha` | TEXT NULL | |
 
 Indexes: `activity_recent_idx (created_at DESC, post_id DESC, id DESC)`,
-`activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`.
+`activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`,
+`activity_author_identity_idx (author_identity_id)` (schema 26). The author
+index supports identity-specific attribution/approval updates without scanning
+all activity rows for each profile. Schema-25 databases are rebuilt at normal
+startup before serving the current application; this index is also present in
+manual rebuilds and candidate databases.
 
 ### `commits`
 

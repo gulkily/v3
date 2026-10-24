@@ -105,7 +105,10 @@ try {
         $pdo->prepare("UPDATE metadata SET value = ? WHERE key = 'repository_root'")->execute([$repository]);
         $pdo = null;
         if ($options['rebuild-copy'] ?? false) {
-            (new ReadModelBuilder($repository, $database, new CanonicalRecordRepository($repository), 'benchmark_setup'))->rebuild();
+            // Rebuild caches/allocator pages must not inflate measured registration memory.
+            benchmarkCommand([PHP_BINARY, '-r',
+                'require $argv[1]; (new ForumRewrite\\ReadModel\\ReadModelBuilder($argv[2], $argv[3], new ForumRewrite\\Canonical\\CanonicalRecordRepository($argv[2]), "benchmark_setup"))->rebuild();',
+                dirname(__DIR__) . '/autoload.php', $repository, $database], $caseRoot);
         }
         mkdir($caseRoot . '/artifacts', 0700);
         $home = $caseRoot . '/gnupg';
