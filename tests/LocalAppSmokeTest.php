@@ -1730,9 +1730,9 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('Public content and history only', $backupPage);
+            assertStringContains('Current public content only', $backupPage);
             assertStringContains('not a complete instance backup.', $backupPage);
-            assertStringContains('Private messages, browser keys and drafts, operational data', $backupPage);
+            assertStringContains('Git history, private messages, browser keys and drafts, operational data', $backupPage);
             assertStringContains('software, configuration, secrets, and externally hosted media need separate backups', $backupPage);
             assertStringContains('include supplemental workflow records', $backupPage);
             assertStringContains('may lag behind the repository', $backupPage);
@@ -2017,7 +2017,7 @@ PHP;
         assertStringContains('/downloads/repository.tar.gz', $instance);
         assertStringContains('/downloads/repository.zip', $instance);
         assertStringContains('/downloads/read_model.sqlite3', $instance);
-        assertStringContains('Public content and history only', $instance);
+        assertStringContains('Current public content only', $instance);
         assertStringContains('not a complete instance backup.', $instance);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);

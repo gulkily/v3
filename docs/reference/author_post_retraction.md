@@ -73,8 +73,9 @@ generated-effect family or recall externally held copies.
 ## What retraction does not do
 
 - It does not delete the original canonical post file or remove it from Git history. Anyone with a clone,
-  and the whole-checkout downloads at `/downloads/repository.tar.gz` and
-  `/downloads/repository.zip`, still has it.
+  and the current-content downloads at `/downloads/repository.tar.gz` and
+  `/downloads/repository.zip`, still has the retained current file. Those downloads
+  exclude `.git`; a separately maintained Git backup retains historical versions.
 - It does not reach backups, other servers, or copies other people saved.
 - Canonical/history and backup purge remain separate. Managed artifact and LLM
   payload cleanup uses the [local retraction sweep](retraction_sweep.md).
@@ -135,7 +136,7 @@ exchange store is reported and is not created by the sweep.
 | LLM exchanges with proven retracted dependencies | Withheld from inspection; request/response/error/context payloads and arbitrary diagnostic strings are scrubbed. Minimal non-content status/provenance remains. |
 | LLM exchanges with uncertain dependencies | Withheld but retained; reported for policy review. |
 | Proven unaffected LLM exchanges | Remain available and unchanged. |
-| Canonical files, Git history, whole-checkout downloads and backups | Retained; not purged by retraction or the sweep. |
+| Canonical files, Git history, current-content downloads and backups | Retained; not purged by retraction or the sweep. |
 | Analysis/Unicode-risk/Fastmod/media caches, agent-generation stores, application/task/provider logs, read-model recovery/candidate copies | Outside sweep coverage. |
 | Attachments, published replies/quotes in other posts, remote/provider data, downloaded or browser copies | Not automatically removed. |
 

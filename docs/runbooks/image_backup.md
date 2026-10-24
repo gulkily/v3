@@ -11,7 +11,10 @@ access to retained-image backups. Existing downloaded copies cannot be recalled.
 From Tools → Backup, download either content repository archive **and** the image
 collection `.tar`. Keep matching revision filenames together. The image archive
 contains `manifest.json` with the repository HEAD and checksums, plus every retained
-object under `objects/`. The repository includes Git history. SQLite is derived
+object under `objects/`. The content repository excludes `.git` and Git history. Legacy post dates are
+carried in `records/post-timestamps/` without changing signed post bytes.
+`repository-snapshot.json` identifies the source revision and checksums the exported
+records for image-pair verification. SQLite is derived
 and cannot substitute for either archive. Image exports include retained objects
 from previously published posts, even if those posts are later removed.
 
@@ -25,8 +28,10 @@ taking the pair. Approved-members-only access also protects the exports.
 
 Use an isolated destination and the repository archive from the same pair. Extract
 your trusted repository snapshot into a fresh directory; it contains a top-level
-`repository/`, including `.git`. Preserve that history: the ordinary content-import
-command creates a new destination revision and is not a backup-pair restoration.
+`repository/`, without `.git`. Keep `repository-snapshot.json` and the records
+unchanged until image verification/restoration completes. The image restore
+command accepts both these snapshots and older full Git backups. A mismatched
+revision or modified records fail verification.
 
 ```bash
 mkdir -p /private/restored-forum
@@ -34,18 +39,22 @@ mkdir -p /private/restored-forum
 tar -xzf /backups/forum-repository-REVISION.tar.gz -C /private/restored-forum
 ./v3 images verify /backups/forum-images-REVISION.tar /private/restored-forum/repository /private/restored-forum/cache/index.sqlite3
 ./v3 images restore /backups/forum-images-REVISION.tar /private/restored-forum/repository /private/restored-forum/cache/index.sqlite3
-./v3 rebuild /private/restored-forum/repository /private/restored-forum/cache/index.sqlite3
 ```
 
 The default image destination is a sibling of the repository, named
 `<repository-basename>-images`. Set `--image-root=/private/images` for another
 fresh directory, then configure that exact `FORUM_IMAGE_ROOT` in the new instance.
 It must be absolute, outside the repository and every served web root, and contain
-no symlink components. Point the new application at the restored repository and
-read-model paths; enable image support and check a thread and reply before cutover.
-Use newly built static artifacts, not old releases from another instance.
+no symlink components. The commands above restore the exported content/image pair, not the complete
+instance or its trusted history. Use the normal reviewed content-import workflow
+for another instance; imports preserve destination authority and can reject
+history-dependent approval/removal claims. For exact instance recovery, retain a
+separate full Git backup and private configuration. Do not fabricate acceptance
+history from a content export. Rebuild and verify the destination before cutover;
+use fresh static artifacts.
 
-Verification checks the revision, clean canonical records, strict tar paths/types,
+Verification checks the source revision and unchanged snapshot records (or clean
+canonical records for a Git-backed restore), strict tar paths/types,
 full inventory, checksums, file types/dimensions, and all current post references.
 It uses temporary private staging but does not activate a store. Restore validates
 first, then renames the verified store into place. Existing different stores are
@@ -136,3 +145,12 @@ controls before reverting code. Retain the private image directory and matching
 repository backup. Prepared images use the existing reference/storage formats and
 remain readable by the previous release when image support is re-enabled. Do not
 rewrite signed references or delete retained images.
+
+## Archive size
+
+Both repository TAR.GZ and ZIP exports omit `.git` before size/count checks and
+copying. Git objects, indexes, reflogs, hooks and configuration are not exported;
+live history and Git maintenance settings are unchanged. The content-only
+512 MiB/100,000-file export bounds still apply, including generated legacy-date
+metadata. Failed or interrupted downloads can be retried. Keep a separate full
+repository backup if historical revisions or trusted acceptance evidence matter.

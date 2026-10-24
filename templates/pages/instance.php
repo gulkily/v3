@@ -80,7 +80,7 @@
   </article>
   <article class="card">
     <h2 class="feature-flag-group-heading">About these downloads</h2>
-    <p>Public content and history only, not a complete instance backup. Private messages, browser keys and drafts, operational data, software, configuration, secrets, and externally hosted media need separate backups.</p>
+    <p>Current public content only, not a complete instance backup. Git history, private messages, browser keys and drafts, operational data, software, configuration, secrets, and externally hosted media need separate backups.</p>
     <p class="meta">The SQLite index may lag behind the repository and include supplemental workflow records.</p>
   </article>
 </section>

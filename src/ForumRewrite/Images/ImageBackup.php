@@ -35,12 +35,12 @@ final class ImageBackup
                     }
                     $store = new ImageStore($this->repositoryRoot);
                     $inventory = $store->inventory();
-                    foreach (self::references($this->repositoryRoot) as $ref) { $store->resolve($ref); }
                     $source = $kind === 'images' ? $store->root : $this->repositoryRoot;
-                    $size = $kind === 'images' ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source);
+                    $size = $kind === 'images' ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source, excludeGit: true);
                     $free = disk_free_space($work);
                     if ($free === false || $free < 2 * $size + 16 * 1024 * 1024) { throw new RuntimeException('Insufficient temporary disk for complete backup; free space and retry.'); }
                     if ($kind === 'images') {
+                        foreach (self::references($this->repositoryRoot) as $ref) { $store->resolve($ref); }
                         mkdir($work . '/objects', 0700);
                         foreach ($inventory as $name => $ref) {
                             if (!copy($store->root . '/' . $name, $work . '/objects/' . $name)
@@ -51,7 +51,10 @@ final class ImageBackup
                         $manifest = ['schema' => 'forum-images-v1', 'repository_head' => $revision, 'created_at' => gmdate('c'), 'objects' => $inventory];
                         if (file_put_contents($work . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n") === false) { throw new RuntimeException('Unable to write backup inventory.'); }
                     } else {
-                        self::copyTree($source, $work . '/repository');
+                        self::copyTree($source, $work . '/repository', excludeGit: true);
+                        foreach (self::references($source, $work . '/repository') as $ref) { $store->resolve($ref); }
+                        RepositorySnapshot::write($work . '/repository', $revision);
+                        self::treeBytes($work . '/repository');
                     }
                     if ($this->revision() !== $revision || $this->git(['status', '--porcelain', '--', 'records']) !== '') {
                         throw new RuntimeException('Repository changed during backup; retry after other writers finish.');
@@ -81,23 +84,38 @@ final class ImageBackup
         });
     }
 
-    public static function references(string $root): array
+    public static function references(string $root, ?string $snapshotRoot = null): array
     {
         $refs = [];
         if (!is_dir($root . '/records/posts')) { return $refs; }
-        $paths = [];
+        $paths = []; $legacyPaths = [];
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root . '/records/posts', \FilesystemIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
             if ($file->isLink()) { throw new RuntimeException('Symlink in canonical post records.'); }
             if ($file->isFile() && $file->getExtension() === 'txt') {
-                $paths[] = substr($file->getPathname(), strlen(rtrim($root, '/')) + 1);
+                $path = substr($file->getPathname(), strlen(rtrim($root, '/')) + 1);
+                $paths[] = $path;
+                $contents = file_get_contents($file->getPathname());
+                if ($contents === false) throw new RuntimeException('Cannot read post for content export: ' . $path);
+                if (self::needsLegacyDate($contents)
+                    && !file_exists($root . '/' . \ForumRewrite\Canonical\LegacyPostTimestamp::path($file->getBasename('.txt')))) {
+                    $legacyPaths[] = $path;
+                }
             }
         }
         $repository = new \ForumRewrite\Canonical\CanonicalRecordRepository($root, allowLegacyFilesystemTimestamp: false);
-        $repository->preloadLegacyPostCreatedAts($paths);
+        $repository->preloadLegacyPostCreatedAts($legacyPaths);
         foreach ($paths as $path) {
             try {
                 $record = $repository->loadPost($path);
+                if ($snapshotRoot !== null) {
+                    $contents = (string) file_get_contents($root . '/' . $path);
+                    if (self::needsLegacyDate($contents)) {
+                        $metadata = $snapshotRoot . '/' . \ForumRewrite\Canonical\LegacyPostTimestamp::path($record->postId);
+                        if (!is_dir(dirname($metadata)) && !mkdir(dirname($metadata), 0700, true)) throw new RuntimeException('Cannot preserve legacy post dates.');
+                        if (file_put_contents($metadata, \ForumRewrite\Canonical\LegacyPostTimestamp::encode($record->postId, $contents, $record->createdAt)) === false) throw new RuntimeException('Cannot preserve legacy post date.');
+                    }
+                }
                 $ref = ImageReference::fromBody($record->body);
                 if ($ref !== null) { $refs[ImageReference::filename($ref)] = $ref; }
             } catch (RuntimeException $error) {
@@ -105,6 +123,12 @@ final class ImageBackup
             }
         }
         return $refs;
+    }
+
+    private static function needsLegacyDate(string $contents): bool
+    {
+        $headers = explode("\n\n", str_replace("\r\n", "\n", $contents), 2)[0];
+        return preg_match('/^Created-At:/m', $headers) !== 1;
     }
 
     private function git(array $args): string
@@ -116,10 +140,10 @@ final class ImageBackup
         return trim(implode("\n", $output));
     }
 
-    public static function treeBytes(string $root): int
+    public static function treeBytes(string $root, bool $excludeGit = false): int
     {
         $size = 0; $count = 0;
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)) as $file) {
+        foreach (new \RecursiveIteratorIterator(self::entries($root, $excludeGit)) as $file) {
             if ($file->isLink() || !$file->isFile()) { throw new RuntimeException('Backup source contains links or special files.'); }
             $size += $file->getSize(); $count++;
             if ($size > 512 * 1024 * 1024 || $count > 100000) { throw new RuntimeException('Repository exceeds bounded web backup capacity (512 MiB / 100000 files); use operator filesystem backup.'); }
@@ -127,15 +151,21 @@ final class ImageBackup
         return $size;
     }
 
-    public static function copyTree(string $source, string $target): void
+    public static function copyTree(string $source, string $target, bool $excludeGit = false): void
     {
         if (!mkdir($target, 0700, true)) { throw new RuntimeException('Unable to create snapshot directory.'); }
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $file) {
+        foreach (new \RecursiveIteratorIterator(self::entries($source, $excludeGit), \RecursiveIteratorIterator::SELF_FIRST) as $file) {
             if ($file->isLink()) { throw new RuntimeException('Snapshot cannot contain symlinks.'); }
             $destination = $target . substr($file->getPathname(), strlen($source));
             if ($file->isDir()) { if (!mkdir($destination, 0700)) { throw new RuntimeException('Unable to copy snapshot directory.'); } }
             elseif (!$file->isFile() || !copy($file->getPathname(), $destination) || !chmod($destination, $file->getPerms() & 0777)) { throw new RuntimeException('Unable to copy snapshot file.'); }
         }
+    }
+
+    private static function entries(string $root, bool $excludeGit): \RecursiveIterator
+    {
+        $entries = new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS);
+        return $excludeGit ? new \RecursiveCallbackFilterIterator($entries, static fn (\SplFileInfo $file): bool => $file->getFilename() !== '.git') : $entries;
     }
 
     public static function removeTree(string $root): void

@@ -31,6 +31,7 @@ $testFiles = [
     __DIR__ . '/ImportedContentPublicationTest.php',
     __DIR__ . '/ContentImportRecoveryTest.php',
     __DIR__ . '/RepositoryArchiveValidationTest.php',
+    __DIR__ . '/RepositoryContentExportTest.php',
     __DIR__ . '/ContentImportPlannerTest.php',
     __DIR__ . '/AgentReplyCommandTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',

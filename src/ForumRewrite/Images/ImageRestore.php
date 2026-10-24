@@ -23,12 +23,15 @@ final class ImageRestore
             }
             try {
                 $manifest = $this->unpack($archive, $stage);
-                $head = (new ImageBackup($repository, $database))->revision();
+                $hasHistory = file_exists($repository . '/.git');
+                $head = $hasHistory ? (new ImageBackup($repository, $database))->revision() : RepositorySnapshot::revision($repository);
                 if (($manifest['schema'] ?? '') !== 'forum-images-v1' || ($manifest['repository_head'] ?? '') !== $head || !is_array($manifest['objects'] ?? null)) {
                     throw new RuntimeException('Image backup and repository revision do not match. Restore the matching repository snapshot first.');
                 }
-                exec('git -C ' . escapeshellarg($repository) . ' status --porcelain -- records 2>&1', $statusOutput, $exit);
-                if ($exit !== 0 || implode('', $statusOutput) !== '') { throw new RuntimeException('Restore requires clean canonical records.'); }
+                if ($hasHistory) {
+                    exec('git -C ' . escapeshellarg($repository) . ' status --porcelain -- records 2>&1', $statusOutput, $exit);
+                    if ($exit !== 0 || implode('', $statusOutput) !== '') { throw new RuntimeException('Restore requires clean canonical records.'); }
+                }
                 $stagedStore = new ImageStore($repository, $stage . '/objects');
                 $actual = $stagedStore->inventory();
                 $expected = $manifest['objects'];

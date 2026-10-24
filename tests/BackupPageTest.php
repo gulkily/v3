@@ -16,6 +16,8 @@ final class BackupPageTest
             $html = $this->render($root, $db, '/tools/backup/');
             assertStringContains('>Text content</h2>', $html);
             assertStringContains('data-role="text-content-downloads"', $html);
+            assertStringContains('Current content; Git history excluded.', $html);
+            assertStringNotContains('including .git history', $html);
             assertStringContains('data-role="image-downloads"', $html);
             assertOrdered($html, '>Text content</h2>', '>Images</h2>');
             assertOrdered($html, '>Images</h2>', 'data-role="image-downloads"');
@@ -32,7 +34,7 @@ final class BackupPageTest
         $this->fixture(true, function (string $root, string $db): void {
             $html = $this->render($root, $db, '/tools/backup/');
             assertOrdered($html, '>Recent included items</h2>', '>About these downloads</h2>');
-            assertOrdered($html, '>About these downloads</h2>', 'Public content and history only, not a complete instance backup.');
+            assertOrdered($html, '>About these downloads</h2>', 'Current public content only, not a complete instance backup.');
             foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'] as $href) {
                 assertSame(1, substr_count($html, 'href="' . $href));
             }

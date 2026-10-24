@@ -59,14 +59,14 @@ final class InstancePageController
                         'label' => 'Content repository (.tar.gz)',
                         'item' => 'Content repository',
                         'format' => '.tar.gz',
-                        'description' => 'Tarball of the full repository, including .git history.',
+                        'description' => 'Current content; Git history excluded.',
                     ],
                     [
                         'href' => '/downloads/repository.zip' . $revisionQuery,
                         'label' => 'Content repository (.zip)',
                         'item' => 'Content repository',
                         'format' => '.zip',
-                        'description' => 'ZIP archive of the full repository, including .git history.',
+                        'description' => 'Current content; Git history excluded.',
                     ],
                     [
                         'href' => '/downloads/read_model.sqlite3',
@@ -89,17 +89,7 @@ final class InstancePageController
             return;
         }
 
-        if ($revision !== null || is_dir((new \ForumRewrite\Images\ImageStore($this->repositoryRoot))->root)) {
-            $this->downloadImageBackup($method, $format, $revision);
-            return;
-        }
-        $download = $this->buildRepositoryArchive($format);
-        $this->routeServices->sendDownload(
-            $download['path'],
-            $download['contentType'],
-            $this->repositoryArchiveDownloadFilename($download['extension']),
-            true
-        );
+        $this->downloadImageBackup($method, $format, $revision);
     }
 
     public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null): void
@@ -191,64 +181,4 @@ final class InstancePageController
         return $this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none');
     }
 
-    private function repositoryArchiveDownloadFilename(string $extension): string
-    {
-        return SiteConfig::siteName()
-            . '-repository-'
-            . gmdate('Y-m-d_H-i-s\Z')
-            . '-'
-            . ReadModelMetadata::repositoryShortCommit($this->repositoryRoot)
-            . '.'
-            . $extension;
-    }
-
-    /**
-     * @return array{path: string, contentType: string, extension: string}
-     */
-    private function buildRepositoryArchive(string $format): array
-    {
-        $archivePath = tempnam(sys_get_temp_dir(), 'forum-repo-');
-        if ($archivePath === false) {
-            throw new RuntimeException('Unable to create temporary archive path.');
-        }
-
-        @unlink($archivePath);
-
-        $parent = dirname($this->repositoryRoot);
-        $base = basename($this->repositoryRoot);
-
-        if ($format === 'tar.gz') {
-            $archiveTarget = $archivePath . '.tar.gz';
-            $command = sprintf(
-                'tar -czf %s -C %s %s 2>&1',
-                escapeshellarg($archiveTarget),
-                escapeshellarg($parent),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/gzip';
-        } elseif ($format === 'zip') {
-            $archiveTarget = $archivePath . '.zip';
-            $command = sprintf(
-                'cd %s && zip -qr %s %s 2>&1',
-                escapeshellarg($parent),
-                escapeshellarg($archiveTarget),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/zip';
-        } else {
-            throw new RuntimeException('Unsupported repository archive format.');
-        }
-
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0 || !is_file($archiveTarget)) {
-            @unlink($archiveTarget);
-            throw new RuntimeException('Unable to archive repository download.');
-        }
-
-        return [
-            'path' => $archiveTarget,
-            'contentType' => $contentType,
-            'extension' => $format,
-        ];
-    }
 }
