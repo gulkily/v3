@@ -45,6 +45,16 @@ final class RegistrationBenchmarkTest
                 assertSame(false, file_exists($root . '/run/' . $name . '/gnupg'));
                 $expectedPosts = $case['counts_before']['posts'] + ($name === 'fresh_signed' ? 1 : 0);
                 assertSame($expectedPosts, $case['counts_after']['posts']);
+                assertSame('incremental', $case['identity_update_metrics']['path']);
+                foreach (['profiles_considered', 'posts_considered', 'profile_rows_updated', 'activity_update_statements', 'activity_row_updates', 'process_peak_memory_bytes'] as $metric) {
+                    assertSame(true, is_int($case['identity_update_metrics'][$metric]));
+                    assertSame(true, $case['identity_update_metrics'][$metric] >= 0);
+                    assertSame(false, isset($case['timings_ms'][$metric]));
+                }
+                foreach (['lock_wait', 'lock_hold', 'read_model_incremental_profile_load', 'read_model_incremental_profile_posts_load', 'read_model_incremental_profile_approval_derive', 'read_model_incremental_profile_counts_derive', 'read_model_incremental_profile_rows_update', 'read_model_incremental_profile_activity_refresh', 'read_model_incremental_transaction_commit', 'artifact_invalidate'] as $timing) {
+                    assertSame(true, isset($case['timings_ms'][$timing]), $timing);
+                    assertSame(true, $case['timings_ms'][$timing] >= 0);
+                }
             }
             $reportHash = hash_file('sha256', $root . '/run/report.json');
             [$exit, , $error] = $this->run($args, $root);

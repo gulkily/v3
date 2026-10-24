@@ -49,6 +49,8 @@ class LocalWriteService
     /** @var (callable():void)|null */
     private $enqueueOfflineSnapshotPublication;
     private $enqueueRetractionSweep;
+    /** @var array<string,int|string> */
+    private array $identityUpdateMetrics = [];
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -1161,10 +1163,12 @@ class LocalWriteService
     public function linkIdentity(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
+            $timings = [];
+            $startedAt = hrtime(true);
             $this->assertWritableRepository();
             $publicKey = $this->normalizeAsciiBody((string) ($input['public_key'] ?? ''), 'public_key');
 
-            $inspected = $this->keyInspector->inspect($publicKey);
+            $inspected = $this->timePhase($timings, 'gpg_key_inspect', fn (): array => $this->keyInspector->inspect($publicKey));
             $fingerprintUpper = $inspected['fingerprint'];
             $fingerprintLower = strtolower($fingerprintUpper);
             $username = $inspected['username'];
@@ -1203,12 +1207,15 @@ class LocalWriteService
             $writtenPaths[] = $identityPath;
             $commitResult = $this->commitCanonicalWrite($writtenPaths, 'Link identity ' . $postId);
             $commitSha = $commitResult['commit_sha'];
-            $timings = $this->synchronizeIdentityDerivedState($identityPath, $commitSha);
-            $this->invalidator()->invalidateIdentityLink(
-                'openpgp-' . $fingerprintLower,
-                $bootstrapThreadId,
-                $bootstrapPostId
-            );
+            $timings = array_merge($timings, $this->synchronizeIdentityDerivedState($identityPath, $commitSha));
+            $this->timePhase($timings, 'artifact_invalidate', function () use ($fingerprintLower, $bootstrapThreadId, $bootstrapPostId): void {
+                $this->invalidator()->invalidateIdentityLink(
+                    'openpgp-' . $fingerprintLower,
+                    $bootstrapThreadId,
+                    $bootstrapPostId
+                );
+            });
+            $timings['write_total'] = $this->elapsedMilliseconds($startedAt);
 
             return [
                 'status' => 'ok',
@@ -1219,6 +1226,7 @@ class LocalWriteService
                 'bootstrap_thread_id' => $bootstrapThreadId,
                 'commit_sha' => $commitSha,
                 'timings' => array_merge($commitResult['timings'], $timings),
+                'identity_update_metrics' => $this->identityUpdateMetrics,
             ];
         });
     }
@@ -1477,6 +1485,7 @@ class LocalWriteService
                 'signature_path' => $recordPath . '.asc',
                 'commit_sha' => $commitResult['commit_sha'],
                 'timings' => $timings,
+                'identity_update_metrics' => $this->identityUpdateMetrics,
             ];
             });
         } catch (RuntimeException $exception) {
@@ -2621,7 +2630,9 @@ class LocalWriteService
     private function synchronizeIdentityDerivedState(string $identityPath, string $commitSha): array
     {
         $phaseStartedAt = hrtime(true);
+        $this->identityUpdateMetrics = ['path' => 'incremental'];
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->identityUpdateMetrics = ['path' => 'full_rebuild', 'fallback_reason' => 'incremental_unavailable'];
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -2635,10 +2646,14 @@ class LocalWriteService
 
         $identity = $this->canonicalRepository->loadIdentity($identityPath);
 
+        $updater = null;
         try {
-            $incrementalTimings = $this->incrementalReadModelUpdater()->applyIdentityLink($identity, $commitSha);
+            $updater = $this->incrementalReadModelUpdater();
+            $incrementalTimings = $updater->applyIdentityLink($identity, $commitSha);
+            $this->identityUpdateMetrics += $updater->identityUpdateMetrics();
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->identityUpdateMetrics = ['path' => 'full_rebuild', 'fallback_reason' => 'incremental_update_failed'] + ($updater?->identityUpdateMetrics() ?? []);
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);

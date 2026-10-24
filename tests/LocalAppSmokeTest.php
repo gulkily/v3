@@ -5084,6 +5084,16 @@ PHP;
         assertTrue(isset($result['timings']['lock_wait']));
         assertTrue(is_float($result['timings']['lock_wait']));
         assertTrue($result['timings']['lock_wait'] >= 0.0);
+        assertTrue(is_float($result['timings']['lock_hold']));
+        assertTrue($result['timings']['lock_hold'] >= 0.0);
+        assertSame(false, $lock->isLocked());
+        try {
+            $lock->withExclusiveLockTimed(static function (): void { throw new RuntimeException('callback failed'); });
+            throw new RuntimeException('Expected callback failure.');
+        } catch (RuntimeException $error) {
+            assertSame('callback failed', $error->getMessage());
+        }
+        assertSame(false, $lock->isLocked());
     }
 
     private function render(Application $application, string $path): string

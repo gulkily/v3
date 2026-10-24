@@ -22,6 +22,14 @@ class IncrementalReadModelUpdater
 {
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
+    /** @var array<string,int> Counts, not durations; kept outside Server-Timing. */
+    private array $identityUpdateMetrics = [];
+
+    /** @return array<string,int> */
+    public function identityUpdateMetrics(): array
+    {
+        return $this->identityUpdateMetrics;
+    }
 
     public function __construct(
         private readonly string $databasePath,
@@ -64,6 +72,8 @@ class IncrementalReadModelUpdater
     public function applyIdentityLink(IdentityBootstrapRecord $record, string $commitSha): array
     {
         $timings = [];
+        $this->identityUpdateMetrics = ['profiles_considered' => 0, 'posts_considered' => 0,
+            'profile_rows_updated' => 0, 'activity_update_statements' => 0, 'activity_row_updates' => 0];
         $pdo = (new ReadModelConnection($this->databasePath))->open();
         $pdo->beginTransaction();
 
@@ -75,9 +85,12 @@ class IncrementalReadModelUpdater
             $this->measure($timings, 'ensure_username_route', fn (): mixed => $this->ensureUsernameRoute($pdo, $profile));
             $this->measure($timings, 'link_posts', fn (): mixed => $this->linkIdentityPosts($pdo, $profile));
             $this->measure($timings, 'link_activity', fn (): mixed => $this->linkIdentityActivity($pdo, $profile));
-            $this->measure($timings, 'refresh_profile_state', fn (): mixed => $this->refreshProfileState($pdo));
+            $this->measure($timings, 'refresh_profile_state', function () use ($pdo, &$timings): void {
+                $this->refreshProfileState($pdo, $timings);
+            });
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
-            $pdo->commit();
+            $this->measure($timings, 'transaction_commit', fn (): bool => $pdo->commit());
+            $this->identityUpdateMetrics['process_peak_memory_bytes'] = memory_get_peak_usage(true);
 
             return $timings;
         } catch (\Throwable $throwable) {
@@ -565,51 +578,62 @@ class IncrementalReadModelUpdater
             'author_label' => $profile['username'],
             'author_is_approved' => $approved['is_approved'],
         ]);
+        if ($this->identityUpdateMetrics !== []) {
+            $this->identityUpdateMetrics['activity_update_statements']++;
+            $this->identityUpdateMetrics['activity_row_updates'] += $stmt->rowCount();
+        }
     }
 
-    private function refreshProfileState(PDO $pdo): void
+    private function refreshProfileState(PDO $pdo, array &$timings): void
     {
-        $profiles = $this->loadProfiles($pdo);
+        $profiles = $this->measure($timings, 'profile_load', fn (): array => $this->loadProfiles($pdo));
+        $this->identityUpdateMetrics['profiles_considered'] = count($profiles);
         if ($profiles === []) {
             return;
         }
 
-        $posts = $this->loadPostsForProfileDerivation($pdo);
-        $approvalState = $this->deriveApprovalState($posts, $profiles);
-        $profileCounts = $this->deriveProfileCounts($posts, $profiles);
+        $posts = $this->measure($timings, 'profile_posts_load', fn (): array => $this->loadPostsForProfileDerivation($pdo));
+        $this->identityUpdateMetrics['posts_considered'] = count($posts);
+        $approvalState = $this->measure($timings, 'profile_approval_derive', fn (): array => $this->deriveApprovalState($posts, $profiles));
+        $profileCounts = $this->measure($timings, 'profile_counts_derive', fn (): array => $this->deriveProfileCounts($posts, $profiles));
 
-        $update = $pdo->prepare(
-            'UPDATE profiles
-             SET is_approved = :is_approved,
-                 approved_by_identity_id = :approved_by_identity_id,
-                 approved_by_profile_slug = :approved_by_profile_slug,
-                 approved_by_label = :approved_by_label,
-                 post_count = :post_count,
-                 thread_count = :thread_count
-             WHERE identity_id = :identity_id'
-        );
+        $this->measure($timings, 'profile_rows_update', function () use ($pdo, $profiles, $approvalState, $profileCounts): void {
+            $update = $pdo->prepare(
+                'UPDATE profiles
+                 SET is_approved = :is_approved,
+                     approved_by_identity_id = :approved_by_identity_id,
+                     approved_by_profile_slug = :approved_by_profile_slug,
+                     approved_by_label = :approved_by_label,
+                     post_count = :post_count,
+                     thread_count = :thread_count
+                 WHERE identity_id = :identity_id'
+            );
 
-        foreach ($profiles as $identityId => $profile) {
-            $approval = $approvalState[$identityId] ?? [
-                'approved_by_identity_id' => null,
-                'approved_by_profile_slug' => null,
-                'approved_by_label' => null,
-            ];
-            $counts = $profileCounts[$identityId] ?? ['post_count' => 0, 'thread_count' => 0];
-            $update->execute([
-                'is_approved' => isset($approvalState[$identityId]) ? 1 : 0,
-                'approved_by_identity_id' => $approval['approved_by_identity_id'],
-                'approved_by_profile_slug' => $approval['approved_by_profile_slug'],
-                'approved_by_label' => $approval['approved_by_label'],
-                'post_count' => $counts['post_count'],
-                'thread_count' => $counts['thread_count'],
-                'identity_id' => $identityId,
-            ]);
-        }
+            foreach ($profiles as $identityId => $profile) {
+                $approval = $approvalState[$identityId] ?? [
+                    'approved_by_identity_id' => null,
+                    'approved_by_profile_slug' => null,
+                    'approved_by_label' => null,
+                ];
+                $counts = $profileCounts[$identityId] ?? ['post_count' => 0, 'thread_count' => 0];
+                $update->execute([
+                    'is_approved' => isset($approvalState[$identityId]) ? 1 : 0,
+                    'approved_by_identity_id' => $approval['approved_by_identity_id'],
+                    'approved_by_profile_slug' => $approval['approved_by_profile_slug'],
+                    'approved_by_label' => $approval['approved_by_label'],
+                    'post_count' => $counts['post_count'],
+                    'thread_count' => $counts['thread_count'],
+                    'identity_id' => $identityId,
+                ]);
+                $this->identityUpdateMetrics['profile_rows_updated'] += $update->rowCount();
+            }
+        });
 
-        foreach ($profiles as $identityId => $profile) {
-            $this->linkIdentityActivity($pdo, $profile);
-        }
+        $this->measure($timings, 'profile_activity_refresh', function () use ($pdo, $profiles): void {
+            foreach ($profiles as $identityId => $profile) {
+                $this->linkIdentityActivity($pdo, $profile);
+            }
+        });
     }
 
     /**

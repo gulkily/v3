@@ -150,6 +150,7 @@ try {
         $report['cases'][$case] = [
             'wall_ms' => $milliseconds,
             'timings_ms' => $result['timings'],
+            'identity_update_metrics' => $result['identity_update_metrics'] ?? [],
             'preparation_timings_ms' => $case === 'fresh_signed' ? $prepared['timings'] : null,
             'counts_before' => $before, 'counts_after' => $after,
             'rebuild_reason' => $afterMetadata['rebuild_reason'],
