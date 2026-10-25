@@ -2,6 +2,8 @@
 
 Debug mode: enabled
 
+Approval: APPROVED — user — 2026-10-25T16:41:40-04:00 — scope v1 (explicit "Approved Step 1" in session)
+
 Effort study: `railspike-effort` / `v3/request_path_cheap_wins`; [ledger](../effort_estimation_trial.md), standing enrollment P2.
 
 ## Original Query
