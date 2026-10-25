@@ -63,25 +63,27 @@ final class ReadModelViewerTagsProjectionTest
         $nullRows = (int) $pdo->query("SELECT COUNT(*) FROM viewer_tags WHERE author_identity_id IS NULL OR author_identity_id = ''")->fetchColumn();
         assertSame(0, $nullRows);
 
-        // Core invariant: for every (family, tag) pair present in the projection,
-        // the file-scan ViewerTagLookup returns exactly the same target set for
-        // this identity. This holds regardless of what the base fixture seeds.
+        // The ViewerTagLookup API, now backed by viewer_tags, returns exactly
+        // the projected membership for every (family, tag) pair.
         foreach ($this->projectedFamilyTagPairs($pdo, $identityId) as [$family, $tag]) {
             $targets = $this->projectedTargets($pdo, $family, $tag, $identityId);
             if ($family === 'post-reactions') {
-                $scan = ViewerTagLookup::postTags($repositoryRoot, $targets, $tag, $identityId);
+                $scan = ViewerTagLookup::postTags($pdo, $targets, $tag, $identityId);
             } else {
-                $scan = ViewerTagLookup::threadTags($repositoryRoot, $targets, $tag, $identityId);
+                $scan = ViewerTagLookup::threadTags($pdo, $targets, $tag, $identityId);
             }
             $scanTargets = array_keys($scan);
             sort($scanTargets);
             assertSame($targets, $scanTargets);
         }
 
-        // Spot parity on the seeded records specifically.
-        assertSame(['reply-001'], array_keys(ViewerTagLookup::postTags($repositoryRoot, ['reply-001', 'root-001'], 'like', $identityId)));
-        assertSame(['reply-001'], array_keys(ViewerTagLookup::postTags($repositoryRoot, ['reply-001', 'root-001'], 'flag', $identityId)));
-        assertSame(['root-001'], array_keys(ViewerTagLookup::threadTags($repositoryRoot, ['root-001'], 'upvote', $identityId)));
+        // Spot checks on the seeded records specifically.
+        assertSame(['reply-001'], array_keys(ViewerTagLookup::postTags($pdo, ['reply-001', 'root-001'], 'like', $identityId)));
+        assertSame(['reply-001'], array_keys(ViewerTagLookup::postTags($pdo, ['reply-001', 'root-001'], 'flag', $identityId)));
+        assertSame(['root-001'], array_keys(ViewerTagLookup::threadTags($pdo, ['root-001'], 'upvote', $identityId)));
+
+        // A target not tagged by this identity returns nothing; memo reuse is safe.
+        assertSame([], array_keys(ViewerTagLookup::postTags($pdo, ['nonexistent-post'], 'like', $identityId)));
 
         // Ensure the projection is non-empty (sanity against a silent no-op).
         assertSame(true, count($rows) > 0);
