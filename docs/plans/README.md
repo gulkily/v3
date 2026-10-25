@@ -16,6 +16,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Repository archive README](repository_archive_readme/)
+
 - [Independent documentation publication](docs_independent_publication/)
 
 - [Documentation publication policy](docs_publication_policy/)
