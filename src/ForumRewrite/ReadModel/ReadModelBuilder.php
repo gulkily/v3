@@ -1129,7 +1129,6 @@ final class ReadModelBuilder
     {
         $stmt = $pdo->prepare('INSERT INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
-            'source_removal_generation' => \ForumRewrite\Canonical\LabelRemoval::generation($this->repositoryRoot),
             'repository_root' => $this->repositoryRoot,
             'repository_head' => ReadModelMetadata::repositoryHead($this->repositoryRoot),
             'rebuilt_at' => gmdate('c'),

@@ -22,7 +22,6 @@ final class StaticArtifactReleasePublisher
         }
 
         $metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-        $token = \ForumRewrite\Retraction\PublicationGuard::begin($databasePath, $this->repositoryRoot);
         $candidatePath = $this->staticHtmlRoot . '/.candidate-' . bin2hex(random_bytes(8));
         try {
             (new StaticArtifactBuilder(
@@ -40,11 +39,11 @@ final class StaticArtifactReleasePublisher
             }
 
             $releasePath = $releaseDirectory . '/release-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4));
-            \ForumRewrite\Retraction\PublicationGuard::publish($token, $releasePath, static function () use ($candidatePath, $releasePath, $metaToken): void {
+            (static function () use ($candidatePath, $releasePath, $metaToken): void {
                 \ForumRewrite\Scoring\FastmodMetaPublication::publish($metaToken,$releasePath,static function () use ($candidatePath,$releasePath): void {
                 if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
                 });
-            });
+            })();
             return $releasePath;
         } catch (\Throwable $throwable) {
             $this->removeDirectory($candidatePath);
@@ -69,13 +68,11 @@ final class StaticArtifactReleasePublisher
         try {
             $metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             \ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact($metaToken,$releasePath);
-            $generation = @file_get_contents($releasePath . '.retraction-generation');
-            $token = ['root' => $this->repositoryRoot, 'generation' => $generation === false ? '' : trim($generation)];
-            \ForumRewrite\Retraction\PublicationGuard::publish($token, $this->staticHtmlRoot . '/current', function () use ($pendingLink,$metaToken): void {
+            (function () use ($pendingLink,$metaToken): void {
                 \ForumRewrite\Scoring\FastmodMetaPublication::publish($metaToken,$this->staticHtmlRoot.'/current',function () use ($pendingLink): void {
                     if (!rename($pendingLink, $this->staticHtmlRoot . '/current')) throw new RuntimeException('Unable to activate static release.');
                 });
-            });
+            })();
         } finally { if (is_link($pendingLink)) @unlink($pendingLink); }
     }
 
@@ -93,13 +90,10 @@ final class StaticArtifactReleasePublisher
 
         $metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
         \ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact($metaToken,$activeReleasePath);
-        $token = \ForumRewrite\Retraction\PublicationGuard::begin($databasePath, $this->repositoryRoot);
-        if (!is_file($activeReleasePath . '.retraction-generation') || trim((string) file_get_contents($activeReleasePath . '.retraction-generation')) !== $token['generation']) throw new RuntimeException('Shared refresh requires a full build after retraction.');
 
         $candidatePath = $this->staticHtmlRoot . '/.candidate-' . bin2hex(random_bytes(8));
         try {
-            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($token, $activeReleasePath, $candidatePath): void {
-                if (\ForumRewrite\Retraction\PublicationGuard::generation($this->repositoryRoot) !== $token['generation']) throw new RuntimeException('Retraction changed before shared refresh.');
+            \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, function () use ($activeReleasePath, $candidatePath): void {
                 $this->copyDirectory($activeReleasePath, $candidatePath);
             });
             (new StaticArtifactBuilder(
@@ -117,11 +111,11 @@ final class StaticArtifactReleasePublisher
             }
 
             $releasePath = $releaseDirectory . '/release-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4));
-            \ForumRewrite\Retraction\PublicationGuard::publish($token, $releasePath, static function () use ($candidatePath, $releasePath, $metaToken): void {
+            (static function () use ($candidatePath, $releasePath, $metaToken): void {
                 \ForumRewrite\Scoring\FastmodMetaPublication::publish($metaToken,$releasePath,static function () use ($candidatePath,$releasePath): void {
                 if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
                 });
-            });
+            })();
             return $releasePath;
         } catch (\Throwable $throwable) {
             $this->removeDirectory($candidatePath);

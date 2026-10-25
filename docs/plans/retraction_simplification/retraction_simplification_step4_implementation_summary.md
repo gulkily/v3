@@ -58,3 +58,15 @@ Step 3 explicitly approved. Planning commit `fd5c6849`, branch `feature/retracti
 - Notes: broader display/signature assertions and legacy policy tests remain for Stage 8 reconciliation. Retained malformed/unconverted evidence does not globally prevent publication. No estimate revision.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 5 - Publication without retraction gates
+
+**Original estimate: 0.25**
+
+**Retrospective stage work: 0.25**
+
+- Changes: normal HTML/static/offline publishers no longer create or check retraction-generation tokens. Ordinary publication/access-mode serialization remains in `PublicationLock`; retraction writes no longer disable high-traffic serving. High-traffic rendering uses the ordinary live model and does not rebuild or hash all canonical files; the separate absent-target model path is retired.
+- Verification: HighTrafficPublicationTest, HighTrafficTest and PublicOfflineSnapshotBuilderTest 12/12. Real cold front-controller and manual CLI refresh succeed with the two previously absent production target IDs; missing-model instructions and renderer-timeout diagnostics pass. Concurrent changed retraction evidence is tolerated; access-mode changes and failed workers still reject publication. Stage 4's archive non-resurrection end-to-end check also passes after treating detached signatures as part of the skipped deleted post.
+- Notes: production qdb.us not changed or verified. Old guard remains temporarily only for the sweep being replaced in Stage 6. Ordinary Fastmod/access integrity remains enforced. No estimate revision.
+
+*— Codex · 2026-10-25 UTC*
