@@ -166,3 +166,39 @@ recorded approval, honoring the gate I undercut earlier.
 
 Step 3 carries `Approval: PENDING`; no branch/commit/implementation until it reads
 `APPROVED` for scope v1.
+
+## 2026-10-25 UTC — Approved Step 3; implemented Stages 1–4 + Step 4
+
+Recorded Step 3 approval in its document, then branched (`feat/request-path-cheap-wins`,
+planning commit `4e61ee25`) and implemented. Stage commits `acaa1acf` (S1),
+`f0999228` (S2), `b1e01c1e` (S3). Full suite 1523 passed, 9 failed — the 9 are the
+pre-existing baseline set; zero new failures.
+
+### Necessary/useful instructions
+- Approval-in-document gate, end to end: every step was drafted only after the
+  prior step read `APPROVED`, and each implementing action waited for Step 3
+  `APPROVED`. The convention held for a full cycle without the earlier slip. Retain.
+- "verification" + baseline-differencing: the full-suite grep initially *looked*
+  like it had 14 failures, but the runner summary interleaves "fixed N runs ago"
+  history lines; isolating the actual `] FAIL ` lines showed the true 9 = baseline.
+  Re-checking before claiming a regression prevented a false alarm. Retain — same
+  lesson as the viewer-tag cycle, now a reliable habit.
+- "investigate before asserting": #4 nesting risk and #6 memoization status were
+  both resolved by reading code in planning, so implementation had no surprises.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Extended estimates / per-stage values: off.
+- Read-model schema-change checklist: no schema change.
+
+### Uncertain assessments
+- The AssetFingerprint memo-proof test asserts behavior (unchanged fingerprint
+  after a mid-process content change) rather than counting private calls; this is a
+  faithful characterization of "hashed at most once per request" but is indirect.
+  Single exposed, non-blind rater; ≈0.40 retrospective, matching projection.
+
+### Ready to merge
+- Step 4 written; completion contract met; behavior-neutral with zero new
+  full-suite failures. Awaiting user merge decision (not pushed, not merged).
