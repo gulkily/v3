@@ -59,6 +59,16 @@ final class AcceptedRetractionTest
         assertSame('independent reply', file_get_contents($root . '/records/posts/reply.txt'));
         assertSame($record, AcceptedRetraction::read($root, 'root'));
         assertSame($commit, \ForumRewrite\Write\RetractionDeletion::commit($root, $record));
+        $archive = $root . '-archive'; mkdir($archive . '/records/posts', 0775, true);
+        file_put_contents($archive . '/records/posts/root.txt', $source);
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($archive, $root);
+        assertSame('duplicate', $plan['records/posts/root.txt']['state']);
+        mkdir($archive . '/records/post-retractions', 0775, true);
+        file_put_contents($archive . '/' . AcceptedRetraction::path('root'), AcceptedRetraction::encode($record));
+        $empty = $root . '-empty'; mkdir($empty . '/records', 0775, true);
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($archive, $empty);
+        assertSame('invalid', $plan[AcceptedRetraction::path('root')]['state']);
+
         assertSame('3', trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])) === '' ? '0' : (string) count(explode("\n", trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])))));
     }
 

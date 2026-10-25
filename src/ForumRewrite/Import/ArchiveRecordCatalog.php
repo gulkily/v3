@@ -25,7 +25,7 @@ final class ArchiveRecordCatalog
             || preg_match('#^records/thread-subjects/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/post-retractions/post-retraction-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/post-retractions/post-retraction-[A-Za-z0-9][A-Za-z0-9._-]*\.(?:txt|json)$#', $relativePath) === 1
             || preg_match('#^records/identity/identity-openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
             || preg_match('#^records/approval-seeds/openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
             || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;
@@ -131,6 +131,10 @@ final class ArchiveRecordCatalog
                 return 'post-reaction:' . $repository->loadPostReaction($relativePath)->recordId;
             }
 
+            if (str_starts_with($relativePath, 'records/post-retractions/') && str_ends_with($relativePath, '.json')) {
+                $id = substr(basename($relativePath, '.json'), strlen('post-retraction-'));
+                return \ForumRewrite\Canonical\AcceptedRetraction::read($repositoryRoot, $id) === null ? null : 'post-retraction:' . $id;
+            }
             if (str_starts_with($relativePath, 'records/post-retractions/')) {
                 return 'post-retraction:' . $repository->loadPostRetraction($relativePath)->recordId;
             }

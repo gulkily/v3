@@ -385,3 +385,6 @@ by original activity time and canonical action key, independent of disposable
 SQLite row IDs. Version 25 rebuilds prior models at normal startup before the
 new query contract runs. Existing Forte and RSS queries/return shapes remain
 unchanged; canonical records and Activity membership are unaffected.
+
+
+Schema version 26 rebuilds existing derived rows using accepted deletion records as structural placeholders. Core columns are unchanged; legacy suppression-only records no longer gate indexing. This version bump also triggers normal startup refresh on code-only deployments.

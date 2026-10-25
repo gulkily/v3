@@ -171,7 +171,7 @@ final class ReadModelBuilder
              VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at, :retraction_class, :retraction_attribution)'
         );
 
-        $removals = \ForumRewrite\Canonical\LabelRemoval::all($this->repositoryRoot);
+        $removals = \ForumRewrite\Canonical\AcceptedRetraction::removals($this->repositoryRoot) + \ForumRewrite\Canonical\LabelRemoval::all($this->repositoryRoot);
         $retractions = $this->loadPostRetractions();
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
@@ -217,11 +217,11 @@ final class ReadModelBuilder
             $parsedPosts[] = [
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
-                'retracted_at' => $removal['accepted_at'], 'retraction_class' => 'operator', 'retraction_attribution' => 'operator',
+                'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
                 'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
                 'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
-                'source_path' => \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
+                'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
             ];
         }
 
@@ -314,17 +314,8 @@ final class ReadModelBuilder
      */
     private function loadPostRetractions(): array
     {
-        $retractions = [];
-        foreach ($this->findRelativePaths('records/post-retractions') as $relativePath) {
-            try {
-                $record = $this->canonicalRepository->loadPostRetraction($relativePath);
-            } catch (CanonicalRecordParseException) {
-                continue;
-            }
-            $retractions[$record->postId] = $record;
-        }
-
-        return $retractions;
+        // Legacy suppression is retired. Explicit migration converts accepted requests to deletion.
+        return [];
     }
 
     /**

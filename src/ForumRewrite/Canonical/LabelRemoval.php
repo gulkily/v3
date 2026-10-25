@@ -61,13 +61,13 @@ final class LabelRemoval
     public static function all(string $root): array
     {
         $records = [];
-        if (file_exists($root . '/.git')) {
-            $tracked = preg_split('/\n/', trim(self::git($root, ['ls-tree', '-r', '--name-only', 'HEAD', '--', 'records/post-removals'])));
-            foreach ($tracked as $path) if ($path !== '' && !is_file($root . '/' . $path)) throw new RuntimeException('Tracked removal evidence missing; restore trusted repository: ' . $path);
-        }
         foreach (glob($root . '/records/post-removals/*.json') ?: [] as $path) {
-            $id = basename($path, '.json');
-            $records[$id] = self::read($root, $id);
+            try {
+                $data = json_decode((string) file_get_contents($path), true, 32, JSON_THROW_ON_ERROR);
+                if (($data['acceptance_version'] ?? null) !== 2) continue;
+                $id = basename($path, '.json');
+                $records[$id] = self::read($root, $id);
+            } catch (\Throwable) { /* Unresolved legacy evidence belongs to explicit migration. */ }
         }
         return $records;
     }
@@ -141,7 +141,7 @@ final class LabelRemoval
         }
         ksort($labels);
         $effectiveOperation = ($existing['operation'] ?? null) === 'delete' ? 'delete' : $operation;
-        return ['source_id' => $id, 'source_hash' => $inspection['source_hash'],
+        return ['acceptance_version' => 2, 'source_id' => $id, 'source_hash' => $inspection['source_hash'],
             'operation' => $effectiveOperation, 'accepted_at' => ($existing['operation'] ?? null) === $effectiveOperation ? $existing['accepted_at'] : gmdate('Y-m-d\TH:i:s\Z'),
             'actor' => 'local-operator', 'labels' => $labels,
             'post' => ['post_id' => $id, 'thread_id' => $post->threadId ?? $id, 'parent_id' => $post->parentId,

@@ -3825,6 +3825,16 @@ NODE;
         $repeat = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
         assertSame(true, $repeat['already_retracted']);
         assertSame($result['commit_sha'], $repeat['commit_sha']);
+        $pdo = new PDO('sqlite:' . $db);
+        $pdo->exec("UPDATE metadata SET value='25' WHERE key='schema_version'");
+        $pdo->exec("UPDATE posts SET body='stale prose' WHERE post_id='" . $author['thread_id'] . "'");
+        $fresh = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $page = $this->renderMethod($fresh, 'GET', '/threads/' . $author['thread_id']);
+        assertStringNotContains('stale prose', $page);
+        assertSame(\ForumRewrite\ReadModel\ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id='" . $author['thread_id'] . "'")->fetchColumn());
+
     }
 
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
@@ -4146,15 +4156,7 @@ NODE;
         });
         $assertSuppressed();
 
-        // Even if the operator removed the post files, restoring them from the archive does not resurrect them.
-        foreach ([$authorReply, $author['thread_id']] as $postId) {
-            foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
-                if (is_file($repositoryRoot . '/' . $candidate)) {
-                    $this->runCommand($repositoryRoot, 'git rm -q -f ' . escapeshellarg($candidate . '.asc') . ' ' . escapeshellarg($candidate) . ' 2>/dev/null || git rm -q -f ' . escapeshellarg($candidate));
-                }
-            }
-        }
-        $this->runCommand($repositoryRoot, 'git commit -q -m "Operator removes retracted post files"');
+        // Repeated archive imports cannot restore accepted deletions.
         clearstatcache(true);
         foreach ([$authorReply, $author['thread_id']] as $postId) {
             foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
@@ -4171,7 +4173,7 @@ NODE;
             foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
                 $present = $present || is_file($repositoryRoot . '/' . $candidate);
             }
-            assertTrue($present, 'Original post file was not restored by the archive import: ' . $postId);
+            assertSame(false, $present, 'Archive resurrected a retracted post: ' . $postId);
         }
         $assertSuppressed();
 

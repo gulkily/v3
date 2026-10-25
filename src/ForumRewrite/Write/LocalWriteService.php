@@ -878,8 +878,7 @@ class LocalWriteService
         }
 
         $labelCleanup = [];
-        try { $labelCleanup = \ForumRewrite\Canonical\LabelRemoval::inspect($this->repositoryRoot, $postId)['review_candidates']; }
-        catch (\Throwable) { $labelCleanup = ['Ownership inspection unavailable; operator review required.']; }
+        // Independently authored labels/replies are not retraction cleanup targets.
 
         $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
 
@@ -894,7 +893,7 @@ class LocalWriteService
             'post_id' => $postId,
             'thread_id' => $threadId,
             'record_path' => $recordPath,
-            'signature_path' => $recordPath . '.asc',
+            'signature_path' => str_ends_with($recordPath, '.json') ? null : $recordPath . '.asc',
             'commit_sha' => $commitSha,
             'timings' => $timings,
         ];

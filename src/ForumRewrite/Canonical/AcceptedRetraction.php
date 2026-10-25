@@ -59,7 +59,18 @@ final class AcceptedRetraction
         $records = [];
         foreach (glob($root . '/records/post-retractions/post-retraction-*.json') ?: [] as $path) {
             $id = substr(basename($path, '.json'), strlen('post-retraction-'));
-            $records[$id] = self::read($root, $id);
+            try { $records[$id] = self::read($root, $id); }
+            catch (\Throwable) { /* Operator migration/inspection reports malformed records; readers remain available. */ }
+        }
+        return $records;
+    }
+
+    /** Adapter to the existing structural-placeholder shape; no additional persisted record. */
+    public static function removals(string $root): array
+    {
+        $records = [];
+        foreach (self::all($root) as $id => $record) {
+            $records[$id] = $record + ['operation' => 'delete', 'labels' => [], 'source_id' => $id];
         }
         return $records;
     }

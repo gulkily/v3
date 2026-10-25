@@ -34,7 +34,7 @@ final class ContentImportPlanner
 
     public function plan(string $source, string $destination): array
     {
-        $removals = \ForumRewrite\Canonical\LabelRemoval::all($destination);
+        $removals = \ForumRewrite\Canonical\AcceptedRetraction::removals($destination) + \ForumRewrite\Canonical\LabelRemoval::all($destination);
         $target = [];
         foreach (self::files($destination) as $path) {
             $key = ArchiveRecordCatalog::identityKey($destination, $path);
@@ -48,7 +48,8 @@ final class ContentImportPlanner
         foreach (self::files($source) as $path) {
             $entry = $this->describe($source, $path, $destination);
             $entry['hash'] = hash_file('sha256', $source . '/' . $path);
-            if (str_starts_with($path, 'records/posts/') && ($removals[basename($path, '.txt')]['operation'] ?? null) === 'delete') {
+            $postPath = preg_replace('/\.(?:asc|sig)$/D', '', $path);
+            if (str_starts_with($postPath, 'records/posts/') && ($removals[basename($postPath, '.txt')]['operation'] ?? null) === 'delete') {
                 $entry = [...$entry, 'state' => 'duplicate', 'reason' => 'Source removed locally; structural placeholder retained', 'dependencies' => []];
             }
             if (str_starts_with($path, 'records/thread-labels/') && $entry['state'] === 'import') {
@@ -178,6 +179,15 @@ final class ContentImportPlanner
     private function describe(string $root, string $path, ?string $keyFallbackRoot = null): array
     {
         $entry = ['state' => 'import', 'reason' => '', 'key' => ArchiveRecordCatalog::pathIdentityKey($path), 'dependencies' => []];
+        if (str_starts_with($path, 'records/post-retractions/') && str_ends_with($path, '.json')) {
+            $id = substr(basename($path, '.json'), strlen('post-retraction-'));
+            try {
+                $incoming = \ForumRewrite\Canonical\AcceptedRetraction::decode((string) file_get_contents($root . '/' . $path), $id);
+                $local = $keyFallbackRoot === null ? null : \ForumRewrite\Canonical\AcceptedRetraction::read($keyFallbackRoot, $id);
+                if ($local === null || $incoming !== $local) throw new RuntimeException('Imported acceptance is not local authority; use a signed retraction request or operator migration.');
+                return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local retraction'];
+            } catch (Throwable $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
+        }
         if (str_starts_with($path, 'records/post-removals/')) {
             try {
                 $id = basename($path, '.json');

@@ -46,3 +46,15 @@ Step 3 explicitly approved. Planning commit `fd5c6849`, branch `feature/retracti
 - Notes: unconverted operator records still require legacy authority during explicit migration; Stage 4 removes recurring checks from normal readers. Migration is an operator command, not automatic live mutation. No estimate revision.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 4 - Readers and archive imports
+
+**Original estimate: 0.25**
+
+**Retrospective stage work: 0.25**
+
+- Changes: existing placeholder fields now derive from retained acceptance records; legacy suppression-only requests no longer hide content during ordinary rebuild. Current source routes recognize the accepted target/record. Ordinary archive imports skip deleted content; unfamiliar JSON acceptance claims are explicitly rejected, matching the existing local-removal trust policy. No repeated Git acceptance reconstruction in ordinary placeholder readers. Signed legacy requests remain available to explicit migration.
+- Verification: 6 focused checks passed covering record/import rejection, absent migration, root/reply normal pages, schema-25 startup rebuild and actual `./v3 rebuild`; archive end-to-end test updated from physical resurrection expectations to non-resurrection. No core columns changed; schema identity 26 forces correct rebuild on code-only deployment, documented in schema spec.
+- Notes: broader display/signature assertions and legacy policy tests remain for Stage 8 reconciliation. Retained malformed/unconverted evidence does not globally prevent publication. No estimate revision.
+
+*— Codex · 2026-10-25 UTC*
