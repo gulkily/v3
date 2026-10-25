@@ -10,6 +10,7 @@ $testFiles = [
     __DIR__ . '/RetractionMaintenanceTest.php',
     __DIR__ . '/AcceptedRetractionTest.php',
     __DIR__ . '/RetractionReceiptTest.php',
+    __DIR__ . '/RetractionTransactionTest.php',
     __DIR__ . '/DocsPublicationTest.php',
     __DIR__ . '/IndependentDocsPublicationTest.php',
     __DIR__ . '/LegacyDocsMigrationTest.php',

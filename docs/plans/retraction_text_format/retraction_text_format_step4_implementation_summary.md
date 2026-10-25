@@ -22,3 +22,15 @@ Step 3 explicitly approved. Branch `feature/retraction-text-format`; planning co
 - Notes: S1/v1 scope unchanged; local receipt hashes do not confer archive authority. Filesystem/missing-file cases belong to Stage 2. Zero dependencies.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 2 - Atomic retained evidence
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.20**
+
+- Changes: acceptance reads all three bound text files; deletion installs request/signature before the receipt and only then deletes the post. Atomic file replacement avoids partial receipts. Scoped commit/restore preserves unrelated staging; complete receipts support interrupted retry.
+- Verification: receipt/transaction suites **6/6**. Injected exceptions and actual subprocess exits at all six write/delete/stage boundaries; rejected Git commit, five-path successful commit, missing signature, repeat/no-extra-commit and unrelated index checks pass.
+- Notes: interruption test exposed staged-deletion paths disappearing from the index; include HEAD paths in the commit and avoid re-adding already staged absent paths. Fixed and rerun. No new journal, dependencies or history migration. Stage 1 commit `d4c5cb1c`; S2/v1 unchanged. Existing legacy/application fixtures are reconciled in dependent stages; this intermediate commit is not releasable.
+
+*— Codex · 2026-10-25 UTC*
