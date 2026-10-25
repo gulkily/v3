@@ -88,7 +88,7 @@ final class HealthIndicatorsTest
         ])));
 
         assertSame('FAIL', $stuck['Read-model DB']['level']);
-        assertStringContains('may be stuck', (string) $stuck['Read-model DB']['fix']);
+        assertStringContains('web request or manual command', (string) $stuck['Read-model DB']['fix']);
         assertStringContains('rebuild is running', (string) $rebuilding['Read-model DB']['fix']);
     }
 
