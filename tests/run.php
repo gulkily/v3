@@ -181,6 +181,7 @@ $testFiles = [
     __DIR__ . '/ReadModelMetadataTest.php',
     __DIR__ . '/ReadModelSchemaTest.php',
     __DIR__ . '/ReadModelHotIndexRebuildTest.php',
+    __DIR__ . '/ReadModelViewerTagsProjectionTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',
     __DIR__ . '/ReadModelThreadSubjectsTest.php',
     __DIR__ . '/ReadModelPostRetractionsTest.php',
