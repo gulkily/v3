@@ -148,6 +148,7 @@ final class ReadModelBuilder
         $pdo->exec('DROP TABLE IF EXISTS instance_public');
         $pdo->exec('DROP TABLE IF EXISTS activity');
         $pdo->exec('DROP TABLE IF EXISTS commits');
+        $pdo->exec('DROP TABLE IF EXISTS viewer_tags');
     }
 
     private function createSchema(PDO $pdo): void
@@ -346,18 +347,27 @@ final class ReadModelBuilder
             $seedVoteCountByThread[$rootPostId] = (int) $row['vote_count'];
         }
         $records = [];
+        $viewerTagRows = [];
 
         $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $paths = $this->findRelativePaths('records/thread-labels');
         foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
                 $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+                // viewer_tags mirrors ViewerTagLookup::threadTags()'s file scan, which applies
+                // no inactive/publication exclusion: project every loaded record's labels.
+                if ($record->authorIdentityId !== null) {
+                    foreach ($record->labels as $label) {
+                        $viewerTagRows[] = ['thread-labels', $record->threadId, $record->authorIdentityId, $label];
+                    }
+                }
                 if (isset($this->excludedPublicationPosts[$record->sourcePostId ?? ''])) continue;
                 if (!isset($inactive[$record->recordId])) $records[] = $record;
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadLabelRecordCount++;
             }
         }
+        $this->writeViewerTags($pdo, $viewerTagRows);
 
         $this->measure('sort_thread_labels', function () use (&$records): void {
             usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {
@@ -546,15 +556,24 @@ final class ReadModelBuilder
         }
 
         $records = [];
+        $viewerTagRows = [];
         $paths = $this->findRelativePaths('records/post-reactions');
         foreach ($this->progressItems('parsing_post_reaction_records', $paths) as $index => $relativePath) {
             try {
-                $records[] = $this->canonicalRepository->loadPostReaction($relativePath);
+                $record = $this->canonicalRepository->loadPostReaction($relativePath);
+                $records[] = $record;
+                // viewer_tags mirrors ViewerTagLookup::postTags()'s file scan over every loaded record.
+                if ($record->authorIdentityId !== null) {
+                    foreach ($record->tags as $tag) {
+                        $viewerTagRows[] = ['post-reactions', $record->postId, $record->authorIdentityId, $tag];
+                    }
+                }
             } catch (CanonicalRecordParseException) {
                 $this->invalidPostReactionRecordCount++;
                 continue;
             }
         }
+        $this->writeViewerTags($pdo, $viewerTagRows);
 
         $this->measure('sort_post_reactions', function () use (&$records): void {
             usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
@@ -642,6 +661,33 @@ final class ReadModelBuilder
                 'is_hidden' => $isHidden ? 1 : 0,
                 'hidden_reason' => $isHidden ? 'approved_flagged_reply_agent' : null,
                 'post_id' => $postId,
+            ]);
+        }
+    }
+
+    /**
+     * Insert projected viewer-tag rows (record_family, target_id, author_identity_id, tag).
+     * INSERT OR IGNORE dedupes repeat (identity, target, tag) across multiple records,
+     * matching the set semantics of the file-scan lookups.
+     *
+     * @param list<array{0:string,1:string,2:string,3:string}> $rows
+     */
+    private function writeViewerTags(PDO $pdo, array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+
+        $insert = $pdo->prepare(
+            'INSERT OR IGNORE INTO viewer_tags (record_family, target_id, author_identity_id, tag)
+             VALUES (:record_family, :target_id, :author_identity_id, :tag)'
+        );
+        foreach ($rows as [$recordFamily, $targetId, $authorIdentityId, $tag]) {
+            $insert->execute([
+                'record_family' => $recordFamily,
+                'target_id' => $targetId,
+                'author_identity_id' => $authorIdentityId,
+                'tag' => $tag,
             ]);
         }
     }

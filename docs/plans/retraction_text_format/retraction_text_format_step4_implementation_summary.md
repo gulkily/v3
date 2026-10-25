@@ -96,3 +96,16 @@ Previous retractions remain untouched and unsupported. New-record transaction/re
 Temporary evidence: `/tmp/retraction-text-regressions.log`, `/tmp/retraction-text-api.log`, `/tmp/retraction-text-browser.log`, `/tmp/retraction-text-corrections.log`, and `/tmp/retraction-browser-evidence/`; durable outcomes are recorded above.
 
 *— Codex · 2026-10-25 UTC*
+
+## Merge verification
+
+User authorized merge and push. Integrated `origin/main` at `95e6c17a`, preserving
+its schema version 27, viewer-tag projection/indexes, archive README and Railspike
+beta.4. Retained both sets of planning/study history and the readable-format policy.
+Combined-tree checks: **138/138** focused PHP regressions (including schema rebuild,
+viewer tags, archive exports and Railspike sync), **16/16** signed API/source tests,
+actual browser author/operator/account/partial flows and all 13 themes at phone and
+desktop widths, plus menu keyboard/Escape/focus/touch checks passed. PHP lint passed
+for all 54 added/modified PHP files relative to main; diff checks passed. No full-suite
+or deployment claim. Study scores and pending maintainer fit judgment are unchanged.
+Evidence: `/tmp/retraction-merge-{regressions,api,browser,menu}.log`.

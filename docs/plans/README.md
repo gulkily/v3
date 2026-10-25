@@ -20,6 +20,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Readable retraction records](retraction_text_format/)
 
+- [Repository archive README](repository_archive_readme/)
+
 - [Independent documentation publication](docs_independent_publication/)
 
 - [Documentation publication policy](docs_publication_policy/)
@@ -41,6 +43,8 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Markdown task lists](markdown_task_lists/)
 
 - [Standard Activity and shared pagination](activity_feed_pagination/)
+
+- [Read-model hot indexes](read_model_hot_indexes/)
 
 - [Thread-like Activity reporting](thread_like_activity/)
 

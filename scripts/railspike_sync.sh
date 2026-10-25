@@ -4,11 +4,11 @@ set -euo pipefail
 railspike_usage() {
   cat <<'USAGE'
 Usage:
-  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.3.0-beta.3]
+  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.3.0-beta.4]
   ./v3 fdp sync ...  (deprecated alias)
 
 Updates docs/railspike to an explicit release tag using Git subtree, creating update commits.
-Without --ref the pinned tag v0.3.0-beta.3 (690c5963) is used, so a plain sync never moves
+Without --ref the pinned tag v0.3.0-beta.4 (f8c8d258) is used, so a plain sync never moves
 the installed version. Branches such as main are not accepted; pass a newer tag deliberately.
 The target must descend from the installed revision recorded in RAILSPIKE_SOURCE.md.
 Requires a clean migrated repository with subtree history. FDP stays frozen.
@@ -21,8 +21,8 @@ railspike_sync() {
   local repository_root canonical source ref pinned_ref pinned_commit installed record explicit=0 argument top existing marker split revision operation
   repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   canonical='https://github.com/rlspk/railspike.git'
-  pinned_ref='v0.3.0-beta.3'
-  pinned_commit='690c596307b2087515b7c258008e5835af89048b'
+  pinned_ref='v0.3.0-beta.4'
+  pinned_commit='f8c8d2588a4a849a12acc7c425d99f533e218f8d'
   ref="${pinned_ref}"
   source="${canonical}"
   for argument in "$@"; do
@@ -41,7 +41,7 @@ railspike_sync() {
     echo 'Railspike remote URL must be nonempty and cannot start with a dash.' >&2; return 1
   fi
   if [[ ! "${ref}" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ || "${ref}" == */ || "${ref}" == *..* ]]; then
-    echo 'Railspike ref must be a release tag name such as v0.3.0-beta.3.' >&2; return 1
+    echo 'Railspike ref must be a release tag name such as v0.3.0-beta.4.' >&2; return 1
   fi
   repository_root="$(cd "${repository_root}" && pwd -P)"
   if ! top="$(git -C "${repository_root}" rev-parse --show-toplevel 2>/dev/null)" || [[ "${repository_root}" != "${top}" ]]; then

@@ -183,6 +183,11 @@ class IncrementalReadModelUpdater
             );
             $this->measure(
                 $timings,
+                'refresh_thread_label_viewer_tags',
+                fn (): mixed => $this->refreshViewerTagsForTarget($pdo, 'thread-labels', $threadId)
+            );
+            $this->measure(
+                $timings,
                 'refresh_thread_label_activity',
                 fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'])
             );
@@ -264,6 +269,11 @@ class IncrementalReadModelUpdater
                 $timings,
                 'update_post_reactions',
                 fn (): mixed => $this->updatePostReactions($pdo, $postId, $state)
+            );
+            $this->measure(
+                $timings,
+                'refresh_post_reaction_viewer_tags',
+                fn (): mixed => $this->refreshViewerTagsForTarget($pdo, 'post-reactions', $postId)
             );
             $this->measure(
                 $timings,
@@ -1303,6 +1313,56 @@ class IncrementalReadModelUpdater
             'root_post_id' => (string) $row['root_post_id'],
             'board_tags_json' => (string) $row['board_tags_json'],
         ];
+    }
+
+    /**
+     * Refresh viewer_tags rows for a single (record family, target) to match the
+     * builder projection: delete the target's rows, then re-insert from the full
+     * unfiltered record scan (no inactive/publication exclusion), so the SQL
+     * lookups stay byte-identical to the former file scan after an incremental
+     * write. Author identity stored verbatim (no openpgp-/openpgp: normalization).
+     */
+    private function refreshViewerTagsForTarget(PDO $pdo, string $recordFamily, string $targetId): void
+    {
+        $delete = $pdo->prepare(
+            'DELETE FROM viewer_tags WHERE record_family = :family AND target_id = :target'
+        );
+        $delete->execute(['family' => $recordFamily, 'target' => $targetId]);
+
+        $insert = $pdo->prepare(
+            'INSERT OR IGNORE INTO viewer_tags (record_family, target_id, author_identity_id, tag)
+             VALUES (:family, :target, :identity, :tag)'
+        );
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $directory = $recordFamily === 'thread-labels' ? 'thread-labels' : 'post-reactions';
+        foreach (glob($this->repositoryRoot . '/records/' . $directory . '/*.txt') ?: [] as $path) {
+            try {
+                if ($recordFamily === 'thread-labels') {
+                    $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+                    if ($record->threadId !== $targetId || $record->authorIdentityId === null) {
+                        continue;
+                    }
+                    $tags = $record->labels;
+                } else {
+                    $record = $repository->loadPostReaction('records/post-reactions/' . basename($path));
+                    if ($record->postId !== $targetId || $record->authorIdentityId === null) {
+                        continue;
+                    }
+                    $tags = $record->tags;
+                }
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+
+            foreach ($tags as $tag) {
+                $insert->execute([
+                    'family' => $recordFamily,
+                    'target' => $targetId,
+                    'identity' => $record->authorIdentityId,
+                    'tag' => $tag,
+                ]);
+            }
+        }
     }
 
     /**

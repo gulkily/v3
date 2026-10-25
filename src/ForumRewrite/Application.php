@@ -1150,6 +1150,7 @@ final class Application
                 $this->repositoryRoot,
                 $this->resolveViewerProfileFromIdentityHint(...),
                 QdbVoteCaptionCatalog::forReadModel($this->databasePath),
+                $this->routeServices()->pdo(),
             ),
             $this->routeServices(),
             $this->threadAndPostPageController(),
