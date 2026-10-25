@@ -50,3 +50,7 @@ Both existing repository download endpoints produce an extractable archive with 
 Step 2 approved 2026-10-25. The earlier “Approved Step 3” preceded this plan; await review of this concrete artifact before implementation. No incidental scope additions. 2026-10-25T18:29:42Z: **0.25 whole-cycle projection reaffirmed**, same scope v2/original baseline `99a0def2af1f0b19b4b5cc284c1eac920da9464d`, R1 hashes reverified, Codex single exposed rater. Export integration is bounded; preservation and recovery drive verification. Prior snapshots retained; no measured labor or completed outcome. Planning remains uncommitted.
 
 *— Codex · 2026-10-25 UTC*
+
+Implementation completed locally; see [verification and closeout](./repository_archive_readme_step4_implementation_summary.md). Step 3 approval was received after the concrete plan was delivered; earlier awaiting-approval text records its historical handoff state.
+
+*— Revised by Codex · 2026-10-25 UTC*

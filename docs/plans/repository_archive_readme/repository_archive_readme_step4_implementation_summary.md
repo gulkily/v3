@@ -30,3 +30,19 @@ Step 3 explicitly approved on 2026-10-25 after plan delivery. Planning commit `8
 - Notes: existing image suite verifies actual restoration including image bytes; no browser UI changes, no deployment, no dependencies or schema changes. Stage 3 closes documentation and study records.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 3 — Closeout
+
+- Changes: cycle study entries transferred without unrelated ledger edits; feature navigation/index and approval outcomes reconciled. Original workspace planning copies are superseded by this canonical feature folder, not separate observations.
+- Verification: scoped diff and relative-link checks passed; all three stage commits include this summary after the separate planning commit. Zero dependency delta; no schema changes. The passing 25-test run is the final relevant test result; no subsequent application changes.
+- Notes: UI/browser verification is inapplicable because no rendered interface changed. Full application suite and deployment were not performed. No runtime configuration or canonical repository migration is required.
+
+*— Codex · 2026-10-25 UTC*
+
+## Study closeout
+
+**Retrospective cycle scope: 0.25**
+
+2026-10-25: projection 0.25 retained separately, scope v2, R1/P2, Codex single exposed rater. Completed stages: 3/3. Planning `832e6e140`, guide/integration `0706092a8`, command/recovery verification `b09388be9`, and this closeout commit. Original cycle baseline `99a0def2af1f0b19b4b5cc284c1eac920da9464d`; implementation baseline `2a6dfba08`. Correction of the import command followed observed failure within approved scope; no added requests or splits. Actual active work was not measured. Maintainer comfortable-fit and study acceptance remain pending; accepted outcomes do not increment. No push or deployment is included in this implementation handoff.
+
+*— Codex · 2026-10-25 UTC*

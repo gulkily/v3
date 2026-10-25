@@ -54,3 +54,7 @@ Acceptance: extract real responses for both formats; verify identical guide cont
 Step 2 approved 2026-10-25; requirements unchanged. Development plan prepared for review.
 
 *— Revised by Codex · 2026-10-25 UTC*
+
+Implementation completed locally; see [verification and closeout](./repository_archive_readme_step4_implementation_summary.md). Step 3 approval was received after the concrete plan was delivered; earlier awaiting-approval text records its historical handoff state.
+
+*— Revised by Codex · 2026-10-25 UTC*

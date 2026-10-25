@@ -54,3 +54,7 @@ Step 1 approved on 2026-10-25. Planning records remain uncommitted. No incidenta
 Post-approval baseline correction: remote commit `042e684ae` removed Git history and unified exports. [Step 2](./repository_archive_readme_step2_feature_description.md) retains Option B but supersedes the history/two-path assumptions above; the original assessment is preserved as inspected-checkout evidence.
 
 *— Revised by Codex · 2026-10-25 UTC*
+
+Implementation completed locally; see [verification and closeout](./repository_archive_readme_step4_implementation_summary.md). Step 3 approval was received after the concrete plan was delivered; earlier awaiting-approval text records its historical handoff state.
+
+*— Revised by Codex · 2026-10-25 UTC*
