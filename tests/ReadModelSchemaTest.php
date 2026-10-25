@@ -34,6 +34,8 @@ final class ReadModelSchemaTest
             'threads',
             'threads_last_activity_idx',
             'username_routes',
+            'viewer_tags',
+            'viewer_tags_identity_idx',
         ], $objects);
     }
 
