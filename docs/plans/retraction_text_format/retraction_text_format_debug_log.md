@@ -65,3 +65,27 @@ No supported findings.
 - Stage sizing is a prospective judgment, not measured work; stage 2 interruption behavior and stage 4 path dispatch may require splitting during implementation. The plan requires splitting before oversized work and renewed scope approval if necessary.
 
 *— Codex · 2026-10-25 UTC*
+
+## 2026-10-25 UTC — Step 4 handoff
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: one planning commit plus six summary-bearing stage commits made the codec, interruption recovery, normal writes, import trust and cleanup independently reviewable. Retain; subprocess interruption testing found a real staged-deletion retry defect before later integration.
+- `step4_implementation_after.md`, normal-flow verification and evidence limits: required actual browser signing, source byte inspection, ZIP export, rebuild, CLI and recovery rather than codec-only passes. This found historical-source trimming and a lost-finalize-response retry gap. Retain; final local results are distinct from deployment/full-suite/physical-device acceptance.
+- `RAILSPIKE.md`, scope and estimate preservation: old-retraction compatibility stayed explicitly excluded while new-record interruption/retry remained required. Original 0.60 projection and separate 0.70 retrospective retained; no measured-time or acceptance claim. Retain.
+
+### Redundant/unnecessary instructions
+
+No new supported findings beyond the planning page-limit feedback already recorded.
+
+### Inapplicable instructions
+
+- Deployment and old-format migration are outside approved scope. No new dependencies, schema changes, navigation destinations or UI copy changes occurred, so corresponding approval/schema/icon work was unnecessary.
+
+### Uncertain assessments
+
+- Native plain-text source rendering scales down on mobile; the receipt is readable structured text and supports browser zoom, but the task did not include a source-view redesign or physical-device acceptance. Retain this distinction rather than treating automated viewport coverage as device validation.
+
+Final implementation commit: `dc8bd8cc`; planning `75ec624b` plus six stage commits verified, each implementation commit includes the summary. Final checks: 117/117 affected regressions, 16/16 API/source, strengthened export/replay 1/1, actual browser scenarios and theme checks, keyboard/touch, PHP lint and documentation links. Working tree clean before this log-only handoff entry. No merge, push, deployment, full-suite or maintainer-fit claim.
+
+*— Codex · 2026-10-25 UTC*
