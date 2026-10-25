@@ -283,3 +283,5 @@ and repair its navigation and affected references. See the
 - [Status frontend target](status_frontend_target/)
 
 - [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.
+
+- [Retraction simplification](./retraction_simplification/retraction_simplification_step3_development_plan.md): approved release-1 implementation plan.
