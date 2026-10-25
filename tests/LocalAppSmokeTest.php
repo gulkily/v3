@@ -1615,6 +1615,10 @@ PHP;
                 $repositoryRoot . '/records/post-reactions/post-reaction-20261002120000-replylike.txt',
                 "Record-ID: post-reaction-20261002120000-replylike\nCreated-At: 2026-10-02T12:00:00Z\nPost-ID: reply-002\nOperation: add\nTags: like\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
             );
+            // The read model is the source of truth for viewer-tag state; rebuild
+            // it so the out-of-band reaction is projected (real writes go through
+            // the write API, which refreshes the read model for us).
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
             $_COOKIE = ['identity_hint' => 'guest'];
             $likedForte = $this->render($application, '/forte?selected=root-001');
 

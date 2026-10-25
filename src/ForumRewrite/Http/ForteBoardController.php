@@ -165,14 +165,15 @@ final class ForteBoardController
         }
 
         $viewerIdentityId = $viewerProfile !== null ? (string) $viewerProfile['identity_id'] : '';
+        $pdo = $this->routeServices->pdo();
         $viewerLikedThreadIds = $viewerProfile !== null
-            ? ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'like', $viewerIdentityId)
+            ? ViewerTagLookup::threadTags($pdo, [$threadId], 'like', $viewerIdentityId)
             : [];
         $viewerLikedPostIds = $viewerProfile !== null
-            ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'like', $viewerIdentityId)
+            ? ViewerTagLookup::postTags($pdo, $allPostIds, 'like', $viewerIdentityId)
             : [];
         $viewerFlaggedPostIds = $viewerProfile !== null
-            ? ViewerTagLookup::postTags($this->repositoryRoot, $allPostIds, 'flag', $viewerIdentityId)
+            ? ViewerTagLookup::postTags($pdo, $allPostIds, 'flag', $viewerIdentityId)
             : [];
 
         return [

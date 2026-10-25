@@ -19,6 +19,7 @@ final class QdbBoardPolicy
         private readonly string $repositoryRoot,
         private readonly \Closure $resolveViewerProfile,
         private readonly ?QdbVoteCaptionCatalog $captionCatalog = null,
+        private readonly ?\PDO $readModel = null,
     ) {
     }
 
@@ -76,14 +77,19 @@ final class QdbBoardPolicy
         $viewerIdentityId = (string) $viewerProfile['identity_id'];
         $rootPostIds = array_column($threads, 'root_post_id');
 
+        if ($this->readModel === null) {
+            throw new \LogicException('QDB board policy requires a read-model connection for viewer-tag lookups.');
+        }
+        $pdo = $this->readModel;
+
         $voted = [];
         foreach ($this->voteTags() as $tag) {
-            $voted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, $tag, $viewerIdentityId);
+            $voted += ViewerTagLookup::threadTags($pdo, $rootPostIds, $tag, $viewerIdentityId);
         }
 
         return [
             'voted' => $voted,
-            'flagged' => ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId),
+            'flagged' => ViewerTagLookup::postTags($pdo, $rootPostIds, 'flag', $viewerIdentityId),
         ];
     }
 
