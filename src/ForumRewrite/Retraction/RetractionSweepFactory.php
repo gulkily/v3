@@ -15,15 +15,15 @@ final class RetractionSweepFactory
         $publicRoot = getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $projectRoot . '/public';
         $key = hash('sha256', json_encode([$repositoryRoot, $exchangePath, $staticRoot, $publicRoot], JSON_THROW_ON_ERROR));
         $statePath ??= getenv('FORUM_RETRACTION_SWEEP_STATE_PATH') ?: $projectRoot . '/state/private/retraction-sweep-' . substr($key, 0, 20) . '.json';
-        return new RetractionSweep($repositoryRoot, $exchangePath, $statePath, [$staticRoot, $publicRoot]);
+        return new RetractionSweep($repositoryRoot, $exchangePath, $statePath, [$staticRoot, $publicRoot, $projectRoot . '/state/high_traffic/' . substr(hash('sha256', realpath($repositoryRoot) ?: $repositoryRoot), 0, 16) . '/pages']);
     }
 
     public static function reconcile(RetractionSweep $sweep, SqliteTaskQueueStore $store): void
     {
         // Do not resurrect terminal failures on every cron tick. An operator can enqueue a retry.
-        $state = $sweep->state();
+        $state = $store->latestByType(SqliteTaskQueueStore::RETRACTION_SWEEP) ?? [];
         if (($state['status'] ?? '') === 'failed') return;
-        if (($state['status'] ?? '') === 'complete' && time() - (strtotime($state['updated_at'] ?? '') ?: 0) < 300) return;
+        if (($state['status'] ?? '') === 'completed' && time() - (strtotime($state['completed_at'] ?? '') ?: 0) < 300) return;
         if (!$sweep->hasRetractions()) return;
         $store->enqueue(SqliteTaskQueueStore::RETRACTION_SWEEP, 'retraction-sweep');
     }

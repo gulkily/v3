@@ -70,3 +70,15 @@ Step 3 explicitly approved. Planning commit `fd5c6849`, branch `feature/retracti
 - Notes: production qdb.us not changed or verified. Old guard remains temporarily only for the sweep being replaced in Stage 6. Ordinary Fastmod/access integrity remains enforced. No estimate revision.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 6 - Stateless artifact maintenance
+
+**Original estimate: 0.30**
+
+**Retrospective stage work: 0.30**
+
+- Changes: sweep scans complete stores each run with only in-memory paging; the task queue owns five-minute discovery and failure/retry status. No saved generation/cursor/stack or publication guard remains. Successful runs retire recognized old sweep ledgers. Artifact traversal preserves assets, pinned independent Docs and symlink boundaries, including the actual high-traffic cache root.
+- Verification: new 1,500-artifact test scans beyond the former per-run limit, verifies preview, repeat/no-op, late-output expiry and protected assets/outside symlink targets; high-traffic actual-flow regression remains passing. Larger QDB migration/cleanup acceptance remains Stage 8.
+- Notes: ordinary file age replaces generation stamps: artifacts predating retained record files retire immediately; later stale output expires after five minutes on a successful subsequent scan. With retractions present this also expires fresh generated copies after five minutes, trading cache lifetime for no per-item cleanup state. Static-only deployments must rebuild/refresh; this operational consequence requires explicit runbook coverage. `--limit` now means in-memory SQLite batch size, not a partial sweep checkpoint. Full scan may be retried manually after worker timeout; no completion SLA. No estimate revision.
+
+*— Codex · 2026-10-25 UTC*
