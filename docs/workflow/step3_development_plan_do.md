@@ -28,11 +28,14 @@ Render the plan using this preferred format for every stage:
 
 ```md
 ## Stage 1
+
+**Estimate: <value>**
+
 - Goal: ...
 - Dependencies: ...
 - Expected changes: ...
 - Verification approach: ...
-- Stage work estimate (extended mode only): ...; driver: ...; uncertainty: ...
+- Estimate details (extended mode only): driver: ...; uncertainty: ...
 - Risks or open questions:
   - Impact: ...
   - Early warning / validation: ...
@@ -49,7 +52,15 @@ For each stage include:
 - Canonical components/API contracts as an explicit bullet, not buried in prose
 - Include all wiring, operations, and verification needed for the Completion Contract; split stories into vertical slices, not layers
 - For documentation-only work, keep every expected change within the approved documentation file scope and identify the evidence and document-integrity checks for that stage
-- Include the optional stage-work bullet only when extended mode is enabled; otherwise omit it. Shared reference/date/rater/exposure metadata may appear once in the artifact, with compact current values and links to retained revision history.
+- Include the standalone estimate line and estimate-details bullet only when extended mode is enabled; otherwise omit them. Use plain numbers without approximation signs and show the enrolled cycle's independent `Cycle estimate: <value>` below its state fields. Follow [estimate presentation](../effort-estimation.md#estimate-presentation) for ranges, unavailable values and history.
+
+When one agent generates the entire Step 3 plan in one pass, use a single attribution footer for the whole plan. Use stage-level attribution only for stages subsequently authored or substantively revised separately. Preserve the original plan footer and prior stage attribution when recording revisions. Follow [agent attribution](../../RAILSPIKE.md#agent-attribution), adding model/settings only when verified. Shared reference/date/rater/exposure metadata may appear once in the artifact.
+
+Place the whole-plan footer after all plan sections, including any study checkpoint:
+
+```md
+*— Agent name · YYYY-MM-DD UTC*
+```
 
 Additional requirements:
 - When Step 2 states a known user or environment recovery condition, include a stage that replays each reported failure as acceptance evidence. A pass only on the installer or another supported platform does not complete it; actionable manual guidance can satisfy it when automatic support is out of scope
