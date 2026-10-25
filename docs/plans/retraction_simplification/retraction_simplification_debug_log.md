@@ -111,3 +111,32 @@ Stage-level calibration remains unestablished; drivers/uncertainties are recorde
 Enablement and all three estimate updates completed. Approved scope and Step 1/2 approvals preserved; Step 3 remains unapproved. Signature-policy changes were discussed but not authorized by this request; existing signatures retained with a shared estimate-revision attribution.
 
 *— Codex · 2026-10-25 UTC*
+
+
+## 2026-10-25T19:15:34Z — Step 4 completed local implementation
+
+Debug mode: enabled, inherited from the current Step 4 summary. Extended estimates remain enabled at explicit user request. Step 3 approval authorized this implementation; no deployment/history purge approval inferred.
+
+### Necessary/useful instructions
+
+- `docs/workflow/step4_implementation_do.md`, stage completion and verification: scoped commits with contemporaneous summary records exposed integration dependencies while preserving working recovery evidence. Planning `fd5c6849` plus stages `dcdd09cc`, `2f55dc1c`, `7b78d723`, `4ae11274`, `e31acf0d`, `1b7862c7`, `3dce9d79`, `471b8111` satisfy nine required commits. Retain the stage/evidence association.
+- `RAILSPIKE.md`, Contract, and `docs/workflow/step4_implementation_after.md`, final checklist: actual browser/API, CLI migration/rebuild, worker invocation, absent-target cold render and 18,931-artifact cleanup caught differences that direct record tests missed. Baseline comparison separates seven inherited failures and local public/private configuration from corrected regressions. Retain the distinction between focused passes and full-suite/production results.
+- `docs/workflow/step4_implementation_after.md`, effort estimation: preserves original 1.00 projection separately from 1.10 retrospective and all eight original stage estimates, with Stage 8 retrospective 0.40. No measured labor, maintainer acceptance or independent rater invented. Retain these boundaries.
+
+### Redundant/unnecessary instructions
+
+No supported findings. Per-stage signatures were discussed by the user earlier, but no authorized policy change followed; required attribution remains. No inference about their general usefulness from that preference alone.
+
+### Inapplicable instructions
+
+Deployment, live qdb.us recovery, history rewrite, push/merge and external provider verification are outside this approved local release-1 execution. They remain pending, not silently passed. No new dependencies or navigation destinations were added, so dependency approval and new-icon checks do not apply. Documentation-only runtime exemptions do not apply to this implementation.
+
+### Uncertain assessments
+
+The no-ledger design deliberately retires clean artifacts too; its live operational fit depends on ordinary refresh cadence. Local QDB-derived traversal and fixtures demonstrate completion and retry, not the deployed host's scheduling/performance. Maintainer comfortable-fit/acceptance remains pending. Exact runtime model/settings are not exposed; attribution stays Codex.
+
+### Final verification and disposition
+
+Planning commit contains only plans, existing debug log and index. All eight scoped stage commits include their summary record; Stage 8 includes the authorized study ledger and UI verification update. Document file links, changed PHP syntax and diff checks pass; `todo.txt` untouched. Final focused 122/122, API 18/18 and browser/menu/offline/QDB-derived checks pass; detailed full-suite failures/limits remain in Step 4. Release-1 implementation complete locally, with separate release-2 history purge still unimplemented. Current feature worktree clean before this log-only commit. No merge, push, deployment or live mutation performed. One prior process deviation: After instructions were inspected before Do finished; reread after Stage 8 and apply final gates now. Clarify sequencing only if early checklist preview is intended to be allowed; current instruction was otherwise followed at handoff.
+
+*— Codex · 2026-10-25 UTC*
