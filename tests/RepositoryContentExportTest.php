@@ -95,6 +95,47 @@ final class RepositoryContentExportTest
         }
     }
 
+    public function testArchiveGuidePreservesNotesAndCollisionsWithoutChangingSource(): void
+    {
+        $w = new ImportTestWorkspace();
+        $guide = file_get_contents(dirname(__DIR__) . '/resources/repository-archive/README.md');
+        foreach (['missing' => null, 'custom' => "# My notes\r\nKeep these bytes.\r\n", 'current' => $guide] as $case => $notes) {
+            $root = $w->repository($case);
+            $w->put($root . '/records/posts/post.txt', $w->post('post'));
+            if ($notes !== null) { $w->put($root . '/README.md', $notes); }
+            $w->put($root . '/README.repository.md', 'Existing file');
+            $w->put($root . '/README.repository-2.md/keep.txt', 'Existing directory');
+            $w->git($root);
+            $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+            $head = $backup->revision();
+            $expected = $guide . ($case === 'custom' ? "\nOriginal repository notes: [README.repository-3.md](README.repository-3.md).\n" : '');
+            foreach (['tar.gz', 'zip'] as $format) {
+                $export = $backup->export($format);
+                try {
+                    $destination = $w->root . '/' . $case . '-' . $format;
+                    mkdir($destination);
+                    assertSame(0, $w->command($format === 'zip'
+                        ? ['unzip', '-q', $export['path'], '-d', $destination]
+                        : ['tar', '-xzf', $export['path'], '-C', $destination])[0]);
+                    $snapshot = $destination . '/repository';
+                    assertSame($expected, file_get_contents($snapshot . '/README.md'));
+                    assertSame('Existing file', file_get_contents($snapshot . '/README.repository.md'));
+                    assertSame('Existing directory', file_get_contents($snapshot . '/README.repository-2.md/keep.txt'));
+                    assertSame($case === 'custom', is_file($snapshot . '/README.repository-3.md'));
+                    if ($case === 'custom') { assertSame($notes, file_get_contents($snapshot . '/README.repository-3.md')); }
+                    assertSame($head, RepositorySnapshot::revision($snapshot));
+                    assertSame(file_get_contents($root . '/records/posts/post.txt'), file_get_contents($snapshot . '/records/posts/post.txt'));
+                    \ForumRewrite\Images\RepositoryArchiveReadme::write($snapshot);
+                    assertSame($expected, file_get_contents($snapshot . '/README.md'));
+                    assertSame(false, file_exists($snapshot . '/README.repository-4.md'));
+                } finally { unlink($export['path']); }
+            }
+            assertSame($notes, is_file($root . '/README.md') ? file_get_contents($root . '/README.md') : null);
+            assertSame($head, $backup->revision());
+            assertSame('', trim($w->command(['git', '-C', $root, 'status', '--porcelain'])[1]));
+        }
+    }
+
     private function reject(callable $operation): void
     {
         try { $operation(); } catch (RuntimeException) { return; }
