@@ -35,9 +35,11 @@ Record every enrolled cycle at its first artifact, including those that pause, f
 
 ## Extended estimates
 
-This optional extension adds detail to a selected effort-study cycle; ordinary study enrollment and whole-cycle checkpoints continue unchanged. Enable it explicitly for a cycle or through a standing host policy for future selected cycles. An extension request does not silently enroll an unselected cycle; establish its study/reference under the normal study setup first. No extra mode question is needed when neither a request nor a policy enables the extension.
+Extended estimates default to enabled for **new enrolled effort-study cycles**. Study enrollment remains optional and whole-cycle checkpoints continue unchanged. An extension request does not silently enroll an unselected cycle; establish its study/reference under the normal study setup first. Unselected cycles need no estimate fields or extra mode question. Debug state is independent.
 
-Record `Extended estimates: enabled` below the study field in the first applicable artifact, and inherit it through Steps 1–4. Restore explicit mode changes first, then current artifact state, then applicable host policy; an absent field is not opt-out when policy selects the extension. Preserve an existing cycle's recorded disabled state. If selected evidence conflicts and cannot be resolved, clarify before dependent estimation while continuing independent authorized work. An explicit disable is recorded in the current artifact; retain earlier snapshots. Debug state is independent.
+Resolve mode in this order: latest explicit user enable/disable request, existing recorded cycle state, applicable host policy, then enabled for a new enrolled cycle. A host may explicitly disable the extension for future selected cycles. Record `Extended estimates: enabled` or `Extended estimates: disabled` below the study field in the first applicable artifact and inherit it through Steps 1–4. A missing field is not opt-out evidence when applicable policy enables the extension. Changing host policy or upgrading Railspike does not override an existing cycle's recorded state. Record explicit mode changes in the current artifact and retain earlier snapshots.
+
+For a cycle started under the earlier opt-in rules, do not apply the new-cycle default on resumption. If its mode field is missing, recover prior explicit requests and applicable policy: a prior enablement remains enabled; absent enablement under those rules, retain disabled behavior and record it now. If evidence conflicts or the prior behavior cannot be established, clarify before dependent estimation while continuing independent authorized work. To activate an older or disabled cycle prospectively, ask “Enable extended effort estimates for this cycle.” To opt out, ask “Disable extended effort estimates for this cycle.” Keep earlier originals missing and date new estimates at activation; never reconstruct prospective history.
 
 - **Option estimate:** total work for that alternative's complete scoped cycle from a stated starting point, including planning, inspection, implementation, verification, documentation and ordinary correction. State outcome differences and assumptions so alternatives are comparable. Keep the recommended-cycle checkpoint separate; a combined option needs a fresh estimate.
 - **Stage work estimate:** a supplemental judgment about the entire named stage's scoped work, including its verification, documentation and ordinary correction, using R1 as a reference yardstick. It is not a formal whole-cycle R1 projection, remaining work, a stage fraction or measured time. Include a short driver and material uncertainty as a range or explanation; ranges are subjective, not calibrated intervals. Retain the original scope and starting point in history; changed scope needs a new version and normal approval, with each whole-stage estimate tied to its recorded scope and starting point.
@@ -47,33 +49,89 @@ Use stable option/stage identities with scope version, reference, UTC date, rate
 
 For example, an illustrative two-stage plan might show stage work 0.10 for a shared component and its checks, then 0.20 for integration and its own checks. Shared validation belongs only to its named owner. An independently judged cycle total of 0.45 also includes inspection/planning; neither the stage sum nor subtraction defines it. Illustrative stage history could retain original 0.20, append a whole-stage revision 0.30 after a discovery, and later add retrospective scope 0.25. All remain different records; no actual hours are inferred.
 
+### Estimate presentation
+
+Make every displayed estimate easy to find without reading its supporting detail:
+
+- Put `**Cycle estimate: 0.60**` on its own line below the artifact's state fields for an enrolled cycle. This is the independently judged whole-cycle projection.
+- In extended mode, put `**Estimate: 0.35**` on its own line directly beneath each option/stage heading, before the description or bullets. The option value covers its whole alternative; the stage value covers only stage work. Add at most a short comment after the bold value.
+- Use plain numbers without approximation signs. Keep the driver, uncertainty, scope and study metadata separately below the value or in linked history. Meaningful ranges remain valid (`**Estimate: 0.20–0.40**`); point estimates may retain a plausible range in their details. Removing an approximation sign does not turn a judgment into measured or calibrated work.
+- For unavailable values use a visible `**Estimate: unavailable**` line and state the reason nearby. Never substitute zero. In comparison/history tables, provide a dedicated estimate column instead of burying values in prose.
+- In Step 4, show `**Original estimate: 0.20**`, any `**Revised estimate: 0.30**`, and a separately assessed `**Retrospective stage work: 0.25**` on separate lines beneath the relevant heading. Label a cycle retrospective `**Retrospective cycle scope: 0.60**`. Keep dates, scope versions, uncertainty and reasons in append-only history; link the history from the concise view. Missing originals stay explicitly missing, and pending retrospectives have no number.
+- When extended mode is off, omit option/stage estimate-only fields. Enrolled cycles still display their whole-cycle estimate; unselected cycles require neither. Formatting an existing estimate is not a new rating: preserve its number, meaning and history.
+
+Sign beneath authored/revised plan contributions using [agent attribution](../RAILSPIKE.md#agent-attribution). Verified model/settings in a signature supplement the rater/exposure record; they do not establish an independent rating or measured effort.
+
 ### Planning examples
 
-These fictional snippets illustrate format, not new study observations. State study/cycle, UTC date, rater/exposure, reference and starting revision once in the artifact, then give each option/stage its identity and scope version.
+These fictional snippets illustrate format, not new study observations. State study/cycle, UTC date, rater/exposure, reference and starting revision once in the artifact. The illustrative agent name and date below do not identify an actual author; unknown model/settings are omitted.
 
-```text
+```md
 Extended estimates: enabled
-Option A v1: existing importer, one supported format, including retry/docs/checks.
-  Whole-cycle estimate: 0.40, plausible 0.30–0.55; driver: existing import path.
-  Uncertainty: malformed-input coverage; excludes migration from other formats.
-Option B v1: new importer plus migration from a second format and recovery.
-  Whole-cycle estimate: 0.75, plausible 0.55–1.00; driver: migration/replay.
-  Uncertainty: historical input variants; delivers broader coverage than A.
-Recommendation: A. Formal handoff snapshot: 0.40 for the selected A scope.
-Combined option C v1: freshly judged 0.60 for its explicitly combined scope;
-  driver: shared parser with selective migration; uncertainty: migration cases.
-  C is not A plus B. Preserve A/B and their original estimates.
+
+**Cycle estimate: 0.40**
+
+## Option A v1 — Existing importer
+
+**Estimate: 0.40**
+
+One supported format, including retry, documentation and checks.
+
+- Driver: existing import path; plausible range 0.30–0.55.
+- Uncertainty: malformed inputs; excludes migration from other formats.
+
+*— Example agent · 2026-01-01 UTC*
+
+## Option B v1 — Importer plus migration
+
+**Estimate: 0.75**
+
+Add migration from a second format and recovery.
+
+- Driver: migration/replay; plausible range 0.55–1.00.
+- Uncertainty: historical input variants; broader outcome than A.
+
+*— Example agent · 2026-01-01 UTC*
+
+Recommendation: A. The cycle estimate above covers the selected A scope.
+
+## Combined option C v1 — Selective migration
+
+**Estimate: 0.60**
+
+Freshly judged for its explicitly combined scope.
+
+- Driver: shared parser with selective migration; uncertainty: migration cases.
+- C is not A plus B. Preserve A/B and their original estimates.
+
+*— Example agent · 2026-01-01 UTC*
 ```
 
-```text
-Stage 1 v1: shared parser and its checks/documentation.
-  Stage work: 0.10, plausible 0.05–0.20; driver: existing parsing contract.
-  Uncertainty: legacy escaping; owns shared parser regression checks.
-Stage 2 v1: importer integration and its own recovery/docs/checks.
-  Stage work: 0.20, plausible 0.15–0.35; driver: recovery and adapter wiring.
-  Uncertainty: existing adapter compatibility; reuses Stage 1's shared checks.
-Whole-cycle projection: 0.45, judged independently with planning/inspection.
+```md
+**Cycle estimate: 0.45**
+
+## Stage 1 v1 — Shared parser
+
+**Estimate: 0.10**
+
+- Scope: parser changes, checks and documentation; owns shared regression checks.
+- Driver: existing parsing contract; plausible range 0.05–0.20.
+- Uncertainty: legacy escaping.
+
+## Stage 2 v1 — Importer integration
+
+**Estimate: 0.20**
+
+- Scope: integration and its own recovery, documentation and checks.
+- Driver: adapter wiring; plausible range 0.15–0.35.
+- Uncertainty: adapter compatibility; reuses Stage 1's shared checks.
+
+The cycle total is judged independently with inspection/planning included.
+
+*— Example agent · 2026-01-01 UTC*
 ```
+
+This Step 3 example was authored as one whole plan, so it has one footer. A stage subsequently authored or substantively revised separately receives its own attribution; retain the original footer and earlier attribution.
 
 Option estimates cover whole alternatives, while stage estimates cover their stated partial work. Neither combining options nor splitting stages supports an additive forecast. If frozen references cannot be verified, replace the affected numeric field with `unavailable: <reason>`; keep prior values and recover the sources rather than inventing a number.
 
@@ -81,17 +139,23 @@ Option estimates cover whole alternatives, while stage estimates cover their sta
 
 The following is fictional, with shared study/reference/rater/exposure metadata stated once. Stage 2 keeps the same scoped integration/recovery outcome and starting point throughout; the discovery changes understanding, not authorized scope.
 
-```text
-Stage 2 v1:
-  2026-01-01T10:00:00Z, Step 3 original stage work 0.20 [0.15–0.35].
-    Driver: adapter/recovery wiring; uncertainty: retry compatibility.
-  2026-01-01T11:00:00Z, Step 4 entry inherits that original unchanged.
-  2026-01-01T11:15:00Z, before dependent work, revised whole-stage work
-    0.30 [0.20–0.40]; new understanding: the existing retry guard needs
-    compatibility work already covered by the approved recovery outcome.
-    Preserve original 0.20; this is not 0.30 remaining work.
-  2026-01-01T12:00:00Z, completed scoped flow and recovery checks passed.
-    Retrospective stage work 0.25, separately judged; measured time unknown.
+```md
+## Stage 2 v1 — Importer integration
+
+**Original estimate: 0.20**
+
+**Revised estimate: 0.30**
+
+**Retrospective stage work: 0.25**
+
+| Checkpoint (UTC) | Estimate | Scope, uncertainty and reason |
+| --- | ---: | --- |
+| 2026-01-01T10:00:00Z — Step 3 original | 0.20 | Adapter/recovery wiring; range 0.15–0.35; retry compatibility uncertain. |
+| 2026-01-01T11:00:00Z — Step 4 entry | 0.20 | Original inherited unchanged. |
+| 2026-01-01T11:15:00Z — Revision | 0.30 | Existing retry guard needs work within the same scope; entire-stage range 0.20–0.40, not remaining work. |
+| 2026-01-01T12:00:00Z — Retrospective | 0.25 | Scoped flow/recovery checks passed; separately judged; measured time unknown. |
+
+*— Example agent · 2026-01-01 UTC*
 ```
 
 The whole-cycle projection is reconsidered independently at discovery, with its own dated reason; do not calculate it from the stage increase or retrospective difference. A changed outcome/file boundary instead returns to the normal approval process before implementation. The original, revision and retrospective values all survive; elapsed timestamps do not measure labor.
@@ -122,7 +186,8 @@ Checkpoint / UTC recorded at / rater and verified model identity if known:
 Scope version / starting revision / reference version / protocol version:
 Outcome, normal entry, recovery and required evidence / dependencies:
 Prior exposure (including source inspection and inherited scores):
-Total projected score / reason (scope change, new understanding, or reaffirmation):
+Cycle estimate: <value>
+Reason (scope change, new understanding, or reaffirmation):
 Approval context / artifact or immutable revision:
 ```
 
