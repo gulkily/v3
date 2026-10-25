@@ -13,6 +13,7 @@ $testFiles = [
     __DIR__ . '/DocsPublicationFlowTest.php',
     __DIR__ . '/HighTrafficPublicationTest.php',
     __DIR__ . '/AbsentRetractionSnapshotTest.php',
+    __DIR__ . '/AssetFingerprintTest.php',
     __DIR__ . "/HighTrafficTest.php",
     __DIR__ . "/AccessHistoryPresenterTest.php",
     __DIR__ . "/FastmodTaggingFlagTest.php",
