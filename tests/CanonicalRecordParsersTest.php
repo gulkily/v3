@@ -270,6 +270,10 @@ final class CanonicalRecordParsersTest
             \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
             $git(['add', $path]); $git(['commit', '-qm', 'Accept source label cleanup root-001']);
             assertSame('delete', \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001')['operation']);
+            $migration = \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock');
+            assertSame(['root-001'], $migration['migrated']);
+            assertSame(2, \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001')['acceptance_version']);
+            assertSame([], \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock')['migrated']);
             file_put_contents($root . '/' . $path, '{}');
             assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Invalid removal evidence: ' . $path);
         } finally {

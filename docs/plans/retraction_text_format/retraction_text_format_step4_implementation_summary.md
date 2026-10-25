@@ -58,3 +58,15 @@ Step 3 explicitly approved. Branch `feature/retraction-text-format`; planning co
 - Notes: S4/v1 unchanged. Stage 3 commit `a726ef3d`. Source byte test exposed existing `exec` line trimming; fixed shared blob response rather than weakening equality. No core read-model schema/query changes or dependencies. Old suppression-only requests are no longer acceptance evidence.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 5 - Cleanup and maintenance
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes: sweep cutoff follows text receipts; new `.txt` requests are not reported as legacy migration work. Retired retraction conversion while preserving source-removal migration. CLI/reference/spec clarify the boundary and replace JSON-trailer documentation.
+- Verification: maintenance/sweep/exchange/acceptance suites **18/18**, including real CLI preview/status/run, artifact retirement, late LLM writes, cron discovery, WAL/interruption and repeat cleanup. Existing source-removal acceptance test extended for actual migration/idempotence **1/1**. CLI help inspected.
+- Notes: S5/v1 unchanged; Stage 4 commit `24f5bc8f`. Historical retractions remain untouched and unsupported. No schema changes or dependencies.
+
+*— Codex · 2026-10-25 UTC*

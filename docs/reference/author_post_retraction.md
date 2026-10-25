@@ -1,6 +1,6 @@
 # Post retraction
 
-Retraction deletes the current canonical post and its detached signature and commits one durable retraction record in the same commit. The record contains target, actor, time, conversation structure, the original signed request/signature, display attribution and the source content hash; it contains no post prose or cleanup progress. Independent replies survive.
+Retraction deletes the current canonical post and its detached signature and commits a signed text request, detached signature and separate text acceptance receipt together. The receipt contains target, actor, time, conversation structure, display attribution, source content hash and hashes binding the signed evidence; it contains no post prose or cleanup progress. Independent replies survive.
 
 Use **… → Retract post** on the post or thread. Authors can retract their own posts; an approved operator can retract eligible posts. Signing, action-time privilege checks and protected identity/approval/invitation restrictions still apply. QDB and Forte display the shared notices.
 
@@ -10,31 +10,35 @@ Git history is **not purged in this release**. History purge is a separately pla
 
 ## Records and retries
 
-New records live at `records/post-retractions/post-retraction-<post-id>.json`. The signed request is embedded unchanged, so preserving or migrating it does not require a new signature. The local acceptance record is trusted canonical input, not proof supplied by an archive. Imports preserve existing accepted deletions and reject unfamiliar JSON acceptance claims; legacy signed claims still undergo import validation and explicit migration.
+New requests live at `records/post-retractions/post-retraction-<post-id>.txt`,
+with their detached signature at the same path plus `.asc`. The separate
+`records/post-retraction-acceptances/post-retraction-<post-id>.txt` receipt uses
+readable `Key: value` fields. See the [record contract](../specs/post_retraction_record_v1.md).
+Preserve all three files. Local acceptance is trusted canonical input, not proof
+supplied by an archive; unfamiliar incoming acceptance claims are rejected.
 
-The prepare/finalize endpoints retain their signing flow. Finalize returns the accepted JSON `record_path`; `signature_path` is null because the signature is embedded. A repeated prepare request by the recorded actor or author uses the retained record without finding the original post or generating another acceptance commit. An interrupted transaction can retry from that same record. A rejected commit restores the original files.
+Prepare/finalize retain their signing flow. Results identify `record_path`
+(the signed request), `signature_path` and `acceptance_path`. Repeated prepare by
+the recorded actor or author retries from the retained evidence without finding
+the original post or generating another acceptance commit. Interrupted writes
+can retry; a rejected commit restores the prior files. A missing or altered
+companion is an evidence error, not authority to reconstruct or invent acceptance.
 
 If the response says **Site update incomplete**, retry retraction or rebuild the read model. If cleanup could not be queued, retry or run maintenance manually. These failures do not undo the committed deletion. Current source routes show a deletion notice; the retained record can be inspected through its current source path. Old archive imports do not restore the deleted post or its signature.
 
-## Upgrade and legacy migration
+## Compatibility and maintenance
 
-Deploy compatible application code before migrating. Use the same repository/database settings as the site:
+Previous retractions are not migrated or supported. Use this format for new
+retractions; do not restore deleted prose. Rollback requires code that reads
+all three retained files; older JSON-only readers are incompatible.
 
-```sh
-./v3 retraction-sweep migrate --repository-root=/path/repository
-./v3 rebuild /path/repository /path/cache/post_index.sqlite3
-./v3 retraction-sweep preview --repository-root=/path/repository
-./v3 retraction-sweep run --repository-root=/path/repository
-```
-
-`migrate` verifies historical acceptance once, commits each eligible deletion/record conversion separately and reports unresolved items. It can recover structural metadata from historical source without restoring prose into the working tree. Existing trusted `post-removals` records are converted in place. Repeat the command after resolving missing trusted evidence; completed conversions are idempotent. JSON output is available with `--json`; unresolved items return a nonzero exit code.
-
-Unconverted legacy suppression-only records do not globally block indexing or publication. Their content can remain visible until migration succeeds. Do not repair unknown authority by trusting imported claims or inventing signatures. Preserve unresolved records/history for operator review. Schema identity 26 forces the ordinary read model to rebuild on a code-only upgrade.
-
-Rollback must use code that understands the accepted JSON records. Reverting to the old suppression implementation is not a supported rollback and may lose structural placeholders; do not restore deleted prose automatically. This migration does not rewrite Git history.
+Run `./v3 rebuild`, then `./v3 retraction-sweep preview` and `run` as needed.
+`retraction-sweep migrate` remains only for legacy **source-removal** receipts;
+it does not convert or reinterpret old or new retraction requests. This format
+change does not rewrite Git history.
 
 ## Release verification
 
-Inspect the acceptance commit: it should remove the post/signature and add the retained record together. Check the normal thread/post page, independent replies and an old-archive import. Exercise a failed refresh followed by retry. Run the existing queue worker and manual sweep, then verify affected generated artifacts and exchange payloads were retired. Local test evidence does not establish qdb.us deployment or recovery.
+Inspect the acceptance commit: it should remove the post/signature and add all three retained files together. Check the normal thread/post page, independent replies and an old-archive import. Exercise a failed refresh followed by retry. Run the existing queue worker and manual sweep, then verify affected generated artifacts and exchange payloads were retired. Local test evidence does not establish qdb.us deployment or recovery.
 
 See [local cleanup and operator recovery](retraction_sweep.md) and [LLM cleanup](llm_exchange_privacy.md).

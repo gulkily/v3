@@ -8,6 +8,7 @@ try {
     $command = $argv[1] ?? 'preview';
     if (in_array($command, ['--help', '-h', 'help'], true)) {
         echo "Usage: ./v3 retraction-sweep preview|run|status|migrate [--json] [--limit=250] [--repository-root=PATH] [--static-html-root=PATH] [--exchange-database-path=PATH] [--state-path=PATH]\n";
+        echo "migrate converts legacy source-removal receipts only; previous retractions are not supported.\n";
         exit(0);
     }
     $options = [];
@@ -23,7 +24,7 @@ try {
         $result = \ForumRewrite\Retraction\RetractionMigration::run($repository, dirname($database) . '/forum-rewrite.lock');
         if ($options['json'] ?? false) echo json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";
         else {
-            echo 'Migration: ' . $result['status'] . '; converted ' . count($result['migrated']) . " records.\n";
+            echo 'Source-removal migration: ' . $result['status'] . '; converted ' . count($result['migrated']) . " records.\n";
             foreach ($result['unresolved'] as $path => $reason) echo $path . ': ' . $reason . "\n";
             echo "Run ./v3 rebuild, then ./v3 retraction-sweep run. Restore missing trusted evidence and rerun migrate for unresolved records.\n";
         }
@@ -45,7 +46,6 @@ try {
         echo 'Retraction sweep: ' . $result['status'] . "\n";
         if (isset($result['updated_at'])) echo 'Last run: ' . $result['updated_at'] . "\n";
         if (isset($result['retractions'])) echo 'Retracted posts: ' . $result['retractions'] . "\n";
-        if (($result['legacy_retractions'] ?? 0) > 0) echo 'Legacy records awaiting migration: ' . $result['legacy_retractions'] . ". Run retraction-sweep migrate, then rebuild.\n";
         if (isset($result['exchange_store'])) echo 'Exchange store: ' . $result['exchange_store'] . "\n";
         $counts = $result['totals'] ?? $result;
         foreach (['examined' => 'Exchanges examined', 'affected' => 'Exchanges to clean', 'cleaned' => 'Exchanges cleaned', 'uncertain' => 'Unknown-provenance exchanges'] as $key => $label) {

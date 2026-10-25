@@ -301,16 +301,13 @@ account authorship from `retraction_class`, which continues to reflect signed
 author/operator authorization. Both are null for unretracted posts. Startup
 rebuilds version 18 caches before queries use the new field.
 
-New operator retractions record a versioned `Retraction-Attribution` JSON trailer
-in their local acceptance commit. It binds the decision to the canonical record
-SHA-256, actual actor, target author, and shared canonical username (when both
-keys are approved). The shared resolver requires the same local acceptance event
-as operator authority; a trailer is local operator evidence, not signer evidence
-or an imported claim. Missing or invalid evidence retains operator wording.
-Signed records, signatures, permissions, and source suppression do not change.
-Later approval changes and rebuilds preserve the accepted decision. Retain the
-canonical repository's local Git history in backups and deployment transfers;
-a records-only copy cannot establish local operator acceptance or attribution.
+New retractions retain a separate [text acceptance receipt](post_retraction_record_v1.md)
+with `Retraction-Attribution`, bound to the exact signed request and detached
+signature. This is local acceptance metadata, not a signed attribution claim or
+imported authority. Action-time account evidence determines author/operator
+wording; later approval changes and rebuilds preserve that decision. A missing
+or mismatched receipt/evidence set is not accepted retraction input. The earlier
+JSON-trailer representation is no longer written or required for new retractions.
 
 ## Profile name projections (schema versions 20–21)
 

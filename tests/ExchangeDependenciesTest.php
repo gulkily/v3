@@ -82,8 +82,11 @@ final class ExchangeDependenciesTest
         $author = 'openpgp:' . str_repeat('a', 40);
         $source = "Post-ID: target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: $author\n\nProse\n";
         $bytes = "Record-ID: post-retraction-target\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: target\nOperation: retract\nAuthor-Identity-ID: $author\n\n";
-        $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare((new \ForumRewrite\Canonical\PostRecordParser())->parse($source), (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($bytes), $bytes, '', 'author');
-        file_put_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path('target'), \ForumRewrite\Canonical\AcceptedRetraction::encode($record));
+        $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare((new \ForumRewrite\Canonical\PostRecordParser())->parse($source), (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($bytes), $bytes, 'fixture signature', 'author');
+        foreach (\ForumRewrite\Canonical\AcceptedRetraction::files($record) as $file => $contents) {
+            if (!is_dir(dirname($root . '/' . $file))) mkdir(dirname($root . '/' . $file), 0775, true);
+            file_put_contents($root . '/' . $file, $contents);
+        }
         assertSame(['target' => true], ExchangeRetractionState::read($root));
         // No original post or Git history is necessary after acceptance.
     }

@@ -84,34 +84,18 @@ final class AcceptedRetractionTest
         assertSame('5', trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])) === '' ? '0' : (string) count(explode("\n", trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])))));
     }
 
-    public function testLegacyMigrationRecoversAbsentTargetAndReportsUnresolvedIndividually(): void
+    public function testMaintenanceDoesNotMigratePreviousRetractionsOrNewRequests(): void
     {
-        $root = sys_get_temp_dir() . '/retraction-migration-' . bin2hex(random_bytes(6));
-        mkdir($root . '/records/posts', 0775, true); mkdir($root . '/records/post-retractions', 0775, true);
-        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($root, $args);
-        $git(['init']); $git(['config', 'user.name', 'Test']); $git(['config', 'user.email', 'test@example.invalid']);
-        $author = 'openpgp:' . str_repeat('a', 40);
-        $source = "Post-ID: root\nCreated-At: 2026-10-25T12:00:00Z\nAuthor-Identity-ID: $author\nBoard-Tags: general\n\nsecret prose\n";
-        file_put_contents($root . '/records/posts/root.txt', $source);
-        $request = "Record-ID: post-retraction-root\nCreated-At: 2026-10-25T13:00:00Z\nPost-ID: root\nOperation: retract\nAuthor-Identity-ID: $author\n\n";
-        file_put_contents($root . '/records/post-retractions/post-retraction-root.txt', $request);
-        $git(['add', '.']); $git(['commit', '-m', 'legacy']);
-        $git(['rm', 'records/posts/root.txt']); $git(['commit', '-m', 'old deletion']);
-        file_put_contents($root . '/records/post-retractions/broken.txt', 'unresolved');
+        $root = sys_get_temp_dir() . '/no-retraction-migration-' . bin2hex(random_bytes(6));
+        mkdir($root . '/records/post-retractions', 0775, true);
+        $path = $root . '/records/post-retractions/post-retraction-old.txt';
+        file_put_contents($path, 'previous request');
+        $json = $root . '/records/post-retractions/post-retraction-old.json';
+        file_put_contents($json, '{"previous":"acceptance"}');
+        assertSame(null, AcceptedRetraction::read($root, 'old'));
         $result = \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock');
-        assertSame(['root'], $result['migrated']); assertSame('partial', $result['status']);
-        assertSame(true, isset($result['unresolved']['broken.txt']));
-        assertSame($request, AcceptedRetraction::read($root, 'root')['signed_request']);
-        assertSame(false, is_file($root . '/records/posts/root.txt'));
-        assertSame(false, is_file($root . '/records/post-retractions/post-retraction-root.txt'));
-        assertSame([], \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock')['migrated']);
-        // Simulate process death after writing/staging conversion, before committing it.
-        $git(['reset', '--soft', 'HEAD^']);
-        $recovered = \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock');
-        assertSame(['root'], $recovered['migrated']);
-        assertSame(false, is_file($root . '/records/posts/root.txt'));
-        assertSame([], \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock')['migrated']);
-
+        assertSame([], $result['migrated']); assertSame([], $result['unresolved']);
+        assertSame('previous request', file_get_contents($path));
+        assertSame('{"previous":"acceptance"}', file_get_contents($json));
     }
-
 }

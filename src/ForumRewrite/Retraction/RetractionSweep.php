@@ -39,13 +39,12 @@ final class RetractionSweep
     {
         $ids = ExchangeRetractionState::read($this->repositoryRoot);
         $result = ['status' => $preview ? 'preview' : 'complete', 'retractions' => count($ids),
-            'legacy_retractions' => count(glob($this->repositoryRoot . '/records/post-retractions/*.txt') ?: []),
             'examined' => 0, 'affected' => 0, 'cleaned' => 0, 'uncertain' => 0, 'remaining' => false,
             'exchange_store' => is_file($this->exchangePath) ? 'available' : 'absent'];
         if ($ids === []) return $result;
         // Existing artifacts retire immediately; late stale publishers age out on a later scan.
         $cutoff = time() - 300;
-        foreach (array_merge(glob($this->repositoryRoot . '/records/post-retractions/*.json') ?: [], glob($this->repositoryRoot . '/records/post-removals/*.json') ?: []) as $path) {
+        foreach (array_merge(glob($this->repositoryRoot . '/records/post-retraction-acceptances/*.txt') ?: [], glob($this->repositoryRoot . '/records/post-removals/*.json') ?: []) as $path) {
             $cutoff = max($cutoff, (int) filemtime($path));
         }
         $result['artifacts'] = ArtifactSweep::run($this->artifactRoots, $cutoff, $preview);

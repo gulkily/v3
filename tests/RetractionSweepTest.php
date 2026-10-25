@@ -18,9 +18,12 @@ final class RetractionSweepTest
         $requestPath = $root . '/records/post-retractions/post-retraction-target.txt';
         $request = (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse(file_get_contents($requestPath));
         $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse(file_get_contents($root . '/records/posts/target.txt'));
-        $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, $request, file_get_contents($requestPath), '', 'author');
-        file_put_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path('target'), \ForumRewrite\Canonical\AcceptedRetraction::encode($record));
-        unlink($requestPath); unlink($root . '/records/posts/target.txt');
+        $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, $request, file_get_contents($requestPath), 'fixture signature', 'author');
+        foreach (\ForumRewrite\Canonical\AcceptedRetraction::files($record) as $file => $contents) {
+            if (!is_dir(dirname($root . '/' . $file))) mkdir(dirname($root . '/' . $file), 0775, true);
+            file_put_contents($root . '/' . $file, $contents);
+        }
+        unlink($root . '/records/posts/target.txt');
         $pdo = new PDO('sqlite:' . $root . '/exchanges.sqlite3');
         $recorder = new LlmExchangeRecorder($pdo);
         foreach ([['target'], ['other', 'target'], ['other'], null] as $ids) {
@@ -31,6 +34,32 @@ final class RetractionSweepTest
         return [$root, $pdo, new RetractionSweep($root, $root . '/exchanges.sqlite3', $root . '/state.json')];
     }
 
+
+    public function testCliRecognizesNewReceiptAndDoesNotOfferLegacyMigration(): void
+    {
+        [$root, $pdo] = $this->fixture();
+        mkdir($root . '/static/threads', 0775, true); mkdir($root . '/public');
+        file_put_contents($root . '/static/threads/target.html', 'old artifact');
+        touch($root . '/static/threads/target.html', time() - 10);
+        $run = static function (string $mode, bool $json = false) use ($root): string {
+            $args = [dirname(__DIR__) . '/v3', 'retraction-sweep', $mode, '--repository-root=' . $root,
+                '--static-html-root=' . $root . '/static', '--exchange-database-path=' . $root . '/exchanges.sqlite3', '--state-path=' . $root . '/cli-state.json'];
+            if ($json) $args[] = '--json';
+            $pipes = []; $p = proc_open($args, [1=>['pipe','w'],2=>['pipe','w']], $pipes, null,
+                array_merge(getenv(), ['FORUM_PUBLIC_ARTIFACT_ROOT' => $root . '/public']));
+            $out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);
+            assertSame(0,proc_close($p),$err);return $out;
+        };
+        $preview = $run('preview');
+        assertStringContains('Retracted posts: 1', $preview);
+        assertStringNotContains('migration', $preview);
+        $status = json_decode($run('status', true), true, 512, JSON_THROW_ON_ERROR);
+        assertSame(1,$status['artifacts']['affected']);
+        $run('run');
+        assertSame(false,is_file($root . '/static/threads/target.html'));
+        assertSame(0,json_decode($run('preview',true),true)['affected']);
+        assertSame(false,is_file($root . '/cli-state.json'));
+    }
 
     public function testFullScanUsesBatchSizeWithoutLedgerAndPreservesKnownUnaffectedRows(): void
     {
