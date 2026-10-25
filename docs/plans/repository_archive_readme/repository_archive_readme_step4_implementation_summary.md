@@ -46,3 +46,20 @@ Step 3 explicitly approved on 2026-10-25 after plan delivery. Planning commit `8
 2026-10-25: projection 0.25 retained separately, scope v2, R1/P2, Codex single exposed rater. Completed stages: 3/3. Planning `832e6e140`, guide/integration `0706092a8`, command/recovery verification `b09388be9`, and this closeout commit. Original cycle baseline `99a0def2af1f0b19b4b5cc284c1eac920da9464d`; implementation baseline `2a6dfba08`. Correction of the import command followed observed failure within approved scope; no added requests or splits. Actual active work was not measured. Maintainer comfortable-fit and study acceptance remain pending; accepted outcomes do not increment. No push or deployment is included in this implementation handoff.
 
 *— Codex · 2026-10-25 UTC*
+
+## User-directed correction — one archive README
+
+The user explicitly removed the original-notes preservation requirement: only the
+download guide should appear as the archive README. This supersedes the earlier
+preservation requirement and its checks. The exporter now replaces README.md only
+in its temporary snapshot, without creating README.repository.md or a notes link.
+The source repository's README remains unchanged.
+
+Verification: `php tests/run.php RepositoryContentExportTest` passed 4/4, covering
+both archive formats, a single README with missing/custom/current source guides,
+repeat preparation, unchanged source files, actual downloads, import/image
+verification and preparation failure/retry. `git diff --check` passed. No new
+dependencies. Existing study snapshots remain historical; this small direct
+correction does not start a new Railspike cycle.
+
+*— Revised by Codex · 2026-10-25 UTC*

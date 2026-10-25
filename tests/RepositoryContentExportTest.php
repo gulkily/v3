@@ -129,7 +129,7 @@ final class RepositoryContentExportTest
         }
     }
 
-    public function testArchiveGuidePreservesNotesAndCollisionsWithoutChangingSource(): void
+    public function testArchiveContainsOnlyTheDownloadReadmeWithoutChangingSource(): void
     {
         $w = new ImportTestWorkspace();
         $guide = file_get_contents(dirname(__DIR__) . '/resources/repository-archive/README.md');
@@ -137,12 +137,10 @@ final class RepositoryContentExportTest
             $root = $w->repository($case);
             $w->put($root . '/records/posts/post.txt', $w->post('post'));
             if ($notes !== null) { $w->put($root . '/README.md', $notes); }
-            $w->put($root . '/README.repository.md', 'Existing file');
-            $w->put($root . '/README.repository-2.md/keep.txt', 'Existing directory');
             $w->git($root);
             $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
             $head = $backup->revision();
-            $expected = $guide . ($case === 'custom' ? "\nOriginal repository notes: [README.repository-3.md](README.repository-3.md).\n" : '');
+            $expected = $guide;
             foreach (['tar.gz', 'zip'] as $format) {
                 $export = $backup->export($format);
                 try {
@@ -153,15 +151,12 @@ final class RepositoryContentExportTest
                         : ['tar', '-xzf', $export['path'], '-C', $destination])[0]);
                     $snapshot = $destination . '/repository';
                     assertSame($expected, file_get_contents($snapshot . '/README.md'));
-                    assertSame('Existing file', file_get_contents($snapshot . '/README.repository.md'));
-                    assertSame('Existing directory', file_get_contents($snapshot . '/README.repository-2.md/keep.txt'));
-                    assertSame($case === 'custom', is_file($snapshot . '/README.repository-3.md'));
-                    if ($case === 'custom') { assertSame($notes, file_get_contents($snapshot . '/README.repository-3.md')); }
+                    assertSame([$snapshot . '/README.md'], glob($snapshot . '/README*'));
                     assertSame($head, RepositorySnapshot::revision($snapshot));
                     assertSame(file_get_contents($root . '/records/posts/post.txt'), file_get_contents($snapshot . '/records/posts/post.txt'));
                     \ForumRewrite\Images\RepositoryArchiveReadme::write($snapshot);
                     assertSame($expected, file_get_contents($snapshot . '/README.md'));
-                    assertSame(false, file_exists($snapshot . '/README.repository-4.md'));
+                    assertSame([$snapshot . '/README.md'], glob($snapshot . '/README*'));
                 } finally { unlink($export['path']); }
             }
             assertSame($notes, is_file($root . '/README.md') ? file_get_contents($root . '/README.md') : null);
@@ -184,7 +179,7 @@ final class RepositoryContentExportTest
             [$status, $body] = $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=false', 'FORUM_IMAGE_ROOT=' . $w->root . '/no-images',
                 'php', '-r', $code, dirname(__DIR__), $root, $database, '/downloads/repository.' . $format]);
             assertSame(0, $status);
-            assertStringContains('Cannot preserve repository README.md; repair the file and retry.', $body);
+            assertStringContains('Cannot replace repository README.md; repair the file and retry.', $body);
             assertStringContains('HTTP_STATUS=409', $body);
             assertSame(false, str_starts_with($body, "\x1f\x8b") || str_starts_with($body, 'PK'));
         }
