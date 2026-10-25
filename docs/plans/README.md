@@ -18,6 +18,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Readable retraction records](retraction_text_format/)
+
 - [Independent documentation publication](docs_independent_publication/)
 
 - [Documentation publication policy](docs_publication_policy/)

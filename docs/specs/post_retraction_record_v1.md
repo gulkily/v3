@@ -17,7 +17,7 @@ body. All fields below are required; empty values mean absent for Source-SHA256,
 Parent-ID and Thread-Type. Writers include Source-SHA256 when accepting a live
 post. Unknown/duplicate headers, bodies, invalid identifiers/dates, unsupported
 versions and inconsistent evidence are errors. IDs and timestamps follow the
-existing post/request conventions. Thread-Type is absent or a canonical type.
+existing post/request conventions. Thread-Type is empty or `task`, the supported canonical root type.
 
 ```text
 Version: 1
@@ -54,3 +54,7 @@ Previous retraction formats have no compatibility or migration guarantee. Do not
 restore deleted prose to upgrade them. Retry/recovery for new records must retain
 a coherent evidence set; a post-commit refresh failure does not undo deletion.
 Older JSON-only application versions cannot read this format.
+
+Finalize returns `record_path`, `signature_path` and `acceptance_path`. An exact
+signed-action replay remains retryable after prepared-token cleanup; changed
+requests or signatures cannot reuse that acceptance.

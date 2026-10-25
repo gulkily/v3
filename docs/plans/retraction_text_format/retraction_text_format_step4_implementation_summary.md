@@ -70,3 +70,29 @@ Step 3 explicitly approved. Branch `feature/retraction-text-format`; planning co
 - Notes: S5/v1 unchanged; Stage 4 commit `24f5bc8f`. Historical retractions remain untouched and unsupported. No schema changes or dependencies.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 6 - Acceptance and documentation
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.20**
+
+- Changes: completed policy in AGENTS/CONTRIBUTING and prioritized audit; F01/R04 closed, other conversions remain open. Finished format/API/recovery docs and reconciled fixtures. Removed the last historical Git/trailer acceptance fallback; retained current committed operator checks. Exact signed finalize replay now recovers after prepared-token cleanup, while changed evidence is rejected.
+- Verification: final affected PHP regressions **117/117**; signed API/source checks **16/16**; strengthened actual repository ZIP export byte-preservation/normal-retry check **1/1**. Covers ordinary rebuild, public projections, source current/history, original-archive reimport, missing/tampered evidence, transaction interruption, partial refresh, high-traffic/static/offline publication and actual offline update-reader regressions. No full-suite claim.
+- Browser: actual author/operator/account/partial-retry flows passed with OpenPGP verification of retained detached signatures and all three current-source files. All 13 themes at phone/desktop widths passed overflow checks; separate keyboard activation, Escape/focus restoration and touch checks passed. Inspected desktop and mobile raw receipt screenshots plus Word97 phone retraction page. Raw mobile text uses the browser's native scaled text presentation; no source-view redesign. No navigation/UI copy changed.
+- Corrections: browser fixture initially tried reading a response body after navigation invalidated it; capture the actual response in route interception before forwarding it. Updated obsolete embedded-signature/legacy-acceptance fixture assumptions. New API replay and legacy rejection tests pass. Actual export contains request/signature/receipt unchanged and no deleted post.
+- Notes: Stage 5 commit `53eb2e5a`. Scope S6/v1 unchanged; retrospective increase reflects final recovery/fixture corrections, not new features or measured time. Zero dependency/manifest/lock/vendor delta. Diff/lint/link checks passed. Physical devices, production deployment, complete repository suite and maintainer fit/acceptance remain unverified or pending; no production repositories changed.
+
+*— Codex · 2026-10-25 UTC*
+
+## Study closeout and release limits
+
+2026-10-25 UTC: six planned/six completed stages locally on `feature/retraction-text-format`, scope v3/Option B, baseline `2a07313a738af9e0a0f15796e8155d301d949ed5`, R1/P2, Codex single exposed rater. Planning `75ec624b`; Stages 1–5 `d4c5cb1c`, `95fc49bb`, `a726ef3d`, `24f5bc8f`, `53eb2e5a`; Stage 6 is this summary's commit. No stage scope changes or split outcomes.
+
+**Original cycle projection: 0.60. Retrospective scope assessment: 0.70.** Independently judged, not a sum of stages or measured labor. Exact frozen R1 hashes verified. Earlier v1 0.70/v2 0.45 and selected v3 0.60 projections remain historical; this retrospective is distinct. S1–S6 originals retained; retrospectives 0.15, 0.20, 0.15, 0.20, 0.10, 0.20. Maintainer comfortable-fit/acceptance pending; no accepted-count increment. Merge/push/deployment not performed.
+
+Previous retractions remain untouched and unsupported. New-record transaction/retry recovery is verified; older JSON-only code is not a compatible rollback. Other canonical JSON families remain audit follow-ups, not delivered conversions. History purge remains outside this cycle.
+
+Temporary evidence: `/tmp/retraction-text-regressions.log`, `/tmp/retraction-text-api.log`, `/tmp/retraction-text-browser.log`, `/tmp/retraction-text-corrections.log`, and `/tmp/retraction-browser-evidence/`; durable outcomes are recorded above.
+
+*— Codex · 2026-10-25 UTC*

@@ -3526,40 +3526,7 @@ NODE;
         assertStringContains('Ordinary account target', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
     }
 
-    public function testRetractionAttributionRequiresOneBoundLocalAcceptanceEvent(): void
-    {
-        foreach (['valid', 'missing', 'malformed', 'duplicate', 'hash', 'actor', 'author', 'empty', 'version', 'later'] as $scenario) {
-            [$root, $db, $artifacts] = $this->createTempEnvironment();
-            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
-            $operator = $this->linkSigningIdentity($app, 'evidence-operator');
-            $this->seedApprovedIdentity($root, $operator['identity_id']);
-            $actor = $operator['identity_id'];
-            $author = 'openpgp:' . str_repeat('b', 40);
-            $contents = "Record-ID: post-retraction-root-001\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: root-001\nOperation: retract\n"
-                . "Author-Identity-ID: {$author}\nActor-Identity-ID: {$actor}\nRetraction-Class: operator\n\n";
-            $record = (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($contents);
-            $path = 'records/post-retractions/post-retraction-root-001.txt';
-            mkdir($root . '/records/post-retractions');
-            file_put_contents($root . '/' . $path, $contents);
-            $evidence = ['version' => 1, 'sha256' => hash('sha256', $contents), 'actor' => $actor,
-                'author' => $author, 'attribution' => 'author', 'username' => 'account'];
-            if (in_array($scenario, ['hash', 'actor', 'author'], true)) $evidence[$scenario === 'hash' ? 'sha256' : $scenario] = 'wrong';
-            if ($scenario === 'empty') $evidence['username'] = '';
-            if ($scenario === 'version') $evidence['version'] = 2;
-            $trailer = "\n\nRetraction-Attribution: " . ($scenario === 'malformed' ? '{broken' : json_encode($evidence));
-            if ($scenario === 'duplicate') $trailer .= $trailer;
-            $subject = 'Retract post root-001 by ' . $actor;
-            $this->runCommand($root, 'git add ' . escapeshellarg($path));
-            assertSame('operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents, $record));
-            $this->runCommand($root, 'git commit -m ' . escapeshellarg($subject . (in_array($scenario, ['missing', 'later'], true) ? '' : $trailer)));
-            if ($scenario === 'later') $this->runCommand($root, 'git commit --allow-empty -m ' . escapeshellarg($subject . $trailer));
-            assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
-            assertSame($scenario === 'valid' ? 'author' : 'operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents, $record));
-            assertSame('operator', \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($root, $path, $contents . "\n", $record));
-        }
-    }
-
-    public function testOperatorRetractionAuthorityRequiresLocalAcceptanceHistory(): void
+    public function testHistoricalRequestCannotGrantAcceptanceOrReplaceCurrentOperatorPrivilege(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
         $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
@@ -3568,24 +3535,22 @@ NODE;
         $actor = $operator['identity_id'];
         $contents = "Record-ID: post-retraction-root-001\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: root-001\nOperation: retract\n"
             . "Author-Identity-ID: openpgp:" . str_repeat('b', 40) . "\nActor-Identity-ID: {$actor}\nRetraction-Class: operator\n\n";
-        $parser = new \ForumRewrite\Canonical\PostRetractionRecordParser();
-        $record = $parser->parse($contents);
         $path = 'records/post-retractions/post-retraction-root-001.txt';
         mkdir($root . '/records/post-retractions');
         file_put_contents($root . '/' . $path, $contents);
         file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($operator['home'], $contents));
         assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $contents, $actor));
-        assertSame(false, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
         $this->runCommand($root, 'git add records/post-retractions');
         $this->runCommand($root, 'git commit -m ' . escapeshellarg('Retract post root-001 by ' . $actor));
-        assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
+        $rejected = false;
+        try { (new CanonicalRecordRepository($root))->loadPostRetraction($path); }
+        catch (RuntimeException $error) { $rejected = str_contains($error->getMessage(), 'local acceptance'); }
+        assertSame(true, $rejected);
+        assertSame(true, \ForumRewrite\Security\RetractionAuthority::currentOperator($root, $actor));
         $this->runCommand($root, 'git rm ' . escapeshellarg('records/approval-seeds/openpgp-' . substr($actor, 8) . '.txt'));
         $this->runCommand($root, 'git commit -m "Remove operator privilege"');
-        assertSame(true, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $contents, $record));
-        $changed = str_replace('12:00:00Z', '12:00:01Z', $contents);
-        assertSame(false, \ForumRewrite\Security\RetractionAuthority::acceptedOperator($root, $path, $changed, $parser->parse($changed)));
-        $legacy = preg_replace('/Actor-Identity-ID:.*\nRetraction-Class: operator\n/', '', $contents);
-        assertSame('author', $parser->parse($legacy)->classification);
+        clearstatcache();
+        assertSame(false, \ForumRewrite\Security\RetractionAuthority::currentOperator($root, $actor));
     }
 
     public function testOperatorRetractionSignsAsActorAndRechecksPrivilegeAtFinalize(): void
@@ -3831,9 +3796,27 @@ NODE;
             assertSame($bytes, $this->renderMethod($app, 'GET', '/source/current/' . $result[$field]));
             assertSame($bytes, $this->renderMethod($app, 'GET', '/source/blob/' . $result['commit_sha'] . '/' . $result[$field]));
         }
+        $export = (new \ForumRewrite\Images\ImageBackup($root, $db))->export('zip');
+        $zip = new ZipArchive(); assertSame(true, $zip->open($export['path']));
+        try {
+            foreach (['record_path', 'signature_path', 'acceptance_path'] as $field) {
+                assertSame(file_get_contents($root . '/' . $result[$field]), $zip->getFromName('repository/' . $result[$field]));
+            }
+            assertSame(false, $zip->getFromName('repository/' . $author['record_path']));
+        } finally { $zip->close(); unlink($export['path']); }
         $repeat = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
         assertSame(true, $repeat['already_retracted']);
         assertSame($result['commit_sha'], $repeat['commit_sha']);
+        $_POST = $fields + ['detached_signature' => $record['signature']];
+        try { $replay = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true); }
+        finally { $_POST = []; }
+        assertSame(true, $replay['already_retracted']);
+        assertSame($result['commit_sha'], $replay['commit_sha']);
+        $_POST = $fields + ['detached_signature' => 'forged replay'];
+        try { $rejectedReplay = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true); }
+        finally { $_POST = []; }
+        assertSame('error', $rejectedReplay['status']);
+
         $pdo = new PDO('sqlite:' . $db);
         $pdo->exec("UPDATE metadata SET value='25' WHERE key='schema_version'");
         $pdo->exec("UPDATE posts SET body='stale prose' WHERE post_id='" . $author['thread_id'] . "'");

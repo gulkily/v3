@@ -406,7 +406,7 @@ final class CanonicalRecordParsersTest
         );
     }
 
-    public function testRepositoryLoadsPostRetractionAndRejectsPathMismatch(): void
+    public function testRepositoryRejectsUnacceptedRetractionAndPathMismatch(): void
     {
         $tempRoot = $this->createTempFixtureRoot();
         mkdir($tempRoot . '/records/post-retractions');
@@ -414,7 +414,8 @@ final class CanonicalRecordParsersTest
         file_put_contents($tempRoot . '/records/post-retractions/wrong-name.txt', $this->postRetractionContents());
         $repository = new CanonicalRecordRepository($tempRoot);
 
-        assertSame('reply-001', $repository->loadPostRetraction('records/post-retractions/post-retraction-reply-001.txt')->postId);
+        assertThrows(static fn () => $repository->loadPostRetraction('records/post-retractions/post-retraction-reply-001.txt'),
+            'Retraction lacks local acceptance evidence.');
         assertThrows(
             static fn () => $repository->loadPostRetraction('records/post-retractions/wrong-name.txt'),
             'Post-retraction record path must match Record-ID.'

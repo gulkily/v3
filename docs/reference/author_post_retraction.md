@@ -21,7 +21,8 @@ Prepare/finalize retain their signing flow. Results identify `record_path`
 (the signed request), `signature_path` and `acceptance_path`. Repeated prepare by
 the recorded actor or author retries from the retained evidence without finding
 the original post or generating another acceptance commit. Interrupted writes
-can retry; a rejected commit restores the prior files. A missing or altered
+can retry; a rejected commit restores the prior files. An exact signed finalize
+replay also retries after the prepared token has been removed. A missing or altered
 companion is an evidence error, not authority to reconstruct or invent acceptance.
 
 If the response says **Site update incomplete**, retry retraction or rebuild the read model. If cleanup could not be queued, retry or run maintenance manually. These failures do not undo the committed deletion. Current source routes show a deletion notice; the retained record can be inspected through its current source path. Old archive imports do not restore the deleted post or its signature.

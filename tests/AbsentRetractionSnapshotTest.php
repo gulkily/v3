@@ -39,11 +39,14 @@ final class AbsentRetractionSnapshotTest
             file_put_contents($targetPath, $bytes);
         }
         $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse($bytes);
-        $accepted = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($record), $record, '', 'author', hash('sha256', $bytes));
+        $accepted = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($record), $record, 'fixture signature', 'author', hash('sha256', $bytes));
         $database = $root . '/source.sqlite3';
         (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root), 'absent_test'))->rebuild();
         unlink($root . '/records/posts/' . $target . '.txt');
-        file_put_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($target), \ForumRewrite\Canonical\AcceptedRetraction::encode($accepted));
+        foreach (\ForumRewrite\Canonical\AcceptedRetraction::files($accepted) as $file => $contents) {
+            if (!is_dir(dirname($root . '/' . $file))) mkdir(dirname($root . '/' . $file), 0775, true);
+            file_put_contents($root . '/' . $file, $contents);
+        }
         return [$root, $database];
     }
 
@@ -61,7 +64,7 @@ final class AbsentRetractionSnapshotTest
         assertSame(1, (int) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id='reply-001'")->fetchColumn());
         assertSame(false, str_contains(file_get_contents($result['path']), 'ABSENT-SECRET'));
         assertSame($before, hash_file('sha256', $database));
-        assertTrue(is_file($root . '/records/post-retractions/post-retraction-target.json'));
+        assertTrue(is_file($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path('target')));
         assertSame(false, is_file($result['path'] . '.retraction-generation'));
     }
 

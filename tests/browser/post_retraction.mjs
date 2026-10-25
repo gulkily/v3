@@ -99,19 +99,20 @@ try {
       await control.locator('.post-more-actions > summary').click();
     }
     let simulated = false;
-    if (scenario === 'partial' || scenario === 'operator') {
-      await page.route('**/api/create_prepared_retraction', async route => {
-        const response = await route.fetch();
-        const data = await response.json(); assert.equal(data.retraction_status, 'complete');
-        await route.fulfill({ response, json: scenario === 'partial' ? { ...data, retraction_status: 'partial', failed_step: 'artifact_invalidate' } : { ...data, cleanup_status: 'failed' } });
-        simulated = true;
-      });
-    }
+    let result;
+    await page.route('**/api/create_prepared_retraction', async route => {
+      const response = await route.fetch();
+      result = await response.json(); assert.equal(result.retraction_status, 'complete');
+      const data = scenario === 'partial' ? { ...result, retraction_status: 'partial', failed_step: 'artifact_invalidate' }
+        : scenario === 'operator' ? { ...result, cleanup_status: 'failed' } : result;
+      simulated = scenario === 'partial' || scenario === 'operator';
+      await route.fulfill({ response, json: data });
+    });
     if (await control.locator('details.post-more-actions').getAttribute('open') === null) await control.locator('.post-more-actions > summary').click();
     const completed = page.waitForResponse(response => response.url().endsWith('/api/create_prepared_retraction'));
     completed.catch(() => {});
     await control.getByRole('button', { name: 'Retract post', exact: true }).click({ noWaitAfter: true });
-    const response = await completed.catch(async error => { console.error('Control state:', await control.textContent()); throw error; });
+    const response = await completed;
     if (scenario === 'partial' || scenario === 'operator') {
       await control.getByRole('button', { name: 'Retry retraction', exact: true }).waitFor({ state: 'visible' });
       assert.equal(await control.locator('details.post-more-actions').getAttribute('open'), null);
@@ -132,12 +133,29 @@ try {
     assert.match(fields.get('detached_signature'), /BEGIN PGP SIGNATURE/);
     const currentLabels = await (await context.request.get(base + '/api/get_thread?thread_id=' + post.post_id)).text();
     assert.equal(/^Labels:.*\bpinned\b/m.test(currentLabels), scenario === 'account');
-    const recordPath = fields.get('record_path').replace(/\.txt$/, '.json');
-    const source = await context.request.get(base + '/source/current/' + recordPath);
-    assert.equal(source.status(), 200);
-    const accepted = JSON.parse(await readFile(join(root, 'repository', recordPath), 'utf8'));
-    const record = accepted.signed_request;
-    assert.match(accepted.signature, /BEGIN PGP SIGNATURE/);
+    const recordPath = fields.get('record_path');
+    assert.equal(result.record_path, recordPath);
+    assert.equal(result.signature_path, recordPath + '.asc');
+    const record = await readFile(join(root, 'repository', recordPath), 'utf8');
+    const signature = await readFile(join(root, 'repository', result.signature_path), 'utf8');
+    const receipt = await readFile(join(root, 'repository', result.acceptance_path), 'utf8');
+    assert.equal(record, fields.get('canonical_record'));
+    assert.match(receipt, /^Version: 1\nRecord-ID: post-retraction-/);
+    assert.match(signature, /BEGIN PGP SIGNATURE/);
+    const verification = await openpgp.verify({ message: await openpgp.createMessage({ text: record }),
+      signature: await openpgp.readSignature({ armoredSignature: signature }), verificationKeys: await openpgp.readKey({ armoredKey: keys[role].publicKey }) });
+    await verification.signatures[0].verified;
+    for (const path of [recordPath, result.signature_path, result.acceptance_path]) {
+      const source = await context.request.get(base + '/source/current/' + path);
+      assert.equal(source.status(), 200);
+      assert.equal(await source.text(), await readFile(join(root, 'repository', path), 'utf8'));
+    }
+    const sourcePage = await context.newPage();
+    await sourcePage.goto(base + '/source/current/' + result.acceptance_path);
+    assert.match(await sourcePage.locator('body').innerText(), /Request-SHA256:/);
+    await mkdir('/tmp/retraction-browser-evidence', { recursive: true });
+    await sourcePage.screenshot({ path: `/tmp/retraction-browser-evidence/receipt-${scenario}.png` });
+    await sourcePage.close();
     assert.match(record, new RegExp(`Author-Identity-ID: ${identities.author}`));
     if (role !== 'author') {
       assert.match(record, new RegExp(`Actor-Identity-ID: ${identities[role]}`));

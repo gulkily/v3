@@ -62,7 +62,7 @@ final class RetractionReceipt
             || !in_array($h['Retraction-Attribution'], ['author', 'operator'], true)
             || !preg_match('/^openpgp:[a-f0-9]{40}$/D', $h['Author-Identity-ID'])
             || ($h['Source-SHA256'] !== '' && !preg_match('/^[a-f0-9]{64}$/D', $h['Source-SHA256']))
-            || ($h['Thread-Type'] !== '' && !preg_match('/^[a-z][a-z0-9-]*$/D', $h['Thread-Type']))) throw new RuntimeException('Invalid receipt metadata.');
+            || !in_array($h['Thread-Type'], ['', 'task'], true)) throw new RuntimeException('Invalid receipt metadata.');
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $h['Post-Created-At'], new \DateTimeZone('UTC'));
         if (!$date || $date->format('Y-m-d\TH:i:s\Z') !== $h['Post-Created-At']) throw new RuntimeException('Invalid post timestamp.');
         if ($signature === '' || !hash_equals($h['Request-SHA256'], hash('sha256', $request))
