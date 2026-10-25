@@ -1,5 +1,9 @@
 # Agent instructions
 
+## Current retraction coordination
+
+Before work involving retraction, publication guards, or registration's retraction requirements, read [the 2026-10-24 handoff](docs/plans/retraction_simplification_handoff.md). The user wants immediate content deletion with a retained retraction record, followed by later history purge, and canceled the sweep diagnostics plan. The handoff records the intended simplification and its approval boundaries.
+
 ## UI copy
 
 Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Follow the UI verification guidance in `CONTRIBUTING.md`. Track cleanup and verification in `docs/plans/ui_copy_audit_checklist.md`.

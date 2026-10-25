@@ -185,3 +185,20 @@ Site-wide "Skip to content" link
 	No skip link exists; add one to templates/layout.php targeting <main>, visually hidden until focused
 	Shared chrome on every page: verify focus visibility and header layout in each theme
 	Raised by the docs_landing reviewer brief; deferred from that cycle (docs/plans/docs_landing/docs_landing_step3_development_plan.md)
+
+Keep deployment-specific configuration outside tracked files
+	choose a persistent configuration source for site identity and instance paths,
+		including FORUM_SITE_ID, repository, database, static and public roots
+	stop relying on local edits to tracked public/.htaccess or application files;
+		git reset --hard origin/main erased QDB's profile setting while its data remained
+	keep web, CLI and cron configuration consistent, with explicit precedence
+	provide migration, setup and recovery instructions; verify upgrades and resets
+		preserve each deployment's profile, layout and data-path selection
+
+Add a v3 command to generate the same repository archive as the web download
+	generate the same archive format, directory layout and contents as
+		/downloads/repository.tar.gz, including canonical records and Git history
+	reuse the web archive implementation so CLI and web exports stay consistent
+	support an explicit output path and the deployment's repository/database settings
+	provide progress and useful errors, with consistent locking and revision checks
+	verify CLI/web archive equivalence for the same repository snapshot
