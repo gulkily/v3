@@ -1,7 +1,7 @@
 > **Feature plan:** [Step 1](retraction_text_format_step1_solution_assessment.md) · [Step 2](retraction_text_format_step2_feature_description.md) · Step 3 · Step 4 pending
 
-Debug mode: enabled.  
-Effort study: `railspike-effort` / `v3/retraction_text_format`; [ledger](../effort_estimation_trial.md#cycle-v3retraction_text_format). Standing P2 enrollment.  
+Debug mode: enabled.
+Effort study: `railspike-effort` / `v3/retraction_text_format`; [ledger](../effort_estimation_trial.md#cycle-v3retraction_text_format). Standing P2 enrollment.
 Extended estimates: enabled. Approval: Steps 1–3 approved; implementation authorized.
 
 **Cycle estimate: 0.60**
