@@ -34,3 +34,15 @@ Step 3 explicitly approved. Branch `feature/retraction-text-format`; planning co
 - Notes: interruption test exposed staged-deletion paths disappearing from the index; include HEAD paths in the commit and avoid re-adding already staged absent paths. Fixed and rerun. No new journal, dependencies or history migration. Stage 1 commit `d4c5cb1c`; S2/v1 unchanged. Existing legacy/application fixtures are reconciled in dependent stages; this intermediate commit is not releasable.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 3 - Signing and retry integration
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes: author/operator finalize retains detached request/signature and exposes `record_path`, `signature_path`, `acceptance_path`. Removed old request conversion from prepare/finalize; incomplete unaccepted files cannot bypass fresh authorization/signature checks. Retry marks derived state stale and refreshes without the original post. Attribution now stays a plain internal value instead of a JSON trailer round trip.
+- Verification: six focused signed API tests passed: deletion/path inspection plus actual rebuild, author invalid-signature/unauthorized actions, seven account-attribution scenarios, enqueue/artifact/refresh failures and no-new-commit retry. Operator privilege-recheck scenario passes its signing/revocation/rebuild checks but its later import assertion fails on the new receipt family; Stage 4 owns that known integration dependency.
+- Notes: S3/v1 unchanged; Stage 2 commit `95fc49bb`. No new UI or dependencies. Source/import contract not yet releasable.
+
+*— Codex · 2026-10-25 UTC*

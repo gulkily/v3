@@ -3817,6 +3817,12 @@ NODE;
         assertSame(false, is_file($root . '/' . $author['record_path'] . '.asc'));
         $record = \ForumRewrite\Canonical\AcceptedRetraction::read($root, $author['thread_id']);
         assertSame($prepared['canonical_record'], $record['signed_request']);
+        assertSame($prepared['record_path'], $result['record_path']);
+        assertSame($result['record_path'] . '.asc', $result['signature_path']);
+        assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $result['record_path']));
+        assertSame($record['signature'], file_get_contents($root . '/' . $result['signature_path']));
+        assertStringContains('Request-SHA256: ' . hash('sha256', $prepared['canonical_record']), file_get_contents($root . '/' . $result['acceptance_path']));
+
         $repeat = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
         assertSame(true, $repeat['already_retracted']);
         assertSame($result['commit_sha'], $repeat['commit_sha']);
