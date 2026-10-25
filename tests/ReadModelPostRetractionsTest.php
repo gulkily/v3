@@ -186,9 +186,11 @@ final class ReadModelPostRetractionsTest
         $post = (new CanonicalRecordRepository($root))->loadPost('records/posts/' . $postId . '.txt');
         $request = (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse(file_get_contents($requestPath));
         if (\ForumRewrite\Canonical\RetractedPosts::applies($post, $request)) {
-            $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, $request, file_get_contents($requestPath), '', 'author', hash_file('sha256', $source));
-            file_put_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($postId), \ForumRewrite\Canonical\AcceptedRetraction::encode($record));
-            unlink($requestPath);
+            $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, $request, file_get_contents($requestPath), 'fixture signature', 'author', hash_file('sha256', $source));
+            foreach (\ForumRewrite\Canonical\AcceptedRetraction::files($record) as $path => $bytes) {
+                if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0775, true);
+                file_put_contents($root . '/' . $path, $bytes);
+            }
         }
 
     }

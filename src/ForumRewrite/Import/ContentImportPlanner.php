@@ -179,12 +179,12 @@ final class ContentImportPlanner
     private function describe(string $root, string $path, ?string $keyFallbackRoot = null): array
     {
         $entry = ['state' => 'import', 'reason' => '', 'key' => ArchiveRecordCatalog::pathIdentityKey($path), 'dependencies' => []];
-        if (str_starts_with($path, 'records/post-retractions/') && str_ends_with($path, '.json')) {
-            $id = substr(basename($path, '.json'), strlen('post-retraction-'));
+        if (preg_match('#^records/(post-retractions|post-retraction-acceptances)/post-retraction-([A-Za-z0-9][A-Za-z0-9._-]*)\.txt(?:\.asc)?$#D', $path, $match)) {
+            $id = $match[2];
             try {
-                $incoming = \ForumRewrite\Canonical\AcceptedRetraction::decode((string) file_get_contents($root . '/' . $path), $id);
+                $incoming = \ForumRewrite\Canonical\AcceptedRetraction::read($root, $id);
                 $local = $keyFallbackRoot === null ? null : \ForumRewrite\Canonical\AcceptedRetraction::read($keyFallbackRoot, $id);
-                if ($local === null || $incoming !== $local) throw new RuntimeException('Imported acceptance is not local authority; use a signed retraction request or operator migration.');
+                if ($incoming === null || $local === null || $incoming !== $local) throw new RuntimeException('Retraction requires matching local acceptance evidence; imported records grant no authority.');
                 return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local retraction'];
             } catch (Throwable $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
         }

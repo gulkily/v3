@@ -46,3 +46,15 @@ Step 3 explicitly approved. Branch `feature/retraction-text-format`; planning co
 - Notes: S3/v1 unchanged; Stage 2 commit `95fc49bb`. No new UI or dependencies. Source/import contract not yet releasable.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 4 - Source, rebuild and import
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.20**
+
+- Changes: explicit receipt family in source/catalog/activity; canonical retraction loading requires bound local acceptance. Archive requests/signatures/receipts are duplicates only when the complete set matches local acceptance; otherwise rejected. Historical source response now preserves exact bytes instead of line-trimming Git output.
+- Verification: reader/import/recovery/export and signed source/API checks **26/26**; strengthened transaction/import case separately **1/1**. Actual `v3 rebuild`, independent replies, listings/profile/activity counts, original archive reimport, current and historical request/signature/receipt byte equality, untrusted receipts, tampered signatures, incomplete sets and local duplicates covered.
+- Notes: S4/v1 unchanged. Stage 3 commit `a726ef3d`. Source byte test exposed existing `exec` line trimming; fixed shared blob response rather than weakening equality. No core read-model schema/query changes or dependencies. Old suppression-only requests are no longer acceptance evidence.
+
+*— Codex · 2026-10-25 UTC*

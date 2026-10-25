@@ -3678,9 +3678,12 @@ NODE;
         $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($source, $root);
         assertSame('invalid', $plan[$freshPath]['state']);
         assertStringContains('local acceptance evidence', $plan[$freshPath]['reason']);
-        // Unrelated legacy sidecars cannot alter an already accepted embedded request.
+        // A substituted detached signature invalidates the retained evidence set.
         file_put_contents($root . '/' . $prepared['record_path'] . '.asc', 'forged');
-        assertSame($operator['identity_id'], (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path'])->signerIdentityId());
+        $rejected = false;
+        try { (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']); }
+        catch (RuntimeException) { $rejected = true; }
+        assertSame(true, $rejected);
 
     }
 
@@ -3823,6 +3826,11 @@ NODE;
         assertSame($record['signature'], file_get_contents($root . '/' . $result['signature_path']));
         assertStringContains('Request-SHA256: ' . hash('sha256', $prepared['canonical_record']), file_get_contents($root . '/' . $result['acceptance_path']));
 
+        foreach (['record_path', 'signature_path', 'acceptance_path'] as $field) {
+            $bytes = file_get_contents($root . '/' . $result[$field]);
+            assertSame($bytes, $this->renderMethod($app, 'GET', '/source/current/' . $result[$field]));
+            assertSame($bytes, $this->renderMethod($app, 'GET', '/source/blob/' . $result['commit_sha'] . '/' . $result[$field]));
+        }
         $repeat = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
         assertSame(true, $repeat['already_retracted']);
         assertSame($result['commit_sha'], $repeat['commit_sha']);

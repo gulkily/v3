@@ -16,7 +16,7 @@ final class AcceptedRetractionTest
         $record = AcceptedRetraction::prepare($post, $request, $bytes, 'original detached signature', 'author');
         $encoded = AcceptedRetraction::encode($record);
         assertSame(false, str_contains($encoded, 'secret'));
-        $read = AcceptedRetraction::decode($encoded, 'root');
+        $read = AcceptedRetraction::decode($encoded, 'root', $record['signed_request'], $record['signature']);
         assertSame($bytes, $read['signed_request']);
         assertSame('root', $read['post']['thread_id']);
         assertSame('original detached signature', $read['signature']);
@@ -63,13 +63,25 @@ final class AcceptedRetractionTest
         file_put_contents($archive . '/records/posts/root.txt', $source);
         $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($archive, $root);
         assertSame('duplicate', $plan['records/posts/root.txt']['state']);
-        mkdir($archive . '/records/post-retractions', 0775, true);
-        file_put_contents($archive . '/' . AcceptedRetraction::path('root'), AcceptedRetraction::encode($record));
+        foreach (AcceptedRetraction::files($record) as $path => $bytes) {
+            if (!is_dir(dirname($archive . '/' . $path))) mkdir(dirname($archive . '/' . $path), 0775, true);
+            file_put_contents($archive . '/' . $path, $bytes);
+        }
         $empty = $root . '-empty'; mkdir($empty . '/records', 0775, true);
         $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($archive, $empty);
         assertSame('invalid', $plan[AcceptedRetraction::path('root')]['state']);
+        foreach (AcceptedRetraction::files($record) as $path => $_) assertSame('invalid', $plan[$path]['state']);
+        $duplicate = (new \ForumRewrite\Import\ContentImportPlanner())->plan($archive, $root);
+        foreach (AcceptedRetraction::files($record) as $path => $_) assertSame('duplicate', $duplicate[$path]['state']);
+        file_put_contents($archive . '/' . AcceptedRetraction::requestPath('root') . '.asc', 'substituted signature');
+        $tampered = (new \ForumRewrite\Import\ContentImportPlanner())->plan($archive, $root);
+        foreach (AcceptedRetraction::files($record) as $path => $_) assertSame('invalid', $tampered[$path]['state']);
+        unlink($archive . '/' . AcceptedRetraction::path('root'));
+        $orphan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($archive, $root);
+        assertSame('invalid', $orphan[AcceptedRetraction::requestPath('root')]['state']);
 
-        assertSame('3', trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])) === '' ? '0' : (string) count(explode("\n", trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])))));
+
+        assertSame('5', trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])) === '' ? '0' : (string) count(explode("\n", trim($git(['diff-tree', '--no-commit-id', '--name-only', '-r', $commit])))));
     }
 
     public function testLegacyMigrationRecoversAbsentTargetAndReportsUnresolvedIndividually(): void
