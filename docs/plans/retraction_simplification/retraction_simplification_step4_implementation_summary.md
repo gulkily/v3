@@ -1,6 +1,6 @@
 > **Feature plan:** [Step 1](./retraction_simplification_step1_solution_assessment.md) · [Step 2](./retraction_simplification_step2_feature_description.md) · [Step 3](./retraction_simplification_step3_development_plan.md) · Step 4
 
-Debug mode: enabled.  
+Debug mode: enabled.
 Effort study: `railspike-effort` / `v3/retraction_simplification`; [ledger](../effort_estimation_trial.md#cycle-v3retraction_simplification). Extended estimates: enabled.
 
 **Cycle estimate: 1.00**
@@ -20,5 +20,17 @@ Step 3 explicitly approved. Planning commit `fd5c6849`, branch `feature/retracti
 - Changes: `AcceptedRetraction` stores one JSON record with exact signed-request/signature bytes and whitelisted conversation structure; no post prose or cleanup state. It is a local acceptance record, never self-authenticating imported authority. Existing import catalog does not admit this new JSON family; Stage 4 must validate incoming claims before allowing them.
 - Verification: `php tests/run.php AcceptedRetractionTest` 2/2; target mismatch rejected, signed bytes/structure round-trip, prose metadata rejected. Existing action-time signature/operator checks remain the authority boundary; Stage 2 wires them before record creation.
 - Notes: existing signed text is embedded unchanged, so migration needs no replacement signature. Read does not invoke Git. No stage estimate revision; original S1/v1 scope retained. Production/ingestion integration remains pending dependent stages.
+
+*— Codex · 2026-10-25 UTC*
+
+## Stage 2 - Delete and record atomically
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.20**
+
+- Changes: author/operator finalize preserves signature and privilege checks, then commits scoped post/signature removal plus JSON acceptance. Retry uses the retained record without the original post. Failed commits restore files; already accepted records produce no extra commit. Recovery after process interruption uses the same record/transaction, not a cleanup journal.
+- Verification: AcceptedRetractionTest 3/3 includes failed Git hook rollback, surviving reply and idempotent transaction; two focused WriteApiSmokeTest cases pass for signed browser/API deletion, invalid signature and unauthorized actor. PHP syntax passes.
+- Notes: broader operator flow test reaches successful acceptance but fails obsolete Forte commit display expectations; reader/display compatibility belongs to Stage 4 and remains pending. Existing presentation refresh is retained until the publication/cleanup stages. No estimate revision. Markdown hard-break whitespace from entry removed.
 
 *— Codex · 2026-10-25 UTC*

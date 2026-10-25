@@ -6,6 +6,7 @@ namespace ForumRewrite\Write;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\AcceptedRetraction;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
@@ -586,6 +587,14 @@ class LocalWriteService
             $totalStartedAt = hrtime(true);
             $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? $input['author_identity_id'] ?? ''), 'author_identity_id');
             $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+            $accepted = AcceptedRetraction::read($this->repositoryRoot, $postId);
+            if ($accepted !== null) {
+                if ($accepted['actor'] !== $authorIdentityId && $accepted['post']['author_identity_id'] !== $authorIdentityId) {
+                    throw new RuntimeException('Only the original actor or author can retry this retraction.');
+                }
+                $commit = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+                return $this->retractionResult($postId, $accepted['post']['thread_id'], AcceptedRetraction::path($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
+            }
             $post = $this->requireRetractablePost($postId, $authorIdentityId);
             $threadId = $post->threadId ?? $post->postId;
             $recordPath = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
@@ -672,6 +681,14 @@ class LocalWriteService
                 throw new RuntimeException('Prepared retraction canonical record does not match prepared metadata.');
             }
 
+            $accepted = AcceptedRetraction::read($this->repositoryRoot, $postId);
+            if ($accepted !== null) {
+                if ($accepted['actor'] !== $authorIdentityId && $accepted['post']['author_identity_id'] !== $authorIdentityId) {
+                    throw new RuntimeException('Only the original actor or author can retry this retraction.');
+                }
+                $commit = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+                return $this->retractionResult($postId, $accepted['post']['thread_id'], AcceptedRetraction::path($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
+            }
             $post = $this->requireRetractablePost($postId, $authorIdentityId);
             if ($record->authorIdentityId !== $post->authorIdentityId) {
                 throw new RuntimeException('Retraction target author mismatch.');
@@ -696,16 +713,18 @@ class LocalWriteService
             $attribution = $record->classification === 'operator'
                 ? $this->retractionAttributionEvidence($record, $canonicalRecord) : '';
             $phaseStartedAt = hrtime(true);
-            $this->writeFile($recordPath, $canonicalRecord);
-            $this->writeFile($recordPath . '.asc', $signature);
+            $acceptedRequest = new \ForumRewrite\Canonical\PostRetractionRecord(
+                $record->recordId, $record->createdAt, $record->postId, $record->operation,
+                $record->authorIdentityId, $record->actorIdentityId, $record->classification, true);
+            $display = $record->classification;
+            if ($attribution !== '') {
+                $evidence = json_decode(substr($attribution, strlen("\n\nRetraction-Attribution: ")), true);
+                $display = $evidence['attribution'] ?? $display;
+            }
+            $accepted = AcceptedRetraction::prepare($post, $acceptedRequest, $canonicalRecord, $signature, $display);
+            $commitSha = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+            $recordPath = AcceptedRetraction::path($postId);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
-
-            $commitResult = $this->commitCanonicalWrite(
-                [$recordPath, $recordPath . '.asc'],
-                'Retract post ' . $postId . ' by ' . $authorIdentityId . $attribution
-            );
-            $timings = array_merge($timings, $commitResult['timings']);
-            $commitSha = $commitResult['commit_sha'];
             $this->deletePreparedPost($prepareToken);
 
             $failedStep = null;

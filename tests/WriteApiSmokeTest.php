@@ -3801,6 +3801,32 @@ NODE;
         }
     }
 
+    public function testRetractionDeletesCanonicalFilesAndRetriesFromRetainedRecord(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'delete-now', 'Delete this prose');
+        $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+        $fields = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record']];
+        $_POST = $fields + ['detached_signature' => 'invalid signature'];
+        $bad = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
+        assertSame('error', $bad['status']);
+        assertSame(true, is_file($root . '/' . $author['record_path']));
+        $_POST = $fields + ['detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        try { $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true); }
+        finally { $_POST = []; }
+        assertSame('ok', $result['status']);
+        assertSame(false, is_file($root . '/' . $author['record_path']));
+        assertSame(false, is_file($root . '/' . $author['record_path'] . '.asc'));
+        $record = \ForumRewrite\Canonical\AcceptedRetraction::read($root, $author['thread_id']);
+        assertSame($prepared['canonical_record'], $record['signed_request']);
+        $repeat = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+        assertSame(true, $repeat['already_retracted']);
+        assertSame($result['commit_sha'], $repeat['commit_sha']);
+    }
+
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
