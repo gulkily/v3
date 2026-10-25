@@ -66,3 +66,26 @@ Planning commit `7a22f490`; Stage 1 `794ba967`; Stage 2 `127dd2e4`.
 
 ### Next
 - Stages 3–6 not yet started. Stage 3 (rewire `ViewerTagLookup` to SQL + request-scoped memo + fold in the `viewerHasThreadTag` bypass across five call sites) is the largest-risk stage and the documented split point if it runs large.
+
+## 2026-10-24 UTC — Implementation: Stages 3–6 + Step 4
+
+Stage 3 `179d5496`; Stage 4 `a6ce8277`; Stage 5 `6ac03208`; Stage 6 `ef7c29da`. Full suite: 1521 passed, 9 failed (all 9 pre-existing on baseline `3d764c7b`).
+
+### Necessary/useful instructions
+- "verification" guideline (run build/tests after changes; baseline-difference failures): the full `./v3 test` run surfaced two gaps the focused suites missed — the incremental write path not projecting viewer_tags (S6), and nothing else. Diffing against a pristine `git worktree` of the base commit cleanly separated my 6 regressions from 9 pre-existing environmental failures, preventing both false alarms and masked regressions. Highest-value instruction of the back half. Retain.
+- "investigate before asserting" + reading the real seam: led to discovering `ViewerTagLookup` is static/PDO-free (forcing the five-site signature thread) and that `QdbBoardPolicy` lacks `routeServices` (PDO injected at the Application build site instead). Retain.
+- Loop-breaking / "diagnose root cause rather than patch": the query-count test failing (expected 2, got 1) was not patched away — diagnosed to `spl_object_id` reuse across freed PDOs and fixed with a WeakMap connection id. A real identity-leak/stale-result hazard caught before merge. Retain.
+- "default to action; surface genuine blockers": the exclusions question (S2) and the out-of-band-file-write test (S6) were both surfaced as decisions rather than silently resolved; the user's "ignore the exclusions" directive resolved the first, and the second was a test relying on now-obsolete file-scan immediacy (fixed by rebuilding after the direct write, matching how real writes behave).
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- UI/navigation-icon and UI-copy guidance: no user-facing copy or nav changes; server-rendered viewer-tag markup unchanged (asserted byte-identical).
+
+### Uncertain assessments
+- Retrospective whole-cycle ≈1.2 vs 1.15 projection: the two unforeseen gaps (dropSchema coupling, incremental-path projection) were absorbed in-stage; whether they "should" have pushed a split is debatable, but each was small and the branch stayed coherent. Single exposed, non-blind rater.
+- The WeakMap memo assumes the per-request-process model; under a hypothetical long-lived worker reusing one PDO across requests, the memo would persist across requests. `resetMemo()` exists for that case but is not wired to a request boundary (none exists in this runtime). Noted, not changed.
+
+### Ledger / study bookkeeping
+- Cycle `v3/viewer_tag_read_model_and_memoization`, scope v1 combined, P2 standing enrollment. Checkpoints: Step 1 (merged predecessors) 1.15; Step 2 1.15; Step 3 1.15 + stage-work S1 0.08 / S2 0.30 / S3 0.35 / S4 0.15 / S5 0.15 / S6 0.10; Step 4 retrospective whole-cycle ≈1.2 with retrospective stage-work S1 0.08 / S2 0.32 / S3 0.35 / S4 0.18 / S5 0.12 / S6 0.22. Predecessor snapshots preserved (B 0.9, A 0.35) and not re-rated. Single exposed, non-blind rater; no uploads; collection does not approve implementation.
