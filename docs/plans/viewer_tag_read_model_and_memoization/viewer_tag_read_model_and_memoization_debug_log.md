@@ -44,3 +44,25 @@ Drafted a six-stage development plan grounded in live source (`ReadModelBuilder:
 ### Uncertain assessments
 - Stage 3 ≈0.35 is the least certain: the memo's per-identity keying must match current filter logic exactly across five call sites, and the qdb per-tag loop must collapse to one query. This is the stage most likely to trigger the documented split if it runs large.
 - The chosen `viewer_tags` grain (per record_family/target/identity/tag) assumes the current lookups only ever ask "does identity X have tag T on target Y"; if any caller needs counts or ordering, the grain would need revisiting. Flagged for Stage 3/4 validation.
+
+## 2026-10-24 UTC — Implementation: Stages 1–2 (after Approved Step 3, branch feat/viewer-tag-read-model-and-memoization)
+
+Planning commit `7a22f490`; Stage 1 `794ba967`; Stage 2 `127dd2e4`.
+
+### Necessary/useful instructions
+- Read-model schema-change checklist + the `read_model_hot_indexes` template: drove Stage 1 (schema + exact-set test sync) and Stage 2 (version bump 26→27 + spec changelog) as discrete, separately-committed steps. Verified the fingerprint changes and the metadata gate reports 27. Retain.
+- "investigate before asserting" / read the real seam before coding: surfaced two correctness issues before they shipped — (1) the file-scan `ViewerTagLookup::threadTags` applies NO inactive/publication exclusion while the builder's derive loop does, so projecting from the builder's filtered set would have silently dropped viewer labels on retracted threads; (2) `dropSchema()` has a hardcoded table list that must include every new table or in-place rebuilds collide. Both caught and fixed. Retain — this is the highest-value instruction in the cycle so far.
+
+### User decisions recorded
+- Exclusions: user directed "ignore the exclusions, we're getting rid of them." Implemented as: the `viewer_tags` projection ignores `inactive`/`excludedPublicationPosts`, projecting the full loaded record set so SQL == file scan (byte-identical, including retracted/removed-source threads). Taken as the in-scope reading; the broader removal of those exclusions from the label/score/vote derivation itself was explicitly NOT done here and flagged as its own future change.
+- Identity notation: user clarified `openpgp-` vs `openpgp:` are intermixed and not standardized. Implementation stores `author_identity_id` verbatim from the record (no normalization), so the projection matches whatever form the file scan compares against. The projection test uses the colon form the parser actually stores.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Uncertain assessments
+- The dropSchema coupling means every future read-model table must be added there too; this is an existing fragility (hardcoded list), not introduced here, but it bit this cycle. Worth a follow-up note to derive the drop list from `statements()` rather than hand-maintain it. Out of scope for this cycle.
+- Stage 2 projection correctness is verified at the data layer (projection == file-scan membership) on the parity fixture; the full cross-surface parity (board/Forte/qdb/thread rendering) is Stage 4, still pending.
+
+### Next
+- Stages 3–6 not yet started. Stage 3 (rewire `ViewerTagLookup` to SQL + request-scoped memo + fold in the `viewerHasThreadTag` bypass across five call sites) is the largest-risk stage and the documented split point if it runs large.
