@@ -109,3 +109,11 @@ desktop widths, plus menu keyboard/Escape/focus/touch checks passed. PHP lint pa
 for all 54 added/modified PHP files relative to main; diff checks passed. No full-suite
 or deployment claim. Study scores and pending maintainer fit judgment are unchanged.
 Evidence: `/tmp/retraction-merge-{regressions,api,browser,menu}.log`.
+
+A concurrent push added Backup-page cleanup at `21798f60`; merged cleanly after
+the initial non-fast-forward push rejection. Additional BackupPage/LocalApp smoke
+checks: 150 run, 147 passed, 3 failed. The server-start shorthand check passed on
+isolated retry; continuation grouping and the stale archive-filename reflection
+test both reproduce on untouched `21798f60`. These incoming-main failures are not
+claimed fixed. Logs: `/tmp/retraction-merge-backup.log`,
+`/tmp/retraction-merge-baseline-followup.log`, `/tmp/retraction-merge-port-retry.log`.
