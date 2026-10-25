@@ -21,17 +21,25 @@ or restore this snapshot's image backup.
 ## Use the content in another instance
 
 Install the [application](https://github.com/gulkily/v3) separately and follow its
-setup instructions. Run the following from that application's directory, using
-an initialized destination repository and explicit destination paths:
+setup instructions. To import this download, extract it first. The local importer
+expects `records/` at the archive root, so create a separate import archive from
+the extracted `repository/` directory, leaving the original snapshot unchanged:
 
 ```sh
-./v3 import-repository /backups/repository.tar.gz /path/to/destination-repository /path/to/cache/index.sqlite3 --dry-run
+tar -czf /backups/content-import.tar.gz -C /path/to/extracted/repository records
+```
+
+From the application's directory, preview the import into an initialized
+destination repository using explicit paths:
+
+```sh
+./v3 import-repository /backups/content-import.tar.gz /path/to/destination-repository /path/to/cache/index.sqlite3 --dry-run
 ```
 
 Review the preview before repeating without `--dry-run`. The importer accepts
-TAR.GZ, not ZIP; download TAR.GZ if you intend to import. Importing merges supported
-records into the destination under its existing rules; it does not recreate the
-source instance's authority or trusted history. Conflicting or unsupported records
+TAR.GZ, not ZIP; the preparation above works after extracting either download.
+Importing records does not recreate the source instance's trusted Git history.
+Conflicting or unsupported records
 may need operator review. See the application's
 [CLI reference](https://github.com/gulkily/v3/blob/main/docs/reference/v3_cli.md).
 

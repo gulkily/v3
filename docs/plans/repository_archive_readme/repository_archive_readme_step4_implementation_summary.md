@@ -21,3 +21,12 @@ Step 3 explicitly approved on 2026-10-25 after plan delivery. Planning commit `8
 - Notes: preservation errors are actionable and propagate through the existing backup failure contract. No dependencies or schema changes. Stage 2 adds explicit ordinary-route failure/retry and documented CLI evidence.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 2 — Verify usage and failure recovery
+
+- Changes: pinned/unpinned GET responses now have extracted-guide assertions; directory-in-place-of-README produces HTTP 409 without archive bytes or leaked staging, then repaired source notes permit both downloads. CLI checks exercise image verification, wrong-pair rejection and recovery, plus the guide's local import preview.
+- Discovery/correction: the first command check failed because the legacy local importer accepts `records/` or `local_repository/records/`, not the current `repository/records/` wrapper. Corrected the guide to create a separate records-only import tarball from either extracted format, preserving the original snapshot for images. No importer behavior changed; this is the approved instruction-validation correction, not new feature scope. Original failure is retained as evidence rather than reported as a baseline failure.
+- Verification: `php tests/run.php RepositoryContentExportTest ImageContentTest RepositoryArchiveValidationTest RepositoryArchiveImportCommandTest ImportInstanceCommandTest BackupPageTest` passed **25/25** after correction. Ordinary routes, actual tar/unzip extraction, local dry-run/no destination mutation, image CLI verification/no activation, mismatch/retry, archive limits and import compatibility passed. `git diff --check` passed.
+- Notes: existing image suite verifies actual restoration including image bytes; no browser UI changes, no deployment, no dependencies or schema changes. Stage 3 closes documentation and study records.
+
+*— Codex · 2026-10-25 UTC*

@@ -49,6 +49,20 @@ final class RepositoryContentExportTest
                 $restore = new ImageRestore();
                 assertSame('verified', $restore->run($images['path'], $snapshot, $w->root . '/restore.sqlite3', $w->root . '/images-' . $format, true)['status']);
                 assertSame('restored', $restore->run($images['path'], $snapshot, $w->root . '/restore.sqlite3', $w->root . '/images-' . $format)['status']);
+                [$verifyStatus, $verification] = $w->command([dirname(__DIR__) . '/v3', 'images', 'verify',
+                    $images['path'], $snapshot, $w->root . '/cli-restore.sqlite3', '--image-root=' . $w->root . '/cli-images-' . $format]);
+                assertSame(0, $verifyStatus);
+                assertStringContains('verified', $verification);
+                assertSame(false, is_dir($w->root . '/cli-images-' . $format));
+                $snapshotManifest = file_get_contents($snapshot . '/repository-snapshot.json');
+                $mismatch = json_decode($snapshotManifest, true, 512, JSON_THROW_ON_ERROR);
+                $mismatch['repository_head'] = str_repeat('0', 40);
+                file_put_contents($snapshot . '/repository-snapshot.json', json_encode($mismatch));
+                assertSame(1, $w->command([dirname(__DIR__) . '/v3', 'images', 'verify', $images['path'],
+                    $snapshot, $w->root . '/cli-restore.sqlite3', '--image-root=' . $w->root . '/cli-images-' . $format])[0]);
+                file_put_contents($snapshot . '/repository-snapshot.json', $snapshotManifest);
+                assertSame(0, $w->command([dirname(__DIR__) . '/v3', 'images', 'verify', $images['path'],
+                    $snapshot, $w->root . '/cli-restore.sqlite3', '--image-root=' . $w->root . '/cli-images-' . $format])[0]);
                 file_put_contents($snapshot . '/records/posts/modern.txt', 'changed');
                 $this->reject(fn () => $restore->run($images['path'], $snapshot, $w->root . '/restore.sqlite3', $w->root . '/images-' . $format, true));
                 if ($format === 'tar.gz') {
@@ -91,6 +105,26 @@ final class RepositoryContentExportTest
                 assertStringContains('repository/records/posts/', $listing);
                 assertStringNotContains('/.git/', $listing);
                 assertStringContains('repository/repository-snapshot.json', $listing);
+                [$readStatus, $readme] = $w->command($format === 'zip'
+                    ? ['unzip', '-p', $archive, 'repository/README.md']
+                    : ['tar', '-xOzf', $archive, 'repository/README.md']);
+                assertSame(0, $readStatus);
+                assertSame(file_get_contents(dirname(__DIR__) . '/resources/repository-archive/README.md'), $readme);
+                if ($format === 'tar.gz' && $query === '') {
+                    $destination = $w->repository('import-target');
+                    $w->git($destination);
+                    $extracted = $w->root . '/import-source';
+                    mkdir($extracted);
+                    assertSame(0, $w->command(['tar', '-xzf', $archive, '-C', $extracted])[0]);
+                    $prepared = $w->root . '/content-import.tar.gz';
+                    assertSame(0, $w->command(['tar', '-czf', $prepared, '-C', $extracted . '/repository', 'records'])[0]);
+                    [$importStatus, $preview] = $w->command([dirname(__DIR__) . '/v3', 'import-repository', $prepared,
+                        $destination, $w->root . '/preview.sqlite3', '--dry-run']);
+                    if ($importStatus !== 0) { throw new RuntimeException($preview); }
+                    assertStringContains('Dry run: no files were copied or committed.', $preview);
+                    assertSame([], glob($destination . '/records/*'));
+                    assertSame('', trim($w->command(['git', '-C', $destination, 'status', '--porcelain'])[1]));
+                }
             }
         }
     }
@@ -134,6 +168,41 @@ final class RepositoryContentExportTest
             assertSame($head, $backup->revision());
             assertSame('', trim($w->command(['git', '-C', $root, 'status', '--porcelain'])[1]));
         }
+    }
+
+    public function testGuidePreparationFailureReturns409AndCanBeRetried(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source', true);
+        $w->put($root . '/README.md/notes.txt', 'Keep original notes');
+        $w->git($root);
+        $database = $w->root . '/index.sqlite3';
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $code = 'require $argv[1]."/autoload.php"; (new ForumRewrite\\Application($argv[1],$argv[2],$argv[3]))->handle("GET",$argv[4]); fwrite(STDERR,"\nHTTP_STATUS=".http_response_code());';
+        $temporaryBefore = glob(sys_get_temp_dir() . '/forum-image-export-*');
+        foreach (['tar.gz', 'zip'] as $format) {
+            [$status, $body] = $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=false', 'FORUM_IMAGE_ROOT=' . $w->root . '/no-images',
+                'php', '-r', $code, dirname(__DIR__), $root, $database, '/downloads/repository.' . $format]);
+            assertSame(0, $status);
+            assertStringContains('Cannot preserve repository README.md; repair the file and retry.', $body);
+            assertStringContains('HTTP_STATUS=409', $body);
+            assertSame(false, str_starts_with($body, "\x1f\x8b") || str_starts_with($body, 'PK'));
+        }
+        assertSame($temporaryBefore, glob(sys_get_temp_dir() . '/forum-image-export-*'));
+        assertSame('Keep original notes', file_get_contents($root . '/README.md/notes.txt'));
+        unlink($root . '/README.md/notes.txt');
+        rmdir($root . '/README.md');
+        $w->put($root . '/README.md', 'Repaired notes');
+        $w->git($root);
+        foreach (['tar.gz', 'zip'] as $format) {
+            [$status, $body] = $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=false', 'FORUM_IMAGE_ROOT=' . $w->root . '/no-images',
+                'php', '-r', $code, dirname(__DIR__), $root, $database, '/downloads/repository.' . $format]);
+            assertSame(0, $status);
+            assertTrue(str_starts_with($body, $format === 'zip' ? 'PK' : "\x1f\x8b"));
+            assertStringNotContains('HTTP_STATUS=409', $body);
+        }
+        assertSame('Repaired notes', file_get_contents($root . '/README.md'));
+        assertSame('', trim($w->command(['git', '-C', $root, 'status', '--porcelain'])[1]));
     }
 
     private function reject(callable $operation): void
