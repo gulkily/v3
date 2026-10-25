@@ -36,6 +36,17 @@ final class ViewerTagLookup
     private static array $memo = [];
 
     /**
+     * Stable per-connection ids. A WeakMap entry disappears when the PDO is
+     * freed, so ids are never reused across distinct live connections — unlike
+     * spl_object_id(), which can recycle an id after an object is destroyed.
+     *
+     * @var \WeakMap<PDO, int>|null
+     */
+    private static ?\WeakMap $connectionIds = null;
+
+    private static int $nextConnectionId = 1;
+
+    /**
      * @param array<int, mixed> $postIds
      * @return array<string, true>
      */
@@ -60,6 +71,8 @@ final class ViewerTagLookup
     public static function resetMemo(): void
     {
         self::$memo = [];
+        self::$connectionIds = null;
+        self::$nextConnectionId = 1;
     }
 
     /**
@@ -97,7 +110,7 @@ final class ViewerTagLookup
      */
     private static function identityTagMap(PDO $pdo, string $recordFamily, string $identityId): array
     {
-        $connectionId = spl_object_id($pdo);
+        $connectionId = self::connectionId($pdo);
         if (isset(self::$memo[$connectionId][$recordFamily][$identityId])) {
             return self::$memo[$connectionId][$recordFamily][$identityId];
         }
@@ -119,5 +132,15 @@ final class ViewerTagLookup
         self::$memo[$connectionId][$recordFamily][$identityId] = $tagMap;
 
         return $tagMap;
+    }
+
+    private static function connectionId(PDO $pdo): int
+    {
+        self::$connectionIds ??= new \WeakMap();
+        if (!isset(self::$connectionIds[$pdo])) {
+            self::$connectionIds[$pdo] = self::$nextConnectionId++;
+        }
+
+        return self::$connectionIds[$pdo];
     }
 }

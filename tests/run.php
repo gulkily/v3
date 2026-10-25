@@ -182,6 +182,7 @@ $testFiles = [
     __DIR__ . '/ReadModelSchemaTest.php',
     __DIR__ . '/ReadModelHotIndexRebuildTest.php',
     __DIR__ . '/ReadModelViewerTagsProjectionTest.php',
+    __DIR__ . '/ViewerTagLookupParityTest.php',
     __DIR__ . '/ReadModelThreadLabelsTest.php',
     __DIR__ . '/ReadModelThreadSubjectsTest.php',
     __DIR__ . '/ReadModelPostRetractionsTest.php',
