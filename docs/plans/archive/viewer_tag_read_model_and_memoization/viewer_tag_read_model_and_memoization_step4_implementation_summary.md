@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/viewer_tag_read_model_and_memoization`; [ledger](../effort_estimation_trial.md), standing enrollment P2. Extended estimates: enabled.
+Effort study: `railspike-effort` / `v3/viewer_tag_read_model_and_memoization`; [ledger](../../effort_estimation_trial.md), standing enrollment P2. Extended estimates: enabled.
 
 # Step 4 — Implementation Summary
 
@@ -65,7 +65,7 @@ Feature branch: `feat/viewer-tag-read-model-and-memoization`. Planning commit: `
 ## Follow-ups surfaced (out of scope, not done here)
 
 Both are tracked in the shared backlog:
-[`docs/plans/backlog/read_model_maintenance_followups.md`](../backlog/read_model_maintenance_followups.md).
+[`docs/plans/backlog/read_model_maintenance_followups.md`](../../backlog/read_model_maintenance_followups.md).
 
 - `dropSchema()` hand-maintains its table list; it should derive the drop set from `ReadModelSchema::statements()` so new tables cannot be forgotten. This cycle hit that fragility.
 - The broader removal of `inactive`/`excludedPublicationPosts` exclusions from the thread-label derivation (scores/labels/votes), hinted by the user's "we're getting rid of them," is a separate cross-cutting change.
