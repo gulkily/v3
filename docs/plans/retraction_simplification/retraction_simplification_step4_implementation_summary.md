@@ -82,3 +82,15 @@ Step 3 explicitly approved. Planning commit `fd5c6849`, branch `feature/retracti
 - Notes: ordinary file age replaces generation stamps: artifacts predating retained record files retire immediately; later stale output expires after five minutes on a successful subsequent scan. With retractions present this also expires fresh generated copies after five minutes, trading cache lifetime for no per-item cleanup state. Static-only deployments must rebuild/refresh; this operational consequence requires explicit runbook coverage. `--limit` now means in-memory SQLite batch size, not a partial sweep checkpoint. Full scan may be retried manually after worker timeout; no completion SLA. No estimate revision.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 7 - Deferred LLM payload cleanup
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.20**
+
+- Changes: exchange readers/recorders no longer enforce immediate retraction visibility. A completed scrub hides the payload; late provider responses are handled on a later full scan. Existing dependency manifests select affected exchanges; unknown legacy dependencies are conservatively scrubbed when accepted retractions exist instead of silently retained forever. Known unrelated payloads remain unchanged.
+- Verification: RetractionSweepTest 8/8 and LlmExchangeRecorderTest/SqliteLlmExchangeStoreTest 6/6. Includes actual emitted cron execution, task-queue cadence, full traversal with batch size 1, late-result visibility/cleanup, malformed residual payload cleanup, WAL reader failure/retry, killed transaction recovery and unchanged unrelated rows. No sweep state file is created.
+- Notes: conservative cleanup can remove unrelated old diagnostic payloads with unknown provenance; preserve this consequence in operator guidance. No changes to authored replies, external provider copies or Git history. No estimate revision.
+
+*— Codex · 2026-10-25 UTC*

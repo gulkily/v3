@@ -61,7 +61,9 @@ final class RetractionSweep
                 $cursor = (int) $row['id']; ++$result['examined'];
                 $deps = self::dependencies($row);
                 if ($deps === null) ++$result['uncertain'];
-                elseif (array_intersect($deps, array_keys($ids)) !== [] && !ExchangeScrubber::isClean($row, $deps)) {
+                // Older payloads without reliable dependencies cannot be selectively retained.
+                if (($deps === null || array_intersect($deps, array_keys($ids)) !== []) && !ExchangeScrubber::isClean($row, $deps ?? [])) {
+                    $deps ??= [];
                     ++$result['affected'];
                     if (!$preview) { ExchangeScrubber::scrub($pdo, $cursor, $deps); ++$result['cleaned']; }
                 }
