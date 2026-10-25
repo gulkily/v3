@@ -54,6 +54,7 @@ final class ImageBackup
                         self::copyTree($source, $work . '/repository', excludeGit: true);
                         foreach (self::references($source, $work . '/repository') as $ref) { $store->resolve($ref); }
                         RepositorySnapshot::write($work . '/repository', $revision);
+                        RepositoryArchiveReadme::write($work . '/repository');
                         self::treeBytes($work . '/repository');
                     }
                     if ($this->revision() !== $revision || $this->git(['status', '--porcelain', '--', 'records']) !== '') {
