@@ -248,6 +248,17 @@ final class CanonicalRecordRepository
     public function loadPostRetraction(string $relativePath): PostRetractionRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/post-retractions/');
+        if (!preg_match('#^records/post-retractions/post-retraction-([A-Za-z0-9][A-Za-z0-9._-]*)\.(?:txt|json)$#D', $relativePath, $match)) {
+            throw new CanonicalRecordParseException('Post-retraction record path must match Record-ID.');
+        }
+        $id = $match[1];
+        $accepted = AcceptedRetraction::read($this->repositoryRoot, $id);
+        if ($accepted !== null) {
+            $request = $this->postRetractionParser->parse($accepted['signed_request']);
+            return new PostRetractionRecord($request->recordId, $request->createdAt, $request->postId, $request->operation,
+                $request->authorIdentityId, $request->actorIdentityId, $request->classification, true, $accepted['attribution']);
+        }
+
         $contents = $this->read($relativePath);
         $record = $this->postRetractionParser->parse($contents);
         if ($relativePath !== CanonicalPathResolver::postRetraction($record->recordId)) {

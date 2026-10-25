@@ -14,10 +14,10 @@ final class AcceptedRetraction
         return 'records/post-retractions/post-retraction-' . $id . '.json';
     }
 
-    public static function prepare(PostRecord $post, PostRetractionRecord $request, string $signedRequest, string $signature, string $attribution): array
+    public static function prepare(PostRecord $post, PostRetractionRecord $request, string $signedRequest, string $signature, string $attribution, ?string $sourceHash = null): array
     {
         if (!RetractedPosts::applies($post, $request)) throw new RuntimeException('Retraction does not authorize this target.');
-        return ['version' => 1, 'post_id' => $post->postId, 'accepted_at' => $request->createdAt,
+        return ['version' => 1, 'source_hash' => $sourceHash, 'post_id' => $post->postId, 'accepted_at' => $request->createdAt,
             'actor' => $request->signerIdentityId(), 'classification' => $request->classification,
             'attribution' => $attribution, 'signed_request' => $signedRequest, 'signature' => $signature,
             'post' => ['post_id' => $post->postId, 'thread_id' => $post->threadId ?? $post->postId,
@@ -49,6 +49,8 @@ final class AcceptedRetraction
             || $request->createdAt !== ($record['accepted_at'] ?? null)
             || $request->signerIdentityId() !== ($record['actor'] ?? null)
             || $request->classification !== ($record['classification'] ?? null)) throw new RuntimeException('Retraction request mismatch.');
+        if (array_diff(array_keys($record), ['version', 'source_hash', 'post_id', 'accepted_at', 'actor', 'classification', 'attribution', 'signed_request', 'signature', 'post']) !== []
+            || (isset($record['source_hash']) && !preg_match('/^[a-f0-9]{64}$/D', $record['source_hash']))) throw new RuntimeException('Unexpected retraction fields.');
         // Deliberately whitelist structural fields: no prose, titles or cleanup status.
         if (array_diff(array_keys($post), ['post_id', 'thread_id', 'parent_id', 'created_at', 'author_identity_id', 'thread_type']) !== []) throw new RuntimeException('Unexpected retraction metadata.');
         return $record;

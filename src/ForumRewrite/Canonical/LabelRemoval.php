@@ -161,11 +161,4 @@ final class LabelRemoval
         return $relative;
     }
 
-    public static function generation(string $root): string
-    {
-        $records = self::all($root);
-        ksort($records);
-        return hash('sha256', json_encode($records, JSON_THROW_ON_ERROR));
-    }
-
 }

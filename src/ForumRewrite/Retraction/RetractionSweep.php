@@ -39,6 +39,7 @@ final class RetractionSweep
     {
         $ids = ExchangeRetractionState::read($this->repositoryRoot);
         $result = ['status' => $preview ? 'preview' : 'complete', 'retractions' => count($ids),
+            'legacy_retractions' => count(glob($this->repositoryRoot . '/records/post-retractions/*.txt') ?: []),
             'examined' => 0, 'affected' => 0, 'cleaned' => 0, 'uncertain' => 0, 'remaining' => false,
             'exchange_store' => is_file($this->exchangePath) ? 'available' : 'absent'];
         if ($ids === []) return $result;

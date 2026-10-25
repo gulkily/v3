@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./retraction_simplification_step1_solution_assessment.md) · [Step 2](./retraction_simplification_step2_feature_description.md) · [Step 3](./retraction_simplification_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./retraction_simplification_step1_solution_assessment.md) · [Step 2](./retraction_simplification_step2_feature_description.md) · [Step 3](./retraction_simplification_step3_development_plan.md) · [Step 4](./retraction_simplification_step4_implementation_summary.md)
 
 Debug mode: enabled (project marker).  
 Effort study: `railspike-effort` / `v3/retraction_simplification`; standing [P2 enrollment](../effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2). Extended estimates: enabled.

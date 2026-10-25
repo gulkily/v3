@@ -251,7 +251,7 @@ final class CanonicalRecordParsersTest
         }
     }
 
-    public function testRemovalEvidenceRequiresExactLocalAcceptance(): void
+    public function testLegacyRemovalEvidenceRequiresExactLocalAcceptance(): void
     {
         $root = sys_get_temp_dir() . '/label-removal-' . bin2hex(random_bytes(6));
         mkdir($root . '/records/posts', 0777, true);
@@ -262,6 +262,7 @@ final class CanonicalRecordParsersTest
             file_put_contents($root . '/records/posts/root-001.txt', $post);
             $git(['add', 'records']); $git(['commit', '-qm', 'Create source']);
             $record = \ForumRewrite\Canonical\LabelRemoval::prepare($root, 'root-001', 'delete');
+            unset($record['acceptance_version']); // Pre-migration records still require historical acceptance.
             $path = \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
             $git(['add', $path]); $git(['commit', '-qm', 'Import repository']);
             assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Removal evidence lacks trusted local acceptance; restore trusted Git history: ' . $path);

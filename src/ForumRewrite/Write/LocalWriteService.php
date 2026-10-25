@@ -603,7 +603,8 @@ class LocalWriteService
                 if (!RetractedPosts::applies($post, $this->canonicalRepository->loadPostRetraction($recordPath))) {
                     throw new RuntimeException('Existing retraction is not effective for this post.');
                 }
-                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
+                $commit = $this->convertLegacyRetraction($post, $recordPath);
+                return $this->retractionResult($postId, $threadId, AcceptedRetraction::path($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
             }
 
             $createdAt = $this->canonicalTimestampNow();
@@ -700,7 +701,8 @@ class LocalWriteService
                 }
                 $this->deletePreparedPost($prepareToken);
 
-                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
+                $commit = $this->convertLegacyRetraction($post, $recordPath);
+                return $this->retractionResult($postId, $threadId, AcceptedRetraction::path($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
             }
 
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
@@ -721,7 +723,11 @@ class LocalWriteService
                 $evidence = json_decode(substr($attribution, strlen("\n\nRetraction-Attribution: ")), true);
                 $display = $evidence['attribution'] ?? $display;
             }
-            $accepted = AcceptedRetraction::prepare($post, $acceptedRequest, $canonicalRecord, $signature, $display);
+            $sourceHash = null;
+            foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+                if (is_file($this->repositoryRoot . '/' . $candidate)) { $sourceHash = hash_file('sha256', $this->repositoryRoot . '/' . $candidate); break; }
+            }
+            $accepted = AcceptedRetraction::prepare($post, $acceptedRequest, $canonicalRecord, $signature, $display, $sourceHash);
             $commitSha = RetractionDeletion::commit($this->repositoryRoot, $accepted);
             $recordPath = AcceptedRetraction::path($postId);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -741,6 +747,21 @@ class LocalWriteService
 
             return $this->retractionResult($postId, $threadId, $recordPath, $failedStep, $timings, hrtime(true) - $totalStartedAt, false, $commitSha);
         });
+    }
+
+    private function convertLegacyRetraction(PostRecord $post, string $path): string
+    {
+        $request = $this->canonicalRepository->loadPostRetraction($path);
+        $sourceHash = null;
+        foreach (CanonicalPathResolver::postCandidates($post->postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) { $sourceHash = hash_file('sha256', $this->repositoryRoot . '/' . $candidate); break; }
+        }
+        $record = AcceptedRetraction::prepare($post, $request, (string) file_get_contents($this->repositoryRoot . '/' . $path),
+            is_file($this->repositoryRoot . '/' . $path . '.asc') ? (string) file_get_contents($this->repositoryRoot . '/' . $path . '.asc') : '',
+            $request->attribution ?? $request->classification, $sourceHash);
+        $commit = RetractionDeletion::commit($this->repositoryRoot, $record);
+        $this->staleMarker()->mark(['reason' => 'retraction_migrated', 'commit_sha' => $commit]);
+        return $commit;
     }
 
     /** Local acceptance metadata only: never part of the signer's canonical record. */

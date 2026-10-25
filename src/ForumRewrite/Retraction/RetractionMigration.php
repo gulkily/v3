@@ -11,9 +11,19 @@ final class RetractionMigration
 {
     public static function run(string $root, string $lockPath): array
     {
-        return (new ExecutionLock($lockPath))->withExclusiveLock(static function () use ($root): array {
+        return (new ExecutionLock($lockPath))->withExclusiveLock(static fn (): array => \ForumRewrite\Support\PublicationLock::withLock($root, static function () use ($root): array {
             $result = ['status' => 'complete', 'migrated' => [], 'unresolved' => []];
             $repository = new CanonicalRecordRepository($root);
+            // Retry an interrupted conversion even if its legacy text file was already removed.
+            foreach (glob($root . '/records/post-retractions/post-retraction-*.json') ?: [] as $path) {
+                try {
+                    $id = substr(basename($path, '.json'), strlen('post-retraction-'));
+                    $record = AcceptedRetraction::read($root, $id);
+                    $before = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+                    if (RetractionDeletion::commit($root, $record) !== $before) $result['migrated'][] = $id;
+                } catch (\Throwable $error) { $result['unresolved'][basename($path)] = $error->getMessage(); }
+            }
+
             foreach (glob($root . '/records/post-retractions/*.txt') ?: [] as $path) {
                 try {
                     $relative = 'records/post-retractions/' . basename($path);
@@ -30,7 +40,7 @@ final class RetractionMigration
                         }
                     }
                     $record = AcceptedRetraction::prepare($post, $request, (string) file_get_contents($path),
-                        is_file($path . '.asc') ? (string) file_get_contents($path . '.asc') : '', $request->attribution ?? $request->classification);
+                        is_file($path . '.asc') ? (string) file_get_contents($path . '.asc') : '', $request->attribution ?? $request->classification, hash('sha256', $bytes));
                     RetractionDeletion::commit($root, $record);
                     $result['migrated'][] = $request->postId;
                 } catch (\Throwable $error) {
@@ -60,6 +70,6 @@ final class RetractionMigration
             }
             if ($result['unresolved'] !== []) $result['status'] = 'partial';
             return $result;
-        });
+        }));
     }
 }

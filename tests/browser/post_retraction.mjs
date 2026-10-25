@@ -132,13 +132,12 @@ try {
     assert.match(fields.get('detached_signature'), /BEGIN PGP SIGNATURE/);
     const currentLabels = await (await context.request.get(base + '/api/get_thread?thread_id=' + post.post_id)).text();
     assert.equal(/^Labels:.*\bpinned\b/m.test(currentLabels), scenario === 'account');
-    if (scenario === 'account') {
-      await page.getByText("Some labels need operator review. Ask an operator to inspect this post's label ownership.", { exact: true }).waitFor();
-    }
-    const recordPath = fields.get('record_path');
+    const recordPath = fields.get('record_path').replace(/\.txt$/, '.json');
     const source = await context.request.get(base + '/source/current/' + recordPath);
-    assert.equal(source.headers()['x-forum-signature-status'], 'verified');
-    const record = await readFile(join(root, 'repository', recordPath), 'utf8');
+    assert.equal(source.status(), 200);
+    const accepted = JSON.parse(await readFile(join(root, 'repository', recordPath), 'utf8'));
+    const record = accepted.signed_request;
+    assert.match(accepted.signature, /BEGIN PGP SIGNATURE/);
     assert.match(record, new RegExp(`Author-Identity-ID: ${identities.author}`));
     if (role !== 'author') {
       assert.match(record, new RegExp(`Actor-Identity-ID: ${identities[role]}`));
@@ -172,9 +171,9 @@ try {
       for (const width of [390, 1280]) {
         await page.setViewportSize({ width, height: 844 });
         for (const theme of themes) {
-          await page.evaluate(({ theme, id }) => { localStorage.setItem('forum-zenmemes-theme', theme); sessionStorage.setItem('forum-retraction-label-review', id); }, { theme, id: post.post_id });
+          await page.evaluate(theme => localStorage.setItem('forum-zenmemes-theme', theme), theme);
           await page.reload();
-          const warning = page.getByText("Some labels need operator review. Ask an operator to inspect this post's label ownership.", { exact: true });
+          const warning = page.getByText('This post was retracted by its author.', { exact: true }).first();
           await warning.waitFor();
           assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
           assert.equal(await warning.evaluate(node => node.scrollWidth <= node.clientWidth + 1), true, `${theme}/${width} warning overflow`);
@@ -183,7 +182,7 @@ try {
           if (['light', 'word97', 'chicago', 'midnight'].includes(theme)) await page.screenshot({ path: `/tmp/retraction-browser-evidence/${theme}-${width}.png` });
         }
       }
-      console.log('PASS operator-review warning in 13 themes at phone/desktop widths without overflow');
+      console.log('PASS retraction notice in 13 themes at phone/desktop widths without overflow');
     }
     console.log(`PASS real browser ${scenario} retraction, signing and attribution`);
     await context.close();

@@ -93,6 +93,13 @@ final class AcceptedRetractionTest
         assertSame(false, is_file($root . '/records/posts/root.txt'));
         assertSame(false, is_file($root . '/records/post-retractions/post-retraction-root.txt'));
         assertSame([], \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock')['migrated']);
+        // Simulate process death after writing/staging conversion, before committing it.
+        $git(['reset', '--soft', 'HEAD^']);
+        $recovered = \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock');
+        assertSame(['root'], $recovered['migrated']);
+        assertSame(false, is_file($root . '/records/posts/root.txt'));
+        assertSame([], \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock')['migrated']);
+
     }
 
 }

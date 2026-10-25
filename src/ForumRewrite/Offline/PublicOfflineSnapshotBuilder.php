@@ -34,7 +34,11 @@ final class PublicOfflineSnapshotBuilder
     ): array {
         if (!is_file($sourcePath)) throw new RuntimeException('Offline snapshot source database does not exist.');
         $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot ?? dirname(__DIR__,3));
-        $this->excluded = [];
+        $source = new PDO('sqlite:file:' . $sourcePath . '?mode=ro');
+        $columns = array_column($source->query('PRAGMA table_info(posts)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+        $this->excluded = in_array('retracted_at', $columns, true)
+            ? array_fill_keys($source->query('SELECT post_id FROM posts WHERE retracted_at IS NOT NULL')->fetchAll(PDO::FETCH_COLUMN), true) : [];
+        $source = null;
         return $this->buildWhileLocked($sourcePath, $targetPath, $threadLimit, $maxBytes);
     }
 

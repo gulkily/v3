@@ -3418,15 +3418,11 @@ NODE;
             $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true);
             $_POST = [];
             assertSame('complete', $result['retraction_status']);
-            $message = $this->gitOutput($root, 'show -s --format=%B HEAD');
-            assertSame(1, preg_match('/^Retraction-Attribution: (.+)$/m', $message, $match));
-            $evidence = json_decode($match[1], true, 512, JSON_THROW_ON_ERROR);
+            $evidence = \ForumRewrite\Canonical\AcceptedRetraction::read($root, $author['thread_id']);
             assertSame($scenario === 'same' ? 'author' : 'operator', $evidence['attribution']);
-            assertSame($scenario === 'same' ? 'accountevidence' : null, $evidence['username']);
-            assertSame(hash('sha256', $prepared['canonical_record']), $evidence['sha256']);
             assertSame($operator['identity_id'], $evidence['actor']);
-            assertSame($author['identity_id'], $evidence['author']);
-            assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
+            assertSame($author['identity_id'], $evidence['post']['author_identity_id']);
+            assertSame($prepared['canonical_record'], $evidence['signed_request']);
             assertStringContains('Retraction-Class: operator', $prepared['canonical_record']);
             $loaded = (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']);
             assertSame('operator', $loaded->classification);
@@ -3639,7 +3635,7 @@ NODE;
         assertSame('complete', $accepted['retraction_status']);
         $commit = $accepted['commit_sha'];
         $commitDetail = json_decode($this->renderMethod($app, 'GET', '/api/forte_commit_detail?sha=' . $commit), true);
-        assertStringContains($operator['identity_id'], $commitDetail['html']);
+        assertSame($operator['identity_id'], \ForumRewrite\Canonical\AcceptedRetraction::read($root, $author['thread_id'])['actor']);
         assertStringContains('post retraction record', $commitDetail['html']);
         assertStringContains('Operator reply remains', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
         assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']));
@@ -3661,14 +3657,12 @@ NODE;
         (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
         assertSame(false, str_contains($this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']), 'Operator target prose'));
         assertStringContains('retracted by an operator', $this->renderMethod($app, 'GET', '/source/current/' . $author['record_path']));
-        $this->runCommand($root, 'git rm ' . escapeshellarg($author['record_path']) . ' ' . escapeshellarg($author['record_path'] . '.asc'));
-        $this->runCommand($root, 'git commit -m "Remove original retracted post"');
         $report = (new \ForumRewrite\Import\ContentImportRunner($root, $db))->run($original, function () use ($root, $db): void {
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
         });
         assertSame('complete', $report['status']);
         clearstatcache(true);
-        assertSame(true, is_file($root . '/' . $author['record_path']));
+        assertSame(false, is_file($root . '/' . $author['record_path']));
         $restoredPage = $this->renderMethod($app, 'GET', '/threads/' . $author['thread_id']);
         assertSame(false, str_contains($restoredPage, 'Operator target prose'));
         assertStringContains('retracted by an operator', $restoredPage);
@@ -3677,18 +3671,17 @@ NODE;
         mkdir($source);
         $this->copyDirectory($root . '/records', $source . '/records');
         $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($source, $root);
-        assertSame('duplicate', $plan[$prepared['record_path']]['state']);
+        assertSame('duplicate', $plan[\ForumRewrite\Canonical\AcceptedRetraction::path($author['thread_id'])]['state']);
         $freshPath = $stale['record_path'];
         file_put_contents($source . '/' . $freshPath, $stale['canonical_record']);
         file_put_contents($source . '/' . $freshPath . '.asc', $this->signCanonicalRecord($operator['home'], $stale['canonical_record']));
         $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($source, $root);
         assertSame('invalid', $plan[$freshPath]['state']);
         assertStringContains('local acceptance evidence', $plan[$freshPath]['reason']);
+        // Unrelated legacy sidecars cannot alter an already accepted embedded request.
         file_put_contents($root . '/' . $prepared['record_path'] . '.asc', 'forged');
-        $rejected = false;
-        try { (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path']); }
-        catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { $rejected = true; }
-        assertSame(true, $rejected);
+        assertSame($operator['identity_id'], (new CanonicalRecordRepository($root))->loadPostRetraction($prepared['record_path'])->signerIdentityId());
+
     }
 
     public function testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages(): void
@@ -3773,6 +3766,8 @@ NODE;
                 'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
             $this->renderMethod($app, 'POST', '/api/create_prepared_retraction');
             $_POST = [];
+            assertStringContains('Exchange private prose', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]));
+            (new \ForumRewrite\Retraction\RetractionSweep($root, $exchangeDb, $root . '/unused-sweep-state.json'))->run();
             foreach (array_slice($ids, 0, 2) as $id) {
                 $page = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $id);
                 assertStringContains('LLM exchange unavailable.', $page);
@@ -3792,8 +3787,8 @@ NODE;
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '"', $rootPost);
 
             assertSame(3, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
-            assertSame($rawRows, $pdo->query('SELECT * FROM llm_exchanges ORDER BY id')->fetchAll(PDO::FETCH_ASSOC));
-            assertTrue(is_file($root . '/' . $prepared['record_path'] . '.asc'));
+            assertSame($rawRows[2], $pdo->query('SELECT * FROM llm_exchanges WHERE id=' . $ids[2])->fetch(PDO::FETCH_ASSOC));
+            assertTrue(is_file($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($author['thread_id'])));
         } finally {
             $_POST = []; $_COOKIE = $cookies;
             putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
@@ -3874,8 +3869,8 @@ NODE;
 
         assertSame('ok', $finalized['status']);
         assertSame('complete', $finalized['retraction_status']);
-        assertTrue(is_file($repositoryRoot . '/' . $prepared['record_path']));
-        assertTrue(is_file($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
+        assertTrue(is_file($repositoryRoot . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($author['thread_id'])));
+        assertSame(false, is_file($repositoryRoot . '/' . $author['record_path']));
         assertSame('Retract post ' . $author['thread_id'] . ' by ' . $author['identity_id'], $this->gitOutput($repositoryRoot, 'log -1 --format=%s'));
         $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($author['thread_id']));
         assertSame(false, str_contains($threadPage, 'Retraction marker body'));
@@ -3927,8 +3922,8 @@ NODE;
             'canonical_record' => $prepared['canonical_record'], 'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
         try { $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR); }
         finally { $_POST = []; }
-        assertSame('unresolved', $result['label_cleanup_status']);
-        assertSame(1, count($result['unresolved_label_records']));
+        assertSame('complete', $result['label_cleanup_status']);
+        assertSame([], $result['unresolved_label_records']);
         $pdo = new PDO('sqlite:' . $database);
         assertSame('["pinned"]', $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='" . $author['thread_id'] . "'")->fetchColumn());
     }
@@ -4264,7 +4259,7 @@ NODE;
 
         assertSame('partial', $partial['retraction_status']);
         assertSame('read_model_refresh', $partial['failed_step']);
-        assertTrue(is_file($repositoryRoot . '/' . $prepared['record_path']));
+        assertTrue(is_file($repositoryRoot . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($author['thread_id'])));
         assertTrue((new \ForumRewrite\ReadModel\ReadModelStaleMarker($databasePath))->exists());
 
         $service->failRefresh = false;

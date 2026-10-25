@@ -70,30 +70,21 @@ final class ExchangeDependenciesTest
         assertSame(false, array_key_exists('_exchange_dependencies', $known['thread_comments'][0]));
     }
 
-    public function testUnavailableOrMissingTargetStateIsNeverEmptyState(): void
+    public function testCleanupUsesAcceptedTargetsWithoutLegacyPublicationGates(): void
     {
         $root = sys_get_temp_dir() . '/exchange-state-' . bin2hex(random_bytes(6));
-        assertSame(null, ExchangeRetractionState::read($root));
+        try { ExchangeRetractionState::read($root); throw new LogicException('Missing repository accepted'); }
+        catch (RuntimeException $error) { assertStringContains('unavailable', $error->getMessage()); }
         mkdir($root . '/records/post-retractions', 0700, true);
-        assertSame([], ExchangeRetractionState::read($root));
         $path = $root . '/records/post-retractions/post-retraction-target.txt';
-        file_put_contents($path, 'malformed');
-        assertSame(null, ExchangeRetractionState::read($root));
-        file_put_contents($path, "Record-ID: post-retraction-target\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: target\nOperation: retract\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\n");
-        assertSame(null, ExchangeRetractionState::read($root));
-        mkdir($root . '/records/posts');
-        file_put_contents($root . '/records/posts/target.txt', "Post-ID: target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\nProse\n");
+        file_put_contents($path, 'malformed legacy evidence');
+        assertSame([], ExchangeRetractionState::read($root));
+        $author = 'openpgp:' . str_repeat('a', 40);
+        $source = "Post-ID: target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: $author\n\nProse\n";
+        $bytes = "Record-ID: post-retraction-target\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: target\nOperation: retract\nAuthor-Identity-ID: $author\n\n";
+        $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare((new \ForumRewrite\Canonical\PostRecordParser())->parse($source), (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($bytes), $bytes, '', 'author');
+        file_put_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path('target'), \ForumRewrite\Canonical\AcceptedRetraction::encode($record));
         assertSame(['target' => true], ExchangeRetractionState::read($root));
-        foreach (['init -q', 'add records', '-c user.name=Privacy -c user.email=privacy@example.test commit -qm evidence'] as $command) {
-            exec('git -C ' . escapeshellarg($root) . ' ' . $command . ' 2>&1', $output, $code);
-            assertSame(0, $code);
-        }
-        $saved = file_get_contents($path);
-        unlink($path);
-        assertSame(null, ExchangeRetractionState::read($root));
-        file_put_contents($path, $saved);
-
-        file_put_contents($path . '.asc', 'forged');
-        assertSame(null, ExchangeRetractionState::read($root));
+        // No original post or Git history is necessary after acceptance.
     }
 }

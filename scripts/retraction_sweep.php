@@ -45,9 +45,10 @@ try {
         echo 'Retraction sweep: ' . $result['status'] . "\n";
         if (isset($result['updated_at'])) echo 'Last run: ' . $result['updated_at'] . "\n";
         if (isset($result['retractions'])) echo 'Retracted posts: ' . $result['retractions'] . "\n";
+        if (($result['legacy_retractions'] ?? 0) > 0) echo 'Legacy records awaiting migration: ' . $result['legacy_retractions'] . ". Run retraction-sweep migrate, then rebuild.\n";
         if (isset($result['exchange_store'])) echo 'Exchange store: ' . $result['exchange_store'] . "\n";
         $counts = $result['totals'] ?? $result;
-        foreach (['examined' => 'Exchanges examined', 'affected' => 'Exchanges to clean', 'cleaned' => 'Exchanges cleaned', 'uncertain' => 'Uncertain exchanges retained'] as $key => $label) {
+        foreach (['examined' => 'Exchanges examined', 'affected' => 'Exchanges to clean', 'cleaned' => 'Exchanges cleaned', 'uncertain' => 'Unknown-provenance exchanges'] as $key => $label) {
             if (isset($counts[$key])) echo $label . ': ' . $counts[$key] . "\n";
         }
         if (isset($counts['artifacts_cleaned'])) echo 'Artifacts retired: ' . $counts['artifacts_cleaned'] . "\n";
@@ -58,8 +59,8 @@ try {
             if (isset($artifacts['cleaned'])) echo 'Artifacts retired: ' . $artifacts['cleaned'] . "\n";
         }
         if (isset($result['failure'])) echo 'Failure: ' . $result['failure'] . "\n";
-        echo 'More work: ' . (($result['remaining'] ?? false) ? 'yes' : 'no') . "\n";
-        if ($result['status'] === 'failed') echo "Check canonical evidence, permissions and SQLite readers, then retry with retraction-sweep run.\n";
+        if ($result['status'] === 'preview' && (($result['affected'] ?? 0) + ($result['artifacts']['affected'] ?? 0)) > 0) echo "Run retraction-sweep run to clean the reported copies.\n";
+        if ($result['status'] === 'failed') echo "Check permissions and SQLite readers, then retry with retraction-sweep run.\n";
         elseif ($result['remaining'] ?? false) echo "Run retraction-sweep run to continue, or let the cron worker handle it.\n";
     }
 } catch (Throwable $error) {
