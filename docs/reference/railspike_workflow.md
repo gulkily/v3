@@ -7,7 +7,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 ## Provenance
 
-- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.3.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
+- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.3.0-beta.3` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
 - The full upstream tree and license are retained, with the local experimental estimation patch described below. The upstream Ref/Commit identifies the imported baseline, not the locally patched contents.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
@@ -44,7 +44,7 @@ Before a future subtree update, inspect and preserve this patch in branch histor
 ## Update commands
 
 ```bash
-./v3 railspike sync                      # pinned v0.3.0-beta.1: no-op when installed
+./v3 railspike sync                      # pinned v0.3.0-beta.3: no-op when installed
 ./v3 railspike sync --ref=<newer-tag>    # deliberate upgrade
 ./v3 railspike sync --repository-root=/path/to/another/migrated/repository
 ```
@@ -129,3 +129,35 @@ Source: https://github.com/rlspk/railspike.git; MIT license; delivery: existing 
 Updated the CLI default pin, help, reference and affected test assertion. Extended estimates remain off absent explicit cycle activation or host policy; existing standing study enrollment is preserved. The clean maintenance worktree keeps unrelated host edits intact. The prior installed state remains recoverable from the subtree merge's first parent.
 
 Verification: all 17 upstream product files match the release byte-for-byte; `php tests/run.php RailspikeSyncCommandTest RailspikeWorkflowTest` passed all 20 tests; shell syntax and `git diff --check` passed. Actual dependency delta matches the approved inventory: one existing instruction dependency upgraded, zero added packages or transitive dependencies. UI/runtime/deployment checks are inapplicable to this instruction-only upgrade.
+
+
+## Upgrade — 2026-10-25 UTC (v0.3.0-beta.3)
+
+User authorization: “Wait, can you please upgrade railspike to the latest beta.”
+Verified upstream tags directly; latest beta tag `v0.3.0-beta.3` resolves to
+`690c596307b2087515b7c258008e5835af89048b`, a descendant of the installed
+`v0.3.0-beta.1` (`c336536f88d1ce471b4f582a7d87203864f8526e`). The GitHub release
+listing still showed beta.1 when checked; tag discovery supplied the newer beta.
+
+Dependency inventory: existing MIT-licensed Railspike subtree from
+`https://github.com/rlspk/railspike.git`; ten existing Markdown files changed,
+140 insertions/45 deletions, net 9,516 bytes. All 17 upstream files retained;
+no new files, packages, transitive dependencies, manifests or runtime components.
+Delivery uses the supported squash-subtree sync. Retaining beta.1 was the
+reduced-scope alternative. Maintenance remains deliberate tag review, pin updates
+and upstream-content verification; user explicitly requested this dependency update.
+
+Beta.3 includes beta.2's enabled-by-default extended estimates for new enrolled
+cycles, visible standalone estimate lines, and dated agent contribution attribution
+with only verified model/settings. Existing recorded cycle settings, approvals,
+reference sets and study histories survive unchanged. The current retraction cycle
+keeps its disabled extended estimates and approved Step 2; Step 3 was interrupted
+before drafting. This upgrade does not authorize retraction implementation.
+
+Applied in a clean maintenance worktree and updated CLI defaults/help and its
+focused assertion. Host plans and the uncommitted effort ledger remain untouched.
+Verification: all 17 upstream files match the reviewed beta.3 commit byte-for-byte.
+`RailspikeSyncCommandTest` and `RailspikeWorkflowTest` passed 20/20; shell syntax,
+CLI help/pin and diff checks passed. Actual dependency delta matches the reviewed
+inventory: ten changed upstream Markdown files, zero added components or transitive
+packages. Runtime/UI/deployment checks are inapplicable to this instruction upgrade.
