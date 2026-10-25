@@ -47,7 +47,8 @@ final class LabelRemoval
             if (!is_string($labelPath) || !preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $labelPath)
                 || !is_string($hash) || !preg_match('/^[a-f0-9]{64}$/D', $hash)) throw new RuntimeException('Invalid removal label binding.');
         }
-        // The exact bytes must have been accepted locally, not just copied in an archive.
+        if (($record['acceptance_version'] ?? null) === 2) return $record;
+        // Legacy migration only: archives may not supply local acceptance.
         $commits = preg_split('/\s+/', trim(self::git($root, ['log', '--format=%H', '--', $path])));
         foreach ($commits as $commit) {
             if ($commit === '') continue;

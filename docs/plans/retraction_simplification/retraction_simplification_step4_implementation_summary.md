@@ -34,3 +34,15 @@ Step 3 explicitly approved. Planning commit `fd5c6849`, branch `feature/retracti
 - Notes: broader operator flow test reaches successful acceptance but fails obsolete Forte commit display expectations; reader/display compatibility belongs to Stage 4 and remains pending. Existing presentation refresh is retained until the publication/cleanup stages. No estimate revision. Markdown hard-break whitespace from entry removed.
 
 *— Codex · 2026-10-25 UTC*
+
+## Stage 3 - Legacy migration
+
+**Original estimate: 0.30**
+
+**Retrospective stage work: 0.30**
+
+- Changes: `retraction-sweep migrate` resolves legacy author/operator acceptance once, preserves signed request bytes, recovers absent targets from historical source without writing prose back, and commits conversions independently. Unresolved records are reported individually. Existing accepted source-removal records remain in place with versioned local acceptance; imports already reject unfamiliar removal receipts.
+- Verification: AcceptedRetractionTest 4/4, including absent-target migration, unresolved neighbor, preserved request and repeat migration. CLI help includes migrate; human output provides rebuild/cleanup/recovery steps and JSON returns per-record results. Failed source-removal conversion restores prior evidence.
+- Notes: unconverted operator records still require legacy authority during explicit migration; Stage 4 removes recurring checks from normal readers. Migration is an operator command, not automatic live mutation. No estimate revision.
+
+*— Codex · 2026-10-25 UTC*
