@@ -89,3 +89,44 @@ Stage 3 `179d5496`; Stage 4 `a6ce8277`; Stage 5 `6ac03208`; Stage 6 `ef7c29da`. 
 
 ### Ledger / study bookkeeping
 - Cycle `v3/viewer_tag_read_model_and_memoization`, scope v1 combined, P2 standing enrollment. Checkpoints: Step 1 (merged predecessors) 1.15; Step 2 1.15; Step 3 1.15 + stage-work S1 0.08 / S2 0.30 / S3 0.35 / S4 0.15 / S5 0.15 / S6 0.10; Step 4 retrospective whole-cycle ≈1.2 with retrospective stage-work S1 0.08 / S2 0.32 / S3 0.35 / S4 0.18 / S5 0.12 / S6 0.22. Predecessor snapshots preserved (B 0.9, A 0.35) and not re-rated. Single exposed, non-blind rater; no uploads; collection does not approve implementation.
+
+## 2026-10-25 UTC — Process-instruction gap retrospective (post-merge)
+
+User asked what was missing from the process instructions such that findings
+were not fully documented (externalized) initially. The findings *were* recorded
+in-cycle; the gap was the absence of a step that promotes cycle-local findings
+to a durable, shared home before completion. Analysis:
+
+1. **No "externalize cross-cutting findings" step.** Railspike Steps 1–4 are
+   structured around delivering one feature; Step 4 captures findings but inside
+   the feature folder, which moves to `docs/plans/archive/` at completion.
+   Nothing required promoting an outlives-the-cycle finding to the backlog, so
+   the default gravity sank findings into the archive with the cycle.
+2. **"Findings" not distinguished by lifetime.** Three kinds get lumped
+   together: (a) resolved-in-cycle (WeakMap fix), (b) decisions needing a record
+   (exclusion / identity-notation calls), (c) deferred work for someone later
+   (dropSchema derivation; score/vote exclusion removal). Only (c) must leave the
+   folder. No trigger named that distinction.
+3. **AGENTS.md todo rule points the wrong way.** "Record follow-up work in the
+   relevant planning or implementation documents" steered toward the feature
+   folder — exactly where follow-ups get archived — with no carve-out for
+   cross-cutting items. A real tension in the written guidance.
+4. **No bidirectional-link convention.** The promotion pattern (backlog note +
+   README index entry + cross-link from Step 4) had to be invented; a different
+   run might record the same finding with no link or in only one place.
+5. **"Document findings" has no acceptance criterion.** No completion gate makes
+   "findings documented AND discoverable from outside the cycle" required, so
+   "done" could mean "written in the debug log" — technically true, practically
+   lost.
+
+**Proposed smallest fix (covers all five):** add one line to the Step 4 /
+completion definition — "Any finding not resolved in this cycle is recorded in
+`docs/plans/backlog/` with a link back to this cycle's Step 4, before the cycle
+is considered complete." Turns an ask-dependent cleanup into a release gate and
+resolves the AGENTS.md tension by naming the exception.
+
+**Self-critique (not a process gap):** I could have proposed the backlog
+promotion proactively at Step 4 rather than waiting to be asked — the
+instructions did not forbid it. Part of this was a process gap; part was treating
+"documented in the cycle" as sufficient. The process change is the more reliable
+remedy of the two.
