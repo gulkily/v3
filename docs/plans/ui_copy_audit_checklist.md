@@ -1,5 +1,12 @@
 # UI copy audit checklist
 
+## Backup page reduction — October 25, 2026
+
+- [x] Removed site/admin details, freshness headings/metadata, repeated download tables/descriptions, activity preview and the separate explanation card. All three Backup aliases now show direct format links, conditional image pairing guidance, SQLite staleness and a concise separate-backup warning. Removed the corresponding page-data queries and description strings; download behavior is unchanged.
+- Verification: 8/8 focused PHP checks (`BackupPageTest`, `RepositoryContentExportTest`, and `LocalAppSmokeTest` portability/core-route methods). Actual Chromium rendering passed at 390px/1280px across 14 theme choices, with visible download links and no horizontal overflow; all aliases and all four real downloads passed. Wrong-revision HTTP 409 retained actionable refresh/re-download guidance and retry succeeded. Image-unavailable rendering showed three links and no pairing note at both widths. There is no activity empty state or disclosure after removal; native downloads add no success/pending UI.
+- Inspected Word97 phone and Midnight desktop screenshots (`/tmp/backup-word97-390.png`, `/tmp/backup-midnight-1280.png`); browser check `/tmp/backup-copy-check.mjs`. Existing tall Tools navigation remains on phones and is outside this copy change. No navigation destination/icon changes, dependencies, schema changes or `todo.txt` edits. Physical devices, other browser engines, full suite and production deployment were not checked.
+
+
 ## Outstanding-item review — October 23, 2026
 
 - Reviewed unchecked entries against the completion records and current source. Seven copy-audit candidates remain open: Outbox, Bookmarklets, Fastmod, Offline reading, Thread/post analysis, Feature Flags, and Users empty state. Their rendered-state review and acceptance checks below remain outstanding; source inspection does not close them.
