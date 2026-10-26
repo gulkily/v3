@@ -50,3 +50,27 @@ threads.
 - **Risk/size:** medium–large, cross-cutting (board, Forte, qdb listings and
   scores; incremental + full rebuild paths; retraction semantics). Needs its own
   solution assessment.
+
+## 3. Keep the canonical archive README committed in the repository
+
+From the `archive_export_efficiency` cycle (2026-10-26). The repository archive
+(`/downloads/repository.tar.gz` / `.zip`) currently **overrides** whatever
+`README.md` the content repo tracks with the canonical recipient guide
+(`resources/repository-archive/README.md`), injected at export time by
+`RepositoryArchiveReadme::write()`. This override is load-bearing today (there is
+a contract + test that the archive always contains the guide, and a 500 path when
+the tracked `README.md` can't be replaced).
+
+- **User preference (deferred):** instead of overriding at build time, keep the
+  proper (guide) README committed in the content repository, so `git archive`
+  carries the correct README with no override step. This would simplify the export
+  (`git archive` becomes fully sufficient for the committed tree, no README
+  injection) and remove the replace-failure path.
+- **Caveats to resolve in its own cycle:** (a) who keeps the committed README in
+  sync with `resources/repository-archive/README.md` when the guide changes
+  (injection guarantees freshness; a committed file does not); (b) existing
+  instances (incl. qdb.us) have their own `README.md` or none, so this needs a
+  one-time seed and a decision about replacing an instance's own README; (c)
+  update the export tests/contract that currently assert the override.
+- **Risk/size:** small code, but a content/data decision (what README ships in the
+  archive) and a sync-maintenance question; needs a solution assessment.

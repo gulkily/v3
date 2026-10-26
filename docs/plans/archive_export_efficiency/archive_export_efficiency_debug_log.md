@@ -137,3 +137,64 @@ Recorded Step 2 approval in its document, then drafted the four-stage Step 3 aft
 - ≈0.8 (C) / ≈0.35 (A). Single exposed, non-blind rater.
 
 Step 3 carries `Approval: PENDING`; no branch/commit/implementation until it reads APPROVED.
+
+## 2026-10-26 UTC — Stage 1 decision: identity ignores permissions and untracked-file content (user)
+
+While implementing Stage 1, the old `ExportIdentity` was found to make identity
+sensitive to (1) file permissions and (2) untracked-file *content* — both of which
+the cheap git-HEAD + porcelain key does not reproduce. Surfaced as a decision.
+
+User direction: **permissions should not matter (data-only archive); untracked files
+should not matter either.** Confirmed against the archive's purpose: it is the
+committed content snapshot (export captures `git HEAD`, refuses dirty records, injects
+`repository-snapshot.json`). Decision:
+
+- Identity = `git rev-parse HEAD` + `git status --porcelain` (dirtiness present →
+  distinct key / refuse) + image inventory by content-addressed filename + size +
+  generator-source digest. **No file permissions. No per-untracked-file content hash.**
+- Consistency requirement carried into Stage 3 (Option B): the archive must contain
+  **committed content only** (e.g. `git archive HEAD` semantics), so untracked files
+  are neither archived nor identity-affecting. This removes today's inconsistency where
+  `copyTree(excludeGit:true)` swept untracked files into the archive.
+- `ArchiveExportTest::testIdentityIncludesUntrackedBytesPermissionsAndImages` encoded
+  the old (now-rejected) guarantees; it is rewritten to the new semantics rather than
+  preserved. This is a deliberate, user-approved narrowing, not an accidental regression.
+
+Net effect: strictly cheaper identity with guarantees aligned to "committed data only."
+
+## 2026-10-26 UTC — Approved Step 3 (full Option C); implemented Stages 1–3 + Step 4
+
+Recorded Step 3 approval ("just rip it" → full Option C). Branch
+`feat/archive-export-efficiency`, planning commit `696df0d4`; stage commits
+`70aeb083` (S1), `3928576d` (S2), `b22b3868` (S3). Full suite zero new failures.
+
+### Necessary/useful instructions
+- "diagnose root cause rather than patch / step back after repeated failure":
+  Stage 3 failed tests three times across two mechanisms. Rather than a fourth
+  patch, stepped back and found the actual root cause — `git archive` omits empty
+  directories, so a posts-less repo lost `records/` — a real product edge, fixed
+  directly. The earlier flailing on the test harness was the signal to stop.
+- "surface genuine blockers / don't drift from the plan": caught myself
+  mid-pivot implementing mechanism (ii) without approval when the user only asked
+  a question; stopped and re-confirmed. User then approved (ii) and asked to record
+  pivots in Step 4 — done.
+- Baseline-differencing the full suite: the new-looking `CheckoutsCommandTest`
+  failure was verified pre-existing/environmental (passes in isolation; branch
+  touches only Images/*), preventing a false "I broke it" conclusion before merge.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Uncertain assessments
+- Retrospective ≈0.9 vs ≈0.8 projected: the Stage 3 mechanism churn (overlay
+  contracts → tar-in-lock harness interaction → empty-dir edge) was
+  under-weighted. The README-override and snapshot-fingerprint contracts are the
+  entanglement the plan should have flagged earlier.
+
+### Deferred follow-up (user)
+- Keep the canonical archive README committed in the repo so export need not
+  override a tracked README. Preferred long-term; deferred, filed to backlog.
+
+### Pivots (summary; full detail in Step 4)
+1. Identity narrowed to committed-data-only (no perms, no untracked content) — user decision.
+2. Build mechanism: approved overlay (`git archive --add-file`) → `git archive | tar -x` → `git archive -o + PharData` (final), to preserve export contracts and the kill/conflict test harness without a tar shell-out in staging.

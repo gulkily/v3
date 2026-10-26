@@ -38,13 +38,15 @@ Effort study: `railspike-effort` / `v3/archive_export_efficiency`; [ledger](../e
 - Verification: build a large temp repository fixture; measure `ImageBackup::export('tar.gz')` wall-time before (full-tree hash) vs. after (cheap identity), and against a bare `tar -czf` baseline; assert the archive bytes are identical to the pre-change build for the same content; run `import-instance` against a local server serving the fixture archive and confirm round-trip. (This stage is the acceptance of the A half; if A alone is being shipped as the urgent fix, the cycle can pause here.)
 - Canonical components touched: tests only.
 
-## Stage 3 — Single-pass build without the full tree copy (Option B)
+## Stage 3 — Single-pass build via `git archive` (Option B)
 
-- Goal: `ImageBackup::build()` assembles the archive without `copyTree(...)` of the whole repository; inject snapshot/README without a full copy.
+- Goal: `ImageBackup::build()` assembles the repository archive from git's committed file list in one pass, with no workspace copy and no directory walk.
 - Dependencies: Stages 1–2.
-- Expected changes: for tar.gz/zip, archive from the source tree (excluding `.git`) directly, adding `repository-snapshot.json` and the README via a minimal overlay (stage only those two files, append/transform into the archive) rather than copying every file first. Preserve the existing pre/post-build identity revalidation under `forum-rewrite.lock`. Keep the images-tar (PharData) path equivalent (it already adds files individually; ensure no redundant copy). Retain all size/count bounds.
-- Verification: byte-identical archive contents vs. Stage 2's post-A build (so B changes cost, not output); the injected files are present and correct; a concurrent-write-during-export test still yields 409/conflict (no torn archive); `ArchiveExportTest`/`RepositoryContentExportTest` pass. Measure wall-time now approaches `tar -czf`.
-- Canonical components touched: `src/ForumRewrite/Images/ImageBackup.php` (`build()`); possibly `RepositorySnapshot`/`RepositoryArchiveReadme` injection path.
+- Mechanism (user suggestion, verified feasible on git 2.34.1): use **`git archive`** to stream the committed tree — `git archive --format=tar --prefix=repository/ HEAD` piped to `gzip` for tar.gz, and `git archive --format=zip --prefix=repository/ HEAD` for zip. The two generated files are appended with **`--add-file`** (`repository-snapshot.json`, the README) rather than copied into a staged tree. This is essentially the `tar -cf ; gzip` the request asked for, and it makes the archive **committed-content-only** — consistent with the Stage 1 decision that untracked files affect neither the archive nor identity (git's file list simply excludes them; verified: git-tracked == working-tree files on a clean repo, zero difference).
+- Expected changes: replace the `copyTree(...)` + external `tar`/`zip` in `build()` with the `git archive` invocation for tar.gz/zip. Resolve the `--add-file` vs `--prefix` placement so the two generated files land at `repository/<name>` byte-correctly (stage them with the intended basename; confirm prefix interaction). Keep the pre/post-build identity revalidation under `forum-rewrite.lock`. The **images-tar (PharData)** path does not use git and stays as-is (manifest + objects). Retain all size/count bounds (enforce via `git archive` output size check, since there's no pre-copy `treeBytes` pass).
+- Verification: byte-identical archive *contents* (file set + bytes, modulo tar metadata) vs. Stage 2's post-A build; `repository-snapshot.json` + README present at `repository/`; an untracked file in the working tree is **absent** from the archive (new assertion reflecting the committed-only decision); concurrent-write-during-export still yields 409/conflict with no torn archive; `ArchiveExportTest`/`RepositoryContentExportTest` pass; measured wall-time approaches a bare `git archive | gzip`.
+- Canonical components touched: `src/ForumRewrite/Images/ImageBackup.php` (`build()`); `RepositorySnapshot`/`RepositoryArchiveReadme` injection via `--add-file`.
+
 
 ## Stage 4 — Full verification + runbook note
 
