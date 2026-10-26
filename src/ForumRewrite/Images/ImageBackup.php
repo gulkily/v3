@@ -32,7 +32,7 @@ final class ImageBackup
             try {
                 return $locks->withExclusiveLock('forum-rewrite.lock', function () use ($cache, $built, $kind, $expectedRevision): array {
                     $identity = $this->identity($expectedRevision);
-                    if ($identity !== $built['identity']) throw new RuntimeException('Repository changed during backup; refresh Backup and retry.');
+                    if ($identity !== $built['identity']) throw new ArchiveConflictException('Repository changed during backup; refresh Backup and retry.');
                     return $cache->publish($built, $identity, $kind);
                 });
             } finally {
@@ -52,7 +52,7 @@ final class ImageBackup
                 $revision = $locks->withExclusiveLock('forum-rewrite.lock', function () use ($kind, $expectedRevision, $work, &$identity): string {
                     $revision = $this->revision();
                     if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
-                        throw new RuntimeException('Repository changed. Refresh Backup and download both artifacts again.');
+                        throw new ArchiveConflictException('Repository changed. Refresh Backup and download both artifacts again.');
                     }
                     if ($this->git(['status', '--porcelain', '--', 'records']) !== '') {
                         throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');
@@ -83,7 +83,7 @@ final class ImageBackup
                         self::treeBytes($work . '/repository');
                     }
                     if ($this->revision() !== $revision || $this->git(['status', '--porcelain', '--', 'records']) !== '') {
-                        throw new RuntimeException('Repository changed during backup; retry after other writers finish.');
+                        throw new ArchiveConflictException('Repository changed during backup; retry after other writers finish.');
                     }
                     return $revision;
                 });
@@ -100,13 +100,13 @@ final class ImageBackup
                     if ($status !== 0 || !is_file($archive)) { throw new RuntimeException('Unable to assemble complete backup.'); }
                 }
                 $locks->withExclusiveLock('forum-rewrite.lock', function () use ($identity): void {
-                    if ($this->identity() !== $identity) throw new RuntimeException('Repository changed during backup; refresh Backup and retry.');
+                    if ($this->identity() !== $identity) throw new ArchiveConflictException('Repository changed during backup; refresh Backup and retry.');
                 });
                 chmod($archive, 0600);
                 return ['path' => $archive, 'revision' => $revision, 'extension' => $extension, 'identity' => $identity];
             } catch (\Throwable $error) {
                 @unlink($archive);
-                if ($error instanceof ArchiveBusyException) throw $error;
+                if ($error instanceof ArchiveBusyException || $error instanceof ArchiveConflictException) throw $error;
                 throw new RuntimeException('Backup failed: ' . $error->getMessage(), 0, $error);
             } finally {
                 self::removeTree($work);
@@ -118,7 +118,7 @@ final class ImageBackup
     {
         $revision = $this->revision();
         if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
-            throw new RuntimeException('Repository changed. Refresh Backup and download both artifacts again.');
+            throw new ArchiveConflictException('Repository changed. Refresh Backup and download both artifacts again.');
         }
         if ($this->git(['status', '--porcelain', '--', 'records']) !== '') {
             throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');

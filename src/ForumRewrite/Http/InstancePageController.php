@@ -85,8 +85,15 @@ final class InstancePageController
         if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
         try {
             $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision);
+        } catch (\ForumRewrite\Images\ArchiveBusyException $error) {
+            $this->routeServices->sendText($error->getMessage() . "\n", 503, ['Cache-Control: private, no-store', 'Retry-After: 5']);
+            return;
+        } catch (\ForumRewrite\Images\ArchiveConflictException $error) {
+            $this->routeServices->sendText("Repository changed. Refresh Backup and download both artifacts again.\n", 409, ['Cache-Control: private, no-store']);
+            return;
         } catch (RuntimeException $error) {
-            $this->routeServices->sendText($error->getMessage() . "\n", 409, ['Cache-Control: private, no-store']);
+            error_log('Archive export failed: ' . $error->getMessage());
+            $this->routeServices->sendText("Backup could not be prepared. Ask the site operator to check archive storage and source integrity, then retry.\n", 500, ['Cache-Control: private, no-store']);
             return;
         }
         if (!headers_sent()) { header('Cache-Control: private, no-store'); }

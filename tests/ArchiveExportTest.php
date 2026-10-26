@@ -112,4 +112,32 @@ final class ArchiveExportTest
         assertSame(2, count(glob($w->root . '/archive-exports/*/metadata')));
     }
 
+    public function testBusyConflictAndFailureResponsesDoNotLeakPathsAndRetrySucceeds(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source', true); $w->git($root);
+        $database = $w->root . '/index.sqlite3';
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root)))->rebuild();
+        $code = 'require $argv[1]."/autoload.php"; (new ForumRewrite\\Application($argv[1],$argv[2],$argv[3]))->handle("GET",$argv[4]); fwrite(STDOUT,"\nHTTP_STATUS=".http_response_code());';
+        $request = fn ($query = '') => $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=false',
+            'FORUM_IMAGE_ROOT=' . $w->root . '/no-images', 'php', '-d', 'error_log=' . $w->root . '/errors.log', '-r', $code,
+            dirname(__DIR__), $root, $database, '/downloads/repository.tar.gz' . $query]);
+        $held = fopen($w->root . '/image-export.lock', 'c+'); flock($held, LOCK_EX);
+        try {
+            $start = microtime(true); [$status, $body] = $request();
+            assertSame(0, $status); assertStringContains('HTTP_STATUS=503', $body);
+            assertStringContains('Retry the download', $body); assertStringNotContains($w->root, $body);
+            assertTrue(microtime(true) - $start < 7);
+        } finally { flock($held, LOCK_UN); fclose($held); }
+        [$status, $body] = $request(); assertSame(0, $status); assertTrue(str_starts_with($body, "\x1f\x8b"));
+        [$status, $body] = $request('?revision=' . str_repeat('0', 40));
+        assertStringContains('HTTP_STATUS=409', $body); assertStringContains('Refresh Backup', $body);
+        $w->put($root . '/records/posts/broken.txt', 'uncommitted');
+        [$status, $body] = $request();
+        assertStringContains('HTTP_STATUS=500', $body); assertStringNotContains($w->root, $body);
+        assertStringContains('source integrity', $body);
+        assertStringContains('uncommitted changes', file_get_contents($w->root . '/errors.log'));
+        unlink($root . '/records/posts/broken.txt');
+        [$status, $body] = $request(); assertTrue(str_starts_with($body, "\x1f\x8b"));
+    }
+
 }

@@ -47,3 +47,14 @@ Dependencies: Zero additions or updates authorized/proposed; use existing PHP/sy
 - Notes: S3/v1 unchanged; Stage 2 commit 84f14eee. Deadline bounds lock waiting, not compression runtime; timed-out callers receive typed busy errors. No new config/dependencies.
 
 *— Codex · 2026-10-26 UTC*
+
+## Stage 4 - Failure and retry flow
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes: Temporary contention returns 503 with Retry-After: 5; revision conflicts retain 409 with refresh guidance; source/storage failures return 500 with operator recovery and private log details instead of paths in public bodies. Existing importer reports bounded source text and safe retry without modification.
+- Verification: Focused 18-case run: 17 passed, one legacy-import assertion still expected the former 409/path leak. Updated that assertion to 500 plus private-log detail/public redaction, then the complete legacy image import/retry case passed. Actual busy wait/release, conflict, dirty-source failure and successful retry tested through Application routes; normal import and export tests passed.
+- Notes: S4/v1 unchanged; Stage 3 commit cf7cb4e1. HTTP/browser Retry-After and visible phone/desktop recovery checks remain S6 acceptance. No dependency/config change.
+
+*— Codex · 2026-10-26 UTC*
