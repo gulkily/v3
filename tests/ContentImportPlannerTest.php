@@ -9,6 +9,54 @@ use ForumRewrite\Import\ContentImportPlanner;
 
 final class ContentImportPlannerTest
 {
+    public function testSignedLabelsKeepTheirClassificationAndFallbackKeys(): void
+    {
+        foreach ([['.asc'], ['.sig'], ['.asc', '.sig']] as $suffixes) {
+            foreach ([false, true] as $fallback) {
+                $w = new ImportTestWorkspace();
+                $source = $w->repository('source', true);
+                $target = $w->repository('target');
+                $path = $w->signedLabel($source, $suffixes);
+                $key = '/records/public-keys/openpgp-066236E516A3B74EC51B3B423A26034600DE67FD.asc';
+                if ($fallback) {
+                    $w->put($target . $key, file_get_contents($source . $key));
+                    unlink($source . $key);
+                }
+                $plan = (new ContentImportPlanner())->plan($source, $target);
+                assertSame('import', $plan[$path]['state']);
+                foreach ($suffixes as $suffix) {
+                    assertSame('import', $plan[$path . $suffix]['state']);
+                    assertSame($path, $plan[$path . $suffix]['record']);
+                    assertSame(hash_file('sha256', $source . '/' . $path . $suffix), $plan[$path . $suffix]['hash']);
+                }
+                // Invalid companions reject the pair, while unrelated posts remain usable.
+                $w->put($source . '/' . $path . $suffixes[0], "tampered\n");
+                $plan = (new ContentImportPlanner())->plan($source, $target);
+                assertSame('invalid', $plan[$path]['state']);
+                assertStringContains('Invalid reaction signature', $plan[$path]['reason']);
+                foreach ($suffixes as $suffix) assertSame('invalid', $plan[$path . $suffix]['state']);
+                assertSame('import', $plan['records/posts/root-001.txt']['state']);
+            }
+        }
+    }
+
+    public function testRemovedSignedLabelsExcludeEveryCompanion(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source', true);
+        $target = $w->repository('target', true);
+        $path = $w->signedLabel($source, ['.asc', '.sig']);
+        $w->git($target);
+        $removal = \ForumRewrite\Canonical\LabelRemoval::prepare($target, 'root-001', 'delete', [basename($path, '.txt')]);
+        $receipt = \ForumRewrite\Canonical\LabelRemoval::store($target, $removal);
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($target, $args);
+        $git(['add', $receipt]);
+        $git(['rm', 'records/posts/root-001.txt', $path]);
+        $git(['commit', '-qm', 'Accept source label cleanup root-001']);
+        $plan = (new ContentImportPlanner())->plan($source, $target);
+        foreach (['', '.asc', '.sig'] as $suffix) assertSame('excluded', $plan[$path . $suffix]['state']);
+    }
+
     public function testOldArchiveCannotRestoreRemovedSourceOrItsOwnedLabels(): void
     {
         $w = new ImportTestWorkspace();

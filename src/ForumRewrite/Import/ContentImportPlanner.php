@@ -52,8 +52,13 @@ final class ContentImportPlanner
             if (str_starts_with($postPath, 'records/posts/') && ($removals[basename($postPath, '.txt')]['operation'] ?? null) === 'delete') {
                 $entry = [...$entry, 'state' => 'duplicate', 'reason' => 'Source removed locally; structural placeholder retained', 'dependencies' => []];
             }
-            if (str_starts_with($path, 'records/thread-labels/') && $entry['state'] === 'import') {
-                $label = (new CanonicalRecordRepository($source))->loadThreadLabel($path);
+            // Directory membership alone also matches detached signatures. Only
+            // apply record policy to records; companions follow their parent in
+            // dependency propagation below. Keep validation context identical to describe().
+            if (str_starts_with($path, 'records/thread-labels/') && ArchiveRecordCatalog::isRecordPath($path)
+                && $entry['state'] === 'import') {
+                $label = (new CanonicalRecordRepository($source, requireLegacyTimestampMetadata: true,
+                    signatureKeyFallbackRoot: $destination))->loadThreadLabel($path);
                 if ($label->sourcePostId !== null && ($removals[$label->sourcePostId]['operation'] ?? null) === 'delete') {
                     $entry = [...$entry, 'state' => 'excluded', 'reason' => 'Label source was removed locally'];
                 }

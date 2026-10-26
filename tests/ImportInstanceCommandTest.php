@@ -22,8 +22,10 @@ final class ImportInstanceCommandTest
         $w->put($source . '/records/posts/remote-reply.txt', $w->post('remote-reply', "Thread-ID: remote-thread\nParent-ID: remote-thread\nAuthor-Identity-ID: {$author}\n"));
         $w->put($source . '/records/thread-subjects/remote-subject.txt', "Record-ID: remote-subject\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: remote-thread\nOperation: set\nSubject: Remote subject revised\n\n");
         $w->put($source . '/records/post-reactions/remote-like.txt', "Record-ID: remote-like\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: remote-thread\nOperation: add\nTags: like\nAuthor-Identity-ID: {$author}\n\n");
+        $signedLabel = $w->signedLabel($source, ['.asc', '.sig']);
         $w->git($source);
         $target = $w->repository('target', true);
+        unlink($target . '/' . $signedLabel);
         $w->put($target . $identityPath, $identity);
         $w->git($target);
         $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/source.log', [
@@ -39,12 +41,16 @@ final class ImportInstanceCommandTest
         assertSame(0, $code, $output);
         assertStringContains('Preview result: complete', $output);
         assertTrue(!is_file($target . '/records/posts/remote-thread.txt'));
+        assertTrue(!is_file($target . '/' . $signedLabel . '.asc'));
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
         assertStringNotContains('Rendering ', $output);
         assertStringNotContains('Fingerprinting and copying assets', $output);
         assertTrue(is_file($target . '/records/posts/remote-thread.txt'));
+        foreach (['', '.asc', '.sig'] as $suffix) {
+            assertSame(file_get_contents($source . '/' . $signedLabel . $suffix), file_get_contents($target . '/' . $signedLabel . $suffix));
+        }
         assertTrue(!file_exists($w->root . '/target-static/current'));
         $targetServer = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/target.log', [
             'FORUM_REPOSITORY_ROOT' => $target,

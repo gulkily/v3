@@ -30,6 +30,24 @@ final class ImportTestWorkspace
         file_put_contents($path, $contents);
     }
 
+    /** Existing cryptographically signed fixture, with its public identity and key. */
+    public function signedLabel(string $root, array $suffixes = ['.asc']): string
+    {
+        $fixtures = __DIR__ . '/../fixtures/openpgp_signature/';
+        $fingerprint = '066236E516A3B74EC51B3B423A26034600DE67FD';
+        $id = strtolower($fingerprint);
+        $key = file_get_contents($fixtures . 'reaction-public-key.asc');
+        $this->put($root . '/records/public-keys/openpgp-' . $fingerprint . '.asc', $key);
+        $this->put($root . '/records/identity/identity-openpgp-' . $id . '.txt',
+            "Post-ID: identity-openpgp-{$id}\nBoard-Tags: identity\nSubject: identity bootstrap\nIdentity-ID: openpgp:{$id}\nSigner-Fingerprint: {$fingerprint}\nBootstrap-By-Post: root-001\nBootstrap-By-Thread: root-001\n\n" . $key);
+        $path = 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt';
+        $this->put($root . '/' . $path, file_get_contents($fixtures . 'signed-label.txt'));
+        foreach ($suffixes as $suffix) {
+            $this->put($root . '/' . $path . $suffix, file_get_contents($fixtures . 'signed-label.txt.asc'));
+        }
+        return $path;
+    }
+
     public function post(string $id, string $extra = '', string $body = 'Imported body'): string
     {
         return "Post-ID: {$id}\nCreated-At: 2026-04-10T12:00:00Z\nBoard-Tags: general\n{$extra}Subject: Imported {$id}\n\n{$body}\n";
