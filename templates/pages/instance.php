@@ -26,7 +26,7 @@
       <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a><?php if ($download['href'] === '/downloads/read_model.sqlite3'): ?> <span class="meta">(may be out of date)</span><?php endif; ?></li>
 <?php endforeach; ?>
 <?php if ($imageBackupAvailable ?? false): ?>
-      <li><a href="<?= $e($imageBackupHref) ?>">Images (.tar)</a> <span class="meta">Match the content revision.</span></li>
+      <li><a href="<?= $e($imageBackupHref) ?>">Images (.zip)</a> <span class="meta">Match the content revision.</span></li>
 <?php endif; ?>
     </ul>
     <p class="meta">Public content only; not a full site backup.</p>

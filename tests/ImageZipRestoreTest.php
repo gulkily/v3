@@ -23,7 +23,7 @@ final class ImageZipRestoreTest
         $store = new ImageStore($root);
         $store->put($w->root . '/pixel.png', $ref);
         $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
-        $legacy = $backup->export('images');
+        $legacy = $backup->export('images', null, 'tar');
         try {
             $tar = new PharData($legacy['path']);
             $entries = ['manifest.json' => $tar['manifest.json']->getContent(), 'objects/' . ImageReference::filename($ref) => $pixel];

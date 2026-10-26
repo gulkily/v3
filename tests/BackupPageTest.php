@@ -15,7 +15,7 @@ final class BackupPageTest
         $this->fixture(true, function (string $root, string $db): void {
             foreach (['/instance/', '/backup/', '/tools/backup/'] as $route) {
                 $html = $this->render($root, $db, $route);
-                foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'] as $href) {
+                foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.zip'] as $href) {
                     assertSame(1, substr_count($html, 'href="' . $href));
                 }
                 assertStringContains('Match the content revision.', $html);
@@ -48,7 +48,7 @@ final class BackupPageTest
         $this->fixture(false, function (string $root, string $db): void {
             $html = $this->render($root, $db, '/tools/backup/');
             assertStringContains('Content (.tar.gz)', $html);
-            assertStringNotContains('/downloads/images.tar', $html);
+            assertStringNotContains('/downloads/images.zip', $html);
             assertStringNotContains('Match the content revision.', $html);
         });
     }

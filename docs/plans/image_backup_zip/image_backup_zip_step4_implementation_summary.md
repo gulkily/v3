@@ -26,3 +26,16 @@ Step 3 approved. Planning commit `7256340b2` precedes implementation on `feat/im
 - Notes: no dependencies added. UI and download publication remain Stage 2. Stage 1 owns malformed-archive and common recovery coverage.
 
 *— Codex · 2026-10-26 UTC*
+
+## Stage 2 — Deliver ZIP through Backup
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.12**
+
+- Changes: image export defaults to ZIP with an explicit optional TAR format; ZIP includes manifest.json and objects/, including an empty objects directory. Images use stored ZIP entries to avoid recompressing already compressed JPEG/PNG bytes. Backup advertises images.zip; the TAR route explicitly selects TAR. Headers follow the actual archive extension, and both paths share the same access classification.
+- Verification: existing image/restore/content-export/Backup/import selection 23/23 passed; new real-HTTP ImageZipBackupTest 2/2 passed. Checked empty/populated archives, pinned/unpinned routes, MIME/disposition/no-store, external unzip extraction, restored byte identity, legacy TAR, POST 405, unknown route, wrong revision 409, damaged-image failure/retry, restricted access, unchanged source, unsupported formats and PHP without ZIP support. Diff check passed.
+- Estimate details: 2026-10-26 original S2 scope/0.12 retained without revision; separate retrospective 0.12. Existing APIs and routing were sufficient; no new components. Shared reader validation remains Stage 1 evidence.
+- Notes: both content archive formats now pair with ZIP through the existing content-export regression. Active documentation/browser fixtures are updated in Stage 3; no deployment performed.
+
+*— Codex · 2026-10-26 UTC*
