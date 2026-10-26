@@ -1,5 +1,12 @@
 # UI copy audit checklist
 
+## Backup section grouping — October 25, 2026
+
+- [x] Split the page into three existing-style cards: Backup details, Downloads, and Recent included items. Added only the Downloads heading; preserved all fields, links, notes and empty states.
+- Verification: 4/4 focused PHP checks (BackupPageTest and LocalAppSmokeTest portability/core routes); Chromium across 14 theme choices at 390px/1280px with populated, empty and long-value fixtures, all aliases, real downloads and revision-mismatch retry. No horizontal overflow. Inspected updated Word97 phone and Midnight desktop screenshots at `/tmp/backup-restored-{theme}-{width}.png`; browser evidence `/tmp/backup-restored-check.mjs`. Diff check passed.
+- No dependencies, CSS, navigation/icon, data-contract or `todo.txt` changes. Existing tall Tools navigation on phones remains outside scope. Physical devices, other engines, full suite and deployment were not checked.
+
+
 ## Backup data restoration — October 25, 2026
 
 - [x] Corrected the preceding cleanup: restored instance name, linked admins, generated time, snapshot hash and recent included items with All activity. These are useful data, not explanatory clutter. Kept direct download links; reduced notes to adjacent SQLite staleness/image matching and one short public-content-only limitation. “Index generated” accurately labels the existing read-model timestamp rather than implying archive generation time.

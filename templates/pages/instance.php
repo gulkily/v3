@@ -18,6 +18,9 @@
     </p>
     <p><strong>Index generated:</strong> <?= ($backupSnapshot['generated_at'] ?? '') !== '' ? $timestamp($backupSnapshot['generated_at']) : 'Unavailable' ?></p>
     <p><strong>Snapshot:</strong> <?= ($backupSnapshot['repository_head'] ?? '') !== '' ? $e(substr((string) $backupSnapshot['repository_head'], 0, 12)) : 'Unavailable' ?></p>
+  </article>
+  <article class="card">
+    <h2>Downloads</h2>
     <ul>
 <?php foreach ($downloads as $download): ?>
       <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a><?php if ($download['href'] === '/downloads/read_model.sqlite3'): ?> <span class="meta">(may be out of date)</span><?php endif; ?></li>
@@ -27,6 +30,8 @@
 <?php endif; ?>
     </ul>
     <p class="meta">Public content only; not a full site backup.</p>
+  </article>
+  <article class="card">
     <h2>Recent included items</h2>
 <?php if (($backupSnapshot['items'] ?? []) === []): ?>
     <p>No recent items.</p>
