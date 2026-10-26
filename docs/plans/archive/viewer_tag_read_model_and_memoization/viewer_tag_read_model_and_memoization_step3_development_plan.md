@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/viewer_tag_read_model_and_memoization`; [ledger](../effort_estimation_trial.md), standing enrollment P2. Reference R1 / protocol P2; single exposed, non-blind rater; UTC 2026-10-24. Extended estimates: **enabled**. Stage-work values use the R1 yardstick; they are not summed into the cycle total, not hours, and not percentage-complete. Shared schema-change/verification overhead is owned where noted, not charged to every stage.
+Effort study: `railspike-effort` / `v3/viewer_tag_read_model_and_memoization`; [ledger](../../effort_estimation_trial.md), standing enrollment P2. Reference R1 / protocol P2; single exposed, non-blind rater; UTC 2026-10-24. Extended estimates: **enabled**. Stage-work values use the R1 yardstick; they are not summed into the cycle total, not hours, and not percentage-complete. Shared schema-change/verification overhead is owned where noted, not charged to every stage.
 
 **Cycle estimate: 1.15**
 

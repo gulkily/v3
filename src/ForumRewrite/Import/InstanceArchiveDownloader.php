@@ -34,6 +34,9 @@ final class InstanceArchiveDownloader
             throw new RuntimeException('Instance URL must not contain a query.');
         }
         $url = rtrim($instanceUrl, '/') . '/downloads/repository.tar.gz';
+        if ($this->progress !== null) {
+            ($this->progress)('Archive URL: ' . $url);
+        }
         $deadline = microtime(true) + $this->timeoutSeconds;
         $output = null;
         $created = false;
@@ -51,7 +54,7 @@ final class InstanceArchiveDownloader
                 ]);
                 $input = @fopen($url, 'rb', false, $context);
                 if ($input === false) {
-                    throw new RuntimeException('Unable to download source archive (connection, timeout, or TLS failure).');
+                    throw new RuntimeException('Unable to download source archive from ' . $url . ' (connection, timeout, or TLS failure).');
                 }
                 try {
                     $metadata = stream_get_meta_data($input);

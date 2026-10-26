@@ -177,13 +177,22 @@ final class HighTrafficTest
         assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/?page=2'));
         $root = sys_get_temp_dir() . '/v3-high-traffic-' . bin2hex(random_bytes(6));
         mkdir($root);
-        $cmd = [PHP_BINARY, dirname(__DIR__) . '/scripts/high_traffic_render.php', dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $root . '/read.sqlite3', $root . '/assets', '/about/'];
+        $cmd = [PHP_BINARY, dirname(__DIR__) . '/scripts/high_traffic_render.php', dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $root . '/read.sqlite3', $root . '/assets', '/about/', \ForumRewrite\SiteProfileRegistry::active()['name']];
         $run = static function (array $command) use ($root): array {
             $proc = proc_open($command, [0 => ['pipe','r'], 1 => ['pipe','w'], 2 => ['pipe','w']], $pipes, null, array_merge(getenv(), ['VISITOR_STATISTICS_DATABASE_PATH'=>$root . '/visits.sqlite3']));
             fclose($pipes[0]); $body = stream_get_contents($pipes[1]); $error = stream_get_contents($pipes[2]);
             fclose($pipes[1]); fclose($pipes[2]);
             return [proc_close($proc), $body, $error];
         };
+        $invalidProfile = $cmd;
+        $invalidProfile[7] = 'unknown-profile';
+        [$status, $html, $error] = $run($invalidProfile);
+        assertSame(1, $status);
+        assertSame('', $html);
+        assertStringContains('Unknown shared render site profile', $error);
+        [$status, $html, $error] = $run(array_slice($cmd, 0, -1));
+        assertSame(1, $status);
+        assertStringContains('Internal render worker arguments required', $error);
         [$status, $html, $error] = $run($cmd);
         assertSame(1, $status);
         assertStringContains('Page rendering does not rebuild read models', $error);

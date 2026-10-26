@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/viewer_tag_read_model_and_memoization`; [ledger](../effort_estimation_trial.md), standing enrollment P2.
+Effort study: `railspike-effort` / `v3/viewer_tag_read_model_and_memoization`; [ledger](../../effort_estimation_trial.md), standing enrollment P2.
 
 Extended estimates: **enabled** (inherited — both predecessor cycles ran with extended estimates on). Per-stage stage-work estimates begin at Step 3. Step 1 per-option estimates are retrospective (see Step 1). Option estimates are not summed or normalized into the recommended-cycle total.
 
@@ -12,7 +12,7 @@ Extended estimates: **enabled** (inherited — both predecessor cycles ran with 
 
 This **combined** cycle merges the two previously separate, B-then-A-sequenced cycles into one coherent delivery, at the user's request (2026-10-24), because the read model (B) and the memo over it (A) are tightly coupled — B exposes the SQL seam and A wraps it, and the `viewerHasThreadTag()` bypass must be cleaned up in the same pass.
 
-- Supersedes the separate [`viewer_tag_read_model`](../viewer_tag_read_model/) (B) and [`viewer_tag_lookup_memoization`](../viewer_tag_lookup_memoization/) (A) cycles for execution. Their Step 1/Step 2 artifacts are retained as history and are not erased.
+- Supersedes the separate [`viewer_tag_read_model`](../../viewer_tag_read_model/) (B) and [`viewer_tag_lookup_memoization`](../../viewer_tag_lookup_memoization/) (A) cycles for execution. Their Step 1/Step 2 artifacts are retained as history and are not erased.
 - **Approval reset:** combining is a scope change, so the individual `Approved Step 1` marks on B and A no longer carry. Step 1 for this combined cycle is the merge of the two existing (individually approved) Step 1 assessments; this Step 2 still requires a fresh **`Approved Step 2`** before Step 3.
 - **Cycle-size guardrail:** combined projected total is **1.15** (B 0.9 + the memo layer 0.35, minus overlap in call-site rewiring and verification). This is **above the 1.0 "prompt a split discussion" threshold**. The user has explicitly chosen to combine despite that; the split option is the two original cycles, which remain available if Step 3 staging shows the combined scope is unwieldy. Recorded as a deliberate over-threshold decision, not an oversight.
 

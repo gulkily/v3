@@ -1,8 +1,8 @@
 # Read-model maintenance follow-ups (from viewer_tag_read_model_and_memoization)
 
 Two cross-cutting items surfaced during the `viewer_tag_read_model_and_memoization`
-cycle (completed; see
-`docs/plans/viewer_tag_read_model_and_memoization/viewer_tag_read_model_and_memoization_step4_implementation_summary.md`).
+cycle (completed and archived; see
+`docs/plans/archive/viewer_tag_read_model_and_memoization/viewer_tag_read_model_and_memoization_step4_implementation_summary.md`).
 Neither was in that cycle's scope; both are recorded here so they are not lost
 when the cycle is archived.
 
