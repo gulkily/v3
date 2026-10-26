@@ -1,5 +1,13 @@
 # UI copy audit checklist
 
+## Backup data restoration — October 25, 2026
+
+- [x] Corrected the preceding cleanup: restored instance name, linked admins, generated time, snapshot hash and recent included items with All activity. These are useful data, not explanatory clutter. Kept direct download links; reduced notes to adjacent SQLite staleness/image matching and one short public-content-only limitation. “Index generated” accurately labels the existing read-model timestamp rather than implying archive generation time.
+- Regression checks now assert actual instance/admin values, stored timestamp/hash and recent-item content/link presence, alongside unique downloads and essential limits. Focused PHP 8/8 passed, with the strengthened BackupPageTest rechecked. Browser verification passed on all three aliases and 14 theme choices at 390px/1280px, including populated data, template-rendered empty/missing metadata and long names/items, four successful downloads and wrong-revision failure/retry. No horizontal overflow; inspected `/tmp/backup-restored-word97-390.png` and `/tmp/backup-restored-midnight-1280.png`. Browser evidence: `/tmp/backup-restored-check.mjs` and `/tmp/backup-data-router.php`.
+- Principle for later copy work: identify the information and actions a page supports first; remove duplicate explanations while preserving evidence, timestamps, identities, counts, previews and recovery controls. Verify preserved data as well as removed wording.
+- No dependencies, schema, navigation/icon or `todo.txt` changes. Existing tall phone Tools navigation remains outside scope. Physical devices, other engines, full suite and production deployment were not checked. This record supersedes the earlier claim that removing the useful data completed the cleanup.
+
+
 ## Backup page reduction — October 25, 2026
 
 - [x] Removed site/admin details, freshness headings/metadata, repeated download tables/descriptions, activity preview and the separate explanation card. All three Backup aliases now show direct format links, conditional image pairing guidance, SQLite staleness and a concise separate-backup warning. Removed the corresponding page-data queries and description strings; download behavior is unchanged.

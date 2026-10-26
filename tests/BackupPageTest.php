@@ -18,10 +18,25 @@ final class BackupPageTest
                 foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'] as $href) {
                     assertSame(1, substr_count($html, 'href="' . $href));
                 }
-                assertStringContains('Keep content and image downloads with matching revisions.', $html);
-                assertStringContains('Public content only. Back up Git history, private data, browser keys and drafts, software, settings and external media separately.', $html);
-                assertStringContains('The SQLite index may be out of date.', $html);
-                foreach (['Snapshot freshness', 'Recent included items', 'About these downloads', '<table', '<strong>Admin:', '<strong>Name:'] as $removed) {
+                assertStringContains('Match the content revision.', $html);
+                assertStringContains('Public content only; not a full site backup.', $html);
+                assertStringContains('(may be out of date)', $html);
+                assertStringContains('<strong>Instance:</strong> ' . \ForumRewrite\SiteConfig::displayName(), $html);
+                assertStringContains('<strong>Admins:</strong>', $html);
+                assertStringContains('/user/guest', $html);
+                assertStringContains('<strong>Index generated:</strong>', $html);
+                $pdo = new PDO('sqlite:' . $db);
+                $generated = $pdo->query("SELECT value FROM metadata WHERE key = 'rebuilt_at'")->fetchColumn();
+                $revision = $pdo->query("SELECT value FROM metadata WHERE key = 'repository_head'")->fetchColumn();
+                assertStringContains('datetime="' . $generated . '"', $html);
+                assertTrue(is_string($revision) && strlen($revision) === 40);
+                assertStringContains(substr($revision, 0, 12), $html);
+                assertStringContains('Recent included items', $html);
+                assertStringContains('class="backup-preview"', $html);
+                assertStringContains('href="/posts/reply-001"', $html);
+                assertStringContains('Reply body.', $html);
+                assertStringContains('href="/activity/">All activity</a>', $html);
+                foreach (['Snapshot freshness', 'About these downloads', '<table'] as $removed) {
                     assertStringNotContains($removed, $html);
                 }
             }
@@ -34,7 +49,7 @@ final class BackupPageTest
             $html = $this->render($root, $db, '/tools/backup/');
             assertStringContains('Content (.tar.gz)', $html);
             assertStringNotContains('/downloads/images.tar', $html);
-            assertStringNotContains('matching revisions', $html);
+            assertStringNotContains('Match the content revision.', $html);
         });
     }
 
@@ -42,6 +57,7 @@ final class BackupPageTest
     {
         $workspace = new ImportTestWorkspace();
         $root = $workspace->repository('repository', true);
+        $workspace->git($root);
         $db = $workspace->root . '/read.sqlite3';
         $images = $workspace->root . '/images-private';
         if ($withImages && !mkdir($images, 0700, true)) {

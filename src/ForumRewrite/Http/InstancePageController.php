@@ -49,6 +49,9 @@ final class InstancePageController
             [
                 'imageBackupAvailable' => $imageBackupAvailable,
                 'imageBackupHref' => '/downloads/images.tar' . $revisionQuery,
+                'siteName' => SiteConfig::displayName(),
+                'admins' => ToolsPageSupport::fetchSeedApprovedUsers($this->routeServices->pdo()),
+                'backupSnapshot' => $this->fetchBackupSnapshot(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
                 'downloads' => [
                     [

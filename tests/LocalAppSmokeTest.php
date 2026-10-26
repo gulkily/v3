@@ -1734,9 +1734,9 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('Public content only.', $backupPage);
-            assertStringContains('Back up Git history, private data, browser keys and drafts, software, settings and external media separately.', $backupPage);
-            assertStringContains('The SQLite index may be out of date.', $backupPage);
+            assertStringContains('Public content only; not a full site backup.', $backupPage);
+            assertStringContains('Index generated:', $backupPage);
+            assertStringContains('(may be out of date)', $backupPage);
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
@@ -1989,10 +1989,13 @@ PHP;
         assertStringContains('anonymous unsigned', $post);
         foreach ([$instance, $backup, $toolsBackup] as $page) {
             assertStringContains('Backup', $page);
-            assertStringContains('Public content only.', $page);
-            assertStringContains('Back up Git history, private data, browser keys and drafts, software, settings and external media separately.', $page);
+            assertStringContains('Public content only; not a full site backup.', $page);
+            assertStringContains('Index generated:', $page);
             assertStringNotContains('Snapshot freshness', $page);
-            assertStringNotContains('Recent included items', $page);
+            assertStringContains('Recent included items', $page);
+            assertStringContains('<strong>Instance:</strong>', $page);
+            assertStringContains('<strong>Admins:</strong>', $page);
+            assertStringContains('<strong>Snapshot:</strong>', $page);
             assertStringNotContains('About these downloads', $page);
             foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $href) {
                 assertSame(1, substr_count($page, 'href="' . $href));
