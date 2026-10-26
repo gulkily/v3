@@ -113,7 +113,6 @@ final class ImageBackup
         }
     }
 
-
     /** Caller holds the instance writer lock. */
     private function identity(?string $expectedRevision = null): string
     {

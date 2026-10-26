@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+require_once __DIR__ . '/Support/ImportHttpServer.php';
 
 use ForumRewrite\Images\ExportIdentity;
 use ForumRewrite\Images\ImageBackup;
@@ -53,6 +54,9 @@ final class ArchiveExportTest
         assertSame($bytes, stream_get_contents($old['stream']));
         assertTrue(is_file($rebuilt['path']));
         fclose($old['stream']); fclose($rebuilt['stream']);
+        $damage = fopen($rebuilt['path'], 'r+b'); fwrite($damage, 'broken'); fclose($damage);
+        $repaired = $backup->export('tar.gz'); assertSame(false, $repaired['reused']);
+        assertSame(0, $w->command(['tar', '-tzf', $repaired['path']])[0]); fclose($repaired['stream']);
         $w->put($root . '/note.txt', 'new bytes without a commit');
         $changed = $backup->export('tar.gz');
         assertSame(false, $changed['reused']);
@@ -207,6 +211,54 @@ final class ArchiveExportTest
         assertSame([], glob($w->root . '/archive-exports/.build-*'));
         [$status, $listing] = $w->command(['tar', '-tzf', $recovered['path']]);
         assertSame(0, $status); assertStringNotContains('one.txt', $listing);
+    }
+
+    public function testStoragePathsAndInsufficientFilesystemReservation(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source');
+        $w->put($root . '/records/posts/one.txt', $w->post('one')); $w->git($root);
+        try {
+            new \ForumRewrite\Images\ArchiveCache($root . '/cache', $root);
+            throw new RuntimeException('Expected unsafe storage refusal');
+        } catch (RuntimeException $e) { assertStringContains('outside content', $e->getMessage()); }
+        assertSame(false, is_dir($root . '/cache'));
+        $oldDirectory = getcwd();
+        try {
+            chdir($w->root);
+            $backup = new ImageBackup($root, 'cache/index.sqlite3');
+            $export = $backup->export('tar.gz');
+            assertTrue(str_starts_with($export['path'], '/'));
+            fclose($export['stream']);
+        } finally { chdir($oldDirectory); }
+        $cache = new \ForumRewrite\Images\ArchiveCache($w->root . '/space', $root, PHP_INT_MAX);
+        // Request more than actual filesystem availability without allocating/filling shared disk.
+        try {
+            $cache->prepareBuild('identity', (int) disk_free_space($cache->root));
+            throw new RuntimeException('Expected free-space refusal');
+        } catch (RuntimeException $e) { assertStringContains('free disk space', $e->getMessage()); }
+        $retry = $cache->prepareBuild('identity', 0); assertTrue(is_dir($retry));
+        ImageBackup::removeTree($retry);
+    }
+
+    public function testInstanceDownloaderRetriesRealBusySourceWithoutPartialDestination(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source', true); $w->git($root);
+        mkdir($w->root . '/cache');
+        $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/server.log', [
+            'FORUM_REPOSITORY_ROOT' => $root, 'FORUM_DATABASE_PATH' => $w->root . '/cache/index.sqlite3',
+            'FORUM_STATIC_HTML_ROOT' => $w->root . '/static', 'FORUM_APPROVED_MEMBERS_ONLY' => 'false',
+        ]);
+        $held = fopen($w->root . '/cache/image-export.lock', 'c+'); flock($held, LOCK_EX);
+        $downloader = new \ForumRewrite\Import\InstanceArchiveDownloader(); $path = $w->root . '/download.tar.gz';
+        try {
+            $downloader->download($server->url, $path);
+            throw new RuntimeException('Expected busy source refusal');
+        } catch (RuntimeException $e) {
+            assertStringContains('HTTP 503', $e->getMessage()); assertStringContains('Retry the download', $e->getMessage());
+            assertSame(false, is_file($path));
+        } finally { flock($held, LOCK_UN); fclose($held); }
+        assertTrue($downloader->download($server->url, $path) > 0);
+        assertSame(0, $w->command(['tar', '-tzf', $path])[0]);
     }
 
 }

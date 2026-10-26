@@ -14,21 +14,29 @@ final class ArchiveCache
 
     public function __construct(string $directory, string $repository, private readonly int $maxBytes = self::MAX_BYTES, private readonly int $maxEntries = self::MAX_ENTRIES)
     {
-        $this->root = rtrim($directory, '/') . '/archive-exports';
-        for ($path = $this->root; $path !== '/' && $path !== '.'; $path = dirname($path)) {
+        $candidate = rtrim($directory, '/') . '/archive-exports';
+        for ($path = $candidate; $path !== '/' && $path !== '.'; $path = dirname($path)) {
             if (is_link($path)) throw new RuntimeException('Unsafe archive storage.');
         }
-        if (!is_dir($this->root) && !mkdir($this->root, 0700, true) && !is_dir($this->root)) {
-            throw new RuntimeException('Cannot prepare archive storage.');
+        // Resolve the nearest existing parent before creating anything, including relative paths.
+        $parent = $candidate;
+        $suffix = [];
+        while (realpath($parent) === false) {
+            if (dirname($parent) === $parent) throw new RuntimeException('Cannot resolve archive storage.');
+            array_unshift($suffix, basename($parent));
+            $parent = dirname($parent);
         }
-        $real = realpath($this->root);
+        $this->root = rtrim(realpath($parent), '/') . ($suffix === [] ? '' : '/' . implode('/', $suffix));
         foreach ([$repository, dirname(__DIR__, 3) . '/public', (string) ($_SERVER['DOCUMENT_ROOT'] ?? '')] as $unsafe) {
             $unsafe = $unsafe === '' ? false : realpath($unsafe);
-            if ($unsafe !== false && ($real === $unsafe || str_starts_with($real, $unsafe . '/'))) {
+            if ($unsafe !== false && ($this->root === $unsafe || str_starts_with($this->root, $unsafe . '/'))) {
                 throw new RuntimeException('Archive storage must be outside content and public directories.');
             }
         }
-        chmod($this->root, 0700);
+        if (!is_dir($this->root) && !@mkdir($this->root, 0700, true) && !is_dir($this->root)) {
+            throw new RuntimeException('Cannot prepare archive storage.');
+        }
+        if (!chmod($this->root, 0700)) throw new RuntimeException('Cannot protect archive storage.');
     }
 
     /** Caller holds the global build lock: any leftover staging directory is abandoned. */

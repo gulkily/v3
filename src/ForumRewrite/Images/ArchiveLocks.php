@@ -17,7 +17,7 @@ final class ArchiveLocks
 
     public function withExclusiveLock(string $name, callable $callback): mixed
     {
-        $handle = fopen($this->directory . '/' . $name, 'c+');
+        $handle = @fopen($this->directory . '/' . $name, 'c+');
         if ($handle === false) throw new RuntimeException('Cannot open archive coordination file.');
         try {
             do {
