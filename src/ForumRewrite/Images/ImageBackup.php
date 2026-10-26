@@ -18,8 +18,28 @@ final class ImageBackup
 
     public function export(string $kind, ?string $expectedRevision = null): array
     {
-        if (!in_array($kind, ['images', 'tar.gz', 'zip'], true)) { throw new RuntimeException('Unsupported backup format.'); }
-        return (new ExecutionLock(dirname($this->databasePath) . '/image-export.lock', 0))->withExclusiveLock(function () use ($kind, $expectedRevision): array {
+        if (!in_array($kind, ['images', 'tar.gz', 'zip'], true)) throw new RuntimeException('Unsupported backup format.');
+        $cache = new ArchiveCache(dirname($this->databasePath), $this->repositoryRoot);
+        return (new ExecutionLock(dirname($this->databasePath) . '/image-export.lock', 0))->withExclusiveLock(function () use ($cache, $kind, $expectedRevision): array {
+            $hit = (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
+                fn () => $cache->open($this->identity($expectedRevision), $kind),
+            );
+            if ($hit !== null) return $hit;
+            $built = $this->build($kind, $expectedRevision);
+            try {
+                return (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($cache, $built, $kind, $expectedRevision): array {
+                    $identity = $this->identity($expectedRevision);
+                    if ($identity !== $built['identity']) throw new RuntimeException('Repository changed during backup; refresh Backup and retry.');
+                    return $cache->publish($built, $identity, $kind);
+                });
+            } finally {
+                if (is_file($built['path'])) @unlink($built['path']);
+            }
+        });
+    }
+
+    private function build(string $kind, ?string $expectedRevision): array
+    {
             $work = sys_get_temp_dir() . '/forum-image-export-' . bin2hex(random_bytes(10));
             if (!mkdir($work, 0700)) { throw new RuntimeException('Unable to create backup workspace.'); }
             $extension = $kind === 'images' ? 'tar' : $kind;
@@ -80,14 +100,13 @@ final class ImageBackup
                     if ($this->identity() !== $identity) throw new RuntimeException('Repository changed during backup; refresh Backup and retry.');
                 });
                 chmod($archive, 0600);
-                return ['path' => $archive, 'revision' => $revision, 'extension' => $extension];
+                return ['path' => $archive, 'revision' => $revision, 'extension' => $extension, 'identity' => $identity];
             } catch (\Throwable $error) {
                 @unlink($archive);
                 throw new RuntimeException('Backup failed: ' . $error->getMessage(), 0, $error);
             } finally {
                 self::removeTree($work);
             }
-        });
     }
 
     /** Caller holds the instance writer lock. */

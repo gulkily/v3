@@ -25,3 +25,14 @@ Dependencies: Zero additions or updates authorized/proposed; use existing PHP/sy
 - Notes: S1/v1 unchanged; warm-path representative workload timing and coordinated mutation races will be measured with cache acceptance in S6. Identity scans bytes rather than trusting timestamps. Out-of-band writers must respect the existing writer lock; no claim of atomicity against arbitrary external filesystem mutation. No schema/dependency change.
 
 *— Codex · 2026-10-26 UTC*
+
+## Stage 2 - Reusable downloads
+
+**Original estimate: 0.25**
+**Retrospective stage work: 0.25**
+
+- Changes: Private identity/format-keyed artifacts with atomic directory publication and checksum validation; archive streams hold shared reader locks. HTTP delivery streams the admitted handle and closes it without deleting shared output. Existing path-based download contract unchanged.
+- Verification: Focused export/image suite 11/11 passed; cold/warm reuse for all three kinds, corrupted metadata rebuild with existing reader intact, same-head source change and actual download/import compatibility. `git diff --check` passed.
+- Notes: S2/v1 unchanged. Stage 1 commit 7c4a5e91. Direct export callers own/close the additional stream; PHP also closes it on request exit. Cleanup and storage bounds follow in S5; no canonical/dependency/schema changes.
+
+*— Codex · 2026-10-26 UTC*

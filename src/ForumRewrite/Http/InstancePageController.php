@@ -89,10 +89,13 @@ final class InstancePageController
             $this->routeServices->sendText($error->getMessage() . "\n", 409, ['Cache-Control: private, no-store']);
             return;
         }
-        register_shutdown_function(static function () use ($download): void { if (is_file($download['path'])) { @unlink($download['path']); } });
         if (!headers_sent()) { header('Cache-Control: private, no-store'); }
         $type = $kind === 'images' ? 'application/x-tar' : ($kind === 'zip' ? 'application/zip' : 'application/gzip');
-        $this->routeServices->sendDownload($download['path'], $type, SiteConfig::siteName() . '-' . ($kind === 'images' ? 'images' : 'repository') . '-' . $download['revision'] . '.' . $download['extension'], true);
+        try {
+            $this->routeServices->sendDownloadStream($download['stream'], $type, SiteConfig::siteName() . '-' . ($kind === 'images' ? 'images' : 'repository') . '-' . $download['revision'] . '.' . $download['extension']);
+        } finally {
+            fclose($download['stream']);
+        }
     }
 
     public function downloadReadModelDatabase(string $method): void
