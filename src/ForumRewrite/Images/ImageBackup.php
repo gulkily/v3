@@ -28,7 +28,7 @@ final class ImageBackup
                 fn () => $cache->open($this->identity($expectedRevision), $kind),
             );
             if ($hit !== null) return $hit;
-            $built = $this->build($kind, $expectedRevision, $locks);
+            $built = $this->build($kind, $expectedRevision, $locks, $cache);
             try {
                 return $locks->withExclusiveLock('forum-rewrite.lock', function () use ($cache, $built, $kind, $expectedRevision): array {
                     $identity = $this->identity($expectedRevision);
@@ -36,82 +36,83 @@ final class ImageBackup
                     return $cache->publish($built, $identity, $kind);
                 });
             } finally {
-                if (is_file($built['path'])) @unlink($built['path']);
+                self::removeTree($built['workspace']);
             }
         });
     }
 
-    private function build(string $kind, ?string $expectedRevision, ArchiveLocks $locks): array
+    private function build(string $kind, ?string $expectedRevision, ArchiveLocks $locks, ArchiveCache $cache): array
     {
-            $work = sys_get_temp_dir() . '/forum-image-export-' . bin2hex(random_bytes(10));
-            if (!mkdir($work, 0700)) { throw new RuntimeException('Unable to create backup workspace.'); }
-            $extension = $kind === 'images' ? 'tar' : $kind;
-            $archive = $work . '.' . $extension;
-            try {
-                $identity = null;
-                $revision = $locks->withExclusiveLock('forum-rewrite.lock', function () use ($kind, $expectedRevision, $work, &$identity): string {
-                    $revision = $this->revision();
-                    if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
-                        throw new ArchiveConflictException('Repository changed. Refresh Backup and download both artifacts again.');
-                    }
-                    if ($this->git(['status', '--porcelain', '--', 'records']) !== '') {
-                        throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');
-                    }
-                    $store = new ImageStore($this->repositoryRoot);
-                    $inventory = $store->inventory();
-                    $identity = ExportIdentity::capture($this->repositoryRoot, $revision, $inventory);
-                    $source = $kind === 'images' ? $store->root : $this->repositoryRoot;
-                    $size = $kind === 'images' ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source, excludeGit: true);
-                    $free = disk_free_space($work);
-                    if ($free === false || $free < 2 * $size + 16 * 1024 * 1024) { throw new RuntimeException('Insufficient temporary disk for complete backup; free space and retry.'); }
-                    if ($kind === 'images') {
-                        foreach (self::references($this->repositoryRoot) as $ref) { $store->resolve($ref); }
-                        mkdir($work . '/objects', 0700);
-                        foreach ($inventory as $name => $ref) {
-                            if (!copy($store->root . '/' . $name, $work . '/objects/' . $name)
-                                || hash_file('sha256', $work . '/objects/' . $name) !== $ref['sha256']) {
-                                throw new RuntimeException('Image changed or could not be copied; backup incomplete.');
-                            }
-                        }
-                        $manifest = ['schema' => 'forum-images-v1', 'repository_head' => $revision, 'created_at' => gmdate('c'), 'objects' => $inventory];
-                        if (file_put_contents($work . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n") === false) { throw new RuntimeException('Unable to write backup inventory.'); }
-                    } else {
-                        self::copyTree($source, $work . '/repository', excludeGit: true);
-                        foreach (self::references($source, $work . '/repository') as $ref) { $store->resolve($ref); }
-                        RepositorySnapshot::write($work . '/repository', $revision);
-                        RepositoryArchiveReadme::write($work . '/repository');
-                        self::treeBytes($work . '/repository');
-                    }
-                    if ($this->revision() !== $revision || $this->git(['status', '--porcelain', '--', 'records']) !== '') {
-                        throw new ArchiveConflictException('Repository changed during backup; retry after other writers finish.');
-                    }
-                    return $revision;
-                });
-                if ($kind === 'images') {
-                    $tar = new \PharData($archive);
-                    $tar->addFile($work . '/manifest.json', 'manifest.json');
-                    foreach (glob($work . '/objects/*') ?: [] as $path) { $tar->addFile($path, 'objects/' . basename($path)); }
-                    unset($tar);
-                } else {
-                    $command = $kind === 'zip'
-                        ? 'cd ' . escapeshellarg($work) . ' && zip -qr ' . escapeshellarg($archive) . ' repository'
-                        : 'tar -czf ' . escapeshellarg($archive) . ' -C ' . escapeshellarg($work) . ' repository';
-                    exec($command . ' 2>&1', $output, $status);
-                    if ($status !== 0 || !is_file($archive)) { throw new RuntimeException('Unable to assemble complete backup.'); }
+        $work = $workspace = $archive = null;
+        $extension = $kind === 'images' ? 'tar' : $kind;
+        try {
+            $identity = null;
+            $revision = $locks->withExclusiveLock('forum-rewrite.lock', function () use ($kind, $expectedRevision, $cache, $extension, &$work, &$workspace, &$archive, &$identity): string {
+                $revision = $this->revision();
+                if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
+                    throw new ArchiveConflictException('Repository changed. Refresh Backup and download both artifacts again.');
                 }
-                $locks->withExclusiveLock('forum-rewrite.lock', function () use ($identity): void {
-                    if ($this->identity() !== $identity) throw new ArchiveConflictException('Repository changed during backup; refresh Backup and retry.');
-                });
-                chmod($archive, 0600);
-                return ['path' => $archive, 'revision' => $revision, 'extension' => $extension, 'identity' => $identity];
-            } catch (\Throwable $error) {
-                @unlink($archive);
-                if ($error instanceof ArchiveBusyException || $error instanceof ArchiveConflictException) throw $error;
-                throw new RuntimeException('Backup failed: ' . $error->getMessage(), 0, $error);
-            } finally {
-                self::removeTree($work);
+                if ($this->git(['status', '--porcelain', '--', 'records']) !== '') {
+                    throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');
+                }
+                $store = new ImageStore($this->repositoryRoot);
+                $inventory = $store->inventory();
+                $identity = ExportIdentity::capture($this->repositoryRoot, $revision, $inventory);
+                $source = $kind === 'images' ? $store->root : $this->repositoryRoot;
+                $size = $kind === 'images' ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source, excludeGit: true);
+                $workspace = $cache->prepareBuild($identity, $size);
+                $work = $workspace . '/work';
+                $archive = $workspace . '/archive.' . $extension;
+                if (!mkdir($work, 0700)) throw new RuntimeException('Cannot prepare snapshot workspace.');
+                if ($kind === 'images') {
+                    foreach (self::references($this->repositoryRoot) as $ref) { $store->resolve($ref); }
+                    mkdir($work . '/objects', 0700);
+                    foreach ($inventory as $name => $ref) {
+                        if (!copy($store->root . '/' . $name, $work . '/objects/' . $name)
+                            || hash_file('sha256', $work . '/objects/' . $name) !== $ref['sha256']) {
+                            throw new RuntimeException('Image changed or could not be copied; backup incomplete.');
+                        }
+                    }
+                    $manifest = ['schema' => 'forum-images-v1', 'repository_head' => $revision, 'created_at' => gmdate('c'), 'objects' => $inventory];
+                    if (file_put_contents($work . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n") === false) { throw new RuntimeException('Unable to write backup inventory.'); }
+                } else {
+                    self::copyTree($source, $work . '/repository', excludeGit: true);
+                    foreach (self::references($source, $work . '/repository') as $ref) { $store->resolve($ref); }
+                    RepositorySnapshot::write($work . '/repository', $revision);
+                    RepositoryArchiveReadme::write($work . '/repository');
+                    self::treeBytes($work . '/repository');
+                }
+                if ($this->revision() !== $revision || $this->git(['status', '--porcelain', '--', 'records']) !== '') {
+                    throw new ArchiveConflictException('Repository changed during backup; retry after other writers finish.');
+                }
+                return $revision;
+            });
+            if ($kind === 'images') {
+                $tar = new \PharData($archive);
+                $tar->addFile($work . '/manifest.json', 'manifest.json');
+                foreach (glob($work . '/objects/*') ?: [] as $path) { $tar->addFile($path, 'objects/' . basename($path)); }
+                unset($tar);
+            } else {
+                $command = $kind === 'zip'
+                    ? 'cd ' . escapeshellarg($work) . ' && zip -qr ' . escapeshellarg($archive) . ' repository'
+                    : 'tar -czf ' . escapeshellarg($archive) . ' -C ' . escapeshellarg($work) . ' repository';
+                exec($command . ' 2>&1', $output, $status);
+                if ($status !== 0 || !is_file($archive)) { throw new RuntimeException('Unable to assemble complete backup.'); }
             }
+            $locks->withExclusiveLock('forum-rewrite.lock', function () use ($identity): void {
+                if ($this->identity() !== $identity) throw new ArchiveConflictException('Repository changed during backup; refresh Backup and retry.');
+            });
+            chmod($archive, 0600);
+            return ['path' => $archive, 'revision' => $revision, 'extension' => $extension, 'identity' => $identity, 'workspace' => $workspace];
+        } catch (\Throwable $error) {
+            if ($workspace !== null) self::removeTree($workspace);
+            if ($error instanceof ArchiveBusyException || $error instanceof ArchiveConflictException) throw $error;
+            throw new RuntimeException('Backup failed: ' . $error->getMessage(), 0, $error);
+        } finally {
+            if ($work !== null) self::removeTree($work);
+        }
     }
+
 
     /** Caller holds the instance writer lock. */
     private function identity(?string $expectedRevision = null): string

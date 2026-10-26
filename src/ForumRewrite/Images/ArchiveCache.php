@@ -8,16 +8,18 @@ use RuntimeException;
 /** Private complete artifacts. A shared lock on the returned stream protects its lifetime. */
 final class ArchiveCache
 {
+    public const MAX_BYTES = 2 * 1024 * 1024 * 1024;
+    public const MAX_ENTRIES = 6;
     public readonly string $root;
 
-    public function __construct(string $directory, string $repository)
+    public function __construct(string $directory, string $repository, private readonly int $maxBytes = self::MAX_BYTES, private readonly int $maxEntries = self::MAX_ENTRIES)
     {
         $this->root = rtrim($directory, '/') . '/archive-exports';
-        if (!is_dir($this->root) && !mkdir($this->root, 0700, true) && !is_dir($this->root)) {
-            throw new RuntimeException('Cannot prepare archive storage.');
-        }
         for ($path = $this->root; $path !== '/' && $path !== '.'; $path = dirname($path)) {
             if (is_link($path)) throw new RuntimeException('Unsafe archive storage.');
+        }
+        if (!is_dir($this->root) && !mkdir($this->root, 0700, true) && !is_dir($this->root)) {
+            throw new RuntimeException('Cannot prepare archive storage.');
         }
         $real = realpath($this->root);
         foreach ([$repository, dirname(__DIR__, 3) . '/public', (string) ($_SERVER['DOCUMENT_ROOT'] ?? '')] as $unsafe) {
@@ -27,6 +29,68 @@ final class ArchiveCache
             }
         }
         chmod($this->root, 0700);
+    }
+
+    /** Caller holds the global build lock: any leftover staging directory is abandoned. */
+    public function prepareBuild(string $identity, int $sourceBytes): string
+    {
+        $reserve = 2 * $sourceBytes + 64 * 1024 * 1024;
+        $entries = [];
+        foreach (scandir($this->root) ?: [] as $name) {
+            if ($name === '.' || $name === '..') continue;
+            $path = $this->root . '/' . $name;
+            if (!preg_match('/^(?:[a-f0-9]{64}|\.(?:build|publish|obsolete)-[a-f0-9]{20})$/D', $name)
+                || is_link($path) || !is_dir($path)) throw new RuntimeException('Unsafe entry in archive storage.');
+            $metaPath = $path . '/metadata';
+            $meta = is_file($metaPath) && !is_link($metaPath) && filesize($metaPath) <= 4096
+                ? json_decode((string) file_get_contents($metaPath), true) : null;
+            if ((!is_array($meta) || ($meta['identity'] ?? null) !== $identity) && $this->removeEntry($path)) continue;
+            $entries[$path] = $this->bytes($path);
+        }
+        // Evict completed current entries if necessary, but never an admitted transfer.
+        asort($entries);
+        foreach ($entries as $path => $bytes) {
+            $free = disk_free_space($this->root);
+            if (array_sum($entries) + $reserve <= $this->maxBytes && count($entries) < $this->maxEntries
+                && $free !== false && $free >= $reserve) break;
+            if ($this->removeEntry($path)) unset($entries[$path]);
+        }
+        $free = disk_free_space($this->root);
+        if (array_sum($entries) + $reserve > $this->maxBytes || count($entries) >= $this->maxEntries
+            || $free === false || $free < $reserve) {
+            throw new RuntimeException('Archive storage capacity reached; let active downloads finish or free disk space and retry.');
+        }
+        $workspace = $this->root . '/.build-' . bin2hex(random_bytes(10));
+        if (!mkdir($workspace, 0700)) throw new RuntimeException('Cannot prepare archive workspace.');
+        return $workspace;
+    }
+
+    private function bytes(string $directory): int
+    {
+        $bytes = 0;
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file->isLink() || !$file->isFile()) throw new RuntimeException('Unsafe archive cache contents.');
+            $bytes += $file->getSize();
+        }
+        return $bytes;
+    }
+
+    private function removeEntry(string $directory): bool
+    {
+        $handles = [];
+        try {
+            foreach (glob($directory . '/archive.*') ?: [] as $archive) {
+                if (is_link($archive) || !is_file($archive)) throw new RuntimeException('Unsafe cached archive.');
+                $handle = fopen($archive, 'rb');
+                if ($handle === false) return false;
+                $handles[] = $handle;
+                if (!flock($handle, LOCK_EX | LOCK_NB)) return false;
+            }
+            ImageBackup::removeTree($directory);
+            return true;
+        } finally {
+            foreach ($handles as $handle) fclose($handle);
+        }
     }
 
     public function key(string $identity, string $kind): string

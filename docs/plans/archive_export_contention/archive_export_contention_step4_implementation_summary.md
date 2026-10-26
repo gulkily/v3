@@ -58,3 +58,14 @@ Dependencies: Zero additions or updates authorized/proposed; use existing PHP/sy
 - Notes: S4/v1 unchanged; Stage 3 commit cf7cb4e1. HTTP/browser Retry-After and visible phone/desktop recovery checks remain S6 acceptance. No dependency/config change.
 
 *— Codex · 2026-10-26 UTC*
+
+## Stage 5 - Bounded lifecycle and recovery
+
+**Original estimate: 0.25**
+**Retrospective stage work: 0.25**
+
+- Changes: Six-entry/2-GiB private cache budget; reserve twice source bytes plus 64 MiB before a build, check filesystem space, evict unprotected stale/current artifacts as needed and refuse capacity when readers prevent reclamation. Workspaces now live on cache filesystem and abandoned staging is reclaimed under global build ownership. Cleanup takes nonblocking exclusive archive locks and preserves readers; symlink cache roots/entries refused.
+- Verification: Existing export/image suite 14/14 passed, plus two new lifecycle tests passed: held-reader eviction refusal/release/retry, abandoned workspace recovery, capacity refusal, source deletion/commit during paused compression and killed-builder recovery. Recovered archive excludes deleted post, no stale metadata or staging remains. `git diff --check` passed.
+- Notes: S5/v1 unchanged; Stage 4 commit 58c57cd3. Actual filesystem-full condition and browser acceptance remain S6; injected cache-capacity test is not a physical-disk-full claim. Obsolete archives with active readers remain accounted until a later miss triggers cleanup. No new settings or dependencies.
+
+*— Codex · 2026-10-26 UTC*

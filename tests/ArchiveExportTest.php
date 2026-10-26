@@ -140,4 +140,73 @@ final class ArchiveExportTest
         [$status, $body] = $request(); assertTrue(str_starts_with($body, "\x1f\x8b"));
     }
 
+    public function testCleanupProtectsReadersAndRecoversAbandonedBuildsAndCapacity(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source');
+        $w->put($root . '/records/posts/one.txt', $w->post('one')); $w->git($root);
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+        $old = $backup->export('tar.gz'); $oldBytes = file_get_contents($old['path']);
+        $w->put($root . '/note.txt', 'changed');
+        $next = $backup->export('tar.gz'); fclose($next['stream']);
+        assertSame($oldBytes, stream_get_contents($old['stream'])); assertTrue(is_file($old['path']));
+        fclose($old['stream']);
+        $abandoned = dirname(dirname($old['path'])) . '/.build-' . str_repeat('a', 20);
+        mkdir($abandoned); file_put_contents($abandoned . '/partial', 'partial');
+        $zip = $backup->export('zip'); fclose($zip['stream']);
+        assertSame(false, is_file($old['path'])); assertSame(false, is_dir($abandoned));
+        $protected = $backup->export('zip');
+        $limited = new \ForumRewrite\Images\ArchiveCache($w->root, $root, 1, 1);
+        try {
+            $limited->prepareBuild('different', 1);
+            throw new RuntimeException('Expected capacity refusal');
+        } catch (RuntimeException $e) { assertStringContains('capacity reached', $e->getMessage()); }
+        assertTrue(is_file($protected['path'])); fclose($protected['stream']);
+        $cache = new \ForumRewrite\Images\ArchiveCache($w->root, $root);
+        $workspace = $cache->prepareBuild('different', 1);
+        assertTrue(is_dir($workspace)); assertSame(false, is_file($protected['path']));
+        ImageBackup::removeTree($workspace);
+    }
+
+    public function testChangesDuringCompressionAndKilledBuilderNeverPublishStaleOutput(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source');
+        $w->put($root . '/records/posts/one.txt', $w->post('one')); $w->git($root);
+        $bin = $w->root . '/bin'; mkdir($bin);
+        $ready = $w->root . '/ready'; $gate = $w->root . '/gate';
+        $tar = trim($w->command(['which', 'tar'])[1]);
+        file_put_contents($bin . '/tar', "#!/bin/sh\ntouch " . escapeshellarg($ready)
+            . "\nwhile [ ! -f " . escapeshellarg($gate) . " ]; do sleep 0.02; done\nexec " . escapeshellarg($tar) . ' "$@"' . "\n");
+        chmod($bin . '/tar', 0700);
+        $script = $w->root . '/build.php';
+        file_put_contents($script, '<?php require ' . var_export(dirname(__DIR__) . '/autoload.php', true)
+            . '; try { $d=(new ForumRewrite\\Images\\ImageBackup($argv[1],$argv[2]))->export("tar.gz"); echo "published"; fclose($d["stream"]); } catch (ForumRewrite\\Images\\ArchiveConflictException $e) { echo "conflict"; }');
+        foreach ([false, true] as $kill) {
+            @unlink($ready); @unlink($gate);
+            $pipes = [];
+            $process = proc_open(['env', 'PATH=' . $bin . ':' . getenv('PATH'), PHP_BINARY, $script, $root, $w->root . '/index.sqlite3'],
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+            try {
+                $deadline = microtime(true) + 5;
+                while (!is_file($ready) && microtime(true) < $deadline) { usleep(10000); clearstatcache(); }
+                assertTrue(is_file($ready));
+                if ($kill) { proc_terminate($process, 9); }
+                else {
+                    (new \ForumRewrite\Support\ExecutionLock($w->root . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($w, $root): void {
+                        unlink($root . '/records/posts/one.txt'); $w->git($root);
+                    });
+                }
+            } finally { touch($gate); }
+            $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]);
+            fclose($pipes[1]); fclose($pipes[2]); proc_close($process);
+            if (!$kill) assertSame('conflict', $out);
+            assertSame('', $err);
+            assertSame([], glob($w->root . '/archive-exports/*/metadata'));
+        }
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+        $recovered = $backup->export('tar.gz'); fclose($recovered['stream']);
+        assertSame([], glob($w->root . '/archive-exports/.build-*'));
+        [$status, $listing] = $w->command(['tar', '-tzf', $recovered['path']]);
+        assertSame(0, $status); assertStringNotContains('one.txt', $listing);
+    }
+
 }
