@@ -16,6 +16,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Image backup ZIP](image_backup_zip/)
+
 - [Repository archive README](repository_archive_readme/)
 
 - [Independent documentation publication](docs_independent_publication/)
