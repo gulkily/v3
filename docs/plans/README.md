@@ -10,11 +10,17 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Markdown work checklist](markdown_work_checklist.md) — relevance-sorted completed work, acceptance, follow-ups and optional compatibility decisions.
 
+[Human-readable format audit](human_readable_formats_checklist.md) — JSON conversion checklist and boundaries; [retraction text assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md).
+
 ## Production feedback
 
 [Request register](production_feedback_register.md) — current tracking for migrated requests; [intake and update guide](../reference/production_feedback_management.md). Older inventories are linked from the register and await reconciliation.
 
 ## Feature folders
+
+- [Readable retraction records](retraction_text_format/)
+
+- [Repository archive README](repository_archive_readme/)
 
 - [Independent documentation publication](docs_independent_publication/)
 
@@ -285,3 +291,5 @@ and repair its navigation and affected references. See the
 - [Status frontend target](status_frontend_target/)
 
 - [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.
+
+- [Retraction simplification](./retraction_simplification/retraction_simplification_step3_development_plan.md): approved release-1 implementation plan.

@@ -20,7 +20,7 @@ final class LegacyDocsMigrationTest
         assertSame(true, $locator->active()['legacy']);
         $version = $locator->active()['version'];
         assertTrue(!is_file($static . '/' . DocsReleaseLocator::LEGACY));
-        \ForumRewrite\Retraction\ArtifactSweep::run([$static], 'preview-generation', [], 1000, preview: true);
+        \ForumRewrite\Retraction\ArtifactSweep::run([$static], time(), preview: true);
         assertTrue(!is_file($static . '/' . DocsReleaseLocator::LEGACY));
         $responder = new \ForumRewrite\Docs\DocsResponder($project, $static);
         $read = static function (string $uri) use ($responder): string {
@@ -35,7 +35,7 @@ final class LegacyDocsMigrationTest
         $stored = file_get_contents($legacy . '/docs/guide.md.html');
         $next = $static . '/releases/next-forum';
         $w->put($next . '/index.html', 'new forum');
-        $w->put($next . '.retraction-generation', \ForumRewrite\Retraction\PublicationGuard::generation($repo));
+        $w->put($next . '.retraction-generation', 'legacy-stamp');
         $publisher->activate($next);
         assertTrue(is_file($static . '/' . DocsReleaseLocator::LEGACY));
         assertSame($legacy, $locator->active()['root']);
@@ -43,10 +43,7 @@ final class LegacyDocsMigrationTest
         (new \ForumRewrite\Write\StaticArtifactInvalidator($static))->invalidateApprovalSeed();
         assertTrue(!is_link($static . '/current'));
         for ($n = 0; $n < 1000; $n++) $w->put($legacy . '/docs/extra-' . $n . '.md.html', 'docs');
-        $resumed = \ForumRewrite\Retraction\ArtifactSweep::run([$static], 'new-generation',
-            [['path' => $legacy . '/docs', 'after' => '', 'top' => false]], 1000);
-        assertSame(0, $resumed['examined']);
-        $sweep = \ForumRewrite\Retraction\ArtifactSweep::run([$static], 'new-generation', [], 1000);
+        $sweep = \ForumRewrite\Retraction\ArtifactSweep::run([$static], time());
         assertTrue($sweep['examined'] < 300);
         assertTrue(!is_file($legacy . '/index.html'));
         assertTrue(!is_file($next . '/index.html'));
@@ -142,7 +139,7 @@ final class LegacyDocsMigrationTest
         foreach (glob($legacy . '/docs/_assets/*') as $favicon) unlink($favicon);
         rmdir($legacy . '/docs/_assets');
         $w->put($legacy . '/index.html', 'legacy forum output');
-        $w->put($legacy . '.retraction-generation', \ForumRewrite\Retraction\PublicationGuard::generation($repo));
+        $w->put($legacy . '.retraction-generation', 'legacy-stamp');
         $publisher->activate($legacy);
         return [$w, $project, $repo, $static, $database, $publisher, $legacy];
     }

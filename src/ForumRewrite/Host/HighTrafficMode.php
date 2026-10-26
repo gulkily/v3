@@ -3,7 +3,7 @@
 declare(strict_types=1);
 namespace ForumRewrite\Host;
 
-use ForumRewrite\Retraction\PublicationGuard;
+use ForumRewrite\Support\PublicationLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use RuntimeException;
@@ -27,7 +27,7 @@ final class HighTrafficMode
     }
     public function change(bool $enable, string $reason): array
     {
-        return PublicationGuard::withLock($this->cache->repositoryRoot, function () use ($enable,$reason): array {
+        return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason): array {
             $meta=\ForumRewrite\Scoring\FastmodMetaPublication::token($this->cache->projectRoot);
             return (new \ForumRewrite\Support\ExecutionLock($meta['path'] . '.publication.lock'))->withExclusiveLock(fn () => $this->cache->locked(function () use ($enable,$reason): array {
             $path=$this->cache->publicRoot . '/.htaccess';
@@ -64,7 +64,7 @@ final class HighTrafficMode
     }
     public function restore(): array
     {
-        return PublicationGuard::withLock($this->cache->repositoryRoot, fn () => $this->cache->locked(function (): array {
+        return PublicationLock::withLock($this->cache->repositoryRoot, fn () => $this->cache->locked(function (): array {
             $saved=$this->cache->root . '/normal.htaccess';
             if (!is_file($saved)) throw new RuntimeException('No saved normal routing exists. Restore public/.htaccess from the application package.');
             $context=json_decode((string)file_get_contents($this->cache->root . '/normal-context.json'),true,512,JSON_THROW_ON_ERROR);
@@ -77,7 +77,7 @@ final class HighTrafficMode
     }
     public function purge(): void
     {
-        PublicationGuard::withLock($this->cache->repositoryRoot, fn () => $this->cache->locked(function (): void {
+        PublicationLock::withLock($this->cache->repositoryRoot, fn () => $this->cache->locked(function (): void {
             $state=$this->cache->state();$state['generation']=bin2hex(random_bytes(16));
             $this->cache->atomic($this->cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR));
             foreach ($this->htmlFiles() as $file) if (!unlink($file)) throw new RuntimeException('Cannot purge cached page.');

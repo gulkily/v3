@@ -1,5 +1,12 @@
 # UI copy audit checklist
 
+## Backup page reduction — October 25, 2026
+
+- [x] Removed site/admin details, freshness headings/metadata, repeated download tables/descriptions, activity preview and the separate explanation card. All three Backup aliases now show direct format links, conditional image pairing guidance, SQLite staleness and a concise separate-backup warning. Removed the corresponding page-data queries and description strings; download behavior is unchanged.
+- Verification: 8/8 focused PHP checks (`BackupPageTest`, `RepositoryContentExportTest`, and `LocalAppSmokeTest` portability/core-route methods). Actual Chromium rendering passed at 390px/1280px across 14 theme choices, with visible download links and no horizontal overflow; all aliases and all four real downloads passed. Wrong-revision HTTP 409 retained actionable refresh/re-download guidance and retry succeeded. Image-unavailable rendering showed three links and no pairing note at both widths. There is no activity empty state or disclosure after removal; native downloads add no success/pending UI.
+- Inspected Word97 phone and Midnight desktop screenshots (`/tmp/backup-word97-390.png`, `/tmp/backup-midnight-1280.png`); browser check `/tmp/backup-copy-check.mjs`. Existing tall Tools navigation remains on phones and is outside this copy change. No navigation destination/icon changes, dependencies, schema changes or `todo.txt` edits. Physical devices, other browser engines, full suite and production deployment were not checked.
+
+
 ## Outstanding-item review — October 23, 2026
 
 - Reviewed unchecked entries against the completion records and current source. Seven copy-audit candidates remain open: Outbox, Bookmarklets, Fastmod, Offline reading, Thread/post analysis, Feature Flags, and Users empty state. Their rendered-state review and acceptance checks below remain outstanding; source inspection does not close them.
@@ -492,6 +499,11 @@ Reviewed candidates; decisions and verification are recorded above.
 - [x] **Offline reader refresh success** — Review “Saved reader refreshed and rechecked” alongside the resulting health status and freshness rows. Check changed/unchanged revisions and failed refresh/retry; retain enough acknowledgment to distinguish a finished refresh from stale results. Source: `public/assets/offline_health.js`.
 
 - [x] **LLM Exchange return-link duplication** — Review “Back to LLM Exchanges” against the existing LLM Exchanges Tools subnavigation link on detail pages. Check keyboard and phone navigation, access restrictions and long expanded raw records before removing any route back to the list. Sources: `templates/pages/llm_exchange.php`, `templates/partials/tools_nav.php`, `src/ForumRewrite/Http/LlmExchangesController.php`.
+
+## Retraction simplification — October 25, 2026
+
+- Replaced the obsolete completed-retraction promise with concise repository deletion/delayed-cache/history limits. Removed the legacy label-review warning from accepted retractions; independent labels remain independently owned. Existing signing, partial refresh and recovery feedback remains visible.
+- Verification: real browser author/operator/account-attribution flows and partial refresh/retry; all 13 themes at 390px/1280px without overflow, Word97 phone result screenshot inspected. Long embedded source-record/signature content wraps; surviving replies remain navigable. Keyboard activation, Escape/focus restoration and touch pass. Offline update cases 16/16; API retraction scenarios 18/18. No navigation/icon changes or dependencies. Local controlled browser checks only; physical devices and production pending. See [implementation summary](retraction_simplification/retraction_simplification_step4_implementation_summary.md#stage-8---acceptance-recovery-and-closeout).
 
 ## Next phase — new candidates
 

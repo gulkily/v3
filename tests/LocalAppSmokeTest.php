@@ -1460,11 +1460,10 @@ PHP;
         assertTrue(is_file($root . '/records/posts/reply-001.txt'));
     }
 
-    public function testSourceRemovalCommitFailureResumesAndRejectsStalePublication(): void
+    public function testSourceRemovalCommitFailureResumesWithoutPublicationGate(): void
     {
         [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
         (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
-        $old = \ForumRewrite\Retraction\PublicationGuard::begin($database, $root);
         file_put_contents($root . '/.git/hooks/pre-commit', "#!/bin/sh\nexit 1\n");
         chmod($root . '/.git/hooks/pre-commit', 0755);
         $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts, '--json']));
@@ -1475,11 +1474,9 @@ PHP;
         exec($command . ' 2>&1', $retryOutput, $retryStatus);
         assertSame(0, $retryStatus);
         assertSame(false, is_file($root . '/.git/source-label-removal-root-001.json'));
-        $staleRejected = false;
-        try { \ForumRewrite\Retraction\PublicationGuard::publish($old, $artifacts . '/stale.html', static function (): void {}); }
-        catch (RuntimeException) { $staleRejected = true; }
-        assertTrue($staleRejected);
-        assertTrue(\ForumRewrite\Retraction\PublicationGuard::begin($database, $root) !== null);
+        $builder = new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $database, $artifacts);
+        assertStringContains('</head>', $builder->renderHighTrafficRoute('/'));
+
     }
 
     public function testZenMemesDeletedPinRepliesRepairWithoutRemovingConversation(): void
@@ -1734,12 +1731,9 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('Current public content only', $backupPage);
-            assertStringContains('not a complete instance backup.', $backupPage);
-            assertStringContains('Git history, private messages, browser keys and drafts, operational data', $backupPage);
-            assertStringContains('software, configuration, secrets, and externally hosted media need separate backups', $backupPage);
-            assertStringContains('include supplemental workflow records', $backupPage);
-            assertStringContains('may lag behind the repository', $backupPage);
+            assertStringContains('Public content only.', $backupPage);
+            assertStringContains('Back up Git history, private data, browser keys and drafts, software, settings and external media separately.', $backupPage);
+            assertStringContains('The SQLite index may be out of date.', $backupPage);
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
@@ -1990,39 +1984,20 @@ PHP;
         assertStringContains('commit unavailable', $post);
         assertStringContains('Signature:', $post);
         assertStringContains('anonymous unsigned', $post);
-        assertStringContains('zenmemes', $instance);
-        assertStringContains('Backup', $backup);
-        assertStringContains('Backup', $toolsBackup);
-        assertStringContains('Snapshot freshness', $instance);
-        assertStringContains('<table class="backup-downloads" data-role="text-content-downloads">', $instance);
-        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $downloadHref) {
-            assertSame(1, substr_count($instance, 'href="' . $downloadHref));
+        foreach ([$instance, $backup, $toolsBackup] as $page) {
+            assertStringContains('Backup', $page);
+            assertStringContains('Public content only.', $page);
+            assertStringContains('Back up Git history, private data, browser keys and drafts, software, settings and external media separately.', $page);
+            assertStringNotContains('Snapshot freshness', $page);
+            assertStringNotContains('Recent included items', $page);
+            assertStringNotContains('About these downloads', $page);
+            foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $href) {
+                assertSame(1, substr_count($page, 'href="' . $href));
+            }
         }
-        assertStringContains('Generated at:', $instance);
-        assertStringContains('Recent included items', $instance);
-        assertStringContains('href="/activity/">See all recent activity</a>', $instance);
-        assertStringContains('Repository snapshot:', $instance);
-        assertStringContains('Recent included items', $instance);
-        assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
-        // The tools tab bar must be the first thing in the page body, before any page content.
         assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
-        assertOrdered($toolsBackup, '<h1>Backup</h1>', '>Text content</h2>');
-        assertStringNotContains('>Downloads</h2>', $toolsBackup);
-        assertStringContains('>About these downloads</h2>', $toolsBackup);
-        if (str_contains($toolsBackup, '>Images</h2>')) {
-            assertOrdered($toolsBackup, 'tools-nav', '>Images</h2>');
-            assertOrdered($toolsBackup, '>Text content</h2>', '>Images</h2>');
-            assertOrdered($toolsBackup, '>Images</h2>', '>Recent included items</h2>');
-        }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
-        assertStringNotContains('href="/posts/">', $toolsBackup);
-        assertStringContains('/user/guest', $instance);
-        assertStringContains('/downloads/repository.tar.gz', $instance);
-        assertStringContains('/downloads/repository.zip', $instance);
-        assertStringContains('/downloads/read_model.sqlite3', $instance);
-        assertStringContains('Current public content only', $instance);
-        assertStringContains('not a complete instance backup.', $instance);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);

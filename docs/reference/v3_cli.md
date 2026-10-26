@@ -36,12 +36,12 @@ and the bootstrap flow.
 ## Synchronize Railspike workflow documentation
 
 ```bash
-./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.3.0-beta.1]
+./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.3.0-beta.4]
 ./v3 fdp sync ... # deprecated alias; updates Railspike, never FDP
 ```
 
 Updates the vendored `docs/railspike/` subtree to an explicit release tag
-(`--ref`, default the pinned `v0.3.0-beta.1`), creating Git update commits. Branch
+(`--ref`, default the pinned `v0.3.0-beta.4`), creating Git update commits. Branch
 names such as `main` are refused, so a plain sync never moves the installed
 version. The tag must descend from the commit in `docs/railspike/RAILSPIKE_SOURCE.md`,
 which the command updates and commits after a successful merge. The target defaults to this checkout; `--repository-root`
@@ -478,12 +478,12 @@ It refuses recovery while the lock or an open file holder is detected.
 ## Sweep retracted local content
 
 ```
-./v3 retraction-sweep preview|run|status [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
+./v3 retraction-sweep preview|run|status|migrate [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
 ```
 
 Preview is non-mutating. Run executes one bounded batch immediately; repeat while
 `remaining` is true. The normal queue worker also discovers and continues sweeps.
-See [coverage, exclusions, progress and recovery](retraction_sweep.md).
+See [coverage, exclusions, progress and recovery](retraction_sweep.md). `migrate` handles legacy source-removal receipts only; previous retractions are not migrated.
 
 ## Manage the background task queue
 

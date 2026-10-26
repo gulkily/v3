@@ -6,6 +6,7 @@ namespace ForumRewrite\Write;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\AcceptedRetraction;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
@@ -586,16 +587,19 @@ class LocalWriteService
             $totalStartedAt = hrtime(true);
             $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? $input['author_identity_id'] ?? ''), 'author_identity_id');
             $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+            $accepted = AcceptedRetraction::read($this->repositoryRoot, $postId);
+            if ($accepted !== null) {
+                if ($accepted['actor'] !== $authorIdentityId && $accepted['post']['author_identity_id'] !== $authorIdentityId) {
+                    throw new RuntimeException('Only the original actor or author can retry this retraction.');
+                }
+                $commit = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+                $this->staleMarker()->mark(['reason' => 'retraction_retry', 'commit_sha' => $commit]);
+                return $this->retractionResult($postId, $accepted['post']['thread_id'], AcceptedRetraction::requestPath($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
+            }
             $post = $this->requireRetractablePost($postId, $authorIdentityId);
             $threadId = $post->threadId ?? $post->postId;
             $recordPath = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
 
-            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
-                if (!RetractedPosts::applies($post, $this->canonicalRepository->loadPostRetraction($recordPath))) {
-                    throw new RuntimeException('Existing retraction is not effective for this post.');
-                }
-                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
-            }
 
             $createdAt = $this->canonicalTimestampNow();
             $targetAuthor = $post->authorIdentityId;
@@ -643,6 +647,21 @@ class LocalWriteService
             $timings = [];
             $totalStartedAt = hrtime(true);
             $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            // A response can be lost after commit and prepared-token cleanup. Only an
+            // exact replay of the retained signed action may use this recovery path.
+            if (!is_file($this->preparedPostPath($prepareToken))) {
+                $id = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+                $accepted = AcceptedRetraction::read($this->repositoryRoot, $id);
+                $actor = (string) ($input['actor_identity_id'] ?? $input['author_identity_id'] ?? '');
+                if ($accepted !== null && $actor === $accepted['actor']
+                    && ($input['record_path'] ?? '') === AcceptedRetraction::requestPath($id)
+                    && ($input['canonical_record'] ?? '') === $accepted['signed_request']
+                    && $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature') === $accepted['signature']) {
+                    $commit = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+                    $this->staleMarker()->mark(['reason' => 'retraction_retry', 'commit_sha' => $commit]);
+                    return $this->retractionResult($id, $accepted['post']['thread_id'], AcceptedRetraction::requestPath($id), null, [], hrtime(true) - $totalStartedAt, true, $commit);
+                }
+            }
             $prepared = $this->loadPreparedPost($prepareToken);
 
             if (($prepared['kind'] ?? '') !== 'retraction') {
@@ -672,19 +691,20 @@ class LocalWriteService
                 throw new RuntimeException('Prepared retraction canonical record does not match prepared metadata.');
             }
 
+            $accepted = AcceptedRetraction::read($this->repositoryRoot, $postId);
+            if ($accepted !== null) {
+                if ($accepted['actor'] !== $authorIdentityId && $accepted['post']['author_identity_id'] !== $authorIdentityId) {
+                    throw new RuntimeException('Only the original actor or author can retry this retraction.');
+                }
+                $commit = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+                $this->staleMarker()->mark(['reason' => 'retraction_retry', 'commit_sha' => $commit]);
+                return $this->retractionResult($postId, $accepted['post']['thread_id'], AcceptedRetraction::requestPath($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
+            }
             $post = $this->requireRetractablePost($postId, $authorIdentityId);
             if ($record->authorIdentityId !== $post->authorIdentityId) {
                 throw new RuntimeException('Retraction target author mismatch.');
             }
             $threadId = $post->threadId ?? $post->postId;
-            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
-                if (!RetractedPosts::applies($post, $this->canonicalRepository->loadPostRetraction($recordPath))) {
-                    throw new RuntimeException('Existing retraction is not effective for this post.');
-                }
-                $this->deletePreparedPost($prepareToken);
-
-                return $this->retractionResult($postId, $threadId, $recordPath, null, [], hrtime(true) - $totalStartedAt, true);
-            }
 
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
             [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
@@ -694,18 +714,19 @@ class LocalWriteService
             }
 
             $attribution = $record->classification === 'operator'
-                ? $this->retractionAttributionEvidence($record, $canonicalRecord) : '';
+                ? $this->retractionAttribution($record) : 'author';
             $phaseStartedAt = hrtime(true);
-            $this->writeFile($recordPath, $canonicalRecord);
-            $this->writeFile($recordPath . '.asc', $signature);
+            $acceptedRequest = new \ForumRewrite\Canonical\PostRetractionRecord(
+                $record->recordId, $record->createdAt, $record->postId, $record->operation,
+                $record->authorIdentityId, $record->actorIdentityId, $record->classification, true);
+            $sourceHash = null;
+            foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+                if (is_file($this->repositoryRoot . '/' . $candidate)) { $sourceHash = hash_file('sha256', $this->repositoryRoot . '/' . $candidate); break; }
+            }
+            $accepted = AcceptedRetraction::prepare($post, $acceptedRequest, $canonicalRecord, $signature, $attribution, $sourceHash);
+            $commitSha = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+            $recordPath = AcceptedRetraction::requestPath($postId);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
-
-            $commitResult = $this->commitCanonicalWrite(
-                [$recordPath, $recordPath . '.asc'],
-                'Retract post ' . $postId . ' by ' . $authorIdentityId . $attribution
-            );
-            $timings = array_merge($timings, $commitResult['timings']);
-            $commitSha = $commitResult['commit_sha'];
             $this->deletePreparedPost($prepareToken);
 
             $failedStep = null;
@@ -725,7 +746,7 @@ class LocalWriteService
     }
 
     /** Local acceptance metadata only: never part of the signer's canonical record. */
-    private function retractionAttributionEvidence(\ForumRewrite\Canonical\PostRetractionRecord $record, string $contents): string
+    private function retractionAttribution(\ForumRewrite\Canonical\PostRetractionRecord $record): string
     {
         $username = null;
         try {
@@ -764,11 +785,7 @@ class LocalWriteService
         } catch (\Throwable) {
             // Presentation uncertainty must neither grant authority nor prevent a valid retraction.
         }
-        return "\n\nRetraction-Attribution: " . json_encode([
-            'version' => 1, 'sha256' => hash('sha256', $contents),
-            'actor' => $record->signerIdentityId(), 'author' => $record->authorIdentityId,
-            'attribution' => $username === null ? 'operator' : 'author', 'username' => $username,
-        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        return $username === null ? 'operator' : 'author';
     }
 
     private function requireRetractablePost(string $postId, string $authorIdentityId): PostRecord
@@ -789,20 +806,6 @@ class LocalWriteService
         if ($post->authorIdentityId !== $authorIdentityId) {
             $allowed = $this->isApprovedIdentity($authorIdentityId)
                 && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, $authorIdentityId);
-            if (!$allowed) {
-                $path = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
-                if (is_file($this->repositoryRoot . '/' . $path)) {
-                    try {
-                        $existing = $this->canonicalRepository->loadPostRetraction($path);
-                        $contents = (string) file_get_contents($this->repositoryRoot . '/' . $path);
-                        $allowed = $existing->classification === 'operator'
-                            && $existing->signerIdentityId() === $authorIdentityId
-                            && $existing->authorIdentityId === $post->authorIdentityId
-                            && \ForumRewrite\Security\ReactionSignature::status($this->repositoryRoot, $path, $contents, $authorIdentityId) === 'verified'
-                            && \ForumRewrite\Security\RetractionAuthority::acceptedOperator($this->repositoryRoot, $path, $contents, $existing);
-                    } catch (\Throwable) { $allowed = false; }
-                }
-            }
             if (!$allowed) throw new RuntimeException('Only the post author can retract this post. An approved operator may also retract it.');
         }
         if (RetractedPosts::isAuthorityPost($post)) {
@@ -859,8 +862,7 @@ class LocalWriteService
         }
 
         $labelCleanup = [];
-        try { $labelCleanup = \ForumRewrite\Canonical\LabelRemoval::inspect($this->repositoryRoot, $postId)['review_candidates']; }
-        catch (\Throwable) { $labelCleanup = ['Ownership inspection unavailable; operator review required.']; }
+        // Independently authored labels/replies are not retraction cleanup targets.
 
         $timings['total'] = round($elapsedNanoseconds / 1000000, 1);
 
@@ -876,6 +878,7 @@ class LocalWriteService
             'thread_id' => $threadId,
             'record_path' => $recordPath,
             'signature_path' => $recordPath . '.asc',
+            'acceptance_path' => AcceptedRetraction::path($postId),
             'commit_sha' => $commitSha,
             'timings' => $timings,
         ];
@@ -3192,7 +3195,7 @@ class LocalWriteService
     {
         $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
             $this->recoverSignedReactionWrites();
-            return \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot,$callback);
+            return \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot,$callback);
         });
         $result = $locked['result'];
         if (($result['commit_sha'] ?? null) !== null && $this->enqueueOfflineSnapshotPublication !== null) {
