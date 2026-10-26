@@ -25,7 +25,8 @@ final class ImageBackup
             $extension = $kind === 'images' ? 'tar' : $kind;
             $archive = $work . '.' . $extension;
             try {
-                $revision = (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($kind, $expectedRevision, $work): string {
+                $identity = null;
+                $revision = (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($kind, $expectedRevision, $work, &$identity): string {
                     $revision = $this->revision();
                     if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
                         throw new RuntimeException('Repository changed. Refresh Backup and download both artifacts again.');
@@ -35,6 +36,7 @@ final class ImageBackup
                     }
                     $store = new ImageStore($this->repositoryRoot);
                     $inventory = $store->inventory();
+                    $identity = ExportIdentity::capture($this->repositoryRoot, $revision, $inventory);
                     $source = $kind === 'images' ? $store->root : $this->repositoryRoot;
                     $size = $kind === 'images' ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source, excludeGit: true);
                     $free = disk_free_space($work);
@@ -74,6 +76,9 @@ final class ImageBackup
                     exec($command . ' 2>&1', $output, $status);
                     if ($status !== 0 || !is_file($archive)) { throw new RuntimeException('Unable to assemble complete backup.'); }
                 }
+                (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($identity): void {
+                    if ($this->identity() !== $identity) throw new RuntimeException('Repository changed during backup; refresh Backup and retry.');
+                });
                 chmod($archive, 0600);
                 return ['path' => $archive, 'revision' => $revision, 'extension' => $extension];
             } catch (\Throwable $error) {
@@ -83,6 +88,19 @@ final class ImageBackup
                 self::removeTree($work);
             }
         });
+    }
+
+    /** Caller holds the instance writer lock. */
+    private function identity(?string $expectedRevision = null): string
+    {
+        $revision = $this->revision();
+        if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
+            throw new RuntimeException('Repository changed. Refresh Backup and download both artifacts again.');
+        }
+        if ($this->git(['status', '--porcelain', '--', 'records']) !== '') {
+            throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');
+        }
+        return ExportIdentity::capture($this->repositoryRoot, $revision, (new ImageStore($this->repositoryRoot))->inventory());
     }
 
     public static function references(string $root, ?string $snapshotRoot = null): array
