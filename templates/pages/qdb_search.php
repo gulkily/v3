@@ -1,5 +1,8 @@
 <section class="stack">
   <article class="card">
+    <p>Type in the search word,<br>
+      apply pressure to button,<br>
+      then read the results.</p>
     <form method="get" action="/search" class="stack">
       <input type="text" name="search" value="<?= $e($term) ?>" placeholder="Search quotes..." aria-label="Search quotes">
       <button type="submit">Search</button>

@@ -165,7 +165,7 @@ final class RepositoryContentExportTest
         }
     }
 
-    public function testGuidePreparationFailureReturns409AndCanBeRetried(): void
+    public function testGuidePreparationFailureReturns500AndCanBeRetried(): void
     {
         $w = new ImportTestWorkspace();
         $root = $w->repository('source', true);
@@ -180,7 +180,8 @@ final class RepositoryContentExportTest
                 'php', '-r', $code, dirname(__DIR__), $root, $database, '/downloads/repository.' . $format]);
             assertSame(0, $status);
             assertStringContains('Cannot replace repository README.md; repair the file and retry.', $body);
-            assertStringContains('HTTP_STATUS=409', $body);
+            assertStringContains('HTTP_STATUS=500', $body);
+            assertStringContains('Backup could not be prepared.', $body);
             assertSame(false, str_starts_with($body, "\x1f\x8b") || str_starts_with($body, 'PK'));
         }
         assertSame($temporaryBefore, glob(sys_get_temp_dir() . '/forum-image-export-*'));

@@ -18,6 +18,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Reusable archive exports](archive_export_contention/)
+
 - [Readable retraction records](retraction_text_format/)
 
 - [Repository archive README](repository_archive_readme/)

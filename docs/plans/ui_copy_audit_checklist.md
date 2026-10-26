@@ -505,6 +505,12 @@ Reviewed candidates; decisions and verification are recorded above.
 - Replaced the obsolete completed-retraction promise with concise repository deletion/delayed-cache/history limits. Removed the legacy label-review warning from accepted retractions; independent labels remain independently owned. Existing signing, partial refresh and recovery feedback remains visible.
 - Verification: real browser author/operator/account-attribution flows and partial refresh/retry; all 13 themes at 390px/1280px without overflow, Word97 phone result screenshot inspected. Long embedded source-record/signature content wraps; surviving replies remain navigable. Keyboard activation, Escape/focus restoration and touch pass. Offline update cases 16/16; API retraction scenarios 18/18. No navigation/icon changes or dependencies. Local controlled browser checks only; physical devices and production pending. See [implementation summary](retraction_simplification/retraction_simplification_step4_implementation_summary.md#stage-8---acceptance-recovery-and-closeout).
 
+## QDB historical Add and Search copy — October 25, 2026
+
+- Restored the exact user-supplied Add guidance above the quote form and the Search verse above the search form, preserving its three explicit lines. This restoration is explicitly requested; the general preference for removing explanatory copy does not apply to these historical lines. No navigation, icons, behavior or shared compose copy changed.
+- Verification: `QdbExperienceRoutingTest` passed (3/3). Chromium against isolated Apache with real templates/assets checked both pages at 375px/1150px in QDB, Light, Word97, Chicago and Midnight (20 page/theme/size cases). Verified exact rendered copy, Search line breaks, editable quote body, visible Post action, search submission and zero-result recovery, and no horizontal overflow. Inspected QDB phone Add and desktop Search screenshots. Temporary evidence: `/tmp/qdb-haiku-tests.log`, `/tmp/qdb-haiku-visual.log`, `/tmp/qdb-copy-{add,search}-{theme}-{width}.png`.
+- Limitations: signed quote submission, populated/paginated search results, server failures and expanded compose options were not retested for these static paragraphs. No new dependencies; no `todo.txt` changes. Local changes only; deployment remains outstanding.
+
 ## Next phase — new candidates
 
 These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
@@ -518,3 +524,10 @@ These observations need rendered review before deciding what to remove. Keep thi
 - Replaced full-history download descriptions with “Current content; Git history excluded.” Updated the backup scope notice to list Git history among separately backed-up data. Preserved image-pair revision guidance and private-data limitations; no extra confirmation or navigation change.
 - Verified initial/loaded backup pages at 390/1440 widths in Light, Dark, Word97, Chicago and Midnight, with images present/absent (20 Chromium states), real styles loaded, visible download controls and no horizontal overflow. Inspected Midnight phone/Light desktop screenshots. Actual stale-revision failure followed by Backup refresh and successful TAR.GZ/ZIP downloads passed. BackupPageTest and affected LocalAppSmokeTest checks pass. No expanded state exists in the changed copy. Full suite, physical devices and deployment unverified.
 - [Implementation and archive/import evidence](repository_content_export_one_shot_summary.md). Zero dependencies. Early temporary harness checks without fingerprinted assets were discarded and rerun through FrontController.
+
+## Archive export contention — 2026-10-26
+
+Change: Download failures now distinguish 503 busy/retry, 409 refresh-and-pair, and 500 operator recovery. Raw exception paths are logged privately rather than returned publicly. Existing Backup warnings and links remain.
+Verification: `node tests/browser/archive_export_browser.mjs` exercises normal Backup links, cold/warm downloads, two-viewports (390/1280) busy/conflict/retry and generic failure, extraction and overflow checks. Backup links checked in light, Word97, Chicago and Midnight; plaintext error responses are theme-independent. Phone/desktop screenshots inspected locally; no navigation destinations/icons changed. PHP route/import tests cover integrity repair and retry.
+Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
+Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).
