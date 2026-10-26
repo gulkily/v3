@@ -102,3 +102,42 @@ Observation: Stages isolate contracts and outcomes, but timing cannot be establi
 Suggestion: Retain explicit sizing review without representing projections as measured duration.
 
 Attribution: Codex; 2026-10-26 UTC
+
+## 2026-10-26 — Step 4 completed-step report
+
+State: Debug enabled; six stages locally complete; production/maintainer acceptance pending.
+Commits: Planning 3256d774; S1 7c4a5e91; S2 84f14eee; S3 cf7cb4e1; S4 58c57cd3; S5 f9fd15b8; S6 94a55e68. Seven commits satisfy planning-plus-six-stages cadence; summary introduced only after planning commit. This report is the separate log-only handoff commit.
+Verification: Final targeted run 33/34 with identical baseline filename-test failure reproduced in isolated starting-revision archive; final strengthened checks 3/3; real HTTP/browser acceptance passed. Navigation links and diff whitespace passed. No dependency/manifest/lock/vendor or todo.txt changes; clean worktree before this log addition. Deployment, qdb.us process ownership/recovery, full suite and physical devices unverified.
+Study: R1/P2, v2/Option B, original baseline and estimates retained. Projected 0.90; separate retrospective 0.95, no labor measurement or maintainer acceptance invented.
+
+### Necessary/useful instructions
+
+Source: docs/workflow/step4_implementation_do.md — stage boundary protocol.
+Observation: Separate commits preserved freshness, protected delivery, bounded coordination, response semantics, storage recovery and acceptance. Test fixture lock inheritance and old 409 assertions were corrected before advancing.
+Suggestion: Retain verification-plus-summary commit gates.
+
+Source: docs/workflow/step4_implementation_after.md — final verification checklist, items 5–7.
+Observation: Prevented local reuse/performance results from being presented as qdb.us recovery and required reproducing the legacy filename-test failure rather than claiming a green suite.
+Suggestion: Retain environment-specific evidence and explicit baseline-failure reporting.
+
+Source: RAILSPIKE.md — experimental effort estimation.
+Observation: Preserved stage originals and separately recorded acceptance corrections as retrospective scope, without adding stage scores or treating runtime benchmarks as effort measurements.
+Suggestion: Retain scope/exposure/non-additivity rules.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Source: docs/workflow/step4_implementation_before.md — eligible existing-branch reuse.
+Observation: New feature branch created; no branch reuse was requested or needed.
+Suggestion: Retain conditional rule for follow-up cycles.
+
+### Uncertain assessments
+
+Source: docs/workflow/step3_development_plan_do.md — approximate stage sizing.
+Observation: Lifecycle and acceptance required more than the alternative 50-line guideline; stages remained distinct tested outcomes. Reliable active-work timing is unavailable, so no hour-limit compliance measurement is claimed.
+Suggestion: Clarify the relationship between approximate line-count and outcome-based stage sizing.
+
+Attribution: Codex; 2026-10-26 UTC
