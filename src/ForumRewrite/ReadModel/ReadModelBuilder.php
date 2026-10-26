@@ -137,18 +137,24 @@ final class ReadModelBuilder
         return $this->qdbVoteScoringPolicy()?->isVoteTag($tag) ? $identityId : $identityId . ':' . $tag;
     }
 
+    /**
+     * Drop every table the schema defines, before createSchema() recreates them,
+     * so an in-place rebuild over an existing database does not collide.
+     *
+     * The table list is derived from ReadModelSchema::statements() rather than
+     * hand-maintained: previously this method held a hardcoded DROP list that had
+     * to be kept in sync with the CREATE TABLE statements by hand, and a forgotten
+     * entry caused in-place rebuilds to fail with "table <name> already exists"
+     * (this bit the viewer_tags addition). Deriving it means adding a table to the
+     * schema automatically drops it on rebuild. Indexes need no DROP — dropping a
+     * table drops its indexes. No read-model table declares a foreign key, so drop
+     * order is immaterial.
+     */
     private function dropSchema(PDO $pdo): void
     {
-        $pdo->exec('DROP TABLE IF EXISTS reaction_signatures');
-        $pdo->exec('DROP TABLE IF EXISTS metadata');
-        $pdo->exec('DROP TABLE IF EXISTS posts');
-        $pdo->exec('DROP TABLE IF EXISTS threads');
-        $pdo->exec('DROP TABLE IF EXISTS profiles');
-        $pdo->exec('DROP TABLE IF EXISTS username_routes');
-        $pdo->exec('DROP TABLE IF EXISTS instance_public');
-        $pdo->exec('DROP TABLE IF EXISTS activity');
-        $pdo->exec('DROP TABLE IF EXISTS commits');
-        $pdo->exec('DROP TABLE IF EXISTS viewer_tags');
+        foreach (ReadModelSchema::tableNames() as $table) {
+            $pdo->exec('DROP TABLE IF EXISTS ' . $table);
+        }
     }
 
     private function createSchema(PDO $pdo): void

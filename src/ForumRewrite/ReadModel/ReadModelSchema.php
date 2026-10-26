@@ -143,4 +143,24 @@ final class ReadModelSchema
     {
         return hash('sha256', implode("\n", self::statements()));
     }
+
+    /**
+     * Names of every table the schema creates, in creation order, parsed from the
+     * CREATE TABLE statements. Single source of truth for callers that must act on
+     * all tables (e.g. ReadModelBuilder::dropSchema()), so a new table added to
+     * statements() is covered automatically without a parallel hand-maintained list.
+     *
+     * @return list<string>
+     */
+    public static function tableNames(): array
+    {
+        $names = [];
+        foreach (self::statements() as $statement) {
+            if (preg_match('/^\s*CREATE TABLE\s+([A-Za-z_][A-Za-z0-9_]*)/', $statement, $match) === 1) {
+                $names[] = $match[1];
+            }
+        }
+
+        return $names;
+    }
 }

@@ -6,7 +6,16 @@ cycle (completed and archived; see
 Neither was in that cycle's scope; both are recorded here so they are not lost
 when the cycle is archived.
 
-## 1. Derive `dropSchema()` from `ReadModelSchema::statements()`
+## 1. Derive `dropSchema()` from `ReadModelSchema::statements()` — DONE (2026-10-25)
+
+**Resolved.** `ReadModelBuilder::dropSchema()` now derives its table list from
+`ReadModelSchema::tableNames()` (parsed from the `CREATE TABLE` statements), so a
+new table is dropped-and-recreated on in-place rebuild automatically with no
+hand-maintained list. Covered by `tests/ReadModelDropSchemaTest.php` (tableNames
+matches the schema; in-place rebuild recreates every table without collision) and
+documented in `docs/specs/read_model_schema_v1.md` (Schema-change contract).
+
+Original note (for history):
 
 `ReadModelBuilder::dropSchema()` hand-maintains a hardcoded `DROP TABLE IF EXISTS`
 list. Any new read-model **table** must be added there too, or in-place rebuilds
