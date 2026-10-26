@@ -1703,6 +1703,10 @@ PHP;
                 $repositoryRoot . '/records/post-reactions/post-reaction-20261002120000-replylike.txt',
                 "Record-ID: post-reaction-20261002120000-replylike\nCreated-At: 2026-10-02T12:00:00Z\nPost-ID: reply-002\nOperation: add\nTags: like\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
             );
+            // The read model is the source of truth for viewer-tag state; rebuild
+            // it so the out-of-band reaction is projected (real writes go through
+            // the write API, which refreshes the read model for us).
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
             $_COOKIE = ['identity_hint' => 'guest'];
             $likedForte = $this->render($application, '/forte?selected=root-001');
 
@@ -1818,12 +1822,9 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('Public content and history only', $backupPage);
-            assertStringContains('not a complete instance backup.', $backupPage);
-            assertStringContains('Private messages, browser keys and drafts, operational data', $backupPage);
-            assertStringContains('software, configuration, secrets, and externally hosted media need separate backups', $backupPage);
-            assertStringContains('include supplemental workflow records', $backupPage);
-            assertStringContains('may lag behind the repository', $backupPage);
+            assertStringContains('Public content only; not a full site backup.', $backupPage);
+            assertStringContains('Index generated:', $backupPage);
+            assertStringContains('(may be out of date)', $backupPage);
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
@@ -2074,39 +2075,23 @@ PHP;
         assertStringContains('commit unavailable', $post);
         assertStringContains('Signature:', $post);
         assertStringContains('anonymous unsigned', $post);
-        assertStringContains('zenmemes', $instance);
-        assertStringContains('Backup', $backup);
-        assertStringContains('Backup', $toolsBackup);
-        assertStringContains('Snapshot freshness', $instance);
-        assertStringContains('<table class="backup-downloads" data-role="text-content-downloads">', $instance);
-        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $downloadHref) {
-            assertSame(1, substr_count($instance, 'href="' . $downloadHref));
+        foreach ([$instance, $backup, $toolsBackup] as $page) {
+            assertStringContains('Backup', $page);
+            assertStringContains('Public content only; not a full site backup.', $page);
+            assertStringContains('Index generated:', $page);
+            assertStringNotContains('Snapshot freshness', $page);
+            assertStringContains('Recent included items', $page);
+            assertStringContains('<strong>Instance:</strong>', $page);
+            assertStringContains('<strong>Admins:</strong>', $page);
+            assertStringContains('<strong>Snapshot:</strong>', $page);
+            assertStringNotContains('About these downloads', $page);
+            foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $href) {
+                assertSame(1, substr_count($page, 'href="' . $href));
+            }
         }
-        assertStringContains('Generated at:', $instance);
-        assertStringContains('Recent included items', $instance);
-        assertStringContains('href="/activity/">See all recent activity</a>', $instance);
-        assertStringContains('Repository snapshot:', $instance);
-        assertStringContains('Recent included items', $instance);
-        assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
-        // The tools tab bar must be the first thing in the page body, before any page content.
         assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
-        assertOrdered($toolsBackup, '<h1>Backup</h1>', '>Text content</h2>');
-        assertStringNotContains('>Downloads</h2>', $toolsBackup);
-        assertStringContains('>About these downloads</h2>', $toolsBackup);
-        if (str_contains($toolsBackup, '>Images</h2>')) {
-            assertOrdered($toolsBackup, 'tools-nav', '>Images</h2>');
-            assertOrdered($toolsBackup, '>Text content</h2>', '>Images</h2>');
-            assertOrdered($toolsBackup, '>Images</h2>', '>Recent included items</h2>');
-        }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
-        assertStringNotContains('href="/posts/">', $toolsBackup);
-        assertStringContains('/user/guest', $instance);
-        assertStringContains('/downloads/repository.tar.gz', $instance);
-        assertStringContains('/downloads/repository.zip', $instance);
-        assertStringContains('/downloads/read_model.sqlite3', $instance);
-        assertStringContains('Public content and history only', $instance);
-        assertStringContains('not a complete instance backup.', $instance);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);

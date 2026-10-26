@@ -48,32 +48,23 @@ final class InstancePageController
             'instance.php',
             [
                 'imageBackupAvailable' => $imageBackupAvailable,
-                'imageBackupHref' => '/downloads/images.tar' . $revisionQuery,
+                'imageBackupHref' => '/downloads/images.zip' . $revisionQuery,
                 'siteName' => SiteConfig::displayName(),
                 'admins' => ToolsPageSupport::fetchSeedApprovedUsers($this->routeServices->pdo()),
-                'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
                 'backupSnapshot' => $this->fetchBackupSnapshot(),
+                'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
                 'downloads' => [
                     [
                         'href' => '/downloads/repository.tar.gz' . $revisionQuery,
-                        'label' => 'Content repository (.tar.gz)',
-                        'item' => 'Content repository',
-                        'format' => '.tar.gz',
-                        'description' => 'Tarball of the full repository, including .git history.',
+                        'label' => 'Content (.tar.gz)',
                     ],
                     [
                         'href' => '/downloads/repository.zip' . $revisionQuery,
-                        'label' => 'Content repository (.zip)',
-                        'item' => 'Content repository',
-                        'format' => '.zip',
-                        'description' => 'ZIP archive of the full repository, including .git history.',
+                        'label' => 'Content (.zip)',
                     ],
                     [
                         'href' => '/downloads/read_model.sqlite3',
-                        'label' => 'SQLite index database',
-                        'item' => 'SQLite index database',
-                        'format' => '.sqlite3',
-                        'description' => 'Current read-model database for local indexing and queries.',
+                        'label' => 'SQLite index (.sqlite3)',
                     ],
                 ],
             ],
@@ -89,31 +80,21 @@ final class InstancePageController
             return;
         }
 
-        if ($revision !== null || is_dir((new \ForumRewrite\Images\ImageStore($this->repositoryRoot))->root)) {
-            $this->downloadImageBackup($method, $format, $revision);
-            return;
-        }
-        $download = $this->buildRepositoryArchive($format);
-        $this->routeServices->sendDownload(
-            $download['path'],
-            $download['contentType'],
-            $this->repositoryArchiveDownloadFilename($download['extension']),
-            true
-        );
+        $this->downloadImageBackup($method, $format, $revision);
     }
 
-    public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null): void
+    public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null, string $imageFormat = 'zip'): void
     {
         if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
         try {
-            $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision);
+            $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision, $imageFormat);
         } catch (RuntimeException $error) {
             $this->routeServices->sendText($error->getMessage() . "\n", 409, ['Cache-Control: private, no-store']);
             return;
         }
         register_shutdown_function(static function () use ($download): void { if (is_file($download['path'])) { @unlink($download['path']); } });
         if (!headers_sent()) { header('Cache-Control: private, no-store'); }
-        $type = $kind === 'images' ? 'application/x-tar' : ($kind === 'zip' ? 'application/zip' : 'application/gzip');
+        $type = match ($download['extension']) { 'zip' => 'application/zip', 'tar' => 'application/x-tar', default => 'application/gzip' };
         $this->routeServices->sendDownload($download['path'], $type, SiteConfig::siteName() . '-' . ($kind === 'images' ? 'images' : 'repository') . '-' . $download['revision'] . '.' . $download['extension'], true);
     }
 
@@ -191,64 +172,4 @@ final class InstancePageController
         return $this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for downloads.', 'none');
     }
 
-    private function repositoryArchiveDownloadFilename(string $extension): string
-    {
-        return SiteConfig::siteName()
-            . '-repository-'
-            . gmdate('Y-m-d_H-i-s\Z')
-            . '-'
-            . ReadModelMetadata::repositoryShortCommit($this->repositoryRoot)
-            . '.'
-            . $extension;
-    }
-
-    /**
-     * @return array{path: string, contentType: string, extension: string}
-     */
-    private function buildRepositoryArchive(string $format): array
-    {
-        $archivePath = tempnam(sys_get_temp_dir(), 'forum-repo-');
-        if ($archivePath === false) {
-            throw new RuntimeException('Unable to create temporary archive path.');
-        }
-
-        @unlink($archivePath);
-
-        $parent = dirname($this->repositoryRoot);
-        $base = basename($this->repositoryRoot);
-
-        if ($format === 'tar.gz') {
-            $archiveTarget = $archivePath . '.tar.gz';
-            $command = sprintf(
-                'tar -czf %s -C %s %s 2>&1',
-                escapeshellarg($archiveTarget),
-                escapeshellarg($parent),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/gzip';
-        } elseif ($format === 'zip') {
-            $archiveTarget = $archivePath . '.zip';
-            $command = sprintf(
-                'cd %s && zip -qr %s %s 2>&1',
-                escapeshellarg($parent),
-                escapeshellarg($archiveTarget),
-                escapeshellarg($base)
-            );
-            $contentType = 'application/zip';
-        } else {
-            throw new RuntimeException('Unsupported repository archive format.');
-        }
-
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0 || !is_file($archiveTarget)) {
-            @unlink($archiveTarget);
-            throw new RuntimeException('Unable to archive repository download.');
-        }
-
-        return [
-            'path' => $archiveTarget,
-            'contentType' => $contentType,
-            'extension' => $format,
-        ];
-    }
 }

@@ -127,6 +127,16 @@ final class ReadModelSchema
                 file_count INTEGER NOT NULL
             )',
             'CREATE INDEX commits_committed_at_idx ON commits (committed_at DESC, id DESC)',
+            'CREATE INDEX posts_thread_sequence_idx ON posts (thread_id, sequence_number)',
+            'CREATE INDEX threads_last_activity_idx ON threads (last_activity_at DESC, root_post_id DESC)',
+            'CREATE TABLE viewer_tags (
+                record_family TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                author_identity_id TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                PRIMARY KEY (record_family, target_id, author_identity_id, tag)
+            )',
+            'CREATE INDEX viewer_tags_identity_idx ON viewer_tags (author_identity_id, record_family, tag, target_id)',
         ];
     }
 

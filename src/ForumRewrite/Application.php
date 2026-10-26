@@ -706,8 +706,8 @@ final class Application
             return;
         }
 
-        if ($path === '/downloads/images.tar') {
-            $this->instancePageController()->downloadImageBackup($method, 'images', isset($query['revision']) ? (string) $query['revision'] : null);
+        if (in_array($path, ['/downloads/images.zip', '/downloads/images.tar'], true)) {
+            $this->instancePageController()->downloadImageBackup($method, 'images', isset($query['revision']) ? (string) $query['revision'] : null, $path === '/downloads/images.tar' ? 'tar' : 'zip');
             return;
         }
 
@@ -1150,6 +1150,7 @@ final class Application
                 $this->repositoryRoot,
                 $this->resolveViewerProfileFromIdentityHint(...),
                 QdbVoteCaptionCatalog::forReadModel($this->databasePath),
+                $this->routeServices()->pdo(),
             ),
             $this->routeServices(),
             $this->threadAndPostPageController(),
@@ -2059,7 +2060,7 @@ final class Application
             '/tools/sqlite', '/tools/sqlite/',
             '/offline', '/offline/', '/offline/reader', '/offline/reader/',
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
-            '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
+            '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
