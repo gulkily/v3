@@ -239,7 +239,33 @@ try:
     assert not list(cache_pages.parent.glob('.render-*'))
     cli('disable')
     assert request('/')[0]==200
-    print(json.dumps({'status':'passed','checks':['Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
+    # Request-scoped Apache configuration must reach the isolated CLI renderer.
+    # Apache still inherits the original non-QDB process environment.
+    with (public/'.htaccess').open('a') as rules:
+        rules.write('\nSetEnv FORUM_SITE_ID qdb\n')
+    env['FORUM_SITE_ID']='qdb'
+    def assert_qdb_home(body):
+        assert b'<title>Welcome</title>' in body, body[:500]
+        assert b'data-default-theme="qdb"' in body
+        assert b'/assets/theme-qdb.' in body
+        assert b'href="/latest' in body
+    code,_,normal_home=request('/')
+    assert code==200
+    assert_qdb_home(normal_home)
+    assert json.loads(cli('enable'))['profile']=='qdb'
+    code,_,cold_home=request('/')
+    assert code==200
+    assert_qdb_home(cold_home)
+    assert b'v3-generated-at' in cold_home
+    before=count()
+    code,headers,warm_home=request('/')
+    assert code==200 and headers.get('X-V3-High-Traffic')=='hit'
+    assert warm_home==cold_home and count()==before
+    assert_qdb_home(warm_home)
+    assert json.loads(cli('refresh','/'))['refreshed']=='/'
+    assert_qdb_home(request('/')[2])
+    cli('disable')
+    print(json.dumps({'status':'passed','checks':['Apache request-scoped QDB profile survives cold/warm/CLI rendering','Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
 except Exception:
     print('Fixture:',root)
     if (root/'error.log').exists():print((root/'error.log').read_text()[-5000:])
