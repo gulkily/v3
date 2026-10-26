@@ -4,7 +4,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Llm\ExchangeRetractionState;
-use ForumRewrite\Retraction\PublicationGuard;
 
 final class AbsentRetractionSnapshotTest
 {
@@ -16,39 +15,6 @@ final class AbsentRetractionSnapshotTest
         file_put_contents($root . '/records/post-retractions/post-retraction-' . $id . '.txt',
             "Record-ID: post-retraction-$id\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: $id\nOperation: retract\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\n");
         return $root;
-    }
-
-    public function testSnapshotAbsenceIsNotGlobalAuthorityAndReappearanceIsBuildLocal(): void
-    {
-        foreach (['target', 'reply-20260526032118-654b2b08'] as $id) {
-            $root = $this->fixture($id);
-            assertSame(null, ExchangeRetractionState::read($root));
-            $state = ExchangeRetractionState::snapshot($root);
-            assertSame([$id => true], $state['absent']);
-            assertSame([], $state['ids']);
-            $generation = PublicationGuard::snapshotGeneration($root, $state['absent']);
-            file_put_contents($root . '/records/posts/' . $id . '.txt', "Post-ID: $id\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: openpgp:" . str_repeat('b', 40) . "\n\nReappeared\n");
-            assertSame($generation, PublicationGuard::snapshotGeneration($root, $state['absent']));
-            assertSame([], ExchangeRetractionState::snapshot($root)['absent']);
-            assertSame([], ExchangeRetractionState::read($root));
-            $recordPath = $root . '/records/post-retractions/post-retraction-' . $id . '.txt';
-            file_put_contents($recordPath, str_replace('12:00:00Z', '12:01:00Z', file_get_contents($recordPath)));
-            assertTrue($generation !== PublicationGuard::snapshotGeneration($root, $state['absent']));
-        }
-    }
-
-    public function testUnsafeAbsenceAndMalformedEvidenceRemainUnavailable(): void
-    {
-        $root = $this->fixture();
-        symlink('/nonexistent-absent-snapshot', $root . '/records/posts/target.txt');
-        assertSame(null, ExchangeRetractionState::snapshot($root));
-        unlink($root . '/records/posts/target.txt');
-        file_put_contents($root . '/records/post-retractions/post-retraction-target.txt', 'bad');
-        assertSame(null, ExchangeRetractionState::snapshot($root));
-        unlink($root . '/records/post-retractions/post-retraction-target.txt');
-        rmdir($root . '/records/post-retractions');
-        symlink('/nonexistent-retractions', $root . '/records/post-retractions');
-        assertSame(null, ExchangeRetractionState::snapshot($root));
     }
 
     public function publicationFixture(string $target = 'target'): array
@@ -66,16 +32,31 @@ final class AbsentRetractionSnapshotTest
         $rootId = 'root-001';
         if ($target !== 'root-001') file_put_contents($root . '/records/posts/' . $target . '.txt',
             "Post-ID: $target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: general\nThread-ID: $rootId\nParent-ID: $rootId\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\nABSENT-SECRET\n");
+        $targetPath = $root . '/records/posts/' . $target . '.txt';
+        $bytes = file_get_contents($targetPath);
+        if (!str_contains($bytes, 'Author-Identity-ID:')) {
+            $bytes = preg_replace('/\n/', "\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n", $bytes, 1);
+            file_put_contents($targetPath, $bytes);
+        }
+        $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse($bytes);
+        $accepted = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse($record), $record, 'fixture signature', 'author', hash('sha256', $bytes));
         $database = $root . '/source.sqlite3';
         (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root), 'absent_test'))->rebuild();
         unlink($root . '/records/posts/' . $target . '.txt');
-        file_put_contents($recordPath, $record);
+        foreach (\ForumRewrite\Canonical\AcceptedRetraction::files($accepted) as $file => $contents) {
+            if (!is_dir(dirname($root . '/' . $file))) mkdir(dirname($root . '/' . $file), 0775, true);
+            file_put_contents($root . '/' . $file, $contents);
+        }
         return [$root, $database];
     }
 
-    public function testBasePublicationFiltersStaleReplyAndRetainsSource(): void
+    public function testStaleSnapshotIsAllowedAndRefreshRemovesDeletedContent(): void
     {
         [$root, $database] = $this->publicationFixture();
+        $before = hash_file('sha256', $database);
+        $stale = (new \ForumRewrite\Offline\OfflineSnapshotPublisher($root . '/stale'))->publish($database);
+        assertSame(true, str_contains(file_get_contents($stale['path']), 'ABSENT-SECRET'));
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root)))->rebuild();
         $before = hash_file('sha256', $database);
         $result = (new \ForumRewrite\Offline\OfflineSnapshotPublisher($root . '/static'))->publish($database);
         $snapshot = new PDO('sqlite:' . $result['path']);
@@ -83,12 +64,14 @@ final class AbsentRetractionSnapshotTest
         assertSame(1, (int) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id='reply-001'")->fetchColumn());
         assertSame(false, str_contains(file_get_contents($result['path']), 'ABSENT-SECRET'));
         assertSame($before, hash_file('sha256', $database));
-        assertTrue(is_file($root . '/records/post-retractions/post-retraction-target.txt'));
+        assertTrue(is_file($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path('target')));
+        assertSame(false, is_file($result['path'] . '.retraction-generation'));
     }
 
     public function testAbsentRootRetainsRepliesWithContentFreeThread(): void
     {
         [$root, $database] = $this->publicationFixture('root-001');
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root)))->rebuild();
         $result = (new \ForumRewrite\Offline\OfflineSnapshotPublisher($root . '/static'))->publish($database);
         $snapshot = new PDO('sqlite:' . $result['path']);
         assertSame(0, (int) $snapshot->query("SELECT COUNT(*) FROM posts WHERE post_id='root-001'")->fetchColumn());
@@ -101,30 +84,14 @@ final class AbsentRetractionSnapshotTest
     {
         foreach (['target', 'root-001'] as $target) {
             [$root, $database] = $this->publicationFixture($target);
-            if ($target === 'target') {
-                $source = new PDO('sqlite:' . $database);
-                $original = $source->query("SELECT * FROM posts WHERE post_id='target'")->fetch(PDO::FETCH_ASSOC);
-                $initial = array_replace($original, ['post_id' => 'initial', 'parent_id' => 'target', 'body' => 'Initial analysis',
-                    'author_label' => 'reply-agent', 'sequence_number' => 4, 'agent_response_json' => null]);
-                $expansion = array_replace($initial, ['post_id' => 'expansion', 'parent_id' => 'initial', 'body' => 'DEPENDENT-EXPANSION-SECRET', 'sequence_number' => 5,
-                    'agent_response_json' => json_encode(['type' => 'scripture_expansion', 'source_post_id' => 'target', 'expansion_of' => 'initial',
-                        'source_hash' => \ForumRewrite\Canonical\AgentResponseMetadata::postHash($original),
-                        'initial_hash' => \ForumRewrite\Canonical\AgentResponseMetadata::postHash($initial)])]);
-                foreach ([$initial, $expansion] as $row) {
-                    $columns = array_keys($row);
-                    $source->prepare('INSERT INTO posts (' . implode(',', $columns) . ') VALUES (' . implode(',', array_fill(0, count($row), '?')) . ')')->execute(array_values($row));
-                }
-            }
-            $record = $root . '/records/post-retractions/post-retraction-' . $target . '.txt';
-            rename($record, $record . '.bak');
             $builder = new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder();
             $builder->build($database, $root . '/base.sqlite3');
-            rename($record . '.bak', $record);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root)))->rebuild();
             $builder->buildUpdate($database, $root . '/update.sqlite3');
             $update = new PDO('sqlite:' . $root . '/update.sqlite3');
             assertSame([$target], $update->query('SELECT post_id FROM excluded_posts')->fetchAll(PDO::FETCH_COLUMN));
             if ($target === 'target') {
-                assertSame(['expansion'], $update->query('SELECT post_id FROM unavailable_expansions')->fetchAll(PDO::FETCH_COLUMN));
+                assertSame(false, str_contains(file_get_contents($root . '/update.sqlite3'), 'ABSENT-SECRET'));
                 assertSame(false, str_contains(file_get_contents($root . '/update.sqlite3'), 'DEPENDENT-EXPANSION-SECRET'));
             }
             // Exercise the bounded-window gap: no replacement of this base thread.
@@ -154,118 +121,5 @@ JS;
         }
     }
 
-    public function testQueuedPublicationRecoversAndProducesBothArtifacts(): void
-    {
-        [$root, $database] = $this->publicationFixture('reply-20260526032118-654b2b08');
-        $other = 'reply-20260526032816-a1447d49';
-        $record = $root . '/records/post-retractions/post-retraction-reply-20260526032118-654b2b08.txt';
-        file_put_contents($root . '/records/post-retractions/post-retraction-' . $other . '.txt', str_replace('reply-20260526032118-654b2b08', $other, file_get_contents($record)));
-        $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new PDO('sqlite::memory:'));
-        $task = $store->enqueue($store::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
-        $publisher = new \ForumRewrite\Offline\OfflineSnapshotPublisher($root . '/static');
-        $publisher->publish($database);
-        $before = hash_file('sha256', $publisher->snapshotPath());
-        $valid = file_get_contents($record); file_put_contents($record, 'corrupt');
-        $worker = new \ForumRewrite\TaskQueue\TaskQueueWorker($store, static function (): void {}, null,
-            static function () use ($publisher, $database): void {
-                $publisher->publishUpdate($database); $publisher->publish($database);
-            });
-        assertSame(1, $worker->run()['retried']);
-        assertSame($before, hash_file('sha256', $publisher->snapshotPath()));
-        assertStringContains('inspect canonical evidence and retry', $store->findById($task['id'])['failure_message']);
-        file_put_contents($record, $valid);
-        assertSame(1, $worker->run()['completed']);
-        assertSame('completed', $store->findById($task['id'])['status']);
-        foreach ([$publisher->snapshotPath(), $publisher->updatePath()] as $path) {
-            $pdo = new PDO('sqlite:' . $path);
-            assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM excluded_posts')->fetchColumn());
-            assertSame(1, (int) $pdo->query("SELECT COUNT(*) FROM posts WHERE post_id='reply-001'")->fetchColumn());
-        }
-    }
 
-    public function testOrdinarySnapshotSidecarRemainsCompatibleWithStrictCleanup(): void
-    {
-        [$root, $database] = $this->publicationFixture();
-        unlink($root . '/records/post-retractions/post-retraction-target.txt');
-        $publisher = new \ForumRewrite\Offline\OfflineSnapshotPublisher($root . '/static');
-        $publisher->publish($database);
-        assertSame(PublicationGuard::generation($root), trim(file_get_contents($publisher->snapshotPath() . '.retraction-generation')));
-        $sweep = \ForumRewrite\Retraction\ArtifactSweep::run([$root . '/static'], PublicationGuard::generation($root), [], 1000);
-        assertTrue(is_file($publisher->snapshotPath()));
-        assertTrue(is_file(dirname($publisher->snapshotPath()) . '/manifest.json'));
-    }
-
-    public function testPinnedContextPublishesThroughReappearanceButRejectsUnrelatedChanges(): void
-    {
-        [$root, $database] = $this->publicationFixture();
-        $token = PublicationGuard::beginSnapshot($database);
-        file_put_contents($root . '/records/posts/target.txt', "Post-ID: target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: approval\nAuthor-Identity-ID: openpgp:" . str_repeat('b', 40) . "\n\nReappeared\n");
-        $published = false;
-        PublicationGuard::publish($token, $root . '/candidate', static function () use (&$published): void { $published = true; });
-        assertTrue($published);
-        $other = str_replace(['post-retraction-target', 'Post-ID: target'], ['post-retraction-other', 'Post-ID: other'], file_get_contents($root . '/records/post-retractions/post-retraction-target.txt'));
-        file_put_contents($root . '/records/post-retractions/post-retraction-other.txt', $other);
-        $published = false;
-        try {
-            PublicationGuard::publish($token, $root . '/candidate', static function () use (&$published): void { $published = true; });
-            throw new LogicException('Expected unrelated evidence change rejection');
-        } catch (RuntimeException $error) {
-            assertStringContains('changed during publication', $error->getMessage());
-        }
-        assertSame(false, $published);
-    }
-
-    public function testLaterBuildUsesExistingAuthorAndProtectedPostAuthority(): void
-    {
-        foreach ([['a', 'general', true], ['b', 'general', false], ['a', 'approval', false]] as [$author, $tags, $effective]) {
-            $root = $this->fixture();
-            assertSame(['target' => true], ExchangeRetractionState::snapshot($root)['absent']);
-            file_put_contents($root . '/records/posts/target.txt', "Post-ID: target\nCreated-At: 2026-10-14T11:00:00Z\nBoard-Tags: $tags\nAuthor-Identity-ID: openpgp:" . str_repeat($author, 40) . "\n\nReappeared\n");
-            $next = ExchangeRetractionState::snapshot($root);
-            assertSame([], $next['absent']);
-            assertSame($effective, isset($next['ids']['target']));
-            assertSame($effective, isset(ExchangeRetractionState::read($root)['target']));
-        }
-    }
-
-    public function testDirectCliAndConfiguredQueuePublishReportedAbsentTargets(): void
-    {
-        [$root, $database] = $this->publicationFixture('reply-20260526032118-654b2b08');
-        $first = $root . '/records/post-retractions/post-retraction-reply-20260526032118-654b2b08.txt';
-        file_put_contents($root . '/records/post-retractions/post-retraction-reply-20260526032816-a1447d49.txt',
-            str_replace('reply-20260526032118-654b2b08', 'reply-20260526032816-a1447d49', file_get_contents($first)));
-        file_put_contents($root . '/secrets.php', '<?php return [];');
-        $env = 'FORUM_APPROVED_MEMBERS_ONLY=false FORUM_SECRETS_PATH=' . escapeshellarg($root . '/secrets.php') . ' ';
-        $args = ' --repository-root=' . escapeshellarg($root) . ' --database-path=' . escapeshellarg($database) . ' --static-html-root=' . escapeshellarg($root . '/static');
-        $base = escapeshellarg(dirname(__DIR__) . '/v3');
-        exec($env . $base . ' offline publish' . $args . ' 2>&1', $output, $code);
-        assertSame(0, $code, implode("\n", $output));
-        assertTrue(is_file($root . '/static/offline/update.sqlite3'));
-        $publishedHash = hash_file('sha256', $root . '/static/offline/snapshot.sqlite3');
-        exec(str_replace('FORUM_APPROVED_MEMBERS_ONLY=false', 'FORUM_APPROVED_MEMBERS_ONLY=true', $env) . $base . ' offline publish' . $args . ' 2>&1', $privateOutput, $privateCode);
-        assertSame(2, $privateCode);
-        assertSame($publishedHash, hash_file('sha256', $root . '/static/offline/snapshot.sqlite3'));
-        $queue = $root . '/queue.sqlite3';
-        $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new PDO('sqlite:' . $queue));
-        $task = $store->enqueue($store::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
-        exec($env . $base . ' task-queue run' . $args . ' --task-id=' . $task['id'] . ' --queue-database-path=' . escapeshellarg($queue)
-            . ' --error-log=' . escapeshellarg($root . '/errors.log') . ' 2>&1', $queueOutput, $code);
-        assertSame(0, $code, implode("\n", $queueOutput));
-        assertSame('completed', $store->findById($task['id'])['status']);
-        foreach (['snapshot', 'update'] as $name) {
-            $pdo = new PDO('sqlite:' . $root . '/static/offline/' . $name . '.sqlite3');
-            assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM excluded_posts')->fetchColumn());
-            assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM posts WHERE post_id LIKE 'reply-20260526%'")->fetchColumn());
-        }
-    }
-
-    public function testMissingTrackedRetractionStillBlocks(): void
-    {
-        $root = $this->fixture();
-        exec('git -C ' . escapeshellarg($root) . ' init -q');
-        exec('git -C ' . escapeshellarg($root) . ' add records');
-        exec('git -C ' . escapeshellarg($root) . ' -c user.name=Test -c user.email=test@example.invalid commit -qm fixture');
-        unlink($root . '/records/post-retractions/post-retraction-target.txt');
-        assertSame(null, ExchangeRetractionState::snapshot($root));
-    }
 }

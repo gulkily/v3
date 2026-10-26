@@ -152,8 +152,10 @@ final class ImportInstanceCommandTest
         $w->git($source);
         [$code, $output] = $w->command([...$command, '--dry-run']);
         assertSame(1, $code, $output);
-        if (!str_contains($output, 'Source archive returned HTTP 409')) { throw new RuntimeException($output); }
-        assertStringContains('records/posts/broken.txt:', $output);
+        if (!str_contains($output, 'Source archive returned HTTP 500')) { throw new RuntimeException($output); }
+        assertStringNotContains('records/posts/broken.txt:', $output);
+        assertStringContains('records/posts/broken.txt:', file_get_contents($w->root . '/source.log'));
+        assertStringContains('source integrity', $output);
         assertStringNotContains('--resume', $output);
         assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
         unlink($source . '/records/posts/broken.txt');
@@ -161,7 +163,7 @@ final class ImportInstanceCommandTest
         unlink($store->resolve($ref));
         [$code, $output] = $w->command([...$command, '--dry-run']);
         assertSame(1, $code, $output);
-        if (!str_contains($output, 'Source archive returned HTTP 409')) { throw new RuntimeException($output); }
+        if (!str_contains($output, 'Source archive returned HTTP 500')) { throw new RuntimeException($output); }
         assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
     }
 

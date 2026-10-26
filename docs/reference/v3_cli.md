@@ -478,12 +478,12 @@ It refuses recovery while the lock or an open file holder is detected.
 ## Sweep retracted local content
 
 ```
-./v3 retraction-sweep preview|run|status [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
+./v3 retraction-sweep preview|run|status|migrate [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
 ```
 
 Preview is non-mutating. Run executes one bounded batch immediately; repeat while
 `remaining` is true. The normal queue worker also discovers and continues sweeps.
-See [coverage, exclusions, progress and recovery](retraction_sweep.md).
+See [coverage, exclusions, progress and recovery](retraction_sweep.md). `migrate` handles legacy source-removal receipts only; previous retractions are not migrated.
 
 ## Manage the background task queue
 

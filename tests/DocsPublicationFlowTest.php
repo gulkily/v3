@@ -25,7 +25,7 @@ final class DocsPublicationFlowTest
                 $legacy = $static . '/releases/legacy';
                 (new \ForumRewrite\Docs\DocsArtifactBuilder($project, $target, $legacy, str_repeat('a', 64)))->build();
                 $w->put($legacy . '/index.html', 'previous forum');
-                $w->put($legacy . '.retraction-generation', \ForumRewrite\Retraction\PublicationGuard::generation($target));
+                $w->put($legacy . '.retraction-generation', 'legacy-stamp');
                 $publisher->activate($legacy);
             }
             $locator = new DocsReleaseLocator($static);

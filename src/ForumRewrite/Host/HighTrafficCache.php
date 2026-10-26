@@ -82,7 +82,7 @@ final class HighTrafficCache
             }
             if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
             $this->progress('Checking active mode under publication lock');
-            $token = \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, fn () => $this->state());
+            $token = \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, fn () => $this->state());
             if (!$this->enabled()) return $this->refuseGeneration('High-traffic mode is inactive or its profile/public-root link does not match; run ./v3 high-traffic status.');
             $this->progress('Acquiring generator slot (' . $this->limits['generators'] . ' configured)');
             for ($i=0;$i<$this->limits['generators'];$i++) {
@@ -97,9 +97,9 @@ final class HighTrafficCache
                 foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root . '/pages',\FilesystemIterator::SKIP_DOTS)) as $existing) if ($existing->isFile() && $existing->getExtension()==='html') $pageCount++;
                 if ($pageCount >= $this->limits['pages']) return $this->refuseGeneration('High-traffic cache page limit reached (' . $pageCount . '/' . $this->limits['pages'] . '); review cache usage and FORUM_HIGH_TRAFFIC_PAGES.');
             }
-            $this->progress('Validating retraction evidence and publication state (no full-record scan)');
+            $this->progress('Checking publication inputs (no full-record scan)');
             $context = HighTrafficPublication::captureForRender($this->repositoryRoot);
-            $this->progress('Validated ' . count($context['state']['absent']) . ' absent targets; ' . ($context['state']['absent'] === [] ? 'using live read model' : 'using prepared shared read model'));
+            $this->progress('Using live read model');
             $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             $renderWorkspace=$this->root . '/.render-' . bin2hex(random_bytes(8));
             $renderAssets=$renderWorkspace . '/assets';
@@ -107,14 +107,8 @@ final class HighTrafficCache
             $html = str_replace('</head>', '<meta name="v3-refresh-after" content="' . $this->limits['fresh_seconds'] . '"><meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
             if (strlen($html) > $this->limits['page_bytes']) throw new RuntimeException('Generated HTML exceeds page size limit.');
             $this->progress('Validating candidate for publication (' . strlen($html) . ' HTML bytes)');
-            \ForumRewrite\Retraction\PublicationGuard::withLock($this->repositoryRoot, function () use ($route,$html,$token,$context,$meta,$renderAssets,$renderWorkspace): void {
+            \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, function () use ($route,$html,$token,$context,$meta,$renderAssets,$renderWorkspace): void {
             HighTrafficPublication::validate($context);
-            if ($context['state']['absent'] === []) {
-                \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath,$this->repositoryRoot);
-            } else {
-                // Validate the excluded candidate, not the stale live model it replaces for this build.
-                \ForumRewrite\Retraction\PublicationGuard::beginSnapshot($renderWorkspace . '/model/read.sqlite3');
-            }
             \ForumRewrite\Scoring\FastmodMetaPublication::publish($meta,$this->path($route),function () use ($route,$html,$token,$renderAssets): void {
             $this->locked(function () use ($route,$html,$token,$renderAssets): void {
                 if (!$this->enabled() || $this->state() !== $token) throw new RuntimeException('Mode changed during generation.');
@@ -154,7 +148,7 @@ final class HighTrafficCache
     }
     public function render(string $route, string $assets, ?array $context = null): string
     {
-        $arguments = [(getenv('FORUM_PHP_CLI') ?: PHP_BINDIR . '/php'), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route];
+        $arguments = [(getenv('FORUM_PHP_CLI') ?: PHP_BINDIR . '/php'), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route, \ForumRewrite\SiteProfileRegistry::active()['name']];
         if ($context !== null) $arguments[] = HighTrafficPublication::identity($context);
         $this->progress('Starting isolated renderer (time limit ' . ($this->limits['render_seconds'] ?? 30) . ' seconds; HTML limit ' . $this->limits['page_bytes'] . ' bytes)');
         $proc=proc_open($arguments, [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);

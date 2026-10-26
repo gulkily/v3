@@ -1548,11 +1548,10 @@ PHP;
         assertTrue(is_file($root . '/records/posts/reply-001.txt'));
     }
 
-    public function testSourceRemovalCommitFailureResumesAndRejectsStalePublication(): void
+    public function testSourceRemovalCommitFailureResumesWithoutPublicationGate(): void
     {
         [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
         (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
-        $old = \ForumRewrite\Retraction\PublicationGuard::begin($database, $root);
         file_put_contents($root . '/.git/hooks/pre-commit', "#!/bin/sh\nexit 1\n");
         chmod($root . '/.git/hooks/pre-commit', 0755);
         $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts, '--json']));
@@ -1563,11 +1562,9 @@ PHP;
         exec($command . ' 2>&1', $retryOutput, $retryStatus);
         assertSame(0, $retryStatus);
         assertSame(false, is_file($root . '/.git/source-label-removal-root-001.json'));
-        $staleRejected = false;
-        try { \ForumRewrite\Retraction\PublicationGuard::publish($old, $artifacts . '/stale.html', static function (): void {}); }
-        catch (RuntimeException) { $staleRejected = true; }
-        assertTrue($staleRejected);
-        assertTrue(\ForumRewrite\Retraction\PublicationGuard::begin($database, $root) !== null);
+        $builder = new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $database, $artifacts);
+        assertStringContains('</head>', $builder->renderHighTrafficRoute('/'));
+
     }
 
     public function testZenMemesDeletedPinRepliesRepairWithoutRemovingConversation(): void

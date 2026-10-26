@@ -238,9 +238,6 @@ resolve reported local divergence before retrying. See the
 
 ## Retraction sweep operations
 
-See [local cleanup coverage and recovery](../reference/retraction_sweep.md).
-Deploy web/worker changes together and keep the existing single queue cron entry.
-Preview then run immediately or enqueue a sweep; inspect status and retry failures
-without signing another retraction. Canonical/history and backup removal are outside
-this operation. Pause/drain writers and workers before rollback; preserve signed
-evidence and avoid restoring diagnostic payloads.
+See [local cleanup coverage and recovery](../reference/retraction_sweep.md) and [legacy migration](../reference/author_post_retraction.md#upgrade-and-legacy-migration).
+
+Acceptance deletes current content and commits one retained record. Run `retraction-sweep migrate` for old suppression-only records, rebuild, then preview/run cleanup with the site's normal paths. Unresolved records may remain visible; they do not block unrelated publication. The task queue owns retries/status; no sweep progress ledger is maintained. Cleanup can expire clean generated pages too, so keep normal static/offline/high-traffic refresh jobs enabled. Unknown-provenance old LLM payloads are conservatively scrubbed. History purge remains outstanding; rollback must retain readers compatible with the new records.

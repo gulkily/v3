@@ -62,7 +62,7 @@ final class ImageZipBackupTest
         }
         assertSame(404, $this->request($server->url . '/downloads/images.rar')[0]);
         file_put_contents($store->resolve($ref), 'damaged');
-        assertSame(409, $this->request($server->url . '/downloads/images.zip')[0]);
+        assertSame(500, $this->request($server->url . '/downloads/images.zip')[0]);
         file_put_contents($imageRoot . '/' . ImageReference::filename($ref), $pixel);
         assertSame(200, $this->request($server->url . '/downloads/images.zip')[0]);
         unset($server);

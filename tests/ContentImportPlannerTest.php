@@ -71,10 +71,10 @@ final class ContentImportPlannerTest
         $w->put($source . '/records/post-retractions/post-retraction-absent.txt', "Record-ID: post-retraction-absent\nCreated-At: 2026-10-13T12:00:00Z\nPost-ID: absent\nOperation: retract\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n");
         $plan = (new ContentImportPlanner())->plan($source, $target);
         assertSame('invalid', $plan[$record]['state']);
-        assertStringContains('Invalid retraction signature', $plan[$record]['reason']);
+        assertStringContains('local acceptance evidence', $plan[$record]['reason']);
         assertSame('invalid', $plan[$record . '.asc']['state']);
         assertSame('invalid', $plan['records/post-retractions/post-retraction-absent.txt']['state']);
-        assertStringContains('verified actor signature', $plan['records/post-retractions/post-retraction-absent.txt']['reason']);
+        assertStringContains('local acceptance evidence', $plan['records/post-retractions/post-retraction-absent.txt']['reason']);
     }
 
     public function testConflictsRejectDependentRecordsAndSignatures(): void

@@ -8,12 +8,19 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/RegistrationBenchmarkTest.php',
+
+    __DIR__ . '/ArchiveExportTest.php',
+    __DIR__ . '/RetractionMaintenanceTest.php',
+    __DIR__ . '/AcceptedRetractionTest.php',
+    __DIR__ . '/RetractionReceiptTest.php',
+    __DIR__ . '/RetractionTransactionTest.php',
     __DIR__ . '/DocsPublicationTest.php',
     __DIR__ . '/IndependentDocsPublicationTest.php',
     __DIR__ . '/LegacyDocsMigrationTest.php',
     __DIR__ . '/DocsPublicationFlowTest.php',
     __DIR__ . '/HighTrafficPublicationTest.php',
     __DIR__ . '/AbsentRetractionSnapshotTest.php',
+    __DIR__ . '/AssetFingerprintTest.php',
     __DIR__ . "/HighTrafficTest.php",
     __DIR__ . "/AccessHistoryPresenterTest.php",
     __DIR__ . "/FastmodTaggingFlagTest.php",

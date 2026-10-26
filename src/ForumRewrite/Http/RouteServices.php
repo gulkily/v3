@@ -653,6 +653,18 @@ final class RouteServices
         );
     }
 
+    /** Streams an already admitted, caller-owned file without reopening or deleting its path. */
+    public function sendDownloadStream($stream, string $contentType, string $filename): void
+    {
+        $stat = fstat($stream);
+        if ($stat === false) throw new RuntimeException('Unable to determine download size.');
+        http_response_code(200);
+        header('Content-Type: ' . $contentType);
+        header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
+        header('Content-Length: ' . (string) $stat['size']);
+        fpassthru($stream);
+    }
+
     public function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void
     {
         $size = filesize($path);

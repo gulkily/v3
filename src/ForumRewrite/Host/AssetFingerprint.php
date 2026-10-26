@@ -8,6 +8,16 @@ final class AssetFingerprint
 {
     private const HASH_LENGTH = 12;
 
+    /**
+     * Per-request memo of asset hashes keyed by absolute path. Each request runs
+     * in its own PHP process, so this static cache is request-scoped (mirroring
+     * ReactionSignature / ViewerTagLookup). resetHashCache() is for tests and any
+     * long-lived process.
+     *
+     * @var array<string, ?string>
+     */
+    private static array $hashCache = [];
+
     public static function fingerprintedPath(string $publicRoot, string $path): string
     {
         if (!str_starts_with($path, '/assets/')) {
@@ -175,12 +185,19 @@ final class AssetFingerprint
 
     private static function assetHash(string $path): ?string
     {
-        $hash = hash_file('sha256', $path);
-        if ($hash === false) {
-            return null;
+        if (array_key_exists($path, self::$hashCache)) {
+            return self::$hashCache[$path];
         }
 
-        return substr($hash, 0, self::HASH_LENGTH);
+        $hash = hash_file('sha256', $path);
+
+        return self::$hashCache[$path] = $hash === false ? null : substr($hash, 0, self::HASH_LENGTH);
+    }
+
+    /** Clear the per-request asset-hash memo (tests / long-lived processes). */
+    public static function resetHashCache(): void
+    {
+        self::$hashCache = [];
     }
 
     private static function isFingerprintedAssetFilename(string $filename): bool
