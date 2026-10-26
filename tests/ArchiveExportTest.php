@@ -41,6 +41,40 @@ final class ArchiveExportTest
         // The image set (by content-addressed filename) still affects identity.
         assertTrue($capture(['abc123.png' => ['sha256' => 'abc123', 'bytes' => 10]]) !== $original);
     }
+    public function testLargeContentRepositoryReusesWarmArchiveWithCheapIdentity(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source');
+        // Many records plus a large committed file: the old identity hashed all of
+        // this per request (the 120s fatal); the cheap identity must not.
+        for ($i = 0; $i < 50; $i++) {
+            $w->put($root . "/records/posts/post-{$i}.txt", $w->post("post-{$i}", body: str_repeat('x', 2048)));
+        }
+        $w->put($root . '/records/large.bin', str_repeat('L', 4 * 1024 * 1024));
+        $w->git($root);
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+
+        // Miss builds; a second request on the same committed state reuses the
+        // prebuilt archive without rebuilding — the hit path computes identity
+        // cheaply (git HEAD + porcelain), not by hashing the 4 MiB of content.
+        $first = $backup->export('tar.gz');
+        $second = $backup->export('tar.gz');
+        assertSame(false, $first['reused']);
+        assertSame(true, $second['reused']);
+        assertSame($first['path'], $second['path']);
+        assertSame(stream_get_contents($first['stream']), stream_get_contents($second['stream']));
+        fclose($first['stream']);
+        fclose($second['stream']);
+
+        // A new commit changes HEAD -> a distinct identity -> a fresh build.
+        $w->put($root . '/records/posts/post-new.txt', $w->post('post-new'));
+        $w->git($root);
+        $afterCommit = $backup->export('tar.gz');
+        assertSame(false, $afterCommit['reused']);
+        assertTrue($afterCommit['path'] !== $first['path']);
+        fclose($afterCommit['stream']);
+    }
+
     public function testWarmArchivesReuseAndCorruptionRebuildsWithoutDeletingReaders(): void
     {
         $w = new ImportTestWorkspace();
