@@ -36,3 +36,14 @@ Dependencies: Zero additions or updates authorized/proposed; use existing PHP/sy
 - Notes: S2/v1 unchanged. Stage 1 commit 7c4a5e91. Direct export callers own/close the additional stream; PHP also closes it on request exit. Cleanup and storage bounds follow in S5; no canonical/dependency/schema changes.
 
 *— Codex · 2026-10-26 UTC*
+
+## Stage 3 - Coordinated contention
+
+**Original estimate: 0.20**
+**Retrospective stage work: 0.20**
+
+- Changes: One five-second lock deadline across export coordination/writer acquisition, cache-hit fast path before global build lock and recheck afterward; writer lock never held while waiting for build lock. Other ExecutionLock callers unchanged.
+- Verification: Focused 13-case run had 12 passes and one test-harness failure (parent lock descriptor inherited by child processes); explicit parent unlock corrected the fixture. ArchiveExportTest then passed 4/4, including concurrent two-tar/one-ZIP requests, exactly one compatible build, warm hit while build lock held, shared deadline and recovery after release.
+- Notes: S3/v1 unchanged; Stage 2 commit 84f14eee. Deadline bounds lock waiting, not compression runtime; timed-out callers receive typed busy errors. No new config/dependencies.
+
+*— Codex · 2026-10-26 UTC*

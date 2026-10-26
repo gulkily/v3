@@ -3,7 +3,6 @@
 declare(strict_types=1);
 namespace ForumRewrite\Images;
 
-use ForumRewrite\Support\ExecutionLock;
 use RuntimeException;
 
 /** Bounded snapshots; never streams a partially assembled archive. */
@@ -20,14 +19,18 @@ final class ImageBackup
     {
         if (!in_array($kind, ['images', 'tar.gz', 'zip'], true)) throw new RuntimeException('Unsupported backup format.');
         $cache = new ArchiveCache(dirname($this->databasePath), $this->repositoryRoot);
-        return (new ExecutionLock(dirname($this->databasePath) . '/image-export.lock', 0))->withExclusiveLock(function () use ($cache, $kind, $expectedRevision): array {
-            $hit = (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
+        $locks = new ArchiveLocks(dirname($this->databasePath));
+        // Never hold the writer lock while waiting for the builder. Hits need no build lock.
+        $hit = $locks->withExclusiveLock('forum-rewrite.lock', fn () => $cache->open($this->identity($expectedRevision), $kind));
+        if ($hit !== null) return $hit;
+        return $locks->withExclusiveLock('image-export.lock', function () use ($cache, $locks, $kind, $expectedRevision): array {
+            $hit = $locks->withExclusiveLock('forum-rewrite.lock',
                 fn () => $cache->open($this->identity($expectedRevision), $kind),
             );
             if ($hit !== null) return $hit;
-            $built = $this->build($kind, $expectedRevision);
+            $built = $this->build($kind, $expectedRevision, $locks);
             try {
-                return (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($cache, $built, $kind, $expectedRevision): array {
+                return $locks->withExclusiveLock('forum-rewrite.lock', function () use ($cache, $built, $kind, $expectedRevision): array {
                     $identity = $this->identity($expectedRevision);
                     if ($identity !== $built['identity']) throw new RuntimeException('Repository changed during backup; refresh Backup and retry.');
                     return $cache->publish($built, $identity, $kind);
@@ -38,7 +41,7 @@ final class ImageBackup
         });
     }
 
-    private function build(string $kind, ?string $expectedRevision): array
+    private function build(string $kind, ?string $expectedRevision, ArchiveLocks $locks): array
     {
             $work = sys_get_temp_dir() . '/forum-image-export-' . bin2hex(random_bytes(10));
             if (!mkdir($work, 0700)) { throw new RuntimeException('Unable to create backup workspace.'); }
@@ -46,7 +49,7 @@ final class ImageBackup
             $archive = $work . '.' . $extension;
             try {
                 $identity = null;
-                $revision = (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($kind, $expectedRevision, $work, &$identity): string {
+                $revision = $locks->withExclusiveLock('forum-rewrite.lock', function () use ($kind, $expectedRevision, $work, &$identity): string {
                     $revision = $this->revision();
                     if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
                         throw new RuntimeException('Repository changed. Refresh Backup and download both artifacts again.');
@@ -96,13 +99,14 @@ final class ImageBackup
                     exec($command . ' 2>&1', $output, $status);
                     if ($status !== 0 || !is_file($archive)) { throw new RuntimeException('Unable to assemble complete backup.'); }
                 }
-                (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function () use ($identity): void {
+                $locks->withExclusiveLock('forum-rewrite.lock', function () use ($identity): void {
                     if ($this->identity() !== $identity) throw new RuntimeException('Repository changed during backup; refresh Backup and retry.');
                 });
                 chmod($archive, 0600);
                 return ['path' => $archive, 'revision' => $revision, 'extension' => $extension, 'identity' => $identity];
             } catch (\Throwable $error) {
                 @unlink($archive);
+                if ($error instanceof ArchiveBusyException) throw $error;
                 throw new RuntimeException('Backup failed: ' . $error->getMessage(), 0, $error);
             } finally {
                 self::removeTree($work);

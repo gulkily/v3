@@ -60,4 +60,56 @@ final class ArchiveExportTest
         fclose($changed['stream']);
     }
 
+    public function testSharedLockDeadlineAndWarmHitDuringAnotherBuild(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source');
+        $w->put($root . '/records/posts/one.txt', $w->post('one')); $w->git($root);
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+        $first = $backup->export('tar.gz'); fclose($first['stream']);
+        $held = fopen($w->root . '/image-export.lock', 'c+'); flock($held, LOCK_EX);
+        $start = microtime(true);
+        $warm = $backup->export('tar.gz');
+        assertTrue($warm['reused']); assertTrue(microtime(true) - $start < 1);
+        fclose($warm['stream']);
+        $locks = new \ForumRewrite\Images\ArchiveLocks($w->root, 0.12);
+        try {
+            $locks->withExclusiveLock('image-export.lock', fn () => true);
+            throw new RuntimeException('Expected busy.');
+        } catch (\ForumRewrite\Images\ArchiveBusyException $e) {
+            assertTrue(microtime(true) - $start >= 0.12);
+            $next = microtime(true);
+            try { $locks->withExclusiveLock('image-export.lock', fn () => true); }
+            catch (\ForumRewrite\Images\ArchiveBusyException) {}
+            assertTrue(microtime(true) - $next < 0.1);
+        } finally { fclose($held); }
+        $zip = $backup->export('zip'); fclose($zip['stream']);
+    }
+
+    public function testConcurrentCompatibleRequestsProduceOneArtifact(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source');
+        $w->put($root . '/records/posts/one.txt', $w->post('one')); $w->git($root);
+        $held = fopen($w->root . '/image-export.lock', 'c+'); flock($held, LOCK_EX);
+        $script = $w->root . '/download.php';
+        file_put_contents($script, '<?php require ' . var_export(dirname(__DIR__) . '/autoload.php', true)
+            . '; $b = new ForumRewrite\\Images\\ImageBackup($argv[1], $argv[2]); $d = $b->export($argv[3]); echo ($d["reused"] ? "hit" : "built"); fclose($d["stream"]);');
+        $jobs = [];
+        foreach (['tar.gz', 'tar.gz', 'zip'] as $kind) {
+            $pipes = [];
+            $process = proc_open([PHP_BINARY, $script, $root, $w->root . '/index.sqlite3', $kind], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+            $jobs[] = [$process, $pipes];
+        }
+        usleep(200000); flock($held, LOCK_UN); fclose($held);
+        $results = [];
+        foreach ($jobs as [$process, $pipes]) {
+            $results[] = stream_get_contents($pipes[1]); $error = stream_get_contents($pipes[2]);
+            fclose($pipes[1]); fclose($pipes[2]); assertSame(0, proc_close($process), $error);
+        }
+        assertSame(['built', 'hit'], (function ($v) { sort($v); return $v; })(array_slice($results, 0, 2)));
+        assertSame('built', $results[2]);
+        assertSame(2, count(glob($w->root . '/archive-exports/*/metadata')));
+    }
+
 }
