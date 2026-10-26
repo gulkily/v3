@@ -27,6 +27,10 @@ final class FrontController
 {
     private readonly string $publicRoot;
 
+    /** Request-scoped memo for activeStaticReleaseRoot(); the controller lives one request. */
+    private ?string $activeStaticReleaseRootMemo = null;
+    private bool $activeStaticReleaseRootResolved = false;
+
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
@@ -60,8 +64,8 @@ final class FrontController
             return;
         }
 
-        $approvedMembersOnly = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
-            ->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
+        $featureFlags = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot);
+        $approvedMembersOnly = $featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
         $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
         if ($requestUri === '/internal/high-traffic/refresh') {
@@ -157,7 +161,7 @@ final class FrontController
                 throw new RuntimeException('Unable to read static HTML artifact: ' . $staticArtifact);
             }
 
-            $imagesEnabled = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
+            $imagesEnabled = $featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
             if (str_contains($contents, 'data-image-content-state="1"') === $imagesEnabled) {
                 $this->sendHtml($contents, 200, true);
                 return;
@@ -610,11 +614,18 @@ final class FrontController
 
     private function activeStaticReleaseRoot(): ?string
     {
+        if ($this->activeStaticReleaseRootResolved) {
+            return $this->activeStaticReleaseRootMemo;
+        }
+
         $currentPath = $this->staticHtmlRoot . '/current';
         clearstatcache(true, $currentPath);
         $releaseRoot = realpath($currentPath);
 
-        return $releaseRoot !== false && is_dir($releaseRoot) ? $releaseRoot : null;
+        $this->activeStaticReleaseRootMemo = $releaseRoot !== false && is_dir($releaseRoot) ? $releaseRoot : null;
+        $this->activeStaticReleaseRootResolved = true;
+
+        return $this->activeStaticReleaseRootMemo;
     }
 
     private function renderConfigurationError(string $details): string
