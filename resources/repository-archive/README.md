@@ -45,7 +45,7 @@ may need operator review. See the application's
 
 ## Keep images with their matching snapshot
 
-Image files are a separate `images.tar` download. Keep the content and image
+Image files are a separate `images.zip` download. Keep the content and image
 archives with matching revision filenames together. `repository-snapshot.json`
 identifies the source revision and checksums the records; do not edit or discard it.
 If the site changes between downloads, refresh Backup and download both again.
@@ -54,10 +54,10 @@ Extract either content archive into an empty directory. With the application
 installed, verify the image archive against the extracted `repository/` directory:
 
 ```sh
-./v3 images verify /backups/images.tar /path/to/extracted/repository /path/to/cache/index.sqlite3
+./v3 images verify /backups/images.zip /path/to/extracted/repository /path/to/cache/index.sqlite3
 ```
 
-Verification does not install images. Follow
+Verification does not install images. Older TAR image backups are also supported. Follow
 [Image backup and recovery](https://github.com/gulkily/v3/blob/main/docs/runbooks/image_backup.md)
 for restoration, image-store configuration and rebuild steps. If verification
 reports a mismatch, use the original matching pair with unchanged records;
