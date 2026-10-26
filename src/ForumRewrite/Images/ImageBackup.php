@@ -123,7 +123,7 @@ final class ImageBackup
         if ($this->git(['status', '--porcelain', '--', 'records']) !== '') {
             throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');
         }
-        return ExportIdentity::capture($this->repositoryRoot, $revision, (new ImageStore($this->repositoryRoot))->inventory());
+        return ExportIdentity::capture($this->repositoryRoot, $revision, (new ImageStore($this->repositoryRoot))->identityListing());
     }
 
     public static function references(string $root, ?string $snapshotRoot = null): array

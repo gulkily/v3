@@ -10,7 +10,7 @@ use ForumRewrite\Images\ImageBackup;
 
 final class ArchiveExportTest
 {
-    public function testIdentityIncludesUntrackedBytesPermissionsAndImages(): void
+    public function testIdentityTracksCommittedRevisionDirtinessAndImagesNotPermissions(): void
     {
         $w = new ImportTestWorkspace();
         $root = $w->repository('source');
@@ -18,19 +18,28 @@ final class ArchiveExportTest
         $w->git($root);
         $revision = (new ImageBackup($root, $w->root . '/index.sqlite3'))->revision();
         $capture = fn (array $images = []) => ExportIdentity::capture($root, $revision, $images);
+
         $original = $capture();
+        // Deterministic for identical committed state.
         assertSame($original, $capture());
+
+        // A dirty working tree (uncommitted/untracked change present) yields a
+        // distinct identity via the porcelain signal.
         file_put_contents($root . '/note.txt', 'one');
-        $first = $capture();
-        assertTrue($first !== $original);
-        $mtime = filemtime($root . '/note.txt');
-        file_put_contents($root . '/note.txt', 'two'); touch($root . '/note.txt', $mtime);
-        assertTrue($capture() !== $first);
+        $dirty = $capture();
+        assertTrue($dirty !== $original);
+
+        // Identity is committed-data-only: an untracked file's *content* change,
+        // and file *permission* changes, do not by themselves alter identity —
+        // only the presence of dirtiness (above) and committed content (revision)
+        // and the image set do.
         unlink($root . '/note.txt');
         assertSame($original, $capture());
-        assertTrue($capture(['image' => ['sha256' => 'changed']]) !== $original);
         chmod($root . '/records/posts/one.txt', 0600); clearstatcache();
-        assertTrue($capture() !== $original);
+        assertSame($original, $capture(), 'permissions are data-irrelevant and must not affect identity');
+
+        // The image set (by content-addressed filename) still affects identity.
+        assertTrue($capture(['abc123.png' => ['sha256' => 'abc123', 'bytes' => 10]]) !== $original);
     }
     public function testWarmArchivesReuseAndCorruptionRebuildsWithoutDeletingReaders(): void
     {
