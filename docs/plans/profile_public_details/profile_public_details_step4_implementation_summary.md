@@ -93,3 +93,12 @@ Outcome: Direct collapsed public key and identity-specific bounded histories wit
 *— Codex · 2026-10-27 UTC*
 
 Acceptance follow-up: Stage 5 closeout commit 20b7ce6f2. Strengthened the HTTP browser check to open an authored contribution from the profile and return through its author profile link, with JavaScript both off and on. Corrected synthetic root fixture parent/author attribution and selected the synthetic contribution explicitly rather than assuming it sorts ahead of the retained root fixture. The full 13-theme browser check passed again. No production changes or estimate revision.
+
+## Approved navigation refinement — 2026-10-27
+
+Request: User accepted the approval-summary mockups after identifying the username and User Access links as confusing.
+Disposition: Apply the accepted presentation as an in-scope profile refinement: remove supplementary username navigation and place Approval details beside Approved/Not approved. Keep the Tools destination and legacy account-keys anchor; no access policy or navigation destination change. Application of the previously optional username link does not change username aggregation.
+Status: Applied and locally verified. Mockup images were review-only; removed from the project and commit history at the user’s request.
+Verification: Focused PHP checks 18/18; updated HTTP browser checks passed for all 13 themes at 390/1280 widths, JavaScript on/off, independent histories and key recovery. Reviewed the updated phone rendering. No new dependencies, schema/query change, access-policy change or production deployment. Existing projected/retrospective cycle estimates retained; this is a small presentation refinement, not a new study outcome.
+
+*— Codex · 2026-10-27 UTC*

@@ -26,7 +26,7 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 ]), 2) ?>
 <?php endif; ?>
   <article class="card">
-    <p><strong>Approved:</strong> <?= (int) $profile['is_approved'] === 1 ? 'yes' : 'no' ?></p>
+    <p id="account-keys"><strong>Approval:</strong> <?= (int) $profile['is_approved'] === 1 ? 'Approved' : 'Not approved' ?> · <a class="profile-approval-details" href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>#account-keys">Approval details</a></p>
 <?php if ((int) $profile['is_approved'] === 1 && (string) ($profile['approved_by_label'] ?? '') !== ''): ?>
     <p><strong>Approved by:</strong>
 <?php if ((string) ($profile['approved_by_profile_slug'] ?? '') !== ''): ?>
@@ -38,8 +38,6 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 <?php endif; ?>
     <p><strong>Threads:</strong> <?= (int) $profileHistory['threads']['total'] ?></p>
     <p><strong>Posts:</strong> <?= (int) $profileHistory['posts']['total'] ?></p>
-    <p><a href="/user/<?= $e($profile['username_token']) ?>">User <?= $e($profile['username_token']) ?></a></p>
-    <p id="account-keys"><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>#account-keys">User Access</a></p>
 <?= $indent($partial('partials/public_key.php', ['publicKey' => (string) $profile['public_key']]), 2) ?>
   </article>
 <?php foreach (['threads' => 'Threads', 'posts' => 'Posts'] as $kind => $label): ?>

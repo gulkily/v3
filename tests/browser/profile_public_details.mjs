@@ -26,6 +26,8 @@ try {
     const page = await context.newPage();
     const initialResponse = await page.goto(base + '/profiles/' + slug);
     assert.ok((await initialResponse.text()).includes('PROFILE STATIC FIRST'), 'anonymous first page uses static artifact');
+    assert.equal(await page.locator('main a[href^="/user/"]').count(), 0);
+    assert.equal(await page.locator('#account-keys').getByRole('link', { name: 'Approval details', exact: true }).count(), 1);
     const details = page.locator('[data-public-key-details]');
     assert.equal(await details.getAttribute('open'), null);
     await details.locator('summary').focus(); await page.keyboard.press('Enter');

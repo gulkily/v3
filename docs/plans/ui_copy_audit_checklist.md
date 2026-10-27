@@ -559,3 +559,8 @@ Evidence: [Implementation summary](archive_export_contention/archive_export_cont
 - Verification: Real Chromium HTTP flows with JavaScript on/off; keyboard disclosure and navigation; exact copying and denied-clipboard fallback; independent pagination and invalid-position recovery; 13 permitted themes at 390px and 1280px, initial/expanded/loaded/empty/unavailable states and overflow. Inspected Word97, Chicago and Midnight screenshots. Shared account/access/Forte/source and messaging tests passed.
 - Limits: No physical-device or production deployment verification; zenmemes.com replay remains pending. Full suite not run. No navigation destinations added or renamed, so icon mapping unchanged.
 - Record: [Implementation evidence and host handoff](profile_public_details/profile_public_details_step4_implementation_summary.md).
+
+### Accepted profile navigation refinement — 2026-10-27
+
+- Removed the supplementary “User <username>” link and standalone “User Access” link from the standard profile. Approval now reads “Approved” or “Not approved” with “Approval details” beside it; the existing Tools route and account-keys anchor remain intact. The detail-link text stays together on narrow screens.
+- Verification: Focused profile/access/messaging/core-route checks 16/16 plus private-session/recovery checks 2/2; actual HTTP Chromium flows with JavaScript on/off and 13 themes at phone/desktop widths passed, including expanded/empty/unavailable states and overflow. Reviewed updated phone screenshot. No new navigation destination or icon mapping; production and physical-device checks remain pending.
