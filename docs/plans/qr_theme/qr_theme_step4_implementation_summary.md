@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/qr_theme; standing P2 enrollment; [ledger](../effort_estimation_trial.md)
 Extended estimates: enabled
-Status: Locally complete on feature/qr-theme; physical-camera and maintainer acceptance pending
+Status: Original implementation locally complete; maintainer visual review failed; appearance follow-up and physical-camera acceptance pending
 
 **Cycle estimate: 0.30**
 
@@ -63,3 +63,16 @@ Release limits: Camera acceptance requires scanning a displayed light, dark and 
 Dependency delta: Zero repository components, manifests or lock files added/updated. Existing encoder bytes unchanged; external jsQR evaluation stayed outside the repository.
 
 *— Codex · 2026-10-27 UTC*
+
+## Maintainer visual review — 2026-10-27 UTC
+
+Request: "I also looked at the qr codes in different themes, and for most themes except LCD they still look black on white with a big white edge and very out of place. (Please follow up on this after finishing the plan)"
+Additional question: "I have a question, are light-on-dark qr codes workable?"
+Disposition: Visual acceptance failed; the prior decoder/layout passes remain valid technical evidence but do not satisfy the intended visual fit. No new product changes made in this review. The separate signing-readiness Step 1 was completed first as requested.
+Finding: The visible margin is the preserved four-module quiet zone, not extra CSS padding. Current rendering sorts text/input colors dark-on-light; bright paper or near-black ink can still read visually as black/white. Transparent or unsuitable input colors trigger the literal black/white fallback. These were conservative implementation choices, not evidence of successful theme integration.
+Follow-up direction: Review explicit QR colors for visual fit, and evaluate light-on-dark for dark themes. Inversion is supported by some scanners but requires compatibility evidence; keep clear margins in the background color. A non-inverted themed fallback remains a candidate. Do not remove the quiet zone to hide the visual mismatch.
+Evidence: ZXing's ALSO_INVERTED option is documented at https://zxing.github.io/zxing/apidocs/com/google/zxing/DecodeHintType.html ; DENSO's QK30 manual section 7.3 describes configurable inverted-code scanning and a dark quiet zone at https://www.denso-wave.eu/fileadmin/download/Manuals/Scanner/QK30/QK30-U_Users_Manual_E1.pdf . These establish feasibility, not compatibility with the user's phone cameras.
+Approval boundary: Light-on-dark changes the approved Steps 1–3 dark-on-light requirement. The user's question is not approval to change polarity. Revise the QR requirements before implementing inversion; retain the original estimates and verification record. No new prospective estimate or maintainer comfortable-fit acceptance is inferred.
+Status: QR visual goal remains unresolved; physical-camera acceptance remains pending. Signing reliability has its own cycle and takes priority; neither a visual correction nor an identity fix has been implemented by this follow-up review.
+
+*— Revised by Codex · 2026-10-27 UTC*
