@@ -509,8 +509,8 @@ final class LocalAppSmokeTest
             $board = $this->render($application, '/');
             $authStatus = $this->render($application, '/api/auth_status');
 
-            assertStringContains('Member activity', $profile);
-            assertStringContains('User Access', $profile);
+            assertStringContains('<h2>Threads</h2>', $profile);
+            assertStringContains('Approval details', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);
@@ -805,7 +805,7 @@ PHP;
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
-            assertStringContains('Member activity', $ownProfileAfterClear);
+            assertStringContains('<h2>Threads</h2>', $ownProfileAfterClear);
             assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
@@ -2170,8 +2170,8 @@ PHP;
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringNotContains('Identity ID', $profile);
-        assertStringNotContains('Public key', $profile);
-        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
+        assertStringContains('<summary>Public key</summary>', $profile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);

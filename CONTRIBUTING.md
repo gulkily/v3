@@ -38,6 +38,10 @@ update after paint is acceptable only when the client learns of a real state
 change during the visit, such as sign-in, sign-out, identity switch, or approval
 gained or revoked.
 
+Keep optional technical details collapsed using the shared
+[progressive disclosure guidance](docs/reference/progressive_disclosure.md).
+Keep primary information, essential warnings, and recovery actions visible.
+
 Before marking a UI change complete:
 
 - Check the rendered flow on phone and desktop in the relevant initial,
@@ -53,6 +57,21 @@ Before marking a UI change complete:
   `docs/plans/ui_copy_audit_checklist.md` for copy cleanup, or the relevant
   implementation document for other UI work. Distinguish completed cleanup
   from unresolved layout or behavior issues.
+
+## Feature flag presentation order
+
+`FeatureFlagRegistry::PRESENTATION_ORDER` is the canonical UI order: Access and
+identity, Authored content, Forum experience, Site rendering, Backups, Fastmod,
+Agent replies, then LLM exchanges. The page uses `presentationGroups()` rather
+than definition insertion order, labels, status or configuration source.
+
+Every registered flag must appear exactly once in its assigned group. Append new
+flags to that group's list by default; place dependent controls together immediately
+after their parent (after existing siblings). Add new groups at the end unless an
+explicit UI change approves another position. Reordering existing controls is an
+intentional UI change, not a side effect of registering a flag. Search and status
+filters must preserve this order. Keep the registry completeness/dependency and
+rendered-order checks current; do not bypass them for new flags.
 
 ## Operator CLI
 

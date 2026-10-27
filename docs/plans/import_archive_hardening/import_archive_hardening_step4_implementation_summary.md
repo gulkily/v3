@@ -120,3 +120,11 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 All eight stages completed locally on `fix/import-archive-hardening`; stage commits retain their individual verification and summaries. Same stable cycle `v3/import_archive_hardening`, scope v1 clarified, original baseline, R1/P2 and single exposed Codex rater. Earlier 0.90 intake/Step 1/Step 2 projections and Step 3/4 1.00 remain unchanged in history. Stage retrospectives are 0.15, 0.10, 0.25, 0.20, 0.25, 0.30, 0.25, 0.25; they are not added to infer cycle work. The separate 1.05 retrospective reflects lifecycle/recovery validation and final defensive review. Measured labor and independent rating unavailable; maintainer comfortable-fit/acceptance pending. No accepted-count increment or new child observation. Deployment, merge and full-suite verification remain unperformed. Final stage revision is recorded in the debug handoff after its commit.
 
 *— Codex · 2026-10-27 UTC*
+
+## Main integration verification
+
+Action: User-requested merge of origin/fix/import-archive-hardening at 7edd75f2 into local main at c73badef.
+Resolution: Preserved both branches' additions in the plan index, effort ledger and test runner. Application changes merged automatically.
+Verification: 110 targeted tests passed across bounded processes, canonical parsing, import admission/planning/CLI/publication, signature budgets, invocation supervision, hard-deadline recovery, backup feature flags, Railspike workflow and signature auditing. All 33 changed PHP files passed syntax validation; staged diff whitespace checks passed.
+Dependency delta: Zero additions or updates.
+Limitations: Full repository suite not run. No push or deployment performed.

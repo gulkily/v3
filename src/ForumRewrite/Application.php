@@ -1202,7 +1202,7 @@ final class Application
     /**
      * @param array<string, mixed> $profile
      */
-    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false): string
+    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false, array $query = []): string
     {
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $isOwnProfile = $viewerProfile !== null
@@ -1244,6 +1244,7 @@ final class Application
                 'accessManagement' => $accessManagement,
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
+                'profileHistory' => $accessManagement ? [] : \ForumRewrite\Http\ProfileHistoryView::build($this->pdo(), $profile, $query),
                 'approvalHistory' => $accessManagement ? $this->routeServices()->approvalHistory()->forKey($profile) : null,
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
@@ -1257,11 +1258,11 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             $accessManagement ? 'tools' : 'profiles',
-            $accessManagement && $canApprove
+            array_merge($accessManagement ? [] : ['/assets/public_key.js'], $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
-                    : []),
+                    : [])),
         );
     }
 

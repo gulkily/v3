@@ -315,6 +315,7 @@ final class TemplateRenderer
         $messages = array_values(array_filter($items, static fn (array $item): bool => $item['section'] === 'messages'));
         return [
             'html' => $this->renderFragment('partials/nav.php', ['navItems' => $items, 'activeSection' => $activeSection]),
+            'tools_html' => $this->renderFragment('partials/tools_nav.php', ['toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('feature-flags')]),
             'messaging_enabled' => $messages !== [],
             'viewer' => $messages[0]['viewer'] ?? null,
             'scripts' => $messages === [] ? [] : array_map($this->assetPath(...), $this->messagingScriptPaths()),
@@ -489,6 +490,8 @@ final class TemplateRenderer
         $data = array_merge([
             'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
+            'imageBackupEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_BACKUP_ENABLED),
+            'textBackupEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TEXT_BACKUP_ENABLED),
             'imageContentEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),

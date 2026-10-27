@@ -22,6 +22,9 @@ foreach ([
     $definition = new FeatureFlagDefinition($key, $label, $description, $default, $key, siteMutable: true, group: $group);
     $flags[] = new FeatureFlagState($definition, $enabled, $environment !== null ? 'environment' : 'site', $environment);
 }
+if (($argv[1] ?? '') === 'canonical') {
+    $flags = array_reverse((new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator())->all());
+}
 $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $indent = static fn (string $html, int $level): string => $html;
 $toolNavOptions = [['href' => '/tools/feature-flags/', 'label' => 'Feature Flags', 'is_active' => true]];

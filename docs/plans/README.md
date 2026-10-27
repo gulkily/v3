@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Profile public details](profile_public_details/)
+
 - [Image backup ZIP](image_backup_zip/)
 
 - [Reusable archive exports](archive_export_contention/)
@@ -306,6 +308,7 @@ and repair its navigation and affected references. See the
 
 - [Retraction simplification](./retraction_simplification/retraction_simplification_step3_development_plan.md): approved release-1 implementation plan.
 
+- [Backup feature flags](./backup_feature_flags/backup_feature_flags_step1_solution_assessment.md): independent text and image backup controls.
 - [Import archive hardening](./import_archive_hardening/import_archive_hardening_step1_solution_assessment.md) — bounded hostile-input processing and CLI recovery.
 
 - [High-traffic toggle](high_traffic_toggle/) — switch row under the Feature Flags heading.

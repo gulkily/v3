@@ -69,7 +69,9 @@ final class UserAccessTest
             foreach (['/users/', '/user/' . $user['username_token'], '/profiles/' . $user['profile_slug']] as $url) {
                 $html = $this->render($root, $db, $url);
                 assertSame(200, http_response_code());
-                foreach (['data-signed-approval-form', 'Account key history', 'Unapproved Profiles', 'Approved Profiles', 'Public key', 'Identity ID', '/users/pending/'] as $removed) assertStringNotContains($removed, $html);
+                foreach (['data-signed-approval-form', 'Account key history', 'Unapproved Profiles', 'Approved Profiles', 'Identity ID', '/users/pending/'] as $removed) assertStringNotContains($removed, $html);
+                if (str_starts_with($url, '/profiles/')) assertStringContains('<summary>Public key</summary>', $html);
+                else assertStringNotContains('Public key', $html);
             }
             $name = $user['username_token'];
             assertStringContains('/tools/user-access/accounts/' . $name . '?key_offset=50#account-keys', $this->render($root, $db, '/user/' . $name . '?key_offset=50'));
@@ -115,7 +117,7 @@ final class UserAccessTest
             $user = $pdo->query('SELECT * FROM profiles WHERE is_approved = 1 LIMIT 1')->fetch(PDO::FETCH_ASSOC);
             assertStringNotContains('/users/pending/', file_get_contents($public . '/users.html'));
             $profile = file_get_contents($public . '/profiles/' . $user['profile_slug'] . '.html');
-            assertStringNotContains('Public key', $profile);
+            assertStringContains('<summary>Public key</summary>', $profile);
             assertStringContains('/tools/user-access/profiles/', $profile);
             foreach (['/tools/user-access/index.html', '/tools/user-access/pending/index.html', '/users/pending/index.html'] as $path) $workspace->put($public . $path, 'STALE ACCESS');
             $host = new \ForumRewrite\Host\FrontController(dirname(__DIR__), $root, $db, $static, $public);

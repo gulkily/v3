@@ -1,10 +1,7 @@
 <?php
 $siteError = $flags[0]->siteError ?? null;
 
-$flagGroups = [];
-foreach ($flags as $flag) {
-    $flagGroups[$flag->definition->groupKey()][] = $flag;
-}
+$flagGroups = $registry->presentationGroups($flags);
 ?>
 <section class="stack">
   <article class="card">
