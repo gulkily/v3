@@ -26,6 +26,13 @@ class PublishTextTransportTest(unittest.TestCase):
                        env=cls.env, check=True, capture_output=True)
         keys = subprocess.check_output(['gpg', '--with-colons', '--list-secret-keys'], env=cls.env).decode()
         cls.fingerprint = next(line.split(':')[9] for line in keys.splitlines() if line.startswith('fpr:'))
+        subprocess.run(['gpg', '--batch', '--pinentry-mode', 'loopback', '--passphrase', '',
+                        '--quick-add-key', cls.fingerprint, 'ed25519', 'sign', '0'],
+                       env=cls.env, check=True, capture_output=True)
+        for name in ('ambiguous-agent-one', 'ambiguous-agent-two'):
+            subprocess.run(['gpg', '--batch', '--pinentry-mode', 'loopback', '--passphrase', '',
+                            '--quick-generate-key', name, 'ed25519', 'sign', '0'],
+                           env=cls.env, check=True, capture_output=True)
         cls.file = cls.directory / 'body.txt'
         cls.body = 'Café & + =\r\n\nFinal line\n'
         cls.file.write_bytes(cls.body.encode())
@@ -109,8 +116,9 @@ class PublishTextTransportTest(unittest.TestCase):
         for client in CLIENTS:
             with self.subTest(client=client):
                 before = len(self.requests)
-                result = self.run_client(client, '--signing-key', self.fingerprint)
+                result = self.run_client(client, '--signing-key', 'transport-agent')
                 self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn('Signing-key: ' + self.fingerprint, result.stdout)
                 self.assertEqual(len(self.requests), before + 2)
                 self.assertIn('Post-ID: test-post', result.stderr)
                 path, fields = self.requests[-1]
@@ -127,11 +135,21 @@ class PublishTextTransportTest(unittest.TestCase):
 
     def test_invalid_options_do_not_send_requests(self):
         for client in CLIENTS:
-            for options in [('--parent-id', 'x'), ('--signing-key', 'bad'),
+            for options in [('--parent-id', 'x'), ('--signing-key', ' '),
                             ('--generate-key', ' '), ('--generate-key', 'test', '--signing-key', self.fingerprint),
                             ('--thread-id', 'root', '--subject', 'bad')]:
                 with self.subTest(client=client, options=options):
                     self.assertEqual(self.run_client(client, *options).returncode, 2)
+        self.assertEqual(self.requests, [])
+
+    def test_unknown_and_ambiguous_names_do_not_send_requests(self):
+        for client in CLIENTS:
+            for name, message in [('missing-agent', 'No matching secret key'),
+                                  ('ambiguous-agent', 'multiple secret keys')]:
+                with self.subTest(client=client, name=name):
+                    result = self.run_client(client, '--signing-key', name)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertIn(message, result.stderr)
         self.assertEqual(self.requests, [])
 
     def test_signing_failure_never_publishes_anonymously(self):

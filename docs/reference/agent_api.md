@@ -154,7 +154,16 @@ To sign a thread or reply with an identity already registered on the instance:
 
 ```sh
 python3 scripts/publish_text.py https://forum.example post.txt --subject "My post" --signing-key FULL_PRIMARY_FINGERPRINT
+python3 scripts/publish_text.py https://forum.example post.txt --subject "My post" --signing-key mybot-agent
 ```
+
+All three versions accept a username in `--signing-key`. GPG searches local
+secret-key user IDs using its usual matching rules (including partial names).
+Exactly one primary key must match; missing or ambiguous matches stop before
+any request to the instance. The resolved fingerprint is printed and used for
+both the identity ID and signing. Signing subkeys are not counted as separate
+identities. This is a local GPG lookup, not a server profile-name lookup; a
+renamed forum username may differ from the key's user ID.
 
 Use the full primary fingerprint from `gpg --list-secret-keys --with-colons`.
 The script uses your existing GPG keyring (or `GNUPGHOME`) and GPG's normal

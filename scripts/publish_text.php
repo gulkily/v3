@@ -23,6 +23,39 @@ function runGpg(array $arguments): array
     return [proc_close($process), $output];
 }
 
+function resolveSigningKey(string $selector): string
+{
+    // GPG matches local user IDs. Count primary keys, not their signing subkeys,
+    // and reject ambiguous names before any request to the instance.
+    if (preg_match('/\A(?:[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})\z/', $selector)) {
+        return $selector;
+    }
+    [$code, $output] = runGpg(['--batch', '--with-colons', '--fingerprint', '--list-secret-keys', '--', $selector]);
+    $fingerprints = [];
+    $primary = false;
+    foreach (explode("\n", $output) as $line) {
+        $fields = explode(':', $line);
+        if ($fields[0] === 'sec' || $fields[0] === 'ssb') {
+            $primary = $fields[0] === 'sec';
+        } elseif ($fields[0] === 'fpr' && $primary) {
+            if (preg_match('/\A(?:[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})\z/', $fields[9] ?? '')) {
+                $fingerprints[$fields[9]] = true;
+            }
+            $primary = false;
+        }
+    }
+    if (count($fingerprints) > 1) {
+        throw new RuntimeException('Username matches multiple secret keys; use --signing-key with a full primary fingerprint.');
+    }
+    if ($code !== 0 || !$fingerprints) {
+        throw new RuntimeException('No matching secret key found. Check the GPG user ID and keyring/GNUPGHOME.');
+    }
+    $fingerprint = (string) array_key_first($fingerprints);
+    echo "Signing-key: $fingerprint\n";
+    fflush(STDOUT);
+    return $fingerprint;
+}
+
 function signRecord(string $record, string $fingerprint): string
 {
     // Sign the server's exact canonical bytes, including its trailing newlines.
@@ -120,7 +153,7 @@ for ($i = 1; $i < $argc; $i++) {
             . "Publish a UTF-8 file; without a key option, publish anonymously.\n"
             . "  --subject TEXT         New thread subject\n  --board-tags TAGS      Comma-separated boards (default: general)\n"
             . "  --thread-id ID         Publish a reply\n  --parent-id ID         Reply parent (defaults to thread ID)\n"
-            . "  --signing-key FPR      Full primary fingerprint of a registered identity\n"
+            . "  --signing-key KEY      Full primary fingerprint or unique local GPG username\n"
             . "  --generate-key NAME    Create persistent Ed25519 key, register identity, publish\n"
             . "Key options are mutually exclusive. GPG uses your keyring/GNUPGHOME and pinentry.\n"
             . "Requires PHP 8.1+ with HTTP(S) streams; signing requires GPG. No automatic retries.\n";
@@ -159,8 +192,8 @@ if (!$url || !in_array($url['scheme'] ?? '', ['http', 'https'], true) || empty($
 if (isset($options['signing-key'], $options['generate-key'])) {
     failInput('Choose --signing-key or --generate-key.');
 }
-if (isset($options['signing-key']) && !preg_match('/\A(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{64})\z/', $options['signing-key'])) {
-    failInput('--signing-key requires a full primary fingerprint.');
+if (isset($options['signing-key']) && (trim($options['signing-key']) === '' || preg_match('/[\x00-\x1f\x7f]/', $options['signing-key']))) {
+    failInput('--signing-key requires a nonempty fingerprint or username without control characters.');
 }
 if (isset($options['generate-key']) && (trim($options['generate-key']) === '' || preg_match('/[\x00-\x1f\x7f]/', $options['generate-key']))) {
     failInput('--generate-key requires a nonempty name without control characters.');
@@ -177,7 +210,7 @@ if ($body === false || preg_match('//u', $body) !== 1 || preg_match('/\A\s*\z/u'
 }
 $preparedId = null;
 try {
-    $fingerprint = $options['signing-key'] ?? null;
+    $fingerprint = isset($options['signing-key']) ? resolveSigningKey($options['signing-key']) : null;
     if (isset($options['generate-key'])) {
         // Use GPG's machine status to identify the new key, not its potentially
         // nonunique name. Key material persists in the user's keyring/GNUPGHOME.

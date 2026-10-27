@@ -73,6 +73,33 @@ def generate_key(name):
     return fingerprint
 
 
+def resolve_signing_key(selector):
+    # Preserve explicit fingerprints. For names, let GPG match local user IDs,
+    # then count primary keys only (a signing subkey is not a separate identity).
+    if re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", selector):
+        return selector
+    result = subprocess.run([
+        "gpg", "--batch", "--with-colons", "--fingerprint", "--list-secret-keys", "--", selector,
+    ], stdout=subprocess.PIPE, text=True)
+    fingerprints = set()
+    primary = False
+    for line in result.stdout.splitlines():
+        fields = line.split(":")
+        if fields[0] in ("sec", "ssb"):
+            primary = fields[0] == "sec"
+        elif fields[0] == "fpr" and primary:
+            if len(fields) > 9 and re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", fields[9]):
+                fingerprints.add(fields[9])
+            primary = False
+    if len(fingerprints) > 1:
+        raise ValueError("Username matches multiple secret keys; use --signing-key with a full primary fingerprint.")
+    if result.returncode or not fingerprints:
+        raise ValueError("No matching secret key found. Check the GPG user ID and keyring/GNUPGHOME.")
+    fingerprint = fingerprints.pop()
+    print("Signing-key: " + fingerprint, flush=True)
+    return fingerprint
+
+
 def register_key(base, fingerprint):
     # Only export the public key. Registration proves possession by signing the
     # server's prepared identity record before the post is prepared separately.
@@ -108,7 +135,7 @@ def main():
     parser.add_argument("--thread-id", help="publish a reply in this thread")
     parser.add_argument("--parent-id", help="reply to this post (defaults to thread ID)")
     keys = parser.add_mutually_exclusive_group()
-    keys.add_argument("--signing-key", help="full primary GPG fingerprint of a registered identity; uses your GPG keyring/GNUPGHOME")
+    keys.add_argument("--signing-key", help="full primary fingerprint or username matching one local GPG secret key; identity must be registered")
     keys.add_argument("--generate-key", metavar="NAME", help="create a persistent Ed25519 signing key, register its public identity, and publish; GPG prompts for a passphrase")
     args = parser.parse_args()
 
@@ -123,8 +150,9 @@ def main():
         parser.error("--parent-id requires --thread-id")
     if args.thread_id and args.subject:
         parser.error("--subject only applies to new threads")
-    if args.signing_key and not re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", args.signing_key):
-        parser.error("--signing-key must be a full primary key fingerprint (40 or 64 hex digits)")
+    if args.signing_key is not None and (not args.signing_key.strip()
+            or any(ord(char) < 32 or ord(char) == 127 for char in args.signing_key)):
+        parser.error("--signing-key requires a nonempty fingerprint or username without control characters")
     if args.generate_key is not None and (not args.generate_key.strip()
             or any(ord(char) < 32 or ord(char) == 127 for char in args.generate_key)):
         parser.error("--generate-key requires a nonempty name without control characters")
@@ -145,6 +173,8 @@ def main():
         fields["subject"] = args.subject
     prepared_id = None
     try:
+        if args.signing_key is not None:
+            args.signing_key = resolve_signing_key(args.signing_key)
         if args.generate_key is not None:
             args.signing_key = generate_key(args.generate_key.strip())
             register_key(base, args.signing_key)

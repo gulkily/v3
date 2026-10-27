@@ -25,6 +25,29 @@ sub escape_form {
     $bytes =~ s/([^A-Za-z0-9_.~-])/sprintf('%%%02X', ord($1))/ge;
     return $bytes;
 }
+sub resolve_signing_key {
+    # Match local GPG user IDs, counting only primary fingerprints. Signing
+    # subkeys belong to the same identity and must not cause false ambiguity.
+    my ($selector) = @_;
+    return $selector if $selector =~ /\A(?:[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})\z/;
+    my ($ok, $output) = capture('gpg', '--batch', '--with-colons', '--fingerprint', '--list-secret-keys', '--', $selector);
+    my %fingerprints;
+    my $primary = 0;
+    for my $line (split /\n/, $output) {
+        my @fields = split /:/, $line;
+        if ($fields[0] eq 'sec' || $fields[0] eq 'ssb') {
+            $primary = $fields[0] eq 'sec';
+        } elsif ($fields[0] eq 'fpr' && $primary) {
+            $fingerprints{$fields[9]} = 1 if defined($fields[9]) && $fields[9] =~ /\A(?:[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})\z/;
+            $primary = 0;
+        }
+    }
+    die "Username matches multiple secret keys; use --signing-key with a full primary fingerprint.\n" if keys(%fingerprints) > 1;
+    die "No matching secret key found. Check the GPG user ID and keyring/GNUPGHOME.\n" unless $ok && keys(%fingerprints);
+    my ($fingerprint) = keys %fingerprints;
+    print "Signing-key: $fingerprint\n";
+    return $fingerprint;
+}
 sub post {
     my ($base, $route, $fields, $signed) = @_;
     # Put the encoded body in a private temporary file, avoiding command-line
@@ -105,7 +128,7 @@ Publish a UTF-8 file; without a key option, publish anonymously.
   --board-tags TAGS      Comma-separated boards (default: general)
   --thread-id ID         Publish a reply
   --parent-id ID         Reply parent (defaults to thread ID)
-  --signing-key FPR      Full primary fingerprint of a registered identity
+  --signing-key KEY      Full primary fingerprint or unique local GPG username
   --generate-key NAME    Create persistent Ed25519 key, register identity, publish
 Key options are mutually exclusive. GPG uses your keyring/GNUPGHOME and pinentry.
 Requires Perl core modules and curl; signing requires GPG. No automatic retries.
@@ -119,8 +142,8 @@ $base =~ s{/+\z}{};
 input_error('Instance must be an HTTP(S) base URL without credentials, query or fragment.')
     unless $base =~ m{\Ahttps?://(?:\[[0-9A-Fa-f:.]+\]|[^/:\s\@?#]+)(?::[0-9]+)?(?:/[^\s?#]*)?\z} && $base !~ /[\x00-\x20\x7f]/;
 input_error('Choose --signing-key or --generate-key.') if exists($options{'signing-key'}) && exists($options{'generate-key'});
-input_error('--signing-key requires a full primary fingerprint.')
-    if exists($options{'signing-key'}) && $options{'signing-key'} !~ /\A(?:[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})\z/;
+input_error('--signing-key requires a nonempty fingerprint or username without control characters.')
+    if exists($options{'signing-key'}) && ($options{'signing-key'} !~ /\S/ || $options{'signing-key'} =~ /[\x00-\x1f\x7f]/);
 input_error('--generate-key requires a nonempty name without control characters.')
     if exists($options{'generate-key'}) && ($options{'generate-key'} !~ /\S/ || $options{'generate-key'} =~ /[\x00-\x1f\x7f]/);
 input_error('--parent-id requires --thread-id.') if $options{'parent-id'} && !$options{'thread-id'};
@@ -134,7 +157,7 @@ my $decoded = eval { decode('UTF-8', $body, FB_CROAK | Encode::LEAVE_SRC) };
 input_error('Text file must contain nonempty UTF-8 text.') if $@ || $decoded !~ /\S/;
 my $prepared_id;
 my $success = eval {
-    my $fingerprint = $options{'signing-key'};
+    my $fingerprint = exists($options{'signing-key'}) ? resolve_signing_key($options{'signing-key'}) : undef;
     if (exists $options{'generate-key'}) {
         # GPG prompts via pinentry and stores a persistent key. Use machine status
         # to find its fingerprint; user IDs need not be unique in a keyring.

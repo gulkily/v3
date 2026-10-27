@@ -88,7 +88,8 @@ final class AgentApiWorkedExampleTest
                         . ' ' . $interpreter . ' ' . escapeshellarg($projectRoot . '/scripts/publish_text.' . $extension)
                         . ' ' . escapeshellarg($server->url) . ' ' . escapeshellarg($root . '/post.txt')
                         . ($kind === 'generated' ? ' --generate-key ' . escapeshellarg($generatedName)
-                            : ' --signing-key ' . escapeshellarg($signingFingerprint))
+                            : ' --signing-key ' . escapeshellarg($kind === 'thread' ? 'example-agent'
+                                : ($kind === 'generated-reply' ? $generatedName : $signingFingerprint)))
                         . (!$isReply ? ' --subject ' . escapeshellarg('Signed file')
                             : ' --thread-id ' . escapeshellarg($threadId));
                     $publishOutput = [];
