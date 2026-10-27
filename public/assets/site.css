@@ -614,18 +614,22 @@ pre {
     overflow-y: auto;
   }
 
-  /* The theme popover opens upward and stays inside the screen. */
+  /* The LCD palette's centering transform would make its fixed popover
+     position against the palette instead of the screen. */
+  [data-shell="app"] .account-menu .lcd-palette {
+    top: 0;
+    transform: none;
+  }
+
+  /* Theme and LCD palette popovers open upward and stay inside the screen. */
   [data-shell="app"] .account-menu .theme-menu__popover {
     position: fixed;
     top: auto;
     right: 0.3rem;
-    bottom: calc(var(--app-tabbar-height) + 0.3rem);
-    max-height: calc(100vh - var(--app-tabbar-height) - 1rem);
+    /* clear the menu's controls row so the theme and palette buttons stay usable */
+    bottom: calc(var(--app-tabbar-height) + 3.75rem);
+    max-height: calc(100vh - var(--app-tabbar-height) - 4.5rem);
     overflow-y: auto;
-  }
-
-  [data-shell="app"] .private-conversation [data-private-message-composer] {
-    bottom: var(--app-tabbar-height);
   }
 
   /* Decorative theme status bars (Word 97, Midnight) give way to the tab bar. */

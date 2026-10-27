@@ -107,3 +107,25 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - **Correction (after commit `650fe55d9`):** the line above stating "`AppNavigationPlacementTest`: 7 run, 7 passed" was wrong. That run reported 5 passed, 2 failed, and the commit went ahead because the command chain did not stop on the failure. Cause: the Stage 3–4 shell CSS is inlined into every page as critical CSS, so two tests that searched the whole page for `new-post-button` / `account-menu` found the class names in the `<style>` block. The shell behavior was correct. Fix: those tests now check the page markup without the inline critical CSS. Rerun: 7 run, 7 passed, exit 0. From here on, test runs gate commits on the exit code.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Navigation scripts and their browser tests
+
+**Original estimate: 0.15**
+**Retrospective: 0.20**
+
+- Changes:
+  - No navigation script needed changes: `feature_flags.js` live refresh, `private_message_unread.js`, `auth_navigation.js`, invite navigation and `theme_toggle.js` work with the single nav and the account menu.
+  - `public/assets/site.css` (phone, account menu): the LCD palette's centering transform is dropped inside the menu, because it made the palette's fixed popover position against the palette and get clipped (palette options could not be tapped on phones); theme and palette popovers now open above the menu's controls row instead of covering it.
+  - `public/assets/private_message_conversation.css`: the phone composer offset moved here from the critical CSS, so the `data-private-message-composer` token no longer appears on every page (a test asserts it is absent when messaging is disabled).
+  - Browser tests: `lcd_palettes.mjs` and `invite_zero_click.mjs` open the account menu before using the theme controls or Invite, as a person now does; `nav_unread_outline.mjs` waits for the theme stylesheet's `load` before measuring.
+- Verification:
+  - Browser tests with `CHROMIUM_PATH=/usr/bin/google-chrome`, all exit 0: `nav_unread_outline`, `nav_active_theme_styles`, `theme_cycle`, `lcd_palettes`, `feature_flags_toolbar` (live navigation refresh), `media_embed_browser`, `invitation_issuance`, `invite_zero_click`, `private_message_availability`.
+  - `php tests/run.php AppNavigationPlacementTest PrivateMessageFeatureFlagTest FeatureFlagChangePageTest`: 14 run, 14 passed (exit-code gated).
+  - Baseline header diff (24 files): identical.
+  - LCD palette geometry at 390px: popover 570–728 clears the theme and palette buttons (742–774); at 1280px it does not overlap the theme button.
+- Notes:
+  - `nav_unread_outline.mjs` had a race: after swapping the theme stylesheet it waited for a page `load` that had already fired, so its "before" measurement could precede the new theme. On the baseline it passed 3/3; with this branch's larger critical CSS it failed 4/4 (different theme each time). Bisecting the CSS showed no single rule responsible (each half passed alone); with the test waiting for the stylesheet it passes 3/3 on the full branch CSS. The fix keeps the test's intent (unread must not shift layout) and removes the race.
+  - Deviation from the plan's wording: the expected script adjustments turned out unnecessary; the stage's work was CSS and test updates instead.
+- Estimate details: original scope; retrospective above the original because of the race investigation and the phone popover fixes.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
