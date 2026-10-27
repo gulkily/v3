@@ -83,3 +83,38 @@ refresh_home() {
   fi
   printf '\r\033[K'
 }
+
+chooser_filter=''
+chooser_selection=status
+show_command_launcher() {
+  local choice entered key description search_text
+  local -a entries
+  while true; do
+    entries=(search 'Search')
+    for key in status task-queue fast-score; do
+      case "$key" in
+        status) description='./v3 status — operator health' ;;
+        task-queue) description='./v3 task-queue status — queue details' ;;
+        fast-score) description='./v3 fast-score status — Fastmod details' ;;
+      esac
+      search_text="${description,,}"
+      if [[ "$search_text" == *"${chooser_filter,,}"* ]]; then
+        entries+=("$key" "$description")
+      fi
+    done
+    local prompt="${chooser_filter:+Search: $chooser_filter}"
+    (( ${#entries[@]} > 2 )) || prompt+=$'\nNo matches. Change or clear Search.'
+    choice="$("${whiptail_bin}" --title 'Read-only commands' --default-item "$chooser_selection" \
+      --menu "$prompt" 0 0 5 "${entries[@]}" 3>&1 1>&2 2>&3)" || return 0
+    chooser_selection="$choice"
+    case "$choice" in
+      search)
+        entered="$("${whiptail_bin}" --inputbox 'Search' 0 0 "$chooser_filter" 3>&1 1>&2 2>&3)" || continue
+        chooser_filter="$entered"
+        ;;
+      status) show_command_output 'Operator status' "${root}/v3" status ;;
+      task-queue) show_command_output 'Task queue status' "${root}/v3" task-queue status ;;
+      fast-score) show_command_output 'Fastmod status' "${root}/v3" fast-score status ;;
+    esac
+  done
+}

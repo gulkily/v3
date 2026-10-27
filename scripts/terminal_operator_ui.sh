@@ -75,38 +75,6 @@ edit_llm_connection() {
   rm -f "${output_file}"
 }
 
-launch_command() {
-  local title="$1"
-  local display="$2"
-  shift 2
-
-  "${whiptail_bin}" --title 'Run read-only command' --yesno \
-    "Run this existing read-only command?\n\n${display}" 10 76 || return 0
-  show_command_output "${title}" "$@"
-}
-
-show_command_launcher() {
-  local choice
-  choice="$("${whiptail_bin}" --title 'Read-only commands' --menu \
-    'The existing commands perform validation and execution.' 17 78 3 \
-    'status' './v3 status — operator health' \
-    'task-queue' './v3 task-queue status — queue details' \
-    'fast-score' './v3 fast-score status — Fastmod details' \
-    3>&1 1>&2 2>&3)" || return 0
-
-  case "${choice}" in
-    status)
-      launch_command 'Operator status' './v3 status' "${root}/v3" status
-      ;;
-    task-queue)
-      launch_command 'Task queue status' './v3 task-queue status' "${root}/v3" task-queue status
-      ;;
-    fast-score)
-      launch_command 'Fastmod status' './v3 fast-score status' "${root}/v3" fast-score status
-      ;;
-  esac
-}
-
 case "${1:-}" in
   -h|--help)
     usage
@@ -137,8 +105,9 @@ fi
 home_status="Repository: ${FORUM_REPOSITORY_ROOT:-${root}/state/local_repository}"
 home_observed=''
 refresh_home
+choice=refresh
 while true; do
-  choice="$("${whiptail_bin}" --title 'v3 terminal operator' --menu \
+  choice="$("${whiptail_bin}" --title 'v3 terminal operator' --default-item "$choice" --menu \
     "$home_status
 $home_freshness" 0 0 8 \
     'refresh' 'Refresh' \

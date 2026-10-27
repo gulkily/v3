@@ -32,3 +32,13 @@ Boundary: No dependency/schema changes, deployment or todo.txt edits. Stage comm
 - Notes: Stage 1 commit bb6109593. No automatic repair, schema or dependency change. Existing collector tests cover ready/stale/unavailable and observation without state creation. Original estimate unchanged; detailed SSH/resize acceptance remains S6.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 3 - Search diagnostics and retain context
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes: Search filters the existing diagnostic catalog literally and case-insensitively; no-match recovery, retained search/selection and home selection. Removed confirmation for read-only diagnostics; streaming return/retry remains.
+- Verification: Bash syntax passed; terminal PHP checks 4/4; navigation regression passed command-name search, no matches, arbitrary shell-looking input, exact allowlisted invocation and retained filter/selection.
+- Notes: Stage 2 commit 5c2cf14d8. No arbitrary command execution or new diagnostic scope. Original estimate unchanged; real keyboard acceptance consolidated in S6.
+
+*— Codex · 2026-10-27 UTC*

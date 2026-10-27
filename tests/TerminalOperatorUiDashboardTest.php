@@ -17,6 +17,8 @@ set -euo pipefail
 printf 'ARGS:%s\n' "$*" >> "$V3_TUI_TEST_LOG"
 if [[ " $* " == *' --menu '* ]]; then
   if [[ " $* " == *' Read-only commands '* ]]; then
+    if [[ -f "$V3_TUI_TEST_STATE-chooser" ]]; then exit 1; fi
+    touch "$V3_TUI_TEST_STATE-chooser"
     printf 'status\n' >&2
     exit 0
   fi
@@ -62,7 +64,7 @@ BASH);
 
             assertSame(0, $exitCode);
             assertSame('', $stderr);
-            assertStringContains('ARGS:--title v3 terminal operator --menu', $log);
+            assertStringContains('ARGS:--title v3 terminal operator', $log);
             assertStringContains('Observed:', $log);
             assertStringContains('Repository:', $log);
             assertStringContains('Queue details', $log);
@@ -72,13 +74,14 @@ BASH);
             assertStringContains('Private config path:', $log);
             assertStringContains('/tools/feature-flags/', $log);
             assertStringContains('./v3 task-queue status', $log);
-            assertStringContains('Run this existing read-only command?', $log);
+            assertStringNotContains('Run this existing read-only command?', $log);
             assertStringContains('./v3 status', $log);
             assertStringNotContains('LLM_API_KEY = ', $stdout);
         } finally {
             @unlink($fakeWhiptail);
             @unlink($logPath);
             @unlink($statePath);
+            @unlink($statePath . '-chooser');
             @rmdir($directory);
         }
     }
