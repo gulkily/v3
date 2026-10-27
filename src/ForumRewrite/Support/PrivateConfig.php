@@ -40,6 +40,19 @@ final class PrivateConfig
     /**
      * @return string[]
      */
+    /** @return array<string, mixed> */
+    public static function fileValues(string $path): array
+    {
+        if (!is_file($path)) {
+            return [];
+        }
+        $values = require $path;
+        if (!is_array($values)) {
+            throw new \RuntimeException('Private config must return an array.');
+        }
+        return array_filter($values, 'is_string', ARRAY_FILTER_USE_KEY);
+    }
+
     private static function candidatePaths(string $projectRoot): array
     {
         $paths = [];

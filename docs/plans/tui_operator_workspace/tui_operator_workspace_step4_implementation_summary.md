@@ -42,3 +42,13 @@ Boundary: No dependency/schema changes, deployment or todo.txt edits. Stage comm
 - Notes: Stage 2 commit 5c2cf14d8. No arbitrary command execution or new diagnostic scope. Original estimate unchanged; real keyboard acceptance consolidated in S6.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 4 - Edit resolved current LLM values
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes: Replaced shell preset-first sequence with a PHP whiptail editor using schema-owned fields, defaults/legacy/file/environment resolution, per-field locks, explicit presets and draft correction. Secret input stays blank and travels through pipes, never command arguments or retained files. Shared file reader added to PrivateConfig.
+- Verification: PHP syntax and focused config/schema/terminal checks 16/16. Actual editor/writer fixture passed current custom model/timeout, legacy source display, canceled review without write, preserved unrelated settings/secret, environment lock, invalid-timeout correction and blank-secret cancellation. Output/argument logs contain no fixture secret.
+- Notes: Stage 3 commit f3125f4ff. Stage 5 adds coordinated stale-review protection before release; current saves still use the established stdin writer. Original estimate unchanged; dependency delta zero.
+
+*— Codex · 2026-10-27 UTC*
