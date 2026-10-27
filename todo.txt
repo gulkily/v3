@@ -137,8 +137,6 @@ Explain feature for page help
 nojs compatibility
 	this is going to be a big one
 
-qr codes should match theme within reason
-
 UI copy cleanup: favor deleting text over editing or moving it into help; rely on an intuitive, explorable interface.
 	Keep essential warnings and recovery actions visible; apply this preference to the existing Explain task and audit checklist.
 
