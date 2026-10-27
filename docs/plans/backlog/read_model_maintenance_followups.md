@@ -6,7 +6,16 @@ cycle (completed and archived; see
 Neither was in that cycle's scope; both are recorded here so they are not lost
 when the cycle is archived.
 
-## 1. Derive `dropSchema()` from `ReadModelSchema::statements()`
+## 1. Derive `dropSchema()` from `ReadModelSchema::statements()` — DONE (2026-10-25)
+
+**Resolved.** `ReadModelBuilder::dropSchema()` now derives its table list from
+`ReadModelSchema::tableNames()` (parsed from the `CREATE TABLE` statements), so a
+new table is dropped-and-recreated on in-place rebuild automatically with no
+hand-maintained list. Covered by `tests/ReadModelDropSchemaTest.php` (tableNames
+matches the schema; in-place rebuild recreates every table without collision) and
+documented in `docs/specs/read_model_schema_v1.md` (Schema-change contract).
+
+Original note (for history):
 
 `ReadModelBuilder::dropSchema()` hand-maintains a hardcoded `DROP TABLE IF EXISTS`
 list. Any new read-model **table** must be added there too, or in-place rebuilds
@@ -41,3 +50,27 @@ threads.
 - **Risk/size:** medium–large, cross-cutting (board, Forte, qdb listings and
   scores; incremental + full rebuild paths; retraction semantics). Needs its own
   solution assessment.
+
+## 3. Keep the canonical archive README committed in the repository
+
+From the `archive_export_efficiency` cycle (2026-10-26). The repository archive
+(`/downloads/repository.tar.gz` / `.zip`) currently **overrides** whatever
+`README.md` the content repo tracks with the canonical recipient guide
+(`resources/repository-archive/README.md`), injected at export time by
+`RepositoryArchiveReadme::write()`. This override is load-bearing today (there is
+a contract + test that the archive always contains the guide, and a 500 path when
+the tracked `README.md` can't be replaced).
+
+- **User preference (deferred):** instead of overriding at build time, keep the
+  proper (guide) README committed in the content repository, so `git archive`
+  carries the correct README with no override step. This would simplify the export
+  (`git archive` becomes fully sufficient for the committed tree, no README
+  injection) and remove the replace-failure path.
+- **Caveats to resolve in its own cycle:** (a) who keeps the committed README in
+  sync with `resources/repository-archive/README.md` when the guide changes
+  (injection guarantees freshness; a committed file does not); (b) existing
+  instances (incl. qdb.us) have their own `README.md` or none, so this needs a
+  one-time seed and a decision about replacing an instance's own README; (c)
+  update the export tests/contract that currently assert the override.
+- **Risk/size:** small code, but a content/data decision (what README ships in the
+  archive) and a sync-maintenance question; needs a solution assessment.

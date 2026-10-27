@@ -28,6 +28,16 @@ and add a regression test for startup from the prior schema version. See
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the complete contributor
 checklist.
 
+Adding a **table** needs only its `CREATE TABLE` statement in
+`ReadModelSchema::statements()`: the rebuild drop step
+(`ReadModelBuilder::dropSchema()`) derives the tables to drop from
+`ReadModelSchema::tableNames()` (parsed from those statements), so a new table is
+dropped-and-recreated on in-place rebuild automatically — there is no separate
+drop list to keep in sync. (A forgotten entry previously caused in-place rebuilds
+to fail with `table <name> already exists`.) Indexes need no drop step; dropping
+a table drops its indexes. Read-model tables declare no foreign keys, so drop
+order is immaterial.
+
 ## Core read-model tables
 
 Defined in `src/ForumRewrite/ReadModel/ReadModelBuilder.php`'s
