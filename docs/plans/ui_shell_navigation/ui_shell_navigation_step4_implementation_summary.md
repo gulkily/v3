@@ -150,3 +150,20 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - Estimate details: original scope; shared fixes in `site.css` made per-theme edits unnecessary.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Icon themes
+
+**Original estimate: 0.08**
+**Retrospective: 0.06**
+
+- Changes (`public/assets/theme-nav-icons.css`, Word 97 / Chicago / Midnight):
+  - Account-menu links reuse the existing `.nav-link` address icons (About, Tools, Account, Invite), so they needed no new rules.
+  - New: Messages (envelope) and a personal Profile link (`/profiles/…`, person) icons; New post shares the existing composer icon and hides its "+" glyph; the "You" trigger shows a pixel person instead of the outline circle.
+  - Nav icons no longer shrink as flex items (`flex: 0 0 auto`), which had hidden the Messages icon in the five-tab phone bar.
+- Verification:
+  - Chrome, each icon theme at 1280px and 390px (touch), account menu open, with Messages and a Profile link injected (the local viewer is a guest): computed `::before` icons present on Messages, Profile, New post and About, and on the "You" trigger; all nav icons 16px wide in the phone tab bar. Screenshots reviewed.
+  - Gated: `php tests/run.php InvitationIssuanceTest AppNavigationPlacementTest PrivateMessageFeatureFlagTest` 21/21; baseline header diff identical; `nav_unread_outline` and `nav_active_theme_styles` (16 themes) pass.
+- Notes: Messages had no icon before this cycle either; it is added now because the tab bar shows it.
+- Estimate details: original scope; no revision.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
