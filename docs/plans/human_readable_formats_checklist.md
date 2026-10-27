@@ -8,8 +8,14 @@ Source audit: 2026-10-25, baseline `2a07313a738af9e0a0f15796e8155d301d949ed5`.
 Includes repository records, source routes, exports, operator configuration,
 reports, CLI output, and browser templates. This is a static source inventory,
 not runtime verification or a claim that every diagnostic path was exercised.
-Priorities below identify follow-up work; only retraction replacement is being
-planned now. No bulk conversion of other families is authorized by this checklist.
+Priorities below identify follow-up work. Retraction replacement (F01/R04) is
+complete; the remaining conversions are not authorized by this checklist.
+
+Latest source review: 2026-10-27, baseline
+`085c47701f57334164f7fe1c562454443cd65596`. Of the 16 audit items, 2 are complete
+and 14 remain open: 11 confirmed conversions (F02–F12) and 3 boundary checks
+(R01–R03). This review rechecked the listed format producers and boundary evidence;
+it is not a fresh exhaustive inventory or runtime verification.
 
 ## Prioritization rubric
 
@@ -26,7 +32,9 @@ Canonical readability gets extra weight because it is a platform contract.
 Each item shows its score and **C/E/F** inputs so the ranking is reviewable.
 Within each section, work highest score first; ties use the existing item ID.
 IDs stay stable and are not ranks. Scores prioritize value, not implementation
-sequence: F01 is already selected, and R04 belongs with it regardless of score.
+sequence: F01 and its companion R04 were completed together. Among the remaining
+canonical conversions, F02 precedes F03 under the existing tie-break rule; this
+ranking does not select or approve a new implementation cycle.
 Boundary-check scores prioritize **investigation only**, not an unconfirmed
 conversion; do not combine their queue with confirmed rewrites. Re-score when
 actual user evidence or a clarified human-facing contract changes an input.
@@ -43,7 +51,7 @@ actual user evidence or a clarified human-facing contract changes an input.
 - [ ] **F02 · Priority 11/12 (C/E/F 3/2/3) — Source/label removal acceptance.** `records/post-removals/*.json` is durable evidence and visible through source routes. Convert metadata, repeated label bindings and conversation structure to readable records; retain source hashes and local acceptance authority. Evidence: [LabelRemoval](../../src/ForumRewrite/Canonical/LabelRemoval.php), [schema contract](../specs/read_model_schema_v1.md).
 - [ ] **F03 · Priority 11/12 (C/E/F 3/2/3) — Approval acceptance receipts.** `records/approval-acceptances/*.json` contains nested reviewed context and is source-readable. Use named text fields; preserve grant/context hash bindings and the distinction between a signed grant and local acceptance. Decide historical digest compatibility explicitly before changing serialization. Evidence: [ApprovalAcceptance](../../src/ForumRewrite/Security/ApprovalAcceptance.php), [receipt specification](../specs/approval_acceptance_record_v1.md).
 - [ ] **F04 · Priority 9/12 (C/E/F 3/2/1) — Legacy timestamp companions.** `records/post-timestamps/*.json` contains three scalar fields. Replace with text headers and retain the exact original-record hash binding. Evidence: [LegacyPostTimestamp](../../src/ForumRewrite/Canonical/LegacyPostTimestamp.php), [post specification](../specs/canonical_post_record_v1.md).
-- [ ] **F05 · Priority 10/12 (C/E/F 3/2/2) — Agent response metadata inside posts.** `Agent-Response: {…}` embeds JSON in canonical signed replies. Replace with individually named headers; update post parsing, response/expansion writers and offline/read-model consumers without losing attribution or version relationships. Evidence: [AgentResponseMetadata](../../src/ForumRewrite/Canonical/AgentResponseMetadata.php), [LocalWriteService](../../src/ForumRewrite/Write/LocalWriteService.php), [PostRecordParser](../../src/ForumRewrite/Canonical/PostRecordParser.php).
+- [ ] **F05 · Priority 10/12 (C/E/F 3/2/2) — Agent response metadata inside posts.** `Agent-Response: {…}` embeds JSON in canonical signed replies. Replace with individually named headers; update post parsing, response/expansion writers and offline/read-model consumers without losing attribution or version relationships. Explicitly define existing signed-record handling; do not rewrite historical signed bytes merely to rename metadata fields. Evidence: [AgentResponseMetadata](../../src/ForumRewrite/Canonical/AgentResponseMetadata.php), [LocalWriteService](../../src/ForumRewrite/Write/LocalWriteService.php), [PostRecordParser](../../src/ForumRewrite/Canonical/PostRecordParser.php).
 
 ## Human-facing configuration, exports and output — convert
 
@@ -74,6 +82,10 @@ Do not rewrite exact protocol diagnostics or frozen evidence to satisfy this aud
 
 ## Closing each conversion
 
+Apply these checks separately to each conversion and link its verification from
+the corresponding item above. These reusable checks are not additional open audit
+items; F01/R04 completion evidence is in their implementation summary.
+
 - [ ] Specify fields, repeated values and multiline content under `docs/specs/` for canonical formats; include a readable example and malformed-input behavior.
 - [ ] Verify actual writers, readers, source/download routes, import/export and recovery; preserve signed bytes and trust boundaries. Explicitly decide compatibility for that family.
 - [ ] Update affected tests/docs and inspect the human result. UI changes follow `CONTRIBUTING.md`; record evidence here or link their implementation summary.
@@ -84,8 +96,29 @@ verification are recorded in the [implementation summary](retraction_text_format
 
 *— Codex · 2026-10-25 UTC*
 
-Prioritization verification: all 16 open audit items scored; component ranges and
+Initial prioritization verification (before F01/R04 completion): all 16 then-open
+audit items scored; component ranges and
 weighted totals checked. Existing IDs, evidence, completion states and conversion
 boundaries preserved. Documentation only; no new Railspike cycle or runtime tests.
 
 *— Revised by Codex · 2026-10-25 UTC*
+
+## 2026-10-27 review
+
+- Confirmed F01's retained request/signature/text-receipt implementation in
+  `AcceptedRetraction`; F01/R04 verification remains linked to the existing
+  implementation summary. No implementation tests were rerun for this review.
+- Rechecked F02–F12 against the listed record codecs, writers, configuration
+  reader, export inventories and CLI output. Their JSON formats remain present;
+  no additional conversion is marked complete and scores are unchanged.
+- Rechecked R01's viewer fallbacks, R02's signed payload serialization and R03's
+  documented direct result-file inspection. Their boundary questions remain open;
+  source inspection alone does not establish a human-facing contract for R02.
+- Corrected the planning-only introduction and distinguished the original scoring
+  checkpoint from current completion counts. Clarified per-conversion closeout
+  and existing signed-record handling for F05.
+- Verification: local Markdown link targets, item counts, priority arithmetic and
+  diff whitespace checked. Documentation only; no runtime/UI verification, new
+  Railspike cycle or dependency changes.
+
+*— Reviewed by Codex · 2026-10-27*
