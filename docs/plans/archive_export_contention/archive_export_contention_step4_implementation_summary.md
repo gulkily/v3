@@ -91,3 +91,22 @@ Stages: Six planned/six locally complete, original stage-work values retained; S
 Acceptance: Maintainer comfortable-fit judgment and production recovery pending; no accepted-outcome increment or independent child observation. No measured labor recorded. Zero dependency delta verified against changed paths; no manifest/lock/vendor additions, no todo.txt edits. Canonical files and export formats remain unchanged.
 
 *— Codex · 2026-10-26 UTC*
+
+## Merge integration verification — 2026-10-25
+
+Integrated reusable archive exports with the image ZIP branch. Default image ZIP
+and legacy image TAR use distinct cache entries; both retain protected stream
+transfer, validated reuse, and the shared busy/conflict/operator-error responses.
+Preserved both branches' guidance, plan indexes, study checkpoints and test entries.
+Updated the image corruption HTTP assertion to the operator-error contract (500).
+Added a regression covering separate ZIP/TAR artifacts and warm reuse.
+
+Verification: 56/56 focused PHP tests passed across archive exports, image ZIP
+backup/restore, image content, Backup, repository content exports, registration,
+accepted retractions/receipts/transactions/maintenance, read-model retractions and
+content import planning. `node tests/browser/archive_export_browser.mjs` passed
+four themes at phone/desktop widths, cold/warm reuse, busy/conflict/retry, extraction
+and failure recovery. Conflict-resolution diff checks passed; the full staged check
+reported four existing Markdown hard-break lines in incoming retraction plans.
+No dependency changes. Full suite,
+physical devices and deployment were not verified during merge integration.

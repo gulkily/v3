@@ -65,3 +65,12 @@ Release limits: Full suite, production deployment, physical devices, other brows
 Commits: Planning 6797de0f; Stage 1 74ff9dc0; Stage 2 d40980d4; Stage 3 41244f96; Stage 4 is the commit containing this closeout. Final commit reference is recorded in the debug handoff log after creation.
 
 *— Codex · 2026-10-27 UTC*
+
+## Main integration — 2026-10-27
+
+Request: User requested help completing the merge already in progress on main (local cbc83630, incoming main 151905f1).
+Resolution: Preserve both study-history sections and both test registrations. Combine incoming Backup metadata/recent items and image ZIP link with independent feature flags, disabled-download state and image-only restore warning. Keep upstream compact public-scope/SQLite freshness copy. Update flag tests and operator guidance for advertised ZIP and legacy TAR; the shared image category gate applies to both. Canonical flag ordering remains intact. Incoming todo.txt changes were preserved byte-for-byte from MERGE_HEAD, without authoring edits to that file.
+Verification: BackupFeatureFlagTest, BackupPageTest, FeatureFlagsBehaviorTest, FeatureFlagEvaluatorTest, ImageZipBackupTest, ImageZipRestoreTest and ArchiveExportTest pass 46/46. ReadModelSchemaTest, ReadModelViewerTagsRebuildTest and RegistrationBenchmarkTest pass 4/4. Signed backup browser passes 240 page/theme/viewport states and HTTP ZIP/TAR enforcement/recovery; canonical-order/toolbar browser checks pass. Midnight phone merged image-only screenshot inspected. Both study sections preserved verbatim; no duplicate test registrations or conflict markers; staged diff check passes. Evidence: /tmp/backup-merge-tests.log, /tmp/backup-merge-readmodel.log, /tmp/backup-merge-browser.log, /tmp/backup-merge-order-browser.log; browser artifacts /tmp/backup-flags-browser-lBKMAg.
+Limits: Focused merge verification, not a full-suite/deployment/physical-device claim. No new dependencies or dependency updates introduced by resolution. Existing study scores and acceptance remain unchanged; no independent outcome or accepted-count increment. Merge commit contains this record; no push authorized or performed.
+
+*— Codex · 2026-10-27 UTC*

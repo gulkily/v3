@@ -64,12 +64,14 @@ final class BackupFeatureFlagTest
         $retained = $store->resolve($ref);
         foreach ([true, false] as $text) {
             foreach ([true, false, true] as $images) {
-                $body = $this->request($w, $root, '/downloads/images.tar', $text, $images);
-                assertStringContains('HTTP_STATUS=' . ($images ? '200' : '403'), $body);
+                foreach (['zip', 'tar'] as $format) {
+                    $body = $this->request($w, $root, '/downloads/images.' . $format, $text, $images);
+                    assertStringContains('HTTP_STATUS=' . ($images ? '200' : '403'), $body);
+                }
                 $body = $this->request($w, $root, '/downloads/repository.zip', $text, $images);
                 assertStringContains('HTTP_STATUS=' . ($text ? '200' : '403'), $body);
                 $page = $this->request($w, $root, '/tools/backup/', $text, $images);
-                assertSame($images, str_contains($page, 'href="/downloads/images.tar'));
+                assertSame($images, str_contains($page, 'href="/downloads/images.zip'));
                 assertSame($text, str_contains($page, 'href="/downloads/repository.zip'));
                 if ($images && !$text) { assertStringContains('requires a matching content backup', $page); }
                 assertSame($png, file_get_contents($retained));
@@ -124,7 +126,7 @@ final class BackupFeatureFlagTest
     public function testEnabledBackupsStillRequirePrivateSiteAccess(): void
     {
         $w = new ImportTestWorkspace(); $root = $w->repository('source', true); $w->git($root);
-        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'] as $path) {
+        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.zip', '/downloads/images.tar'] as $path) {
             $body = $this->request($w, $root, $path, true, true, true);
             assertStringNotContains('HTTP_STATUS=200', $body);
             assertStringContains('HTTP_STATUS=403', $body);

@@ -6082,7 +6082,7 @@ NODE;
                 return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
                     public function applyIdentityLink(\ForumRewrite\Canonical\IdentityBootstrapRecord $record, string $commitSha): array
                     {
-                        throw new RuntimeException('simulated identity incremental failure');
+                        throw new RuntimeException('simulated identity incremental failure with private material');
                     }
                 };
             }
@@ -6096,6 +6096,9 @@ NODE;
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
+        assertSame('full_rebuild', $result['identity_update_metrics']['path']);
+        assertSame('incremental_update_failed', $result['identity_update_metrics']['fallback_reason']);
+        assertStringNotContains('private material', json_encode($result['identity_update_metrics']));
         assertStringContains('<h1>forum-user</h1>', $profilePage);
         $this->assertReadModelHealthy($databasePath);
     }

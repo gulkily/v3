@@ -104,7 +104,7 @@ final class ImportInstanceCommandTest
             'FORUM_TASK_QUEUE_DATABASE_PATH' => $w->root . '/source-private/tasks.sqlite3',
             'FORUM_APPROVED_MEMBERS_ONLY' => 'false',
         ]);
-        foreach (['repository.tar.gz' => "\x1f\x8b", 'repository.zip' => 'PK', 'images.tar' => 'manifest.json'] as $format => $prefix) {
+        foreach (['repository.tar.gz' => "\x1f\x8b", 'repository.zip' => 'PK', 'images.zip' => 'PK', 'images.tar' => 'manifest.json'] as $format => $prefix) {
             $bytes = file_get_contents($server->url . '/downloads/' . $format);
             assertSame($prefix, substr($bytes, 0, strlen($prefix)), $format);
             assertStringContains('200', $http_response_header[0]);

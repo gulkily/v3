@@ -68,12 +68,12 @@ try {
     assert.equal(denied.status(), 403);
   }
   let checks = 0;
-  const paths = ['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'];
+  const paths = ['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.zip', '/downloads/images.tar'];
   for (const [text, images] of [[true, true], [false, true], [false, false], [true, false], [true, true]]) {
     await toggle('text', text); await toggle('image', images);
     await page.waitForFunction(visible => Boolean(document.querySelector('.tools-nav a[href="/tools/backup/"]')) === visible, text || images);
     for (const path of paths) {
-      const allowed = path.includes('images.tar') ? images : text;
+      const allowed = path.includes('/images.') ? images : text;
       const response = await anonymous.request.get(base + path);
       assert.equal(response.status(), allowed ? 200 : 403, path);
       if (!allowed) {
@@ -120,7 +120,7 @@ try {
           }
           if (path === '/tools/backup/') {
             assert.equal(await page.locator('a[href^="/downloads/repository.zip"]').count(), text ? 1 : 0);
-            assert.equal(await page.locator('a[href^="/downloads/images.tar"]').count(), images ? 1 : 0);
+            assert.equal(await page.locator('a[href^="/downloads/images.zip"]').count(), images ? 1 : 0);
             if (!text && images) assert.match(await page.locator('main').innerText(), /matching content backup/);
             if (!text && !images) assert.match(await page.locator('main').innerText(), /Backups are unavailable/);
           }

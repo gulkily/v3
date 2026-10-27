@@ -80,6 +80,94 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion25StartupBuildsActivityAuthorIndexBeforeServingPage(): void
+    {
+        $database = sys_get_temp_dir() . '/registration-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('DROP INDEX activity_author_identity_idx');
+            $pdo->exec('DROP INDEX IF EXISTS posts_author_identity_idx');
+            $pdo->exec("UPDATE metadata SET value='25' WHERE key='schema_version'");
+            $pdo->exec("UPDATE metadata SET value='1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce' WHERE key='schema_fingerprint'");
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            $plan = $pdo->query("EXPLAIN QUERY PLAN UPDATE activity SET author_label='test', author_is_approved=0 WHERE author_identity_id='openpgp:test'")->fetchAll(PDO::FETCH_ASSOC);
+            assertStringContains('USING INDEX activity_author_identity_idx', implode(' ', array_column($plan, 'detail')));
+            assertStringNotContains('SCAN activity', implode(' ', array_column($plan, 'detail')));
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion26StartupBuildsPostAuthorIndexAndPreservesOrSemantics(): void
+    {
+        $database = sys_get_temp_dir() . '/post-author-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('DROP INDEX posts_author_identity_idx');
+            $previous = array_values(array_filter(\ForumRewrite\ReadModel\ReadModelSchema::statements(), static fn (string $sql): bool => !str_contains($sql, 'posts_author_identity_idx')));
+            $pdo->exec("UPDATE metadata SET value='26' WHERE key='schema_version'");
+            $pdo->prepare("UPDATE metadata SET value=? WHERE key='schema_fingerprint'")->execute([hash('sha256', implode("\n", $previous))]);
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            $ids = $pdo->query('SELECT post_id FROM posts ORDER BY post_id LIMIT 2')->fetchAll(PDO::FETCH_COLUMN);
+            $pdo->prepare("UPDATE posts SET author_identity_id='openpgp:test', post_score_total=0 WHERE post_id IN (?,?)")->execute($ids);
+            $sql = "UPDATE posts SET post_score_total=post_score_total+1 WHERE post_id=? OR author_identity_id='openpgp:test'";
+            $plan = $pdo->prepare('EXPLAIN QUERY PLAN ' . $sql);
+            $plan->execute([$ids[0]]);
+            $details = implode(' ', array_column($plan->fetchAll(PDO::FETCH_ASSOC), 'detail'));
+            assertStringContains('MULTI-INDEX OR', $details);
+            assertStringContains('posts_author_identity_idx', $details);
+            assertStringNotContains('SCAN posts', $details);
+            $update = $pdo->prepare($sql);
+            $update->execute([$ids[0]]);
+            assertSame(2, $update->rowCount());
+            assertSame([1, 1], array_map('intval', $pdo->query("SELECT post_score_total FROM posts WHERE author_identity_id='openpgp:test' ORDER BY post_id")->fetchAll(PDO::FETCH_COLUMN)));
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion27StartupRebuildsBeforeChangedProfileUpdates(): void
+    {
+        $database = sys_get_temp_dir() . '/profile-query-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $expected = $pdo->query('SELECT identity_id, post_count, thread_count FROM profiles ORDER BY identity_id')->fetchAll(PDO::FETCH_ASSOC);
+            $pdo->exec("UPDATE metadata SET value='27' WHERE key='schema_version'");
+            $pdo->exec('UPDATE profiles SET post_count=999, thread_count=999');
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame($expected, $pdo->query('SELECT identity_id, post_count, thread_count FROM profiles ORDER BY identity_id')->fetchAll(PDO::FETCH_ASSOC));
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion28StartupRebuildsBeforeTargetedActivityUpdates(): void
+    {
+        $database = sys_get_temp_dir() . '/activity-query-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $expected = $pdo->query('SELECT post_id, author_identity_id, author_label, author_is_approved FROM activity ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+            $pdo->exec("UPDATE metadata SET value='28' WHERE key='schema_version'");
+            $pdo->exec("UPDATE activity SET author_label='stale attribution'");
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame($expected, $pdo->query('SELECT post_id, author_identity_id, author_label, author_is_approved FROM activity ORDER BY id')->fetchAll(PDO::FETCH_ASSOC));
+        } finally { @unlink($database); }
+    }
+
     public function testVersion24StartupRebuildsBeforeServingStandardActivityPages(): void
     {
         $database = sys_get_temp_dir() . '/activity-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -1731,9 +1819,9 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('Public content only.', $backupPage);
-            assertStringContains('Back up Git history, private data, browser keys and drafts, software, settings and external media separately.', $backupPage);
-            assertStringContains('The SQLite index may be out of date.', $backupPage);
+            assertStringContains('Public content only; not a full site backup.', $backupPage);
+            assertStringContains('Index generated:', $backupPage);
+            assertStringContains('(may be out of date)', $backupPage);
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
@@ -1986,10 +2074,13 @@ PHP;
         assertStringContains('anonymous unsigned', $post);
         foreach ([$instance, $backup, $toolsBackup] as $page) {
             assertStringContains('Backup', $page);
-            assertStringContains('Public content only.', $page);
-            assertStringContains('Back up Git history, private data, browser keys and drafts, software, settings and external media separately.', $page);
+            assertStringContains('Public content only; not a full site backup.', $page);
+            assertStringContains('Index generated:', $page);
             assertStringNotContains('Snapshot freshness', $page);
-            assertStringNotContains('Recent included items', $page);
+            assertStringContains('Recent included items', $page);
+            assertStringContains('<strong>Instance:</strong>', $page);
+            assertStringContains('<strong>Admins:</strong>', $page);
+            assertStringContains('<strong>Snapshot:</strong>', $page);
             assertStringNotContains('About these downloads', $page);
             foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $href) {
                 assertSame(1, substr_count($page, 'href="' . $href));
@@ -5063,6 +5154,16 @@ PHP;
         assertTrue(isset($result['timings']['lock_wait']));
         assertTrue(is_float($result['timings']['lock_wait']));
         assertTrue($result['timings']['lock_wait'] >= 0.0);
+        assertTrue(is_float($result['timings']['lock_hold']));
+        assertTrue($result['timings']['lock_hold'] >= 0.0);
+        assertSame(false, $lock->isLocked());
+        try {
+            $lock->withExclusiveLockTimed(static function (): void { throw new RuntimeException('callback failed'); });
+            throw new RuntimeException('Expected callback failure.');
+        } catch (RuntimeException $error) {
+            assertSame('callback failed', $error->getMessage());
+        }
+        assertSame(false, $lock->isLocked());
     }
 
     private function render(Application $application, string $path): string

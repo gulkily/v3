@@ -1,0 +1,115 @@
+{
+  "source": "Matched QDB SQLite snapshot; transaction rollback after each sample",
+  "cases": {
+    "existing_author": {
+      "parameters_scope": "existing_author",
+      "original": {
+        "plan": [
+          "SCAN posts"
+        ],
+        "milliseconds": [
+          5.396893000579439,
+          6.122260994743556,
+          4.507103003561497,
+          5.235486998572014,
+          5.502675994648598,
+          5.490350988111459,
+          5.553214010433294
+        ],
+        "median_ms": 5.490350988111459,
+        "matched_rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "indexed": {
+        "plan": [
+          "MULTI-INDEX OR",
+          "INDEX 1",
+          "SEARCH posts USING INDEX sqlite_autoindex_posts_1 (post_id=?)",
+          "INDEX 2",
+          "SEARCH posts USING INDEX posts_author_identity_idx (author_identity_id=?)"
+        ],
+        "milliseconds": [
+          1.1370339925633743,
+          0.06503499753307551,
+          0.042202998884022236,
+          0.041808001697063446,
+          0.03904700861312449,
+          0.05813500320073217,
+          0.04421500489115715
+        ],
+        "median_ms": 0.04421500489115715,
+        "matched_rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    "anonymous_anchor": {
+      "parameters_scope": "anonymous_anchor",
+      "original": {
+        "plan": [
+          "SCAN posts"
+        ],
+        "milliseconds": [
+          5.740316992159933,
+          9.017624004627578,
+          6.5091739961644635,
+          7.848174005630426,
+          4.79811399418395,
+          4.464279001695104,
+          6.874737999169156
+        ],
+        "median_ms": 6.5091739961644635,
+        "matched_rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "indexed": {
+        "plan": [
+          "MULTI-INDEX OR",
+          "INDEX 1",
+          "SEARCH posts USING INDEX sqlite_autoindex_posts_1 (post_id=?)",
+          "INDEX 2",
+          "SEARCH posts USING INDEX posts_author_identity_idx (author_identity_id=?)"
+        ],
+        "milliseconds": [
+          0.12248801067471504,
+          0.08493100176565349,
+          0.07887399988248944,
+          0.08110298949759454,
+          0.08294200233649462,
+          0.12143699859734625,
+          0.21124100021552294
+        ],
+        "median_ms": 0.08493100176565349,
+        "matched_rows": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    }
+  }
+}

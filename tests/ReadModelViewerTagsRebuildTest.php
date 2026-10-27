@@ -10,7 +10,7 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 require_once __DIR__ . '/Support/RebuildHistoryFixture.php';
 
 /**
- * Schema version 27 regression: a read model stamped with a prior schema
+ * Schema version 30 integration regression: a read model stamped with a prior schema
  * identity and lacking the viewer_tags table must be rebuilt by normal
  * application startup before the thread page's viewer-tag lookups run. Mirrors
  * the corrected ReadModelHotIndexRebuildTest (startup-driven, not a manual
@@ -25,7 +25,7 @@ final class ReadModelViewerTagsRebuildTest
             $livePath = $fixture->root . '/model.sqlite';
             (new ReadModelBuilder($fixture->repository, $livePath, new CanonicalRecordRepository($fixture->repository)))->rebuild();
 
-            // Simulate a pre-27 model: drop viewer_tags and stamp a prior identity.
+            // Simulate the main-branch version 29 model: drop viewer_tags and stamp a prior identity.
             $this->seedStaleModelWithoutViewerTags($livePath);
 
             $stale = new PDO('sqlite:' . $livePath);
@@ -70,8 +70,8 @@ final class ReadModelViewerTagsRebuildTest
         $pdo->exec('DROP INDEX IF EXISTS viewer_tags_identity_idx');
         $pdo->exec('DROP TABLE IF EXISTS viewer_tags');
         $stmt = $pdo->prepare('UPDATE metadata SET value = :value WHERE key = :key');
-        $stmt->execute(['value' => '26', 'key' => 'schema_version']);
-        $stmt->execute(['value' => 'stale-fingerprint-pre-27', 'key' => 'schema_fingerprint']);
+        $stmt->execute(['value' => '29', 'key' => 'schema_version']);
+        $stmt->execute(['value' => 'stale-fingerprint-pre-30', 'key' => 'schema_fingerprint']);
     }
 
     private function tableExists(PDO $pdo, string $name): bool

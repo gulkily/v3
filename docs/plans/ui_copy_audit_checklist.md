@@ -1,5 +1,20 @@
 # UI copy audit checklist
 
+## Backup section grouping — October 25, 2026
+
+- [x] Split the page into three existing-style cards: Backup details, Downloads, and Recent included items. Added only the Downloads heading; preserved all fields, links, notes and empty states.
+- Verification: 4/4 focused PHP checks (BackupPageTest and LocalAppSmokeTest portability/core routes); Chromium across 14 theme choices at 390px/1280px with populated, empty and long-value fixtures, all aliases, real downloads and revision-mismatch retry. No horizontal overflow. Inspected updated Word97 phone and Midnight desktop screenshots at `/tmp/backup-restored-{theme}-{width}.png`; browser evidence `/tmp/backup-restored-check.mjs`. Diff check passed.
+- No dependencies, CSS, navigation/icon, data-contract or `todo.txt` changes. Existing tall Tools navigation on phones remains outside scope. Physical devices, other engines, full suite and deployment were not checked.
+
+
+## Backup data restoration — October 25, 2026
+
+- [x] Corrected the preceding cleanup: restored instance name, linked admins, generated time, snapshot hash and recent included items with All activity. These are useful data, not explanatory clutter. Kept direct download links; reduced notes to adjacent SQLite staleness/image matching and one short public-content-only limitation. “Index generated” accurately labels the existing read-model timestamp rather than implying archive generation time.
+- Regression checks now assert actual instance/admin values, stored timestamp/hash and recent-item content/link presence, alongside unique downloads and essential limits. Focused PHP 8/8 passed, with the strengthened BackupPageTest rechecked. Browser verification passed on all three aliases and 14 theme choices at 390px/1280px, including populated data, template-rendered empty/missing metadata and long names/items, four successful downloads and wrong-revision failure/retry. No horizontal overflow; inspected `/tmp/backup-restored-word97-390.png` and `/tmp/backup-restored-midnight-1280.png`. Browser evidence: `/tmp/backup-restored-check.mjs` and `/tmp/backup-data-router.php`.
+- Principle for later copy work: identify the information and actions a page supports first; remove duplicate explanations while preserving evidence, timestamps, identities, counts, previews and recovery controls. Verify preserved data as well as removed wording.
+- No dependencies, schema, navigation/icon or `todo.txt` changes. Existing tall phone Tools navigation remains outside scope. Physical devices, other engines, full suite and production deployment were not checked. This record supersedes the earlier claim that removing the useful data completed the cleanup.
+
+
 ## Backup page reduction — October 25, 2026
 
 - [x] Removed site/admin details, freshness headings/metadata, repeated download tables/descriptions, activity preview and the separate explanation card. All three Backup aliases now show direct format links, conditional image pairing guidance, SQLite staleness and a concise separate-backup warning. Removed the corresponding page-data queries and description strings; download behavior is unchanged.
@@ -525,6 +540,12 @@ These observations need rendered review before deciding what to remove. Keep thi
 - Verified initial/loaded backup pages at 390/1440 widths in Light, Dark, Word97, Chicago and Midnight, with images present/absent (20 Chromium states), real styles loaded, visible download controls and no horizontal overflow. Inspected Midnight phone/Light desktop screenshots. Actual stale-revision failure followed by Backup refresh and successful TAR.GZ/ZIP downloads passed. BackupPageTest and affected LocalAppSmokeTest checks pass. No expanded state exists in the changed copy. Full suite, physical devices and deployment unverified.
 - [Implementation and archive/import evidence](repository_content_export_one_shot_summary.md). Zero dependencies. Early temporary harness checks without fingerprinted assets were discarded and rerun through FrontController.
 
+## 2026-10-26 — ZIP image backup
+
+- Backup now labels its image download “Images (.zip)”. Instance, admins, generated time, snapshot, recent included items and existing sections remain intact; no navigation changes or extra UI explanations.
+- Passed Chromium checks at 390/1280 widths across all 14 available themes, with populated, empty and long-value fixtures; no horizontal overflow. All three Backup aliases, four browser downloads and revision-mismatch refresh/retry passed. Visually reviewed Word97 phone and Midnight desktop screenshots (`/tmp/backup-zip-word97-390.png`, `/tmp/backup-zip-midnight-1280.png`). No expanded state exists in this change. Physical devices and deployment unverified.
+- [Implementation and recovery evidence](image_backup_zip/image_backup_zip_step4_implementation_summary.md). Zero dependency delta.
+
 ## Archive export contention — 2026-10-26
 
 Change: Download failures now distinguish 503 busy/retry, 409 refresh-and-pair, and 500 operator recovery. Raw exception paths are logged privately rather than returned publicly. Existing Backup warnings and links remain.
@@ -547,3 +568,8 @@ Change: Registry-owned presentation order fixes groups as Access and identity, A
 Verification: FeatureFlagsBehaviorTest and FeatureFlagEvaluatorTest pass 22/22, including registration coverage, duplicate/group/dependency validation and production-template order from reversed input. Existing Chromium toolbar suite passes search/status/counts, empty recovery, signed-save UI success/failure/delay, toggle/reset, keyboard, read-only/no-JS and sticky-banner checks. Added real-registry render checks confirm all eight headings, stable filtered subsequences and restored order across light/dark/console/Word97/Chicago/Midnight at 375/1150px (12 states), with no horizontal overflow. Midnight phone full-page screenshot inspected; existing toggle actions remain visible beside flags. Diff check passes.
 Evidence: /tmp/flag-order-php.log, /tmp/flag-order-browser.log, /tmp/feature-flags-order-{theme}-{width}.png. Rendered browser checks use production template/script and isolated states; this task does not claim a new live signature/backend acceptance run. Full suite, deployment and physical devices not checked.
 Dependency delta: Zero. No navigation destination/icon, schema, canonical record format or todo.txt change. Commit authorization: User requested committing the reviewed change on feat/backup-feature-flags.
+
+## Backup main-merge verification — 2026-10-27
+
+Resolution: Preserve upstream instance/admin/snapshot details, recent items, image ZIP link, inline SQLite freshness and compact public-scope copy alongside the new flag-based unavailable state. Image-only mode retains the matching-content requirement. ZIP and legacy TAR remain under one image flag.
+Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all 240 states across six themes and 390/1280 widths; actual ZIP/TAR denial, recovery and icon checks pass. Merged Midnight phone image-only screenshot inspected at /tmp/backup-flags-browser-lBKMAg/backup-01.png. Canonical-order toolbar suite passes. See backup feature-flags implementation summary for 50 passing PHP checks and evidence paths. No new layout/overflow issue observed; full suite, physical devices and deployment remain unverified.

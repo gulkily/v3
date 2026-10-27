@@ -131,10 +131,20 @@ Symptoms:
 Action:
 
 1. wait briefly and retry the status endpoint
-2. check whether another write or queued-worker rebuild is in progress; a
-   lock alone does not identify which operation owns it
-3. if the lock remains stuck after the PHP process is gone, inspect the host/process state
-4. only remove stale lock files after confirming no active process is still using them
+2. identify the holder with `lslocks -o PID,COMMAND,TYPE,MODE,PATH` and inspect
+   its PID with `ps -p PID -o pid,ppid,etime,time,stat,args`; a web request or
+   manual rebuild can hold locks without appearing in the task queue
+3. if `lslocks` is unavailable, `fuser -v` on the database and
+   `forum-rewrite.lock` paths can identify processes using those files, though
+   an open file alone does not prove lock ownership
+4. establish whether the holder is progressing before stopping it or starting
+   another rebuild; check the host's PHP/web-server logs for failures
+
+Do not delete the lock file to release an active lock: another process could
+create and lock a different file at the same path, breaking mutual exclusion.
+The operating system releases the lock when its holder closes it or exits;
+the file remaining on disk does not mean the lock is held. On an Apache-hosted
+deployment, `./v3 start` is not a production restart command.
 
 ### 3. Git Write Failure
 

@@ -44,6 +44,7 @@ final class ReadModelSchema
                 retraction_attribution TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )',
+            'CREATE INDEX posts_author_identity_idx ON posts (author_identity_id)',
             'CREATE TABLE threads (
                 root_post_id TEXT PRIMARY KEY,
                 root_post_created_at TEXT NOT NULL,
@@ -115,6 +116,7 @@ final class ReadModelSchema
             'CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)',
             'CREATE INDEX activity_post_id_idx ON activity (post_id)',
             'CREATE INDEX activity_action_key_idx ON activity (action_key)',
+            'CREATE INDEX activity_author_identity_idx ON activity (author_identity_id)',
             'CREATE TABLE commits (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 sha TEXT NOT NULL UNIQUE,
@@ -126,7 +128,6 @@ final class ReadModelSchema
             )',
             'CREATE INDEX commits_committed_at_idx ON commits (committed_at DESC, id DESC)',
             'CREATE INDEX posts_thread_sequence_idx ON posts (thread_id, sequence_number)',
-            'CREATE INDEX posts_author_identity_idx ON posts (author_identity_id)',
             'CREATE INDEX threads_last_activity_idx ON threads (last_activity_at DESC, root_post_id DESC)',
             'CREATE TABLE viewer_tags (
                 record_family TEXT NOT NULL,

@@ -10,7 +10,7 @@ use ForumRewrite\Images\ImageBackup;
 
 final class ArchiveExportTest
 {
-    public function testIdentityIncludesUntrackedBytesPermissionsAndImages(): void
+    public function testIdentityTracksCommittedRevisionDirtinessAndImagesNotPermissions(): void
     {
         $w = new ImportTestWorkspace();
         $root = $w->repository('source');
@@ -18,20 +18,63 @@ final class ArchiveExportTest
         $w->git($root);
         $revision = (new ImageBackup($root, $w->root . '/index.sqlite3'))->revision();
         $capture = fn (array $images = []) => ExportIdentity::capture($root, $revision, $images);
+
         $original = $capture();
+        // Deterministic for identical committed state.
         assertSame($original, $capture());
+
+        // A dirty working tree (uncommitted/untracked change present) yields a
+        // distinct identity via the porcelain signal.
         file_put_contents($root . '/note.txt', 'one');
-        $first = $capture();
-        assertTrue($first !== $original);
-        $mtime = filemtime($root . '/note.txt');
-        file_put_contents($root . '/note.txt', 'two'); touch($root . '/note.txt', $mtime);
-        assertTrue($capture() !== $first);
+        $dirty = $capture();
+        assertTrue($dirty !== $original);
+
+        // Identity is committed-data-only: an untracked file's *content* change,
+        // and file *permission* changes, do not by themselves alter identity —
+        // only the presence of dirtiness (above) and committed content (revision)
+        // and the image set do.
         unlink($root . '/note.txt');
         assertSame($original, $capture());
-        assertTrue($capture(['image' => ['sha256' => 'changed']]) !== $original);
         chmod($root . '/records/posts/one.txt', 0600); clearstatcache();
-        assertTrue($capture() !== $original);
+        assertSame($original, $capture(), 'permissions are data-irrelevant and must not affect identity');
+
+        // The image set (by content-addressed filename) still affects identity.
+        assertTrue($capture(['abc123.png' => ['sha256' => 'abc123', 'bytes' => 10]]) !== $original);
     }
+    public function testLargeContentRepositoryReusesWarmArchiveWithCheapIdentity(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source');
+        // Many records plus a large committed file: the old identity hashed all of
+        // this per request (the 120s fatal); the cheap identity must not.
+        for ($i = 0; $i < 50; $i++) {
+            $w->put($root . "/records/posts/post-{$i}.txt", $w->post("post-{$i}", body: str_repeat('x', 2048)));
+        }
+        $w->put($root . '/records/large.bin', str_repeat('L', 4 * 1024 * 1024));
+        $w->git($root);
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+
+        // Miss builds; a second request on the same committed state reuses the
+        // prebuilt archive without rebuilding — the hit path computes identity
+        // cheaply (git HEAD + porcelain), not by hashing the 4 MiB of content.
+        $first = $backup->export('tar.gz');
+        $second = $backup->export('tar.gz');
+        assertSame(false, $first['reused']);
+        assertSame(true, $second['reused']);
+        assertSame($first['path'], $second['path']);
+        assertSame(stream_get_contents($first['stream']), stream_get_contents($second['stream']));
+        fclose($first['stream']);
+        fclose($second['stream']);
+
+        // A new commit changes HEAD -> a distinct identity -> a fresh build.
+        $w->put($root . '/records/posts/post-new.txt', $w->post('post-new'));
+        $w->git($root);
+        $afterCommit = $backup->export('tar.gz');
+        assertSame(false, $afterCommit['reused']);
+        assertTrue($afterCommit['path'] !== $first['path']);
+        fclose($afterCommit['stream']);
+    }
+
     public function testWarmArchivesReuseAndCorruptionRebuildsWithoutDeletingReaders(): void
     {
         $w = new ImportTestWorkspace();
@@ -62,6 +105,27 @@ final class ArchiveExportTest
         assertSame(false, $changed['reused']);
         assertTrue($changed['path'] !== $rebuilt['path']);
         fclose($changed['stream']);
+    }
+
+    public function testImageZipAndLegacyTarUseSeparateReusableArtifacts(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source'); $w->git($root);
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+        $paths = [];
+        foreach (['zip', 'tar'] as $format) {
+            $first = $backup->export('images', null, $format);
+            $second = $backup->export('images', null, $format);
+            try {
+                assertSame($format, $first['extension']);
+                assertSame(false, $first['reused']); assertSame(true, $second['reused']);
+                assertSame($first['path'], $second['path']);
+                $paths[$format] = $first['path'];
+                $command = $format === 'zip' ? ['unzip', '-l', $first['path']] : ['tar', '-tf', $first['path']];
+                [$status, $listing] = $w->command($command);
+                assertSame(0, $status); assertStringContains('manifest.json', $listing);
+            } finally { fclose($first['stream']); fclose($second['stream']); }
+        }
+        assertTrue($paths['zip'] !== $paths['tar']);
     }
 
     public function testSharedLockDeadlineAndWarmHitDuringAnotherBuild(): void
