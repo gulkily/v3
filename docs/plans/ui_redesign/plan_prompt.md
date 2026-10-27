@@ -104,6 +104,9 @@ Outbox, Forte.
 
 ## Implementation handoff (not part of this phase)
 
+Superseded in detail by [next_steps.md](next_steps.md) and
+[implementation_checklist.md](implementation_checklist.md) (2026-10-26).
+
 - Land design tokens as the new `theme-light.css` / `theme-dark.css`
   variable blocks plus a shared `site.css` restructure; verify every novelty
   theme still renders (theme guide: `docs/runbooks/theme_development_guide.md`).

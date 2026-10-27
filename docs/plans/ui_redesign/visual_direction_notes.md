@@ -343,3 +343,9 @@ At night the banner was still the bright daytime gradient and glared against
 the page. It now opens onto a dark sky lit low in the person's color, with
 their flow field as neon lines (person color, cyan, rarely red), matching the
 account card; the slow dusk glow turns neon.
+
+## Next: implementation (2026-10-26)
+
+How to proceed from the mockups is in [next_steps.md](next_steps.md), and the
+work is split into suggested Railspike cycles in
+[implementation_checklist.md](implementation_checklist.md).
