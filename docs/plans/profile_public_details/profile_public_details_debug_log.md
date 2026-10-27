@@ -44,3 +44,21 @@ No supported findings.
 ### Uncertain assessments
 
 - Source: Step 3 Do/After, one-page target and mandatory per-stage fields. Five stage records plus completion, risks and checkpoint metadata exceed a conventional printed page. Consider a separate length allowance for required stage/study metadata.
+
+## 2026-10-27 UTC — Step 4 completed-step report
+
+### Necessary/useful instructions
+
+- Source: Step 4 Do, stage boundaries and shared-component inventory. Stage commits preserve reader eligibility, key display, history, serving coverage and acceptance separately; existing host query handling needed no production rewrite. Retain.
+- Source: Step 4 After, normal-flow contract and named-environment evidence boundary. Added actual HTTP static/live, contribution/author return and retry checks; production deployment and testing1 count verification remain explicitly pending. Retain.
+- Source: RAILSPIKE.md, retrospective estimate preservation. Kept the original 0.50/0.60 projections and distinct per-stage/cycle retrospectives without treating runtime checks as labor or accepting the study outcome. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- Source: Step 3 Do, approximate 50-line stage sizing. Meaningful visibility, navigation and browser coverage exceeded that heuristic while retaining atomic behavior and per-stage review boundaries. Clarify whether test scaffolding is included in the size target; do not split verified user flows solely to satisfy a line count.
+
+Verification state: Five stages locally complete, each with summary-bearing commits, plus Stage 5 navigation follow-up. Planning commit 81e1d51b7 precedes implementation; Stage 5 initial closeout 20b7ce6f2. Focused PHP 47/47, actual HTTP Chromium and 13-theme phone/desktop checks, syntax, documentation links, rebuild and whitespace checks passed. Zero dependencies. Production/physical devices/full suite, merge/push and maintainer study acceptance remain unverified or unperformed as recorded in the summary.
