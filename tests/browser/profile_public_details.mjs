@@ -41,6 +41,14 @@ try {
       assert.match(await details.locator('[role=status]').textContent(), /manually/);
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    const [contributionResponse] = await Promise.all([
+      page.waitForNavigation(), page.locator('#threads h3 a[href^="/threads/profile-page-"]').first().click()
+    ]);
+    assert.equal(contributionResponse.status(), 200);
+    assert.match(new URL(page.url()).pathname, /^\/threads\/profile-page-/);
+    assert.ok(await page.locator(`a[href="/profiles/${slug}"]`).count() > 0);
+    await page.locator(`a[href="/profiles/${slug}"]`).first().click();
+    await page.waitForURL('**/profiles/' + slug);
     const threads = page.locator('#threads');
     const posts = page.locator('#posts');
     const firstLinks = await threads.locator('h3 a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));

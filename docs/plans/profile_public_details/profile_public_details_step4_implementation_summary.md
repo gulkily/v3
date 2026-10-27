@@ -91,3 +91,5 @@ Scope: v1/A, stable v3/profile_public_details, original baseline 93c3ea8132df45f
 Outcome: Direct collapsed public key and identity-specific bounded histories with visible-content totals and normal recovery, locally verified. Maintainer comfortable-fit/study acceptance pending; accepted-outcome count unchanged. No measured labor, child observation or scope split. Production deployment/replay, physical devices, full suite, merge and push remain unperformed. No external dependencies added or updated. Guidance commit d28ea9165 predates this separately approved implementation.
 
 *— Codex · 2026-10-27 UTC*
+
+Acceptance follow-up: Stage 5 closeout commit 20b7ce6f2. Strengthened the HTTP browser check to open an authored contribution from the profile and return through its author profile link, with JavaScript both off and on. Corrected synthetic root fixture parent/author attribution and selected the synthetic contribution explicitly rather than assuming it sorts ahead of the retained root fixture. The full 13-theme browser check passed again. No production changes or estimate revision.

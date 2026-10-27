@@ -25,7 +25,7 @@ $insert = static function (string $table, array $row) use ($pdo): void {
 };
 for ($i = 0; $i < 55; $i++) {
     $id = sprintf('profile-page-%03d', $i);
-    $insert('posts', array_replace($post, ['post_id' => $id, 'thread_id' => $id,
+    $insert('posts', array_replace($post, ['post_id' => $id, 'thread_id' => $id, 'parent_id' => null, 'author_profile_slug' => $profile['profile_slug'],
         'author_identity_id' => $profile['identity_id'], 'is_hidden' => 0, 'retracted_at' => null,
         'board_tags_json' => '["general"]', 'agent_response_json' => null,
         'subject' => 'Profile contribution ' . $i . ' ' . str_repeat('LongValue', 20)]));
