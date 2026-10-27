@@ -28,6 +28,10 @@ the interface cannot convey, and make it accessible without hover. Preserving
 a warning does not by itself require adding a confirmation step; preserve the
 existing interaction unless changing it is part of the requested work.
 
+Keep optional technical details collapsed using the shared
+[progressive disclosure guidance](docs/reference/progressive_disclosure.md).
+Keep primary information, essential warnings, and recovery actions visible.
+
 Before marking a UI change complete:
 
 - Check the rendered flow on phone and desktop in the relevant initial,
