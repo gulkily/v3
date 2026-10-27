@@ -65,8 +65,48 @@ try {
     await page.goto(secondUrl);
     await threads.getByRole('link', {name: 'Previous', exact: true}).click();
     assert.deepEqual(await threads.locator('h3 a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), firstLinks);
+    await page.route('**/*threads_position*', route => route.fulfill({status: 503, body: 'Temporarily unavailable'}));
+    await page.goto(secondUrl);
+    assert.equal(page.url(), secondUrl);
+    await page.unroute('**/*threads_position*');
+    await page.reload();
+    assert.deepEqual(await threads.locator('h3 a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), secondLinks);
     await context.close();
   }
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  const page = await context.newPage();
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  for (const width of [390, 1280]) for (const theme of themes) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(base + '/profiles/' + slug + '?self=1');
+    await page.evaluate(theme => localStorage.setItem('forum-zenmemes-theme', theme), theme);
+    await page.reload();
+    assert.equal(await page.locator('html').getAttribute('data-resolved-theme'), theme);
+    const details = page.locator('[data-public-key-details]');
+    assert.equal(await details.evaluate(n => n.open), false);
+    assert.equal(await page.locator('#threads h3 a').count(), 50);
+    await details.locator('summary').click();
+    assert.equal(await details.locator('pre').textContent(), key);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${theme} ${width}: expanded overflow`);
+    await page.locator('#threads').getByRole('link', {name: 'Next', exact: true}).click();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${theme} ${width}: loaded history overflow`);
+    if (['word97', 'chicago', 'midnight'].includes(theme)) {
+      await page.locator('[data-public-key-details] summary').click();
+      await page.locator('[data-public-key-details]').scrollIntoViewIfNeeded();
+      await page.screenshot({path: `/tmp/profile-public-${theme}-${width}.png`});
+    }
+    await page.goto(base + '/profiles/openpgp-empty-profile');
+    assert.equal(await page.getByText('No visible threads.', {exact: true}).count(), 1);
+    assert.equal(await page.getByText('No visible posts.', {exact: true}).count(), 1);
+    await page.locator('[data-public-key-details] summary').click();
+    assert.equal(await page.getByText('Public key unavailable.', {exact: true}).isVisible(), true);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+  }
+  const missing = await page.goto(base + '/profiles/openpgp-missing-profile');
+  assert.equal(missing.status(), 404);
+  assert.deepEqual(errors, []);
+  await context.close();
+  console.log(`PASS ${themes.length} themes at phone/desktop sizes: expanded key, loaded history, empty/unavailable and missing profile; no page errors`);
   console.log('PASS profile HTTP static/live paging and key: collapsed default, keyboard, exact copy, denied clipboard recovery, no-JS selection and phone overflow');
 } finally {
   await browser.close(); server.kill(); await rm(root, { recursive: true, force: true });

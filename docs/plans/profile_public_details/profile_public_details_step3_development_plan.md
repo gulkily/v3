@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/profile_public_details; [ledger](../effort_estimation_trial.md#cycle-v3profile_public_details); standing P2 enrollment
 Extended estimates: enabled
-Status: Steps 1–2 approved; Step 3 proposed; implementation unapproved
+Status: Step 3 explicitly approved; implementation recorded in Step 4
 
 **Cycle estimate: 0.60**
 

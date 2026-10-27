@@ -62,6 +62,36 @@ Every resolved profile read must be able to surface at least:
 - If the slug does not resolve to a known identity, the route returns `404 Not Found`.
 - Public profile reads must be renderable from indexed profile state without request-time full-repo scans.
 
+### Standard public profile presentation
+
+- The full public key is available on the profile in an initially collapsed
+  disclosure, using [progressive disclosure guidance](../reference/progressive_disclosure.md).
+  The escaped, selectable ASCII-armored text retains its line breaks. Copy uses
+  only the key text; unavailable clipboard access leaves manual selection and an
+  actionable message. An absent key has an explicit unavailable state.
+- Threads and Posts are shown directly for this exact identity, whether approved
+  or unapproved. Threads are authored roots; Posts include authored roots and
+  replies. Neither a shared username nor bootstrap ownership grants authorship.
+- Both lists and their full totals exclude hidden and retracted posts,
+  identity/bootstrap-board content and scripture-expansion records. Threads also
+  require an unretracted, non-bootstrap thread summary. Approval events,
+  reactions and other audit records are outside these authored-content lists.
+- Each list defaults to 50 items (reader limit capped at 100), ordered by creation
+  time descending with descending post ID as a stable tie-breaker. Independent
+  `threads_position` and `posts_position` parameters preserve the other list's
+  position; contexts bind each token to the identity, list and order. Tokens
+  confer no access rights. Totals count all eligible rows, not the current page.
+- Invalid positions show an error and First page recovery without silently
+  displaying a first-page list. Empty positioned pages retain return navigation
+  when rows remain, plus First page. Native links work without JavaScript;
+  failed network navigation can be retried with Reload or left with Back.
+- Static publication contains the first page. Positioned URLs use live profile
+  rendering; they must never receive the unpositioned artifact. Profile HTML is
+  not an offline-reader route. Existing refresh policy remains unchanged.
+- Tools retains detailed approval/history and bootstrap inspection. Username
+  aggregation remains a separate approved-user view; it is supplementary to the
+  identity's history. Forte's existing presentation is unchanged.
+
 ## Self Profile Resolution
 
 - `/profiles/<profile-slug>?self=1` is the self-profile variant of the same identity route.

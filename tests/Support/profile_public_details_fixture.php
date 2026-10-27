@@ -33,6 +33,7 @@ for ($i = 0; $i < 55; $i++) {
         'board_tags_json' => '["general"]', 'retracted_at' => null]));
 }
 
+$insert('profiles', array_replace($profile, ['identity_id' => 'openpgp:empty-profile', 'profile_slug' => 'openpgp-empty-profile', 'public_key' => '', 'is_approved' => 0]));
 mkdir($root . '/static');
 (new \ForumRewrite\Host\StaticArtifactBuilder($root, $root . '/repository', $root . '/read.sqlite3', $root . '/generated'))->buildSingleRoute('/profiles/' . $profile['profile_slug']);
 symlink($root . '/generated', $root . '/static/current');

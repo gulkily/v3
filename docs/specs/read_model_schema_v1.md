@@ -485,7 +485,7 @@ with the repository revision unchanged.
 
 `AuthoredContentRepository::visibleIdentityPage` returns at most 100 rows
 (default 50), newest creation time first with descending post ID as the stable
- tie-breaker. Both threads and posts use these authored-post keys. Position
+tie-breaker. Both threads and posts use these authored-post keys. Position
 boundaries contain `created_at` and `post_id`, never transient SQLite row IDs.
 Counts and page/existence queries share `identityEligibility`; existing username
 aggregate interfaces retain their previous behavior. A deleted boundary remains

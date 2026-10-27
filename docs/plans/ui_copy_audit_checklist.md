@@ -552,3 +552,10 @@ Change: Download failures now distinguish 503 busy/retry, 409 refresh-and-pair, 
 Verification: `node tests/browser/archive_export_browser.mjs` exercises normal Backup links, cold/warm downloads, two-viewports (390/1280) busy/conflict/retry and generic failure, extraction and overflow checks. Backup links checked in light, Word97, Chicago and Midnight; plaintext error responses are theme-independent. Phone/desktop screenshots inspected locally; no navigation destinations/icons changed. PHP route/import tests cover integrity repair and retry.
 Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
 Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).
+
+## 2026-10-27 — Public profile identity details
+
+- Change: Replaced the misleading “Member activity” destination label with a supplementary username link; the profile now shows its own Threads and Posts. Public key material is initially collapsed, with concise Copy/unavailable/manual-copy recovery states.
+- Verification: Real Chromium HTTP flows with JavaScript on/off; keyboard disclosure and navigation; exact copying and denied-clipboard fallback; independent pagination and invalid-position recovery; 13 permitted themes at 390px and 1280px, initial/expanded/loaded/empty/unavailable states and overflow. Inspected Word97, Chicago and Midnight screenshots. Shared account/access/Forte/source and messaging tests passed.
+- Limits: No physical-device or production deployment verification; zenmemes.com replay remains pending. Full suite not run. No navigation destinations added or renamed, so icon mapping unchanged.
+- Record: [Implementation evidence and host handoff](profile_public_details/profile_public_details_step4_implementation_summary.md).

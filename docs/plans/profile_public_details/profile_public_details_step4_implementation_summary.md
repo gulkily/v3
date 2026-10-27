@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/profile_public_details; [ledger](../effort_estimation_trial.md#cycle-v3profile_public_details); standing P2 enrollment
 Extended estimates: enabled
-Status: Step 3 approved; implementation underway
+Status: Five stages locally complete; production acceptance pending
 
 **Cycle estimate: 0.60**
 
@@ -60,5 +60,34 @@ Dependencies: No additions or updates authorized or planned.
 - Changes: Added actual active-release/static-versus-position regression and HTTP browser traversal with independent lists; expanded offline policy checks to positioned profile URLs. Existing host code already bypasses static artifacts for queries and excludes profiles from high-traffic caches; no routing mutation was necessary.
 - Verification: Static/live regression plus OfflineNavigationWorkerTest 11/11; profile_public_details.mjs passed actual HTTP static first page, live older pages, independent positions, reload/backward/invalid-position recovery, JavaScript on/off and key behavior.
 - Notes: Stage 3 commit 628fe999a. Corrected test setup to activate its generated release and use workspace destructor cleanup; browser static evidence checks response bytes because document serialization omits trailing comments. These were harness corrections, not production failures. Offline profile reads remain network-only with normal Reload/Back; no new shell fallback or freshness policy. No dependencies/measured labor.
+
+*— Codex · 2026-10-27 UTC*
+
+## Stage 5 - Acceptance and documentation
+
+**Original estimate: 0.16**
+**Retrospective stage work: 0.16**
+
+- Changes: Updated profile/read-model contracts and copy audit; extended browser acceptance across all 13 zenmemes themes at phone/desktop widths, empty/key-unavailable/not-found states, and same-URL retry after an HTTP 503. Updated messaging's direct template fixture for the new history data contract.
+- Verification: Focused profile/UserAccess/Activity/theme/matrix/offline/core-route/source checks 42/42; messaging composer/release-isolation checks 5/5 without warnings. Chromium profile_public_details.mjs passed with and without JavaScript, actual HTTP static/live routing, independent positions, keyboard, reload/previous/First page, exact-key clipboard and denied-copy recovery. All 13 themes at 390/1280 widths passed overflow and loaded/expanded/empty/unavailable checks; Word97/Chicago/Midnight screenshots visually inspected. Isolated final CLI rebuild, PHP/JS syntax checks and diff whitespace checks passed.
+- Notes: Stage 4 commit 9dffe6c44. Theme screenshots are disposable local `/tmp/profile-public-<theme>-<width>.png` evidence, not committed assets. No runtime code changed during acceptance; corrected a legacy direct-render test fixture that otherwise emitted undefined-history warnings. No dependency delta, navigation destination/icon change, canonical format change or measured labor. Full suite and physical devices unverified.
+
+## Production replay and recovery handoff
+
+Status: Local acceptance complete; zenmemes.com deployment and named-profile acceptance pending. No live content or approvals changed.
+
+1. After separately authorized deployment, allow normal schema-31 startup rebuild or run the installation's normal `./v3 rebuild` with its configured repository/database. Regenerate and activate static artifacts through the existing deployment procedure; old profile HTML does not acquire the feature merely because application files changed. Do not reuse the isolated test database.
+2. Open `https://zenmemes.com/profiles/openpgp-e4299fae842c36f1404a693215130d67723b8cc1` anonymously through an author link and directly, on phone and desktop. Confirm the Public key disclosure starts closed; expand and compare/copy the full key against its Tools record. Clipboard denial must leave selectable text and manual-copy recovery.
+3. Identify the records behind this profile's earlier 1-thread/1-post counts and compare the new totals with eligible authored rows. Hidden bootstrap records do not become public contributions; zero is legitimate if no eligible content exists. Follow a displayed contribution. Its unapproved status must not force activity browsing through `/user/testing1`.
+4. For a profile with over 50 eligible entries, follow each list's Next/Previous links, reload an older-page URL, and confirm the other list's position remains intact. An invalid position must show First page recovery, not first-page content under that URL. Retry a failed request with Reload or return with Back. Empty histories and absent keys must be usable without misleading success feedback.
+5. If results still show the old summary-only profile, verify the deployed revision and regenerate/activate the installation's current artifacts. Record actual same-host results before marking production acceptance complete. Local fixtures do not establish the exact live profile's final counts.
+
+## Study closeout and release limits
+
+**Original Step 3/entry cycle projection: 0.60**
+**Retrospective cycle scope: 0.60**
+
+Scope: v1/A, stable v3/profile_public_details, original baseline 93c3ea8132df45fd5b334f05758a144fdb90e78e, R1/P2; Codex single exposed rater. Earlier 0.50 intake/Step 1/Step 2 and all original stage values preserved; no stage sum or independent-rater claim. Exact frozen hashes verified. Five planned/completed stages; planning 81e1d51b7, stages 7cbdd8163 / 820fed58d / 628fe999a / 9dffe6c44 plus this closeout stage. Final commit is discoverable with `git log --oneline -- docs/plans/profile_public_details/`.
+Outcome: Direct collapsed public key and identity-specific bounded histories with visible-content totals and normal recovery, locally verified. Maintainer comfortable-fit/study acceptance pending; accepted-outcome count unchanged. No measured labor, child observation or scope split. Production deployment/replay, physical devices, full suite, merge and push remain unperformed. No external dependencies added or updated. Guidance commit d28ea9165 predates this separately approved implementation.
 
 *— Codex · 2026-10-27 UTC*
