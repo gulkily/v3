@@ -59,3 +59,30 @@ Documentation-only work restrictions do not apply. Deployment and mutation of th
 
 - The one-page maximum conflicts in practice with eight stages each requiring seven fields, per-stage estimates, safety contracts and study provenance. The plan retains explicit recovery gates and concise stage bullets rather than omitting required fields; it is longer than a conventional printed page. Clarify the page budget or allow a compact overview plus required detail.
 - The generic hour/line guidance cannot establish stage fit from source inspection alone. S1 is a concrete feasibility gate; if supervision/recovery requires new components or broader work, stop and rescope instead of claiming the current cycle can absorb it automatically.
+
+
+## 2026-10-27T01:13:35.314697+00:00 — Step 4 handoff
+
+### Necessary/useful instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, Stage Boundary Protocol: eight separate implementation commits each retain their summary and verification. This exposed the closed-output-pipe regression at the invocation stage before recovery acceptance. Retain the stage gates.
+- Same file, complete the Step 3 Contract: isolated normal CLI import/repeat/resume plus served HTTP/offline checks verified the user outcome beyond parser fixtures. Retain the normal-entry and recovery requirements.
+- `docs/railspike/docs/workflow/step4_implementation_after.md`, Final Verification Checklist: the handoff distinguishes focused tests from the unrun full suite and production/physical-device verification, and preserves partial-source results. Retain explicit evidence boundaries.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+UI/theme, schema migration, external dependency approval and deployment checks are inapplicable to the implemented scope: no such changes or deployment were made. Documentation-only restrictions do not apply to this application change.
+
+### Uncertain assessments
+
+Stage fit is assessed retrospectively, not measured labor. The estimate protocol retains original projections and independent retrospective judgments; no elapsed task runtime is used as a substitute for labor measurements or maintainer acceptance.
+
+### Final verification and revisions
+
+Planning commit `17ae0250` plus eight stage commits, ending `1781375d`, verified. Each stage commit includes its Step 4 summary update; planning commit predates summary creation. All eight stages locally complete. Final stage contains study closeout and ledger, original estimates retained, maintainer acceptance pending. Targeted regression 130/130 and final guard regression 20/20 pass; full suite unrun. Normal isolated WSL ZenMemes import/repeat/resume and HTTP/offline acceptance passed with reported invalid/unsupported source entries. No user-state mutation, deployment or merge. Debug mode remains enabled. This report is saved in the required separate log-only handoff commit; no completed stage amended.
+
+*— Codex · 2026-10-27 UTC*
