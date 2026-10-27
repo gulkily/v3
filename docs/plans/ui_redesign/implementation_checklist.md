@@ -1,15 +1,40 @@
 # UI redesign: implementation checklist
 
-A backlog of suggested Railspike cycles for building the redesign and its
-theme from the mockups. It is a planning input, not a Railspike artifact: each
-cycle still goes through Railspike's steps with an explicit approval at each
-gate, and may be reshaped during its own Step 1 or Step 2. Context and open
-decisions are in [next_steps.md](next_steps.md).
+A backlog of cycles for building the redesign and its theme from the mockups.
+It is a planning input, not a Railspike artifact. Each cycle is marked with
+the process it uses (see below); Railspike cycles still go through Railspike's
+steps with an explicit approval at each gate, and may be reshaped during their
+own Step 1 or Step 2. Context and decisions are in [next_steps.md](next_steps.md).
 
-Sizing follows Railspike's rules: each cycle is a releasable vertical slice
-(normal entry, end-to-end outcome, required recovery) that fits within a day
-or eight Step 3 stages. The stage lists below are suggestions for Step 3, not
-approved plans.
+## Process per cycle
+
+Decided by the user on 2026-10-26. The mockups and this checklist already
+cover much of Railspike's problem framing and requirements, so Railspike is
+kept where there are real unknowns or high stakes. Marking a cycle **Direct**
+is the user's explicit Railspike opt-out for that cycle under `AGENTS.md`.
+
+| Process | Cycles | Reason |
+|---|---|---|
+| **Railspike** (start with Step 1, solution assessment) | 1, 5, T1 | Open design choices: a new navigation surface across every theme (1), key generation and signing (5), registering a day/night theme (T1). |
+| **Railspike, no Step 1** (start with Step 2) | 3, 4, 8, T2, D1, D2, D3 | Clear direction but risky behavior: the docked reply box on phones, backups, encrypted message failures, hooks into decryption and verification, read-model schema changes, security UX. |
+| **Direct** (no Railspike) | 2, 6, 7, 9, T4 | Rearranging markup and wording on screens whose behavior already exists, or a small settings change (T4). |
+| **Decide when scheduled** | T3, D4 | Optional or deferred. |
+
+For a **Direct** cycle:
+
+- Work on its own branch (no direct merges to `main`).
+- Use this checklist's items for the cycle as the spec; record any change of
+  scope here rather than silently expanding it.
+- Apply every check in [Checks that apply to every cycle](#checks-that-apply-to-every-cycle),
+  and record UI verification in `docs/plans/ui_copy_audit_checklist.md` or a
+  short note in this folder.
+- Commit when the cycle's "Done when" is met. Direct cycles are not part of
+  the `railspike-effort` study, which only collects Railspike cycles.
+
+Sizing follows Railspike's rules for every cycle, Direct ones included: each is
+a releasable vertical slice (normal entry, end-to-end outcome, required
+recovery) that fits within a day or eight Step 3 stages. The item lists below
+are suggestions for Step 3 (or the spec, for Direct cycles), not approved plans.
 
 Mockup references are relative to [mockups/](mockups/). Template paths are
 from [plan_prompt.md](plan_prompt.md#interface-checklist).
@@ -24,7 +49,7 @@ from [plan_prompt.md](plan_prompt.md#interface-checklist).
 
 ## Checks that apply to every cycle
 
-Copy these into each cycle's Step 3 verification and Step 4 summary.
+Copy these into each Railspike cycle's Step 3 verification and Step 4 summary; Direct cycles apply them before committing.
 
 - [ ] Rendered flow checked on phone and desktop in initial, loaded, empty, success, failure and expanded states (`CONTRIBUTING.md`, UI copy and verification).
 - [ ] Page overflow checked with real content, long values and pagination.
@@ -43,10 +68,12 @@ adds its screen's theme hooks.
 
 ### Cycle 1: `ui_shell_navigation`
 
+**Process: Railspike.** Step 1 compares options: the phone tab bar is a new
+navigation surface, and moving rare destinations into the account menu has
+alternatives.
+
 App shell and navigation. Mockup: `shell.html`. Templates: `templates/layout.php`,
 `templates/partials/nav.php`, `templates/partials/theme_menu.php`.
-Step 1 recommended: the phone tab bar is a new navigation surface, and moving
-rare destinations into the account menu has alternatives.
 
 - [ ] Top bar with three destinations (Board, Users, Messages), one New post, and an account menu.
 - [ ] Rare destinations (Tools, About, Invite, theme choice) move into the account menu.
@@ -57,6 +84,8 @@ rare destinations into the account menu has alternatives.
 - Done when: every page uses the new shell in every theme, with no lost destination.
 
 ### Cycle 2: `ui_board_list`
+
+**Process: Direct.**
 
 Mockup: `board.html`. Templates: `pages/board.php`, `partials/thread_card.php`.
 Depends on cycle 1.
@@ -71,6 +100,8 @@ Depends on cycle 1.
 
 ### Cycle 3: `ui_thread_reply_dock`
 
+**Process: Railspike, no Step 1.**
+
 Mockup: `thread.html`. Templates: `pages/thread.php`, `partials/thread_root_card.php`,
 `partials/post_card.php`, `partials/reply_form.php`. Depends on cycle 1.
 
@@ -83,7 +114,9 @@ Mockup: `thread.html`. Templates: `pages/thread.php`, `partials/thread_root_card
 
 ### Cycle 4: `ui_account_states`
 
-Mockup: `account.html`. Template: `pages/account_key.php`. Step 1 recommended.
+**Process: Railspike, no Step 1.**
+
+Mockup: `account.html`. Template: `pages/account_key.php`.
 
 - [ ] Three clear states: guest, set up and waiting for approval, approved.
 - [ ] "Not backed up" warning at the top until a backup exists.
@@ -95,9 +128,12 @@ Mockup: `account.html`. Template: `pages/account_key.php`. Step 1 recommended.
 
 ### Cycle 5: `ui_first_post_identity`
 
+**Process: Railspike.** Step 1 compares options for when and where keys are
+generated.
+
 Mockups: `compose-thread.html`, `account.html`. Templates: `pages/compose_thread.php`,
 `partials/thread_compose_form.php`, `pages/account_key.php`, plus the browser
-signing scripts. Step 1 recommended. Depends on cycle 4.
+signing scripts. Depends on cycle 4.
 
 - [ ] Name chosen inline (composer and account page); no `window.prompt` or `window.confirm`.
 - [ ] Key generation starts when the composer or account page opens, so Post only signs and sends.
@@ -105,6 +141,8 @@ signing scripts. Step 1 recommended. Depends on cycle 4.
 - Done when: a new visitor can write and publish a first post with no browser dialogs and no long wait after pressing Post.
 
 ### Cycle 6: `ui_composers`
+
+**Process: Direct.**
 
 Mockups: `compose-thread.html`, `compose-reply.html`. Templates:
 `pages/compose_thread.php`, `pages/compose_reply.php`. Depends on cycle 5.
@@ -115,6 +153,8 @@ Mockups: `compose-thread.html`, `compose-reply.html`. Templates:
 
 ### Cycle 7: `ui_profile_users`
 
+**Process: Direct.**
+
 Mockups: `profile.html`, `users.html`. Templates: `pages/profile.php`,
 `pages/username.php`, `pages/users.php`.
 
@@ -124,6 +164,8 @@ Mockups: `profile.html`, `users.html`. Templates: `pages/profile.php`,
 - Done when: finding a member, opening their profile and messaging or approving them works in all themes.
 
 ### Cycle 8: `ui_messages`
+
+**Process: Railspike, no Step 1.**
 
 Mockups: `messages.html`, `conversation.html`. Templates: `pages/private_messages.php`,
 `partials/private_message_list.php`, `pages/private_message_conversation.php`,
@@ -136,6 +178,8 @@ Mockups: `messages.html`, `conversation.html`. Templates: `pages/private_message
 - Done when: reading, sending and recovering from each failure work on phone and desktop.
 
 ### Cycle 9: `ui_tools_launcher`
+
+**Process: Direct.**
 
 Mockup: `tools.html`. Templates: `pages/tools.php`, `partials/tools_nav.php`.
 
@@ -161,7 +205,9 @@ Ma was chosen (2026-10-26) and ships opt-in. Living Sky (T3) is optional and uns
 
 ### Cycle T1: `ma_theme_day`
 
-Ma in light mode. Step 1 recommended: how a theme with a day and a night look
+**Process: Railspike.**
+
+Ma in light mode. Step 1 decides how a theme with a day and a night look
 is registered (one `auto` theme that follows the system, or separate "Ma" and
 "Ma Night" entries), given `ThemeRegistry`'s one-mode-per-theme entries.
 
@@ -178,6 +224,8 @@ is registered (one `auto` theme that follows the system, or separate "Ma" and
 
 ### Cycle T2: `ma_theme_night`
 
+**Process: Railspike, no Step 1.**
+
 Ma's cyberpunk dark mode. Depends on T1.
 
 - [ ] Night tokens; neon logo and seal with a one-time flicker (no more than 3 flashes a second; none under reduced motion).
@@ -191,11 +239,15 @@ Ma's cyberpunk dark mode. Depends on T1.
 
 ### Cycle T3 (optional, unscheduled): `living_sky_theme`
 
+**Process: decide when scheduled.**
+
 - [ ] Register and build `theme-living-sky.css` from `mockups/zen/zen.css`.
 - [ ] Measure frosted-glass cost on a low-end phone; fall back to solid surfaces under `prefers-reduced-transparency` or on low-end devices.
 - Done when: Living Sky is selectable and scrolls smoothly on the test phone.
 
 ### Cycle T4: `ma_theme_default`
+
+**Process: Direct.**
 
 Only when we decide Ma is ready to become the default (decision 2: opt-in until then).
 
@@ -209,23 +261,30 @@ Each needs its own product decision before its cycle starts.
 
 ### Cycle D1: `community_pulse`
 
+**Process: Railspike, no Step 1.**
+
 - [ ] One cached count of posts in the last 24 hours, mapped to `data-pulse` (`quiet` / `steady` / `busy`) on the app shell.
 - [ ] Prefer existing read-model queries; if a schema change is needed, follow the read-model rules in `CONTRIBUTING.md`.
 
 ### Cycle D2: `profile_constellation`
+
+**Process: Railspike, no Step 1.**
 
 - [ ] Per-identity post and like counts drive the profile artwork (one star per post, brighter for liked posts), capped.
 - [ ] Likely a read-model schema change: bump `ReadModelMetadata::SCHEMA_VERSION`, update `docs/specs/read_model_schema_v1.md`, add the rebuild regression test, and verify `./v3 rebuild`.
 
 ### Cycle D3: `post_seals`
 
-Step 1 recommended (security UX).
+**Process: Railspike, no Step 1.** Step 2 must state the security rule: a seal
+appears only after verification succeeds.
 
 - [ ] A seal per author key, generated from the key (not the per-post signature).
 - [ ] Shown only after the post's signature verifies; never a placeholder seal.
 - [ ] Generator keeps lookalike seals apart, including for color-blind users.
 
 ### Cycle D4 (deferred): `fingerprint_colors`
+
+**Process: decide when scheduled.**
 
 - [ ] Person colors and avatar cuts derived from the key fingerprint instead of the name.
 - [ ] Decide what happens when a person changes keys.

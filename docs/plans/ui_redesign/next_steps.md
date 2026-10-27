@@ -83,15 +83,18 @@ Decided by the user on 2026-10-26:
 
 ## Process
 
-Implementation is multi-session and staged, so it uses Railspike, which
-`AGENTS.md` makes the default (the opt-out applied only to the mockups). Each
-cycle in the checklist goes through Railspike's steps with an explicit
-approval at each gate, and each must be a releasable vertical slice within a
-day or eight Step 3 stages. Every cycle is enrolled in the `railspike-effort`
-study under protocol P2 automatically; there is no need to ask.
+Railspike is used where there are real unknowns or high stakes, and skipped
+where the mockups already settle the work (decided 2026-10-26). Each cycle in
+[implementation_checklist.md](implementation_checklist.md#process-per-cycle)
+is marked **Railspike** (with Step 1), **Railspike, no Step 1**, or
+**Direct**. Direct is the user's explicit Railspike opt-out for that cycle
+under `AGENTS.md`; it still uses a branch and every shared check. Every cycle,
+Direct or not, must be a releasable vertical slice within a day or eight
+stages. Railspike cycles are enrolled in the `railspike-effort` study under
+protocol P2 automatically; there is no need to ask.
 
-These documents are planning inputs, not Railspike artifacts. Each cycle
-creates its own step files and, after `Approved Step 3`, its own feature
+These documents are planning inputs, not Railspike artifacts. Each Railspike
+cycle creates its own step files and, after `Approved Step 3`, its own feature
 folder under `docs/plans/`.
 
 ## Starting the next conversation
@@ -99,5 +102,6 @@ folder under `docs/plans/`.
 Suggested opening prompt:
 
 > Start implementing the UI redesign from `docs/plans/ui_redesign/`
-> (see `next_steps.md` and `implementation_checklist.md`). Use Railspike.
-> Begin with cycle 1, the app shell and navigation.
+> (see `next_steps.md` and `implementation_checklist.md`). Follow the process
+> marked for each cycle. Begin with cycle 1, the app shell and navigation
+> (Railspike, starting with Step 1).
