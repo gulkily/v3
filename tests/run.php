@@ -13,6 +13,8 @@ $testFiles = [
     __DIR__ . '/ImportAdmissionTest.php',
     __DIR__ . '/CanonicalTextBoundsTest.php',
     __DIR__ . '/BoundedProcessTest.php',
+    __DIR__ . '/RegistrationBenchmarkTest.php',
+
     __DIR__ . '/ArchiveExportTest.php',
     __DIR__ . '/RetractionMaintenanceTest.php',
     __DIR__ . '/AcceptedRetractionTest.php',
@@ -38,6 +40,8 @@ $testFiles = [
     __DIR__ . '/FastmodRubricsTest.php',
     __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',
+    __DIR__ . '/ImageZipRestoreTest.php',
+    __DIR__ . '/ImageZipBackupTest.php',
     __DIR__ . '/LegacyTimestampImportTest.php',
     __DIR__ . '/InstanceSourceResolverTest.php',
     __DIR__ . '/ImportInstanceCommandTest.php',

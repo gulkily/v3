@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/autoload.php';
 
 $args = array_slice($argv, 1);
 if ($args === [] || in_array('--help', $args, true)) {
-    fwrite(STDOUT, "Usage: ./v3 images verify|restore <images.tar> <repository_root> <database_path> [--image-root=/private/images]\nVerify checks a complete matching pair. Restore installs into a fresh private directory, or verifies an identical existing store. Rebuild the read model afterward.\n");
+    fwrite(STDOUT, "Usage: ./v3 images verify|restore <images.zip> <repository_root> <database_path> [--image-root=/private/images]\nZIP and legacy TAR archives are supported. Verify checks a complete matching pair. Restore installs into a fresh private directory, or verifies an identical existing store. Rebuild the read model afterward.\n");
     exit($args === [] ? 1 : 0);
 }
 try {

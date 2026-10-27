@@ -14,9 +14,19 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Production feedback
 
+[Retraction simplification handoff](retraction_simplification_handoff.md) — current user direction, canceled sweep diagnostics plan, and coordination with registration and high-traffic work.
+
+[Profile registration cost and remediation](profile_registration_cost_and_remediation.md) — QDB incident evidence, global work hidden inside incremental registration, and proposed performance and recovery fixes.
+
+[Profile registration fix checklist](profile_registration_fix_checklist.md) — implementation and verification tasks, excluding incident containment.
+
+[Retraction sweep evidence diagnostics](retraction_sweep_evidence_diagnostics_report.md) — historical production findings and failure-path inventory; the proposed diagnostics project is canceled (see the simplification handoff).
+
 [Request register](production_feedback_register.md) — current tracking for migrated requests; [intake and update guide](../reference/production_feedback_management.md). Older inventories are linked from the register and await reconciliation.
 
 ## Feature folders
+
+- [Image backup ZIP](image_backup_zip/)
 
 - [Reusable archive exports](archive_export_contention/)
 

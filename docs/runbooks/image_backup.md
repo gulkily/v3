@@ -9,7 +9,7 @@ access to retained-image backups. Existing downloaded copies cannot be recalled.
 ## Download a complete pair
 
 From Tools → Backup, download either content repository archive **and** the image
-collection `.tar`. Keep matching revision filenames together. The image archive
+collection `.zip`. Keep matching revision filenames together. The image archive
 contains `manifest.json` with the repository HEAD and checksums, plus every retained
 object under `objects/`. The content repository excludes `.git` and Git history. Legacy post dates are
 carried in `records/post-timestamps/` without changing signed post bytes.
@@ -24,6 +24,9 @@ records, missing/corrupt image or capacity error produces a failed download, nev
 a purportedly complete image archive. On a busy instance, pause publishing while
 taking the pair. Approved-members-only access also protects the exports.
 
+ZIP is the advertised image download. Existing `/downloads/images.tar` links still
+return TAR, and the verification/restoration commands accept both formats.
+
 ## Restore on another instance
 
 Use an isolated destination and the repository archive from the same pair. Extract
@@ -37,8 +40,8 @@ revision or modified records fail verification.
 mkdir -p /private/restored-forum
 # The directory must be empty before extracting your repository snapshot.
 tar -xzf /backups/forum-repository-REVISION.tar.gz -C /private/restored-forum
-./v3 images verify /backups/forum-images-REVISION.tar /private/restored-forum/repository /private/restored-forum/cache/index.sqlite3
-./v3 images restore /backups/forum-images-REVISION.tar /private/restored-forum/repository /private/restored-forum/cache/index.sqlite3
+./v3 images verify /backups/forum-images-REVISION.zip /private/restored-forum/repository /private/restored-forum/cache/index.sqlite3
+./v3 images restore /backups/forum-images-REVISION.zip /private/restored-forum/repository /private/restored-forum/cache/index.sqlite3
 ```
 
 The default image destination is a sibling of the repository, named
@@ -54,7 +57,7 @@ history from a content export. Rebuild and verify the destination before cutover
 use fresh static artifacts.
 
 Verification checks the source revision and unchanged snapshot records (or clean
-canonical records for a Git-backed restore), strict tar paths/types,
+canonical records for a Git-backed restore), strict archive paths/types,
 full inventory, checksums, file types/dimensions, and all current post references.
 It uses temporary private staging but does not activate a store. Restore validates
 first, then renames the verified store into place. Existing different stores are
@@ -83,7 +86,10 @@ and an optional description of at most 500 UTF-8 bytes. Retained store: 256 MiB/
 transformations, automatic retained-image deletion or cloud backend are included.
 Original bytes, including embedded metadata, are preserved.
 
-Use PHP with Phar and the normal project prerequisites. Configure PHP/web-server
+Use the existing PHP ZIP extension in both CLI and the serving PHP runtime for ZIP
+image export and restoration, plus the normal project prerequisites. If ZIP support
+is unavailable, enable it in that runtime and retry; exports never substitute TAR
+bytes under a ZIP filename. Legacy TAR exports continue to use Phar. Configure PHP/web-server
 request limits above 5 MiB plus the signed form envelope (for example,
 `upload_max_filesize=6M`, `post_max_size=8M`). Image compose needs JavaScript and
 Web Crypto over HTTPS or localhost. Keep the private store writable by the PHP

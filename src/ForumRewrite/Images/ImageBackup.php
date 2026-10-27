@@ -15,9 +15,14 @@ final class ImageBackup
         return $this->git(['rev-parse', 'HEAD']);
     }
 
-    public function export(string $kind, ?string $expectedRevision = null): array
+    public function export(string $kind, ?string $expectedRevision = null, string $imageFormat = 'zip'): array
     {
         if (!in_array($kind, ['images', 'tar.gz', 'zip'], true)) throw new RuntimeException('Unsupported backup format.');
+        if (!in_array($imageFormat, ['zip', 'tar'], true)) throw new RuntimeException('Unsupported image backup format.');
+        if ($kind === 'images' && $imageFormat === 'zip' && !class_exists(\ZipArchive::class)) {
+            throw new RuntimeException('PHP ZIP support is unavailable. Enable the zip extension for the web PHP runtime and retry.');
+        }
+        if ($kind === 'images' && $imageFormat === 'zip') $kind = 'images.zip';
         $cache = new ArchiveCache(dirname($this->databasePath), $this->repositoryRoot);
         $locks = new ArchiveLocks(dirname($this->databasePath));
         // Never hold the writer lock while waiting for the builder. Hits need no build lock.
@@ -44,7 +49,7 @@ final class ImageBackup
     private function build(string $kind, ?string $expectedRevision, ArchiveLocks $locks, ArchiveCache $cache): array
     {
         $work = $workspace = $archive = null;
-        $extension = $kind === 'images' ? 'tar' : $kind;
+        $extension = $kind === 'images.zip' ? 'zip' : ($kind === 'images' ? 'tar' : $kind);
         try {
             $identity = null;
             $revision = $locks->withExclusiveLock('forum-rewrite.lock', function () use ($kind, $expectedRevision, $cache, $extension, &$work, &$workspace, &$archive, &$identity): string {
@@ -58,13 +63,13 @@ final class ImageBackup
                 $store = new ImageStore($this->repositoryRoot);
                 $inventory = $store->inventory();
                 $identity = ExportIdentity::capture($this->repositoryRoot, $revision, $inventory);
-                $source = $kind === 'images' ? $store->root : $this->repositoryRoot;
-                $size = $kind === 'images' ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source, excludeGit: true);
+                $source = in_array($kind, ['images', 'images.zip'], true) ? $store->root : $this->repositoryRoot;
+                $size = in_array($kind, ['images', 'images.zip'], true) ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source, excludeGit: true);
                 $workspace = $cache->prepareBuild($identity, $size);
                 $work = $workspace . '/work';
                 $archive = $workspace . '/archive.' . $extension;
                 if (!mkdir($work, 0700)) throw new RuntimeException('Cannot prepare snapshot workspace.');
-                if ($kind === 'images') {
+                if (in_array($kind, ['images', 'images.zip'], true)) {
                     foreach (self::references($this->repositoryRoot) as $ref) { $store->resolve($ref); }
                     mkdir($work . '/objects', 0700);
                     foreach ($inventory as $name => $ref) {
@@ -94,7 +99,9 @@ final class ImageBackup
                 }
                 return $revision;
             });
-            if ($kind === 'images') {
+            if ($kind === 'images.zip') {
+                $this->writeImageZip($work, $archive);
+            } elseif ($kind === 'images') {
                 $tar = new \PharData($archive);
                 $tar->addFile($work . '/manifest.json', 'manifest.json');
                 foreach (glob($work . '/objects/*') ?: [] as $path) { $tar->addFile($path, 'objects/' . basename($path)); }
@@ -168,6 +175,31 @@ final class ImageBackup
             throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');
         }
         return ExportIdentity::capture($this->repositoryRoot, $revision, (new ImageStore($this->repositoryRoot))->identityListing());
+    }
+
+    private function writeImageZip(string $work, string $archive): void
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($archive, \ZipArchive::CREATE | \ZipArchive::EXCL) !== true) {
+            throw new RuntimeException('Unable to create image ZIP. Check temporary storage and retry.');
+        }
+        try {
+            if (!$zip->addFile($work . '/manifest.json', 'manifest.json') || !$zip->addEmptyDir('objects')) {
+                throw new RuntimeException('Unable to add image ZIP inventory.');
+            }
+            foreach (glob($work . '/objects/*') ?: [] as $path) {
+                $name = 'objects/' . basename($path);
+                if (!$zip->addFile($path, $name) || !$zip->setCompressionName($name, \ZipArchive::CM_STORE)) {
+                    throw new RuntimeException('Unable to add image to ZIP.');
+                }
+            }
+        } catch (\Throwable $error) {
+            $zip->close();
+            throw $error;
+        }
+        if (!$zip->close() || !is_file($archive)) {
+            throw new RuntimeException('Unable to finish image ZIP. Check temporary storage and retry.');
+        }
     }
 
     public static function references(string $root, ?string $snapshotRoot = null): array

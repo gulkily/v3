@@ -1,5 +1,9 @@
 # Agent instructions
 
+## Current retraction coordination
+
+Before work involving retraction, publication guards, or registration's retraction requirements, read [the 2026-10-24 handoff](docs/plans/retraction_simplification_handoff.md). The user wants immediate content deletion with a retained retraction record, followed by later history purge, and canceled the sweep diagnostics plan. The handoff records the intended simplification and its approval boundaries.
+
 ## Human-readable formats
 
 Use the project's `Key: value` plain-text format for canonical records and human-facing source, exports, and editable files. Do not introduce JSON for these purposes. See `CONTRIBUTING.md` for boundaries and migration requirements.

@@ -109,7 +109,7 @@ final class ArchiveCache
     public function open(string $identity, string $kind): ?array
     {
         $dir = $this->root . '/' . $this->key($identity, $kind);
-        $extension = $kind === 'images' ? 'tar' : $kind;
+        $extension = $kind === 'images.zip' ? 'zip' : ($kind === 'images' ? 'tar' : $kind);
         $path = $dir . '/archive.' . $extension;
         $metadata = $dir . '/metadata';
         if (is_link($dir) || is_link($path) || is_link($metadata) || !is_file($path) || !is_file($metadata)

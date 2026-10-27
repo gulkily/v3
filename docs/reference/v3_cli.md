@@ -973,8 +973,9 @@ Startup dependency failures list missing capabilities, group required Ubuntu ext
 
 ## Verify or restore image backups
 
-`./v3 images verify|restore <images.tar> <repository_root> <database_path>
+`./v3 images verify|restore <images.zip> <repository_root> <database_path>
 [--image-root=/private/images]` checks a revision-matched image/repository pair.
+ZIP and legacy TAR image archives are supported.
 `verify` stages and validates without activation; `restore` atomically installs
 into a fresh private image directory or accepts an identical existing store.
 It never overwrites a different store. Exit 0 means complete verification/restore;

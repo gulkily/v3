@@ -48,7 +48,10 @@ final class InstancePageController
             'instance.php',
             [
                 'imageBackupAvailable' => $imageBackupAvailable,
-                'imageBackupHref' => '/downloads/images.tar' . $revisionQuery,
+                'imageBackupHref' => '/downloads/images.zip' . $revisionQuery,
+                'siteName' => SiteConfig::displayName(),
+                'admins' => ToolsPageSupport::fetchSeedApprovedUsers($this->routeServices->pdo()),
+                'backupSnapshot' => $this->fetchBackupSnapshot(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
                 'downloads' => [
                     [
@@ -80,11 +83,11 @@ final class InstancePageController
         $this->downloadImageBackup($method, $format, $revision);
     }
 
-    public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null): void
+    public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null, string $imageFormat = 'zip'): void
     {
         if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
         try {
-            $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision);
+            $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision, $imageFormat);
         } catch (\ForumRewrite\Images\ArchiveBusyException $error) {
             $this->routeServices->sendText($error->getMessage() . "\n", 503, ['Cache-Control: private, no-store', 'Retry-After: 5']);
             return;
@@ -97,7 +100,7 @@ final class InstancePageController
             return;
         }
         if (!headers_sent()) { header('Cache-Control: private, no-store'); }
-        $type = $kind === 'images' ? 'application/x-tar' : ($kind === 'zip' ? 'application/zip' : 'application/gzip');
+        $type = match ($download['extension']) { 'zip' => 'application/zip', 'tar' => 'application/x-tar', default => 'application/gzip' };
         try {
             $this->routeServices->sendDownloadStream($download['stream'], $type, SiteConfig::siteName() . '-' . ($kind === 'images' ? 'images' : 'repository') . '-' . $download['revision'] . '.' . $download['extension']);
         } finally {

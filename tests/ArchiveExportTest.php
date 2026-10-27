@@ -107,6 +107,27 @@ final class ArchiveExportTest
         fclose($changed['stream']);
     }
 
+    public function testImageZipAndLegacyTarUseSeparateReusableArtifacts(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source'); $w->git($root);
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+        $paths = [];
+        foreach (['zip', 'tar'] as $format) {
+            $first = $backup->export('images', null, $format);
+            $second = $backup->export('images', null, $format);
+            try {
+                assertSame($format, $first['extension']);
+                assertSame(false, $first['reused']); assertSame(true, $second['reused']);
+                assertSame($first['path'], $second['path']);
+                $paths[$format] = $first['path'];
+                $command = $format === 'zip' ? ['unzip', '-l', $first['path']] : ['tar', '-tf', $first['path']];
+                [$status, $listing] = $w->command($command);
+                assertSame(0, $status); assertStringContains('manifest.json', $listing);
+            } finally { fclose($first['stream']); fclose($second['stream']); }
+        }
+        assertTrue($paths['zip'] !== $paths['tar']);
+    }
+
     public function testSharedLockDeadlineAndWarmHitDuringAnotherBuild(): void
     {
         $w = new ImportTestWorkspace();

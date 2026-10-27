@@ -57,6 +57,12 @@ Single-row-per-key bookkeeping about the last rebuild.
 
 One row per canonical post record (both thread roots and replies).
 
+Schema 27 adds `posts_author_identity_idx (author_identity_id)`. Together with
+the primary-key index on `post_id`, it supports the identity-link predicate
+`post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id`
+using SQLite's multi-index OR plan, retaining single-update semantics when a
+row matches both branches. Normal startup rebuilds schema-26 and older models.
+
 | Column | Type | Notes |
 | --- | --- | --- |
 | `post_id` | TEXT PK | |
@@ -111,6 +117,12 @@ Index: `threads_last_activity_idx (last_activity_at DESC, root_post_id DESC)`
 backing the board/tags/RSS listing sort. Added in schema version 26.
 
 ### `profiles`
+
+Schema 28 changes identity-registration derived-state writes to update profile
+approval/attribution/count fields only when their values differ. Comparisons are
+NULL-safe (`IS NOT`), and the updater retains the changed profile identities for
+targeted downstream work. No columns or indexes change; the version increment
+and prior-schema startup check accompany this core query change.
 
 One row per identity with a bootstrapped profile.
 
@@ -181,7 +193,19 @@ Feed of indexed activity entries (see `docs/specs/php_forum_rewrite_spec_v1.md`
 | `source_commit_sha` | TEXT NULL | |
 
 Indexes: `activity_recent_idx (created_at DESC, post_id DESC, id DESC)`,
-`activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`.
+`activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`,
+`activity_author_identity_idx (author_identity_id)` (schema 26). The author
+index supports identity-specific attribution/approval updates without scanning
+all activity rows for each profile. Schema-25 databases are rebuilt at normal
+startup before serving the current application; this index is also present in
+manual rebuilds and candidate databases.
+
+Schema 29 limits registration activity refresh to the newly linked identity
+and profiles whose derived state changed. Attribution updates use NULL-safe
+changed-value comparisons and the computed approval state for those profiles;
+they no longer refresh every profile's activity. Normal startup rebuilds older
+derived models before the changed query path runs. Table/index shapes are
+unchanged from schema 27.
 
 ### `commits`
 
@@ -441,3 +465,11 @@ exclusion — so viewer like/flag/vote/label results are unchanged, including on
 retracted or removed-source threads. The index column order matches the lookup
 predicate. Null-identity records are not projected (the file scan never matched
 them). Normal startup rebuilds prior models before the indexed query runs.
+
+### Schema 30 integration
+
+Schema 30 combines the main-branch registration changes through version 29 with
+the viewer-tag projection and hot-path indexes from the image-backup branch
+ancestry. The new identity forces existing models from either branch to rebuild.
+Startup regression coverage includes a version 29 model without `viewer_tags`,
+with the repository revision unchanged.
