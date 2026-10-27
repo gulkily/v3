@@ -6,6 +6,14 @@ namespace ForumRewrite\Security;
 
 final class OpenPgpSignatureVerifier
 {
+    private \ForumRewrite\Support\OperationBudget $budget;
+    private int $outputBytes = 0;
+
+    public function __construct(private readonly array $gpgCommand = ['gpg'], private readonly float $seconds = 10.0)
+    {
+        if (!is_finite($seconds) || $seconds <= 0 || $seconds > 10) throw new \InvalidArgumentException('Verification budget must be positive and at most 10 seconds.');
+    }
+
     /**
      * @return array{ok:bool,fingerprint:?string,status:string,details:string,timings:array<string, float>,diagnostics:array{import_exit_code:?int,import_accepted:?bool,import_result_counts:?list<int>,import_debug_output:list<string>,gpg_import_started_at_epoch:?int,public_key_packet_inspection_exit_code:?int,public_key_creation_epoch:?int,public_key_creation_offset_seconds:?int,post_import_key_lookup_exit_code:?int,post_import_key_lookup_found:?bool,verification_exit_code:?int,validsig_present:bool,gpg_status_codes:list<string>}}
      */
@@ -15,6 +23,12 @@ final class OpenPgpSignatureVerifier
         string $armoredDetachedSignature,
         string $expectedFingerprint
     ): array {
+        $this->budget = new \ForumRewrite\Support\OperationBudget($this->seconds);
+        $this->outputBytes = 0;
+        foreach ([$armoredPublicKey, $armoredDetachedSignature] as $armor) {
+            if (strlen($armor) > \ForumRewrite\Canonical\RecordLimits::ARMOR) throw new \ForumRewrite\Support\OperationLimitException('Signature verification: armor exceeds 1 MiB limit.');
+        }
+        if (strlen($signedText) > \ForumRewrite\Canonical\RecordLimits::TEXT) throw new \ForumRewrite\Support\OperationLimitException('Signature verification: text exceeds 16 MiB limit.');
         $timings = [];
         $diagnostics = $this->emptyDiagnostics();
         $expectedFingerprint = strtoupper(trim($expectedFingerprint));
@@ -114,17 +128,12 @@ final class OpenPgpSignatureVerifier
     private function runGpg(string $homedir, array $arguments): array
     {
         $startedAt = hrtime(true);
-        $command = array_merge([
-            'gpg',
-            '--batch',
-            '--no-tty',
-            '--homedir',
-            $homedir,
-        ], $arguments);
-
-        $output = [];
-        $exitCode = 0;
-        exec(implode(' ', array_map('escapeshellarg', $command)) . ' 2>&1', $output, $exitCode);
+        $command = [...$this->gpgCommand, '--batch', '--no-tty', '--no-options', '--no-autostart', '--homedir', $homedir, ...$arguments];
+        $result = \ForumRewrite\Support\BoundedProcess::run($command, $this->budget,
+            1048576 - $this->outputBytes, 'Signature verification');
+        $this->outputBytes += $result['bytes'];
+        $output = preg_split('/\\r?\\n/', trim($result['stdout'] . "\n" . $result['stderr'])) ?: [];
+        $exitCode = $result['exit_code'];
 
         return [
             'exit_code' => $exitCode,
@@ -322,6 +331,6 @@ final class OpenPgpSignatureVerifier
 
     private function cleanup(string $path): void
     {
-        GpgHomeCleaner::dispose($path);
+        GpgHomeCleaner::dispose($path, stopAgents: false);
     }
 }

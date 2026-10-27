@@ -130,11 +130,15 @@ $rowCountSources = [
     </table>
   </article>
   <article class="card" data-role="codebase-state">
+<?php if ($textBackupEnabled ?? true): ?>
     <h2>Downloads</h2>
     <ul class="codebase-downloads">
 <?php foreach ($state['downloads'] as $download): ?>
       <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a></li>
 <?php endforeach; ?>
     </ul>
+<?php else: ?>
+    <p>Text backups are unavailable.</p>
+<?php endif; ?>
   </article>
 </section>

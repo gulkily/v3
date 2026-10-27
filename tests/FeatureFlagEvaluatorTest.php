@@ -160,6 +160,8 @@ final class FeatureFlagEvaluatorTest
         );
 
         assertSame([
+            FeatureFlagRegistry::IMAGE_BACKUP_ENABLED,
+            FeatureFlagRegistry::TEXT_BACKUP_ENABLED,
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,

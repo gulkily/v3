@@ -98,6 +98,7 @@ final class ToolsPageController
             [
                 'toolPages' => array_map(
                     static fn (array $tool): array => [
+                        'key' => $tool['key'],
                         'label' => $tool['label'],
                         'href' => $tool['href'],
                         'description' => $tool['description'],

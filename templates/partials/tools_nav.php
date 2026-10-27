@@ -1,6 +1,7 @@
 <div class="nav tools-nav">
 <?php $sawStandaloneToolNavOption = false; ?>
 <?php foreach ($toolNavOptions as $option): ?>
+<?php if (($textBackupEnabled ?? true) === false && ($imageBackupEnabled ?? true) === false && ($option['key'] ?? '') === 'backup') { continue; } ?>
 <?php if (!empty($option['standalone']) && !$sawStandaloneToolNavOption): $sawStandaloneToolNavOption = true; ?>
   <span class="tools-nav-divider" aria-hidden="true"></span>
 <?php endif; ?>

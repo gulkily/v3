@@ -50,3 +50,9 @@ UTC 2026-10-23T18:19:32Z; scope v1 / R1 / P2; start `c86b89314602a17cf435448bb66
 Await **Approved Step 1** before Step 2; implementation is not authorized by this assessment.
 
 Commit authorization: the user subsequently requested committing the uncommitted changes. This explicitly permits committing this draft and its study/debug records before Step 3; it does not approve Step 1, advancement or implementation.
+
+## Repair authorization and revised outcome — 2026-10-26
+
+The user reported the same failure again, then explicitly requested: “Let's build the fix now, please. After you're done your review.” This overrides the pending planning gates for the immediate repair; it is not a fabricated sequence of step approvals. [Review and repair evidence](./import_record_failure_isolation_review.txt) records scope v2: the reproduced classification and fallback-key defects, signed-label regression tests, normal CLI and interruption recovery. The broader v1 Option B exception-taxonomy redesign remains deferred. Original v1 0.45 projection and incomplete history are preserved; no prospective v2 score was collected. Retrospective v2 scope assessment: 0.30, single exposed Codex rater, R1/P2 unchanged. Legacy extended mode remains disabled. Application and documentation changes remain uncommitted; maintainer acceptance pending.
+
+*— Revised by Codex · 2026-10-26 UTC*
