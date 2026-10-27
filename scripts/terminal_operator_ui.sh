@@ -18,19 +18,7 @@ fallback() {
   printf '%s\n' 'Run ./v3 status and ./v3 private-config view instead.' >&2
 }
 
-show_command_output() {
-  local title="$1"
-  shift
-  local output_file
-  output_file="$(mktemp "${TMPDIR:-/tmp}/v3-tui.XXXXXX")"
-
-  if ! "$@" >"${output_file}" 2>&1; then
-    printf '\nCommand exited unsuccessfully; inspect the output above before retrying.\n' >>"${output_file}"
-  fi
-
-  "${whiptail_bin}" --title "${title}" --scrolltext --textbox "${output_file}" 22 100 || true
-  rm -f "${output_file}"
-}
+source "${root}/scripts/terminal_operator_ui_lib.sh"
 
 show_private_config() {
   local output_file

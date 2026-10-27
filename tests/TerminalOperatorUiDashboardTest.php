@@ -64,7 +64,7 @@ BASH);
             assertSame('', $stderr);
             assertStringContains('ARGS:--title v3 terminal operator --menu', $log);
             assertStringContains('TEXTBOX:', $log);
-            assertStringContains('v3 status', $log);
+            assertStringContains('Operator status', $stdout);
             assertStringContains('Private configuration (redacted)', $log);
             assertStringContains('Private config path:', $log);
             assertStringContains('/tools/feature-flags/', $log);
@@ -92,6 +92,7 @@ BASH);
             throw new RuntimeException('Unable to run command.');
         }
 
+        fwrite($pipes[0], "\n\n");
         fclose($pipes[0]);
         $stdout = stream_get_contents($pipes[1]);
         $stderr = stream_get_contents($pipes[2]);
