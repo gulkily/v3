@@ -238,7 +238,7 @@ pre {
   opacity: 0.7;
 }
 
-.board-controls-nav > *:last-child {
+.board-controls-nav > *:last-child:not([data-nav-key]) {
   margin-left: auto;
 }
 

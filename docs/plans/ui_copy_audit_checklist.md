@@ -573,3 +573,8 @@ Dependency delta: Zero. No navigation destination/icon, schema, canonical record
 
 Resolution: Preserve upstream instance/admin/snapshot details, recent items, image ZIP link, inline SQLite freshness and compact public-scope copy alongside the new flag-based unavailable state. Image-only mode retains the matching-content requirement. ZIP and legacy TAR remain under one image flag.
 Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all 240 states across six themes and 390/1280 widths; actual ZIP/TAR denial, recovery and icon checks pass. Merged Midnight phone image-only screenshot inspected at /tmp/backup-flags-browser-lBKMAg/backup-01.png. Canonical-order toolbar suite passes. See backup feature-flags implementation summary for 50 passing PHP checks and evidence paths. No new layout/overflow issue observed; full suite, physical devices and deployment remain unverified.
+
+## Board New Post link — 2026-10-27
+
+- [x] Removed the board controls' New Post link; the inline composer replaces it. `/compose/thread` stays as the full-page and no-JS route, and the Tags page and offline reader controls are unchanged. The controls' right-aligned last-item rule now skips view/sort options, so Top stays with its group.
+- Verification: `php tests/run.php LocalAppSmokeTest` passes except the two failures that were already present (quick-reply continuations, archive filename). `node tests/browser/board_compose_focus.mjs` passes across light, Word97, Chicago and Midnight at 390px/1280px, including no-JS controls. Nav alignment was not inspected in screenshots.
