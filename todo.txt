@@ -12,12 +12,12 @@ precisely, including interrupted-work recovery.
 
 terminal operator ui (`./v3 tui`)
 ----------------------------------
-	config-first status/config dashboard and command launcher
-	extract shared config schema: defaults, validation, redaction, precedence
-	private-config editor: presets, masked secrets, atomic writes, save diff
+x	config-first status/config dashboard and command launcher
+x	extract shared config schema: defaults, validation, redaction, precedence
+x	private-config editor: presets, masked secrets, atomic writes, save diff
 	later: guided destructive workflows with review, confirmation, output, cancellation
-	keep scripts as executor/validator; do not duplicate web feature-flags ui
-	use whiptail with dependency check and cli fallback
+x	keep scripts as executor/validator; do not duplicate web feature-flags ui
+x	use whiptail with dependency check and cli fallback
 
 scoring
 -------
