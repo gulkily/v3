@@ -9,7 +9,7 @@ final class PresentationSlotRegistry
     /** @var array<string, array{fallback:string, choices:list<string>}> */
     private const SLOTS = [
         'navigation' => ['fallback' => 'forum', 'choices' => ['forum', 'qdb', 'app']],
-        'boardCard' => ['fallback' => 'thread', 'choices' => ['thread', 'quote']],
+        'boardCard' => ['fallback' => 'thread', 'choices' => ['thread', 'quote', 'list']],
         'compose' => ['fallback' => 'thread', 'choices' => ['thread', 'qdb']],
         'about' => ['fallback' => 'default', 'choices' => ['default', 'chouse']],
         'editorial' => ['fallback' => 'zenmemes', 'choices' => ['zenmemes', 'boston', 'qdb', 'mitrapclub']],

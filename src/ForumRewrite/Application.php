@@ -612,6 +612,7 @@ final class Application
                 $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
+                    position: $query['position'] ?? null,
                 ),
                 200
             );

@@ -406,25 +406,30 @@ Use `./v3 task-queue status` for individual task details and
 ./v3 tui
 ```
 
-Opens a `whiptail` dashboard in an interactive terminal. It displays the
-canonical `./v3 status` result and a redacted effective private-config view,
-including each value's source. Environment overrides are read-only in the UI;
-manage site feature flags through `/tools/feature-flags/`.
+Opens a `whiptail` dashboard with repository context, health and queue indicators,
+observation time, refresh and direct details. Collection is bounded to five seconds;
+a failed refresh marks the previous observation stale. `./v3 status --summary`
+prints the same compact indicators without opening the TUI.
 
-The launcher shows the selected command before running one of its fixed
-read-only entries: `./v3 status`, `./v3 task-queue status`, or
-`./v3 fast-score status`. It accepts no command arguments and does not edit
-private config, modify feature flags, enqueue work, or offer destructive
-workflows. The private-config editor and guided destructive workflows remain
-separate follow-up work.
+Search diagnostics by name, description or command. The fixed catalog contains
+`./v3 status`, `./v3 task-queue status` and `./v3 fast-score status`.
+Output appears while the command runs. Ctrl-C interrupts that diagnostic;
+Enter returns and `r` retries. Search and selection survive return. This does
+not cancel separately running background jobs or launch repairs.
 
-The LLM connection editor offers OpenAI, OpenRouter, Anthropic, stub, and
-custom-provider presets. It masks API-key entry, shows a redacted review before
-an atomic save, and refuses partial editing when any LLM connection setting is
-set through the environment; change that deployment setting and restart instead.
+The LLM editor starts with resolved current values and sources. Environment
+fields are locked individually; other fields remain editable. Presets are an
+explicit choice. Blank API-key input keeps the current key. Review shows only
+actual changes with secrets redacted; validation and save failures retain the
+draft for correction. Concurrent changes require a fresh review, preserving
+non-secret unlocked draft fields and asking for any replacement key again.
+Saved values appear in the editor; `./v3 private-config view` verifies them.
+Manage site feature flags through `/tools/feature-flags/`.
 
-`whiptail` and interactive stdin, stdout, and stderr are required. If either
-is unavailable, `./v3 tui` makes no change and directs the operator to:
+The UI supports keyboard navigation at 50 columns by 18 rows or larger. Below
+that size it offers resize/retry or return; long reviews use a scrolling view.
+`whiptail` and interactive stdin, stdout and stderr are required. Missing
+requirements provide these CLI fallbacks:
 
 ```
 ./v3 status
@@ -806,7 +811,7 @@ and rebuilds affected artifacts.
 ## Manage the private LLM config
 
 ```
-./v3 private-config [view|edit|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
+./v3 private-config [view|edit|update-llm|refresh-template|--view|--edit|--force|--api-key-stdin] [--path=/private/path/secrets.php]
 ```
 
 Creates or updates the private PHP config consumed by
@@ -818,10 +823,17 @@ fallbacks, but new writes use `LLM_*` names.
 
 - `view` / `--view` — print a redacted summary and update reminders without writing the file
 - `edit` / `--edit` — open an existing config in `$VISUAL`, `$EDITOR`, or `vi`; it does not print secrets or create a missing file
+- `update-llm` — accept the existing machine request on stdin, with a `values` object; blank API key means unchanged. The TUI also sends an internal `expected_revision` token so stale reviews fail without saving. Secrets never belong in command arguments.
 - `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL`, while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`
 - `--path=...` — write to a specific file instead of the default `../forum-private/secrets.php` (relative to this checkout)
+
+Private-config writers and `edit` coordinate through a private `.lock` sidecar;
+busy saves fail after three seconds and can be retried. Keep that lock file in
+place. Saves preserve unrelated values and use private temporary files with
+atomic replacement. An external editor that bypasses this lock can still race
+the final check; avoid editing the same file concurrently outside these commands.
 
 ## Show agent-reply diagnostics
 

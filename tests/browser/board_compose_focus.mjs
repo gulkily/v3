@@ -105,12 +105,12 @@ try {
    assert.deepEqual(await page.evaluate(()=>({same:editor===document.activeElement,focus:focusCalls,scroll:scrollCalls,events:focusEvents.length})),{same:true,focus:0,scroll:0,events:1});
    const draft='Board draft '+theme+' '+width;
    await body.fill(draft);await body.evaluate(el=>el.setSelectionRange(3,8));
-   await page.locator('.board-controls-nav a').first().focus();
+   await page.locator('.board-filter a').first().focus();
    assert.equal(await body.inputValue(),draft);assert.equal(await actions.isVisible(),true);
    await body.focus();assert.deepEqual(await body.evaluate(el=>[el.selectionStart,el.selectionEnd]),[3,8]);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await body.fill('');
-   await page.locator('.board-controls-nav a').first().focus();
+   await page.locator('.board-filter a').first().focus();
    await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='0');
    assert.equal(await actions.isVisible(),false);
    assert.equal((await body.boundingBox()).height,collapsedHeight,'empty focus exit restores the compact editor');

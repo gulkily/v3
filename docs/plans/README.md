@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [TUI operator workspace](tui_operator_workspace/)
+
 - [Profile public details](profile_public_details/)
 
 - [Image backup ZIP](image_backup_zip/)

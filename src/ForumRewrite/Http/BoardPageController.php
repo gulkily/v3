@@ -35,7 +35,10 @@ final class BoardPageController
     ) {
     }
 
-    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null): string
+    /** Threads per board list page; pinned threads come on the first page in addition. */
+    private const LIST_PAGE_SIZE = 50;
+
+    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null, mixed $position = null): string
     {
         $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
@@ -50,6 +53,9 @@ final class BoardPageController
         $voteCaptionPair = $qdbPolicy?->selectCaptionPair();
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
+        if ($boardCardSlot === 'list' && $qdbPolicy === null) {
+            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, $position);
+        }
 
         return $this->routeServices->renderPageTemplate(
             'board.php',
@@ -89,6 +95,84 @@ final class BoardPageController
                 '/assets/lazy_compose_signing.js',
             ], $qdbPolicy !== null ? ['/assets/thread_reactions.js'] : []),
         );
+    }
+
+    /**
+     * The `list` board: pinned threads grouped above the latest ones, which
+     * are paged with the shared native-link pagination. The position names
+     * the boundary thread in the sorted list, so filter and sort changes
+     * (a different context) discard it.
+     *
+     * @param array<int, array<string, mixed>> $threads Sorted, pinned first.
+     * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $viewOptions
+     * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $sortOptions
+     */
+    private function boardList(string $view, string $sort, array $threads, array $viewOptions, array $sortOptions, mixed $position): string
+    {
+        $context = 'board:' . $view . ':' . $sort;
+        $pinned = array_values(array_filter($threads, fn (array $thread): bool => $this->isPinned($thread)));
+        $latest = array_values(array_filter($threads, fn (array $thread): bool => !$this->isPinned($thread)));
+        $error = null;
+        try {
+            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
+            $cursor = $position === null ? null : \ForumRewrite\Pagination\PageNavigation::decode($position, $context);
+            $page = $this->listPage($latest, $cursor);
+        } catch (\InvalidArgumentException $exception) {
+            $error = $exception->getMessage();
+            $page = ['items' => [], 'previous' => null, 'next' => null];
+        }
+        $pagination = \ForumRewrite\Pagination\PageNavigation::links('/threads/', ['view' => $view, 'sort' => $sort], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
+
+        return $this->routeServices->renderPageTemplate(
+            'board_list.php',
+            [
+                'listingQuery' => \ForumRewrite\Tools\BoardListingQuery::context($view, $sort),
+                'view' => $view,
+                'sort' => $sort,
+                'viewOptions' => $viewOptions,
+                'sortOptions' => $sortOptions,
+                'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
+                'pinnedThreads' => $position === null ? $pinned : [],
+                'threads' => $page['items'],
+                'pagination' => $pagination,
+                'paginationError' => $error,
+            ],
+            'Board',
+            'board',
+            ['/assets/inline_reply_form.js', '/assets/lazy_compose_signing.js'],
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $threads
+     * @param array{direction:string,boundary:array<string,string>}|null $cursor
+     * @return array{items: array<int, array<string, mixed>>, previous: array<string,string>|null, next: array<string,string>|null}
+     */
+    private function listPage(array $threads, ?array $cursor): array
+    {
+        $start = 0;
+        if ($cursor !== null) {
+            $boundaryId = $cursor['boundary']['thread'] ?? null;
+            if (!is_string($boundaryId) || array_keys($cursor['boundary']) !== ['thread']) {
+                throw new \InvalidArgumentException('This page position is invalid.');
+            }
+            $index = array_search($boundaryId, array_map(static fn (array $thread): string => (string) $thread['root_post_id'], $threads), true);
+            if ($index === false) {
+                throw new \InvalidArgumentException('This page position has expired.');
+            }
+            $start = $cursor['direction'] === 'next' ? $index + 1 : max(0, $index - self::LIST_PAGE_SIZE);
+            $end = $cursor['direction'] === 'next' ? $start + self::LIST_PAGE_SIZE : $index;
+        } else {
+            $end = self::LIST_PAGE_SIZE;
+        }
+        $items = array_slice($threads, $start, $end - $start);
+        $boundary = static fn (array $thread): array => ['thread' => (string) $thread['root_post_id']];
+
+        return [
+            'items' => $items,
+            'previous' => $items !== [] && $start > 0 ? $boundary($items[0]) : null,
+            'next' => $items !== [] && $start + count($items) < count($threads) ? $boundary($items[count($items) - 1]) : null,
+        ];
     }
 
     /**
