@@ -7,7 +7,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 ## Provenance
 
-- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.2.1-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
+- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.4.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
 - The full upstream tree and license are retained, with the local experimental estimation patch described below. The upstream Ref/Commit identifies the imported baseline, not the locally patched contents.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
@@ -44,7 +44,7 @@ Before a future subtree update, inspect and preserve this patch in branch histor
 ## Update commands
 
 ```bash
-./v3 railspike sync                      # pinned v0.2.1-beta.1: no-op when installed
+./v3 railspike sync                      # pinned v0.4.0-beta.1: no-op when installed
 ./v3 railspike sync --ref=<newer-tag>    # deliberate upgrade
 ./v3 railspike sync --repository-root=/path/to/another/migrated/repository
 ```
@@ -119,3 +119,17 @@ Standing enrollment under [protocol P2](../plans/effort_estimation_trial.md#cont
 Upgraded to `v0.2.1-beta.1` (`b6c399424f75dc2e94af496411467480487cc319`) through a squash subtree merge. The release incorporates the installed effort-estimation contract and all eight checkpoint instruction files unchanged, so no local experiment patch remains. The historical patch notes above describe the pre-upgrade installation. Resolved the two README conflicts to the reviewed release versions; the product tree matches upstream except for the host installation record. Updated the CLI default pin and source record, and migrated the legacy `railspike` remote to `https://github.com/rlspk/railspike.git`.
 
 Verification: all 17 upstream product files match the release byte-for-byte; `php tests/run.php RailspikeSyncCommandTest RailspikeWorkflowTest` passed all 20 tests; shell syntax and `git diff --check` passed. No UI files changed.
+
+## Upgrade — 2026-10-26
+
+Upgraded from `v0.2.1-beta.1` to `v0.4.0-beta.1` (`0dcab22380874e53dae641b3d82a24c703241ac9`) with `./v3 railspike sync --ref=v0.4.0-beta.1` on the maintenance branch `railspike-v0.4.0-beta.1`. The merge was clean; no local product patch existed to preserve. Updated the CLI default pin, its usage text and test, the CLI reference, and the source record.
+
+What changed upstream (13 commits):
+
+- **One-shot mode** (`docs/railspike/docs/workflow/one_shot.md`): explicitly authorized, bounded work runs in one evolving record (`docs/plans/{feature}/{feature}_one_shot.md`) without intermediate step approvals, normally with one completion commit. Staged cycles are unchanged. Railspike now starts by choosing the execution mode.
+- **Agent attribution**: authored or revised plan sections are signed with an italic line (agent name, UTC date, and verified model/settings only).
+- **Effort estimation**: extended estimates (every Step 1 option and every Step 3 stage) are enabled by default for new enrolled cycles; estimates are shown as bold `Estimate:` and `Cycle estimate:` lines; one-shot cycles have their own checkpoints; frozen references are recovered from host-local snapshots.
+
+Effect on the `railspike-effort` study: standing enrollment under protocol P2 still applies, now to one-shot cycles as well. New enrolled cycles get extended estimates unless the user overrides it; existing cycles keep their recorded state.
+
+Verification: installed product files match the tag byte-for-byte (the only difference is the host `RAILSPIKE_SOURCE.md`); the Railspike sync and workflow tests are recorded in the commit that updated the pin.
