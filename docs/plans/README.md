@@ -308,3 +308,7 @@ and repair its navigation and affected references. See the
 
 - [Backup feature flags](./backup_feature_flags/backup_feature_flags_step1_solution_assessment.md): independent text and image backup controls.
 - [Import archive hardening](./import_archive_hardening/import_archive_hardening_step1_solution_assessment.md) — bounded hostile-input processing and CLI recovery.
+
+[QR theme](qr_theme/qr_theme_step4_implementation_summary.md) — restrained QR colors and live theme synchronization; locally complete, physical-camera acceptance pending.
+
+[Invite signing readiness](invite_signing_readiness/invite_signing_readiness_step4_implementation_summary.md) — session/signing-key mismatch fixed locally; user/production confirmation pending.

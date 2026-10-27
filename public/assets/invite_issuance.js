@@ -58,8 +58,70 @@
       throw new Error("Browser signing is unavailable.");
     }
 
-    await signing.ensureActionIdentity(root, feedback);
-    return signing;
+    const ready = await signing.ensureActionIdentity(root, feedback, { existingIdentityOnly: true, verifyPublishedIdentity: true });
+    if (ready === false) throw new Error("Your saved key is unavailable. Restore it on Account, then return here and try again.");
+    const auth = window.PrivateSiteAuth;
+    if (!auth || typeof auth.authenticate !== "function") throw new Error("Authentication is unavailable. Reload this page and try again.");
+    const authenticated = await auth.authenticate({ force: true, navigate: false, existingIdentityOnly: true });
+    if (authenticated.status === "not-configured") throw new Error("Your saved key is unavailable. Restore it on Account, then return here and try again.");
+    if (authenticated.status !== "approved") throw new Error("Your current identity is not approved to create invitations. Use Account to restore your approved identity.");
+    return { identityId: authenticated.identityId,
+      signCanonicalRecord: record => signing.signCanonicalRecord(record, authenticated.identityId) };
+  }
+
+  async function prepareSignedInvitation(root, feedback, fields) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const signing = await ensureInvitationIdentity(root, feedback);
+        const prepared = await post("/api/prepare_invitation", fields);
+        if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare invitation. Try again.");
+        const author = (String(prepared.canonical_record || "").match(/^Author-Identity-ID: (.+)$/m) || ["", ""])[1];
+        if (!signing.identityId || author !== signing.identityId) {
+          const error = new Error("Your browser identity changed. Try again when it has finished changing.");
+          error.code = "identity_changed";
+          throw error;
+        }
+        const signature = await signing.signCanonicalRecord(prepared.canonical_record);
+        return { prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path,
+          author_identity_id: author, canonical_record: prepared.canonical_record, detached_signature: signature };
+      } catch (error) {
+        if (attempt === 0 && error.code === "identity_changed") continue;
+        throw error;
+      }
+    }
+  }
+
+  function invitationFailure(error) {
+    const message = error && error.message || "Unable to create invitation. Check your connection and try again.";
+    if (message.startsWith("Detached signature verification failed:")) {
+      return "The invitation signature could not be verified. Your keys were kept. Retry; if it persists, restore your matching key on Account. (" + message + ")";
+    }
+    if (/saved.*key|private key|public key/i.test(message) && !/Restore it on Account/.test(message)) {
+      return "Your saved keys could not be used. Restore your matching key on Account, then try again.";
+    }
+    return message;
+  }
+
+  function resolveInvitationQrColors(canvas) {
+    const fallback = ["#000", "#fff"];
+    if (!window.getComputedStyle || (window.matchMedia && window.matchMedia("(forced-colors: active)").matches)) return fallback;
+    const style = window.getComputedStyle(canvas);
+    const colors = [style.color, style.backgroundColor].map(function (color) {
+      // Computed sRGB only: reject transparent or unsupported color spaces conservatively.
+      const match = /^rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*(1(?:\.0+)?))?\s*\)$/.exec(color);
+      if (!match) return null;
+      const rgb = match.slice(1, 4).map(Number);
+      if (rgb.some(value => value > 255)) return null;
+      const linear = rgb.map(value => {
+        const channel = value / 255;
+        return channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+      });
+      return { color, luminance: linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722 };
+    });
+    if (colors.some(color => !color)) return fallback;
+    colors.sort((a, b) => a.luminance - b.luminance);
+    return (colors[1].luminance + 0.05) / (colors[0].luminance + 0.05) >= 7
+      ? colors.map(color => color.color) : fallback;
   }
 
   function renderInvitationQr(canvas, value) {
@@ -69,11 +131,12 @@
     const modules = qr.getModuleCount();
     const cell = 4;
     const margin = 4;
+    const colors = resolveInvitationQrColors(canvas);
     canvas.width = canvas.height = (modules + margin * 2) * cell;
     const context = canvas.getContext("2d");
-    context.fillStyle = "#fff";
+    context.fillStyle = colors[1];
     context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "#000";
+    context.fillStyle = colors[0];
     for (let row = 0; row < modules; row += 1) {
       for (let col = 0; col < modules; col += 1) {
         if (qr.isDark(row, col)) context.fillRect((col + margin) * cell, (row + margin) * cell, cell, cell);
@@ -151,6 +214,28 @@
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
     const issueButton = form.querySelector('button[type="submit"]');
     let issuing = false;
+    let uncertainInvitation = null;
+    const issueLabel = issueButton && issueButton.textContent;
+    const refreshQr = function () {
+      if (issuing || result.hidden || qrResult.hidden || !link.value) return;
+      try {
+        renderInvitationQr(qrCanvas, link.value);
+      } catch (error) {
+        qrResult.hidden = true;
+        setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead.", "ok");
+      }
+    };
+    if (window.MutationObserver) {
+      new window.MutationObserver(refreshQr).observe(document.documentElement, {
+        attributes: true, attributeFilter: ["data-theme", "data-resolved-theme", "data-lcd-palette"]
+      });
+    }
+    // Initial and automatic theme changes can precede stylesheet readiness.
+    document.addEventListener("load", function (event) {
+      if (event.target.tagName === "LINK" && event.target.rel === "stylesheet") refreshQr();
+    }, true);
+    const forcedColors = window.matchMedia && window.matchMedia("(forced-colors: active)");
+    if (forcedColors && forcedColors.addEventListener) forcedColors.addEventListener("change", refreshQr);
     addDestinationOption(destinationOptions, destination.dataset.sourceDestination);
     recentInvitationDestinations().forEach(function (recentDestination) {
       addDestinationOption(destinationOptions, recentDestination);
@@ -198,25 +283,36 @@
       link.value = "";
       if (qrResult) qrResult.hidden = true;
       if (qrCanvas) qrCanvas.width = 0;
-      setFeedback(feedback, "Creating invitation…", "ok");
+      setFeedback(feedback, uncertainInvitation ? "Checking invitation…" : "Creating invitation…", "ok");
       try {
-        const signing = await ensureInvitationIdentity(root, feedback);
-        const token = randomToken();
-        const selectedDestination = includeDestination.checked ? String(destination.value || "") : "";
-        const prepared = await post("/api/prepare_invitation", {
-          action: "issue",
-          verification_hash: await verificationHash(token),
-          expires_at: new Date(Date.now() + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
-          destination: selectedDestination,
-        });
-        if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare invitation.");
-        const signature = await signing.signCanonicalRecord(prepared.canonical_record);
-        const finalized = await post("/api/create_prepared_invitation", {
-          prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path,
-          author_identity_id: (prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m) || ["", ""])[1],
-          canonical_record: prepared.canonical_record, detached_signature: signature,
-        });
-        if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to create invitation.");
+        const token = uncertainInvitation ? uncertainInvitation.token : randomToken();
+        const selectedDestination = uncertainInvitation ? uncertainInvitation.destination
+          : includeDestination.checked ? String(destination.value || "") : "";
+        if (uncertainInvitation) {
+          let inspected;
+          try { inspected = await post("/api/inspect_invitation", { invite_token: token }); }
+          catch (error) { throw new Error("Could not check the invitation. Keep this page open and check again when your connection returns."); }
+          if (!inspected || inspected.status !== "ok" || inspected.state !== "available") {
+            throw new Error("The invitation is not confirmed as available. Keep this page open and check again; another invitation has not been generated.");
+          }
+        } else {
+          const prepared = await prepareSignedInvitation(root, feedback, {
+            action: "issue",
+            verification_hash: await verificationHash(token),
+            expires_at: new Date(Date.now() + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
+            destination: selectedDestination,
+          });
+          let finalized;
+          try {
+            finalized = await post("/api/create_prepared_invitation", prepared);
+            if (!finalized || !["ok", "error"].includes(finalized.status)) throw new Error("Unrecognized finalization response");
+          } catch (error) {
+            uncertainInvitation = { token, destination: selectedDestination };
+            throw new Error("Could not confirm whether the invitation was created. Keep this page open and use Check invitation when your connection returns.");
+          }
+          if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to create invitation.");
+        }
+        uncertainInvitation = null;
         rememberInvitationDestination(selectedDestination);
         addDestinationOption(destinationOptions, selectedDestination);
         link.value = window.location.origin + "/lobby/#invite=" + token;
@@ -230,33 +326,36 @@
           setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead.", "ok");
         }
       } catch (error) {
-        setFeedback(feedback, error && error.message || "Unable to create invitation.", "error");
+        setFeedback(feedback, invitationFailure(error), "error");
       } finally {
         issuing = false;
-        if (issueButton) issueButton.disabled = false;
+        if (issueButton) {
+          issueButton.disabled = false;
+          issueButton.textContent = uncertainInvitation ? "Check invitation" : issueLabel;
+        }
       }
     });
 
     const revokeForm = root.querySelector("[data-invitation-revoke-form]");
+    let revoking = false;
     if (revokeForm) revokeForm.addEventListener("submit", async function (event) {
       event.preventDefault();
+      if (revoking) return;
+      revoking = true;
       try {
-        const signing = await ensureInvitationIdentity(root, feedback);
-        const prepared = await post("/api/prepare_invitation", {
+        const prepared = await prepareSignedInvitation(root, feedback, {
           action: "revoke", invitation_id: String(revokeForm.elements.invitation_id.value || ""),
           verification_hash: String(revokeForm.elements.verification_hash.value || ""),
         });
-        if (!prepared || prepared.status !== "ok") throw new Error(prepared && prepared.error || "Unable to prepare revocation.");
-        const signature = await signing.signCanonicalRecord(prepared.canonical_record);
-        const finalized = await post("/api/create_prepared_invitation", {
-          prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path,
-          author_identity_id: (prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m) || ["", ""])[1],
-          canonical_record: prepared.canonical_record, detached_signature: signature,
-        });
+        let finalized;
+        try { finalized = await post("/api/create_prepared_invitation", prepared); }
+        catch (error) { throw new Error("Could not confirm revocation. Keep the invitation private and retry revocation when your connection returns."); }
         if (!finalized || finalized.status !== "ok") throw new Error(finalized && finalized.error || "Unable to revoke invitation.");
         setFeedback(feedback, "Invitation revoked.", "ok");
       } catch (error) {
-        setFeedback(feedback, error && error.message || "Unable to revoke invitation.", "error");
+        setFeedback(feedback, invitationFailure(error), "error");
+      } finally {
+        revoking = false;
       }
     });
   });
