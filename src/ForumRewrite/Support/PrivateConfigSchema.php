@@ -12,6 +12,8 @@ final class PrivateConfigSchema
     public static function definitions(): array
     {
         return [
+            // Site-mutable flags use canonical site values or environment overrides, not template defaults.
+            'FORUM_TEXT_BACKUP_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_STATUS_URL' => self::definition('', 'string', template: true),
             'LLM_PROVIDER' => self::definition('', 'string', template: true, required: true),
             'LLM_API_KEY' => self::definition('replace-with-real-key', 'string', secret: true, template: true),

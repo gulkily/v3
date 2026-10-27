@@ -17,7 +17,9 @@
 <?php if ($imageBackupAvailable ?? false): ?>
     <p class="meta">Keep content and image downloads with matching revisions.</p>
 <?php endif; ?>
+<?php if ($textBackupEnabled ?? true): ?>
     <p class="meta">The SQLite index may be out of date.</p>
+<?php endif; ?>
     <p>Public content only. Back up Git history, private data, browser keys and drafts, software, settings and external media separately.</p>
   </article>
 </section>

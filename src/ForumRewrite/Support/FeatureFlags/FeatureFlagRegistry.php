@@ -7,6 +7,7 @@ namespace ForumRewrite\Support\FeatureFlags;
 final class FeatureFlagRegistry
 {
     public const COLLAPSE_SAME_AUTHOR_POSTS_ENABLED = 'FORUM_COLLAPSE_SAME_AUTHOR_POSTS_ENABLED';
+    public const TEXT_BACKUP_ENABLED = 'FORUM_TEXT_BACKUP_ENABLED';
     public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
     public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
@@ -36,6 +37,15 @@ final class FeatureFlagRegistry
     public function all(): array
     {
         return [
+            new FeatureFlagDefinition(
+                self::TEXT_BACKUP_ENABLED,
+                'Text backups',
+                'Allow repository and SQLite downloads. Disabling also makes SQLite Viewer and query dialogs unavailable; stored content is preserved.',
+                true,
+                self::TEXT_BACKUP_ENABLED,
+                siteMutable: true,
+                group: 'BACKUP',
+            ),
             new FeatureFlagDefinition(
                 self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
                 'Collapse posts from same author',
@@ -256,6 +266,7 @@ final class FeatureFlagRegistry
     }
 
     private const GROUP_LABELS = [
+        'BACKUP' => 'Backups',
         'ACCESS' => 'Access and identity',
         'AUTHORING' => 'Authored content',
         'EXPERIENCE' => 'Forum experience',

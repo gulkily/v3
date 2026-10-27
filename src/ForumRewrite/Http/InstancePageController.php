@@ -7,6 +7,8 @@ namespace ForumRewrite\Http;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Tools\ToolsPageSupport;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use PDO;
 use RuntimeException;
 
@@ -50,7 +52,7 @@ final class InstancePageController
                 'imageBackupAvailable' => $imageBackupAvailable,
                 'imageBackupHref' => '/downloads/images.tar' . $revisionQuery,
                 'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
-                'downloads' => [
+                'downloads' => $this->backupEnabled(FeatureFlagRegistry::TEXT_BACKUP_ENABLED) ? [
                     [
                         'href' => '/downloads/repository.tar.gz' . $revisionQuery,
                         'label' => 'Content (.tar.gz)',
@@ -63,7 +65,7 @@ final class InstancePageController
                         'href' => '/downloads/read_model.sqlite3',
                         'label' => 'SQLite index (.sqlite3)',
                     ],
-                ],
+                ] : [],
             ],
             'Backup',
             'tools',
@@ -83,6 +85,7 @@ final class InstancePageController
     public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null): void
     {
         if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
+        if ($kind !== 'images' && !$this->allowBackup(FeatureFlagRegistry::TEXT_BACKUP_ENABLED)) { return; }
         try {
             $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision);
         } catch (\ForumRewrite\Images\ArchiveBusyException $error) {
@@ -111,6 +114,8 @@ final class InstancePageController
             $this->routeServices->sendHtml($this->methodNotAllowedPage(), 405);
             return;
         }
+
+        if (!$this->allowBackup(FeatureFlagRegistry::TEXT_BACKUP_ENABLED)) { return; }
 
         if (!is_file($this->databasePath)) {
             $this->routeServices->sendHtml(
@@ -172,6 +177,18 @@ final class InstancePageController
         $stmt->execute(['name' => $table]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    private function backupEnabled(string $flag): bool
+    {
+        return FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled($flag);
+    }
+
+    private function allowBackup(string $flag): bool
+    {
+        if ($this->backupEnabled($flag)) { return true; }
+        $this->routeServices->sendText("Backup unavailable.\n", 403, ['Cache-Control: private, no-store']);
+        return false;
     }
 
     private function methodNotAllowedPage(): string

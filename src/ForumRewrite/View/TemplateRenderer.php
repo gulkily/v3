@@ -488,6 +488,7 @@ final class TemplateRenderer
         $data = array_merge([
             'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
+            'textBackupEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TEXT_BACKUP_ENABLED),
             'imageContentEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
