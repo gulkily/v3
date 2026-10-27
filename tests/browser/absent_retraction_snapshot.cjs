@@ -15,11 +15,10 @@ foreach (['target', 'root-001'] as $target) {
     [$root, $database] = (new AbsentRetractionSnapshotTest())->publicationFixture($target);
     $source = new PDO('sqlite:' . $database);
     $source->exec("UPDATE posts SET body = 'SURVIVING-REPLY ' || '" . str_repeat('longvalue', 70) . "' WHERE post_id='reply-001'");
-    $record = $root . '/records/post-retractions/post-retraction-' . $target . '.txt';
-    rename($record, $record . '.bak');
     $builder = new ForumRewrite\\Offline\\PublicOfflineSnapshotBuilder();
     $builder->build($database, $root . '/base.sqlite3');
-    rename($record . '.bak', $record);
+    (new ForumRewrite\\ReadModel\\ReadModelBuilder($root, $database, new ForumRewrite\\Canonical\\CanonicalRecordRepository($root)))->rebuild();
+    $source->exec("UPDATE posts SET body = 'SURVIVING-REPLY ' || '" . str_repeat('longvalue', 70) . "' WHERE post_id='reply-001'");
     $builder->buildUpdate($database, $root . '/update.sqlite3');
     $builder->build($database, $root . '/fresh.sqlite3');
     $update = new PDO('sqlite:' . $root . '/update.sqlite3');

@@ -80,8 +80,14 @@ for enabled, members in [(True,False),(False,False),(True,True)]:
             assert status != 200, status
         status, _, body = request('/')
         assert (b'APACHE_IMAGE_SNAPSHOT' in body) == (enabled and not members), (enabled,members,status,body[:100])
-        status, _, body = request('/downloads/images.tar')
-        assert (status == 200) == (not members), (status,body[:100])
+        for suffix, media_type in [('zip', 'application/zip'), ('tar', 'application/x-tar')]:
+            status, headers, body = request('/downloads/images.' + suffix)
+            assert (status == 200) == (not members), (status,body[:100])
+            if status == 200:
+                assert headers['Content-Type'] == media_type, headers
+                assert ('-images-' in headers['Content-Disposition'] and '.' + suffix in headers['Content-Disposition']), headers
+                if suffix == 'zip':
+                    assert body.startswith(b'PK'), body[:100]
         status, _, _ = request('/.static/current/index.html')
         assert status != 200
         if enabled and not members:

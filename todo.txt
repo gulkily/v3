@@ -192,3 +192,20 @@ Reply-agent private key check in ./v3 status
 	since unsigned attribution Stage 7 the agent signs its replies, so a missing key makes replies fail instead of posting unsigned
 	recovery: restore the key from backup, or rotate deliberately (a new key is a new identity, splitting the agent's history)
 	before enabling verified attribution on zenmemes, confirm the key exists on the server
+
+Keep deployment-specific configuration outside tracked files
+	choose a persistent configuration source for site identity and instance paths,
+		including FORUM_SITE_ID, repository, database, static and public roots
+	stop relying on local edits to tracked public/.htaccess or application files;
+		git reset --hard origin/main erased QDB's profile setting while its data remained
+	keep web, CLI and cron configuration consistent, with explicit precedence
+	provide migration, setup and recovery instructions; verify upgrades and resets
+		preserve each deployment's profile, layout and data-path selection
+
+Add a v3 command to generate the same repository archive as the web download
+	generate the same archive format, directory layout and contents as
+		/downloads/repository.tar.gz, including canonical records and Git history
+	reuse the web archive implementation so CLI and web exports stay consistent
+	support an explicit output path and the deployment's repository/database settings
+	provide progress and useful errors, with consistent locking and revision checks
+	verify CLI/web archive equivalence for the same repository snapshot

@@ -49,23 +49,9 @@ final class RetractedPosts
 
     private static function effectiveValues(string $repositoryRoot, bool $attribution): array
     {
-        $repository = new CanonicalRecordRepository($repositoryRoot);
         $ids = [];
-        foreach (glob($repositoryRoot . '/records/post-retractions/*.txt') ?: [] as $path) {
-            try {
-                $retraction = $repository->loadPostRetraction('records/post-retractions/' . basename($path));
-                foreach (CanonicalPathResolver::postCandidates($retraction->postId) as $candidate) {
-                    if (!is_file($repositoryRoot . '/' . $candidate)) {
-                        continue;
-                    }
-                    if (self::applies($repository->loadPost($candidate), $retraction)) {
-                        $ids[$retraction->postId] = $attribution ? ($retraction->attribution ?? $retraction->classification) : $retraction->classification;
-                    }
-                    break;
-                }
-            } catch (CanonicalRecordParseException) {
-                continue;
-            }
+        foreach (AcceptedRetraction::all($repositoryRoot) as $id => $record) {
+            $ids[$id] = $attribution ? $record['attribution'] : $record['classification'];
         }
 
         foreach (LabelRemoval::all($repositoryRoot) as $id => $removal) {

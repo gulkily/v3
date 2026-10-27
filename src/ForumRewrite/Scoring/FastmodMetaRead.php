@@ -36,7 +36,15 @@ final class FastmodMetaRead
         if ($columns === []) return $read;
         $read->exec('CREATE TEMP TABLE fastmod_public_meta(post_id TEXT PRIMARY KEY)');
         $q=$read->prepare('INSERT INTO temp.fastmod_public_meta VALUES(?)');
-        foreach($ids as $id) $q->execute([$id]);
+        $ownTransaction=!$read->inTransaction();
+        if ($ownTransaction) $read->beginTransaction();
+        try {
+            foreach($ids as $id) $q->execute([$id]);
+            if ($ownTransaction) $read->commit();
+        } catch (\Throwable $error) {
+            if ($ownTransaction && $read->inTransaction()) $read->rollBack();
+            throw $error;
+        }
         $fields=[];
         foreach($columns as $column) {
             $name='"'.str_replace('"','""',$column['name']).'"';

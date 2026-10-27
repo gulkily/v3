@@ -1,5 +1,19 @@
 # Contributing
 
+## Human-readable formats
+
+Canonical records and files intended for people to read or edit must use the
+project's `Key: value` headers and plain-text body, not JSON. Apply this to source
+views, human-facing exports, and editable configuration; keep multiline content
+readable rather than embedding escaped strings. Existing JSON is migration debt,
+not precedent for new formats.
+
+JSON is appropriate for machine APIs/protocols, explicit `--json` output, and
+internal caches or state. A human-facing exception requires explicit maintainer
+approval. Document canonical formats in `docs/specs/`; format changes must
+preserve signed bytes and trust decisions and explicitly define existing-record handling.
+Track outstanding conversions in [the format audit](docs/plans/human_readable_formats_checklist.md).
+
 ## UI copy and verification
 
 Remove explanations that repeat controls, visible results, or other feedback.

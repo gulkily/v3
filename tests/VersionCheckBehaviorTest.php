@@ -4,6 +4,47 @@ declare(strict_types=1);
 
 final class VersionCheckBehaviorTest
 {
+    public function testDocsVersionStateDoesNotConsumeOrOverwriteForumPendingUpdates(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const source = require('fs').readFileSync(process.argv[1], 'utf8');
+const vm = require('vm');
+const store = {forum_pending_app_version: 'forum-next'};
+const redirects = [], requests = [];
+function load(version) {
+  const handlers = {}, timers = [];
+  const banner = {hidden: true, querySelector() {return {addEventListener() {}};}};
+  const window = {
+    sessionStorage: {getItem(k) {return store[k] || null;}, setItem(k,v) {store[k]=String(v);}, removeItem(k) {delete store[k];}},
+    location: {href:'https://example.test/docs/guide.md', origin:'https://example.test', replace(v) {redirects.push(v);}, assign(v) {redirects.push(v);}},
+    fetch(url) {requests.push(url); return Promise.resolve({ok:true, text:()=>Promise.resolve('docs-next')});},
+    setTimeout(fn) {timers.push(fn); return timers.length;}, clearTimeout() {},
+    addEventListener(name,fn) {handlers[name]=fn;}
+  };
+  const document = {visibilityState:'visible', addEventListener() {}, querySelector(selector) {
+    if(selector==='[data-role="app-version-banner"]') return banner;
+    const values = {'meta[name="app-version"]':version, 'meta[name="app-version-endpoint"]':'/api/docs-version',
+      'meta[name="app-version-storage-key"]':'forum_pending_docs_version'};
+    return selector in values ? {getAttribute:()=>values[selector]} : null;
+  }};
+  vm.runInNewContext(source,{window,document,URL});
+  return {handlers,timers};
+}
+(async()=>{
+  const first=load('docs-current'); first.handlers.pageshow(); first.timers[0]();
+  await new Promise(resolve=>setImmediate(resolve));
+  const pending=store.forum_pending_docs_version;
+  const second=load('docs-next'); second.handlers.pageshow();
+  process.stdout.write(JSON.stringify({store,pending,redirects,requests}));
+})().catch(error=>{console.error(error);process.exit(1);});
+NODE);
+        assertSame('docs-next', $result['pending']);
+        assertSame('forum-next', $result['store']['forum_pending_app_version']);
+        assertTrue(!isset($result['store']['forum_pending_docs_version']));
+        assertSame([], $result['redirects']);
+        assertStringContains('/api/docs-version', $result['requests'][0]);
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -123,28 +123,31 @@ publication becomes available in the next snapshot.
 
 ## Regenerate stale generated pages
 
-Use the instance's actual canonical repository, read-model database and static
-release root in place of the example variables below. These commands activate a
-local release; run them only for the intended instance.
+Use the instance's canonical repository, static root and `FORUM_SITE_ID` profile:
 
 ```sh
-./v3 build-static --shared-only "$records" "$database" "$static_root"
+./v3 docs publish --repository-root="$records" --static-html-root="$static_root"
 ```
 
-The shared refresh includes the Docs index, complete library, search data and
-attachment snapshots. It copies
-the active complete release, renders into a candidate, then replaces the active
-pointer only after success. If there is no active complete release, run:
+This independently publishes the complete Docs index, library, browse/search data,
+source downloads and assets to the static root's `-docs` sibling. Use `--json` for
+automation. An unchanged compatible library can be reused; changed or damaged
+inputs/output cause full rendering only in this explicit command. The current docs
+pointer changes after complete validation; failure retains the previous library.
+Correct the cause and retry with the same options/profile.
 
-```sh
-./v3 build-static "$records" "$database" "$static_root"
-```
+Imports, resumes, full forum builds and shared refreshes never regenerate or bulk
+scan/copy Docs. They retain the last published library, including legacy combined
+releases until independent publication succeeds. Forum content changes still use
+normal rebuild/publication procedures. Docs publication does not change the forum
+release, read model or forum offline snapshot.
 
-A full build is also required for changed canonical records, retractions or a
-static-detail-page mode transition; shared refresh cannot replace those steps.
-All eligible Docs URLs use the shared eligibility policy and renderer. The
-anonymous static host serves the active snapshot; personalized requests retain
-the existing dynamic-response policy.
+Before first publication, PHP readers remain available. Published docs serve the
+same public anonymous snapshot with or without cookies and on private profiles.
+Static-only hosting must separately publish and map the docs library/downloads and
+its retained fingerprinted/scoped assets; forum output alone no longer includes
+Docs. Serve canonical reader URLs through the documented PHP routes when PHP is
+available; do not expose arbitrary application or canonical-record source files.
 
 Reload `/docs/reference/author_post_retraction.md` after refresh. Verify four
 rendered, scrollable tables, the six source-numbered procedure steps, emphasis

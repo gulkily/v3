@@ -1,0 +1,155 @@
+{
+  "started_at": "2026-10-24T17:29:50+00:00",
+  "application_head": "517844c7e4fe4a10bcbeafcc5ac9ddfd45358234",
+  "application_changes": "M scripts/benchmark_profile_registration.php\n M src/ForumRewrite/ReadModel/IncrementalReadModelUpdater.php\n M src/ForumRewrite/Support/ExecutionLock.php\n M src/ForumRewrite/Support/HealthIndicators.php\n M src/ForumRewrite/Write/LocalWriteService.php",
+  "php_version": "8.1.2-1ubuntu2.28",
+  "sqlite_version": "3.37.2",
+  "site": "qdb",
+  "source_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+  "source_database_sha256": "7b93d656a31eb0aec723147eedac5ec0b6123821bb15338c7babb9c7762c753e",
+  "source_metadata": {
+    "source_removal_generation": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "thread_label_invalid_count": "0",
+    "post_reaction_invalid_count": "0",
+    "thread_subject_invalid_count": "0",
+    "schema_version": "25",
+    "schema_fingerprint": "1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce",
+    "repository_root": "/home/qdb/v3/state/local_repository",
+    "repository_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+    "rebuilt_at": "2026-10-24T07:27:00+00:00",
+    "rebuild_reason": "write_incremental"
+  },
+  "source_counts": {
+    "posts": 18760,
+    "threads": 18739,
+    "profiles": 3845,
+    "activity": 18863
+  },
+  "rebuild_copy": false,
+  "timing_scope": "LocalWriteService on isolated clones; setup/key generation excluded. Fresh total includes local signing; server timings reported separately. No HTTP, cron, or host-load simulation.",
+  "cases": {
+    "fresh_signed": {
+      "wall_ms": 16397.30672,
+      "timings_ms": {
+        "lock_wait": 0,
+        "lock_hold": 16355.3,
+        "identity_signature_verify": 45.5,
+        "gpg_public_key_packet_inspection": 5.6,
+        "gpg_public_key_import": 14.6,
+        "gpg_post_import_key_lookup": 4,
+        "gpg_signature_verify": 5.9,
+        "canonical_record_parse": 0.2,
+        "identity_write_files": 1.9,
+        "identity_commit": 339.9,
+        "git_add": 225.7,
+        "git_commit": 111.3,
+        "git_rev_parse": 2.8,
+        "identity_derived_state": 15965.7,
+        "read_model_incremental_update": 15965.6,
+        "read_model_incremental_insert_profile": 0.8,
+        "read_model_incremental_ensure_bootstrap_post": 10.3,
+        "read_model_incremental_ensure_username_route": 0.1,
+        "read_model_incremental_link_posts": 3.7,
+        "read_model_incremental_link_activity": 3.2,
+        "read_model_incremental_profile_load": 7.8,
+        "read_model_incremental_profile_posts_load": 54.3,
+        "read_model_incremental_profile_approval_derive": 326.2,
+        "read_model_incremental_profile_counts_derive": 12.3,
+        "read_model_incremental_profile_rows_update": 16.2,
+        "read_model_incremental_profile_activity_refresh": 15512.7,
+        "read_model_incremental_refresh_profile_state": 15933.2,
+        "read_model_incremental_write_metadata": 0.3,
+        "read_model_incremental_transaction_commit": 10.1,
+        "artifact_invalidate": 1.2,
+        "prepared_post_delete": 0.1,
+        "write_total": 16355.4
+      },
+      "identity_update_metrics": {
+        "path": "incremental",
+        "profiles_considered": 3846,
+        "posts_considered": 18761,
+        "profile_rows_updated": 3846,
+        "activity_update_statements": 3847,
+        "activity_row_updates": 3954,
+        "process_peak_memory_bytes": 37748736
+      },
+      "preparation_timings_ms": {
+        "lock_wait": 0,
+        "lock_hold": 26,
+        "gpg_key_inspect": 21.5,
+        "prepared_post_store": 0.6,
+        "write_total": 26.8
+      },
+      "counts_before": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3845,
+        "activity": 18863
+      },
+      "counts_after": {
+        "posts": 18761,
+        "threads": 18740,
+        "profiles": 3846,
+        "activity": 18864
+      },
+      "rebuild_reason": "write_incremental",
+      "process_peak_memory_bytes": 37748736,
+      "quick_check": "ok"
+    },
+    "historical_link": {
+      "wall_ms": 17185.694415,
+      "timings_ms": {
+        "lock_wait": 0,
+        "lock_hold": 17185.4,
+        "git_add": 124.2,
+        "git_commit": 171.6,
+        "git_rev_parse": 2.3,
+        "gpg_key_inspect": 17.7,
+        "read_model_incremental_update": 16867.6,
+        "read_model_incremental_insert_profile": 0.4,
+        "read_model_incremental_ensure_bootstrap_post": 0,
+        "read_model_incremental_ensure_username_route": 0,
+        "read_model_incremental_link_posts": 4.3,
+        "read_model_incremental_link_activity": 3.1,
+        "read_model_incremental_profile_load": 7,
+        "read_model_incremental_profile_posts_load": 50.4,
+        "read_model_incremental_profile_approval_derive": 299.1,
+        "read_model_incremental_profile_counts_derive": 6.5,
+        "read_model_incremental_profile_rows_update": 21.2,
+        "read_model_incremental_profile_activity_refresh": 16420.7,
+        "read_model_incremental_refresh_profile_state": 16810.8,
+        "read_model_incremental_write_metadata": 0.4,
+        "read_model_incremental_transaction_commit": 47.3,
+        "artifact_invalidate": 0.2,
+        "write_total": 17184.7
+      },
+      "identity_update_metrics": {
+        "path": "incremental",
+        "profiles_considered": 3846,
+        "posts_considered": 18760,
+        "profile_rows_updated": 3846,
+        "activity_update_statements": 3847,
+        "activity_row_updates": 3952,
+        "process_peak_memory_bytes": 37748736
+      },
+      "preparation_timings_ms": null,
+      "counts_before": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3845,
+        "activity": 18863
+      },
+      "counts_after": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3846,
+        "activity": 18863
+      },
+      "rebuild_reason": "write_incremental",
+      "process_peak_memory_bytes": 37748736,
+      "quick_check": "ok"
+    }
+  },
+  "source_inputs_unchanged": true,
+  "finished_at": "2026-10-24T17:30:39+00:00"
+}

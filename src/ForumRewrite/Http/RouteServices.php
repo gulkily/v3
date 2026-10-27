@@ -74,6 +74,7 @@ final class RouteServices
         private readonly ?string $staticHtmlRoot,
         private readonly FeatureFlagEvaluator $featureFlags,
         private readonly \Closure $lenientViewerProfileResolver,
+        private readonly bool $readModelAccessAllowed = true,
     ) {
     }
 
@@ -102,6 +103,9 @@ final class RouteServices
 
     public function pdo(): PDO
     {
+        if (!$this->readModelAccessAllowed) {
+            throw new \LogicException('Documentation rendering must not access the forum read model.');
+        }
         return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
             (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
     }
@@ -671,6 +675,18 @@ final class RouteServices
             'Redirecting',
             $activeSection
         );
+    }
+
+    /** Streams an already admitted, caller-owned file without reopening or deleting its path. */
+    public function sendDownloadStream($stream, string $contentType, string $filename): void
+    {
+        $stat = fstat($stream);
+        if ($stat === false) throw new RuntimeException('Unable to determine download size.');
+        http_response_code(200);
+        header('Content-Type: ' . $contentType);
+        header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
+        header('Content-Length: ' . (string) $stat['size']);
+        fpassthru($stream);
     }
 
     public function sendDownload(string $path, string $contentType, string $filename, bool $deleteAfterSend = false): void

@@ -39,6 +39,7 @@ final class ReadModelBuilder
     private array $sourceCommitShaByPath = [];
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
     private ?string $attributionCutoff = null;
+    private array $excludedPublicationPosts = [];
 
     public function __construct(
         private readonly string $repositoryRoot,
@@ -46,6 +47,7 @@ final class ReadModelBuilder
         private readonly CanonicalRecordRepository $canonicalRepository,
         private readonly string $rebuildReason = 'manual',
         private readonly ?\Closure $progressReporter = null,
+        private readonly array $publicationExclusions = [],
     ) {
     }
 
@@ -70,6 +72,7 @@ final class ReadModelBuilder
         $this->postReactionActivityEvents = [];
         $this->profileNameActivityEvents = [];
         $this->sourceCommitShaByPath = [];
+        $this->excludedPublicationPosts = $this->publicationExclusions;
         $pdo->beginTransaction();
         try {
             $this->measure('drop_schema', fn (): mixed => $this->dropSchema($pdo));
@@ -89,7 +92,7 @@ final class ReadModelBuilder
             $this->measure('index_activity', fn (): mixed => $this->indexActivity($pdo, $posts));
             $this->measure('mark_activity_attribution', fn (): mixed => VerifiedAttribution::markActivity($pdo, $this->repositoryRoot, $this->attributionCutoff, false));
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
-            ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot);
+            $this->measure('index_reaction_signatures', fn (): mixed => ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot));
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
             $this->measure('apply_verified_attribution', fn (): mixed => VerifiedAttribution::sync($pdo, $this->repositoryRoot, $this->attributionCutoff));
             $this->measure('commit_read_model', fn (): bool => $pdo->commit());
@@ -139,17 +142,24 @@ final class ReadModelBuilder
         return $this->qdbVoteScoringPolicy()?->isVoteTag($tag) ? $identityId : $identityId . ':' . $tag;
     }
 
+    /**
+     * Drop every table the schema defines, before createSchema() recreates them,
+     * so an in-place rebuild over an existing database does not collide.
+     *
+     * The table list is derived from ReadModelSchema::statements() rather than
+     * hand-maintained: previously this method held a hardcoded DROP list that had
+     * to be kept in sync with the CREATE TABLE statements by hand, and a forgotten
+     * entry caused in-place rebuilds to fail with "table <name> already exists"
+     * (this bit the viewer_tags addition). Deriving it means adding a table to the
+     * schema automatically drops it on rebuild. Indexes need no DROP — dropping a
+     * table drops its indexes. No read-model table declares a foreign key, so drop
+     * order is immaterial.
+     */
     private function dropSchema(PDO $pdo): void
     {
-        $pdo->exec('DROP TABLE IF EXISTS reaction_signatures');
-        $pdo->exec('DROP TABLE IF EXISTS metadata');
-        $pdo->exec('DROP TABLE IF EXISTS posts');
-        $pdo->exec('DROP TABLE IF EXISTS threads');
-        $pdo->exec('DROP TABLE IF EXISTS profiles');
-        $pdo->exec('DROP TABLE IF EXISTS username_routes');
-        $pdo->exec('DROP TABLE IF EXISTS instance_public');
-        $pdo->exec('DROP TABLE IF EXISTS activity');
-        $pdo->exec('DROP TABLE IF EXISTS commits');
+        foreach (ReadModelSchema::tableNames() as $table) {
+            $pdo->exec('DROP TABLE IF EXISTS ' . $table);
+        }
     }
 
     private function createSchema(PDO $pdo): void
@@ -173,7 +183,7 @@ final class ReadModelBuilder
              VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at, :retraction_class, :retraction_attribution)'
         );
 
-        $removals = \ForumRewrite\Canonical\LabelRemoval::all($this->repositoryRoot);
+        $removals = \ForumRewrite\Canonical\AcceptedRetraction::removals($this->repositoryRoot) + \ForumRewrite\Canonical\LabelRemoval::all($this->repositoryRoot);
         $retractions = $this->loadPostRetractions();
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
@@ -219,12 +229,16 @@ final class ReadModelBuilder
             $parsedPosts[] = [
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
-                'retracted_at' => $removal['accepted_at'], 'retraction_class' => 'operator', 'retraction_attribution' => 'operator',
+                'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
                 'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
                 'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
-                'source_path' => \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
+                'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
             ];
+        }
+
+        if ($this->excludedPublicationPosts !== []) {
+            $parsedPosts = PublicationPostFilter::apply($parsedPosts, $this->excludedPublicationPosts);
         }
 
         $this->measure('sort_posts', function () use (&$parsedPosts): void {
@@ -312,17 +326,8 @@ final class ReadModelBuilder
      */
     private function loadPostRetractions(): array
     {
-        $retractions = [];
-        foreach ($this->findRelativePaths('records/post-retractions') as $relativePath) {
-            try {
-                $record = $this->canonicalRepository->loadPostRetraction($relativePath);
-            } catch (CanonicalRecordParseException) {
-                continue;
-            }
-            $retractions[$record->postId] = $record;
-        }
-
-        return $retractions;
+        // Legacy suppression is retired. Explicit migration converts accepted requests to deletion.
+        return [];
     }
 
     /**
@@ -353,17 +358,27 @@ final class ReadModelBuilder
             $seedVoteCountByThread[$rootPostId] = (int) $row['vote_count'];
         }
         $records = [];
+        $viewerTagRows = [];
 
         $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $paths = $this->findRelativePaths('records/thread-labels');
         foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
                 $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+                // viewer_tags mirrors ViewerTagLookup::threadTags()'s file scan, which applies
+                // no inactive/publication exclusion: project every loaded record's labels.
+                if ($record->authorIdentityId !== null) {
+                    foreach ($record->labels as $label) {
+                        $viewerTagRows[] = ['thread-labels', $record->threadId, $record->authorIdentityId, $label];
+                    }
+                }
+                if (isset($this->excludedPublicationPosts[$record->sourcePostId ?? ''])) continue;
                 if (!isset($inactive[$record->recordId])) $records[] = $record;
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadLabelRecordCount++;
             }
         }
+        $this->writeViewerTags($pdo, $viewerTagRows);
 
         $this->measure('sort_thread_labels', function () use (&$records): void {
             usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {
@@ -565,15 +580,24 @@ final class ReadModelBuilder
         }
 
         $records = [];
+        $viewerTagRows = [];
         $paths = $this->findRelativePaths('records/post-reactions');
         foreach ($this->progressItems('parsing_post_reaction_records', $paths) as $index => $relativePath) {
             try {
-                $records[] = $this->canonicalRepository->loadPostReaction($relativePath);
+                $record = $this->canonicalRepository->loadPostReaction($relativePath);
+                $records[] = $record;
+                // viewer_tags mirrors ViewerTagLookup::postTags()'s file scan over every loaded record.
+                if ($record->authorIdentityId !== null) {
+                    foreach ($record->tags as $tag) {
+                        $viewerTagRows[] = ['post-reactions', $record->postId, $record->authorIdentityId, $tag];
+                    }
+                }
             } catch (CanonicalRecordParseException) {
                 $this->invalidPostReactionRecordCount++;
                 continue;
             }
         }
+        $this->writeViewerTags($pdo, $viewerTagRows);
 
         $this->measure('sort_post_reactions', function () use (&$records): void {
             usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
@@ -682,6 +706,33 @@ final class ReadModelBuilder
                 'is_hidden' => $isHidden ? 1 : 0,
                 'hidden_reason' => $isHidden ? 'approved_flagged_reply_agent' : null,
                 'post_id' => $postId,
+            ]);
+        }
+    }
+
+    /**
+     * Insert projected viewer-tag rows (record_family, target_id, author_identity_id, tag).
+     * INSERT OR IGNORE dedupes repeat (identity, target, tag) across multiple records,
+     * matching the set semantics of the file-scan lookups.
+     *
+     * @param list<array{0:string,1:string,2:string,3:string}> $rows
+     */
+    private function writeViewerTags(PDO $pdo, array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+
+        $insert = $pdo->prepare(
+            'INSERT OR IGNORE INTO viewer_tags (record_family, target_id, author_identity_id, tag)
+             VALUES (:record_family, :target_id, :author_identity_id, :tag)'
+        );
+        foreach ($rows as [$recordFamily, $targetId, $authorIdentityId, $tag]) {
+            $insert->execute([
+                'record_family' => $recordFamily,
+                'target_id' => $targetId,
+                'author_identity_id' => $authorIdentityId,
+                'tag' => $tag,
             ]);
         }
     }
@@ -1179,7 +1230,6 @@ final class ReadModelBuilder
     {
         $stmt = $pdo->prepare('INSERT INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
-            'source_removal_generation' => \ForumRewrite\Canonical\LabelRemoval::generation($this->repositoryRoot),
             'repository_root' => $this->repositoryRoot,
             'repository_head' => ReadModelMetadata::repositoryHead($this->repositoryRoot),
             'rebuilt_at' => gmdate('c'),

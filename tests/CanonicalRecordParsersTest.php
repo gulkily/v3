@@ -252,7 +252,7 @@ final class CanonicalRecordParsersTest
         }
     }
 
-    public function testRemovalEvidenceRequiresExactLocalAcceptance(): void
+    public function testLegacyRemovalEvidenceRequiresExactLocalAcceptance(): void
     {
         $root = sys_get_temp_dir() . '/label-removal-' . bin2hex(random_bytes(6));
         mkdir($root . '/records/posts', 0777, true);
@@ -263,6 +263,7 @@ final class CanonicalRecordParsersTest
             file_put_contents($root . '/records/posts/root-001.txt', $post);
             $git(['add', 'records']); $git(['commit', '-qm', 'Create source']);
             $record = \ForumRewrite\Canonical\LabelRemoval::prepare($root, 'root-001', 'delete');
+            unset($record['acceptance_version']); // Pre-migration records still require historical acceptance.
             $path = \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
             $git(['add', $path]); $git(['commit', '-qm', 'Import repository']);
             assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Removal evidence lacks trusted local acceptance; restore trusted Git history: ' . $path);
@@ -270,6 +271,10 @@ final class CanonicalRecordParsersTest
             \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
             $git(['add', $path]); $git(['commit', '-qm', 'Accept source label cleanup root-001']);
             assertSame('delete', \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001')['operation']);
+            $migration = \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock');
+            assertSame(['root-001'], $migration['migrated']);
+            assertSame(2, \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001')['acceptance_version']);
+            assertSame([], \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock')['migrated']);
             file_put_contents($root . '/' . $path, '{}');
             assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Invalid removal evidence: ' . $path);
         } finally {
@@ -402,7 +407,7 @@ final class CanonicalRecordParsersTest
         );
     }
 
-    public function testRepositoryLoadsPostRetractionAndRejectsPathMismatch(): void
+    public function testRepositoryRejectsUnacceptedRetractionAndPathMismatch(): void
     {
         $tempRoot = $this->createTempFixtureRoot();
         mkdir($tempRoot . '/records/post-retractions');
@@ -410,7 +415,8 @@ final class CanonicalRecordParsersTest
         file_put_contents($tempRoot . '/records/post-retractions/wrong-name.txt', $this->postRetractionContents());
         $repository = new CanonicalRecordRepository($tempRoot);
 
-        assertSame('reply-001', $repository->loadPostRetraction('records/post-retractions/post-retraction-reply-001.txt')->postId);
+        assertThrows(static fn () => $repository->loadPostRetraction('records/post-retractions/post-retraction-reply-001.txt'),
+            'Retraction lacks local acceptance evidence.');
         assertThrows(
             static fn () => $repository->loadPostRetraction('records/post-retractions/wrong-name.txt'),
             'Post-retraction record path must match Record-ID.'

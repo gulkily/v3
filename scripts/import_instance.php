@@ -154,6 +154,8 @@ Usage:
            --static-html-root=/path/static_html
 
 Download and merge public forum content, preserving local settings and authority.
+Refreshes data and invalidates stale HTML; does not render static pages.
+Run ./v3 build-static separately when static output is needed.
 --dry-run: download and validate, then report proposed imports, duplicates,
            conflicts, and exclusions without changing records, commits, the
            read model, or published views. Temporary/lock files may be created.

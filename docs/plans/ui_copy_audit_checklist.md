@@ -1,5 +1,27 @@
 # UI copy audit checklist
 
+## Backup section grouping — October 25, 2026
+
+- [x] Split the page into three existing-style cards: Backup details, Downloads, and Recent included items. Added only the Downloads heading; preserved all fields, links, notes and empty states.
+- Verification: 4/4 focused PHP checks (BackupPageTest and LocalAppSmokeTest portability/core routes); Chromium across 14 theme choices at 390px/1280px with populated, empty and long-value fixtures, all aliases, real downloads and revision-mismatch retry. No horizontal overflow. Inspected updated Word97 phone and Midnight desktop screenshots at `/tmp/backup-restored-{theme}-{width}.png`; browser evidence `/tmp/backup-restored-check.mjs`. Diff check passed.
+- No dependencies, CSS, navigation/icon, data-contract or `todo.txt` changes. Existing tall Tools navigation on phones remains outside scope. Physical devices, other engines, full suite and deployment were not checked.
+
+
+## Backup data restoration — October 25, 2026
+
+- [x] Corrected the preceding cleanup: restored instance name, linked admins, generated time, snapshot hash and recent included items with All activity. These are useful data, not explanatory clutter. Kept direct download links; reduced notes to adjacent SQLite staleness/image matching and one short public-content-only limitation. “Index generated” accurately labels the existing read-model timestamp rather than implying archive generation time.
+- Regression checks now assert actual instance/admin values, stored timestamp/hash and recent-item content/link presence, alongside unique downloads and essential limits. Focused PHP 8/8 passed, with the strengthened BackupPageTest rechecked. Browser verification passed on all three aliases and 14 theme choices at 390px/1280px, including populated data, template-rendered empty/missing metadata and long names/items, four successful downloads and wrong-revision failure/retry. No horizontal overflow; inspected `/tmp/backup-restored-word97-390.png` and `/tmp/backup-restored-midnight-1280.png`. Browser evidence: `/tmp/backup-restored-check.mjs` and `/tmp/backup-data-router.php`.
+- Principle for later copy work: identify the information and actions a page supports first; remove duplicate explanations while preserving evidence, timestamps, identities, counts, previews and recovery controls. Verify preserved data as well as removed wording.
+- No dependencies, schema, navigation/icon or `todo.txt` changes. Existing tall phone Tools navigation remains outside scope. Physical devices, other engines, full suite and production deployment were not checked. This record supersedes the earlier claim that removing the useful data completed the cleanup.
+
+
+## Backup page reduction — October 25, 2026
+
+- [x] Removed site/admin details, freshness headings/metadata, repeated download tables/descriptions, activity preview and the separate explanation card. All three Backup aliases now show direct format links, conditional image pairing guidance, SQLite staleness and a concise separate-backup warning. Removed the corresponding page-data queries and description strings; download behavior is unchanged.
+- Verification: 8/8 focused PHP checks (`BackupPageTest`, `RepositoryContentExportTest`, and `LocalAppSmokeTest` portability/core-route methods). Actual Chromium rendering passed at 390px/1280px across 14 theme choices, with visible download links and no horizontal overflow; all aliases and all four real downloads passed. Wrong-revision HTTP 409 retained actionable refresh/re-download guidance and retry succeeded. Image-unavailable rendering showed three links and no pairing note at both widths. There is no activity empty state or disclosure after removal; native downloads add no success/pending UI.
+- Inspected Word97 phone and Midnight desktop screenshots (`/tmp/backup-word97-390.png`, `/tmp/backup-midnight-1280.png`); browser check `/tmp/backup-copy-check.mjs`. Existing tall Tools navigation remains on phones and is outside this copy change. No navigation destination/icon changes, dependencies, schema changes or `todo.txt` edits. Physical devices, other browser engines, full suite and production deployment were not checked.
+
+
 ## Outstanding-item review — October 23, 2026
 
 - Reviewed unchecked entries against the completion records and current source. Seven copy-audit candidates remain open: Outbox, Bookmarklets, Fastmod, Offline reading, Thread/post analysis, Feature Flags, and Users empty state. Their rendered-state review and acceptance checks below remain outstanding; source inspection does not close them.
@@ -493,6 +515,17 @@ Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **LLM Exchange return-link duplication** — Review “Back to LLM Exchanges” against the existing LLM Exchanges Tools subnavigation link on detail pages. Check keyboard and phone navigation, access restrictions and long expanded raw records before removing any route back to the list. Sources: `templates/pages/llm_exchange.php`, `templates/partials/tools_nav.php`, `src/ForumRewrite/Http/LlmExchangesController.php`.
 
+## Retraction simplification — October 25, 2026
+
+- Replaced the obsolete completed-retraction promise with concise repository deletion/delayed-cache/history limits. Removed the legacy label-review warning from accepted retractions; independent labels remain independently owned. Existing signing, partial refresh and recovery feedback remains visible.
+- Verification: real browser author/operator/account-attribution flows and partial refresh/retry; all 13 themes at 390px/1280px without overflow, Word97 phone result screenshot inspected. Long embedded source-record/signature content wraps; surviving replies remain navigable. Keyboard activation, Escape/focus restoration and touch pass. Offline update cases 16/16; API retraction scenarios 18/18. No navigation/icon changes or dependencies. Local controlled browser checks only; physical devices and production pending. See [implementation summary](retraction_simplification/retraction_simplification_step4_implementation_summary.md#stage-8---acceptance-recovery-and-closeout).
+
+## QDB historical Add and Search copy — October 25, 2026
+
+- Restored the exact user-supplied Add guidance above the quote form and the Search verse above the search form, preserving its three explicit lines. This restoration is explicitly requested; the general preference for removing explanatory copy does not apply to these historical lines. No navigation, icons, behavior or shared compose copy changed.
+- Verification: `QdbExperienceRoutingTest` passed (3/3). Chromium against isolated Apache with real templates/assets checked both pages at 375px/1150px in QDB, Light, Word97, Chicago and Midnight (20 page/theme/size cases). Verified exact rendered copy, Search line breaks, editable quote body, visible Post action, search submission and zero-result recovery, and no horizontal overflow. Inspected QDB phone Add and desktop Search screenshots. Temporary evidence: `/tmp/qdb-haiku-tests.log`, `/tmp/qdb-haiku-visual.log`, `/tmp/qdb-copy-{add,search}-{theme}-{width}.png`.
+- Limitations: signed quote submission, populated/paginated search results, server failures and expanded compose options were not retested for these static paragraphs. No new dependencies; no `todo.txt` changes. Local changes only; deployment remains outstanding.
+
 ## Next phase — new candidates
 
 These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
@@ -500,3 +533,22 @@ These observations need rendered review before deciding what to remove. Keep thi
 - [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
 
 - [ ] **System State repository head duplication** — Review “Short head” alongside the full Repository head and the abbreviated hash in Latest commit. Check long hashes, missing Git/history and stale read-model comparisons; preserve useful provenance and mismatch diagnosis. Source: `templates/pages/codebase_state.php`.
+
+## 2026-10-24 — Current-content repository export wording
+
+- Replaced full-history download descriptions with “Current content; Git history excluded.” Updated the backup scope notice to list Git history among separately backed-up data. Preserved image-pair revision guidance and private-data limitations; no extra confirmation or navigation change.
+- Verified initial/loaded backup pages at 390/1440 widths in Light, Dark, Word97, Chicago and Midnight, with images present/absent (20 Chromium states), real styles loaded, visible download controls and no horizontal overflow. Inspected Midnight phone/Light desktop screenshots. Actual stale-revision failure followed by Backup refresh and successful TAR.GZ/ZIP downloads passed. BackupPageTest and affected LocalAppSmokeTest checks pass. No expanded state exists in the changed copy. Full suite, physical devices and deployment unverified.
+- [Implementation and archive/import evidence](repository_content_export_one_shot_summary.md). Zero dependencies. Early temporary harness checks without fingerprinted assets were discarded and rerun through FrontController.
+
+## 2026-10-26 — ZIP image backup
+
+- Backup now labels its image download “Images (.zip)”. Instance, admins, generated time, snapshot, recent included items and existing sections remain intact; no navigation changes or extra UI explanations.
+- Passed Chromium checks at 390/1280 widths across all 14 available themes, with populated, empty and long-value fixtures; no horizontal overflow. All three Backup aliases, four browser downloads and revision-mismatch refresh/retry passed. Visually reviewed Word97 phone and Midnight desktop screenshots (`/tmp/backup-zip-word97-390.png`, `/tmp/backup-zip-midnight-1280.png`). No expanded state exists in this change. Physical devices and deployment unverified.
+- [Implementation and recovery evidence](image_backup_zip/image_backup_zip_step4_implementation_summary.md). Zero dependency delta.
+
+## Archive export contention — 2026-10-26
+
+Change: Download failures now distinguish 503 busy/retry, 409 refresh-and-pair, and 500 operator recovery. Raw exception paths are logged privately rather than returned publicly. Existing Backup warnings and links remain.
+Verification: `node tests/browser/archive_export_browser.mjs` exercises normal Backup links, cold/warm downloads, two-viewports (390/1280) busy/conflict/retry and generic failure, extraction and overflow checks. Backup links checked in light, Word97, Chicago and Midnight; plaintext error responses are theme-independent. Phone/desktop screenshots inspected locally; no navigation destinations/icons changed. PHP route/import tests cover integrity repair and retry.
+Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
+Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).

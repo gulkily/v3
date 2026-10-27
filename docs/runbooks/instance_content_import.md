@@ -2,7 +2,8 @@
 
 Use `./v3 import-instance` to download a public instance's repository archive,
 merge its supported forum content into this instance, and refresh the local
-read model, static pages, and offline snapshots. This is an on-demand command;
+read model and applicable offline snapshots. Import does not render pages or
+fingerprint/copy presentation assets. This is an on-demand command;
 there is no schedule or web UI in this release.
 
 ## Run an import
@@ -221,13 +222,42 @@ unrecoverable divergence requires operator review of the recorded base commit
 and owned files. The generic [operator recovery guide](operator_recovery.md)
 covers database sidecars and publication failures.
 
-Public destinations publish complete static releases plus the standalone
-snapshot/update files served ahead of release snapshots. Private destinations
-refresh the read model and retain their existing access gates without publishing
-public static/offline artifacts. Resume is retry-based recovery, not rollback of
+Imports and resumes withdraw stale forum HTML and refresh the read model. Public
+destinations also refresh standalone offline snapshot/update data. Requests use
+PHP until an operator explicitly runs `./v3 build-static` with the matching
+repository/database/static-root settings. Static-only hosts require that explicit
+build before deploying imported content. Private destinations retain their access
+gates and publish no public offline data. Resume is retry-based recovery, not rollback of
 a committed import. Old run directories retain review data; remove completed
 runs only after reviewing their reports and confirming no pending journal
 references them.
+
+### Documentation publication
+
+Imports, `--resume`, forum builds and shared refreshes perform no documentation
+rendering or bulk inventory, validation or copying. Changed application code,
+missing docs and broken docs templates do not make imports rebuild the library.
+Previously published docs remain available across forum publication and cleanup.
+
+Publish docs separately for initial static setup or after docs, rendering, profile
+or asset changes, using the same destination and profile as the site:
+
+```sh
+./v3 docs publish --repository-root="$records" --static-html-root="$static_root"
+```
+
+Use `--json` for automation and the site's normal `FORUM_SITE_ID` environment.
+The complete library, browse/search pages, downloads and assets activate together
+under the static root's `-docs` sibling. This command does not replace the forum
+release, read model or forum offline snapshot. Docs use `/api/docs-version` for
+update notifications, independently of forum imports.
+
+An existing combined release is retained through a bounded legacy reference until
+a successful docs publication replaces it. Without any publication, PHP readers
+remain available; static-only hosting needs the separate docs command. A failed
+docs publication preserves the prior library. Correct the reported cause and retry
+`docs publish` with the same options/profile. Use import `--resume` only for the
+pending forum import; it does not retry docs publication.
 
 ## Requirements, limits, and deployment check
 
@@ -246,7 +276,7 @@ this release; exceeding them is a reported failure, not a truncated import.
 For a production smoke check, preview a compatible source first and inspect the
 resolved source/destination and exclusions. Import into a disposable destination
 with the production runtime/configuration; check an imported thread/tag page,
-its attribution/reactions, the active static release, and the served offline
+its attribution/reactions through PHP, absence of a stale static pointer, and the served offline
 snapshot. Repeat the command and confirm zero additions. On the actual target,
 follow the same reviewed command and inspect its report and ordinary site views.
 No cron entry is needed. Production-host validation is separate from the local
