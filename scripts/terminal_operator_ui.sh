@@ -134,10 +134,17 @@ if [[ ! -t 0 || ! -t 1 || ! -t 2 ]]; then
   exit 1
 fi
 
+home_status="Repository: ${FORUM_REPOSITORY_ROOT:-${root}/state/local_repository}"
+home_observed=''
+refresh_home
 while true; do
   choice="$("${whiptail_bin}" --title 'v3 terminal operator' --menu \
-    'Read-only operator dashboard' 18 78 6 \
-    'status' 'View current operator status' \
+    "$home_status
+$home_freshness" 0 0 8 \
+    'refresh' 'Refresh' \
+    'status' 'Health details' \
+    'task-queue' 'Queue details' \
+    'fast-score' 'Fastmod details' \
     'config' 'View redacted effective private configuration' \
     'edit-llm' 'Edit LLM connection settings' \
     'flags' 'Open the feature-flags management route in a browser' \
@@ -146,6 +153,9 @@ while true; do
     3>&1 1>&2 2>&3)" || exit 0
 
   case "${choice}" in
+    refresh) refresh_home ;;
+    task-queue) show_command_output "Task queue status" "${root}/v3" task-queue status ;;
+    fast-score) show_command_output "Fastmod status" "${root}/v3" fast-score status ;;
     status)
       show_command_output 'Operator status' "${root}/v3" status
       ;;

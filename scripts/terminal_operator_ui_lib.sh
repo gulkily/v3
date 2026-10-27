@@ -45,3 +45,41 @@ stop_diagnostic() {
     diagnostic_pid=''
   fi
 }
+
+# Capture an observation without allowing a slow collector to trap navigation.
+bounded_capture() (
+  local limit="$1" output diagnostic_pid='' deadline result=0
+  shift
+  output="$(mktemp "${TMPDIR:-/tmp}/v3-tui-observation.XXXXXX")"
+  trap 'stop_diagnostic; rm -f "$output"' EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM HUP
+  set -m
+  "$@" >"$output" 2>/dev/null </dev/null &
+  diagnostic_pid=$!
+  set +m
+  deadline=$((SECONDS + limit))
+  while kill -0 "$diagnostic_pid" 2>/dev/null; do
+    (( SECONDS < deadline )) || exit 124
+    sleep 0.05
+  done
+  wait "$diagnostic_pid" || result=$?
+  (( result == 0 )) && cat "$output"
+  exit "$result"
+)
+
+refresh_home() {
+  local observation
+  printf '\rRefreshing status…'
+  if observation="$(bounded_capture 5 "${root}/v3" status --summary)"; then
+    home_status="$observation"
+    home_observed="$(date -u '+%H:%M:%S UTC')"
+    home_freshness="Observed: $home_observed"
+  else
+    home_freshness="Status: unavailable; refresh or inspect ./v3 status"
+    if [[ -n "${home_observed:-}" ]]; then
+      home_freshness+=" (last observation: $home_observed; stale)"
+    fi
+  fi
+  printf '\r\033[K'
+}

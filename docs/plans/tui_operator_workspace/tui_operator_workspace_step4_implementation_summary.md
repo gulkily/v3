@@ -22,3 +22,13 @@ Boundary: No dependency/schema changes, deployment or todo.txt edits. Stage comm
 - Notes: Updated old buffered-output assertion and supplied return input in the dashboard fixture. An initial fixture run waited for input; terminated that owned test run after correcting the fixture. No dependency delta. Stage scope/estimate unchanged; no remote SSH claim.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 2 - Put health and relevant actions on home
+**Original estimate: 0.12**
+**Retrospective stage work: 0.12**
+
+- Changes: Added plain-text status --summary using canonical collector/HealthIndicators; home shows repository, health/queue, observation time, refresh and direct details. Five-second bounded collection retains stale last-known observations on failure.
+- Verification: PHP terminal/collector/health checks 18/18; syntax checks and real ./v3 status --summary passed. Real whiptail PTY rendered home observation and queue action. PTY regression plus delayed/failed collection and stale snapshot recovery passed.
+- Notes: Stage 1 commit bb6109593. No automatic repair, schema or dependency change. Existing collector tests cover ready/stale/unavailable and observation without state creation. Original estimate unchanged; detailed SSH/resize acceptance remains S6.
+
+*— Codex · 2026-10-27 UTC*

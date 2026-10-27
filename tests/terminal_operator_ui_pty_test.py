@@ -79,3 +79,19 @@ os.write(fd, b'\n')
 until(fd, b'RESTORED')
 finish(pid, fd)
 print('PASS: live output, success, failure, interruption, descendant cleanup, terminal restoration')
+
+# Bounded observations suppress partial output and retain the last good snapshot.
+import subprocess
+result = subprocess.run(['bash', '-c', """
+source scripts/terminal_operator_ui_lib.sh
+[[ "$(bounded_capture 2 printf 'Read model: OK ready')" == 'Read model: OK ready' ]] || exit 1
+bounded_capture 1 bash -c 'echo PARTIAL; sleep 10' >/tmp/v3-tui-bounded-test-$$
+[[ $? == 124 && ! -s /tmp/v3-tui-bounded-test-$$ ]] || exit 2
+rm /tmp/v3-tui-bounded-test-$$
+bounded_capture() { return 1; }
+home_status='Read model: OK ready'; home_observed='12:00 UTC'; root=.
+refresh_home >/dev/null
+[[ "$home_status" == 'Read model: OK ready' && "$home_freshness" == *stale* ]] || exit 3
+"""], cwd=ROOT, capture_output=True, timeout=5)
+assert result.returncode == 0, result.stderr
+print('PASS: bounded observations and stale snapshot recovery')

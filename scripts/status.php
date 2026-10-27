@@ -46,7 +46,18 @@ try {
         static fn (): array => $frontendResolver->check($frontendTarget),
     ))->collect();
 
-    printStatus($status, $repositoryRoot, $databasePath, $queuePath);
+    if (($options['summary'] ?? false) === true) {
+        fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
+        foreach (HealthIndicators::fromStatus($status) as $indicator) {
+            if (in_array($indicator['label'], ['Frontend', 'Read model', 'Task queue', 'Failed tasks'], true)) {
+                // Home is deliberately compact; details retain all indicators/recovery.
+                $detail = $indicator['label'] === 'Frontend' ? $status['frontend']['status'] : $indicator['detail'];
+                fwrite(STDOUT, $indicator['label'] . ': ' . $indicator['level'] . ' ' . $detail . "\n");
+            }
+        }
+    } else {
+        printStatus($status, $repositoryRoot, $databasePath, $queuePath);
+    }
 } catch (Throwable $exception) {
     fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n");
     printStatusUsage(STDERR);
@@ -61,6 +72,10 @@ function parseStatusOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
+        if ($argument === '--summary') {
+            $options['summary'] = true;
+            continue;
+        }
         if ($argument === '-h' || $argument === '--help') {
             $options['help'] = true;
             continue;
@@ -180,7 +195,7 @@ function printStatusUsage($stream): void
 {
     fwrite($stream, <<<'TEXT'
 Usage:
-  ./v3 status [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
+  ./v3 status [--summary] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
 
 Frontend target: --url, FORUM_STATUS_URL (private config/environment), active development server, verified local port 8000/80.
 TEXT);
