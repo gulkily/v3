@@ -18,4 +18,23 @@ foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, F
 $pdo = new PDO('sqlite:' . $root . '/read.sqlite3');
 $profile = $pdo->query('SELECT * FROM profiles LIMIT 1')->fetch(PDO::FETCH_ASSOC);
 $pdo->exec('UPDATE profiles SET is_approved=0');
+$post = $pdo->query('SELECT * FROM posts LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+$thread = $pdo->query('SELECT * FROM threads LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+$insert = static function (string $table, array $row) use ($pdo): void {
+    $pdo->prepare('INSERT INTO ' . $table . ' (' . implode(',', array_keys($row)) . ') VALUES (' . implode(',', array_fill(0, count($row), '?')) . ')')->execute(array_values($row));
+};
+for ($i = 0; $i < 55; $i++) {
+    $id = sprintf('profile-page-%03d', $i);
+    $insert('posts', array_replace($post, ['post_id' => $id, 'thread_id' => $id,
+        'author_identity_id' => $profile['identity_id'], 'is_hidden' => 0, 'retracted_at' => null,
+        'board_tags_json' => '["general"]', 'agent_response_json' => null,
+        'subject' => 'Profile contribution ' . $i . ' ' . str_repeat('LongValue', 20)]));
+    $insert('threads', array_replace($thread, ['root_post_id' => $id, 'last_post_id' => $id,
+        'board_tags_json' => '["general"]', 'retracted_at' => null]));
+}
+
+mkdir($root . '/static');
+(new \ForumRewrite\Host\StaticArtifactBuilder($root, $root . '/repository', $root . '/read.sqlite3', $root . '/generated'))->buildSingleRoute('/profiles/' . $profile['profile_slug']);
+symlink($root . '/generated', $root . '/static/current');
+file_put_contents($root . '/generated/profiles/' . $profile['profile_slug'] . '.html', '<!-- PROFILE STATIC FIRST -->', FILE_APPEND);
 echo json_encode(['slug' => $profile['profile_slug'], 'key' => $profile['public_key'], 'themes' => array_values(array_filter(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes'], static fn (string $theme): bool => $theme !== 'auto'))]);

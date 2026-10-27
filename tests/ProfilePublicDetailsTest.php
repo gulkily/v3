@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\ReadModel\AuthoredContentRepository;
@@ -164,6 +165,43 @@ final class ProfilePublicDetailsTest
             assertStringContains('First page', $empty);
             assertStringContains('>Previous</a>', $empty);
         } finally { @unlink($database); }
+    }
+
+    public function testStaticProfileAndLivePositionsNeverSubstituteFirstPage(): void
+    {
+        $workspace = new ImportTestWorkspace();
+        $flag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
+        [$app, $pdo, $database] = $this->environment();
+        try {
+            $profile = $pdo->query('SELECT * FROM profiles LIMIT 1')->fetch();
+            $pdo->exec('UPDATE profiles SET is_approved=0');
+            for ($i = 0; $i < 55; $i++) $this->contribution($pdo, sprintf('host-%03d', $i), $profile['identity_id']);
+            $public = $workspace->root . '/public';
+            $root = __DIR__ . '/fixtures/parity_minimal_v1';
+            (new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $database, $public))->buildFromReadModel();
+            $artifact = $public . '/profiles/' . $profile['profile_slug'] . '.html';
+            file_put_contents($artifact, "<!-- FIRST PROFILE ARTIFACT -->", FILE_APPEND);
+            mkdir($workspace->root . '/static');
+            symlink($public, $workspace->root . '/static/current');
+            $host = new \ForumRewrite\Host\FrontController(dirname(__DIR__), $root, $database, $workspace->root . '/static', $public);
+            $render = static function (string $url) use ($host): string {
+                ob_start(); try { $host->handle('GET', $url, []); return (string) ob_get_contents(); } finally { ob_end_clean(); }
+            };
+            $url = '/profiles/' . $profile['profile_slug'];
+            $first = $render($url);
+            assertStringContains('FIRST PROFILE ARTIFACT', $first);
+            assertStringContains('<summary>Public key</summary>', $first);
+            preg_match('/rel="next" href="([^"]+)"/', $first, $match);
+            $second = $render(html_entity_decode($match[1], ENT_QUOTES));
+            assertStringNotContains('FIRST PROFILE ARTIFACT', $second);
+            assertStringContains('/threads/host-004', $second);
+            assertStringNotContains('/threads/host-054', $second);
+            $invalid = $render($url . '?posts_position=bad');
+            assertStringNotContains('FIRST PROFILE ARTIFACT', $invalid);
+            assertStringContains('First page', $invalid);
+            assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical($url));
+        } finally { @unlink($database); unset($workspace); putenv($flag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $flag); }
     }
 
 }

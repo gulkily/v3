@@ -51,3 +51,14 @@ Dependencies: No additions or updates authorized or planned.
 - Notes: Stage 2 commit 820fed58d. No new table/index; query changes covered by schema 31. Host/static query handling is next. Original estimate/scope unchanged, no dependencies or measured labor.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 4 - Host/static delivery compatibility
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.10**
+
+- Changes: Added actual active-release/static-versus-position regression and HTTP browser traversal with independent lists; expanded offline policy checks to positioned profile URLs. Existing host code already bypasses static artifacts for queries and excludes profiles from high-traffic caches; no routing mutation was necessary.
+- Verification: Static/live regression plus OfflineNavigationWorkerTest 11/11; profile_public_details.mjs passed actual HTTP static first page, live older pages, independent positions, reload/backward/invalid-position recovery, JavaScript on/off and key behavior.
+- Notes: Stage 3 commit 628fe999a. Corrected test setup to activate its generated release and use workspace destructor cleanup; browser static evidence checks response bytes because document serialization omits trailing comments. These were harness corrections, not production failures. Offline profile reads remain network-only with normal Reload/Back; no new shell fallback or freshness policy. No dependencies/measured labor.
+
+*— Codex · 2026-10-27 UTC*

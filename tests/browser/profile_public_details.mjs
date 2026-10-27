@@ -8,7 +8,7 @@ import { once } from 'node:events';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-core');
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const root = await mkdtemp(join(tmpdir(), 'profile-public-browser-'));
-const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', SIGNED_REACTION_TEST_ROOT: root,
+const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', FORUM_APPROVED_MEMBERS_ONLY: 'false', SIGNED_REACTION_TEST_ROOT: root,
   FORUM_SECRETS_PATH: join(root, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') };
 const seed = spawnSync('php', [join(project, 'tests/Support/profile_public_details_fixture.php'), root], { env, encoding: 'utf8' });
 assert.equal(seed.status, 0, seed.stderr);
@@ -24,7 +24,8 @@ try {
   for (const javaScriptEnabled of [false, true]) {
     const context = await browser.newContext({ javaScriptEnabled, serviceWorkers: 'block', viewport: { width: 390, height: 900 } });
     const page = await context.newPage();
-    await page.goto(base + '/profiles/' + slug);
+    const initialResponse = await page.goto(base + '/profiles/' + slug);
+    assert.ok((await initialResponse.text()).includes('PROFILE STATIC FIRST'), 'anonymous first page uses static artifact');
     const details = page.locator('[data-public-key-details]');
     assert.equal(await details.getAttribute('open'), null);
     await details.locator('summary').focus(); await page.keyboard.press('Enter');
@@ -40,9 +41,33 @@ try {
       assert.match(await details.locator('[role=status]').textContent(), /manually/);
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    const threads = page.locator('#threads');
+    const posts = page.locator('#posts');
+    const firstLinks = await threads.locator('h3 a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));
+    assert.equal(firstLinks.length, 50);
+    await threads.getByRole('link', {name: 'Next', exact: true}).click();
+    await page.waitForURL(/threads_position=/);
+    const secondUrl = page.url();
+    assert.doesNotMatch(await page.content(), /PROFILE STATIC FIRST/);
+    const secondLinks = await threads.locator('h3 a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));
+    assert.ok(secondLinks.length > 0 && secondLinks.length < 50);
+    assert.equal(secondLinks.some(href => firstLinks.includes(href)), false);
+    assert.equal(await posts.locator('article.card').count(), 50);
+    await posts.getByRole('link', {name: 'Next', exact: true}).click();
+    await page.waitForURL(/posts_position=/);
+    assert.ok(page.url().includes('threads_position='));
+    await page.reload();
+    assert.deepEqual(await threads.locator('h3 a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), secondLinks);
+    await page.goto(base + '/profiles/' + slug + '?threads_position=bad');
+    assert.equal(await threads.getByRole('alert').isVisible(), true);
+    await threads.getByRole('link', {name: 'First page', exact: true}).click();
+    assert.equal(await threads.locator('h3 a').count(), 50);
+    await page.goto(secondUrl);
+    await threads.getByRole('link', {name: 'Previous', exact: true}).click();
+    assert.deepEqual(await threads.locator('h3 a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), firstLinks);
     await context.close();
   }
-  console.log('PASS profile key: collapsed default, keyboard, exact copy, denied clipboard recovery, no-JS selection and phone overflow');
+  console.log('PASS profile HTTP static/live paging and key: collapsed default, keyboard, exact copy, denied clipboard recovery, no-JS selection and phone overflow');
 } finally {
   await browser.close(); server.kill(); await rm(root, { recursive: true, force: true });
 }
