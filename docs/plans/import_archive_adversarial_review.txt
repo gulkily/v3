@@ -1,0 +1,150 @@
+Title: Adversarial instance archive review
+Date: 2026-10-27 UTC
+Reviewed revision: 00c84bad
+Prior fix commit: 00c84bad - Fix signed thread-label import classification and fallback verification
+Status: Review complete; findings below remain unfixed
+Scope: import-instance download, tar extraction, isolated history recovery, content planning, signature verification, durable import and publication boundary
+Authorization: Commit existing work, then review resistance to unexpected or malicious archive contents
+Method: Source inspection, bounded synthetic fixtures in temporary repositories, existing targeted tests
+Dependency delta: zero
+
+Conclusion:
+The archive container has meaningful containment checks. The pipeline is not yet
+robust against adversarial resource consumption or all malformed filenames.
+Four issues were reproduced locally. A fifth subprocess-budget concern is supported
+by source inspection but was not exercised with a hostile OpenPGP packet.
+No path escape, command execution or authority escalation was demonstrated. This
+bounded review does not certify their absence or audit every downstream renderer.
+The operator must initiate an import; these findings are not unauthenticated remote
+invocation of the CLI. A chosen remote source can nevertheless supply hostile bytes.
+
+Finding: F1
+Priority: P1 - memory exhaustion below the admitted record limit
+Location: src/ForumRewrite/Canonical/GenericTextRecordParser.php:51
+Related location: src/ForumRewrite/Import/ContentImportPlanner.php:224
+Evidence: A valid post with a 4 MiB ASCII body (4,194,396 total bytes) passed the
+16 MiB admission threshold, then php -d memory_limit=128M terminated with:
+Allowed memory size of 134217728 bytes exhausted (tried to allocate 134217736 bytes).
+The reported failing line was GenericTextRecordParser.php:51.
+Cause: preg_split('//u', ...) materializes every character as a PHP array entry.
+Impact: One small, highly compressible accepted record can kill the importing PHP
+process instead of becoming a rejected record. PHP memory exhaustion is not handled
+by the existing catch(Throwable). This checkout's CLI memory_limit is -1; without
+a process limit, the same amplification can consume host memory rather than fail
+at 128 MiB. No unbounded-memory experiment was run.
+Recommendation: Validate Unicode/control characters with bounded-memory scanning
+or a whole-string check that preserves the existing character rules. Set explicit
+whole-operation budgets, not only input byte limits. Add a child-process regression
+under a realistic memory limit, alongside invalid UTF-8/control-character cases.
+
+Finding: F2
+Priority: P2 - companion and indirect reads bypass file-size admission
+Location: src/ForumRewrite/Import/ContentImportPlanner.php:206
+Related location: src/ForumRewrite/Security/ReactionSignature.php:17
+Related location: src/ForumRewrite/Security/ReactionSignature.php:27
+Evidence: A normal post with records/posts/root.txt.sig containing 17,825,792 bytes
+was classified state=import. The advertised 16 MiB file limit never ran for it.
+Cause: The signature branch returns after describing its parent, before the size
+check. Loading a signed reaction also reads companions and key files wholesale,
+without independently checking their sizes, before their own traversal entry can
+supply any protection. Serialization of all verified bytes adds further copies.
+Impact: An oversized companion can be copied into the destination; indirect reads
+can exhaust memory even when the main record is small. The 1 GiB total expanded
+archive cap still applies; this is a per-file/read-budget bypass, not unlimited
+archive extraction. Accepting this post companion does not prove its signature
+valid and was not treated as an authentication bypass in this review.
+Recommendation: Centralize admission before every read, including signatures,
+keys, metadata and fallback files. Apply appropriate format-specific limits and
+preserve inseparable record/signature rejection and actionable reasons. Test each
+suffix, indirect reads, large rejected keys, and valid neighboring content.
+
+Finding: F3
+Priority: P2 - adversarial dependency order makes planning quadratic under lock
+Location: src/ForumRewrite/Import/ContentImportPlanner.php:120
+Related location: src/ForumRewrite/Import/ContentImportRunner.php:31
+Evidence: Generated valid small posts named p000000 through pNNNNNN, with each
+post's Thread-ID and Parent-ID referencing the next post; the last dependency was
+absent. Local measured planning times: 1,000 records 0.328 s; 2,000 records 1.245 s;
+4,000 records 4.677 s. Tests were bounded at 4,000 records, not 100,000.
+Cause: Sorted traversal encounters dependents before their rejection cause, so
+only one more link becomes rejected on each full fixed-point pass.
+Impact: A small archive can hold the shared forum writer lock for disproportionate
+time. Preview takes the same lock. The download/history 120-second deadlines do
+not bound this planning loop. The configured archive ceiling permits far more
+entries than the bounded reproduction; no large-scale runtime is claimed.
+Recommendation: Propagate rejection through reverse dependency edges using a queue,
+preserving bootstrap cycles, root-cause reporting and companion relationships.
+Add adversarial order/long-chain cases and a whole-planning cancellation/deadline
+contract. If reducing lock duration, preserve destination revision revalidation.
+
+Finding: F4
+Priority: P2 - unsupported non-UTF-8 filenames abort durable reporting
+Location: src/ForumRewrite/Import/RepositoryArchive.php:229
+Related location: src/ForumRewrite/Import/ContentImportRunner.php:236
+Evidence: A valid tar.gz containing one normal post and an unsupported filename
+records/unknown/invalid-<byte FF>.txt extracted successfully. ContentImportRunner
+then threw "Malformed UTF-8 characters, possibly incorrectly encoded" while
+encoding recovery/report data. Zero canonical destination files were written.
+Cause: safePath rejects traversal/control bytes but accepts arbitrary high bytes;
+unsupported paths remain report-map keys, and JSON_THROW_ON_ERROR rejects them.
+Impact: A single otherwise ignorable unsupported file aborts the entire import,
+instead of yielding a useful partial result. It can leave scratch payloads already
+prepared in the import history directory, although it does not modify canonical
+records in this reproduction.
+Recommendation: Define an archive filename encoding policy and reject unsupported
+encoding during validation before extraction, or provide lossless byte-safe report
+representation. Do not silently normalize/rename signed paths. Test non-UTF-8 names
+both under records/ and in excluded archive-category names.
+
+Concern: C1
+Priority: P2 hardening; source-confirmed missing limits, hostile-input impact not reproduced
+Location: src/ForumRewrite/Security/OpenPgpSignatureVerifier.php:116
+Related location: src/ForumRewrite/Security/OpenPgpSignatureVerifier.php:44
+Evidence: runGpg uses blocking exec and collects all output. Packet inspection,
+key import, key lookup and verification have no enforced deadline, output ceiling
+or child resource budget. limitedOutput truncates diagnostics only after capture.
+Arguments are shell-escaped, and a private GPG home is used; no command-injection
+finding is asserted. LegacyArchiveTimestamps has a separately bounded child runner,
+which illustrates a useful existing lifecycle pattern but does not protect GPG.
+Recommendation: Use bounded subprocess management, kill/reap on budget exhaustion,
+and cap captured output while reading. Test with a controlled slow/noisy child
+fixture before exercising malformed key packets; avoid an uncontrolled denial-of-
+service experiment. Account for Git's nested object decompression as a separate
+resource boundary even though history jobs already have deadlines/output limits.
+
+Protections observed:
+- Downloader validates HTTP(S), forbids credentials/control characters, validates
+  TLS, refuses HTTPS downgrade, bounds redirects, bytes and elapsed download time.
+- Tar reader checks checksums, terminators and gzip CRC; bounds total expanded
+  bytes and entry count; rejects absolute/traversal/backslash/control paths,
+  duplicate normalized names, links, special entries and unsupported extensions.
+- Validation precedes extraction to a fresh private directory. It never invokes
+  tar to extract attacker-supplied metadata. Destination parent symlinks are checked.
+- Source Git configuration, hooks, alternates, replacements and indexes are not
+  imported. Timestamp recovery reconstructs isolated bare metadata, validates a
+  fixed tip, uses a fresh environment, forbids network protocols, bounds parallel
+  jobs and output/time, and verifies blob hashes before attaching legacy dates.
+- Import policy excludes source instance settings/private/approval authority and
+  rejects retractions without matching local acceptance evidence. Existing content
+  conflicts preserve local bytes. These checks must remain intact during hardening.
+- Durable writes preserve hashes and lock/recovery state. A candidate read model
+  is built before promotion, but canonical imports commit before publication and
+  stale presentation is invalidated before building; parser/resource safety is
+  therefore needed throughout the lifecycle, not only inside the tar reader.
+
+Verification:
+php tests/run.php RepositoryArchiveValidationTest ContentImportPlannerTest ImportInstanceCommandTest
+Result: 24 run, 24 passed, zero failures.
+Ad hoc reproductions: isolated local fixtures; 4 MiB memory test explicitly capped
+at 128 MiB; 17 MiB companion; one invalid filename; chains capped at 4,000 records.
+All four findings are independent of the repaired signed-label misclassification.
+No live repository mutation, new dependencies, third-party installs, production
+requests, full-suite claim, exhaustive fuzzing or GPG exploit claim in this review.
+
+Disposition:
+Existing fix committed as requested. This review is a separate uncommitted record;
+no hardening code changes made. Prioritize F1 and F2, then F3/F4 and bounded GPG
+execution. Keep archive-wide safety violations fatal before destination mutation;
+keep ordinary malformed supported records as truthful per-record rejections when
+independent content can safely proceed. Do not implement blanket exception skipping.
+Author: Codex
