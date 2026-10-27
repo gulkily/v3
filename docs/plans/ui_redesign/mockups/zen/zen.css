@@ -1,0 +1,404 @@
+/* "Living Sky": a ZenMemes default skin layered on the neutral base.
+   The whole screen is a moving sky (dawn in light mode, deep space in dark),
+   tinted by whoever the screen is about. Content floats on frosted glass.
+   Icons are colored glyphs. Scoped to .app[data-skin="zen"]; the Base switch
+   shows the same markup without it. Motion stops under reduced motion. */
+
+.app[data-skin="zen"] {
+  --sky-person: #7c5cff;
+  --grad: linear-gradient(135deg, #d9361f 0%, #d61c64 48%, #6d28d9 100%);
+  --grad-text: linear-gradient(100deg, #ff6a3d, #ff2e7e 45%, #8b5cf6);
+  --glass: rgb(255 255 255 / 0.62);
+  --glass-2: rgb(255 255 255 / 0.42);
+  --glass-strong: rgb(255 255 255 / 0.88);
+  --glass-line: rgb(255 255 255 / 0.8);
+  --glass-hi: rgb(255 255 255 / 0.9);
+  --glass-shadow: 0 12px 34px rgb(60 20 80 / 0.10);
+  --bg: #fbe9ee; --surface: var(--glass); --surface-2: var(--glass-2);
+  --ink: #17142b; --ink-2: #4b4662; --ink-3: #686280; --line: rgb(23 20 43 / 0.08);
+  --accent: #d61c64; --accent-ink: #ffffff; --accent-soft: rgb(214 28 100 / 0.12); --accent-text: #b0175a;
+  --danger: #c81e1e; --danger-soft: rgb(200 30 30 / 0.12); --warn: #8f5300; --warn-soft: rgb(240 170 40 / 0.2);
+  --ok: #157a45; --ok-soft: rgb(30 160 90 / 0.15); --agent: #6d4ae0; --agent-soft: rgb(109 74 224 / 0.14);
+  --star: #a8650a;
+  --tone-mix: 0%;
+  --radius: 20px;
+  background: #fbe9ee;
+  isolation: isolate;
+}
+.app[data-skin="zen"][data-mode="dark"] {
+  --glass: rgb(22 21 50 / 0.58);
+  --glass-2: rgb(255 255 255 / 0.07);
+  --glass-strong: rgb(24 22 54 / 0.9);
+  --glass-line: rgb(255 255 255 / 0.09);
+  --glass-hi: rgb(255 255 255 / 0.12);
+  --glass-shadow: 0 16px 40px rgb(0 0 0 / 0.35);
+  --bg: #05060f;
+  --ink: #f3f1ff; --ink-2: #bbb7d9; --ink-3: #9a96bd; --line: rgb(255 255 255 / 0.08);
+  --accent: #ff6b9d; --accent-ink: #22000d; --accent-soft: rgb(255 107 157 / 0.16); --accent-text: #ff8fb3;
+  --danger: #ff6b6b; --danger-soft: rgb(255 107 107 / 0.15); --warn: #ffc266; --warn-soft: rgb(255 194 102 / 0.14);
+  --ok: #6be0a0; --ok-soft: rgb(107 224 160 / 0.14); --agent: #b8a6ff; --agent-soft: rgb(184 166 255 / 0.16);
+  --star: #ffd257;
+  --tone-mix: 35%;
+  background: #05060f;
+}
+
+/* ---------- the sky ---------- */
+.app[data-skin="zen"] > .sky {
+  display: block; position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: linear-gradient(172deg, #ffe1cf 0%, #ffcfe0 32%, #e4d7ff 64%, #cde5ff 100%);
+}
+.app[data-skin="zen"][data-mode="dark"] > .sky {
+  background: radial-gradient(140% 90% at 50% 120%, #1b1244 0%, #08091c 55%, #04050d 100%);
+}
+.app[data-skin="zen"] > :not(.sky):not(.scrim) { position: relative; z-index: 1; }
+.app[data-skin="zen"] .neb {
+  position: absolute; width: 80%; aspect-ratio: 1; border-radius: 50%; filter: blur(48px); opacity: 0.5;
+  animation: zm-drift 26s ease-in-out infinite alternate; will-change: transform;
+}
+.app[data-skin="zen"] .neb.a { background: var(--sky-person); top: -28%; left: -22%; }
+.app[data-skin="zen"] .neb.b { background: #ff8a6b; top: 18%; right: -38%; animation-duration: 33s; animation-delay: -9s; }
+.app[data-skin="zen"] .neb.c { background: #8fc4ff; bottom: -40%; left: 12%; animation-duration: 39s; animation-delay: -17s; }
+.app[data-skin="zen"][data-mode="dark"] .neb { opacity: 0.42; }
+.app[data-skin="zen"][data-mode="dark"] .neb.b { background: #ff3d7f; opacity: 0.3; }
+.app[data-skin="zen"][data-mode="dark"] .neb.c { background: #1fb6c9; opacity: 0.26; }
+.app[data-skin="zen"] .stars { position: absolute; inset: 0; opacity: 0.55; animation: zm-twinkle 5s ease-in-out infinite alternate; }
+.app[data-skin="zen"][data-mode="dark"] .stars { opacity: 1; }
+.app[data-skin="zen"] .stars.s1 {
+  background:
+    radial-gradient(1.2px 1.2px at 23px 31px, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 141px 82px, #dfe6ff 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 207px 17px, #fff3c4 50%, transparent 51%),
+    radial-gradient(1px 1px at 88px 143px, #fff 50%, transparent 51%),
+    radial-gradient(1.3px 1.3px at 251px 121px, #ffd6c8 50%, transparent 51%),
+    radial-gradient(1px 1px at 179px 187px, #fff 50%, transparent 51%);
+  background-size: 280px 210px;
+}
+.app[data-skin="zen"] .stars.s2 {
+  background:
+    radial-gradient(1px 1px at 61px 52px, #fff 50%, transparent 51%),
+    radial-gradient(2.2px 2.2px at 300px 140px, #fff 40%, rgb(255 255 255 / 0.25) 60%, transparent 70%),
+    radial-gradient(1px 1px at 190px 260px, #cfe0ff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 20px 300px, #fff 50%, transparent 51%);
+  background-size: 360px 330px; animation-duration: 7s; animation-delay: -3s;
+}
+.app[data-skin="zen"] .shoot {
+  position: absolute; top: 12%; left: -20%; width: 140px; height: 1.5px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #fff); opacity: 0; transform: rotate(18deg);
+  animation: zm-shoot 11s ease-in infinite 2s;
+}
+.app[data-skin="zen"]:not([data-mode="dark"]) .shoot { display: none; }
+@keyframes zm-drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(12%, 9%) scale(1.18); } }
+@keyframes zm-twinkle { from { opacity: 0.45; } to { opacity: 1; } }
+@keyframes zm-shoot { 0% { opacity: 0; transform: translate(0, 0) rotate(18deg); } 2% { opacity: 1; } 9% { opacity: 0; transform: translate(520px, 170px) rotate(18deg); } 100% { opacity: 0; transform: translate(520px, 170px) rotate(18deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .app[data-skin="zen"] .neb, .app[data-skin="zen"] .stars { animation: none; }
+  .app[data-skin="zen"] .shoot { display: none; }
+}
+
+/* ---------- glass ---------- */
+.app[data-skin="zen"] :is(.thread-list, .group, .tile, .reply, .post, .quick-compose, .empty, .dock-box, .hero-card, .sheet, .chat .foot) {
+  background-color: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1px var(--glass-line), var(--glass-shadow);
+}
+.app[data-skin="zen"] :is(.popover, .menu-list, .dialog) {
+  background: var(--glass-strong); -webkit-backdrop-filter: blur(30px) saturate(170%); backdrop-filter: blur(30px) saturate(170%);
+  border-color: var(--glass-line);
+}
+.app[data-skin="zen"] .scrim { background: rgb(20 8 40 / 0.32); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.app[data-skin="zen"] .dialog { border-radius: 26px; }
+.app[data-skin="zen"] :is(.seg, .search, .input, .textarea) { background: var(--glass-2); border-color: var(--glass-line); }
+.app[data-skin="zen"] .seg span[aria-pressed="true"] { background: var(--glass-strong); }
+.app[data-skin="zen"] .chip { background: var(--glass-2); }
+.app[data-skin="zen"] .chip.ok { background: var(--ok-soft); } .app[data-skin="zen"] .chip.warn { background: var(--warn-soft); }
+.app[data-skin="zen"] .chip.agent { background: var(--agent-soft); } .app[data-skin="zen"] .chip.accent { background: var(--accent-soft); color: var(--accent-text); }
+.app[data-skin="zen"] .status-row { border-radius: 16px; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+
+/* ---------- chrome ---------- */
+.app[data-skin="zen"] .topbar {
+  background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+  border-bottom: 1px solid var(--glass-line); height: 60px;
+}
+.app[data-skin="zen"] .phonebar { background: transparent; }
+.app[data-skin="zen"] .wordmark {
+  display: inline-flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 800; letter-spacing: -0.04em; text-transform: lowercase;
+  color: transparent; background: var(--grad-text); -webkit-background-clip: text; background-clip: text;
+}
+.app[data-skin="zen"] .wordmark .mark {
+  width: 28px; height: 28px; border-radius: 50%; flex: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3.5c.6 4.6 3.9 7.9 8.5 8.5-4.6.6-7.9 3.9-8.5 8.5-.6-4.6-3.9-7.9-8.5-8.5 4.6-.6 7.9-3.9 8.5-8.5z' fill='white'/%3E%3C/svg%3E") center / 18px no-repeat, var(--grad);
+  box-shadow: 0 0 16px rgb(255 61 127 / 0.55);
+}
+.app[data-skin="zen"] .topnav a { border-radius: 999px; color: var(--ink-2); }
+.app[data-skin="zen"] .topnav a::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--tab); box-shadow: 0 0 8px var(--tab); }
+.app[data-skin="zen"] .topnav a[aria-current="page"] { background: var(--glass-strong); color: var(--ink); box-shadow: 0 0 0 1px var(--glass-line); }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tab="board"] { --tab: #3b82f6; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tab="users"] { --tab: #10b981; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tab="messages"] { --tab: #ec4899; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tab="account"] { --tab: #8b5cf6; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tab="about"] { --tab: #f59e0b; }
+.app[data-skin="zen"][data-mode="dark"] [data-tab] { --tab-ink: color-mix(in srgb, var(--tab) 65%, white); }
+.app[data-skin="zen"] .tabbar {
+  background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+  border-top: 1px solid var(--glass-line);
+}
+.app[data-skin="zen"] .tabbar a { color: var(--ink-3); }
+.app[data-skin="zen"] .tabbar a svg.i { color: var(--tab-ink, var(--tab)); opacity: 0.75; }
+.app[data-skin="zen"] .tabbar a[aria-current="page"] { color: var(--ink); font-weight: 700; }
+.app[data-skin="zen"] .tabbar a[aria-current="page"] svg.i { opacity: 1; stroke-width: 2.3; filter: drop-shadow(0 0 6px var(--tab)); }
+.app[data-skin="zen"] .tabbar .compose-tab span.plus {
+  width: 48px; height: 48px; margin-top: -16px; border-radius: 50%; background: var(--grad); color: #fff;
+  box-shadow: 0 8px 22px rgb(214 28 100 / 0.45), 0 0 0 4px var(--glass-line);
+}
+.app[data-skin="zen"] .badge { background: var(--grad); color: #fff; box-shadow: 0 0 10px rgb(255 61 127 / 0.5); }
+.app[data-skin="zen"] .phonebar .back, .app[data-skin="zen"] .phonebar .trail { color: var(--accent-text); }
+
+/* ---------- buttons ---------- */
+.app[data-skin="zen"] .btn { border-radius: 999px; }
+.app[data-skin="zen"] .btn.lg { border-radius: 16px; }
+.app[data-skin="zen"] .btn.primary { background: var(--grad); color: #fff; box-shadow: 0 8px 22px rgb(214 28 100 / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.3); }
+.app[data-skin="zen"] .btn.tinted { background: var(--glass-strong); color: var(--accent-text); box-shadow: 0 0 0 1px var(--glass-line); }
+.app[data-skin="zen"] .btn:not(.primary):not(.tinted):not(.plain):not(.danger) { background: var(--glass-2); box-shadow: 0 0 0 1px var(--glass-line); }
+.app[data-skin="zen"] .btn.plain { color: var(--accent-text); }
+.app[data-skin="zen"] .send { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgb(214 28 100 / 0.4); }
+.app[data-skin="zen"] .send.off { background: var(--glass-2); color: var(--ink-3); box-shadow: none; }
+
+/* ---------- type ---------- */
+.app[data-skin="zen"] :is(.page-head h1, .post h1, .profile-head h1, .phonebar:not(.inline) h1) { font-weight: 800; letter-spacing: -0.035em; }
+.app[data-skin="zen"] .page-head h1 { font-size: 44px; line-height: 1.05; }
+.app[data-skin="zen"] .phonebar:not(.inline) h1 { font-size: 36px; }
+.app[data-skin="zen"] .post h1 { font-size: 36px; line-height: 1.08; }
+.app[data-skin="zen"] :is(.empty h2, .hero-card h2, .dialog h2) { font-weight: 800; letter-spacing: -0.02em; }
+.app[data-skin="zen"] .section-label { color: var(--ink-2); font-weight: 700; letter-spacing: 0.14em; font-size: 11.5px; }
+.app[data-skin="zen"] .thread h3 { font-weight: 650; letter-spacing: -0.01em; }
+
+/* ---------- people: planets ---------- */
+.app[data-skin="zen"] .avatar {
+  background: radial-gradient(circle at 30% 26%, color-mix(in srgb, var(--av) 40%, #fff), var(--av) 55%, color-mix(in srgb, var(--av) 60%, #000) 100%);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.75), 0 0 16px color-mix(in srgb, var(--av) 55%, transparent);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+.app[data-skin="zen"][data-mode="dark"] .avatar { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--av) 50%, #fff), 0 0 20px color-mix(in srgb, var(--av) 65%, transparent); }
+.app[data-skin="zen"] .avatar.agent { --av: #8b5cf6; }
+
+/* board rows: each author's color glows from behind their avatar */
+.app[data-skin="zen"] .thread {
+  background: radial-gradient(220px 130px at 0% 30%, color-mix(in srgb, var(--person, transparent) 22%, transparent), transparent 75%);
+}
+.app[data-skin="zen"][data-mode="dark"] .thread { background: radial-gradient(220px 130px at 0% 30%, color-mix(in srgb, var(--person, transparent) 30%, transparent), transparent 75%); }
+.app[data-skin="zen"] .thread + .thread { border-top-color: var(--line); }
+.app[data-skin="zen"] .thread .meta { color: color-mix(in srgb, var(--person, var(--ink-2)) 70%, var(--ink)); font-weight: 600; }
+.app[data-skin="zen"] .thread .count.hot {
+  align-self: start; justify-self: center; display: inline-block; min-width: 0; padding: 2px 9px; border-radius: 999px;
+  background: var(--grad); color: #fff; box-shadow: 0 0 12px rgb(255 61 127 / 0.45);
+}
+.app[data-skin="zen"] .thread.unread h3::before { background: var(--grad); box-shadow: 0 0 10px rgb(255 61 127 / 0.8); }
+.app[data-skin="zen"] .pinned-list { box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1.5px rgb(255 200 70 / 0.65), 0 0 28px rgb(255 190 60 / 0.25), var(--glass-shadow); }
+.app[data-skin="zen"] .pinned-list .thread { background: radial-gradient(260px 140px at 100% 0%, rgb(255 200 70 / 0.22), transparent 70%), radial-gradient(220px 130px at 0% 30%, color-mix(in srgb, var(--person) 22%, transparent), transparent 75%); }
+.app[data-skin="zen"] .section-label svg.i { color: var(--star); }
+
+/* ---------- thread ---------- */
+.app[data-skin="zen"] .post { padding: 24px; border-radius: 26px; background-image: radial-gradient(420px 220px at 0% 0%, color-mix(in srgb, var(--person) 20%, transparent), transparent 70%); }
+.app[data-skin="zen"] .byline .name, .app[data-skin="zen"] .reply .head .name { color: color-mix(in srgb, var(--person, var(--ink)) 70%, var(--ink)); }
+.app[data-skin="zen"] .replies { background: none; gap: 10px; overflow: visible; }
+.app[data-skin="zen"] .reply { border-radius: 20px; background-image: radial-gradient(260px 150px at 0% 0%, color-mix(in srgb, var(--person, transparent) 18%, transparent), transparent 75%); }
+.app[data-skin="zen"] .reply + .reply { border-top: 0; }
+.app[data-skin="zen"] .reply:has(+ .reply.cont) { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+.app[data-skin="zen"] .reply.cont { margin-top: -8px; border-top-left-radius: 6px; border-top-right-radius: 6px; padding-top: 12px; background-image: none; }
+.app[data-skin="zen"] .reply.agent {
+  background-image: linear-gradient(125deg, rgb(139 92 246 / 0.28), rgb(31 182 201 / 0.16) 55%, transparent 85%);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1px rgb(139 92 246 / 0.45), 0 0 26px rgb(139 92 246 / 0.25);
+}
+.app[data-skin="zen"] .reply.highlight { box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 2px var(--accent), 0 0 24px rgb(255 61 127 / 0.3); }
+.app[data-skin="zen"] .actions .act.on { color: var(--star); }
+.app[data-skin="zen"] .actions .act.on svg.i { filter: drop-shadow(0 0 6px var(--star)); }
+.app[data-skin="zen"] .dock { background: linear-gradient(transparent, var(--glass-2) 40%); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); -webkit-mask-image: linear-gradient(transparent, #000 18px); mask-image: linear-gradient(transparent, #000 18px); padding-top: 18px; }
+.app[data-skin="zen"] .dock-box { border: 0; border-radius: 26px; }
+.app[data-skin="zen"] .spinner { border-color: var(--agent-soft); border-top-color: var(--agent); }
+
+/* ---------- starfields (seeded skies) ---------- */
+.app:not([data-skin="zen"]) .starfield > .sky,
+.app:not([data-skin="zen"]) .starfield.banner,
+.app:not([data-skin="zen"]) .starfield.thumb,
+.app:not([data-skin="zen"]) .hero-card > .starfield { display: none; }
+.app[data-skin="zen"] .starfield { display: block; position: relative; overflow: hidden; color: color-mix(in srgb, var(--person, #c9b8ff) 45%, #fff); }
+.app[data-skin="zen"] .starfield svg.sky { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* profile: a constellation drawn straight onto the page sky, then a ringed planet */
+.app[data-skin="zen"] .starfield.banner {
+  height: 170px; margin: -28px -24px 0; background: none;
+  -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent);
+}
+.app[data-skin="zen"]:not([data-mode="dark"]) .starfield.banner svg.sky { filter: drop-shadow(0 0 1px rgb(60 20 90 / 0.6)); }
+.app[data-skin="zen"]:not([data-mode="dark"]) .starfield.banner { color: color-mix(in srgb, var(--person) 70%, #000); }
+.app[data-skin="zen"] .starfield.banner + .profile-head { position: relative; margin-top: -92px; gap: 26px; align-items: center; }
+.app[data-skin="zen"] .starfield.banner + .profile-head .avatar.lg { position: relative; width: 116px; height: 116px; font-size: 44px; margin: 10px 14px; }
+.app[data-skin="zen"] .starfield.banner + .profile-head .avatar.lg::after {
+  content: ""; position: absolute; inset: 36% -32%; border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--av) 45%, #fff); transform: rotate(-16deg);
+  -webkit-mask-image: linear-gradient(#000 45%, transparent 46%, transparent 60%, #000 61%); mask-image: linear-gradient(#000 45%, transparent 46%, transparent 60%, #000 61%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--av) 60%, transparent);
+}
+.app[data-skin="zen"] .starfield.banner + .profile-head h1 { font-size: 46px; line-height: 1; }
+.app[data-skin="zen"] .stats > span:not(.chip) { background: var(--glass); box-shadow: 0 0 0 1px var(--glass-line); padding: 3px 11px; border-radius: 999px; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+@container app (max-width: 600px) {
+  .app[data-skin="zen"] .starfield.banner { margin: -4px -16px 0; height: 150px; }
+  .app[data-skin="zen"] .starfield.banner + .profile-head { flex-direction: column; text-align: center; margin-top: -110px; gap: 14px; }
+  .app[data-skin="zen"] .starfield.banner + .profile-head .grow { justify-items: center; min-width: 0; }
+  .app[data-skin="zen"] .starfield.banner + .profile-head .stats { justify-content: center; }
+  .app[data-skin="zen"] .starfield.banner + .profile-head h1 { font-size: 40px; }
+  .app[data-skin="zen"] .starfield.banner + .profile-head .btn { align-self: stretch; height: 44px; }
+}
+/* small skies */
+.app[data-skin="zen"] .starfield.thumb { width: 44px; height: 44px; border-radius: 12px; background: radial-gradient(120% 120% at 80% 0%, color-mix(in srgb, var(--person, #7c5cff) 55%, #0b0c22), #0b0c22 70%); flex: none; box-shadow: 0 0 14px color-mix(in srgb, var(--person, #7c5cff) 40%, transparent); }
+.app[data-skin="zen"] .empty .starfield.big { width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, #2a1f6b, #0b0c22 70%); box-shadow: 0 0 40px rgb(255 200 70 / 0.35), 0 0 0 1px rgb(255 255 255 / 0.2); }
+.app[data-skin="zen"] .empty .starfield.big svg.i { position: relative; width: 38px; height: 38px; color: #ffd257; fill: rgb(255 210 87 / 0.35); filter: drop-shadow(0 0 10px #ffd257); }
+/* account: the hero is a night sky even at dawn */
+.app[data-skin="zen"] .hero-card.night {
+  position: relative; overflow: hidden; color: #fff; border-radius: 26px; padding: 26px;
+  background: radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--person, #7c5cff) 60%, #0b0c22), #0b0c22 68%);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14), 0 20px 50px color-mix(in srgb, var(--person, #7c5cff) 35%, transparent);
+}
+.app[data-skin="zen"] .hero-card.night > .starfield { position: absolute; inset: 0; color: color-mix(in srgb, var(--person, #c9b8ff) 40%, #fff); }
+.app[data-skin="zen"] .hero-card.night > :not(.starfield) { position: relative; }
+.app[data-skin="zen"] .hero-card.night h2 { font-size: 28px; }
+.app[data-skin="zen"] .hero-card.night p, .app[data-skin="zen"] .hero-card.night .field label { color: rgb(255 255 255 / 0.8); }
+.app[data-skin="zen"] .hero-card.night .input { background: rgb(255 255 255 / 0.1); border-color: rgb(255 255 255 / 0.25); color: #fff; }
+.app[data-skin="zen"] .hero-card.night .name { color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+.app[data-skin="zen"] .hero-card.night .chip.ok { background: rgb(107 224 160 / 0.2); color: #9ff5c6; }
+.app[data-skin="zen"] .hero-card.night .chip.warn { background: rgb(255 194 102 / 0.2); color: #ffd99c; }
+
+/* ---------- colored glyphs: the icon itself carries the color ---------- */
+.app[data-skin="zen"] [data-tone] { --tone-ink: color-mix(in srgb, var(--tone) calc(100% - var(--tone-mix)), white); }
+.app[data-skin="zen"] [data-tone] .ic, .app[data-skin="zen"] .ic[data-tone] { background: none; color: var(--tone-ink); }
+.app[data-skin="zen"] [data-tone] .ic svg.i :is(rect, circle, ellipse),
+.app[data-skin="zen"] .ic[data-tone] svg.i :is(rect, circle, ellipse) { fill: color-mix(in srgb, var(--tone) 30%, transparent); }
+.app[data-skin="zen"][data-mode="dark"] [data-tone] .ic svg.i { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tone) 70%, transparent)); }
+.app[data-skin="zen"] .tile { border-radius: 22px; padding: 18px; gap: 6px; background-image: radial-gradient(160px 110px at 0% 0%, color-mix(in srgb, var(--tone) 16%, transparent), transparent 75%); }
+.app[data-skin="zen"] .tile .ic { width: auto; height: auto; justify-content: start; margin-bottom: 6px; }
+.app[data-skin="zen"] .tile .ic svg.i { width: 36px; height: 36px; stroke-width: 2.2; filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--tone) 45%, transparent)); }
+.app[data-skin="zen"][data-mode="dark"] .tile .ic svg.i { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tone) 80%, transparent)); }
+.app[data-skin="zen"] .tile:hover { box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1.5px var(--tone), 0 0 26px color-mix(in srgb, var(--tone) 35%, transparent); }
+.app[data-skin="zen"] .row[data-tone] .ic, .app[data-skin="zen"] .row .ic[data-tone] { width: 30px; }
+.app[data-skin="zen"] .row[data-tone] .ic svg.i { width: 22px; height: 22px; stroke-width: 2; }
+.app[data-skin="zen"] .section-label .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tone); display: inline-block; box-shadow: 0 0 10px var(--tone); }
+/* Your device: blues */
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="outbox"] { --tone: #2563eb; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="offline"] { --tone: #0284c7; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="bookmark"] { --tone: #4f46e5; }
+/* Reading: pinks and violets */
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="activity"] { --tone: #db2777; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="forte"] { --tone: #7c3aed; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="docs"] { --tone: #a21caf; }
+/* Community: greens */
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="access"] { --tone: #15803d; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="stats"] { --tone: #0f766e; }
+/* Operator: ambers and stones */
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="flags"] { --tone: #b45309; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="status"] { --tone: #64748b; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="sqlite"] { --tone: #475569; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="backup"] { --tone: #78716c; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="llm"] { --tone: #9a3412; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="fastmod"] { --tone: #c2410c; }
+/* Account rows and menu */
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="save"] { --tone: #2563eb; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="restore"] { --tone: #0f766e; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="advanced"] { --tone: #64748b; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="remove"] { --tone: #c81e1e; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="account"] { --tone: #d61c64; }
+.app:is([data-skin="zen"], [data-skin="ma"]) [data-tone="person"] { --tone: var(--person); }
+.app[data-skin="zen"] .popover .ic { width: 24px; height: 24px; display: grid; place-items: center; flex: none; }
+.app[data-skin="zen"] .popover .ic svg.i { width: 20px; height: 20px; stroke-width: 2; }
+.app[data-skin="zen"] .hide-zen { display: none !important; }
+
+/* ---------- messages ---------- */
+.app[data-skin="zen"] .bubble {
+  background: color-mix(in srgb, var(--person, var(--ink-3)) 20%, var(--glass-strong));
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--person, #fff) 30%, transparent), 0 0 18px color-mix(in srgb, var(--person, transparent) 20%, transparent);
+}
+.app[data-skin="zen"] .bubble.me { background: var(--grad); color: #fff; box-shadow: 0 6px 18px rgb(214 28 100 / 0.3); }
+.app[data-skin="zen"] .bubble.fail { background: var(--glass-2); box-shadow: 0 0 0 1px var(--glass-line); color: var(--ink-2); }
+.app[data-skin="zen"] .lock-line { color: var(--ink-2); }
+.app[data-skin="zen"] .lock-line svg.i { color: var(--ok); }
+.app[data-skin="zen"] .day { color: var(--ink-2); font-weight: 600; }
+.app[data-skin="zen"] .chat .foot { border-top: 0; border-radius: 0; }
+
+/* ---------- round 4: ensō, orbit, agent aurora, community pulse ---------- */
+/* Ensō: one brushstroke circle. The logo is static; the loader rotates a
+   gradient under a fixed ensō mask, so only transform animates. */
+.app[data-skin="zen"] { --enso: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14.36 3.17L15.29 3.13L16.24 3.20L17.19 3.39L18.03 3.83L18.76 4.44L19.43 5.11L20.02 5.84L20.55 6.63L20.98 7.47L21.33 8.34L21.60 9.24L21.77 10.15L21.85 11.08L21.83 12.00L21.73 12.91L21.54 13.80L21.27 14.67L20.91 15.50L20.48 16.28L19.99 17.02L19.43 17.70L18.81 18.32L18.15 18.88L17.44 19.37L16.70 19.79L15.92 20.14L15.12 20.42L14.31 20.63L13.49 20.76L12.66 20.81L11.84 20.79L11.02 20.70L10.22 20.54L9.44 20.31L8.68 20.01L7.96 19.65L7.27 19.22L6.63 18.74L6.03 18.20L5.48 17.61L4.99 16.97L4.56 16.29L4.20 15.58L3.90 14.84L3.67 14.07L3.51 13.28L3.42 12.48L3.40 11.68L3.46 10.88L3.59 10.08L3.79 9.30L4.07 8.54L4.41 7.81L4.82 7.11L5.29 6.44L5.83 5.83L6.11 6.11L5.61 6.71L5.18 7.35L4.81 8.03L4.52 8.74L4.30 9.47L4.15 10.21L4.07 10.96L4.06 11.70L4.13 12.44L4.26 13.17L4.46 13.87L4.71 14.55L5.03 15.20L5.40 15.81L5.82 16.38L6.29 16.91L6.80 17.40L7.35 17.83L7.93 18.22L8.54 18.54L9.18 18.81L9.83 19.02L10.50 19.18L11.18 19.26L11.86 19.29L12.54 19.25L13.21 19.15L13.87 18.98L14.51 18.76L15.12 18.47L15.69 18.13L16.23 17.73L16.72 17.29L17.17 16.80L17.56 16.27L17.90 15.70L18.17 15.12L18.38 14.51L18.54 13.88L18.62 13.25L18.65 12.62L18.61 12.00L18.51 11.39L18.36 10.80L18.15 10.23L17.89 9.69L17.59 9.18L17.24 8.71L16.85 8.28L16.43 7.89L15.98 7.54L15.51 7.24L15.07 6.91L14.68 6.44L14.23 5.99L13.72 5.56Z'/%3E%3C/svg%3E"); }
+.app[data-skin="zen"] .wordmark .mark {
+  width: 30px; height: 30px; border-radius: 0; box-shadow: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23d9361f'/%3E%3Cstop offset='.5' stop-color='%23d61c64'/%3E%3Cstop offset='1' stop-color='%236d28d9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M14.36 3.17L15.29 3.13L16.24 3.20L17.19 3.39L18.03 3.83L18.76 4.44L19.43 5.11L20.02 5.84L20.55 6.63L20.98 7.47L21.33 8.34L21.60 9.24L21.77 10.15L21.85 11.08L21.83 12.00L21.73 12.91L21.54 13.80L21.27 14.67L20.91 15.50L20.48 16.28L19.99 17.02L19.43 17.70L18.81 18.32L18.15 18.88L17.44 19.37L16.70 19.79L15.92 20.14L15.12 20.42L14.31 20.63L13.49 20.76L12.66 20.81L11.84 20.79L11.02 20.70L10.22 20.54L9.44 20.31L8.68 20.01L7.96 19.65L7.27 19.22L6.63 18.74L6.03 18.20L5.48 17.61L4.99 16.97L4.56 16.29L4.20 15.58L3.90 14.84L3.67 14.07L3.51 13.28L3.42 12.48L3.40 11.68L3.46 10.88L3.59 10.08L3.79 9.30L4.07 8.54L4.41 7.81L4.82 7.11L5.29 6.44L5.83 5.83L6.11 6.11L5.61 6.71L5.18 7.35L4.81 8.03L4.52 8.74L4.30 9.47L4.15 10.21L4.07 10.96L4.06 11.70L4.13 12.44L4.26 13.17L4.46 13.87L4.71 14.55L5.03 15.20L5.40 15.81L5.82 16.38L6.29 16.91L6.80 17.40L7.35 17.83L7.93 18.22L8.54 18.54L9.18 18.81L9.83 19.02L10.50 19.18L11.18 19.26L11.86 19.29L12.54 19.25L13.21 19.15L13.87 18.98L14.51 18.76L15.12 18.47L15.69 18.13L16.23 17.73L16.72 17.29L17.17 16.80L17.56 16.27L17.90 15.70L18.17 15.12L18.38 14.51L18.54 13.88L18.62 13.25L18.65 12.62L18.61 12.00L18.51 11.39L18.36 10.80L18.15 10.23L17.89 9.69L17.59 9.18L17.24 8.71L16.85 8.28L16.43 7.89L15.98 7.54L15.51 7.24L15.07 6.91L14.68 6.44L14.23 5.99L13.72 5.56Z' fill='url%28%23g%29'/%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 0 6px rgb(255 61 127 / 0.5));
+}
+.app[data-skin="zen"] .spinner {
+  width: 18px; height: 18px; border: 0; border-radius: 0; position: relative; overflow: hidden; flex: none;
+  -webkit-mask: var(--enso) center / contain no-repeat; mask: var(--enso) center / contain no-repeat;
+  background: var(--agent-soft);
+}
+.app[data-skin="zen"] .spinner::before {
+  content: ""; position: absolute; inset: -6px;
+  background: conic-gradient(from 0deg, transparent 0 35%, var(--agent));
+  animation: zm-spin 1.6s linear infinite;
+}
+
+/* Orbit: key generation and decryption. A moon on a rotating arm. */
+.orbit { position: relative; display: inline-block; width: 64px; height: 64px; flex: none; }
+.app:not([data-skin="zen"]) .orbit { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); }
+.app:not([data-skin="zen"]) .orbit > * { display: none; }
+.app[data-skin="zen"] .orbit::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1px dashed rgb(255 255 255 / 0.35); }
+.app[data-skin="zen"] .orbit .planet {
+  position: absolute; inset: 17px; border-radius: 50%; --av: var(--person, #8b5cf6);
+  background: radial-gradient(circle at 30% 26%, color-mix(in srgb, var(--av) 40%, #fff), var(--av) 55%, color-mix(in srgb, var(--av) 60%, #000) 100%);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--av) 70%, transparent);
+}
+.app[data-skin="zen"] .orbit .arm { position: absolute; inset: 0; animation: zm-spin 2.6s linear infinite; }
+.app[data-skin="zen"] .orbit .moon {
+  position: absolute; top: -4px; left: calc(50% - 4.5px); width: 9px; height: 9px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 10px #fff, 0 0 18px var(--person, #c9b8ff);
+}
+
+/* Agent: light, not a planet. An aurora with curtains that shimmer. */
+.app[data-skin="zen"] .avatar.agent {
+  position: relative; overflow: hidden; border-radius: 44% 56% 52% 48% / 48% 42% 58% 52%;
+  background: linear-gradient(160deg, #22d3ee 0%, #8b5cf6 50%, #34d399 100%);
+  box-shadow: 0 0 14px rgb(34 211 238 / 0.45), 0 0 22px rgb(139 92 246 / 0.4);
+}
+.app[data-skin="zen"] .avatar.agent::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.45) 0 1px, transparent 1px 4px);
+  -webkit-mask-image: linear-gradient(#000, transparent 85%); mask-image: linear-gradient(#000, transparent 85%);
+  animation: zm-shimmer 3.2s ease-in-out infinite alternate;
+}
+.app[data-skin="zen"] .avatar.agent svg.i { position: relative; z-index: 1; }
+.app[data-skin="zen"] .reply.agent { position: relative; overflow: hidden; }
+.app[data-skin="zen"] .reply.agent > * { position: relative; }
+.app[data-skin="zen"] .reply.agent::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 84px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.18) 0 1px, transparent 1px 7px),
+    linear-gradient(90deg, rgb(34 211 238 / 0.35), rgb(139 92 246 / 0.35) 50%, rgb(52 211 153 / 0.3));
+  -webkit-mask-image: linear-gradient(#000, transparent); mask-image: linear-gradient(#000, transparent);
+  animation: zm-shimmer 4.5s ease-in-out infinite alternate;
+}
+
+/* Community pulse: the page sets data-pulse from the last 24 hours of activity.
+   Quiet skies go still and dim; busy skies brighten and shoot more stars. */
+.app[data-skin="zen"][data-pulse="quiet"] > .sky .neb { animation-play-state: paused; opacity: 0.28; }
+.app[data-skin="zen"][data-pulse="quiet"] > .sky .stars { animation: none; opacity: 0.35; }
+.app[data-skin="zen"][data-pulse="quiet"][data-mode="dark"] > .sky .stars.s1 { opacity: 0.6; }
+.app[data-skin="zen"][data-pulse="quiet"] > .sky :is(.stars.s2, .shoot) { display: none; }
+.app[data-skin="zen"][data-pulse="busy"] > .sky .neb { opacity: 0.66; }
+.app[data-skin="zen"][data-pulse="busy"][data-mode="dark"] > .sky .neb { opacity: 0.55; }
+.app[data-skin="zen"][data-pulse="busy"] > .sky .stars.s2 { animation-duration: 3s; }
+.app[data-skin="zen"][data-pulse="busy"] > .sky .shoot { animation-duration: 5.5s; animation-delay: 0.6s; }
+
+@keyframes zm-spin { to { transform: rotate(1turn); } }
+@keyframes zm-shimmer { from { opacity: 0.35; } to { opacity: 0.9; } }
+@media (prefers-reduced-motion: reduce) {
+  .app[data-skin="zen"] .spinner { background: var(--agent); }
+  .app[data-skin="zen"] .spinner::before, .app[data-skin="zen"] .orbit .arm,
+  .app[data-skin="zen"] .avatar.agent::after, .app[data-skin="zen"] .reply.agent::before { animation: none; }
+  .app[data-skin="zen"] .spinner::before { display: none; }
+}

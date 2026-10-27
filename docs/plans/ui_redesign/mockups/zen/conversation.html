@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversation, themed · ZenMemes redesign</title>
+<link rel="stylesheet" href="../mockup.css">
+<link rel="stylesheet" href="zen.css">
+<link rel="stylesheet" href="ma.css">
+<script src="../mockup.js" defer></script>
+<style>
+  .chat { display: grid; grid-template-rows: 1fr auto; height: 100%; }
+  .chat .scroll { overflow: auto; padding: 4px 14px 10px; }
+  .chat .foot { padding: 8px 12px 26px; display: grid; gap: 6px; background: var(--bg); border-top: 1px solid var(--line); }
+  .app[data-skin="zen"] .chat .foot { background: var(--surface); }
+  .app[data-skin="zen"] .chat-hello .starfield { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--person) 55%, #0b0c22), #0b0c22 72%); box-shadow: 0 0 50px color-mix(in srgb, var(--person) 45%, transparent), 0 0 0 1px rgb(255 255 255 / 0.18); }
+  .app[data-skin="zen"] .chat-hello .starfield .avatar { position: relative; }
+</style>
+</head>
+<body data-skin="ma">
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="../index.html">← All mockups</a>
+      <h1>T6 · Conversation, themed</h1>
+      <p>A conversation happens under the other person’s sky. Their messages carry their color; yours carry the brand gradient.</p>
+      <p class="doc-files">Structure: <a href="../conversation.html">10 · Conversation</a> · Skin: mockups/zen/zen.css</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="skin-toggle" role="group" aria-label="Skin"><button type="button" data-skin="base">Base</button><button type="button" data-skin="zen">Living Sky</button><button type="button" data-skin="ma">Ma</button></div>
+      <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+    </div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>In Ma</h2>
+      <ul>
+        <li><b>At night</b>, the newest incoming message visibly decrypts: it scrambles through hex and resolves once when it scrolls into view. Short failure labels glitch; the encryption line is set in a data typeface.</li>
+        <li><b>Their bubbles are tinted paper</b> in their color; yours are ink on paper (paper on ink in dark mode). Vermilion is kept for seals and actions.</li>
+        <li><b>First message</b>: the other person’s key, drawn as a flow field, in a paper circle.</li>
+        <li>The page is lit from above in the other person’s color (Turrell).</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What the theme adds</h2>
+      <ul>
+        <li><b>Their sky:</b> the nebula behind the conversation is their color.</li>
+        <li><b>Their bubbles</b> are glass tinted with their color and a soft halo. <b>Yours</b> use the gradient.</li>
+        <li><b>A first message opens on their world:</b> their planet inside a glowing orb of their stars.</li>
+        <li>Failure states use plain glass and danger text, never a person’s color.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What it needs from the base</h2>
+      <ul>
+        <li><code>data-sky</code> and <code>--person</code> on the conversation, set from the other participant.</li>
+        <li>A starfield slot behind the avatar in the empty state.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Checks</h2>
+      <ul>
+        <li>Their bubbles keep ink text at 12:1 or better for every avatar color.</li>
+        <li>White on the gradient bubble is 4.6:1 or better at every stop.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<template data-sky="onthebus" data-screen="Conversation with all three edge states" data-active="messages" data-phonebar="inline" data-back="Messages" data-title="onthebus" data-trail="av:onthebus" data-tabbar="none" data-devices="phone">
+  <div class="chat" data-person="onthebus">
+    <div class="scroll">
+      <div class="bubbles">
+        <div class="lock-line" style="margin:6px 0 4px"><i data-i="lock" class="sm"></i>Only you and onthebus can read these, on your approved devices.</div>
+        <div class="day">Oct 22</div>
+        <div class="bubble fail" style="display:grid;gap:4px"><span style="display:flex;gap:6px;align-items:center"><i data-i="shield" class="sm"></i><b>Couldn’t verify this message</b></span><span class="small">Details · Retry</span></div>
+        <div class="bubble me">Yes, it’s the next thing I’m fixing.</div>
+        <div class="day">Yesterday</div>
+        <div class="bubble me">Try it now, the reply box docks to the bottom.</div>
+        <div class="bubble-meta fail">Not confirmed · <b>Check</b></div>
+        <div class="day">Today 9:41</div>
+        <div class="bubble" data-scramble="ok the new reply box is way better on my phone">ok the new reply box is way better on my phone</div>
+        <div class="bubble me" style="opacity:.55">Ship it tonight?</div>
+        <div class="bubble-meta fail">Not sent · <b>Retry</b></div>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="dock-box"><span class="grow">Message</span><span class="send off"><i data-i="send" class="sm"></i></span></div>
+    </div>
+  </div>
+</template>
+
+<template data-sky="lucas" data-screen="Empty — first message" data-active="messages" data-phonebar="inline" data-back="Messages" data-title="lucas" data-tabbar="none" data-devices="phone">
+  <div class="chat" data-person="lucas">
+    <div class="scroll" style="display:grid;place-items:center;text-align:center">
+      <div class="chat-hello" style="display:grid;gap:10px;justify-items:center;max-width:260px">
+        <span class="starfield" data-seed="lucas" data-person="lucas"><span class="avatar lg" data-av="lucas"></span></span>
+        <b style="font-size:18px">lucas</b>
+        <div class="lock-line"><i data-i="lock" class="sm"></i>Only you and lucas can read these, on your approved devices.</div>
+      </div>
+    </div>
+    <div class="foot"><div class="dock-box"><span class="grow typed">hey, is mykull the friend you mentioned?</span><span class="send"><i data-i="send" class="sm"></i></span></div></div>
+  </div>
+</template>
+</body>
+</html>
