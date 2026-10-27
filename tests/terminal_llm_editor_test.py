@@ -33,6 +33,12 @@ if answer=='CONFLICT':
     config=Path(os.environ['FORUM_SECRETS_PATH'])
     config.write_text(config.read_text().replace("'preserved'", "'external'"))
     answer=''
+if answer=='BLOCK_SAVE':
+    Path(os.environ['FORUM_SECRETS_PATH']+'.lock').mkdir()
+    answer=''
+if answer=='UNBLOCK':
+    Path(os.environ['FORUM_SECRETS_PATH']+'.lock').rmdir()
+    answer=''
 if answer=='CANCEL': sys.exit(1)
 os.write(3, answer.encode())
 ''')
@@ -74,3 +80,8 @@ assert '(replacement)' in log
 saved, log = run_editor(['preset', 'stub', 'review', '', 'CANCEL'])
 assert "'LLM_PROVIDER' => 'stub'" in saved and "'LLM_TIMEOUT_SECONDS' => 137" in saved
 print('PASS: conflict reload/re-review, replacement-secret redaction, deliberate preset')
+
+saved, log = run_editor(['LLM_MODEL', 'retry-model', 'review', 'BLOCK_SAVE', 'UNBLOCK', 'review', '', 'CANCEL'])
+assert "'LLM_MODEL' => 'retry-model'" in saved
+assert 'Unable to lock private configuration' in log
+print('PASS: failed save retains draft for retry')

@@ -488,6 +488,9 @@ The default local path is ../forum-private/secrets.php relative to this app chec
 LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
 Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
 update-llm accepts a JSON request only on standard input; never pass a secret in an argument.
+Its values object contains changed LLM fields; blank API key keeps the current key.
+An optional expected_revision binds a TUI review to the current file and value sources.
+Writers coordinate through a private .lock sidecar; busy saves return after three seconds.
 
 TEXT);
 }

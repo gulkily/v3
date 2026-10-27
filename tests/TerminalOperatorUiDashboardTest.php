@@ -58,19 +58,19 @@ BASH);
                 'TERM=xterm V3_TUI_WHIPTAIL=' . escapeshellarg($fakeWhiptail)
                     . ' V3_TUI_TEST_LOG=' . escapeshellarg($logPath)
                     . ' V3_TUI_TEST_STATE=' . escapeshellarg($statePath)
-                    . " script -qec './v3 tui' /dev/null"
+                    . " script -qec 'stty rows 24 cols 80; ./v3 tui' /dev/null"
             );
             $log = (string) file_get_contents($logPath);
 
             assertSame(0, $exitCode);
             assertSame('', $stderr);
-            assertStringContains('ARGS:--title v3 terminal operator', $log);
+            assertStringContains('--title v3 terminal operator', $log);
             assertStringContains('Observed:', $log);
             assertStringContains('Repository:', $log);
             assertStringContains('Queue details', $log);
             assertStringContains('TEXTBOX:', $log);
             assertStringContains('Operator status', $stdout);
-            assertStringContains('Private configuration (redacted)', $log);
+            assertStringContains('Private configuration', $log);
             assertStringContains('Private config path:', $log);
             assertStringContains('/tools/feature-flags/', $log);
             assertStringContains('./v3 task-queue status', $log);

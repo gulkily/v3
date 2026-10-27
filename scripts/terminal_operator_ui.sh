@@ -23,15 +23,8 @@ source "${root}/scripts/terminal_operator_ui_lib.sh"
 show_private_config() {
   local output_file
   output_file="$(mktemp "${TMPDIR:-/tmp}/v3-tui.XXXXXX")"
-  {
-    printf '%s\n\n' 'Private configuration (redacted)'
-    "${root}/v3" private-config view
-    printf '%s\n' ''
-    printf '%s\n' 'Environment-origin values are read-only here; change deployment configuration and restart as needed.'
-    printf '%s\n' 'Site feature flags are managed on the web at /tools/feature-flags/.'
-  } >"${output_file}" 2>&1 || true
-
-  "${whiptail_bin}" --title 'Private configuration' --scrolltext --textbox "${output_file}" 22 100 || true
+  "${root}/v3" private-config view >"${output_file}" 2>&1 || true
+  tui_dialog --title 'Private configuration' --scrolltext --textbox "${output_file}" 0 0 || true
   rm -f "${output_file}"
 }
 
@@ -71,19 +64,27 @@ home_observed=''
 refresh_home
 choice=refresh
 while true; do
-  choice="$("${whiptail_bin}" --title 'v3 terminal operator' --default-item "$choice" --menu \
-    "$home_status
-$home_freshness" 0 0 8 \
+  terminal_ready || exit 0
+  menu_height=$((tui_rows - 15))
+  (( menu_height <= 8 )) || menu_height=8
+  home_prompt="$(compact_home)"
+  next_choice="$(tui_dialog --title 'v3 terminal operator' --default-item "$choice" --menu \
+    "$home_prompt" 0 0 "$menu_height" \
     'refresh' 'Refresh' \
     'status' 'Health details' \
     'task-queue' 'Queue details' \
     'fast-score' 'Fastmod details' \
-    'config' 'View redacted effective private configuration' \
-    'edit-llm' 'Edit LLM connection settings' \
-    'flags' 'Open the feature-flags management route in a browser' \
-    'commands' 'Launch an existing read-only command' \
-    'exit' 'Exit without running a command' \
-    3>&1 1>&2 2>&3)" || exit 0
+    'config' 'Private configuration' \
+    'edit-llm' 'LLM connection' \
+    'flags' 'Feature flags (web)' \
+    'commands' 'Search diagnostics' \
+    'exit' 'Exit' \
+    3>&1 1>&2 2>&3)" || {
+    result=$?
+    (( result == 75 )) && continue
+    exit 0
+  }
+  choice="$next_choice"
 
   case "${choice}" in
     refresh) refresh_home ;;
@@ -99,8 +100,8 @@ $home_freshness" 0 0 8 \
       edit_llm_connection
       ;;
     flags)
-      "${whiptail_bin}" --title 'Site feature flags' --msgbox \
-        'Feature flags are managed by the web UI at /tools/feature-flags/. This terminal UI does not edit them.' 9 76 || true
+      tui_dialog --title 'Site feature flags' --msgbox \
+        '/tools/feature-flags/' 0 0 || true
       ;;
     commands)
       show_command_launcher

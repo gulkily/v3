@@ -2,8 +2,8 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/tui_operator_workspace; [host ledger](../effort_estimation_trial.md), standing P2 enrollment
 Extended estimates: enabled
-Status: Step 3 explicitly approved; implementation in progress
-Cycle estimate: 0.75
+Status: Six stages locally complete; maintainer acceptance pending
+Cycle estimate: 0.85
 
 ## Entry checkpoint
 Date: 2026-10-27 UTC
@@ -60,5 +60,35 @@ Boundary: No dependency/schema changes, deployment or todo.txt edits. Stage comm
 - Changes: Shared schema update policy validates and normalizes preview/save, including real redacted differences and explicit secret replacement. Config snapshot binds file bytes and effective LLM sources/values; save rechecks before replacement. Persistent private sidecar lock coordinates writer/edit/refresh operations with a three-second busy response. Conflicts reload sources, retain non-secret unlocked drafts and require review again. No-op leaves bytes unchanged; temporary files are private from creation and failed writes/renames clean up.
 - Verification: Config/schema PHP checks 12/12; editor regression passed deliberate presets, replacement-key redaction and concurrent edit/re-review preserving external unrelated changes. Writer regression passed no-op, invalid/unsupported input, file/environment conflicts, bounded lock contention, permissions, legacy stdin compatibility and failed rename cleanup. PHP syntax passed.
 - Notes: Stage 4 commit 5ce25b1e5. An uncooperative external writer can still race after the final check; coordinated project writers are serialized. No new dependency/schema or secret-bearing argument/log. Original estimate unchanged; remote/real-terminal integrated acceptance remains S6.
+
+*— Codex · 2026-10-27 UTC*
+
+## Stage 6 discovery - Live resize
+Date: 2026-10-27 UTC
+Evidence: Real 80x24 → 50x18 resize while home was open left the original newt layout clipped, hiding buttons. Entry-at-size and resize-between-dialog checks had passed; neither covered this failure.
+Scope: In-scope correction to approved small/resized-terminal recovery, not a new renderer or dependency.
+Stage S6 original estimate: 0.14 retained.
+Stage S6 revised whole-stage estimate: 0.20, before dependent correction; driver is shared dialog resize supervision and draft/navigation recovery; uncertainty is newt termination/restoration behavior.
+Cycle revised projection: 0.85, independently assessed for the unchanged v1/A outcome; prior 0.75 projections retained. R1/P2, frozen hashes reverified; same exposed single Codex rater, no measured labor.
+
+*— Codex · 2026-10-27 UTC*
+
+## Stage 6 - Replay operator journeys and close out
+**Original estimate: 0.14**
+**Revised estimate: 0.20**
+**Retrospective stage work: 0.22**
+
+- Changes: Adaptive menu sizing, concise labels and explicit undersized-terminal recovery; schema sources precede long values; long reviews scroll. Shared TerminalDialog supervises existing whiptail, recreates dialogs on live resize and restores terminal settings; navigation and committed drafts survive. Updated CLI help/reference and copy audit. No new renderer/dependency.
+- Verification: Focused PHP terminal/status/config/schema/collector/health checks 37/37; final terminal checks 4/4. Five Python suites passed: terminal_operator_ui_pty_test.py (live output, success/failure/interruption, descendants, terminal state, bounded/stale collection); terminal_operator_ui_navigation_test.py (literal search, no-match recovery, retained context); terminal_llm_editor_test.py (current sources, locks, presets, blank/replaced secrets, validation, conflicts, failed-save retry, cancellation); private_config_review_test.py (no-op, malformed input, file/source conflicts, busy lock, atomic permissions/rename cleanup and legacy stdin); terminal_operator_ui_acceptance_test.py (real whiptail normal-entry journeys at 80x24/50x18, live home/editor resize, 40x12 recovery, long-value scrolling review, save/reopen/cancel and SSH-style environment).
+- Corrections: Real resize initially clipped buttons; shared resize supervision resolved it. Corrected descriptor setup and terminal-test synchronization/Enter handling while verifying that fix. Final keyboard acceptance waits for the replacement dialog; failures were not treated as passes. Stage 5 commit 6326e9ac5.
+- Notes: Actual environment is WSL2 (6.6.87.2-microsoft-standard-WSL2). Isolated config/repository fixtures protect live settings. No actual remote SSH target or physical terminal device was available; these remain explicit limits. Browser/theme/icon checks are inapplicable to this terminal-only UI. Full suite and deployment not run.
+
+*— Codex · 2026-10-27 UTC*
+
+## Study closeout and release limits
+Status: Six stages locally complete; stage commits retain their scoped summaries. Branch feat/tui-operator-workspace; planning fc951e144; S1 bb6109593, S2 5c2cf14d8, S3 f3125f4ff, S4 5ce25b1e5, S5 6326e9ac5; S6 recorded in the final debug handoff after creation.
+Study: railspike-effort / v3/tui_operator_workspace; unchanged v1/A outcome and original baseline; R1/P2, all three frozen hashes reverified. Same single exposed Codex rater; earlier checkpoints preserved. Original entry projection 0.75 and prospective S6 discovery revision 0.85 retained. Separate retrospective whole-cycle scope assessment: 0.85. S1–S6 original stage-work 0.18/0.12/0.10/0.15/0.18/0.14; S6 prospective revision 0.20; separate retrospectives 0.18/0.12/0.10/0.15/0.18/0.22. Non-additive judgments, not measured labor; no independent rating or accepted-count increment. Maintainer comfortable-fit/acceptance pending.
+Release boundary: Approved local WSL journeys and recovery verified. Remote SSH, physical-device terminals, deployment, full-suite and maintainer acceptance remain unverified. No merge/push performed. Outside writers that bypass the private sidecar lock can still race the final check; documented operator recovery is to avoid concurrent external edits and retry/review conflicts.
+Inventory: Actual dependency delta zero; no manifests, locks for dependencies, vendor code, schema/canonical-record changes, web navigation changes or todo.txt edits. Private-config .lock is runtime coordination, not a dependency lockfile. Human-facing additions use plain text/Key: value; JSON remains the pre-existing stdin machine protocol.
 
 *— Codex · 2026-10-27 UTC*

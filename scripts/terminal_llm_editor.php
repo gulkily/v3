@@ -6,18 +6,50 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Support\PrivateConfig;
 use ForumRewrite\Support\PrivateConfigSchema;
+use ForumRewrite\Support\TerminalDialog;
 
 // Whiptail sends selections to a pipe, keeping secrets out of arguments/logs.
 function editorDialog(string $kind, string $text, array $extra = [], string $title = 'LLM connection'): ?string
 {
-    $command = [getenv('V3_TUI_WHIPTAIL') ?: 'whiptail', '--title', $title, '--output-fd', '3', $kind, $text, '0', '0', ...$extra];
-    $process = proc_open($command, [0 => STDIN, 1 => STDOUT, 2 => STDERR, 3 => ['pipe', 'w']], $pipes);
-    if (!is_resource($process)) {
-        throw new RuntimeException('Unable to open editor. Use ./v3 private-config edit.');
+    [$rows, $columns] = TerminalDialog::size();
+    while ($rows < 18 || $columns < 50) {
+        fwrite(STDOUT, "\nResize to at least 50 columns × 18 rows. Enter: retry · q: return\n");
+        $answer = fgets(STDIN);
+        if ($answer === false || trim($answer) === 'q') {
+            return null;
+        }
+        [$rows, $columns] = TerminalDialog::size();
     }
-    $value = stream_get_contents($pipes[3]);
-    fclose($pipes[3]);
-    return proc_close($process) === 0 ? (string) $value : null;
+    if ($kind === '--menu') {
+        $extra[0] = (string) min((int) $extra[0], $rows - 10);
+    }
+    // Long review text needs scrolling, otherwise newt can clip the decision.
+    if ($kind === '--yesno' && strlen($text) > ($rows - 10) * ($columns - 12)) {
+        $temporary = tempnam(sys_get_temp_dir(), 'v3-tui-review-');
+        if ($temporary === false) {
+            throw new RuntimeException('Unable to display review.');
+        }
+        chmod($temporary, 0600);
+        try {
+            file_put_contents($temporary, wordwrap($text, $columns - 12, "\n", true));
+            if (editorDialog('--textbox', $temporary, ['--scrolltext'], 'Review changes') === null) {
+                return null;
+            }
+        } finally {
+            unlink($temporary);
+        }
+        $text = 'Save the reviewed changes?';
+    }
+    $command = ['--title', $title, $kind, $text, '0', '0', ...$extra];
+    if ($kind === '--menu') {
+        $command[] = '--notags';
+    }
+    [$status, $value] = TerminalDialog::run($command);
+    if ($status === 75) {
+        // Rebuild at the new size; committed draft values remain in the caller.
+        return editorDialog($kind, $text, $extra, $title);
+    }
+    return $status === 0 ? $value : null;
 }
 
 function editorText(string $value): string
@@ -56,7 +88,8 @@ try {
             $display = PrivateConfigSchema::formatValue($key, $value);
             $source = array_key_exists($key, $draft) ? 'draft' : $resolved[$key]['source'];
             $entries[] = $key;
-            $entries[] = editorText($display . ' (' . $source . (in_array($key, $locked, true) ? '; locked' : '') . ')');
+            $label = ucfirst(strtolower(str_replace('_', ' ', substr($key, 4))));
+            $entries[] = editorText($label . ' (' . $source . (in_array($key, $locked, true) ? '; locked' : '') . '): ' . $display);
         }
         $entries = [...$entries, 'preset', 'Apply provider preset', 'review', 'Review changes'];
         $choice = editorDialog('--menu', '', ['8', ...$entries, '--default-item', $selection]);

@@ -76,9 +76,9 @@ refresh_home() {
     home_observed="$(date -u '+%H:%M:%S UTC')"
     home_freshness="Observed: $home_observed"
   else
-    home_freshness="Status: unavailable; refresh or inspect ./v3 status"
+    home_freshness="Status: unavailable; refresh to retry"
     if [[ -n "${home_observed:-}" ]]; then
-      home_freshness+=" (last observation: $home_observed; stale)"
+      home_freshness="Observed: $home_observed (stale); refresh failed"
     fi
   fi
   printf '\r\033[K'
@@ -90,6 +90,7 @@ show_command_launcher() {
   local choice entered key description search_text
   local -a entries
   while true; do
+    terminal_ready || return 0
     entries=(search 'Search')
     for key in status task-queue fast-score; do
       case "$key" in
@@ -104,12 +105,21 @@ show_command_launcher() {
     done
     local prompt="${chooser_filter:+Search: $chooser_filter}"
     (( ${#entries[@]} > 2 )) || prompt+=$'\nNo matches. Change or clear Search.'
-    choice="$("${whiptail_bin}" --title 'Read-only commands' --default-item "$chooser_selection" \
-      --menu "$prompt" 0 0 5 "${entries[@]}" 3>&1 1>&2 2>&3)" || return 0
+    local width=$((tui_cols - 12))
+    if (( ${#prompt} > width )); then
+      prompt="${prompt:0:width}…"
+      (( ${#entries[@]} > 2 )) || prompt+=$'\nNo matches. Change Search.'
+    fi
+    choice="$(tui_dialog --title 'Read-only commands' --default-item "$chooser_selection" \
+      --menu "$prompt" 0 0 5 "${entries[@]}" 3>&1 1>&2 2>&3)" || {
+      local result=$?
+      (( result == 75 )) && continue
+      return 0
+    }
     chooser_selection="$choice"
     case "$choice" in
       search)
-        entered="$("${whiptail_bin}" --inputbox 'Search' 0 0 "$chooser_filter" 3>&1 1>&2 2>&3)" || continue
+        entered="$(tui_dialog --inputbox 'Search' 0 0 "$chooser_filter" 3>&1 1>&2 2>&3)" || continue
         chooser_filter="$entered"
         ;;
       status) show_command_output 'Operator status' "${root}/v3" status ;;
@@ -117,4 +127,30 @@ show_command_launcher() {
       fast-score) show_command_output 'Fastmod status' "${root}/v3" fast-score status ;;
     esac
   done
+}
+
+terminal_ready() {
+  local answer
+  while true; do
+    read -r tui_rows tui_cols < <(stty size)
+    if (( tui_rows >= 18 && tui_cols >= 50 )); then
+      return 0
+    fi
+    printf '\nResize to at least 50 columns × 18 rows. Enter: retry · q: return\nCLI: ./v3 status\n'
+    read -r answer || return 1
+    [[ "$answer" != q ]] || return 1
+  done
+}
+
+compact_home() {
+  local line width=$((tui_cols - 10))
+  while IFS= read -r line; do
+    if (( ${#line} > width )); then line="${line:0:width-1}…"; fi
+    printf '%s\n' "$line"
+  done <<< "$home_status
+$home_freshness"
+}
+
+tui_dialog() {
+  php "${root}/scripts/terminal_dialog.php" "$@"
 }

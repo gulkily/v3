@@ -24,7 +24,8 @@ esac
     fake.chmod(0o700)
     result = subprocess.run(['bash', '-c', '''
 source scripts/terminal_operator_ui_lib.sh
-whiptail_bin="$CASE_DIR/whiptail"; root="$PWD"
+export V3_TUI_WHIPTAIL="$CASE_DIR/whiptail"; root="$PWD"
+terminal_ready() { tui_rows=24; tui_cols=80; }
 show_command_output() { printf '%s\\n' "$*" >> "$CASE_DIR/run"; }
 show_command_launcher
 [[ "$chooser_filter" == QUEUE && "$chooser_selection" == task-queue ]]
