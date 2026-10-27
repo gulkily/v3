@@ -53,6 +53,7 @@ use ForumRewrite\Qdb\QdbExperience;
 use ForumRewrite\Qdb\QdbExperienceRouteResult;
 use ForumRewrite\Qdb\QdbBoardPolicy;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
+use ForumRewrite\Security\SignatureCheckCache;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -110,6 +111,7 @@ final class Application
         private readonly bool $allowReadModelRebuild = true,
         private readonly bool $requireCurrentReadModel = true,
     ) {
+        SignatureCheckCache::useBeside($databasePath);
     }
 
     /**

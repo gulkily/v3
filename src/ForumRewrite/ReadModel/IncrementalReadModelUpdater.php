@@ -13,6 +13,7 @@ use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\Canonical\ThreadSubjectRecord;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
+use ForumRewrite\Security\SignatureCheckCache;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\TagScore;
 use PDO;
@@ -37,6 +38,7 @@ class IncrementalReadModelUpdater
         private readonly string $databasePath,
         private readonly string $repositoryRoot,
     ) {
+        SignatureCheckCache::useBeside($databasePath);
     }
 
     private function qdbVoteScoringPolicy(): ?QdbVoteScoringPolicy

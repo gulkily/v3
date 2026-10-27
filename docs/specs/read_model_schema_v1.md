@@ -364,6 +364,13 @@ Activity rows for posts, labels and reactions carry the same markers, so an
 uncounted item renders its claimed name unlinked with `(unsigned)` in cards,
 Activity and record details.
 
+Signature checks behind these markers are saved in `signature_checks.sqlite3`
+beside the read model, outside its schema, so rebuilds and later requests do
+not run GPG again for the same record. Each row is a SHA-256 of the record,
+signature, public key and fingerprint; only successful checks are kept. The
+file is derived and safe to delete, and an unusable file falls back to running
+GPG.
+
 ## Operator retraction attribution
 
 Schema version 18 adds nullable `retraction_class` to `posts` and `threads`.

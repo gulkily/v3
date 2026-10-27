@@ -14,6 +14,7 @@ use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\ThreadLabelRecord;
 use ForumRewrite\Canonical\ThreadSubjectRecord;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
+use ForumRewrite\Security\SignatureCheckCache;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\TagScore;
 use PDO;
@@ -49,6 +50,7 @@ final class ReadModelBuilder
         private readonly ?\Closure $progressReporter = null,
         private readonly array $publicationExclusions = [],
     ) {
+        SignatureCheckCache::useBeside($databasePath);
     }
 
     public function rebuild(): void
