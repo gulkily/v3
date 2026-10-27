@@ -79,6 +79,7 @@ final class ContentImportRunner
                     ];
                     $run['report']['review_path'] = $directory;
                     $this->save($pending, $run);
+                    $this->at('prepared');
                 }
                 $directory = $this->stateRoot . '/' . $run['id'];
                 $message = 'Import instance content (' . $run['id'] . ')';
@@ -109,7 +110,14 @@ final class ContentImportRunner
                                 }
                                 $this->directory(dirname($target), 0777);
                                 $temporary = $this->stateRoot . '/copy.tmp';
-                                if (!copy($saved, $temporary) || !rename($temporary, $target)) {
+                                if (stat(dirname($target))['dev'] !== stat($this->stateRoot)['dev']) {
+                                    throw new RuntimeException('Atomic import requires records and .git on the same filesystem: ' . $path);
+                                }
+                                if (!copy($saved, $temporary) || hash_file('sha256', $temporary) !== $hash) {
+                                    throw new RuntimeException('Unable to prepare complete import record: ' . $path);
+                                }
+                                $this->at('copy_prepared', $path);
+                                if (!rename($temporary, $target)) {
                                     throw new RuntimeException('Unable to install import record: ' . $path);
                                 }
                             }

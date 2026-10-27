@@ -26,6 +26,16 @@ final class HighTrafficCache
         }, array_keys($defaults), array_values($defaults));
         $this->limits = array_combine(array_keys($defaults), $this->limits);
     }
+    private function currentBackupPolicyPage(string $route): ?string
+    {
+        $path = $this->path($route);
+        if (!is_file($path)) return null;
+        $html = file_get_contents($path);
+        return is_string($html) && \ForumRewrite\Support\FeatureFlags\BackupAvailability::matchesHtml(
+            $html, \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+        ) ? $html : null;
+    }
+
     public function initialize(): void
     {
         foreach (['', '/pages', '/locks', '/hints'] as $part) {
@@ -76,11 +86,11 @@ final class HighTrafficCache
         try {
             $this->progress('Acquiring page lock (wait up to ' . $this->limits['wait_ms'] . ' ms)');
             while (!flock($page, LOCK_EX | LOCK_NB)) {
-                if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
+                if (!$force && ($cached = $this->currentBackupPolicyPage($route)) !== null) return $cached;
                 if (microtime(true) >= $deadline) return $this->refuseGeneration('Page generation is already running for ' . $route . '; retry after it finishes.');
                 usleep(10000);
             }
-            if (!$force && is_file($this->path($route))) return file_get_contents($this->path($route)) ?: null;
+            if (!$force && ($cached = $this->currentBackupPolicyPage($route)) !== null) return $cached;
             $this->progress('Checking active mode under publication lock');
             $token = \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, fn () => $this->state());
             if (!$this->enabled()) return $this->refuseGeneration('High-traffic mode is inactive or its profile/public-root link does not match; run ./v3 high-traffic status.');

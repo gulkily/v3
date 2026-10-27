@@ -21,15 +21,19 @@
   </article>
   <article class="card">
     <h2>Downloads</h2>
+<?php if ($downloads === [] && !($imageBackupAvailable ?? false)): ?>
+    <p>Backups are unavailable.</p>
+<?php else: ?>
     <ul>
 <?php foreach ($downloads as $download): ?>
       <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a><?php if ($download['href'] === '/downloads/read_model.sqlite3'): ?> <span class="meta">(may be out of date)</span><?php endif; ?></li>
 <?php endforeach; ?>
 <?php if ($imageBackupAvailable ?? false): ?>
-      <li><a href="<?= $e($imageBackupHref) ?>">Images (.zip)</a> <span class="meta">Match the content revision.</span></li>
+      <li><a href="<?= $e($imageBackupHref) ?>">Images (.zip)</a> <span class="meta"><?php if ($textBackupEnabled ?? true): ?>Match the content revision.<?php else: ?>Restoring images requires a matching content backup. Text downloads are disabled here.<?php endif; ?></span></li>
 <?php endif; ?>
     </ul>
     <p class="meta">Public content only; not a full site backup.</p>
+<?php endif; ?>
   </article>
   <article class="card">
     <h2>Recent included items</h2>

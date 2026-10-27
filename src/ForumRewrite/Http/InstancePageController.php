@@ -7,6 +7,8 @@ namespace ForumRewrite\Http;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Tools\ToolsPageSupport;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use PDO;
 use RuntimeException;
 
@@ -41,7 +43,7 @@ final class InstancePageController
     public function renderBackup(): string
     {
         $imageStore = new \ForumRewrite\Images\ImageStore($this->repositoryRoot);
-        $imageBackupAvailable = is_dir($imageStore->root) || \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
+        $imageBackupAvailable = $this->backupEnabled(FeatureFlagRegistry::IMAGE_BACKUP_ENABLED) && (is_dir($imageStore->root) || \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED));
         $revision = ReadModelMetadata::repositoryHead($this->repositoryRoot);
         $revisionQuery = $imageBackupAvailable ? '?revision=' . rawurlencode($revision) : '';
         return $this->routeServices->renderPageTemplate(
@@ -53,7 +55,7 @@ final class InstancePageController
                 'admins' => ToolsPageSupport::fetchSeedApprovedUsers($this->routeServices->pdo()),
                 'backupSnapshot' => $this->fetchBackupSnapshot(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('backup'),
-                'downloads' => [
+                'downloads' => $this->backupEnabled(FeatureFlagRegistry::TEXT_BACKUP_ENABLED) ? [
                     [
                         'href' => '/downloads/repository.tar.gz' . $revisionQuery,
                         'label' => 'Content (.tar.gz)',
@@ -66,7 +68,7 @@ final class InstancePageController
                         'href' => '/downloads/read_model.sqlite3',
                         'label' => 'SQLite index (.sqlite3)',
                     ],
-                ],
+                ] : [],
             ],
             'Backup',
             'tools',
@@ -86,6 +88,7 @@ final class InstancePageController
     public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null, string $imageFormat = 'zip'): void
     {
         if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
+        if (!$this->allowBackup($kind === 'images' ? FeatureFlagRegistry::IMAGE_BACKUP_ENABLED : FeatureFlagRegistry::TEXT_BACKUP_ENABLED)) { return; }
         try {
             $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision, $imageFormat);
         } catch (\ForumRewrite\Images\ArchiveBusyException $error) {
@@ -114,6 +117,8 @@ final class InstancePageController
             $this->routeServices->sendHtml($this->methodNotAllowedPage(), 405);
             return;
         }
+
+        if (!$this->allowBackup(FeatureFlagRegistry::TEXT_BACKUP_ENABLED)) { return; }
 
         if (!is_file($this->databasePath)) {
             $this->routeServices->sendHtml(
@@ -175,6 +180,18 @@ final class InstancePageController
         $stmt->execute(['name' => $table]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    private function backupEnabled(string $flag): bool
+    {
+        return FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled($flag);
+    }
+
+    private function allowBackup(string $flag): bool
+    {
+        if ($this->backupEnabled($flag)) { return true; }
+        $this->routeServices->sendText("Backup unavailable.\n", 403, ['Cache-Control: private, no-store']);
+        return false;
     }
 
     private function methodNotAllowedPage(): string
