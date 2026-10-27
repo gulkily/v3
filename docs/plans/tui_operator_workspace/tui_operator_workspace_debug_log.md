@@ -42,3 +42,27 @@ No supported findings.
 
 ## Inapplicable instructions
 - Database change and documentation-only contracts do not apply: this approved scope is a TUI application change with no schema modification.
+
+Timestamp: 2026-10-27 UTC
+Step: 4
+
+## Necessary/useful instructions
+- Step 4 Before, Planning Docs Commit Gate, and Do, Stage Boundary Protocol: planning commit fc951e144 precedes the summary/application work; six separate stage commits each contain their summary updates. This kept unrelated ledger bookkeeping out of the planning commit and preserved reviewable stage boundaries. Retain these gates.
+- Step 4 Do, Completion Contract, and After, Final Verification Checklist: real WSL keyboard journeys exposed newt's clipped buttons on live resize, missed by initial-at-size fixtures. Shared dialog recreation and scrolling review were verified through the actual ./v3 tui entry. Retain normal-entry/recovery evidence and explicit remote limits.
+- RAILSPIKE.md, Experimental Effort Estimation: preserved the original 0.75 projection and S6 0.14 estimate, then recorded prospective 0.85/0.20 revisions before the resize correction and separate 0.85/0.22 retrospectives. Retain the distinction between new understanding, scope, and measured labor.
+
+## Redundant/unnecessary instructions
+No supported findings.
+
+## Inapplicable instructions
+- Database migration and browser theme/icon verification: no schema or web UI changes. Terminal resize/keyboard acceptance and existing configuration/CLI checks are the applicable evidence.
+
+## Uncertain assessments
+- Step 3's approximate 50-line stage target did not predict the amount of regression/PTY coverage required for a single terminal workflow. Stage scope remained bounded, but the final stage includes shared resize supervision and acceptance fixtures. Prefer sizing by recovery boundary and actual verification obligations rather than line counts.
+
+## Final handoff
+Planning commit: fc951e144
+Stage commits: S1 bb6109593; S2 5c2cf14d8; S3 f3125f4ff; S4 5ce25b1e5; S5 6326e9ac5; S6 07aeb2787
+Cadence: One planning plus six stage commits, each stage with its summary; closeout ledger/copy audit included in S6. This final log-only commit follows the prescribed handoff allowance.
+Verification: Focused PHP 37/37, final terminal subset 4/4, five Python terminal/config suites, shell/PHP syntax, artifact links and diff checks passed. Actual WSL whiptail normal flows, live resize and long review verified. Early descriptor/test synchronization failures were corrected; no baseline failure remains in the scoped checks.
+Limits: Actual remote SSH, physical-device terminals, full suite, deployment, merge/push and maintainer comfortable-fit/acceptance remain unverified or pending. SSH-style PTY evidence is not remote acceptance. Dependency delta zero; no measured labor or accepted-count change.
