@@ -480,3 +480,14 @@ the viewer-tag projection and hot-path indexes from the image-backup branch
 ancestry. The new identity forces existing models from either branch to rebuild.
 Startup regression coverage includes a version 29 model without `viewer_tags`,
 with the repository revision unchanged.
+
+### Public identity history queries (schema version 31)
+
+`AuthoredContentRepository::visibleIdentityPage` returns at most 100 rows
+(default 50), newest creation time first with descending post ID as the stable
+ tie-breaker. Both threads and posts use these authored-post keys. Position
+boundaries contain `created_at` and `post_id`, never transient SQLite row IDs.
+Counts and page/existence queries share `identityEligibility`; existing username
+aggregate interfaces retain their previous behavior. A deleted boundary remains
+usable through key comparisons. An empty positioned list offers first-page
+recovery and a return direction when eligible rows remain.

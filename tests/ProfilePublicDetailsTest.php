@@ -105,4 +105,65 @@ final class ProfilePublicDetailsTest
             assertStringNotContains('data-copy-public-key', $html);
         } finally { @unlink($database); }
     }
+    public function testIdentityPagesTraverseTiesAndReturnAfterDeletionAndArrival(): void
+    {
+        [$app, $pdo, $database] = $this->environment();
+        try {
+            for ($i = 0; $i < 105; $i++) $this->contribution($pdo, sprintf('page-%03d', $i), 'openpgp:paging');
+            $first = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts');
+            $second = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'next', 'boundary' => $first['next']]);
+            $third = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'next', 'boundary' => $second['next']]);
+            $ids = array_merge(array_column($first['items'], 'post_id'), array_column($second['items'], 'post_id'), array_column($third['items'], 'post_id'));
+            assertSame(105, count(array_unique($ids)));
+            assertSame(105, AuthoredContentRepository::countVisibleIdentity($pdo, 'openpgp:paging', 'posts'));
+            assertSame(null, $first['previous']); assertSame(null, $third['next']);
+            $back = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'previous', 'boundary' => $second['previous']]);
+            assertSame(array_column($first['items'], 'post_id'), array_column($back['items'], 'post_id'));
+            $this->contribution($pdo, 'new-arrival', 'openpgp:paging', ['created_at' => '2099-01-01T00:00:00Z']);
+            $pdo->prepare('DELETE FROM posts WHERE post_id=?')->execute([$first['next']['post_id']]);
+            $after = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'next', 'boundary' => $first['next']]);
+            assertSame(array_column($second['items'], 'post_id'), array_column($after['items'], 'post_id'));
+            assertSame(100, count(AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', null, 9999)['items']));
+        } finally { @unlink($database); }
+    }
+
+    public function testNormalProfileHistoryIsUnapprovedIdentityScopedWithIndependentRecovery(): void
+    {
+        [$app, $pdo, $database] = $this->environment();
+        try {
+            $profile = $pdo->query('SELECT * FROM profiles LIMIT 1')->fetch();
+            $pdo->exec('UPDATE profiles SET is_approved=0');
+            $pdo->exec('UPDATE posts SET author_identity_id=NULL');
+            for ($i = 0; $i < 55; $i++) $this->contribution($pdo, sprintf('own-%03d', $i), $profile['identity_id']);
+            $this->contribution($pdo, 'excluded-other-author', 'openpgp:another');
+            $this->contribution($pdo, 'excluded-hidden', $profile['identity_id'], ['is_hidden' => 1]);
+            $url = '/profiles/' . $profile['profile_slug'];
+            $first = $this->render($app, $url);
+            assertStringContains('<strong>Posts:</strong> 55', $first);
+            assertStringContains('<strong>Threads:</strong> 55', $first);
+            assertStringNotContains('excluded-other-author', $first);
+            assertStringNotContains('excluded-hidden', $first);
+            preg_match_all('/rel="next" href="([^"]+)"/', $first, $matches);
+            assertSame(2, count($matches[1]));
+            $secondUrl = html_entity_decode($matches[1][0], ENT_QUOTES);
+            $second = $this->render($app, $secondUrl);
+            assertStringContains('/threads/own-004', $second);
+            assertStringNotContains('/threads/own-054', $second);
+            assertStringContains('/posts/own-054', $second);
+            preg_match('/rel="next" href="([^"]*posts_position[^"]+)"/', $second, $next);
+            assertStringContains('threads_position=', html_entity_decode($next[1], ENT_QUOTES));
+            $invalid = $this->render($app, $url . '?threads_position[]=bad');
+            assertStringContains('This page position is invalid.', $invalid);
+            assertStringContains('First page', $invalid);
+            assertStringContains('/posts/own-054', $invalid);
+            $wrong = \ForumRewrite\Pagination\PageNavigation::encode('profile:other:threads:created:desc', 'next', ['created_at' => '2026', 'post_id' => 'x']);
+            assertStringContains('This page position is invalid.', $this->render($app, $url . '?threads_position=' . $wrong));
+            $pdo->exec("DELETE FROM posts WHERE post_id <= 'own-004'");
+            $empty = $this->render($app, $secondUrl);
+            assertStringContains('No visible threads.', $empty);
+            assertStringContains('First page', $empty);
+            assertStringContains('>Previous</a>', $empty);
+        } finally { @unlink($database); }
+    }
+
 }

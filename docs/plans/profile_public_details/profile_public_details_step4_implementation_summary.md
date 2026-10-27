@@ -40,3 +40,14 @@ Dependencies: No additions or updates authorized or planned.
 - Notes: Stage 1 commit 7cbdd8163. Full theme acceptance remains Stage 5. Original scope/estimate unchanged; no dependencies or measured labor.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 3 - Bounded profile history and recovery
+
+**Original estimate: 0.22**
+**Retrospective stage work: 0.22**
+
+- Changes: Bounded exact-identity histories, full matching totals, stable creation-time/post-ID order and independent thread/post positions. ProfileHistoryView composes existing PageNavigation with optional position parameter names; shared navigation gains optional accessible labels. Invalid positions and empty histories offer recovery. Existing aggregate interfaces preserved.
+- Verification: ProfilePublicDetailsTest 5/5, including tied-time traversal, arrivals/deletions, backward traversal, limit cap, unapproved normal-route counts, separate list navigation, malformed/cross-identity positions and deleted-page recovery. Earlier shared Activity/UserAccess checks 19/19 passed after shared pagination changes.
+- Notes: Stage 2 commit 820fed58d. No new table/index; query changes covered by schema 31. Host/static query handling is next. Original estimate/scope unchanged, no dependencies or measured labor.
+
+*— Codex · 2026-10-27 UTC*

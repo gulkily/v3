@@ -36,10 +36,33 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 <?php endif; ?>
     </p>
 <?php endif; ?>
-    <p><strong>Threads:</strong> <?= (int) $profile['thread_count'] ?></p>
-    <p><strong>Posts:</strong> <?= (int) $profile['post_count'] ?></p>
-    <p><a href="/user/<?= $e($profile['username_token']) ?>">Member activity</a></p>
+    <p><strong>Threads:</strong> <?= (int) $profileHistory['threads']['total'] ?></p>
+    <p><strong>Posts:</strong> <?= (int) $profileHistory['posts']['total'] ?></p>
+    <p><a href="/user/<?= $e($profile['username_token']) ?>">User <?= $e($profile['username_token']) ?></a></p>
     <p id="account-keys"><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>#account-keys">User Access</a></p>
 <?= $indent($partial('partials/public_key.php', ['publicKey' => (string) $profile['public_key']]), 2) ?>
   </article>
+<?php foreach (['threads' => 'Threads', 'posts' => 'Posts'] as $kind => $label): ?>
+  <article class="card" id="<?= $e($kind) ?>">
+    <h2><?= $e($label) ?></h2>
+<?php $history = $profileHistory[$kind]; ?>
+<?php if ($history['error'] !== null): ?>
+    <p role="alert"><?= $e($history['error']) ?></p>
+<?php elseif ($history['items'] === []): ?>
+    <p>No visible <?= $e($kind) ?>.</p>
+<?php else: ?>
+<?php foreach ($history['items'] as $item): ?>
+    <article class="card">
+<?php if ($kind === 'threads'): ?>
+      <h3><a href="/threads/<?= $e($item['post_id']) ?>"><?= $e($threadTitle($item)) ?></a></h3>
+<?php else: ?>
+      <p><a href="/posts/<?= $e($item['post_id']) ?>"><?= $e($item['post_id']) ?></a></p>
+<?php endif; ?>
+      <p class="meta"><?= $contentMeta($item, 'created_at', '') ?></p>
+    </article>
+<?php endforeach; ?>
+<?php endif; ?>
+<?= $indent($partial('partials/page_navigation.php', ['pagination' => $history['pagination'], 'paginationLabel' => $label . ' pagination']), 2) ?>
+  </article>
+<?php endforeach; ?>
 </section>
