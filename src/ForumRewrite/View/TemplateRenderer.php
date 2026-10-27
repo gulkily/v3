@@ -588,6 +588,10 @@ final class TemplateRenderer
             $authorLabel = 'guest';
         }
 
+        if (((int) ($record['attribution_counted'] ?? 1)) === 0) {
+            return $escape($authorLabel) . ' <span class="meta">(unsigned)</span>';
+        }
+
         $authorProfileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
         $authorUsernameToken = trim((string) ($record['author_username_token'] ?? ''));
         $authorIsApproved = ((int) ($record['author_is_approved'] ?? 0)) === 1;

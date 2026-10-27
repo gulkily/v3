@@ -7,6 +7,7 @@ namespace ForumRewrite\Write;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\AcceptedRetraction;
+use ForumRewrite\Canonical\AttributionCutoffRecordParser;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
@@ -35,6 +36,8 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\ApprovalPolicy;
+use ForumRewrite\Security\AttributionCutoff;
+use ForumRewrite\ReadModel\VerifiedAttribution;
 use ForumRewrite\Security\ApprovalAcceptance;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
@@ -155,11 +158,12 @@ class LocalWriteService
 
     /**
      * @param array<string, mixed> $input
+     * @param (callable(string): string)|null $signer returns a detached signature of the record by its author
      * @return array<string, string>
      */
-    public function createReply(array $input, ?array $agentResponse = null, ?callable $beforeWrite = null): array
+    public function createReply(array $input, ?array $agentResponse = null, ?callable $beforeWrite = null, ?callable $signer = null): array
     {
-        return $this->withTimedWriteLock(function () use ($input, $agentResponse, $beforeWrite): array {
+        return $this->withTimedWriteLock(function () use ($input, $agentResponse, $beforeWrite, $signer): array {
             $this->assertWritableRepository();
             if ($beforeWrite !== null) { $beforeWrite(); }
             $timings = [];
@@ -184,9 +188,10 @@ class LocalWriteService
                 if (($existing->agentResponse['expansion_of'] ?? null) !== $parentId || $existing->authorIdentityId !== $authorIdentityId) {
                     throw new RuntimeException('Expansion publication identity conflict.');
                 }
-                $dirty = trim($this->runGitCommand(['status', '--porcelain', '--', $existingPath], 'Unable to inspect expansion publication'));
+                $recoverPaths = is_file($this->repositoryRoot . '/' . $existingPath . '.asc') ? [$existingPath, $existingPath . '.asc'] : [$existingPath];
+                $dirty = trim($this->runGitCommand(['status', '--porcelain', '--', ...$recoverPaths], 'Unable to inspect expansion publication'));
                 $head = $dirty !== ''
-                    ? $this->commitCanonicalWrite([$existingPath], 'Recover expansion ' . $postId)['commit_sha']
+                    ? $this->commitCanonicalWrite($recoverPaths, 'Recover expansion ' . $postId)['commit_sha']
                     : trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
                 $this->refreshDerivedStateAfterCommit($head);
                 $this->invalidator()->invalidateReply($threadId, $postId);
@@ -200,15 +205,30 @@ class LocalWriteService
                 ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
+            $signature = null;
+            if ($signer !== null) {
+                if ($authorIdentityId === null) {
+                    throw new RuntimeException('A signed reply needs author_identity_id.');
+                }
+                $signature = $this->normalizeAsciiBody((string) $signer($contents), 'detached_signature');
+                [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
+                $verification = $this->signatureVerifier->verifyDetached($publicKey, $contents, $signature, $expectedFingerprint);
+                if (!$verification['ok']) {
+                    throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+                }
+            }
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
+            if ($signature !== null) {
+                $this->writeFile($recordPath . '.asc', $signature);
+            }
             if ($threadLabels !== []) {
                 [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $phaseStartedAt = hrtime(true);
-            $writtenPaths = [$recordPath];
+            $writtenPaths = $signature !== null ? [$recordPath, $recordPath . '.asc'] : [$recordPath];
             if ($labelRecordPath !== null) {
                 $writtenPaths[] = $labelRecordPath;
             }
@@ -2367,6 +2387,93 @@ class LocalWriteService
                 'wrote_record' => 'yes', 'record_id' => $recordId, 'record_path' => $recordPath,
                 'signature_path' => $recordPath . '.asc', 'operator_identity_id' => $operatorIdentityId,
                 'commit_sha' => $commitSha, 'timings' => $commitResult['timings'],
+            ] + ($action->flagKey === FeatureFlagRegistry::VERIFIED_ATTRIBUTION
+                ? ['attribution_cutoff_at' => AttributionCutoff::resolve($this->repositoryRoot)['cutoff_at'] ?? '']
+                : []);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareAttributionCutoff(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
+                throw new RuntimeException('Moving the attribution cutoff requires an approved operator identity.');
+            }
+            $cutoffAt = $this->requireAttributionCutoffAt((string) ($input['cutoff_at'] ?? ''));
+            $recordId = $this->generateRecordId('attribution-cutoff');
+            $canonicalRecord = $this->buildAttributionCutoffRecord($recordId, $this->canonicalTimestampNow(), $cutoffAt, $operatorIdentityId);
+            $recordPath = CanonicalPathResolver::attributionCutoff($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $canonicalRecord, [
+                'kind' => 'attribution-cutoff', 'record_id' => $recordId, 'operator_identity_id' => $operatorIdentityId,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok', 'record_id' => $recordId,
+                'record_path' => $recordPath, 'canonical_record' => $canonicalRecord,
+            ]);
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedAttributionCutoff(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'attribution-cutoff' || strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared attribution cutoff is invalid or expired.');
+            }
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')
+                || !$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
+                throw new RuntimeException('Moving the attribution cutoff requires an approved operator identity.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) ($prepared['canonical_sha256'] ?? '')) {
+                throw new RuntimeException('Prepared attribution cutoff canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $recordId = $this->requirePreparedMatch($input, $prepared, 'record_id');
+            $record = (new AttributionCutoffRecordParser())->parse($canonicalRecord);
+            if ($record->recordId !== $recordId || CanonicalPathResolver::attributionCutoff($recordId) !== $recordPath
+                || $record->operatorIdentityId !== $operatorIdentityId) {
+                throw new RuntimeException('Prepared attribution cutoff does not match its canonical record.');
+            }
+            if (is_file($this->repositoryRoot . '/' . $recordPath)) {
+                throw new RuntimeException('Attribution cutoff record already exists.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $commitResult = $this->commitCanonicalWrite(
+                [$recordPath, $recordPath . '.asc'],
+                'Move attribution cutoff to ' . $record->cutoffAt . ' by ' . $operatorIdentityId
+            );
+            $this->syncReadModelAfterAttributionCutoffWrite($commitResult['commit_sha']);
+            $this->invalidator()->invalidateFeatureFlags();
+            $this->deletePreparedPost($prepareToken);
+
+            return [
+                'status' => 'ok', 'attribution_cutoff_at' => $record->cutoffAt,
+                'record_id' => $recordId, 'record_path' => $recordPath, 'signature_path' => $recordPath . '.asc',
+                'operator_identity_id' => $operatorIdentityId, 'commit_sha' => $commitResult['commit_sha'],
+                'timings' => $commitResult['timings'],
             ];
         });
     }
@@ -2815,6 +2922,12 @@ class LocalWriteService
         return (new ReadModelConnection($this->databasePath))->open();
     }
 
+    /** Verified totals depend on the cutoff throughout, so a moved cutoff rebuilds them. */
+    private function syncReadModelAfterAttributionCutoffWrite(string $commitSha): void
+    {
+        $this->refreshDerivedStateAfterCommit($commitSha);
+    }
+
     private function syncReadModelAfterFeatureFlagWrite(
         string $key,
         bool $value,
@@ -2825,7 +2938,12 @@ class LocalWriteService
         ?string $createdAt = null,
     ): void
     {
-        if (!$this->canIncrementallyUpdateReadModel()) {
+        $cutoffChanged = false;
+        if ($key === FeatureFlagRegistry::VERIFIED_ATTRIBUTION && $this->canIncrementallyUpdateReadModel()) {
+            // The first switch-on sets the cutoff, which verified totals depend on.
+            $cutoffChanged = VerifiedAttribution::storedCutoff($this->readModelPdo()) !== VerifiedAttribution::resolveCutoff($this->repositoryRoot);
+        }
+        if ($cutoffChanged || !$this->canIncrementallyUpdateReadModel()) {
             // A rebuild replays feature-flag activity from git history too (see
             // ReadModelBuilder::featureFlagActivityEvents()), so it already covers
             // this write - don't also insert the activity row below, or it would
@@ -2867,6 +2985,9 @@ class LocalWriteService
                 'source_commit_sha' => $commitSha,
             ]);
 
+            if ($key === FeatureFlagRegistry::VERIFIED_ATTRIBUTION) {
+                VerifiedAttribution::apply($pdo, $this->featureFlags->withSiteValues([$key => $value])->isEnabled($key));
+            }
             $this->incrementalReadModelUpdater()->writeMetadata($pdo, $commitSha);
             $pdo->commit();
         } catch (\Throwable $throwable) {
@@ -3619,6 +3740,36 @@ class LocalWriteService
         (new FeatureFlagChangeRecordParser())->parse($contents);
 
         return $contents;
+    }
+
+    private function buildAttributionCutoffRecord(string $recordId, string $createdAt, string $cutoffAt, string $operatorIdentityId): string
+    {
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Cutoff-At: {$cutoffAt}\n"
+            . "Operator-Identity-ID: {$operatorIdentityId}\n\n";
+        (new AttributionCutoffRecordParser())->parse($contents);
+
+        return $contents;
+    }
+
+    /** Accepts RFC 3339 UTC or a browser datetime-local value read as UTC; a cutoff in the future is refused. */
+    private function requireAttributionCutoffAt(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $value) === 1) {
+            $value .= ':00Z';
+        }
+        try {
+            $cutoffAt = AttributionCutoffRecordParser::parseTimestamp($value, 'cutoff_at');
+        } catch (\ForumRewrite\Canonical\CanonicalRecordParseException $exception) {
+            throw new RuntimeException($exception->getMessage());
+        }
+        if ($cutoffAt > $this->canonicalTimestampNow()) {
+            throw new RuntimeException('The attribution cutoff cannot be in the future.');
+        }
+
+        return $cutoffAt;
     }
 
     private function isApprovedIdentity(string $identityId): bool

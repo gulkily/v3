@@ -304,6 +304,8 @@ and repair its navigation and affected references. See the
 
 - [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.
 
+- [Unsigned attribution](./unsigned_attribution/unsigned_attribution_step1_solution_assessment.md) — default-off verified attribution flag: unsigned posts and votes after a cutoff are accepted but don't count.
+
 - [Retraction simplification](./retraction_simplification/retraction_simplification_step3_development_plan.md): approved release-1 implementation plan.
 
 - [Backup feature flags](./backup_feature_flags/backup_feature_flags_step1_solution_assessment.md): independent text and image backup controls.
