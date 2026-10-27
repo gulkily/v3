@@ -465,6 +465,12 @@ Reviewed candidates; decisions and verification are recorded above.
 - Targeted PHP and controlled rendered phone/desktop checks passed as recorded above. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and deployment acceptance remain unverified. Changes remain local; origin has advanced and synchronization is still needed before publication.
 - Two further source observations are collected below for later review.
 
+## App shell navigation (ZenMemes) — October 27, 2026
+
+- Cycle [`ui_shell_navigation`](./ui_shell_navigation/ui_shell_navigation_step4_implementation_summary.md) moved ZenMemes to a new shell; Chouse, QDB and MIT Rap Club headers are unchanged. Copy added: "New post" (one button instead of none in the header), "You" for the account menu trigger (accessible name "You, account menu"), and "Account and more" as the menu's navigation label. No destination label changed; About, Tools, Account, Invite and a members-only Profile link moved into the account menu. Icon mappings updated for Word 97, Chicago and Midnight (Messages, Profile, New post, the account trigger).
+- Verification: placement and render tests for guest, unapproved, approved and members-only viewers; existing markup-sensitive smoke tests unchanged and passing; Chrome checks with JavaScript on and off at 1280px and 390px (every guest destination reachable, New post reaches the composer, theme choice persists); all 13 permitted themes plus Auto reviewed with the menu open. Limitations: signed-in viewer states were checked through server-rendered tests, not in a browser session; no physical device.
+- Follow-up for the Board cycle: the board toolbar still has its own "New Post" control beside the shell's New post.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.

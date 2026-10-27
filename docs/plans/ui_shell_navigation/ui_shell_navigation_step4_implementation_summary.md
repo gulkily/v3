@@ -13,7 +13,8 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - Step 3 approved 2026-10-27 ("Approved Step 3").
 - Entry projection: **0.90 reaffirmed** from the Step 3 handoff; scope v1 / R1 / P2, baseline `83fba59802ce`; Claude single exposed rater; no new inspection since the Step 3 snapshot.
 - Original stage-work estimates copied from the [approved plan](./ui_shell_navigation_step3_development_plan.md) (copying is not a new rating): Stage 1 0.15, Stage 2 0.12, Stage 3 0.10, Stage 4 0.20, Stage 5 0.15, Stage 6 0.15, Stage 7 0.08, Stage 8 0.10.
-- Enhancement requests: none recorded.
+- Enhancement requests:
+  - **2026-10-27 — Pull-only deploys.** Request: "make it automatic. A deploy should never require more than a git pull." Context: pre-built (static) releases are served regardless of which code built them, so a presentation change can show the old header on thread/tag/profile pages until `./v3 build-static` runs (and the documented `--shared-only` fast path keeps them stale). Disposition: **separate work** — it changes static-release validity in the serving path and needs an automatic rebuild trigger, outside this cycle's approved scope. Approval status: user-requested; new cycle to start at Step 1 after this cycle's closeout. Outcome: follow-up cycle (link to be added when created).
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
 
@@ -165,5 +166,41 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
   - Gated: `php tests/run.php InvitationIssuanceTest AppNavigationPlacementTest PrivateMessageFeatureFlagTest` 21/21; baseline header diff identical; `nav_unread_outline` and `nav_active_theme_styles` (16 themes) pass.
 - Notes: Messages had no icon before this cycle either; it is added now because the tab bar shows it.
 - Estimate details: original scope; no revision.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Acceptance and closeout
+
+**Original estimate: 0.10**
+**Retrospective: 0.15**
+
+- Changes:
+  - `docs/plans/ui_copy_audit_checklist.md`: the shell's copy changes, verification and the Board-cycle follow-up recorded.
+  - Effort ledger: cycle row and closeout entry.
+  - Corrective test maintenance (not shell work): five stale assertions that failed on the baseline before this cycle were updated to current behavior. `AgentIdentityServiceTest` reads username and approval state from the access-management profile (`/tools/user-access/profiles/…`), and `ApprovalSeedCommandTest` checks for "Member activity" instead of copy removed in `aa8c3cde2`. In `LocalAppSmokeTest`, the two build-progress tests accept any shared-page total (platform docs pages grew it), and the continuation-merge test matches `<p class="meta"` with the `data-post-byline` attribute.
+- Verification:
+  - Other sites unchanged and switch-back: headers rendered on the baseline commit `83fba5980` and on this branch, for Chouse, QDB, MIT Rap Club and ZenMemes switched to `forum`, each for guest, unapproved and approved viewers with Messages on and off. All 24 are byte-identical.
+  - Guest matrix, Chrome against the local server, JavaScript on and off at 1280px and 390px (touch), on the board, tools, about and users pages with the account menu open: every destination (`/`, `/users/`, `/compose/thread`, `/about/`, `/tools/`, `/account/key/`) visible and linked, no horizontal overflow, no page errors; New post reaches the composer in all four combinations. Screenshots reviewed.
+  - Signed-in states: placement and render tests (`AppNavigationPlacementTest`) plus the browser tests below, which sign in through the app.
+  - Browser tests with `CHROMIUM_PATH=/usr/bin/google-chrome`, all exit 0: `nav_unread_outline`, `nav_active_theme_styles`, `theme_cycle`, `lcd_palettes`, `feature_flags_toolbar`, `media_embed_browser`, `invitation_issuance`, `invite_zero_click`, `private_message_availability`, `private_message_feature_flag`, `private_message_live_navigation`, `private_message_unread_ui`, `board_compose_focus`, `railspike_auth_navigation`, `testing_self_approval`.
+  - Previously failing tests rerun: 12 run, 10 passed. The five tests above now pass, and so do `testFourthProfileFixtureUsesTheSameRuntimeAndSharedStateMatrix` and `PresentationProfileMatrixTest::testListingQueryRoutesAndCodebaseCoverage`, which last failed on 2026-10-20.
+  - Two failures remain, both failing before this cycle: `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` (since 2026-10-18), and `PrivateMessageReleaseIsolationTest::testStaticReleaseAndOfflineSnapshotExcludePrivateMailboxArtifacts` (since 2026-10-20). For the second, a fixture build shows every `private_message_reader` hit is a generated `/docs/` page naming plans such as `private_message_reader_refinement` in text; no application page loads a private-message script.
+  - Baked artifacts: the local server's pre-built tag, thread and profile pages carry the account menu. Production needs the same rebuild; that is the pull-only deploy follow-up above.
+  - Full suite (`php tests/run.php`): **partial, not a full-suite result.** Stopped by agreement after 55 minutes (exit 143) with 712 tests run across 83 classes: 711 passed, 1 failed. It was interrupted during `LocalAppSmokeTest::testFourthProfileFixtureUsesTheSameRuntimeAndSharedStateMatrix`; roughly 700 tests did not run. The one failure, `ImportedContentPublicationTest::testEachPublicationFailureResumesWithoutNewRecords` ("Documentation changed during publication"), was caused by editing this summary while the test built the repository's docs; it was not rerun here. On this branch every static build renders all platform docs pages, so each import and static-build test takes 1–9 minutes; current main publishes docs separately (`./v3 docs publish`). The full suite will be run after merging main (follow-up below).
+- Estimate details: original scope plus the corrective test maintenance and the slow full-suite run; retrospective above the original.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+**Retrospective cycle assessment: 0.95** (separately labeled retrospective scope assessment; not a prospective score or measured effort)
+
+- Delivered scope: v1 as approved. ZenMemes renders the app shell (top bar with Board, Users and Messages, New post, an account menu holding About, Tools, Account, Invite and theme choice; a phone tab bar below 640px; theme hooks; icon-theme icons). Chouse, QDB and MIT Rap Club headers are byte-identical to the baseline, and switching ZenMemes back to `forum` restores today's header.
+- Projections: 0.90 intake, 0.85 Step 1 and Step 2, 0.90 Step 3, 0.90 reaffirmed at Step 4 entry; no in-cycle revision. The retrospective is slightly higher because of the Stage 4 test correction, the Stage 5 browser-test race and the Stage 8 test maintenance and slow suite.
+- Stages: 8 planned, 8 completed. Commits: planning `062c19f4b`; stages `78568bb93`, `a70fb5cbe`, `4ace73ab7`, `650fe55d9` (Stage 4) with its correction `9c2b3c55e`, `60216a806`, `c4d71b1d1`, `00986b74e`, and the Stage 8 commit.
+- Corrective work versus new requests: the Stage 1 test-registration miss, the Stage 4 false pass and the Stage 8 stale baseline tests are corrective. The pull-only deploy request is new work for a separate cycle.
+- Unverified or outside scope: a complete full-suite run (partial only, above); signed-in viewer states in a real browser beyond the browser tests listed in Stage 8; the thread reply panel's reading state on phones; landscape phones; physical devices; per-theme keyboard focus rings; production rebuild and deployment; merging `main`.
+- Follow-up before merge to `main`: merge current `origin/main` (215 commits ahead; a trial merge shows 9 conflicts, all in Railspike and CLI docs, none in shell code), then rerun the full suite, the header comparison, the guest matrix and the navigation browser tests on the merged branch.
+- Maintainer comfortable-fit judgment: **pending.** No study accepted-count increment.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*

@@ -310,7 +310,7 @@ final class ApprovalSeedCommandTest
             assertSame(303, $this->request($root, $db, $public, $static, '/users/pending/', true)['status']);
             assertSame(200, $this->request($root, $db, $public, $static, '/tools/user-access/pending/', true)['status']);
             $profile = $this->request($root, $db, $public, $static, '/profiles/' . str_replace(':', '-', self::ID), true);
-            assertStringContains('This is your profile.', $profile['body']);
+            assertStringContains('Member activity', $profile['body']);
         });
     }
 

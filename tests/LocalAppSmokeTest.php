@@ -307,7 +307,8 @@ final class LocalAppSmokeTest
             assertStringContains('[1/4] Read-model candidate is ready.', $text);
             assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
             assertStringContains('[2/4] Fingerprinting and copying assets referenced by rendered pages...', $text);
-            assertStringContains('[2/4] Rendering shared pages (1/20): /.', $text);
+            // The total grows with the platform docs pages, so match any total.
+            assertTrue(preg_match('#\[2/4\] Rendering shared pages \(1/\d+\): /\.#', $text) === 1, $text);
             assertStringContains('Skipping individual thread and post pages', $text);
             assertStringNotContains('Rendering thread pages', $text);
             assertStringNotContains('Rendering post pages', $text);
@@ -377,7 +378,7 @@ final class LocalAppSmokeTest
                 assertSame(0, $exitCode, $text);
                 assertStringContains('Starting shared static release refresh', $text);
                 assertStringContains('does not rebuild the read model', $text);
-                assertStringContains('[1/2] Rendering shared pages (10/20): /tags/.', $text);
+                assertTrue(preg_match('#\[1/2\] Rendering shared pages \(10/\d+\): /tags/\.#', $text) === 1, $text);
                 assertStringContains('[2/2] Shared static release activated.', $text);
                 assertStringNotContains('Rendering thread pages', $text);
                 assertStringNotContains('Rendering post pages', $text);
@@ -2452,10 +2453,11 @@ PHP;
             preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
             'Expected to find the root card block.'
         );
-        assertStringNotContains('<p class="meta">', $rootBlockMatch[0]);
+        // Bylines carry data-post-byline, so match the class without the closing bracket.
+        assertStringNotContains('<p class="meta"', $rootBlockMatch[0]);
 
         assertTrue(
-            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
+            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta"[^>]*>(.*?)<\/p>/s', $thread, $metaMatch) === 1,
             'Expected to find the run tail (r2) meta line.'
         );
         assertStringContains('2 replies', $metaMatch[1]);
@@ -2469,7 +2471,7 @@ PHP;
         assertStringContains('4 replies', $separate);
         foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
             assertSame(1, preg_match('/<article id="post-cont-merge-' . $suffix . '"[^>]*>(.*?)<\/article>/s', $separate, $card));
-            assertStringContains('<p class="meta">', $card[1]);
+            assertStringContains('<p class="meta"', $card[1]);
             assertStringContains('post-card-actions', $card[1]);
         }
         unlink($flagPath);
