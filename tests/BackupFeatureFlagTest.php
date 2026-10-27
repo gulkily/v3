@@ -13,18 +13,18 @@ final class BackupFeatureFlagTest
     public function testTextDefaultsAndEnvironmentPrecedence(): void
     {
         foreach ([FeatureFlagRegistry::TEXT_BACKUP_ENABLED, FeatureFlagRegistry::IMAGE_BACKUP_ENABLED] as $key) {
-        $previous = getenv($key);
-        try {
-            putenv($key);
-            assertTrue((new FeatureFlagEvaluator())->isEnabled($key));
-            assertSame(false, (new FeatureFlagEvaluator(siteValues: [$key => false]))->isEnabled($key));
-            putenv($key . '=true');
-            $state = (new FeatureFlagEvaluator(siteValues: [$key => false]))->evaluate($key);
-            assertTrue($state->effectiveValue);
-            assertTrue($state->isLocked());
-            assertTrue(in_array($key, PrivateConfigSchema::environmentKeys(), true));
-            assertSame(false, array_key_exists($key, PrivateConfigSchema::templateDefaults()));
-        } finally { putenv($previous === false ? $key : $key . '=' . $previous); }
+            $previous = getenv($key);
+            try {
+                putenv($key);
+                assertTrue((new FeatureFlagEvaluator())->isEnabled($key));
+                assertSame(false, (new FeatureFlagEvaluator(siteValues: [$key => false]))->isEnabled($key));
+                putenv($key . '=true');
+                $state = (new FeatureFlagEvaluator(siteValues: [$key => false]))->evaluate($key);
+                assertTrue($state->effectiveValue);
+                assertTrue($state->isLocked());
+                assertTrue(in_array($key, PrivateConfigSchema::environmentKeys(), true));
+                assertSame(false, array_key_exists($key, PrivateConfigSchema::templateDefaults()));
+            } finally { putenv($previous === false ? $key : $key . '=' . $previous); }
         }
     }
 
@@ -121,10 +121,20 @@ final class BackupFeatureFlagTest
         } finally { fclose($lock); putenv($old === false ? $key : $key . '=' . $old); }
     }
 
-    private function request(ImportTestWorkspace $w, string $root, string $path, bool $text, bool $images = true): string
+    public function testEnabledBackupsStillRequirePrivateSiteAccess(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source', true); $w->git($root);
+        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'] as $path) {
+            $body = $this->request($w, $root, $path, true, true, true);
+            assertStringNotContains('HTTP_STATUS=200', $body);
+            assertStringContains('HTTP_STATUS=403', $body);
+        }
+    }
+
+    private function request(ImportTestWorkspace $w, string $root, string $path, bool $text, bool $images = true, bool $membersOnly = false): string
     {
         $code = 'require $argv[1]."/autoload.php"; http_response_code(200); (new ForumRewrite\\Application($argv[1],$argv[2],$argv[3]))->handle("GET",$argv[4]); fwrite(STDOUT,"\nHTTP_STATUS=".http_response_code());';
-        [$status, $body] = $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=false',
+        [$status, $body] = $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=' . ($membersOnly ? 'true' : 'false'),
             'FORUM_TEXT_BACKUP_ENABLED=' . ($text ? 'true' : 'false'),
             'FORUM_IMAGE_BACKUP_ENABLED=' . ($images ? 'true' : 'false'),
             'FORUM_IMAGE_CONTENT_ENABLED=false',

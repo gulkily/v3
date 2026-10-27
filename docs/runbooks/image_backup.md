@@ -4,7 +4,36 @@ Image support uses one private local store per content instance, outside Git.
 `FORUM_IMAGE_CONTENT_ENABLED` defaults off; a root-approved operator can change it
 from Tools → Feature Flags. Environment overrides take precedence. Disabling it
 stops uploads and image delivery/rendering, but preserves records, bytes and
-access to retained-image backups. Existing downloaded copies cannot be recalled.
+access to retained-image backups when image backups are enabled. Existing downloaded copies cannot be recalled.
+
+## Operator download controls
+
+Tools → Feature Flags → Backups provides two independent, default-enabled controls:
+
+- Text backups: repository `.tar.gz`/`.zip` and SQLite index downloads. Disabling also makes SQLite Viewer and embedded query dialogs unavailable.
+- Image backups: image `.tar` downloads, including retained images when image attachments are disabled.
+
+Environment: `FORUM_TEXT_BACKUP_ENABLED=false` or `FORUM_IMAGE_BACKUP_ENABLED=false`
+locks the respective flag off; `true` locks it on. Without an environment override,
+the saved site flag applies, then the enabled default. These site-mutable flags are
+registered environment settings, deliberately omitted from generated private-config
+templates; private-config file entries do not override them. Use the effective value
+and lock explanation in Feature Flags to identify the controlling source.
+
+Disabled direct downloads return 403 with no attachment. Backup navigation disappears
+when both are disabled; bookmarked pages show unavailability. Re-enable the flag
+(or remove/change its deployment override), reload, and retry the ordinary download.
+No stored content, image bytes or archives are deleted. Already downloaded copies,
+loaded browser data and transfers already underway cannot be recalled. These controls
+do not disable ordinary public reading, offline reading, browser key backup,
+filesystem backups, restore or import.
+
+An image archive alone cannot restore content: retain a matching content archive
+before disabling text downloads. Existing approved-members-only access still applies.
+After changing deployment overrides, reload affected pages and verify one permitted
+and one disabled download; cached HTML with a different backup policy is not reused.
+Existing site-feature writes may retire high-traffic mode under its normal access-change
+policy; review `./v3 high-traffic status` and follow its existing re-enable procedure.
 
 ## Download a complete pair
 

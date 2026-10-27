@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./backup_feature_flags_step1_solution_assessment.md) · [Step 2](./backup_feature_flags_step2_feature_description.md) · [Step 3](./backup_feature_flags_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./backup_feature_flags_step1_solution_assessment.md) · [Step 2](./backup_feature_flags_step2_feature_description.md) · [Step 3](./backup_feature_flags_step3_development_plan.md) · [Step 4](./backup_feature_flags_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/backup_feature_flags; [host ledger](../effort_estimation_trial.md#cycle-v3backup_feature_flags)
