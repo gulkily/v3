@@ -16,6 +16,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [UI shell and navigation](ui_shell_navigation/)
+
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
 - [Reply continuation](reply_continuation/)
