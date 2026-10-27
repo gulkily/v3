@@ -77,3 +77,37 @@ Uncertain assessments: Session/key disagreement is demonstrated; its origin in t
 State: User approved the bounded diagnostic discussed after the plan. Step 3 implementation approval remains pending. No new stage completion or score is inferred; see invite_signing_readiness_reproduction.txt.
 
 *— Codex · 2026-10-27 UTC*
+
+## 2026-10-27 UTC — Step 4 completed handoff
+
+Debug mode: enabled, restored from the Step 4 artifact; no override.
+Approval: Subsequent explicit Approved Step 3 authorized implementation; the earlier diagnostic-only boundary is historical.
+Final implementation revision: 456cada2d on feature/invite-signing-readiness.
+
+### Necessary/useful instructions
+
+Source: step4_implementation_after.md, Final Verification Checklist items 1–4. The four stage commits each contain their summary update; planning commit 554114c2c precedes them and contains only approved planning artifacts/navigation. Five commits satisfy the one-plus-four gate. Real direct-entry, recipient redemption and recovery checks exposed behavior that Account-preconditioned checks missed. Retain the normal-flow completion requirement.
+
+Source: step4_implementation_after.md, Effort estimation and items 6–7. Original projections and separate retrospective assessments remain in the summary and host ledger; acceptance remains pending. Explicitly separating focused verification from full-suite and user-browser outcomes prevents overclaiming this repair. Retain these boundaries.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Schema migration, dependency installation and external-system deployment checks are inapplicable: this cycle changes none and authorizes no deployment. Documentation-only runtime exemptions are inapplicable to this application repair.
+
+### Uncertain assessments
+
+The controlled session/key mismatch and exact Account recovery were reproduced and repaired. The origin of the historical mismatch in the user's browser remains unknown; production and user-device confirmation are pending. Chromium fixture success is not incident telemetry. Retain this distinction.
+
+### Final verification record
+
+Passed: Four stage-scoped commits and summary updates; planning organization/count gate; normal UI issuance, redemption, revocation and recovery; 112 focused PHP checks, Node checks, existing zero-click regression, 160 rendered UI states, syntax and diff checks. Full evidence and limitations are in the Step 4 summary.
+Passed: Scope and study closeout recorded in the final stage commit; no todo.txt edits, dependency changes or schema changes. Unrelated QR review edits remain uncommitted in three planning documents.
+Pending: User-browser/production confirmation and maintainer comfortable-fit judgment. Full suite not run; no full-suite claim. No merge, push or deployment performed.
+Baseline failure: Exact detached-signature rejection twice before Account reconciliation on original code; permanent regression passes after repair in both access modes.
+Handoff: This addition is a separate log-only commit after final stage 456cada2d; completed stage commits are not amended. QR visual follow-up remains outside this reliability cycle.
+
+*— Codex · 2026-10-27 UTC*
