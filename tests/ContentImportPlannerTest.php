@@ -9,6 +9,28 @@ use ForumRewrite\Import\ContentImportPlanner;
 
 final class ContentImportPlannerTest
 {
+    public function testAdversarialChainsAndCyclesHaveBoundedDependencyWork(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source'); $target = $w->repository('target');
+        $count = 4000;
+        for ($i = 0; $i < $count; $i++) {
+            $id = sprintf('p%06d', $i); $next = sprintf('p%06d', $i + 1);
+            $w->put($source . '/records/posts/' . $id . '.txt', $w->post($id, "Thread-ID: {$next}\nParent-ID: {$next}\n"));
+        }
+        foreach (['cycle-a' => 'cycle-b', 'cycle-b' => 'cycle-a'] as $id => $parent) {
+            $w->put($source . '/records/posts/' . $id . '.txt', $w->post($id, "Thread-ID: {$parent}\nParent-ID: {$parent}\n"));
+        }
+        $w->put($source . '/records/posts/diamond.txt', $w->post('diamond', "Thread-ID: p000001\nParent-ID: p000002\n"));
+        $planner = new ContentImportPlanner(); $plan = $planner->plan($source, $target);
+        assertSame('invalid', $plan['records/posts/p000000.txt']['state']);
+        assertSame('records/posts/p003999.txt', $plan['records/posts/p000000.txt']['root_cause']);
+        assertSame('invalid', $plan['records/posts/diamond.txt']['state']);
+        assertSame('import', $plan['records/posts/cycle-a.txt']['state']);
+        assertSame('import', $plan['records/posts/cycle-b.txt']['state']);
+        assertTrue($planner->dependencyVisits() < 10 * count($plan), 'Dependency work must remain linear');
+    }
+
     public function testSignedLabelsKeepTheirClassificationAndFallbackKeys(): void
     {
         foreach ([['.asc'], ['.sig'], ['.asc', '.sig']] as $suffixes) {

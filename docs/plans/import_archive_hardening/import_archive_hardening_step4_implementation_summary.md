@@ -48,3 +48,15 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 - Notes: accepted retraction/removal evidence retains existing 1 MiB restrictions; timestamps retain 4 KiB. No signature repair or byte rewriting. Scope/estimate unchanged.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 4 - Linear dependency rejection
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.20**
+
+- Changes: reverse dependency edges and a work queue replace repeated complete-plan scans. Signature/record coupling and existing state decisions remain; a diagnostic visit counter makes complexity testable without machine-speed assumptions.
+- Verification: planner/recovery 15/15, then strengthened planner 13/13. A 4,000-record reverse chain plus diamond and valid cycle uses fewer than ten visits per entry; deep root cause, valid cycles, conflicts, missing dependencies and signatures retain expected behavior. S3 commit: `99030016`.
+- Notes: initial path order and dependency order remain deterministic; rejection wakes only affected entries. Scope/estimate unchanged.
+
+*— Codex · 2026-10-27 UTC*

@@ -19,6 +19,11 @@ use ForumRewrite\Support\OperationLimitException;
 /** Builds a byte-preserving, additive public-content merge without mutating either repository. */
 final class ContentImportPlanner
 {
+    private int $dependencyVisits = 0;
+
+    /** Diagnostic work counter; enables deterministic complexity regression checks. */
+    public function dependencyVisits(): int { return $this->dependencyVisits; }
+
     public static function files(string $root): array
     {
         $paths = [];
@@ -125,11 +130,27 @@ final class ContentImportPlanner
         foreach ($entries as $path => $entry) {
             if ($entry['key'] !== null) { $byKey[$entry['key']] ??= $path; }
         }
-        // Records and their detached signatures are inseparable on conflicts; then
-        // propagate rejected dependencies to a fixed point (bootstrap cycles are valid).
-        do {
-            $changed = false;
-            foreach ($entries as $path => $entry) {
+        // Each rejected entry wakes only its dependents, rather than rescanning
+        // the entire archive for every link in an adversarially ordered chain.
+        $reverse = [];
+        foreach ($entries as $path => $entry) {
+            foreach ($entry['dependencies'] as $dependency) {
+                if (isset($byKey[$dependency])) $reverse[$byKey[$dependency]][$path] = true;
+            }
+            if (isset($entry['record'])) {
+                $reverse[$entry['record']][$path] = true;
+                $reverse[$path][$entry['record']] = true;
+            }
+        }
+        $queue = new \SplQueue();
+        $queued = [];
+        foreach ($entries as $path => $_) { $queue->enqueue($path); $queued[$path] = true; }
+        $this->dependencyVisits = 0;
+        while (!$queue->isEmpty()) {
+                $path = $queue->dequeue(); unset($queued[$path]);
+                if (!isset($entries[$path])) continue;
+                $entry = $entries[$path];
+                $this->dependencyVisits++;
                 if (!in_array($entry['state'], ['import', 'duplicate'], true)) {
                     continue;
                 }
@@ -137,6 +158,7 @@ final class ContentImportPlanner
                 $blockedBy = null;
                 $state = 'invalid';
                 foreach ($entry['dependencies'] as $dependency) {
+                    $this->dependencyVisits++;
                     $sourcePath = $byKey[$dependency] ?? null;
                     if ($sourcePath !== null) {
                         if (!in_array($entries[$sourcePath]['state'], ['import', 'duplicate'], true)) {
@@ -184,10 +206,11 @@ final class ContentImportPlanner
                         $entries[$path]['blocked_by'] = $blockedBy;
                         $entries[$path]['root_cause'] = $entries[$blockedBy]['root_cause'] ?? $blockedBy;
                     }
-                    $changed = true;
+                    foreach ($reverse[$path] ?? [] as $dependent => $_) {
+                        if (!isset($queued[$dependent])) { $queue->enqueue($dependent); $queued[$dependent] = true; }
+                    }
                 }
-            }
-        } while ($changed);
+        }
         return $entries;
     }
 
