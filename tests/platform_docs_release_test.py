@@ -21,6 +21,10 @@ for name in ["src", "templates", "public", "docs", "scripts"]:
 for name in ["autoload.php", "v3", "README.md", "CONTRIBUTING.md", "AGENTS.md", "BLESSING.md"]:
     shutil.copy2(project / name, package / name)
 shutil.copytree(project / "tests/fixtures/parity_minimal_v1", root / "repository")
+shutil.copy2(project / "tests/fixtures/markdown_table_reader.md", package / "docs/examples/markdown_table_fixture.md")
+shutil.copy2(project / "tests/fixtures/markdown_list_reader.md", package / "docs/examples/markdown_list_fixture.md")
+shutil.copy2(project / "tests/fixtures/markdown_task_reader.md", package / "docs/examples/markdown_task_fixture.md")
+(package / "docs/examples/removed_table_fixture.md").write_text("| A | B |\n| --- | --- |\n| x | y |\n")
 database = root / "read.sqlite3"
 static = root / "static"
 env = dict(os.environ, FORUM_SITE_ID="zenmemes", FORUM_SECRETS_PATH=str(root / "absent.php"),
@@ -73,11 +77,35 @@ try:
         except OSError:
             time.sleep(.1)
     status, dynamic = get(path + "?dynamic=1")
-    assert status == 200 and dynamic.count('aria-label="Table source"') == 4
+    assert status == 200 and dynamic.count('<table>') == 4
     status, generated = get(path)
     assert status == 200 and "route-source: static-html" in generated
     content = lambda html: re.search(r'<article class="card docs-content">(.*?)</article>', html, re.S)[1]
     assert content(dynamic) == content(generated), "Dynamic/generated content differs"
+
+    fixture_path = "/docs/examples/markdown_table_fixture.md"
+    fixture_dynamic = get(fixture_path + "?dynamic=1")[1]
+    fixture_static = get(fixture_path)[1]
+    assert content(fixture_dynamic) == content(fixture_static)
+    assert '<table>' in fixture_static and 'aria-label="Table source"' in fixture_static
+    assert 'href="/docs/reference/v3_cli.md#delete-a-canonical-record"' in fixture_static
+    assert get('/docs/reference/v3_cli.md')[0] == 200
+    assert get('/docs/examples/removed_table_fixture.md')[0] == 200
+    (package / "docs/examples/removed_table_fixture.md").unlink()
+
+    list_path = "/docs/examples/markdown_list_fixture.md"
+    list_dynamic, list_static = get(list_path + "?dynamic=1")[1], get(list_path)[1]
+    assert content(list_dynamic) == content(list_static), "List/fallback publication differs"
+    assert '<ol start="3">' in list_static and '<li value="8">' in list_static
+    assert list_static.count('aria-label="List source"') == 2
+    assert 'class="docs-list-scroll"' in list_static
+
+    task_path = "/docs/examples/markdown_task_fixture.md"
+    task_dynamic, task_static = get(task_path + "?dynamic=1")[1], get(task_path)[1]
+    assert content(task_dynamic) == content(task_static), "Task publication differs"
+    assert task_static.count('<input type="checkbox" disabled') == 5
+    assert task_static.count(' disabled checked') == 3
+    assert get('/docs/_download/docs/examples/markdown_task_fixture.md')[1] == (package / 'docs/examples/markdown_task_fixture.md').read_text()
 
     prior = (static / "current").resolve()
     (prior / artifact).write_text("<h1>STALE DOCS FIXTURE</h1>")
@@ -85,7 +113,10 @@ try:
     build(shared=True)
     recovered = (static / "current").resolve()
     assert recovered != prior
-    assert get(path)[1].count('aria-label="Table source"') == 4 and "STALE DOCS FIXTURE" not in get(path)[1]
+    assert not (recovered / 'docs/examples/removed_table_fixture.md.html').exists()
+    assert not (recovered / 'docs/_download/docs/examples/removed_table_fixture.md.bin').exists()
+    assert get('/docs/examples/removed_table_fixture.md')[0] == 404
+    assert get(path)[1].count('<table>') == 4 and "STALE DOCS FIXTURE" not in get(path)[1]
 
     renderer = package / "src/ForumRewrite/Docs/PublicMarkdownRenderer.php"
     original = renderer.read_bytes()
@@ -104,15 +135,17 @@ final class PublicMarkdownRenderer {
     assert get("/docs/?dynamic=1")[0] == 200
     build(shared=True, expect=1)
     assert (static / "current").resolve() == recovered, "Failed build replaced active release"
-    assert get(path)[1].count('aria-label="Table source"') == 4, "Failed build damaged active page"
+    assert get(path)[1].count('<table>') == 4, "Failed build damaged active page"
+    assert get(list_path)[1].count('aria-label="List source"') == 2, "Failed build damaged published list fallback"
+    assert get(task_path)[1].count('<input type="checkbox" disabled') == 5, "Failed build damaged published tasks"
     renderer.write_bytes(original)
     build(shared=True)
     assert get(path + "?dynamic=1")[0] == 200
-    assert get(path)[1].count('aria-label="Table source"') == 4
+    assert get(path)[1].count('<table>') == 4
     assert not (package / "third_party/markdown").exists()
 
     # Actual generated delivery through FrontController, not a file-only probe.
-    browser_env = dict(env, DOCS_BASE_URL=base, DOCS_EVIDENCE_ROOT=str(root / "browser"))
+    browser_env = dict(env, DOCS_BASE_URL=base, DOCS_EVIDENCE_ROOT=str(root / "browser"), DOCS_TABLE_FIXTURE_PATH=fixture_path, DOCS_LIST_FIXTURE_PATH=list_path, DOCS_TASK_FIXTURE_PATH=task_path)
     browser = subprocess.run(["node", str(project / "tests/browser/platform_docs.mjs")],
                              cwd=project, env=browser_env, capture_output=True, text=True, timeout=300)
     assert browser.returncode == 0, browser.stdout + browser.stderr
@@ -122,7 +155,7 @@ final class PublicMarkdownRenderer {
         capture_output=True, text=True, timeout=300)
     assert discovery.returncode == 0, discovery.stdout + discovery.stderr
     php = subprocess.check_output(["php", "-r", "echo PHP_VERSION;"], text=True)
-    report = {"php": php, "composerAtRuntime": False, "dynamicStaticParity": "passed",
+    report = {"php": php, "composerAtRuntime": False, "dynamicStaticParity": "passed", "tableAndFallbackParity": "passed", "listAndFallbackParity": "passed", "literalNumberingAndDeepRegion": "passed", "nativeDisabledTasks": "passed", "taskSourceDownloadUnchanged": "passed", "cellLinkDestination": "passed", "removedReaderRefresh": "passed",
               "staleSharedRefreshRetry": "passed", "rendererFailure503": "passed", "markdownVendorAbsent": True, "failedBuildRetainsActiveRelease": "passed",
               "completePackageRollbackAndRegeneration": "passed", "staticBrowserScenarios": 8, "staticDiscoveryScenarios": 8,
               "root": str(root)}

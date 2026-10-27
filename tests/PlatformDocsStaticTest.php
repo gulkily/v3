@@ -20,13 +20,8 @@ final class PlatformDocsStaticTest
         mkdir($publicRoot, 0777, true);
 
         try {
-            (new StaticArtifactBuilder(
-                dirname(__DIR__),
-                __DIR__ . '/fixtures/parity_minimal_v1',
-                $databasePath,
-                $releaseRoot,
-            ))->build();
-            symlink('release', $staticRoot . '/current');
+            $docsPublisher = new \ForumRewrite\Docs\DocsReleasePublisher(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $staticRoot);
+            $releaseRoot = $docsPublisher->publish();
 
             assertTrue(is_file($releaseRoot . '/docs.html'));
             assertTrue(is_file($releaseRoot . '/docs/index.html'));
@@ -81,8 +76,19 @@ final class PlatformDocsStaticTest
             assertTrue(str_contains($index, 'route-source: static-html'));
             assertTrue(str_contains($index, 'Platform Docs'));
             assertTrue(str_contains($document, 'route-source: static-html'));
+            assertStringContains('<table>', $document);
+            assertStringContains('<th scope="col">', $document);
+            assertStringContains('class="docs-table-scroll" tabindex="0"', $document);
             assertTrue(str_contains($document, 'Repository source: <code>docs/examples/extension_improvement_cookbook.md</code>'));
-            assertTrue(str_contains($invalid, '<h1>Not Found</h1>'));
+            assertStringContains('data-docs-document-retry', $invalid);
+            $procedure = $this->render($controller, '/docs/reference/author_post_retraction.md');
+            assertSame(1, substr_count($procedure, '<ol start="1">'));
+            foreach (range(1, 6) as $number) { assertStringContains('<li value="' . $number . '">', $procedure); }
+            assertStringContains('retraction record, signs it with the acting identity, and submits it.</p></li>', $procedure);
+            $checklist = $this->render($controller, '/docs/plans/agent_api_onboarding_checklist.md');
+            assertStringContains('<input type="checkbox" disabled>', $checklist);
+            assertStringContains('class="docs-task-label"', $checklist);
+            assertSame(file_get_contents(dirname(__DIR__) . '/docs/plans/agent_api_onboarding_checklist.md'), $this->render($controller, '/docs/_download/docs/plans/agent_api_onboarding_checklist.md'));
             assertStringContains('route-source: static-html', $workflow);
             assertStringContains('route-source: static-html', $this->render($controller, '/docs/_project/README.md?q=README'));
             assertStringContains('route-source: static-html', $this->render($controller, '/docs/?q=recovery'));
@@ -92,10 +98,10 @@ final class PlatformDocsStaticTest
             assertStringContains('&lt;html', strtolower($this->render($controller, '/docs/plans/backlog/feature-flags-redesign.html')));
             assertStringContains('data-docs-document-retry', $this->render($controller, '/docs/missing.md'));
 
-            // Shared refresh must remove stale readers/downloads and retain existing URLs.
+            // A separate docs publication repairs stale readers/downloads and retains existing URLs.
             file_put_contents($releaseRoot . '/docs/deleted.md.html', 'stale');
             file_put_contents($releaseRoot . '/docs/_download/deleted.md.bin', 'stale');
-            (new StaticArtifactBuilder(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $databasePath, $releaseRoot))->refreshSharedPagesFromReadModel();
+            $releaseRoot = $docsPublisher->publish();
             assertTrue(!is_file($releaseRoot . '/docs/deleted.md.html'));
             assertTrue(!is_file($releaseRoot . '/docs/_download/deleted.md.bin'));
             assertStringContains('route-source: static-html', $this->render($controller, '/docs/_project/README.md'));
@@ -103,6 +109,7 @@ final class PlatformDocsStaticTest
         } finally {
             @unlink($databasePath);
             $this->deleteTree($staticRoot);
+            $this->deleteTree($staticRoot . '-docs');
             $this->deleteTree($publicRoot);
         }
     }

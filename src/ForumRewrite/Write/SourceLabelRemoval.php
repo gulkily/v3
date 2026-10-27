@@ -8,7 +8,7 @@ use ForumRewrite\Canonical\LabelOwnership;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Support\ExecutionLock;
-use ForumRewrite\Retraction\PublicationGuard;
+use ForumRewrite\Support\PublicationLock;
 use RuntimeException;
 
 final class SourceLabelRemoval
@@ -16,7 +16,7 @@ final class SourceLabelRemoval
     public static function run(string $root, string $database, string $id, bool $repair, array $labels, string $artifactRoot): array
     {
         return (new ExecutionLock(dirname($database) . '/forum-rewrite.lock'))->withExclusiveLock(
-            static fn (): array => PublicationGuard::withLock($root, static function () use ($root, $database, $id, $repair, $labels, $artifactRoot): array {
+            static fn (): array => PublicationLock::withLock($root, static function () use ($root, $database, $id, $repair, $labels, $artifactRoot): array {
                 $journal = self::journal($root, $id);
                 if (is_file($journal)) {
                     $pending = json_decode((string) file_get_contents($journal), true, 32, JSON_THROW_ON_ERROR);

@@ -37,20 +37,7 @@ final class LlmExchangeRecorder
             return null;
         }
 
-        // A result may arrive long after its provider request began. Revalidate at recording.
-        if ($this->repositoryRoot !== null) {
-            $ids = ExchangeRetractionState::read($this->repositoryRoot);
-            $dependencies = ExchangeDependencies::classify(['related_post_id' => $context['post_id'] ?? null, 'context' => $context, 'request' => $request, 'call_type' => $context['call_type'] ?? null]);
-            if ($ids !== null && $dependencies !== null && array_intersect($dependencies, array_keys($ids)) !== []) {
-                $postId = $context['post_id'] ?? null;
-                $context = \ForumRewrite\Retraction\ExchangeScrubber::context($dependencies);
-                if ($postId !== null) $context['post_id'] = $postId;
-                $context['call_type'] = 'redacted';
-                $request = $response = $error = [];
-                $status = 'retracted';
-                $durationMilliseconds = 0;
-            }
-        }
+        // Late provider results are cleaned by the next successful maintenance scan.
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO llm_exchanges (

@@ -248,26 +248,14 @@ final class CanonicalRecordRepository
     public function loadPostRetraction(string $relativePath): PostRetractionRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/post-retractions/');
-        $contents = $this->read($relativePath);
-        $record = $this->postRetractionParser->parse($contents);
-        if ($relativePath !== CanonicalPathResolver::postRetraction($record->recordId)) {
+        if (!preg_match('#^records/post-retractions/post-retraction-([A-Za-z0-9][A-Za-z0-9._-]*)\.txt$#D', $relativePath, $match)) {
             throw new CanonicalRecordParseException('Post-retraction record path must match Record-ID.');
         }
-        $status = ReactionSignature::status($this->repositoryRoot, $relativePath, $contents,
-            $record->signerIdentityId(), $this->signatureKeyFallbackRoot);
-        if ($status === 'invalid' || ($record->classification === 'operator' && $status !== 'verified')) {
-            throw new CanonicalRecordParseException('Invalid retraction signature: ' . $relativePath);
-        }
-        if ($record->classification === 'operator') {
-            $authorityRoot = $this->signatureKeyFallbackRoot ?? $this->repositoryRoot;
-            if (!\ForumRewrite\Security\RetractionAuthority::acceptedOperator($authorityRoot, $relativePath, $contents, $record)) {
-                throw new CanonicalRecordParseException('Operator retraction lacks local acceptance evidence: ' . $relativePath);
-            }
-            return new PostRetractionRecord($record->recordId, $record->createdAt, $record->postId,
-                $record->operation, $record->authorIdentityId, $record->actorIdentityId, $record->classification, true,
-                \ForumRewrite\Security\RetractionAuthority::acceptedAttribution($authorityRoot, $relativePath, $contents, $record));
-        }
-        return $record;
+        $accepted = AcceptedRetraction::read($this->repositoryRoot, $match[1]);
+        if ($accepted === null) throw new CanonicalRecordParseException('Retraction lacks local acceptance evidence.');
+        $request = $this->postRetractionParser->parse($accepted['signed_request']);
+        return new PostRetractionRecord($request->recordId, $request->createdAt, $request->postId, $request->operation,
+            $request->authorIdentityId, $request->actorIdentityId, $request->classification, true, $accepted['attribution']);
     }
 
     public function loadFeatureFlagChange(string $relativePath): FeatureFlagChangeRecord
@@ -285,7 +273,10 @@ final class CanonicalRecordRepository
     private function read(string $relativePath): string
     {
         $path = $this->repositoryRoot . '/' . ltrim($relativePath, '/');
-        $contents = file_get_contents($path);
+        if (!is_file($path)) {
+            throw new CanonicalRecordParseException('Unable to read canonical record: ' . $relativePath);
+        }
+        $contents = RecordLimits::read($path);
         if ($contents === false) {
             throw new CanonicalRecordParseException('Unable to read canonical record: ' . $relativePath);
         }

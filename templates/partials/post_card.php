@@ -72,7 +72,7 @@ $hoverTimeLabel = $isRunTail ? '' : $postTimeLabel;
 // byline-above-body order.
 $metaLine = '';
 if ($isRunTail) {
-    $metaLine = '<p class="meta">' . $contentMeta($post, 'created_at', '');
+    $metaLine = '<p class="meta" data-post-byline>' . $contentMeta($post, 'created_at', '');
     if ($showRootMetaExtras) {
         if ($thread['thread_labels'] !== []) {
             $metaLine .= ' · Labels: ' . $e(implode(', ', $thread['thread_labels']));
@@ -138,7 +138,6 @@ foreach ($postAnalysisUnicodeFields as $unicodeFieldName => $unicodeFieldFacts) 
     }
 }
 $postAnalysisUnicodeLabels = array_keys($postAnalysisUnicodeLabels);
-$postAnalysisSummary = is_array($postAnalysis) ? trim((string) ($postAnalysis['post_summary'] ?? '')) : '';
 $postAnalysisLabels = $postAnalysisModeration['labels'] ?? [];
 if (!is_array($postAnalysisLabels)) {
     $postAnalysisLabels = [];
@@ -221,24 +220,18 @@ if (!is_array($postAnalysisLabels)) {
     <summary>Post analysis</summary>
     <div class="stack">
       <p class="meta">Provider: <?= $e(($postAnalysis['provider'] ?? 'unknown') . ' / ' . ($postAnalysis['provider_model'] ?? 'unknown')) ?></p>
-<?php if ($postAnalysisSummary !== ''): ?>
-      <p><strong>Post summary:</strong> <?= $e($postAnalysisSummary) ?></p>
-<?php endif; ?>
       <p><strong>Moderation:</strong> <?= $e($postAnalysisModeration['severity'] ?? 'unknown') ?><?= $postAnalysisLabels !== [] ? ' (' . $e(implode(', ', array_map('strval', $postAnalysisLabels))) . ')' : '' ?></p>
-<?php if (isset($postAnalysisModeration['recommended_action'])): ?>
+<?php if (!in_array(strtolower(trim((string) ($postAnalysisModeration['recommended_action'] ?? ''))), ['', 'none'], true)): ?>
       <p><strong>Recommended action:</strong> <?= $e($postAnalysisModeration['recommended_action']) ?></p>
 <?php endif; ?>
 <?php if (isset($postAnalysisModeration['summary']) && trim((string) $postAnalysisModeration['summary']) !== ''): ?>
       <p><strong>Moderation summary:</strong> <?= $e($postAnalysisModeration['summary']) ?></p>
 <?php endif; ?>
 <?php if (isset($postAnalysisQuality['discussion_value']) || isset($postAnalysisQuality['good_faith_likelihood'])): ?>
-      <p><strong>Quality:</strong> <?= $e($postAnalysisQuality['discussion_value'] ?? 'unknown') ?><?php if (isset($postAnalysisQuality['good_faith_likelihood'])): ?>, good faith <?= $e($postAnalysisQuality['good_faith_likelihood']) ?><?php endif; ?></p>
+      <p><strong>Quality:</strong> <?= $e($postAnalysisQuality['discussion_value'] ?? '') ?><?php if (isset($postAnalysisQuality['good_faith_likelihood'])): ?><?= isset($postAnalysisQuality['discussion_value']) ? ', ' : '' ?>good faith <?= $e($postAnalysisQuality['good_faith_likelihood']) ?><?php endif; ?></p>
 <?php endif; ?>
 <?php if ($postAnalysisRespondability !== []): ?>
       <p><strong>Respondability:</strong> <?= $e($postAnalysisRespondability['overall_score'] ?? 'unknown') ?><?php if (isset($postAnalysisRespondability['best_response_mode'])): ?>, <?= $e($postAnalysisRespondability['best_response_mode']) ?><?php endif; ?><?php if (array_key_exists('should_generate_response', $postAnalysisRespondability)): ?>, generate <?= ((bool) $postAnalysisRespondability['should_generate_response']) ? 'yes' : 'no' ?><?php endif; ?></p>
-<?php if (isset($postAnalysisRespondability['asks_question']) || isset($postAnalysisRespondability['question_type'])): ?>
-      <p><strong>Question:</strong> <?= ((bool) ($postAnalysisRespondability['asks_question'] ?? false)) ? 'yes' : 'no' ?><?php if (isset($postAnalysisRespondability['question_type'])): ?>, <?= $e($postAnalysisRespondability['question_type']) ?><?php endif; ?></p>
-<?php endif; ?>
 <?php if (isset($postAnalysisRespondability['audience_benefit']) || isset($postAnalysisRespondability['response_risk'])): ?>
       <p><strong>Response value:</strong> audience <?= $e($postAnalysisRespondability['audience_benefit'] ?? 'unknown') ?><?php if (isset($postAnalysisRespondability['author_benefit'])): ?>, author <?= $e($postAnalysisRespondability['author_benefit']) ?><?php endif; ?><?php if (isset($postAnalysisRespondability['response_risk'])): ?>, risk <?= $e($postAnalysisRespondability['response_risk']) ?><?php endif; ?></p>
 <?php endif; ?>
@@ -249,7 +242,10 @@ if (!is_array($postAnalysisLabels)) {
 <?php if (isset($postAnalysisEngagement['suggested_response']) && trim((string) $postAnalysisEngagement['suggested_response']) !== ''): ?>
       <p><strong>Suggested response:</strong> <?= $e($postAnalysisEngagement['suggested_response']) ?></p>
 <?php endif; ?>
-<?php if ($postAnalysisUnicodeRisk !== []): ?>
+<?php if ($postAnalysisUnicodeLabels !== [] || $postAnalysisUnicodeCodePoints !== []
+    || ($postAnalysisUnicodeReview['review_priority'] ?? 'none') !== 'none'
+    || ($postAnalysisUnicodeReview['concerns'] ?? []) !== []
+    || !in_array(strtolower(trim((string) ($postAnalysisUnicodeReview['recommended_action'] ?? ''))), ['', 'none'], true)): ?>
       <p><strong>Unicode risk:</strong> <?= $e($postAnalysisUnicodeReview['review_priority'] ?? 'none') ?><?= $postAnalysisUnicodeLabels !== [] ? ' (' . $e(implode(', ', $postAnalysisUnicodeLabels)) . ')' : '' ?></p>
 <?php if ($postAnalysisUnicodeScripts !== []): ?>
       <p><strong>Unicode scripts:</strong> <?= $e(implode('; ', $postAnalysisUnicodeScripts)) ?></p>

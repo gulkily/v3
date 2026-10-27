@@ -49,6 +49,7 @@ final class SqliteLlmExchangeStoreTest
         for ($i = 0; $i < 3; ++$i) $safe[] = $recorder->record(['post_id' => 'target', 'exchange_dependencies' =>
             \ForumRewrite\Llm\ExchangeDependencies::manifest(['target'])], ['payload' => ['safe' => $i]], [], 'completed', 1);
         for ($i = 0; $i < 205; ++$i) $recorder->record(['post_id' => 'target'], ['hidden' => 'prose'], [], 'completed', 1);
+        for ($id = 4; $id <= 208; ++$id) \ForumRewrite\Retraction\ExchangeScrubber::scrub($pdo, $id, []);
         $pdo->exec("UPDATE llm_exchanges SET occurred_at = '2026-10-14T12:00:00Z'");
         $store = new SqliteLlmExchangeStore($pdo, new \ForumRewrite\Llm\ExchangeVisibility($root));
         assertSame([$safe[1], $safe[0]], array_column($store->recent(2, 1), 'id'));
@@ -57,7 +58,7 @@ final class SqliteLlmExchangeStoreTest
         assertSame(208, (int) $pdo->query('SELECT COUNT(*) FROM llm_exchanges')->fetchColumn());
     }
 
-    public function testExistingStoreRechecksStateForLateAndFailedProviderResults(): void
+    public function testExistingStoreAllowsDelayAndReflectsCompletedScrubbing(): void
     {
         $root = sys_get_temp_dir() . '/exchange-race-' . bin2hex(random_bytes(6));
         mkdir($root . '/records/posts', 0700, true);
@@ -73,6 +74,8 @@ final class SqliteLlmExchangeStoreTest
         file_put_contents($path, "Record-ID: post-retraction-target\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: target\nOperation: retract\nAuthor-Identity-ID: openpgp:" . str_repeat('a', 40) . "\n\n");
         $late = $recorder->record($context, ['body' => 'prose'], ['body' => 'late prose'], 'completed', 1);
         $failed = $recorder->record($context, [], [], 'provider_error', 1, ['message' => 'error prose']);
+        foreach ([$first, $late, $failed] as $id) assertSame($id, $store->find($id)['id']);
+        foreach ([$first, $late, $failed] as $id) \ForumRewrite\Retraction\ExchangeScrubber::scrub($pdo, $id, ['target']);
         foreach ([$first, $late, $failed] as $id) assertSame(null, $store->find($id));
         assertSame([], $store->recent());
         assertSame([], $store->forPost('target'));

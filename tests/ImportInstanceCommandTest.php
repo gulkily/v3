@@ -22,8 +22,10 @@ final class ImportInstanceCommandTest
         $w->put($source . '/records/posts/remote-reply.txt', $w->post('remote-reply', "Thread-ID: remote-thread\nParent-ID: remote-thread\nAuthor-Identity-ID: {$author}\n"));
         $w->put($source . '/records/thread-subjects/remote-subject.txt', "Record-ID: remote-subject\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: remote-thread\nOperation: set\nSubject: Remote subject revised\n\n");
         $w->put($source . '/records/post-reactions/remote-like.txt', "Record-ID: remote-like\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: remote-thread\nOperation: add\nTags: like\nAuthor-Identity-ID: {$author}\n\n");
+        $signedLabel = $w->signedLabel($source, ['.asc', '.sig']);
         $w->git($source);
         $target = $w->repository('target', true);
+        unlink($target . '/' . $signedLabel);
         $w->put($target . $identityPath, $identity);
         $w->git($target);
         $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/source.log', [
@@ -39,11 +41,17 @@ final class ImportInstanceCommandTest
         assertSame(0, $code, $output);
         assertStringContains('Preview result: complete', $output);
         assertTrue(!is_file($target . '/records/posts/remote-thread.txt'));
+        assertTrue(!is_file($target . '/' . $signedLabel . '.asc'));
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
+        assertStringNotContains('Rendering ', $output);
+        assertStringNotContains('Fingerprinting and copying assets', $output);
         assertTrue(is_file($target . '/records/posts/remote-thread.txt'));
-        assertStringContains('Remote subject revised', file_get_contents($w->root . '/target-static/current/tags/general.html'));
+        foreach (['', '.asc', '.sig'] as $suffix) {
+            assertSame(file_get_contents($source . '/' . $signedLabel . $suffix), file_get_contents($target . '/' . $signedLabel . $suffix));
+        }
+        assertTrue(!file_exists($w->root . '/target-static/current'));
         $targetServer = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/target.log', [
             'FORUM_REPOSITORY_ROOT' => $target,
             'FORUM_DATABASE_PATH' => $w->root . '/target-cache/index.sqlite3',
@@ -102,7 +110,7 @@ final class ImportInstanceCommandTest
             'FORUM_TASK_QUEUE_DATABASE_PATH' => $w->root . '/source-private/tasks.sqlite3',
             'FORUM_APPROVED_MEMBERS_ONLY' => 'false',
         ]);
-        foreach (['repository.tar.gz' => "\x1f\x8b", 'repository.zip' => 'PK', 'images.tar' => 'manifest.json'] as $format => $prefix) {
+        foreach (['repository.tar.gz' => "\x1f\x8b", 'repository.zip' => 'PK', 'images.zip' => 'PK', 'images.tar' => 'manifest.json'] as $format => $prefix) {
             $bytes = file_get_contents($server->url . '/downloads/' . $format);
             assertSame($prefix, substr($bytes, 0, strlen($prefix)), $format);
             assertStringContains('200', $http_response_header[0]);
@@ -116,6 +124,8 @@ final class ImportInstanceCommandTest
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
+        assertStringNotContains('Rendering ', $output);
+        assertStringNotContains('Fingerprinting and copying assets', $output);
         assertStringContains('Image files are separate', $output);
         $pdo = new PDO('sqlite:' . $w->root . '/target-cache/index.sqlite3');
         foreach ($original as $id => $bytes) {
@@ -127,7 +137,7 @@ final class ImportInstanceCommandTest
         }
         $query = null;
         $pdo = null;
-        assertStringContains('Imported legacy-text', file_get_contents($w->root . '/target-static/current/tags/general.html'));
+        assertTrue(!file_exists($w->root . '/target-static/current'));
         $targetServer = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/target.log', [
             'FORUM_REPOSITORY_ROOT' => $target,
             'FORUM_DATABASE_PATH' => $w->root . '/target-cache/index.sqlite3',
@@ -148,8 +158,10 @@ final class ImportInstanceCommandTest
         $w->git($source);
         [$code, $output] = $w->command([...$command, '--dry-run']);
         assertSame(1, $code, $output);
-        if (!str_contains($output, 'Source archive returned HTTP 409')) { throw new RuntimeException($output); }
-        assertStringContains('records/posts/broken.txt:', $output);
+        if (!str_contains($output, 'Source archive returned HTTP 500')) { throw new RuntimeException($output); }
+        assertStringNotContains('records/posts/broken.txt:', $output);
+        assertStringContains('records/posts/broken.txt:', file_get_contents($w->root . '/source.log'));
+        assertStringContains('source integrity', $output);
         assertStringNotContains('--resume', $output);
         assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
         unlink($source . '/records/posts/broken.txt');
@@ -157,7 +169,7 @@ final class ImportInstanceCommandTest
         unlink($store->resolve($ref));
         [$code, $output] = $w->command([...$command, '--dry-run']);
         assertSame(1, $code, $output);
-        if (!str_contains($output, 'Source archive returned HTTP 409')) { throw new RuntimeException($output); }
+        if (!str_contains($output, 'Source archive returned HTTP 500')) { throw new RuntimeException($output); }
         assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
     }
 
@@ -225,7 +237,9 @@ final class ImportInstanceCommandTest
         if ($code !== 0) { throw new RuntimeException($output); }
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
-        assertStringContains('Imported resume-thread', file_get_contents($static . '/current/tags/general.html'));
+        assertStringNotContains('Rendering ', $output);
+        assertStringNotContains('Fingerprinting and copying assets', $output);
+        assertTrue(!file_exists($static . '/current'));
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
 
@@ -250,7 +264,7 @@ final class ImportInstanceCommandTest
         assertSame(0, proc_close($process), $errors);
         assertSame('', $errors);
         assertTrue(is_file($target . '/records/posts/pipe-thread.txt'));
-        assertTrue(is_file($w->root . '/static/current/tags/general.html'));
+        assertTrue(!file_exists($w->root . '/static/current'));
         assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
     }
 

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "study_id": "railspike-effort",
+  "reference_version": "R1",
+  "recovered_at_utc": "2026-10-23T17:45:28.297785+00:00",
+  "sources": [
+    {
+      "label": "calibration-report",
+      "original_filename": "report.md",
+      "original_repository": "https://github.com/rlspk/railspike-dev.git",
+      "original_revision": "557f9a0a178a4661e5c3de1c839df9ff33330c3b",
+      "original_path": "docs/research/effort_estimation/report.md",
+      "expected_sha256": "d3a30b6400b83bb25283b4234b41ba07515df9a696ea44de59c10186103771b0",
+      "cached_path": "calibration-report.txt",
+      "retrieval_method": "git show exact revision:path without changing source checkout"
+    },
+    {
+      "label": "implementation-diff-review",
+      "original_filename": "diff_review.md",
+      "original_repository": "https://github.com/rlspk/railspike-dev.git",
+      "original_revision": "557f9a0a178a4661e5c3de1c839df9ff33330c3b",
+      "original_path": "docs/research/effort_estimation/diff_review.md",
+      "expected_sha256": "068b3519326e08a939df40b5abe0106ddcbab80bd796616c76b5084a21462b84",
+      "cached_path": "implementation-diff-review.txt",
+      "retrieval_method": "git show exact revision:path without changing source checkout"
+    },
+    {
+      "label": "user-feedback",
+      "original_filename": "zenmemes_meta_feedback_2026-10-18_summary.md",
+      "original_repository": "local v3 project; public repository identity not asserted",
+      "original_revision": "4f6cfe2b436fae8d939b1349fe724a3879ee0a0e",
+      "original_path": "docs/plans/zenmemes_meta_feedback_2026-10-18_summary.md",
+      "expected_sha256": "ef335604ecd5b51e5c04067d88e4d6f01cb4fdb21b8f4d7dba7b5b90e4012bfc",
+      "cached_path": "user-feedback.txt",
+      "retrieval_method": "git show exact revision:path without changing source checkout"
+    }
+  ],
+  "ledger_recovery": {
+    "recorded_at_utc": "2026-10-23T17:46:53.192203+00:00",
+    "ledger_path": "docs/plans/effort_estimation_trial.md",
+    "original_source_link_targets": {
+      "Calibration report": "../../../railspike-dev/docs/research/effort_estimation/report.md",
+      "Implementation diff review": "../../../railspike-dev/docs/research/effort_estimation/diff_review.md",
+      "User feedback": "./zenmemes_meta_feedback_2026-10-18_summary.md"
+    },
+    "ledger_sha256_before": "b7393c73be6fcd1ea8b521f5c16dbfe2032798de6ad1836bf6bd4dba661cfd62",
+    "current_feedback_sha256_before": "6f5a07426cf0624bde554b0d8034f32313481a0a8ca7387ce085386f2bdef31c",
+    "source_routing_only": true
+  },
+  "additional_ledger_recoveries": [
+    {
+      "recorded_at_utc": "2026-10-23T17:46:53.140733+00:00",
+      "ledger_path": "docs/plans/effort_estimation_trial.md",
+      "original_source_link_targets": {
+        "Calibration report": "../../../railspike-dev/docs/research/effort_estimation/report.md",
+        "Implementation diff review": "../../../railspike-dev/docs/research/effort_estimation/diff_review.md",
+        "User feedback": "./zenmemes_meta_feedback_2026-10-18_summary.md"
+      },
+      "ledger_sha256_before": "9cc7a60e04c7972b6b9fd5a720fd1b02793be2ad2a981e70a625afc044661bef",
+      "current_feedback_sha256_before": "6f5a07426cf0624bde554b0d8034f32313481a0a8ca7387ce085386f2bdef31c",
+      "source_routing_only": true
+    },
+    {
+      "recorded_at_utc": "2026-10-23T17:46:53.176405+00:00",
+      "ledger_path": "docs/plans/effort_estimation_trial.md",
+      "original_source_link_targets": {
+        "Calibration report": "../../../railspike-dev/docs/research/effort_estimation/report.md",
+        "Implementation diff review": "../../../railspike-dev/docs/research/effort_estimation/diff_review.md",
+        "User feedback": "./zenmemes_meta_feedback_2026-10-18_summary.md"
+      },
+      "ledger_sha256_before": "84be6d74ea4ed34acd6f7b5d37809f96c40efb9cc0399f316f938ca3f60191ec",
+      "current_feedback_sha256_before": "6f5a07426cf0624bde554b0d8034f32313481a0a8ca7387ce085386f2bdef31c",
+      "source_routing_only": true
+    }
+  ]
+}

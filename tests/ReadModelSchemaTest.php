@@ -20,6 +20,7 @@ final class ReadModelSchemaTest
         assertSame([
             'activity',
             'activity_action_key_idx',
+            'activity_author_identity_idx',
             'activity_post_id_idx',
             'activity_recent_idx',
             'commits',
@@ -27,10 +28,15 @@ final class ReadModelSchemaTest
             'instance_public',
             'metadata',
             'posts',
+            'posts_author_identity_idx',
+            'posts_thread_sequence_idx',
             'profiles',
             'reaction_signatures',
             'threads',
+            'threads_last_activity_idx',
             'username_routes',
+            'viewer_tags',
+            'viewer_tags_identity_idx',
         ], $objects);
     }
 

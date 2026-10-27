@@ -1066,6 +1066,7 @@ final class ActivityService
             str_starts_with($path, 'records/thread-labels/') => 'thread label record',
             str_starts_with($path, 'records/post-reactions/') => 'post reaction record',
             str_starts_with($path, 'records/post-retractions/') => 'post retraction record',
+            str_starts_with($path, 'records/post-retraction-acceptances/') => 'post retraction acceptance',
             str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
             str_starts_with($path, 'records/profile-names/') => 'profile name record',
             str_starts_with($path, 'records/identity/') => 'identity record',

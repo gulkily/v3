@@ -19,12 +19,12 @@ final class ReactionSignatureIndex
             $insert = $pdo->prepare('INSERT INTO reaction_signatures (source_path, author_identity_id, signature_status) VALUES (?, ?, ?)');
             foreach (glob($root . '/' . $prefix . '*.txt') ?: [] as $file) {
                 $path = $prefix . basename($file);
-                $contents = (string) file_get_contents($file);
+                $contents = \ForumRewrite\Canonical\RecordLimits::read($file);
                 $author = null;
                 try {
                     $author = (new GenericTextRecordParser())->parse($contents)->headers['Author-Identity-ID'] ?? null;
                     $status = ReactionSignature::status($root, $path, $contents, $author);
-                } catch (\RuntimeException) {
+                } catch (\ForumRewrite\Support\OperationLimitException $error) { throw $error; } catch (\RuntimeException) {
                     $status = 'invalid';
                 }
                 $insert->execute([$path, $author, $status]);

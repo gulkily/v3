@@ -12,8 +12,8 @@ final class HighTrafficSafety
         $project = dirname(__DIR__,3);
         $cache = new HighTrafficCache($project,$repository,$database,getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $project . '/public');
         if (!is_file($cache->root . '/state.json')) return;
-        // Restrictions/feature changes and retractions retire the bypass before canonical publication.
-        $withdraw = preg_match('~(?:post-retractions|feature-flags|approval-seeds|approvals)/|feature-flags\.txt|site-feature-flags~', $relativePath) === 1;
+        // Restrictions/feature changes retire the bypass before canonical publication.
+        $withdraw = preg_match('~(?:feature-flags|approval-seeds|approvals)/|feature-flags\.txt|site-feature-flags~', $relativePath) === 1;
         if (str_starts_with($relativePath,'records/thread-labels/') || str_starts_with($relativePath,'records/post-reactions/')) {
             // Positive votes/tags are ordinary stale-tolerant changes; moderation flags can hide content.
             $withdraw=true;

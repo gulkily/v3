@@ -105,7 +105,10 @@
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
   <meta name="app-version" content="<?= $e($appVersion) ?>">
-  <meta name="app-version-endpoint" content="/api/version">
+  <meta name="app-version-endpoint" content="<?= $e($versionEndpoint) ?>">
+<?php if ($versionStorageKey !== 'forum_pending_app_version'): ?>
+  <meta name="app-version-storage-key" content="<?= $e($versionStorageKey) ?>">
+<?php endif; ?>
 <?php endif; ?>
   <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
 <?php if (!$approvedMembersOnlyEnabled): ?>
@@ -144,7 +147,7 @@
   <script src="<?= $e($pwaRegistrationScriptPath) ?>" defer></script>
 <?php endif; ?>
 </head>
-<body data-image-content-state="<?= ($imageContentEnabled ?? false) ? '1' : '0' ?>"<?= $publicAuthenticationResume ? ' data-private-site-auth-state data-public-auth-resume="true" data-authenticated-identity-id=""' : '' ?>>
+<body data-backup-state="<?= ($textBackupEnabled ?? true) ? '1' : '0' ?><?= ($imageBackupEnabled ?? true) ? '1' : '0' ?>" data-image-content-state="<?= ($imageContentEnabled ?? false) ? '1' : '0' ?>"<?= $publicAuthenticationResume ? ' data-private-site-auth-state data-public-auth-resume="true" data-authenticated-identity-id=""' : '' ?>>
 <?php if ($appVersionNotificationEnabled): ?>
   <div class="app-version-banner" data-role="app-version-banner" hidden>
     <div class="app-version-banner__inner">

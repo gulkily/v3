@@ -13,16 +13,9 @@ final class ExchangeVisibility
         return ($this->predicate())($exchange);
     }
 
-    /** A current snapshot for one served query; never cached across requests. */
+    /** Only completed cleanup changes visibility; stale payloads may remain until maintenance. */
     public function predicate(): \Closure
     {
-        $retracted = ExchangeRetractionState::read($this->repositoryRoot);
-        return static function (array $exchange) use ($retracted): bool {
-            if ($retracted === null || ($exchange['context']['retraction_scrubbed'] ?? false) === true) return false;
-            $ids = ExchangeDependencies::classify($exchange);
-            if ($ids === null) return false;
-            foreach ($ids as $id) if (isset($retracted[$id])) return false;
-            return true;
-        };
+        return static fn (array $exchange): bool => ($exchange['context']['retraction_scrubbed'] ?? false) !== true;
     }
 }

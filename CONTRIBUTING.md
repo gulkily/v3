@@ -1,5 +1,19 @@
 # Contributing
 
+## Human-readable formats
+
+Canonical records and files intended for people to read or edit must use the
+project's `Key: value` headers and plain-text body, not JSON. Apply this to source
+views, human-facing exports, and editable configuration; keep multiline content
+readable rather than embedding escaped strings. Existing JSON is migration debt,
+not precedent for new formats.
+
+JSON is appropriate for machine APIs/protocols, explicit `--json` output, and
+internal caches or state. A human-facing exception requires explicit maintainer
+approval. Document canonical formats in `docs/specs/`; format changes must
+preserve signed bytes and trust decisions and explicitly define existing-record handling.
+Track outstanding conversions in [the format audit](docs/plans/human_readable_formats_checklist.md).
+
 ## UI copy and verification
 
 Remove explanations that repeat controls, visible results, or other feedback.
@@ -30,6 +44,21 @@ Before marking a UI change complete:
   implementation document for other UI work. Distinguish completed cleanup
   from unresolved layout or behavior issues.
 
+## Feature flag presentation order
+
+`FeatureFlagRegistry::PRESENTATION_ORDER` is the canonical UI order: Access and
+identity, Authored content, Forum experience, Site rendering, Backups, Fastmod,
+Agent replies, then LLM exchanges. The page uses `presentationGroups()` rather
+than definition insertion order, labels, status or configuration source.
+
+Every registered flag must appear exactly once in its assigned group. Append new
+flags to that group's list by default; place dependent controls together immediately
+after their parent (after existing siblings). Add new groups at the end unless an
+explicit UI change approves another position. Reordering existing controls is an
+intentional UI change, not a side effect of registering a flag. Search and status
+filters must preserve this order. Keep the registry completeness/dependency and
+rendered-order checks current; do not bypass them for new flags.
+
 ## Operator CLI
 
 Inspect comparable `v3` commands before designing a command. Use readable output
@@ -37,6 +66,16 @@ by default and `--json` for automation. Include actionable setup/recovery guidan
 keep top-level help current, and follow existing subcommand meanings: `cron`
 prints installation instructions; `run` executes the scheduled worker. Verify
 help, output modes and required next steps in the relevant implementation plan.
+
+## Private runtime configuration
+
+Register new private-config/environment settings in `PrivateConfigSchema`, with
+an explicit decision about inclusion in `templateDefaults()`. Template settings
+are emitted automatically by the private-config writer; add dedicated comments
+and examples when operators need guidance. Do not maintain a separate key list.
+Verify creation and `private-config refresh-template` preserve every template
+setting and existing custom values with `PrivateConfigCommandTest`; run the
+schema and affected configuration-consumer checks as well.
 
 ## Read-model schema changes
 

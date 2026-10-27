@@ -31,7 +31,7 @@ final class LabelRemoval
         $path = self::path($sourceId);
         if (!is_file($root . '/' . $path)) return null;
         if (is_link($root . '/' . $path) || filesize($root . '/' . $path) > 1048576) throw new RuntimeException('Unsafe removal evidence: ' . $path);
-        $bytes = (string) file_get_contents($root . '/' . $path);
+        $bytes = (string) RecordLimits::read($root . '/' . $path);
         $record = json_decode($bytes, true, 32, JSON_THROW_ON_ERROR);
         if (!is_array($record) || ($record['source_id'] ?? null) !== $sourceId
             || !in_array($record['operation'] ?? '', ['delete', 'resolve'], true)
@@ -47,7 +47,8 @@ final class LabelRemoval
             if (!is_string($labelPath) || !preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $labelPath)
                 || !is_string($hash) || !preg_match('/^[a-f0-9]{64}$/D', $hash)) throw new RuntimeException('Invalid removal label binding.');
         }
-        // The exact bytes must have been accepted locally, not just copied in an archive.
+        if (($record['acceptance_version'] ?? null) === 2) return $record;
+        // Legacy migration only: archives may not supply local acceptance.
         $commits = preg_split('/\s+/', trim(self::git($root, ['log', '--format=%H', '--', $path])));
         foreach ($commits as $commit) {
             if ($commit === '') continue;
@@ -60,13 +61,14 @@ final class LabelRemoval
     public static function all(string $root): array
     {
         $records = [];
-        if (file_exists($root . '/.git')) {
-            $tracked = preg_split('/\n/', trim(self::git($root, ['ls-tree', '-r', '--name-only', 'HEAD', '--', 'records/post-removals'])));
-            foreach ($tracked as $path) if ($path !== '' && !is_file($root . '/' . $path)) throw new RuntimeException('Tracked removal evidence missing; restore trusted repository: ' . $path);
-        }
         foreach (glob($root . '/records/post-removals/*.json') ?: [] as $path) {
-            $id = basename($path, '.json');
-            $records[$id] = self::read($root, $id);
+            try {
+                $data = json_decode((string) RecordLimits::read($path), true, 32, JSON_THROW_ON_ERROR);
+                if (($data['acceptance_version'] ?? null) !== 2) continue;
+                $id = basename($path, '.json');
+                $records[$id] = self::read($root, $id);
+            } catch (\ForumRewrite\Support\OperationLimitException|RecordReadException|RecordSizeException $error) { throw $error; }
+            catch (\RuntimeException|\JsonException) { /* Unresolved legacy evidence belongs to explicit migration. */ }
         }
         return $records;
     }
@@ -75,7 +77,7 @@ final class LabelRemoval
     {
         self::path($id);
         foreach (CanonicalPathResolver::postCandidates($id) as $path) {
-            if (is_file($root . '/' . $path)) return [$path, (string) file_get_contents($root . '/' . $path)];
+            if (is_file($root . '/' . $path)) return [$path, (string) RecordLimits::read($root . '/' . $path)];
         }
         // Recovery from deletions made before this feature; never infer ownership from time.
         foreach (CanonicalPathResolver::postCandidates($id) as $path) {
@@ -140,7 +142,7 @@ final class LabelRemoval
         }
         ksort($labels);
         $effectiveOperation = ($existing['operation'] ?? null) === 'delete' ? 'delete' : $operation;
-        return ['source_id' => $id, 'source_hash' => $inspection['source_hash'],
+        return ['acceptance_version' => 2, 'source_id' => $id, 'source_hash' => $inspection['source_hash'],
             'operation' => $effectiveOperation, 'accepted_at' => ($existing['operation'] ?? null) === $effectiveOperation ? $existing['accepted_at'] : gmdate('Y-m-d\TH:i:s\Z'),
             'actor' => 'local-operator', 'labels' => $labels,
             'post' => ['post_id' => $id, 'thread_id' => $post->threadId ?? $id, 'parent_id' => $post->parentId,
@@ -158,13 +160,6 @@ final class LabelRemoval
                 || !rename($temporary, $root . '/' . $relative)) throw new RuntimeException('Cannot persist removal evidence.');
         } finally { if (is_file($temporary)) unlink($temporary); }
         return $relative;
-    }
-
-    public static function generation(string $root): string
-    {
-        $records = self::all($root);
-        ksort($records);
-        return hash('sha256', json_encode($records, JSON_THROW_ON_ERROR));
     }
 
 }

@@ -343,7 +343,7 @@ const database = {
 };
 const content = element('div');
 window.forumOfflineSnapshot.renderThreadDetail({
-  content, database, threadId: 't1', setStatus() {}
+  content, database, threadId: 'p1', setStatus() {}
 });
 process.stdout.write(JSON.stringify({
   rootBody: content.children[0].children[1].innerHTML,

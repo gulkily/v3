@@ -224,24 +224,43 @@ final class PlatformDocsPageTest
     }
 
 
+    public function testPipeTablesRenderThroughTheOrdinaryReader(): void
+    {
+        $html = PublicMarkdownRenderer::render("Before\n\nName | Value\n:--- | ---:\n**One** | `two`\n\nAfter");
+        assertStringContains('<th scope="col" class="docs-align-left">Name</th>', $html);
+        assertStringContains('<td class="docs-align-right"><code>two</code></td>', $html);
+        assertStringContains('<strong>One</strong>', $html);
+        assertStringContains('<p>Before</p>', $html);
+        assertStringContains('<p>After</p>', $html);
+        assertStringContains('<tbody></tbody>', PublicMarkdownRenderer::render("| A | B |\n| --- | --- |"));
+        assertStringContains('&lt;table&gt;', PublicMarkdownRenderer::render("```\n<table>\n```"));
+        $reader = $this->render('/docs/examples/extension_improvement_cookbook.md');
+        assertStringContains('<table>', $reader);
+        assertStringContains('<th scope="col">', $reader);
+    }
+
     public function testRestoredFormattingFallbacksAndDocumentScopedAnchors(): void
     {
         $source = "# Same\n\n# Same\n\n- [x] Done\n  - Nested\n\n[ref][r] and ~~old~~ and _emphasis_\n\n[r]: https://example.test\n";
         $html = PublicMarkdownRenderer::render($source);
         assertStringContains('id="same"', $html);
         assertStringContains('id="same-1"', $html);
-        // Restored parser: task markers/reference forms stay readable, nested lists flatten.
-        assertStringContains('[x] Done', $html);
-        assertSame(1, substr_count($html, '<ul>'));
+        // Task states and unsupported reference forms stay readable; nested lists retain their parent.
+        assertStringContains('<input type="checkbox" disabled checked>Done', $html);
+        assertSame(2, substr_count($html, '<ul>'));
         assertStringContains('~~old~~', $html);
         assertStringContains('_emphasis_', $html);
         assertStringContains('[ref][r]', $html);
         assertSame($html, PublicMarkdownRenderer::render($source));
-        $guide = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'));
-        assertSame(0, substr_count($guide, '<table>'));
-        assertSame(4, substr_count($guide, 'aria-label="Table source"'));
+        // Keep renderer coverage independent of changes to the user guide.
+        $procedure = "1. Open the action.\n\n   Continue here.\n\n";
+        foreach (range(2, 6) as $number) $procedure .= "$number. Step $number.\n\n   Continue here.\n\n";
+        $guide = PublicMarkdownRenderer::render($procedure . str_repeat("| A | B |\n| --- | --- |\n| one | two |\n\n", 4));
+        assertSame(4, substr_count($guide, '<table>'));
+        assertSame(0, substr_count($guide, 'aria-label="Table source"'));
         // Continuations retain their source numbers rather than restarting each step at 1.
-        foreach (range(1, 6) as $number) { assertStringContains('<ol start="' . $number . '">', $guide); }
+        foreach (range(1, 6) as $number) { assertStringContains('<li value="' . $number . '">', $guide); }
+        assertStringContains('<li value="1"><p>Open', $guide);
     }
 
     public function testRestoredInlineLinksKeepCurrentSafetyBoundary(): void
@@ -318,13 +337,13 @@ final class PlatformDocsPageTest
 
     public function testDocumentTemplatePreservesCodeBytes(): void
     {
-        $markdown = file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md');
-        $expected = PublicMarkdownRenderer::render($markdown, 'docs/reference/author_post_retraction.md');
-        $page = $this->render('/docs/reference/author_post_retraction.md');
+        $markdown = file_get_contents(dirname(__DIR__) . '/docs/reference/agent_api.md');
+        $expected = PublicMarkdownRenderer::render($markdown, 'docs/reference/agent_api.md');
+        $page = $this->render('/docs/reference/agent_api.md');
         preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $expected, $expectedBlocks);
         preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $page, $actualBlocks);
         assertSame($expectedBlocks[1], $actualBlocks[1]);
-        assertStringContains('tabindex="0" role="region" aria-label="Table source"', $page);
+        assertStringContains('tabindex="0" role="region" aria-label="Table"', $page);
         assertStringContains('tabindex="0" role="region" aria-label="Code"', $page);
     }
 

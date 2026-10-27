@@ -51,6 +51,23 @@ final class RepositoryArchiveValidationTest
         $this->reject($archive, $w->root . '/out');
     }
 
+    public function testIgnoredDirectoryHeadersCountTowardAdmissionBound(): void
+    {
+        $w = new ImportTestWorkspace();
+        $header = str_repeat("\0", 512);
+        $header = substr_replace($header, './', 0, 2);
+        $header = substr_replace($header, sprintf("%011o\0", 0), 124, 12);
+        $header = substr_replace($header, str_repeat(' ', 8), 148, 8);
+        $header[156] = '5';
+        $checksum = array_sum(unpack('C*', $header));
+        $header = substr_replace($header, sprintf("%06o\0 ", $checksum), 148, 8);
+        $archive = $w->root . '/repeated.tar.gz';
+        file_put_contents($archive, gzencode(str_repeat($header, 4) . str_repeat("\0", 1024)));
+        try { (new RepositoryArchive(maxEntries: 2))->extract($archive, $w->root . '/out'); throw new LogicException('Expected entry limit'); }
+        catch (RuntimeException $e) { assertStringContains('entry count limit', $e->getMessage()); }
+        assertTrue(!file_exists($w->root . '/out'));
+    }
+
     private function reject(string $archive, string $directory, ?RepositoryArchive $reader = null): void
     {
         $failed = false;

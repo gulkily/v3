@@ -6,7 +6,9 @@
     storage = null;
   }
 
-  var pendingVersionStorageKey = 'forum_pending_app_version';
+  var storageKeyMeta = document.querySelector('meta[name="app-version-storage-key"]');
+  var pendingVersionStorageKey = storageKeyMeta
+    ? String(storageKeyMeta.getAttribute('content') || 'forum_pending_app_version') : 'forum_pending_app_version';
   var versionMeta = document.querySelector('meta[name="app-version"]');
   if (!versionMeta) {
     return;

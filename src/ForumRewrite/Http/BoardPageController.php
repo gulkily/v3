@@ -185,12 +185,13 @@ final class BoardPageController
         $viewerIdentityId = (string) $viewerProfile['identity_id'];
         $rootPostIds = array_column($threads, 'root_post_id');
 
-        $voted = ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'upvote', $viewerIdentityId);
-        $voted += ViewerTagLookup::threadTags($this->repositoryRoot, $rootPostIds, 'downvote', $viewerIdentityId);
+        $pdo = $this->routeServices->pdo();
+        $voted = ViewerTagLookup::threadTags($pdo, $rootPostIds, 'upvote', $viewerIdentityId);
+        $voted += ViewerTagLookup::threadTags($pdo, $rootPostIds, 'downvote', $viewerIdentityId);
 
         return [
             'voted' => $voted,
-            'flagged' => ViewerTagLookup::postTags($this->repositoryRoot, $rootPostIds, 'flag', $viewerIdentityId),
+            'flagged' => ViewerTagLookup::postTags($pdo, $rootPostIds, 'flag', $viewerIdentityId),
         ];
     }
 

@@ -40,7 +40,7 @@ final class ImportedContentPublicationTest
             $pdo = new PDO('sqlite:' . $database);
             assertSame('Imported imported', $pdo->query("SELECT subject FROM posts WHERE post_id = 'imported'")->fetchColumn());
             $pdo = null;
-            assertStringContains('Imported imported', file_get_contents($static . '/current/tags/general.html'));
+            assertTrue(!file_exists($static . '/current'));
             $locator = new OfflineSnapshotLocator();
             assertSame($static . '/offline/snapshot.sqlite3', $locator->servedSnapshotPath($static));
             $snapshot = new PDO('sqlite:' . $locator->servedSnapshotPath($static));
@@ -49,6 +49,33 @@ final class ImportedContentPublicationTest
             assertTrue(is_file($static . '/offline/update.sqlite3'));
             assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
         }
+    }
+
+    public function testImportRetiresStaleReleaseAndDirectHtmlBeforeRefreshingOfflineData(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/fresh.txt', $w->post('fresh'));
+        $database = $w->root . '/cache/index.sqlite3';
+        $static = $w->root . '/static';
+        $w->put($static . '/releases/old/index.html', 'stale release');
+        symlink('releases/old', $static . '/current');
+        $w->put($static . '/tags/general.html', 'stale direct page');
+        $w->put($static . '/offline/snapshot.sqlite3', 'stale offline');
+        // An incomplete legacy library must not be traversed or removed by import.
+        $w->put($static . '/docs/guide.md.html', 'retained docs');
+        $w->put($static . '/docs.html', 'retained docs alias');
+        $publisher = new ImportedContentPublisher(dirname(__DIR__), $target, $database, $static);
+        (new ContentImportRunner($target, $database))->run($source, $publisher->publishWhileLocked(...));
+        assertTrue(!is_link($static . '/current'));
+        assertTrue(!is_file($static . '/tags/general.html'));
+        assertSame('stale release', file_get_contents($static . '/releases/old/index.html'));
+        assertSame('retained docs', file_get_contents($static . '/docs/guide.md.html'));
+        assertSame('retained docs alias', file_get_contents($static . '/docs.html'));
+        $snapshot = new PDO('sqlite:' . $static . '/offline/snapshot.sqlite3');
+        assertSame('Imported fresh', $snapshot->query("SELECT subject FROM posts WHERE post_id='fresh'")->fetchColumn());
     }
 
     public function testPrivateDestinationDoesNotPublishPublicArtifacts(): void

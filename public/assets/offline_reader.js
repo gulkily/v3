@@ -275,7 +275,7 @@
       navigation.appendChild(boardLink);
       header.appendChild(eyebrow);
       header.appendChild(heading);
-      header.appendChild(count);
+      if (group) header.appendChild(count);
       header.appendChild(navigation);
       options.content.appendChild(header);
       if (!group) {
@@ -431,7 +431,7 @@
       )[0];
       var rows = result && result.values ? result.values : [];
       if (!rows.length) {
-        options.setStatus("That thread is not included in this offline snapshot.", "error");
+        options.setStatus("This thread is not in the saved snapshot. Reconnect to read it online.", "error");
         if (options.onMissing) options.onMissing();
         return false;
       }
@@ -456,13 +456,14 @@
         }
         return true;
       });
-      rows.forEach(function (row, index) {
+      rows.forEach(function (row) {
+        var isRoot = String(row[0]) === String(options.threadId);
         var post = document.createElement("article");
-        post.className = index === 0 ? "card post-card thread-root-card" : "card post-card";
+        post.className = isRoot ? "card post-card thread-root-card" : "card post-card";
         post.id = "post-" + String(row[0] || "");
         post.dataset.postId = String(row[0] || "");
         post.dataset.author = String(row[4] || "guest");
-        if (index === 0) {
+        if (isRoot) {
           var heading = document.createElement("h1");
           heading.textContent = snapshotPresentation.threadTitle(row[2], row[3]);
           post.appendChild(heading);
@@ -476,7 +477,7 @@
         var body = document.createElement("div");
         body.className = "body";
         var postBody = String(row[3] || "");
-        if (index === 0) {
+        if (isRoot) {
           var firstLineBreak = /\r\n|\r|\n/.exec(postBody);
           var firstLine = firstLineBreak ? postBody.slice(0, firstLineBreak.index) : postBody;
           var remainder = firstLineBreak ? postBody.slice(firstLineBreak.index + firstLineBreak[0].length) : "";
@@ -488,7 +489,7 @@
         meta.className = "meta";
         meta.textContent = "by " + String(row[4] || "guest") + (row[5] ? " on " + String(row[5]) : "");
         body.innerHTML = nl2br(postBody);
-        if (index === 0) {
+        if (isRoot) {
           post.appendChild(body);
           post.appendChild(meta);
         } else {
@@ -516,7 +517,7 @@
         post.appendChild(permalink);
         if (options.onQueueReaction) {
           var actions = document.createElement("div");
-          actions.className = "button-row button-row-natural post-card-actions" + (index === 0 ? " thread-root-actions" : "");
+          actions.className = "button-row button-row-natural post-card-actions" + (isRoot ? " thread-root-actions" : "");
           var queueLike = document.createElement("button");
           queueLike.type = "button";
           queueLike.className = "thread-reaction-button";
@@ -538,7 +539,7 @@
                 button.disabled = false;
               });
             };
-          })(String(row[0] || ""), index === 0, index === 0 ? snapshotPresentation.threadTitle(row[2], row[3]) : "comment", queueLike));
+          })(String(row[0] || ""), isRoot, isRoot ? snapshotPresentation.threadTitle(row[2], row[3]) : "comment", queueLike));
           actions.appendChild(queueLike);
           post.appendChild(actions);
         }
@@ -574,6 +575,19 @@
         var unavailable = update.exec("SELECT post_id FROM unavailable_expansions")[0];
         if (unavailable) unavailable.values.forEach(function (row) { database.run("DELETE FROM posts WHERE post_id = ?", [row[0]]); });
       }
+      var excludedTable = update.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'excluded_posts'")[0];
+      if (excludedTable) {
+        var excluded = update.exec("SELECT post_id FROM excluded_posts")[0];
+        if (excluded) excluded.values.forEach(function (row) {
+          var affected = database.exec("SELECT thread_id FROM posts WHERE post_id = ?", [row[0]])[0];
+          database.run("DELETE FROM posts WHERE post_id = ?", [row[0]]);
+          database.run("UPDATE threads SET subject = NULL, body_preview = '', author_label = '', author_profile_slug = NULL, thread_labels_json = '[]', score_total = 0 WHERE root_post_id = ?", [row[0]]);
+          if (affected) affected.values.forEach(function (thread) {
+            database.run("UPDATE threads SET reply_count = (SELECT COUNT(*) FROM posts WHERE thread_id = ? AND post_id <> ?), last_post_id = COALESCE((SELECT post_id FROM posts WHERE thread_id = ? ORDER BY sequence_number DESC, post_id DESC LIMIT 1), ''), last_activity_at = COALESCE((SELECT created_at FROM posts WHERE thread_id = ? ORDER BY sequence_number DESC, post_id DESC LIMIT 1), root_post_created_at) WHERE root_post_id = ?", [thread[0], thread[0], thread[0], thread[0], thread[0]]);
+          });
+        });
+        database.run("INSERT OR REPLACE INTO metadata (key, value) VALUES ('snapshot_version', '5')");
+      }
       database.run("COMMIT");
     } catch (error) { database.run("ROLLBACK"); throw error; }
   };
@@ -599,7 +613,7 @@
         return;
       }
       status.textContent = message;
-      status.hidden = state !== "error";
+      status.hidden = !message || (state !== "error" && state !== "outcome");
       if (state) {
         status.dataset.state = state;
       } else {
@@ -679,7 +693,7 @@
     function renderOfflineBoard(database) {
       root.dataset.offlineNavigation = "board";
       showOfflineMode();
-      setStatus("Showing saved board content offline.", "ok");
+      setStatus("", "ok");
       var boardPath = snapshotPresentation.boardPathFromPathname(window.location.pathname);
       var parameters = new URLSearchParams(window.location.search);
       var boardState = {
@@ -710,7 +724,7 @@
     function renderOfflineTagsIndex(database) {
       root.dataset.offlineNavigation = "tags";
       showOfflineMode();
-      setStatus("Showing saved tags offline.", "ok");
+      setStatus("", "ok");
       snapshotPresentation.renderTagsIndex({
         content: content,
         database: database,
@@ -720,31 +734,26 @@
     function renderOfflineTag(database, tag) {
       root.dataset.offlineNavigation = "tag";
       showOfflineMode();
-      setStatus("Showing saved #" + tag + " results offline.", "ok");
-      if (!snapshotPresentation.renderTagResult({ content: content, database: database, tag: tag })) {
-        setStatus("That tag is not included in this offline snapshot. Reconnect to browse live results.", "error");
-      }
+      setStatus("", "ok");
+      snapshotPresentation.renderTagResult({ content: content, database: database, tag: tag });
     }
 
     function renderOfflineThread(database, threadId) {
       root.dataset.offlineNavigation = "thread";
       showOfflineMode();
-      setStatus("Showing saved thread content offline.", "ok");
+      setStatus("", "ok");
       snapshotPresentation.renderThreadDetail({
         content: content,
         database: database,
         onMissing: function () {
           clearNode(content);
           content.hidden = false;
-          var unavailable = document.createElement("p");
-          unavailable.className = "meta";
-          unavailable.textContent = "This thread is not in the saved snapshot. Reconnect to read it online.";
-          content.appendChild(unavailable);
+
         },
         setStatus: setStatus,
         onQueueReaction: function (target, summary, payload) {
           return snapshotPresentation.queueSignedReaction(target, summary, payload).then(function () {
-            setStatus("Like queued. Open Tools → Outbox to review it.", "ok");
+            setStatus("Like queued. Open Tools → Outbox to review it.", "outcome");
           }).catch(function (error) {
             setStatus(error && error.message ? error.message : "Unable to queue Like.", "error");
             throw error;
@@ -757,7 +766,7 @@
     window.addEventListener("online", function () {
       if (!window.forumOutboxSender || typeof window.forumOutboxSender.processQueuedOutbox !== "function") return;
       window.forumOutboxSender.processQueuedOutbox().then(function (items) {
-        if (items.length) setStatus("Queued Outbox work was processed after reconnecting.", "ok");
+        if (items.length) setStatus("Queued Outbox work was processed after reconnecting.", "outcome");
       });
     });
 
@@ -796,7 +805,7 @@
           // A missing or invalid update must not prevent reading the saved base.
         }
         var generatedAt = metadataValue(database, "generated_at");
-        setStatus("Offline snapshot is ready.", "ok");
+        setStatus("", "ok");
         root.dispatchEvent(new CustomEvent("forum-offline-reader-ready", {
           detail: { database: database, generatedAt: generatedAt }
         }));
