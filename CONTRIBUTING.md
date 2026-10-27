@@ -28,6 +28,16 @@ the interface cannot convey, and make it accessible without hover. Preserving
 a warning does not by itself require adding a confirmation step; preserve the
 existing interaction unless changing it is part of the requested work.
 
+Pages must look final on first paint. Do not add UI that appears, disappears,
+resizes, or changes caption after load because data arrives late; remove such
+changes where you find them. Decide viewer-specific UI before first paint in the
+client, from locally available state (cookies, browser storage), so server HTML
+stays identical for every viewer and shared/high-traffic pages remain fully
+static. Do not add server work or cookies just to personalize markup. An in-place
+update after paint is acceptable only when the client learns of a real state
+change during the visit, such as sign-in, sign-out, identity switch, or approval
+gained or revoked.
+
 Before marking a UI change complete:
 
 - Check the rendered flow on phone and desktop in the relevant initial,
