@@ -71,7 +71,8 @@
   width: 18rem;
   max-width: 100%;
   height: auto;
-  background: #fff;
+  color: var(--ink, #000);
+  background: var(--input-bg, #fff);
   image-rendering: pixelated;
   forced-color-adjust: none;
 }

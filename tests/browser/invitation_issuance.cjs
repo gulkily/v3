@@ -69,6 +69,27 @@ async function main() {
   await page.copy.listeners.click();
   assert.equal(page.state.copied, page.link.value);
 
+  for (const [foreground, background, expected, forced] of [
+    ['rgb(39, 50, 32)', 'rgb(223, 232, 188)', ['rgb(39, 50, 32)', 'rgb(223, 232, 188)']],
+    ['rgb(217, 231, 255)', 'rgb(15, 23, 41)', ['rgb(15, 23, 41)', 'rgb(217, 231, 255)']],
+    ['rgb(100, 100, 100)', 'rgb(130, 130, 130)', ['#000', '#fff']],
+    ['invalid', 'rgb(255, 255, 255)', ['#000', '#fff']],
+    ['rgba(0, 0, 0, 0.5)', 'rgb(255, 255, 255)', ['#000', '#fff']],
+    ['rgb(0, 0, 0)', 'rgba(255, 255, 255, 0)', ['#000', '#fff']],
+    ['rgb(39, 50, 32)', 'rgb(223, 232, 188)', ['#000', '#fff'], true]
+  ]) {
+    const themed = invitationPage();
+    themed.window.getComputedStyle = () => ({ color: foreground, backgroundColor: background });
+    themed.window.matchMedia = () => ({ matches: Boolean(forced) });
+    await themed.issue();
+    assert.equal(themed.rectangles[0][0], expected[1]);
+    assert.equal(themed.rectangles[1][0], expected[0]);
+    assert.equal(themed.payloads.at(-1), themed.link.value);
+    assert.equal(themed.rectangles[0][3], themed.canvas.width);
+    assert(themed.rectangles.slice(1).every(rect => rect[1] >= 16 && rect[2] >= 16
+      && rect[1] + rect[3] <= themed.canvas.width - 16 && rect[2] + rect[4] <= themed.canvas.height - 16));
+  }
+
   for (const failure of ['missing', 'throws', 'canvas']) {
     const failed = invitationPage();
     if (failure === 'missing') delete failed.window.qrcode;
