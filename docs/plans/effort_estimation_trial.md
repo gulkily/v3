@@ -604,3 +604,23 @@ Scope: v1/A / R1 / P2; baseline c349d7fe12cfb651cd4002fc51ac299d5907dd58; measur
 Canonical checkpoints: [Intake and Step 1](./text_backup_start_latency_step1_solution_assessment.md#study-snapshots), 2026-10-26T17:49:57Z; intake and handoff 0.65; extended estimates enabled, A 0.65 / B 0.95 / C 0.90, alternative complete cycles.
 Rater: Codex single exposed rater after source and predecessor-plan inspection; all three frozen host-local R1 hashes verified. Pristine pre-inspection intake missing; no reconstructed earlier score, measured labor or independent rating.
 Outcome: Await Approved Step 1; production 5–7-second delay is user-reported, not independently timed. No implementation, deployment, commit or accepted-count increment. Predecessor outcome and pending host acceptance preserved.
+
+## Cycle v3/high_traffic_toggle
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/high_traffic_toggle` | Locally complete; maintainer acceptance pending | v3 / R1 / P2 | 0.20 | [Intake and Step 1](./high_traffic_toggle/high_traffic_toggle_step1_solution_assessment.md#study-snapshots); [Step 2](./high_traffic_toggle/high_traffic_toggle_step2_feature_description.md#study-snapshot-and-approval); [Step 3](./high_traffic_toggle/high_traffic_toggle_step3_development_plan.md#study-checkpoint); [Step 4 entry and closeout](./high_traffic_toggle/high_traffic_toggle_step4_implementation_summary.md#closeout) | Follow-up UI cleanup of `high_traffic_mode`; acceptance pending |
+
+2026-10-27T02:06:46Z: standing P2 enrollment, baseline `6e32cd093e76da88820388159de08c95e7bd9a0d`. Intake **0.25** before toggle-source inspection; Step 1 handoff **0.20** for recommended Option A (switch row under Feature Flags heading). Extended options A 0.20, B 0.35, C 0.50, not additive. Claude Code single exposed rater, exact R1 hashes verified. No implementation, measurement or accepted outcome; planning remains uncommitted.
+
+2026-10-27 UTC: user chose Option C; scope v2 is a dedicated Tools › High traffic page with launcher/subnav entries and theme icons. **0.50 projected total**, adopting C/v1 unchanged; earlier 0.25 intake and 0.20 Step 1 retained. Same baseline/R1/P2/rater; no implementation or approval.
+
+2026-10-27 UTC: Step 1 Option C approved. Step 2 handoff **0.50 reaffirmed**, scope v2 unchanged; capability-filtered tools registry and browser-test move fit the estimate. Same baseline/R1/P2/rater; no implementation or accepted outcome.
+
+2026-10-27 UTC: user returned to Step 1 and chose Option A; scope v3 (switch row under Feature Flags heading). **0.20 projected total**, adopting A/v1 unchanged; v2 Option C 0.50 snapshots and Step 2 draft retained as superseded history. Same baseline/R1/P2/rater; no implementation or accepted outcome.
+
+2026-10-27 UTC: Step 1 Option A re-approved. Step 2 rewritten for scope v3; **0.20 reaffirmed**. Superseded v2 Step 2 draft (Option C dedicated Tools page, capability-filtered nav, 0.50) not retained as a file. Same baseline/R1/P2/rater; no implementation or accepted outcome.
+
+2026-10-27 UTC: Step 2 approved. Step 3 handoff **0.20 reaffirmed**, scope v3; stage-work originals S1 0.10, S2 0.07 (not summed). Same baseline/R1/P2/rater; no implementation or accepted outcome.
+
+2026-10-27 UTC: Step 3 approved; Step 4 entry **0.20 reaffirmed**. Closeout: two stages delivered on `feat/high-traffic-toggle` (planning `8742dc96`, Stage 1 `072ad8a2`, Stage 2 closeout commit). Stage retrospectives S1 0.10, S2 0.06; cycle retrospective scope assessment **0.20**, not measured effort. Two pre-existing LocalAppSmoke failures reproduced at baseline. Maintainer comfortable-fit judgment and acceptance pending; no accepted-count increment.

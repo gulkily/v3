@@ -552,3 +552,9 @@ Change: Download failures now distinguish 503 busy/retry, 409 refresh-and-pair, 
 Verification: `node tests/browser/archive_export_browser.mjs` exercises normal Backup links, cold/warm downloads, two-viewports (390/1280) busy/conflict/retry and generic failure, extraction and overflow checks. Backup links checked in light, Word97, Chicago and Midnight; plaintext error responses are theme-independent. Phone/desktop screenshots inspected locally; no navigation destinations/icons changed. PHP route/import tests cover integrity repair and retry.
 Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
 Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).
+
+## High-traffic toggle — 2026-10-27
+
+- [x] Replaced the separate High-traffic mode card and its full-width “Enable/Disable high-traffic mode” button with one flag-style row beneath the Feature Flags heading: label, existing staleness line, shared switch and on/off state. Shortened the failure text while keeping reload and `./v3 high-traffic restore` visible. No navigation destination or icon change.
+- Verification: `node tests/browser/high_traffic_control.mjs` passed real signed enable/disable, failure and keyboard retry, unauthorized absence, and 13 themes at 375/1150px without clipping or overflow; toolbar counts/search unaffected. Row screenshots inspected for light, dark, Word97, Chicago and Midnight in disabled, enabled and failure states at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](high_traffic_toggle/high_traffic_toggle_step4_implementation_summary.md).
