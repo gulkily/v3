@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/qr_theme; standing P2 enrollment; [ledger](../effort_estimation_trial.md)
 Extended estimates: enabled
-Status: Step 3 approved; implementation in progress on feature/qr-theme
+Status: Locally complete on feature/qr-theme; physical-camera and maintainer acceptance pending
 
 **Cycle estimate: 0.30**
 
@@ -34,5 +34,32 @@ Status: Step 3 approved; implementation in progress on feature/qr-theme
 - Verification: invitation_issuance.cjs and theme_cycle.cjs pass; existing lcd_palettes.mjs passes all palette/load/retry checks (its two separately recorded baseline composer errors remain unrelated). Real signed browser invitation passed live theme, all LCD palettes, automatic system and forced-color transitions with exact independently decoded payload and one issuance. Delayed/failed stylesheets retained a usable current code; forced redraw failure retained the current copyable link. Temporary evidence: /tmp/qr-theme/stage2.mjs.
 - Notes: Corrected test route matching for fingerprinted assets and used DOMContentLoaded for navigation with intentionally held stylesheet requests; initial harness timeouts were not product failures. Physical scans still pending. Stage 1 commit: d52c39997.
 - Estimate details: S2/v1 scope and original estimate unchanged; retrospective 0.10, same R1/P2/exposed rater.
+
+*— Codex · 2026-10-27 UTC*
+
+## Stage 3 - Normal-flow acceptance and handoff
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Completed acceptance matrix and documentation; retained focused color, margin, repaint and stale-result regression assertions in the existing invitation harness from Stages 1–2. No additional product changes were needed.
+- Verification passed: 38 rendered combinations cover all 16 registered explicit themes plus three additional LCD variants, each at 320/1280 pixels. Real signed invitations entered through normal navigation; QDB uses its existing direct Invite URL because its navigation deliberately omits Invite. Raw canvas and actual displayed canvas screenshots independently decode to the exact link with jsQR 1.4.0. Every combination has two opaque colors, dark-on-light contrast at least 7:1, a four-module clear margin, square sizing, unchanged module matrix across theme changes and no page overflow. All phone theme screenshots and representative desktop screenshots reviewed. Normal Copy reads back the same URL; a fresh recipient opens the intended thread through real redemption.
+- Verification passed: Existing invitation_issuance.cjs, theme_cycle.cjs and lcd_palettes.mjs; php tests/run.php InvitationIssuanceTest (9/9); invite_zero_click.mjs in public and members-only modes, including fresh/existing identities, recovery, invalid/expired/revoked invitations and username-change restrictions. Browser acceptance additionally covers initial empty result, long/expanded destination, issuance failure, switching while cleared and retry; Stage 2 covers pending, load failures, live auto/forced colors and QR-only failure. JS syntax and whitespace checks passed.
+- Evidence: Disposable scripts, screenshots and machine matrix results under /tmp/qr-theme/ (stage1.mjs, stage2.mjs, stage3.mjs, profiles.mjs, matrix.json and matrix-{profile}.json). Disposable decoder lives only in /tmp/qr-theme-tools. Profile harness initially attempted QDB's deliberately absent Invite navigation and passed a Node-only variable into the browser; corrected harness and reran all three profiles successfully. No new dependency was added to the repository.
+- Notes: Stage 2 commit 7ee61aadd. Existing LCD test reports two baseline composer errors separately; its scoped palette assertions passed. Full test suite and physical camera scans not run. Deployment, merge and push not performed. No schema, API or UI-copy changes; todo.txt unchanged.
+- Estimate details: S3/v1 original 0.10 retained; retrospective 0.15 reflects independent decoder/tooling and profile-specific acceptance work. Same scope/R1/P2/exposed rater; no measured labor claim.
+
+*— Codex · 2026-10-27 UTC*
+
+## Study closeout and release limits
+
+Status: Three planned stages completed locally; physical-device and maintainer acceptance pending.
+Original projected cycle: 0.30 retained.
+Retrospective cycle scope: 0.35, separately judged, not the sum of stage annotations.
+Scope: v1/A; original baseline 085c47701f57334164f7fe1c562454443cd65596; R1/P2; stable v3/qr_theme, deduplicated across worktrees.
+Evidence: Frozen R1 hashes reverified at entry. Planning 0b52b2251, S1 d52c39997, S2 7ee61aadd and this Stage 3 closeout commit; final revision recorded in the subsequent debug handoff.
+Outcome: Restrained colors, automatic theme/palette recoloring, conservative fallback and preserved generation/copy recovery delivered. Existing invitation behavior remains covered. No new scope, splits or replacement outcomes; earlier intake omission and projections preserved.
+Release limits: Camera acceptance requires scanning a displayed light, dark and LCD code from a physical phone and confirming it opens the matching invitation. Automated decoding does not claim that evidence. No full-suite, production deployment or merge-readiness claim. Maintainer comfortable-fit judgment unknown; accepted study outcome count unchanged.
+Dependency delta: Zero repository components, manifests or lock files added/updated. Existing encoder bytes unchanged; external jsQR evaluation stayed outside the repository.
 
 *— Codex · 2026-10-27 UTC*
