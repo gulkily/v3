@@ -72,3 +72,15 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 - Notes: existing non-verifier GPG-home cleanup behavior retained. No weakened signer validation or new dependency. Scope/estimate unchanged.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 6 - Invocation deadline supervision
+
+**Original estimate: 0.30**
+
+**Retrospective stage work: 0.30**
+
+- Changes: Linux/WSL parent supervises a separate import worker using a monotonic whole-invocation budget (300 seconds default, explicit positive finite --time-limit override). It observes descendants including nested verification process groups, tracks PID birth times, and terminates owned processes on expiry/interruption. Progress identifies the active stage; reports distinguish retry from a pending resume. Missing enforcement support fails before mutation. Normal download/history limits remain inside the supervised worker.
+- Verification: existing CLI group initially 8/9 exposed a broken-pipe notice in the new limit banner; corrected it. Supervisor/closed-pipe checks then 3/3: blocked HTTP download deadline, nested setsid child and held-lock release, invalid overrides and normal closed-output completion. Remaining original CLI checks passed with supervision. S5 commit: `1751d6d2`.
+- Notes: deadline covers blocking native calls and publication, not just cooperative checkpoints. Atomic interrupted writes and durable recovery are S7; hard-killed worker temporary workspaces may remain for inspection. No new dependency or schema.
+
+*— Codex · 2026-10-27 UTC*

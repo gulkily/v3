@@ -12,6 +12,23 @@ use ForumRewrite\Import\InstanceSourceResolver;
 use ForumRewrite\PresentationPathResolver;
 use ForumRewrite\SiteProfileRegistry;
 
+try {
+    $options = importInstanceOptions(array_slice($argv, 1));
+    if (isset($options['help'])) { fwrite(STDOUT, importInstanceUsage()); exit(0); }
+    $rawLimit = $options['time-limit'] ?? '300';
+    if (!preg_match('/^[0-9]+(?:\\.[0-9]+)?$/D', $rawLimit) || !is_finite((float) $rawLimit) || (float) $rawLimit <= 0) {
+        throw new RuntimeException('--time-limit must be a positive finite number of seconds.');
+    }
+    @fwrite(STDOUT, 'Import time limit: ' . $rawLimit . " seconds\n");
+    $repository = realpath($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
+    exit(\ForumRewrite\Support\InvocationSupervisor::run(static fn (): int => importInstanceMain($argv), (float) $rawLimit, $repository === false ? null : $repository));
+} catch (Throwable $error) {
+    fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");
+    exit(1);
+}
+
+function importInstanceMain(array $argv): int
+{
 $projectRoot = dirname(__DIR__);
 $workspace = null;
 $repository = null;
@@ -39,6 +56,7 @@ try {
     // A pager may close stdout while an import still needs to finish safely.
     $outputOpen = true;
     $progress = static function (string $message) use (&$outputOpen): void {
+        \ForumRewrite\Support\InvocationSupervisor::stage($message);
         $line = importTerminalText($message) . "\n";
         while ($outputOpen && $line !== '') {
             $written = @fwrite(STDOUT, $line);
@@ -114,7 +132,9 @@ try {
         rmdir($workspace);
     }
 }
-exit($exitCode);
+return $exitCode;
+
+}
 
 function importInstanceOptions(array $arguments): array
 {
@@ -122,7 +142,7 @@ function importInstanceOptions(array $arguments): array
     foreach ($arguments as $argument) {
         if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--verbose'], true)) {
             $options[$argument === '-h' ? 'help' : substr($argument, 2)] = true;
-        } elseif (preg_match('/^--(repository-root|database-path|static-html-root|sources)=(.+)$/D', $argument, $match)) {
+        } elseif (preg_match('/^--(repository-root|database-path|static-html-root|sources|time-limit)=(.+)$/D', $argument, $match)) {
             if (isset($options[$match[1]])) { throw new RuntimeException('Duplicate option: --' . $match[1]); }
             $options[$match[1]] = $match[2];
         } elseif (!str_starts_with($argument, '-') && !isset($options['source'])) {
@@ -165,7 +185,11 @@ Example: ./v3 import-instance https://forum.example --dry-run
 Conflicts retain the local version.
 Names require an explicit JSON mapping: {"community": "https://forum.example/base"}
 Hostnames default to HTTPS; use an explicit http:// URL when needed.
-Limits: 256 MiB download, 1 GiB expanded, 16 MiB per record, 100,000 entries, 120 seconds, 5 redirects.
+Limits: 256 MiB download, 1 GiB expanded, 100,000 entries; UTF-8 archive names.
+16 MiB text, 1 MiB signatures/keys, 4 KiB timestamps; stricter metadata limits remain.
+300 seconds total (finite --time-limit=SECONDS override); up to 5 seconds cleanup.
+120 seconds download/history, 5 redirects; verification 10 seconds/1 MiB output.
+Requires Linux/WSL with PHP PCNTL/POSIX and setsid; unavailable enforcement fails closed.
 Excludes private data, authority, instance settings, source history, and derived databases.
 Legacy dates are recovered from isolated history and retained as hash-bound metadata.
 Posts without recoverable dates and unsupported records are reported, not rewritten.
