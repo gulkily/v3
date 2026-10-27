@@ -24,3 +24,15 @@ Status: Step 3 approved; implementation in progress on feature/qr-theme
 - Estimate details: S1/v1 original scope unchanged, no revision; R1/P2/exposed rater retained. Stage commit follows this record.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 2 - Keep visible codes synchronized
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes: Invite-local observer follows effective theme and LCD palette attributes, stylesheet load completion and forced-color changes. Only a current visible successful QR redraws. Redraw failures hide the QR and preserve the current link with existing recovery feedback. No changes to shared theme selection or issuance APIs.
+- Verification: invitation_issuance.cjs and theme_cycle.cjs pass; existing lcd_palettes.mjs passes all palette/load/retry checks (its two separately recorded baseline composer errors remain unrelated). Real signed browser invitation passed live theme, all LCD palettes, automatic system and forced-color transitions with exact independently decoded payload and one issuance. Delayed/failed stylesheets retained a usable current code; forced redraw failure retained the current copyable link. Temporary evidence: /tmp/qr-theme/stage2.mjs.
+- Notes: Corrected test route matching for fingerprinted assets and used DOMContentLoaded for navigation with intentionally held stylesheet requests; initial harness timeouts were not product failures. Physical scans still pending. Stage 1 commit: d52c39997.
+- Estimate details: S2/v1 scope and original estimate unchanged; retrospective 0.10, same R1/P2/exposed rater.
+
+*— Codex · 2026-10-27 UTC*

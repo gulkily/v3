@@ -174,6 +174,26 @@
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
     const issueButton = form.querySelector('button[type="submit"]');
     let issuing = false;
+    const refreshQr = function () {
+      if (issuing || result.hidden || qrResult.hidden || !link.value) return;
+      try {
+        renderInvitationQr(qrCanvas, link.value);
+      } catch (error) {
+        qrResult.hidden = true;
+        setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead.", "ok");
+      }
+    };
+    if (window.MutationObserver) {
+      new window.MutationObserver(refreshQr).observe(document.documentElement, {
+        attributes: true, attributeFilter: ["data-theme", "data-resolved-theme", "data-lcd-palette"]
+      });
+    }
+    // Initial and automatic theme changes can precede stylesheet readiness.
+    document.addEventListener("load", function (event) {
+      if (event.target.tagName === "LINK" && event.target.rel === "stylesheet") refreshQr();
+    }, true);
+    const forcedColors = window.matchMedia && window.matchMedia("(forced-colors: active)");
+    if (forcedColors && forcedColors.addEventListener) forcedColors.addEventListener("change", refreshQr);
     addDestinationOption(destinationOptions, destination.dataset.sourceDestination);
     recentInvitationDestinations().forEach(function (recentDestination) {
       addDestinationOption(destinationOptions, recentDestination);

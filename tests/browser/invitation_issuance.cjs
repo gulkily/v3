@@ -28,7 +28,9 @@ function invitationPage() {
   const document = node({ querySelector() { return root; } });
   const calls = [], payloads = [];
   const state = { failure: '', pause: null, copied: '' };
+  let themeChanged;
   const window = { location: { origin: 'https://forum.test' },
+    MutationObserver: class { constructor(callback) { themeChanged = callback; } observe() {} },
     ForumBrowserSigning: {
       async ensureActionIdentity() { if (state.pause) await state.pause; },
       async signCanonicalRecord() { if (state.failure === 'sign') throw Error('sign failed'); return 'signature'; }
@@ -53,6 +55,7 @@ function invitationPage() {
   vm.runInContext(fs.readFileSync(path.join(assets, 'invite_issuance.js'), 'utf8'), sandbox);
   document.listeners.DOMContentLoaded();
   return { state, window, form, submit, feedback, result, link, copy, qr, canvas, calls, payloads, rectangles,
+    themeChanged: () => themeChanged(), stylesheetLoaded: () => document.listeners.load({target:{tagName:'LINK',rel:'stylesheet'}}),
     issue: () => form.listeners.submit({ preventDefault() {} }) };
 }
 
@@ -106,6 +109,12 @@ async function main() {
   }
 
   const firstLink = page.link.value;
+  page.window.getComputedStyle = () => ({ color: 'rgb(39, 50, 32)', backgroundColor: 'rgb(223, 232, 188)' });
+  page.themeChanged();
+  assert.equal(page.rectangles.at(-1)[0], 'rgb(39, 50, 32)');
+  page.stylesheetLoaded();
+  assert.equal(page.payloads.at(-1), firstLink);
+  assert.equal(page.calls.length, 2);
   await page.issue();
   assert.notEqual(page.link.value, firstLink);
   assert.equal(page.payloads.at(-1), page.link.value);
@@ -120,6 +129,9 @@ async function main() {
     assert.equal(retry.link.value, '', failure);
     assert.equal(retry.qr.hidden, true, failure);
     assert.equal(retry.canvas.width, 0, failure);
+    const rendered = retry.payloads.length;
+    retry.themeChanged(); retry.stylesheetLoaded();
+    assert.equal(retry.payloads.length, rendered);
     assert.equal(retry.feedback.dataset.status, 'error', failure);
     assert.equal(retry.submit.disabled, false, failure);
     retry.state.failure = '';
@@ -138,6 +150,8 @@ async function main() {
   assert.equal(delayed.qr.hidden, true);
   assert.equal(delayed.link.value, '');
   assert.equal(delayed.submit.disabled, true);
+  delayed.themeChanged(); delayed.stylesheetLoaded();
+  assert.equal(delayed.payloads.length, 1);
   await delayed.issue(); // A second submit event must be ignored even if dispatched programmatically.
   assert.equal(delayed.calls.length, 2);
   resume();
@@ -148,6 +162,10 @@ async function main() {
   assert.equal(delayed.submit.disabled, false);
 
   delete delayed.window.qrcode;
+  delayed.themeChanged();
+  assert.equal(delayed.qr.hidden, true);
+  assert.equal(delayed.result.hidden, false);
+  assert.match(delayed.feedback.textContent, /QR code unavailable/);
   await delayed.issue();
   assert.equal(delayed.qr.hidden, true);
   assert.equal(delayed.canvas.width, 0);
