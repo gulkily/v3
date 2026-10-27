@@ -24,3 +24,15 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 - Notes: runner ownership is a process group; invocation supervision must additionally handle nested owned groups (S6). No global installation or promise of an OS sandbox. Original scope/estimate unchanged; no measured labor.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 2 - Bounded-memory text validation
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.10**
+
+- Changes: a Unicode category check replaces the per-character PHP array while retaining permitted tab/LF and rejection of other category-C characters.
+- Verification: `CanonicalTextBoundsTest CanonicalRecordParsersTest` 49/49, including a full 16 MiB record in a 128 MiB child, multibyte prose, controls/private-use/invalid bytes and all canonical families. S1 commit: `00f2dfbe`.
+- Notes: no signed-byte changes; this bounds parser overhead, not whole-import memory. Original scope unchanged; no new dependencies.
+
+*— Codex · 2026-10-27 UTC*
