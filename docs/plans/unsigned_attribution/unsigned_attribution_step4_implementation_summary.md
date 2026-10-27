@@ -8,6 +8,7 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
 
 ## Effort snapshot
 
+- Technical closeout — 2026-10-26 after Stage 8; same study, cycle, scope v6, R1/P2 and exposed single rater (has seen the whole implementation). Projection **about 1.0 reaffirmed**; retrospective scope assessment **about 1.05**: delivered scope matches v6, plus a Stage 3 label gap fixed in Stage 4, the Word97 mark contrast fix and the schema renumbering on merge. Measured effort unknown. Maintainer acceptance pending; no accepted-count change.
 - Step 4 entry — 2026-10-23; same study, cycle, scope v4, R1/P2 and rater. **About 0.95 reaffirmed** from Step 3; recorded after the planning commit and before implementation.
 - Step 4 re-entry — 2026-10-23; same study, cycle, R1/P2 and rater; scope v6 after Approved Step 2 (revision 3) and Approved Step 3 (revision 2). **About 1.0 reaffirmed**; Stage 1 kept, later stages renumbered.
 
@@ -110,7 +111,19 @@ Branch: `feat/unsigned-attribution` · Planning commit: `53e70490`
   - Scripture, agent reply and agent identity suites pass except `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts`, which fails identically before Stage 2 (pre-existing).
 - Release check: the production reply agent's private key must exist in its private key directory; without it, agent replies fail instead of posting unsigned.
 
+## Stage 8 - Acceptance and release evidence
+
+- Changes:
+  - Merged `origin/main` (`151905f1`) in `0888609c`. Main had moved the read model to schema 30, so verified attribution is now **schema 31** (was 26 on this branch); `read_model_schema_v1.md` and the prior-version startup test (`testVersion30StartupRebuildsBeforeServingVerifiedTotals`) follow. Main's changed-rows-only profile refresh now also sets and compares the claimed and verified counts.
+- Verification:
+  - Full suite on the merged tree: 1,544 passed, 9 failed. Full suite on `origin/main` (`151905f1`): 1,540 passed, 7 failed. The 7 fail on both: `ApprovalSeedCommandTest::testApprovalIsEffectiveForExistingAuthenticatedMemberOnNextRequest`, `AgentIdentityServiceTest::testReplyAgentBootstrapCreatesApprovedIdentityAndPrivateKeyOutsidePublicArtifacts`, `LocalAppSmokeTest::testThreadMergesSameAuthorQuickRepliesIntoContinuations`, `LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets`, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, `WriteApiSmokeTest::testHistoricalReactionSignaturesAreVerifiedOnRebuildAndImport`. The other 2 are intermittent: `ImportInstanceCommandTest::testSourceErrorDetailIsBoundedAndSafe` passed on both reruns; `FrontendTargetResolverTest::testHungCandidateCannotEstablishUniquenessAndBudgetIsShared` (a wall-clock budget assertion in code this branch does not touch) failed 2 of 8 runs here and 0 of 8 on `main`.
+  - zenmemes backup copy (`5b98332a`), rebuilt at schema 31 and compared with the pre-Stage-3 rebuild: flag off, and flag on with a cutoff of now (2026-10-26T23:00Z), each give 0 differing threads (score, vote count), posts (score, flags, hidden, profile link) and profiles (post and thread counts), and no uncounted post or activity row. The cutoff was supplied by a test-only override in a scratch copy of the code, since an operator-signed switch-on cannot be made on a copy; nothing was written to zenmemes.
+  - Same copy with a cutoff of 2026-08-01 (illustration, not a release setting): 102 posts and 254 activity rows uncounted, 42 threads, 151 posts and 4 profiles change. Every uncounted post is one the Stage 1 audit lists as missing a signature (62 `reply-agent`, 26 `ilyag`). That rebuild took 28 s against 2.5–4 s for the others.
+- Outstanding before release:
+  - Maintainer review of the Stage 1 counts and of the Stage 3 judgment call (approved-member flags hiding reply-agent posts follow the verified rule).
+  - The production reply agent's private key must exist (see `todo.txt`).
+
 ## Enhancement Requests
 
-- **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** pending renewed Approved Step 2 and Approved Step 3. / **Outcome:** pending.
-- **Request:** keep today's behavior as the default; write the cutoff automatically and show it to operators (maintainer, 2026-10-23). / **Disposition:** changed scope; Step 2 revision 3 (default-off verified attribution flag; accept-unsigned-content flag to its own cycle) and Step 3 revision 2. / **Approval status:** Approved Step 2 (revision 3) and Approved Step 3 (revision 2). / **Outcome:** pending.
+- **Request:** keep existing unsigned items counting with a cutoff (maintainer, at the Stage 1 review gate, 2026-10-23). / **Disposition:** changed scope; implementation paused after Stage 1; returned to Step 2 (revision 2). / **Approval status:** superseded by the next request's approvals. / **Outcome:** delivered (Stages 2–5).
+- **Request:** keep today's behavior as the default; write the cutoff automatically and show it to operators (maintainer, 2026-10-23). / **Disposition:** changed scope; Step 2 revision 3 (default-off verified attribution flag; accept-unsigned-content flag to its own cycle) and Step 3 revision 2. / **Approval status:** Approved Step 2 (revision 3) and Approved Step 3 (revision 2). / **Outcome:** delivered (Stages 2–7); maintainer acceptance pending.

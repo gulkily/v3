@@ -189,3 +189,18 @@
 ### Uncertain assessments
 
 - Step 2 named an "existing unverified signature status" that does not exist; the existing word is "unsigned". Treated as a wording correction under Step 2's own decision ("reuse the existing signature status wording"), not a scope change.
+
+## 2026-10-26T23:30Z · Step 4 Stage 8 (acceptance and release evidence)
+
+### Necessary/useful instructions
+
+- Step 3 Stage 8 "full suite against the known failures": running `origin/main` alongside the merged tree separated pre-existing failures from new ones; the earlier full-suite attempt had been interrupted and never recorded. Retain.
+- `CONTRIBUTING.md` "Read-model schema changes": the merge collided on the schema version (26 here, 30 on main); the same four obligations defined what renumbering had to touch. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- The release check needs counts "with the flag on (cutoff now)", but a cutoff comes only from an operator-signed record, which cannot be made on a read-only copy. A test-only override in a scratch copy of the code supplied it. Railspike does not say whether such a harness is acceptable evidence.
