@@ -573,3 +573,10 @@ Dependency delta: Zero. No navigation destination/icon, schema, canonical record
 
 Resolution: Preserve upstream instance/admin/snapshot details, recent items, image ZIP link, inline SQLite freshness and compact public-scope copy alongside the new flag-based unavailable state. Image-only mode retains the matching-content requirement. ZIP and legacy TAR remain under one image flag.
 Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all 240 states across six themes and 390/1280 widths; actual ZIP/TAR denial, recovery and icon checks pass. Merged Midnight phone image-only screenshot inspected at /tmp/backup-flags-browser-lBKMAg/backup-01.png. Canonical-order toolbar suite passes. See backup feature-flags implementation summary for 50 passing PHP checks and evidence paths. No new layout/overflow issue observed; full suite, physical devices and deployment remain unverified.
+
+## Invitation signing recovery — October 27, 2026
+
+- [x] Recover session/signing-key disagreement on Invite without an Account detour. Reserve Account restore guidance for genuinely unusable/unapproved saved identities; retain keys and input.
+- [x] Provide actionable signature failure text with the diagnostic status. For unknown creation outcomes, retain the pending token in this page and use Check invitation rather than issuing again; keep-page-open guidance remains visible.
+- Verified 160 rendered public/members-only, five-theme, phone/desktop states covering initial, pending, successful, uncertain, invalid-signature, unapproved, missing-key and restored flows. No page overflow; main action remains available and recovery stays beneath it. Representative screenshots reviewed with expanded revocation/long values. Existing app-version notifications appeared during the fixtures; notification behavior is outside this correction.
+- Actual signing, permission denial, restore/retry, lost-response inspection, recipient redemption and revocation checks passed. Full suite, production and physical-device verification are not claimed. [Implementation evidence](invite_signing_readiness/invite_signing_readiness_step4_implementation_summary.md).

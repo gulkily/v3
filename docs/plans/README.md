@@ -311,4 +311,4 @@ and repair its navigation and affected references. See the
 
 [QR theme](qr_theme/qr_theme_step4_implementation_summary.md) — restrained QR colors and live theme synchronization; locally complete, physical-camera acceptance pending.
 
-[Invite signing readiness](invite_signing_readiness/invite_signing_readiness_step3_development_plan.md) — repair reproduced session/signing-key mismatch; Steps 1–3 approved.
+[Invite signing readiness](invite_signing_readiness/invite_signing_readiness_step4_implementation_summary.md) — session/signing-key mismatch fixed locally; user/production confirmation pending.

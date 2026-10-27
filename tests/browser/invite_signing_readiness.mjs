@@ -1,6 +1,7 @@
 // Run: node tests/browser/invite_signing_readiness.mjs; --baseline verifies the original defect.
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, mkdir, readdir } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runInThisContext } from 'node:vm';
@@ -16,8 +17,10 @@ const keys = await pgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ 
 const fingerprint = (await pgp.readKey({ armoredKey: keys.publicKey })).getFingerprint();
  const keysB=await pgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'second-inviter'}],format:'armored',date:new Date(Date.now()-60000)});
  const fpB=(await pgp.readKey({armoredKey:keysB.publicKey})).getFingerprint();
+const keysC=await pgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'unapproved'}],format:'armored',date:new Date(Date.now()-60000)});
+const fpC=(await pgp.readKey({armoredKey:keysC.publicKey})).getFingerprint();
 const root = await mkdtemp(join(tmpdir(), 'invite-browser-'));
-const fixture = spawnSync('php', [join(project, 'tests/Support/invite_browser_fixture.php'), root], { input: JSON.stringify({...keys, additionalPublicKeys:[keysB.publicKey]}), encoding: 'utf8' });
+const fixture = spawnSync('php', [join(project, 'tests/Support/invite_browser_fixture.php'), root], { input: JSON.stringify({...keys, additionalPublicKeys:[keysB.publicKey], unapprovedPublicKeys:[keysC.publicKey]}), encoding: 'utf8' });
 assert.equal(fixture.status, 0, fixture.stderr);
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', args: ['--no-sandbox'] });
 let server, logs = '', lastPage;
@@ -59,6 +62,23 @@ try {
   const signature=await pgp.sign({message:await pgp.createMessage({text:challenge}),signingKeys:await pgp.readPrivateKey({armoredKey:keys.privateKey}),detached:true,format:'armored'});
   const auth=await context.request.post(base+'/api/authenticate_identity',{form:{identity_id:'openpgp:'+fingerprint,challenge,detached_signature:signature}});assert.equal(auth.status(),200,await auth.text());
   await page.goto(base+'/invites/');
+  const screenshots = process.env.INVITE_SIGNING_SCREENSHOTS;
+  async function checkUi(label) {
+    if (!screenshots || staleFingerprint || baseline) return;
+    await mkdir(screenshots, {recursive:true});
+    for (const width of [320,1280]) {
+      await page.setViewportSize({width,height:900});
+      for (const theme of ['light','dark','lcd','word97','midnight']) {
+        await page.locator('[data-action=theme-toggle]').click();
+        await page.locator(`[data-theme-option="${theme}"]`).click();
+        await page.waitForFunction(theme => document.documentElement.dataset.resolvedTheme === theme, theme);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, label);
+        assert.equal(await page.locator('[data-invitation-issue-form] button[type=submit]').isVisible(), true);
+        await page.screenshot({path:join(screenshots, `${privateSite?'private':'public'}-${label}-${theme}-${width}.png`),fullPage:true});
+      }
+    }
+  }
+  await checkUi('initial');
   const requests=[];
   page.on('request',r=>{if(r.url().endsWith('/api/authenticate_identity'))requests.push('authenticate');});
   async function issue(){
@@ -86,6 +106,7 @@ try {
     await page.waitForRequest(request => request.url().endsWith('/api/authenticate_identity'));
     assert.equal(preparedRequests, 0, 'preparation must wait for authentication');
     assert.equal(await page.locator('[data-invitation-issue-form] button[type=submit]').isDisabled(), true);
+    await checkUi('pending');
     releaseAuthentication();
   }
   const first=await firstPending;
@@ -103,6 +124,12 @@ try {
     assert.equal(first.status,'ok',first.error);
     assert.equal(first.author,'openpgp:'+fpB);
     assert.equal(preparedRequests, 1); assert.equal(finalRequests, 1);
+    const token = (await page.locator('[data-role=invitation-link]').inputValue()).split('#invite=')[1];
+    const hash = 'sha256:' + createHash('sha256').update(token).digest('hex');
+    const posts = join(root, 'repository/records/posts');
+    const records = await Promise.all((await readdir(posts,{recursive:true})).filter(path => path.endsWith('.txt')).map(path => readFile(join(posts,path),'utf8')));
+    assert.equal(records.filter(text => text.includes('Invitation-Action: issue\n') && text.includes('Verification-Hash: '+hash+'\n')).length, 1);
+    await checkUi('success');
   }
   assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('forum_pki_public_key'),localStorage.getItem('forum_pki_private_key')]),before);
   assert.equal(await page.locator('[data-role=invitation-qr]').isVisible(),true);
@@ -150,6 +177,7 @@ try {
     });
     await page.locator('[data-invitation-issue-form] button[type=submit]').click();
     await page.getByRole('button', {name:'Check invitation', exact:true}).waitFor();
+    await checkUi('uncertain');
     assert.equal(finalRequests, finalStart + 1);
     await page.unroute('**/api/create_prepared_invitation');
     await page.getByRole('button', {name:'Check invitation', exact:true}).click();
@@ -168,6 +196,7 @@ try {
     assert.equal((await issue()).status, 'error');
     assert.equal(finalRequests, invalidStart + 1);
     await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent.includes('signature could not be verified'));
+    await checkUi('invalid-signature');
     assert.equal(await page.locator('[data-role=invitation-qr]').isVisible(), false);
     await page.unroute('**/api/create_prepared_invitation');
     const revocable = await issue();
@@ -179,8 +208,27 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent === 'Invitation revoked.');
     const revoked = await (await context.request.post(base+'/api/inspect_invitation',{form:{invite_token:token}})).json();
     assert.equal(revoked.status, 'error'); assert.match(revoked.error, /revoked/);
+    const blockedStart = preparedRequests;
+    await setKeys(keysC, fpC);
+    await page.locator('[data-invitation-issue-form] button[type=submit]').click();
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent.includes('not approved'));
+    assert.equal(preparedRequests, blockedStart);
+    assert.equal(await page.evaluate(() => localStorage.getItem('forum_pki_private_key')), keysC.privateKey);
+    await checkUi('unapproved');
+    await setKeys(keys, fingerprint);
+    assert.equal((await issue()).status, 'ok');
+    await tab.evaluate(() => localStorage.removeItem('forum_pki_private_key'));
+    await page.locator('[data-invitation-issue-form] button[type=submit]').click();
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent.includes('saved key is unavailable'));
+    assert.equal(await page.evaluate(() => localStorage.getItem('forum_pki_private_key')), null);
+    assert.equal(preparedRequests, blockedStart + 1);
+    await checkUi('missing-key');
+    await setKeys(keys, fingerprint);
+    assert.equal((await issue()).status, 'ok');
+    await checkUi('restored');
     console.log(`PASS ${privateSite?'members-only':'public'}: cross-tab preparation race, bounded repeat drift, lost-response check without reissuance and recipient redemption`);
     console.log(`PASS ${privateSite?'members-only':'public'}: wrong-key signature rejected without retry; retry and actual revocation UI`);
+    console.log(`PASS ${privateSite?'members-only':'public'}: unapproved/missing key blocked without replacement; restore and retry`);
   }
   await context.close();
   }

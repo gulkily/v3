@@ -19,6 +19,9 @@ foreach (array_merge([$input['publicKey']], $input['additionalPublicKeys'] ?? []
     $path = $root . '/repository/records/approval-seeds/' . str_replace(':', '-', $identity['identity_id']) . '.txt';
     file_put_contents($path, 'Approved-Identity-ID: ' . $identity['identity_id'] . "\nSeed-Reason: isolated invitation browser fixture\n\n");
 }
+foreach ($input['unapprovedPublicKeys'] ?? [] as $publicKey) {
+    $writer->linkIdentity(['public_key' => $publicKey]);
+}
 exec('git -C ' . escapeshellarg($root . '/repository') . ' add .');
 exec('git -C ' . escapeshellarg($root . '/repository') . ' commit -qm "Approve isolated browser inviter"');
 (new \ForumRewrite\ReadModel\ReadModelBuilder($root . '/repository', $root . '/read.sqlite3', $repository))->rebuild();
