@@ -69,6 +69,7 @@ final class InvocationSupervisor
             // nested setsid groups created by bounded signature verification.
             if (!$reaped) @posix_kill($pid, SIGSTOP);
             self::discover($pid, $known);
+            $ownedLocks = $reaped || $repository === null ? [] : self::gitLocks($known, $repository);
             foreach (array_reverse($known, true) as $child => $birth) {
                 $stat = self::stat($child);
                 if ($stat !== null && $stat['birth'] === $birth) {
@@ -78,9 +79,44 @@ final class InvocationSupervisor
             }
             @posix_kill(-$pid, SIGKILL);
             if (!$reaped) { @posix_kill($pid, SIGKILL); pcntl_waitpid($pid, $status); }
+            $cleanupEnd = hrtime(true) / 1e9 + 2;
+            do {
+                $alive = false;
+                foreach ($known as $child => $birth) {
+                    $stat = self::stat($child);
+                    if ($stat !== null && $stat['birth'] === $birth && !in_array($stat['state'], ['Z', 'X'], true)) $alive = true;
+                }
+                if ($alive) usleep(10000);
+            } while ($alive && hrtime(true) / 1e9 < $cleanupEnd);
+            if ($alive) {
+                $ownedLocks = [];
+                fwrite(STDERR, "An owned child has not exited; retaining Git locks for operator inspection.\n");
+            }
+            foreach ($ownedLocks as $path => $identity) {
+                clearstatcache(true, $path);
+                $stat = @lstat($path);
+                if ($stat !== false && !is_link($path) && [$stat['dev'], $stat['ino']] === $identity) @unlink($path);
+            }
             fclose($pair[0]);
             pcntl_signal(SIGINT, $oldInt); pcntl_signal(SIGTERM, $oldTerm); pcntl_async_signals($oldAsync);
         }
+    }
+
+    /** Only files observed open by our Git child can be cleaned after it is killed. */
+    private static function gitLocks(array $known, string $repository): array
+    {
+        $locks = [];
+        foreach ($known as $pid => $birth) {
+            $stat = self::stat($pid);
+            if ($stat === null || $stat['birth'] !== $birth || basename((string) @readlink('/proc/' . $pid . '/exe')) !== 'git') continue;
+            foreach (glob('/proc/' . $pid . '/fd/*') ?: [] as $fd) {
+                $path = @readlink($fd);
+                if (!is_string($path) || !str_starts_with($path, $repository . '/.git/') || !str_ends_with($path, '.lock')) continue;
+                $identity = @stat($fd);
+                if ($identity !== false) $locks[$path] = [$identity['dev'], $identity['ino']];
+            }
+        }
+        return $locks;
     }
 
     private static function stat(int $pid): ?array
@@ -88,7 +124,7 @@ final class InvocationSupervisor
         $raw = @file_get_contents('/proc/' . $pid . '/stat');
         if ($raw === false) return null;
         $fields = explode(' ', substr($raw, strrpos($raw, ')') + 2));
-        return ['parent' => (int) $fields[1], 'group' => (int) $fields[2], 'birth' => $fields[19]];
+        return ['state' => $fields[0], 'parent' => (int) $fields[1], 'group' => (int) $fields[2], 'birth' => $fields[19]];
     }
 
     private static function discover(int $root, array &$known): void

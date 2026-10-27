@@ -84,3 +84,15 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 - Notes: deadline covers blocking native calls and publication, not just cooperative checkpoints. Atomic interrupted writes and durable recovery are S7; hard-killed worker temporary workspaces may remain for inspection. No new dependency or schema.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 7 - Durable hard-timeout recovery
+
+**Original estimate: 0.25**
+
+**Retrospective stage work: 0.25**
+
+- Changes: retained the existing private scratch-copy/rename design, verified complete copied bytes before installation and refused cross-filesystem installs where rename could degrade to copying. Added prepared/copy-prepared checkpoints. Supervisor may remove only a Git lock observed open by its own Git child, after termination and inode/device revalidation; foreign/unproven locks remain untouched.
+- Verification: final hard-deadline/supervisor/recovery group 7/7; separate publication group 3/3. Nine real hard-stop boundaries cover prepared state, scratch copy, copied files, staging, post-commit/pre-journal, pre-build, built candidate, promotion and first offline publication. Each resumes without source, keeps signatures, has exactly two commits including seed, a clean destination and valid live/offline SQLite. Partial scratch bytes are safely replaced. Actual stalled Git hook resumes; foreign index.lock is preserved. Divergent-local-edit protection remains passing. S6 commit: `68ac5220`.
+- Notes: Linux uninterruptible kernel/device failures cannot be repaired by signals; if an owned child has not exited, locks are retained for operator inspection. Ordinary process stalls and deadline fixtures meet the cleanup allowance. Hard-killed temporary download/candidate files may remain; they are not canonical or resumed payloads and no broad cleanup deletes unrelated files. No rollback of local edits.
+
+*— Codex · 2026-10-27 UTC*
