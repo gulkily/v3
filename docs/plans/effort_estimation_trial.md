@@ -624,3 +624,15 @@ Outcome: Await Approved Step 1; production 5–7-second delay is user-reported, 
 2026-10-27 UTC: Step 2 approved. Step 3 handoff **0.20 reaffirmed**, scope v3; stage-work originals S1 0.10, S2 0.07 (not summed). Same baseline/R1/P2/rater; no implementation or accepted outcome.
 
 2026-10-27 UTC: Step 3 approved; Step 4 entry **0.20 reaffirmed**. Closeout: two stages delivered on `feat/high-traffic-toggle` (planning `8742dc96`, Stage 1 `072ad8a2`, Stage 2 closeout commit). Stage retrospectives S1 0.10, S2 0.06; cycle retrospective scope assessment **0.20**, not measured effort. Two pre-existing LocalAppSmoke failures reproduced at baseline. Maintainer comfortable-fit judgment and acceptance pending; no accepted-count increment.
+
+## Cycle v3/site_operations_page
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/site_operations_page` | Locally complete; maintainer acceptance pending | v1 / R1 / P2 | 0.40 | [Intake and Step 2](./site_operations_page/site_operations_page_step2_feature_description.md#study-snapshots-and-approval); [Step 3](./site_operations_page/site_operations_page_step3_development_plan.md#study-checkpoint); [Step 4 and closeout](./site_operations_page/site_operations_page_step4_implementation_summary.md#closeout) | Follow-up to `v3/high_traffic_toggle`; acceptance pending |
+
+2026-10-27 UTC: standing P2 enrollment, start `c462cc92` on `feat/high-traffic-toggle`. Intake and Step 2 handoff **0.40** for a Tools › Operations page holding high-traffic mode, nav icons and read-only view; Step 1 skipped. Prior exposure to predecessor's Option C (0.50) disclosed. Claude Code single exposed rater, R1 hashes verified earlier today. No implementation or accepted outcome; planning uncommitted.
+
+2026-10-27 UTC: Step 2 approved. Step 3 handoff **0.40 reaffirmed**; stage-work S1 0.18, S2 0.07, S3 0.05 (not summed). Same start/R1/P2/rater; no implementation.
+
+2026-10-27 UTC: Step 3 approved; Step 4 entry **0.40 reaffirmed** on new branch `feat/operations-page`. Closeout: three stages (planning `aab96984`, S1 `d160c1ab`, S2 `b364f71f`, S3 closeout commit). Stage retrospectives S1 0.16, S2 0.07, S3 0.03; cycle retrospective scope assessment **0.30**, not measured effort. Maintainer judgment and acceptance pending; no accepted-count increment.

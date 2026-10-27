@@ -559,3 +559,9 @@ Evidence: [Implementation summary](archive_export_contention/archive_export_cont
 - Verification: `node tests/browser/high_traffic_control.mjs` passed real signed enable/disable, failure and keyboard retry, unauthorized absence, and 13 themes at 375/1150px without clipping or overflow; toolbar counts/search unaffected. Row screenshots inspected for light, dark, Word97, Chicago and Midnight in disabled, enabled and failure states at both widths. No physical-device or deployment claim.
 - Evidence: [implementation summary](high_traffic_toggle/high_traffic_toggle_step4_implementation_summary.md).
 - [x] Feature Flags toolbar: removed the visible “Search flags” label and “N of N flags shown” line at the user's request. The search input keeps “Search flags” as its accessible name; the count remains a screen-reader-only live region. Toolbar, High-traffic and Fastmod browser tests passed.
+
+## Operations page — 2026-10-27
+
+- [x] Moved High-traffic mode from Feature Flags to a new **Tools › Operations** page (`/tools/operations/`), named for site-serving controls generally. The row reuses the flag-row/switch layout; managers can switch it, others see a disabled switch with the existing read-only hint and no error details. Launcher description: “Control how the site is served, including high-traffic mode.” Teal gear icon in Word97/Chicago/Midnight.
+- Verification: high-traffic browser test passed on the new page (signing, failure/retry, 403, 13 themes at 375/1150px); launcher, subnav and row screenshots inspected in light, dark, Word97, Chicago and Midnight at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](site_operations_page/site_operations_page_step4_implementation_summary.md).

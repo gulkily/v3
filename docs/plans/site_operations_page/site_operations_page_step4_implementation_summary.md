@@ -46,3 +46,22 @@ Branch: `feat/operations-page`, created from unmerged `feat/high-traffic-toggle`
 - Estimate details: original scope unchanged; the icon colour correction is ordinary correction within the stage.
 
 *— Claude Code · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Documentation and closeout
+
+**Original estimate: 0.05**
+**Retrospective: 0.03**
+
+- Changes: `docs/runbooks/high_traffic_mode.md` UI path now **Tools → Operations → High-traffic mode**; UI copy audit checklist entry; ledger closeout. `docs/reference/v3_cli.md` does not name the UI location, so it is unchanged.
+- Verification: repository grep for stale Feature Flags/high-traffic UI references outside plans found only the updated runbook line; `git diff --check` passed; plan and checklist links resolve to existing files.
+- Inapplicable: deployment, Apache, migration — out of scope.
+- Estimate details: original scope unchanged.
+
+## Closeout
+
+- Retrospective scope assessment (not a projection or measured effort): **0.30**, below the 0.40 projection; route/registry wiring was simpler than expected and no capability filter was needed.
+- Commits: planning `aab96984`, Stage 1 `d160c1ab`, Stage 2 `b364f71f`, Stage 3 (this commit). Branch `feat/operations-page` from unmerged `feat/high-traffic-toggle`.
+- Not verified: physical devices, production. Pre-existing baseline failures: two `LocalAppSmokeTest` cases.
+- Maintainer comfortable-fit judgment: pending. Study acceptance: pending; no accepted-count increment.
+
+*— Claude Code · 2026-10-27 UTC · Model: claude-opus-5-5*
