@@ -578,3 +578,8 @@ Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all
 
 - [x] Removed the board controls' New Post link; the inline composer replaces it. `/compose/thread` stays as the full-page and no-JS route, and the Tags page and offline reader controls are unchanged. The controls' right-aligned last-item rule now skips view/sort options, so Top stays with its group.
 - Verification: `php tests/run.php LocalAppSmokeTest` passes except the two failures that were already present (quick-reply continuations, archive filename). `node tests/browser/board_compose_focus.mjs` passes across light, Word97, Chicago and Midnight at 390px/1280px, including no-JS controls. Nav alignment was not inspected in screenshots.
+
+## Inline composer expand spacing — 2026-10-27
+
+- [x] Expanding the board thread composer or inline reply no longer moves the editor down. Two causes: the logged-in identity status (empty, `hidden`, `data-kind="ok"`) was forced visible with 1rem margin, and the expanded padding top was 1rem against the collapsed 0.8rem. Hidden statuses now stay hidden; expanded top padding matches collapsed. Real identity messages still display.
+- Verification: `board_compose_focus.mjs` and `reply_compose_focus.mjs` now assert equal editor-to-card-top distance collapsed/expanded, failing before the fix; both pass in light, Word97, Chicago and Midnight at 390px/1280px. The touch-phone reply's fixed panel is excluded by design. Inspected light board and Word97 reply desktop screenshots. Status display checked for empty-hidden, info and error states.
