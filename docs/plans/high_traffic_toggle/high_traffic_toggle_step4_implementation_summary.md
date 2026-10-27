@@ -55,3 +55,8 @@ Branch: `feat/high-traffic-toggle`. Planning commit: `8742dc96`. Step 3 approved
 - Maintainer comfortable-fit judgment: pending. Study acceptance: pending; no accepted-count increment.
 
 *— Claude Code · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Enhancement requests after closeout
+
+- **Request:** “Get rid of "Search flags" element.” / “Get rid of "23 of 23 flags shown" element.” **Disposition:** changed scope (Step 2 kept the toolbar unchanged); small user-directed Feature Flags cleanup made directly as a separate commit, outside this cycle's stages and estimates. **Approval:** explicit user request. **Outcome:** visible label removed (input keeps accessible name “Search flags” and its placeholder); result count kept only as a screen-reader live region. `feature_flags_toolbar.mjs`, `high_traffic_control.mjs` and `fastmod.mjs` browser tests passed; desktop screenshot inspected.
+- **Request:** “Move high traffic mode setting to its own page, but don't call the whole page high traffic mode, pick a name for it that would include other things in the same category.” **Disposition:** changed scope (new navigation destination); a distinct follow-up Railspike cycle. **Approval:** pending its own planning approvals. **Outcome:** follow-up cycle `v3/site_operations_page`.

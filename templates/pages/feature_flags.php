@@ -33,14 +33,13 @@ foreach ($flags as $flag) {
     <div class="feedback feedback-error"><?= $e($siteError) ?></div>
 <?php endif; ?>
     <div class="feature-flags-toolbar" data-feature-flags-toolbar hidden>
-      <label for="feature-flags-search">Search flags</label>
-      <input id="feature-flags-search" type="search" placeholder="Name, key, or description" aria-keyshortcuts="/">
+      <input id="feature-flags-search" type="search" placeholder="Name, key, or description" aria-label="Search flags" aria-keyshortcuts="/">
       <div class="feature-flags-filters" role="group" aria-label="Filter flags by status">
 <?php foreach (['all' => 'All', 'enabled' => 'Enabled', 'overridden' => 'Overridden', 'locked' => 'Locked'] as $status => $label): ?>
         <button type="button" class="feature-flags-chip" data-flag-filter="<?= $e($status) ?>" aria-pressed="<?= $status === 'all' ? 'true' : 'false' ?>"><?= $e($label) ?> <span data-flag-filter-count>0</span></button>
 <?php endforeach; ?>
       </div>
-      <p class="meta" role="status" aria-live="polite" aria-atomic="true" data-feature-flags-results></p>
+      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-feature-flags-results></p>
     </div>
     <p data-feature-flags-empty hidden>No flags match.</p>
 <?php foreach ($flagGroups as $groupKey => $groupFlags): ?>
