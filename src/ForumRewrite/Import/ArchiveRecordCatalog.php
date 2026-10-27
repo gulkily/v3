@@ -6,7 +6,6 @@ namespace ForumRewrite\Import;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\LegacyPostTimestamp;
-use Throwable;
 
 final class ArchiveRecordCatalog
 {
@@ -148,7 +147,7 @@ final class ArchiveRecordCatalog
             if ($relativePath === 'records/instance/feature-flags.txt') {
                 return 'instance:feature-flags';
             }
-        } catch (Throwable) {
+        } catch (\ForumRewrite\Support\OperationLimitException|\ForumRewrite\Canonical\RecordReadException|\ForumRewrite\Canonical\RecordSizeException $error) { throw $error; } catch (\RuntimeException|\JsonException) {
             return null;
         }
 

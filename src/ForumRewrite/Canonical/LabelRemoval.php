@@ -31,7 +31,7 @@ final class LabelRemoval
         $path = self::path($sourceId);
         if (!is_file($root . '/' . $path)) return null;
         if (is_link($root . '/' . $path) || filesize($root . '/' . $path) > 1048576) throw new RuntimeException('Unsafe removal evidence: ' . $path);
-        $bytes = (string) file_get_contents($root . '/' . $path);
+        $bytes = (string) RecordLimits::read($root . '/' . $path);
         $record = json_decode($bytes, true, 32, JSON_THROW_ON_ERROR);
         if (!is_array($record) || ($record['source_id'] ?? null) !== $sourceId
             || !in_array($record['operation'] ?? '', ['delete', 'resolve'], true)
@@ -63,11 +63,12 @@ final class LabelRemoval
         $records = [];
         foreach (glob($root . '/records/post-removals/*.json') ?: [] as $path) {
             try {
-                $data = json_decode((string) file_get_contents($path), true, 32, JSON_THROW_ON_ERROR);
+                $data = json_decode((string) RecordLimits::read($path), true, 32, JSON_THROW_ON_ERROR);
                 if (($data['acceptance_version'] ?? null) !== 2) continue;
                 $id = basename($path, '.json');
                 $records[$id] = self::read($root, $id);
-            } catch (\Throwable) { /* Unresolved legacy evidence belongs to explicit migration. */ }
+            } catch (\ForumRewrite\Support\OperationLimitException|RecordReadException|RecordSizeException $error) { throw $error; }
+            catch (\RuntimeException|\JsonException) { /* Unresolved legacy evidence belongs to explicit migration. */ }
         }
         return $records;
     }
@@ -76,7 +77,7 @@ final class LabelRemoval
     {
         self::path($id);
         foreach (CanonicalPathResolver::postCandidates($id) as $path) {
-            if (is_file($root . '/' . $path)) return [$path, (string) file_get_contents($root . '/' . $path)];
+            if (is_file($root . '/' . $path)) return [$path, (string) RecordLimits::read($root . '/' . $path)];
         }
         // Recovery from deletions made before this feature; never infer ownership from time.
         foreach (CanonicalPathResolver::postCandidates($id) as $path) {
