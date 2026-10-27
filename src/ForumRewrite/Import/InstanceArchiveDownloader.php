@@ -34,6 +34,9 @@ final class InstanceArchiveDownloader
             throw new RuntimeException('Instance URL must not contain a query.');
         }
         $url = rtrim($instanceUrl, '/') . '/downloads/repository.tar.gz';
+        if ($this->progress !== null) {
+            ($this->progress)('Archive URL: ' . $url);
+        }
         $deadline = microtime(true) + $this->timeoutSeconds;
         $output = null;
         $created = false;

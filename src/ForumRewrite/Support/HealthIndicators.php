@@ -21,6 +21,11 @@ final class HealthIndicators
         $frontend = $status['frontend'] ?? ['status' => 'not_checked'];
         $access = $status['database_access'] ?? [];
         $rebuildRunning = $queue['rebuild_task_status'] === 'running';
+        $readModelBusy = $readModel['lock_status'] === 'locked'
+            || ($access['read_model']['status'] ?? null) === 'locked';
+        $readModelFix = $readModelBusy
+            ? 'Read model: identify the lock holder before starting another rebuild; a web request or manual rebuild may already be rebuilding it.'
+            : 'Read model: Run ./v3 task-queue enqueue-rebuild or the manual rebuild command in the recovery runbook.';
         $indicators = [];
 
         if (isset($frontend['source'])) {
@@ -31,16 +36,16 @@ final class HealthIndicators
                 'ambiguous', 'unresolved' => self::row(self::WARN, 'Frontend', $frontend['detail'], 'Frontend: set FORUM_STATUS_URL in private config, or pass --url=http://host:port.'),
                 'redirected' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: set FORUM_STATUS_URL or --url to the direct URL for this instance.'),
                 'responding' => self::row(self::OK, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url']),
-                'timed_out' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: restart with ./v3 start and check its terminal for a stuck request (if it listens elsewhere, pass --url=).'),
-                'error' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: server is answering with errors; check the ./v3 start terminal output and --log-file.'),
-                default => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: start it with ./v3 start, or pass --url= if it uses another address.'),
+                'timed_out' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: check the web server/PHP error logs and running PHP processes for the reported URL; inspect the locks below before restarting anything.'),
+                'error' => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: server is answering with errors; check its web server/PHP error logs (or terminal output for a local ./v3 start server).'),
+                default => self::row(self::FAIL, 'Frontend', $frontend['detail'] . ' at ' . $frontend['url'], 'Frontend: verify the reported URL and its web server; use ./v3 start only for a local development server.'),
             };
         }
 
         $indicators[] = match ($readModel['status']) {
             'ready' => self::row(self::OK, 'Read model', 'ready, schema ' . $readModel['schema_version'] . '/' . $readModel['expected_schema_version']),
-            'unavailable' => self::row(self::FAIL, 'Read model', 'unavailable', 'Read model: Run ./v3 task-queue enqueue-rebuild or the manual rebuild command in the recovery runbook.'),
-            default => self::row(self::WARN, 'Read model', 'stale', 'Read model: Run ./v3 task-queue enqueue-rebuild or the manual rebuild command in the recovery runbook.'),
+            'unavailable' => self::row(self::FAIL, 'Read model', 'unavailable', $readModelFix),
+            default => self::row(self::WARN, 'Read model', 'stale', $readModelFix),
         };
 
         $indicators[] = $readModel['stale_marker'] === 'present'
@@ -48,7 +53,7 @@ final class HealthIndicators
             : self::row(self::OK, 'Stale marker', 'absent');
 
         $indicators[] = $readModel['lock_status'] === 'locked'
-            ? self::row(self::WARN, 'Shared lock', 'held', 'Shared lock: ' . ($rebuildRunning ? 'a rebuild is running; wait, then rerun ./v3 status.' : 'no rebuild is running, so another process may be stuck; check ./v3 task-queue status and running php processes.'))
+            ? self::row(self::WARN, 'Shared lock', 'held', 'Shared lock: ' . ($rebuildRunning ? 'a rebuild is running; wait, then rerun ./v3 status.' : 'no queued-worker rebuild is reported; web-request and manual rebuilds are not tracked here. Identify the holder with lslocks and inspect its process before intervening.'))
             : self::row(self::OK, 'Shared lock', 'unlocked');
 
         foreach (['read_model' => 'Read-model DB', 'task_queue' => 'Queue DB'] as $key => $label) {
@@ -65,7 +70,7 @@ final class HealthIndicators
             }
             $indicators[] = match ($probe['status']) {
                 'accessible' => self::row(self::OK, $label, $probe['detail']),
-                'locked' => self::row(self::FAIL, $label, $probe['detail'], $label . ': ' . ($rebuildRunning ? 'locked while a rebuild is running; wait, then rerun ./v3 status.' : 'locked with no rebuild running; a process may be stuck holding it.')),
+                'locked' => self::row(self::FAIL, $label, $probe['detail'], $label . ': ' . ($rebuildRunning ? 'locked while a rebuild is running; wait, then rerun ./v3 status.' : 'no queued-worker rebuild is reported; inspect the lock holder with lslocks and ps. A web request or manual command may be writing the database.')),
                 default => self::row(self::FAIL, $label, $probe['detail'], $label . ': database cannot be opened; check the file and run ./v3 rebuild diagnose.'),
             };
         }

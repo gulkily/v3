@@ -1,5 +1,27 @@
 # UI copy audit checklist
 
+## Backup section grouping — October 25, 2026
+
+- [x] Split the page into three existing-style cards: Backup details, Downloads, and Recent included items. Added only the Downloads heading; preserved all fields, links, notes and empty states.
+- Verification: 4/4 focused PHP checks (BackupPageTest and LocalAppSmokeTest portability/core routes); Chromium across 14 theme choices at 390px/1280px with populated, empty and long-value fixtures, all aliases, real downloads and revision-mismatch retry. No horizontal overflow. Inspected updated Word97 phone and Midnight desktop screenshots at `/tmp/backup-restored-{theme}-{width}.png`; browser evidence `/tmp/backup-restored-check.mjs`. Diff check passed.
+- No dependencies, CSS, navigation/icon, data-contract or `todo.txt` changes. Existing tall Tools navigation on phones remains outside scope. Physical devices, other engines, full suite and deployment were not checked.
+
+
+## Backup data restoration — October 25, 2026
+
+- [x] Corrected the preceding cleanup: restored instance name, linked admins, generated time, snapshot hash and recent included items with All activity. These are useful data, not explanatory clutter. Kept direct download links; reduced notes to adjacent SQLite staleness/image matching and one short public-content-only limitation. “Index generated” accurately labels the existing read-model timestamp rather than implying archive generation time.
+- Regression checks now assert actual instance/admin values, stored timestamp/hash and recent-item content/link presence, alongside unique downloads and essential limits. Focused PHP 8/8 passed, with the strengthened BackupPageTest rechecked. Browser verification passed on all three aliases and 14 theme choices at 390px/1280px, including populated data, template-rendered empty/missing metadata and long names/items, four successful downloads and wrong-revision failure/retry. No horizontal overflow; inspected `/tmp/backup-restored-word97-390.png` and `/tmp/backup-restored-midnight-1280.png`. Browser evidence: `/tmp/backup-restored-check.mjs` and `/tmp/backup-data-router.php`.
+- Principle for later copy work: identify the information and actions a page supports first; remove duplicate explanations while preserving evidence, timestamps, identities, counts, previews and recovery controls. Verify preserved data as well as removed wording.
+- No dependencies, schema, navigation/icon or `todo.txt` changes. Existing tall phone Tools navigation remains outside scope. Physical devices, other engines, full suite and production deployment were not checked. This record supersedes the earlier claim that removing the useful data completed the cleanup.
+
+
+## Backup page reduction — October 25, 2026
+
+- [x] Removed site/admin details, freshness headings/metadata, repeated download tables/descriptions, activity preview and the separate explanation card. All three Backup aliases now show direct format links, conditional image pairing guidance, SQLite staleness and a concise separate-backup warning. Removed the corresponding page-data queries and description strings; download behavior is unchanged.
+- Verification: 8/8 focused PHP checks (`BackupPageTest`, `RepositoryContentExportTest`, and `LocalAppSmokeTest` portability/core-route methods). Actual Chromium rendering passed at 390px/1280px across 14 theme choices, with visible download links and no horizontal overflow; all aliases and all four real downloads passed. Wrong-revision HTTP 409 retained actionable refresh/re-download guidance and retry succeeded. Image-unavailable rendering showed three links and no pairing note at both widths. There is no activity empty state or disclosure after removal; native downloads add no success/pending UI.
+- Inspected Word97 phone and Midnight desktop screenshots (`/tmp/backup-word97-390.png`, `/tmp/backup-midnight-1280.png`); browser check `/tmp/backup-copy-check.mjs`. Existing tall Tools navigation remains on phones and is outside this copy change. No navigation destination/icon changes, dependencies, schema changes or `todo.txt` edits. Physical devices, other browser engines, full suite and production deployment were not checked.
+
+
 ## Outstanding-item review — October 23, 2026
 
 - Reviewed unchecked entries against the completion records and current source. Seven copy-audit candidates remain open: Outbox, Bookmarklets, Fastmod, Offline reading, Thread/post analysis, Feature Flags, and Users empty state. Their rendered-state review and acceptance checks below remain outstanding; source inspection does not close them.
@@ -465,6 +487,12 @@ Reviewed candidates; decisions and verification are recorded above.
 - Targeted PHP and controlled rendered phone/desktop checks passed as recorded above. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and deployment acceptance remain unverified. Changes remain local; origin has advanced and synchronization is still needed before publication.
 - Two further source observations are collected below for later review.
 
+## App shell navigation (ZenMemes) — October 27, 2026
+
+- Cycle [`ui_shell_navigation`](./ui_shell_navigation/ui_shell_navigation_step4_implementation_summary.md) moved ZenMemes to a new shell; Chouse, QDB and MIT Rap Club headers are unchanged. Copy added: "New post" (one button instead of none in the header), "You" for the account menu trigger (accessible name "You, account menu"), and "Account and more" as the menu's navigation label. No destination label changed; About, Tools, Account, Invite and a members-only Profile link moved into the account menu. Icon mappings updated for Word 97, Chicago and Midnight (Messages, Profile, New post, the account trigger).
+- Verification: placement and render tests for guest, unapproved, approved and members-only viewers; existing markup-sensitive smoke tests unchanged and passing; Chrome checks with JavaScript on and off at 1280px and 390px (every guest destination reachable, New post reaches the composer, theme choice persists); all 13 permitted themes plus Auto reviewed with the menu open. Limitations: signed-in viewer states were checked through server-rendered tests, not in a browser session; no physical device.
+- Follow-up for the Board cycle: the board toolbar still has its own "New Post" control beside the shell's New post.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -493,6 +521,17 @@ Reviewed candidates; decisions and verification are recorded above.
 
 - [x] **LLM Exchange return-link duplication** — Review “Back to LLM Exchanges” against the existing LLM Exchanges Tools subnavigation link on detail pages. Check keyboard and phone navigation, access restrictions and long expanded raw records before removing any route back to the list. Sources: `templates/pages/llm_exchange.php`, `templates/partials/tools_nav.php`, `src/ForumRewrite/Http/LlmExchangesController.php`.
 
+## Retraction simplification — October 25, 2026
+
+- Replaced the obsolete completed-retraction promise with concise repository deletion/delayed-cache/history limits. Removed the legacy label-review warning from accepted retractions; independent labels remain independently owned. Existing signing, partial refresh and recovery feedback remains visible.
+- Verification: real browser author/operator/account-attribution flows and partial refresh/retry; all 13 themes at 390px/1280px without overflow, Word97 phone result screenshot inspected. Long embedded source-record/signature content wraps; surviving replies remain navigable. Keyboard activation, Escape/focus restoration and touch pass. Offline update cases 16/16; API retraction scenarios 18/18. No navigation/icon changes or dependencies. Local controlled browser checks only; physical devices and production pending. See [implementation summary](retraction_simplification/retraction_simplification_step4_implementation_summary.md#stage-8---acceptance-recovery-and-closeout).
+
+## QDB historical Add and Search copy — October 25, 2026
+
+- Restored the exact user-supplied Add guidance above the quote form and the Search verse above the search form, preserving its three explicit lines. This restoration is explicitly requested; the general preference for removing explanatory copy does not apply to these historical lines. No navigation, icons, behavior or shared compose copy changed.
+- Verification: `QdbExperienceRoutingTest` passed (3/3). Chromium against isolated Apache with real templates/assets checked both pages at 375px/1150px in QDB, Light, Word97, Chicago and Midnight (20 page/theme/size cases). Verified exact rendered copy, Search line breaks, editable quote body, visible Post action, search submission and zero-result recovery, and no horizontal overflow. Inspected QDB phone Add and desktop Search screenshots. Temporary evidence: `/tmp/qdb-haiku-tests.log`, `/tmp/qdb-haiku-visual.log`, `/tmp/qdb-copy-{add,search}-{theme}-{width}.png`.
+- Limitations: signed quote submission, populated/paginated search results, server failures and expanded compose options were not retested for these static paragraphs. No new dependencies; no `todo.txt` changes. Local changes only; deployment remains outstanding.
+
 ## Next phase — new candidates
 
 These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
@@ -500,3 +539,67 @@ These observations need rendered review before deciding what to remove. Keep thi
 - [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
 
 - [ ] **System State repository head duplication** — Review “Short head” alongside the full Repository head and the abbreviated hash in Latest commit. Check long hashes, missing Git/history and stale read-model comparisons; preserve useful provenance and mismatch diagnosis. Source: `templates/pages/codebase_state.php`.
+
+## 2026-10-24 — Current-content repository export wording
+
+- Replaced full-history download descriptions with “Current content; Git history excluded.” Updated the backup scope notice to list Git history among separately backed-up data. Preserved image-pair revision guidance and private-data limitations; no extra confirmation or navigation change.
+- Verified initial/loaded backup pages at 390/1440 widths in Light, Dark, Word97, Chicago and Midnight, with images present/absent (20 Chromium states), real styles loaded, visible download controls and no horizontal overflow. Inspected Midnight phone/Light desktop screenshots. Actual stale-revision failure followed by Backup refresh and successful TAR.GZ/ZIP downloads passed. BackupPageTest and affected LocalAppSmokeTest checks pass. No expanded state exists in the changed copy. Full suite, physical devices and deployment unverified.
+- [Implementation and archive/import evidence](repository_content_export_one_shot_summary.md). Zero dependencies. Early temporary harness checks without fingerprinted assets were discarded and rerun through FrontController.
+
+## 2026-10-26 — ZIP image backup
+
+- Backup now labels its image download “Images (.zip)”. Instance, admins, generated time, snapshot, recent included items and existing sections remain intact; no navigation changes or extra UI explanations.
+- Passed Chromium checks at 390/1280 widths across all 14 available themes, with populated, empty and long-value fixtures; no horizontal overflow. All three Backup aliases, four browser downloads and revision-mismatch refresh/retry passed. Visually reviewed Word97 phone and Midnight desktop screenshots (`/tmp/backup-zip-word97-390.png`, `/tmp/backup-zip-midnight-1280.png`). No expanded state exists in this change. Physical devices and deployment unverified.
+- [Implementation and recovery evidence](image_backup_zip/image_backup_zip_step4_implementation_summary.md). Zero dependency delta.
+
+## Archive export contention — 2026-10-26
+
+Change: Download failures now distinguish 503 busy/retry, 409 refresh-and-pair, and 500 operator recovery. Raw exception paths are logged privately rather than returned publicly. Existing Backup warnings and links remain.
+Verification: `node tests/browser/archive_export_browser.mjs` exercises normal Backup links, cold/warm downloads, two-viewports (390/1280) busy/conflict/retry and generic failure, extraction and overflow checks. Backup links checked in light, Word97, Chicago and Midnight; plaintext error responses are theme-independent. Phone/desktop screenshots inspected locally; no navigation destinations/icons changed. PHP route/import tests cover integrity repair and retry.
+Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
+Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).
+
+## High-traffic toggle — 2026-10-27
+
+- [x] Replaced the separate High-traffic mode card and its full-width “Enable/Disable high-traffic mode” button with one flag-style row beneath the Feature Flags heading: label, existing staleness line, shared switch and on/off state. Shortened the failure text while keeping reload and `./v3 high-traffic restore` visible. No navigation destination or icon change.
+- Verification: `node tests/browser/high_traffic_control.mjs` passed real signed enable/disable, failure and keyboard retry, unauthorized absence, and 13 themes at 375/1150px without clipping or overflow; toolbar counts/search unaffected. Row screenshots inspected for light, dark, Word97, Chicago and Midnight in disabled, enabled and failure states at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](high_traffic_toggle/high_traffic_toggle_step4_implementation_summary.md).
+- [x] Feature Flags toolbar: removed the visible “Search flags” label and “N of N flags shown” line at the user's request. The search input keeps “Search flags” as its accessible name; the count remains a screen-reader-only live region. Toolbar, High-traffic and Fastmod browser tests passed.
+
+## Operations page — 2026-10-27
+
+- [x] Moved High-traffic mode from Feature Flags to a new **Tools › Operations** page (`/tools/operations/`), named for site-serving controls generally. The row reuses the flag-row/switch layout; managers can switch it, others see a disabled switch with the existing read-only hint and no error details. Launcher description: “Control how the site is served, including high-traffic mode.” Teal gear icon in Word97/Chicago/Midnight.
+- Verification: high-traffic browser test passed on the new page (signing, failure/retry, 403, 13 themes at 375/1150px); launcher, subnav and row screenshots inspected in light, dark, Word97, Chicago and Midnight at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](site_operations_page/site_operations_page_step4_implementation_summary.md).
+
+## Backup feature flags — 2026-10-27
+
+Change: Backup removes disabled download links and hides itself from Tools when both categories are off. Bookmarks show unavailability; SQLite full/embedded viewers omit unusable controls while text backups are disabled. Codebase download links follow the same policy. Retain matching-revision/incomplete-restore warnings, including image-only mode, and hide irrelevant SQLite freshness copy. No new navigation destination or confirmation.
+Verification: `node tests/browser/backup_feature_flags.mjs` exercises real signed operator toggles, HTTP denial/recovery, SQLite loading and archive-link recovery, four combinations plus restored defaults, and 240 page/theme/viewport states (Backup, Tools, SQLite Viewer, Feature Flags; light/dark/console/Word97/Chicago/Midnight; 390/1280). Checks overflow and actual Backup icon backgrounds/dimensions in both launcher/subnavigation for all three icon themes. Phone Midnight image-only and unavailable screenshots inspected. Expanded disabled query dialog also checks zero database requests, message, close and no JS errors. Existing toolbar test covers search empty/recovery, details/toggle/reset, delayed/failure/read-only/no-JS states; archive browser test covers busy/conflict/failure/retry at both widths. See cycle summary for final results.
+Limits: Local Chromium/HTTP evidence; no physical devices, screen-reader, production deployment or full-suite claim. Existing theme navigation height remains unchanged. New recovery copy remains limited to material availability and matching-backup consequences.
+Evidence: [Implementation summary](backup_feature_flags/backup_feature_flags_step4_implementation_summary.md); [operator instructions](../runbooks/image_backup.md#operator-download-controls).
+
+## Canonical feature-flag ordering — 2026-10-27
+
+Work type: Authorized one-shot application change; no Railspike cycle.
+Change: Registry-owned presentation order fixes groups as Access and identity, Authored content, Forum experience, Site rendering, Backups, Fastmod, Agent replies, LLM exchanges. Stable key lists preserve relative row positions independently of registration order, labels and effective state. Media embed controls now use Site rendering; response requests use Agent replies. CONTRIBUTING.md requires new flags to append within their group, with dependent controls kept beside their parent/siblings; deliberate reordering requires an intentional UI change. Existing search/status filters only hide rows. Unexpected entries remain visible at the end rather than disappearing; completeness tests require every production flag exactly once in its assigned group.
+Verification: FeatureFlagsBehaviorTest and FeatureFlagEvaluatorTest pass 22/22, including registration coverage, duplicate/group/dependency validation and production-template order from reversed input. Existing Chromium toolbar suite passes search/status/counts, empty recovery, signed-save UI success/failure/delay, toggle/reset, keyboard, read-only/no-JS and sticky-banner checks. Added real-registry render checks confirm all eight headings, stable filtered subsequences and restored order across light/dark/console/Word97/Chicago/Midnight at 375/1150px (12 states), with no horizontal overflow. Midnight phone full-page screenshot inspected; existing toggle actions remain visible beside flags. Diff check passes.
+Evidence: /tmp/flag-order-php.log, /tmp/flag-order-browser.log, /tmp/feature-flags-order-{theme}-{width}.png. Rendered browser checks use production template/script and isolated states; this task does not claim a new live signature/backend acceptance run. Full suite, deployment and physical devices not checked.
+Dependency delta: Zero. No navigation destination/icon, schema, canonical record format or todo.txt change. Commit authorization: User requested committing the reviewed change on feat/backup-feature-flags.
+
+## Backup main-merge verification — 2026-10-27
+
+Resolution: Preserve upstream instance/admin/snapshot details, recent items, image ZIP link, inline SQLite freshness and compact public-scope copy alongside the new flag-based unavailable state. Image-only mode retains the matching-content requirement. ZIP and legacy TAR remain under one image flag.
+Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all 240 states across six themes and 390/1280 widths; actual ZIP/TAR denial, recovery and icon checks pass. Merged Midnight phone image-only screenshot inspected at /tmp/backup-flags-browser-lBKMAg/backup-01.png. Canonical-order toolbar suite passes. See backup feature-flags implementation summary for 50 passing PHP checks and evidence paths. No new layout/overflow issue observed; full suite, physical devices and deployment remain unverified.
+
+## 2026-10-27 — Public profile identity details
+
+- Change: Replaced the misleading “Member activity” destination label with a supplementary username link; the profile now shows its own Threads and Posts. Public key material is initially collapsed, with concise Copy/unavailable/manual-copy recovery states.
+- Verification: Real Chromium HTTP flows with JavaScript on/off; keyboard disclosure and navigation; exact copying and denied-clipboard fallback; independent pagination and invalid-position recovery; 13 permitted themes at 390px and 1280px, initial/expanded/loaded/empty/unavailable states and overflow. Inspected Word97, Chicago and Midnight screenshots. Shared account/access/Forte/source and messaging tests passed.
+- Limits: No physical-device or production deployment verification; zenmemes.com replay remains pending. Full suite not run. No navigation destinations added or renamed, so icon mapping unchanged.
+- Record: [Implementation evidence and host handoff](profile_public_details/profile_public_details_step4_implementation_summary.md).
+
+### Accepted profile navigation refinement — 2026-10-27
+
+- Removed the supplementary “User <username>” link and standalone “User Access” link from the standard profile. Approval now reads “Approved” or “Not approved” with “Approval details” beside it; the existing Tools route and account-keys anchor remain intact. The detail-link text stays together on narrow screens.
+- Verification: Focused profile/access/messaging/core-route checks 16/16 plus private-session/recovery checks 2/2; actual HTTP Chromium flows with JavaScript on/off and 13 themes at phone/desktop widths passed, including expanded/empty/unavailable states and overflow. Reviewed updated phone screenshot. No new navigation destination or icon mapping; production and physical-device checks remain pending.

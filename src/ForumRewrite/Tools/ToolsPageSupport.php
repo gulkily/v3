@@ -130,6 +130,8 @@ final class ToolsPageSupport
             ],
             ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
                 'description' => 'Choose which independent scores Fastmod records.', 'standalone' => false],
+            ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/',
+                'description' => 'Control how the site is served, including high-traffic mode.', 'standalone' => false],
         ];
     }
 

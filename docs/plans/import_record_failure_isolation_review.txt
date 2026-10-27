@@ -1,0 +1,103 @@
+Title: Signed thread-label import failure review and repair
+Date: 2026-10-26 UTC
+Status: Implemented locally; uncommitted
+Cycle: v3/import_record_failure_isolation
+Prior assessment: docs/plans/import_record_failure_isolation_step1_solution_assessment.md
+Debug mode: enabled
+Effort study: railspike-effort / R1 / P2
+Extended estimates: disabled; preserved legacy mode, no backfilled option estimates
+Original cycle baseline: c86b89314602a17cf435448bb66053f4d750150f
+Repair baseline: c349d7fe12cfb651cd4002fc51ac299d5907dd58
+Scope: v2; repair the reproduced signed-label classification and fallback-key defects, with focused regression and normal CLI/recovery verification
+Authorization: User explicitly requested "Let's build the fix now, please. After you're done your review." This supersedes the pending staged planning gates for this repair. No fabricated Step 1/2/3 approvals or automatic commit.
+
+Reported symptom:
+./v3 import-instance zenmemes.com downloads and extracts successfully, then fails
+while planning with Invalid header line: -----BEGIN PGP SIGNATURE-----.
+
+Reproduction:
+Downloaded 612797 bytes from https://zenmemes.com/downloads/repository.tar.gz.
+Archive SHA256: d0549e3c4bb072147b4a3d5850456d242acdc5684ee49e6de2e0b3aba16fedf0
+Used the production downloader/extractor and an isolated destination in /tmp.
+Exact exception reproduced at ContentImportPlanner.php:56 through loadThreadLabel,
+ThreadLabelRecordParser and GenericTextRecordParser. Accepted signature example:
+records/thread-labels/thread-label-24f56ce40a894d1002c9085d7dc28e18.txt.asc
+No source records, signatures or application runtime content were repaired/deleted.
+
+Rubber-duck trace:
+1. Archive validation correctly accepts a detached signature next to its record.
+2. describe() recognizes it, validates its parent and assigns a signature identity.
+3. The later label-removal policy checks only the directory prefix and import state.
+4. Both the label and its accepted signature satisfy that condition.
+5. loadThreadLabel() receives the signature path and sends ASCII armor to the text
+   header parser. The parser correctly rejects the armor; weakening it is wrong.
+6. This call is outside describe()'s record-rejection handling, so planning aborts
+   before the durable import journal or canonical writes are prepared.
+7. The same second read omits the destination signing-key fallback. Even after
+   excluding signature paths, a valid label whose key exists only locally fails.
+
+History and recurrence:
+9b0fb193 (2026-10-22) introduced the directory-only removal-policy check.
+e6837fab (2026-10-23) recorded this exact defect and a proposed assessment, while
+implementing the separate no-static-rendering change. It did not fix the planner.
+Current blame still points to 9b0fb193 for the failing call. This is evidence of
+an unresolved defect, not evidence of three separate repairs being reverted.
+The original 10 focused ContentImportPlannerTest methods all passed before repair.
+Broader coverage already existed: WriteApiSmokeTest's historical signed-reaction
+import test. Recent archive_export_efficiency and viewer-tag summaries recorded
+that test as a pre-existing failure. Baseline attribution prevented falsely blaming
+those changes, but did not establish that signed imports worked. This repair runs
+that existing test explicitly and adds coverage to the normal importer test groups.
+
+Repair:
+Use ArchiveRecordCatalog::isRecordPath as well as the family prefix before applying
+label-specific policy. Signatures continue to inherit parent exclusions/rejections
+through the existing dependency propagation. Give the second label read the same
+legacy-metadata requirement and destination signing-key fallback as describe().
+Do not catch-and-ignore unexpected exceptions, remove signatures, rewrite signed
+bytes or bypass signature validation. No new dependency, core schema or UI change.
+
+Regression evidence:
+Two new planner tests failed with the exact PGP header exception before the fix.
+The signed-label matrix covers .asc, .sig and both, source/fallback keys, matching
+signature classification and hashes, tampered signatures and independent posts.
+The second test covers accepted local label removal and exclusion of both companions.
+Normal HTTP export/download/CLI preview, import and repeat now include a valid
+signed label with both companions, asserting byte preservation and no extra commit.
+Recovery at copied/staged/committed/published checkpoints now preserves the signed
+label and both companions even after the source disappears.
+26/26 focused planner, CLI, recovery and two broader signed-reaction tests passed.
+After strengthening recovery, recovery/archive-validation/content-export passed
+10/10. This is 33 distinct tests across the two runs, not a full-suite claim.
+The previously failing historical signed-reaction test passed.
+
+Live archive acceptance:
+The same archive now completes planning. CLI acceptance uses a temporary initialized
+Git repository with its own instance/public.txt, cache and static roots. Preview and
+import each report partial (exit 2): 3002 import, 13 invalid, 8 unsupported,
+239 excluded, 0 conflicts. Existing policy rejects untrusted retraction evidence,
+missing-target reactions and dependents; profile-name records remain unsupported.
+These are truthful review results, not the signature parsing crash. Repeat import
+reported 0 imported and 3002 duplicates, with the same review counts; Git retained
+exactly two commits (initialization plus the first import), proving no extra commit.
+An initial harness used a bare records directory without instance/public.txt;
+publication correctly failed on missing local instance configuration after import.
+The harness was corrected to supply local instance configuration before acceptance.
+The user's state/local_repository, read model and static root were not modified.
+
+Scope limits and follow-up:
+The broader v1 Option B exception-taxonomy redesign remains unimplemented. Existing
+catch(Throwable) handling, unsupported profile-name imports and retraction authority
+policy are unchanged; this repair does not claim universal record-failure isolation.
+No full suite, deployment or mutation of the user's destination was performed.
+Dependency delta: zero additions or updates.
+
+Study closeout:
+Original v1 intake/Step 1 projection 0.45 retained. R1 frozen report/diff-review/
+feedback SHA256 hashes verified against the ledger. Same stable cycle and original
+baseline; Codex single exposed rater. v2 is the bounded corrective scope above.
+No prospective v2 projection was collected before implementation; leave it missing.
+Retrospective v2 scope assessment: 0.30, including review, tests and documentation;
+not measured labor, a replacement for v1 0.45, or an independently accepted outcome.
+Maintainer acceptance pending; no accepted-count increment or worktree duplication.
+Author: Codex, 2026-10-26 UTC

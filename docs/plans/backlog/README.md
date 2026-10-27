@@ -57,6 +57,7 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 - [iPhone Database Web UI](iphone_database_webui_step1_solution_assessment.md)
 - [Local Dev Begin-Development FDP UI](local_dev_begin_development_fdp_ui_step1_solution_assessment.md)
 - [PHP 5.6 and Subdirectory Compatibility](php56_subdirectory_compatibility_step1_solution_assessment.md)
+- [Read-model maintenance follow-ups](read_model_maintenance_followups.md) — derive `dropSchema()` from the schema; decide retracted-source label/score/vote exclusions (from the viewer_tag read-model cycle)
 - [Tools Page Mobile Clickability](tools_page_mobile_clickability_step1_solution_assessment.md)
 - [Usenet Forte Agent Interface](usenet_forte_agent_interface_step1_solution_assessment.md)
 - [`v3` Start Port Shorthand](v3_start_port_shorthand_step1_solution_assessment.md)

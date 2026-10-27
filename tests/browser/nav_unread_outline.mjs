@@ -15,8 +15,7 @@ await page.route('http://nav.test/**', async route => {
 await page.goto('http://nav.test/');
 const boxes = () => page.evaluate(() => ['m', 'i'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; }));
 for (const theme of themes) {
-  await page.evaluate(theme => { document.documentElement.dataset.theme = theme; document.getElementById('theme').href = `/assets/theme-${theme}.css`; }, theme);
-  await page.waitForLoadState('load');
+  await page.evaluate(theme => new Promise(resolve => { const link = document.getElementById('theme'); link.onload = resolve; document.documentElement.dataset.theme = theme; link.href = `/assets/theme-${theme}.css`; }), theme);
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(() => document.getElementById('m').removeAttribute('data-unread-count'));
   const base = await boxes();

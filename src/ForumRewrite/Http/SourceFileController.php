@@ -139,19 +139,13 @@ final class SourceFileController
             return null;
         }
 
-        $object = $commitSha . ':' . $relativePath;
-        $command = sprintf(
-            'git -C %s show --no-ext-diff %s 2>/dev/null',
-            escapeshellarg($this->repositoryRoot),
-            escapeshellarg($object)
-        );
-        $output = [];
-        $exitCode = 0;
-        exec($command, $output, $exitCode);
-        if ($exitCode !== 0) {
-            return null;
-        }
-
-        return implode("\n", $output) . "\n";
+        $pipes = [];
+        $process = proc_open(['git', '-C', $this->repositoryRoot, 'show', '--no-ext-diff', $commitSha . ':' . $relativePath],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        if (!is_resource($process)) return null;
+        $bytes = stream_get_contents($pipes[1]);
+        stream_get_contents($pipes[2]);
+        fclose($pipes[1]); fclose($pipes[2]);
+        return proc_close($process) === 0 && $bytes !== false ? $bytes : null;
     }
 }

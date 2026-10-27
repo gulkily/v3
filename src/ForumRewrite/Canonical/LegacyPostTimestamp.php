@@ -20,7 +20,7 @@ final class LegacyPostTimestamp
         if (!is_file($file) || is_link($file) || filesize($file) > 4096) {
             throw new CanonicalRecordParseException('Legacy timestamp metadata is missing or exceeds 4 KiB.');
         }
-        $data = json_decode((string) file_get_contents($file), true);
+        $data = json_decode((string) RecordLimits::read($file), true);
         if (!is_array($data) || count($data) !== 3 || !is_string($data['post_id'] ?? null)
             || !is_string($data['record_sha256'] ?? null) || !is_string($data['created_at'] ?? null)
             || preg_match('/^[a-f0-9]{64}$/D', $data['record_sha256']) !== 1

@@ -32,7 +32,7 @@ final class ExecutionLock
     /**
      * @template T
      * @param callable(): T $callback
-     * @return array{result:T,timings:array{lock_wait:float}}
+     * @return array{result:T,timings:array{lock_wait:float,lock_hold:float}}
      */
     public function withExclusiveLockTimed(callable $callback): array
     {
@@ -51,11 +51,14 @@ final class ExecutionLock
             do {
                 if (flock($handle, LOCK_EX | LOCK_NB)) {
                     $lockWait = $this->elapsedMilliseconds($start);
+                    $holdStarted = hrtime(true);
                     try {
+                        $result = $callback();
                         return [
-                            'result' => $callback(),
+                            'result' => $result,
                             'timings' => [
                                 'lock_wait' => $lockWait,
+                                'lock_hold' => $this->elapsedMilliseconds($holdStarted),
                             ],
                         ];
                     } finally {

@@ -164,11 +164,6 @@
   border-bottom: 1px solid var(--line);
 }
 
-.feature-flags-toolbar label {
-  display: block;
-  margin-bottom: 0.35rem;
-}
-
 .feature-flags-toolbar input {
   width: 100%;
   min-width: 0;
@@ -193,10 +188,6 @@
   color: var(--active-ink);
   background: var(--active-bg);
   border-color: var(--active-line);
-}
-
-.feature-flags-toolbar [role="status"] {
-  margin: 0.5rem 0 0;
 }
 
 .feature-flags-toolbar[hidden],
@@ -352,6 +343,7 @@
   gap: 0.3rem;
 }
 
+form.feature-flag-control,
 .feature-flag-control form {
   margin: 0;
   display: flex;

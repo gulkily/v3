@@ -1,0 +1,236 @@
+{
+  "environment": "Local WSL; PHP CLI/router and existing Playwright/Chrome; disposable frozen application/destinations; no deployment",
+  "production_revision": "7c255bfd",
+  "fixture_revision": "5567310c",
+  "forum_work": {
+    "source_baseline": "5567310c",
+    "inventory": 1465,
+    "inventory_digest": "41302ba5246b76d17202badb6bed4de02850a2ed4861772279cf4d2207665c5e",
+    "same_baseline_docs": true,
+    "legacy_before": {
+      "root": "/tmp/docs-independent-baseline-state/static/releases/release-20261023142653-9bf7fa28",
+      "version": "8c232e4bb93f0c99f294d2b983b129a0f679e4f3b1a09a32d751f93588881177",
+      "legacy": true,
+      "documents": 0
+    },
+    "baseline_changed_tree_import_seconds": 62.267110109329224,
+    "changed_tree_import_seconds": 2.1096420288085938,
+    "duplicate_import_seconds": 1.7840499877929688,
+    "forum_build_seconds": 1.2889230251312256,
+    "shared_refresh_seconds": 0.779865026473999,
+    "docs_bulk_calls": 0,
+    "legacy_retained": true,
+    "forum_contains_docs": false,
+    "forum_head": "466449e737007f36c88538cca97ee6aeb797fcec",
+    "forum_current": "/tmp/docs-independent-baseline-state/static/releases/release-20261023150052-ba058f0e",
+    "database_sha256": "a08d0ca43fe6d371ae3701db48b0dbe2e07e3225e12334fbc872cea611e0dc3d"
+  },
+  "docs_publish": {
+    "status": "complete",
+    "docs_root": "/tmp/docs-independent-baseline-state/static-docs",
+    "release": "/tmp/docs-independent-baseline-state/static-docs/releases/docs-20261023150347-abae386c",
+    "version": "747316c054e84cf5dbd104871dc477851182ff7226eb6f520f69e085bdef985b",
+    "documents": 1465
+  },
+  "browser": [
+    {
+      "legacyMigration": true,
+      "independentDocsPublicationSeconds": 36.696,
+      "forumPointerUnchanged": true,
+      "databaseUnchanged": true,
+      "docsVersionDetected": true,
+      "reloadRecovery": true,
+      "forumPendingPreserved": true
+    },
+    {
+      "nextForumImport": true,
+      "forumVersionChanged": true,
+      "docsVersionStable": true,
+      "falseDocsPrompt": false
+    },
+    {
+      "host": "dynamic",
+      "width": 1280,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "dynamic",
+      "width": 390,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "static",
+      "width": 1280,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "static",
+      "width": 390,
+      "search": true,
+      "filter": true,
+      "pagination": true,
+      "history": true,
+      "returnState": true,
+      "download": true,
+      "empty": true,
+      "failureRetry": true,
+      "missing": true,
+      "overflow": "passed"
+    },
+    {
+      "host": "dynamic",
+      "noJavaScript": true,
+      "widths": [
+        1280,
+        390
+      ],
+      "themes": [
+        "default",
+        "word97",
+        "chicago",
+        "midnight"
+      ],
+      "existingBrowserSuite": "passed"
+    },
+    {
+      "host": "static",
+      "noJavaScript": true,
+      "widths": [
+        1280,
+        390
+      ],
+      "themes": [
+        "default",
+        "word97",
+        "chicago",
+        "midnight"
+      ],
+      "existingBrowserSuite": "passed"
+    },
+    {
+      "notificationsDisabled": "passed"
+    }
+  ],
+  "focused_regression": {
+    "command": "php tests/run.php DocsPublicationTest IndependentDocsPublicationTest LegacyDocsMigrationTest DocsPublicationFlowTest PlatformDocsCatalogTest PlatformDocsPageTest PlatformDocsStaticTest VersionCheckBehaviorTest LocalAppSmokeTest::testBuildStaticCommandReportsProgressAndArtifactSummary LocalAppSmokeTest::testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel",
+    "passed": 60,
+    "failed": 0,
+    "history_timestamp": "2026-10-23T11:05:02-04:00"
+  },
+  "screenshots": [
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-1280.png",
+      "sha256": "818a36bf1bae5eee72a1f85e8f53f4f0d8904492d70b40166dce1f8aed2c26ad"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-390.png",
+      "sha256": "c00582c4a323e0736f0fd02364ce6793363c5a7e662349181d8813db38196c7e"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/chicago-1280.png",
+      "sha256": "7acdc8b21625d9d3ff759350defbb6f92f1a792918fc5833372e235b0a41e963"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/chicago-390.png",
+      "sha256": "e9f58481be8d936a0c16497a8bf1525fd680e89a0025118d95709d9e0b295c7d"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/default-1280.png",
+      "sha256": "c56c50239c7cd6d6f0b5991e97c07d9e4f301fbfb38d83e2b85eb9c061c23169"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/default-390.png",
+      "sha256": "655e4fc99392098db88fd2ef48d0a22ce5ebdfbda3f4e65a7331d5799e0c5602"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/midnight-1280.png",
+      "sha256": "c978fb0e7922448c9b574de5c542a92a566a2faaaf15e13f597014e3ad20664a"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/midnight-390.png",
+      "sha256": "d8d392e6533b48302314da1528c1042893d94723bddccbb9226131e534b3bc2f"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/word97-1280.png",
+      "sha256": "95d22a8ef24d68fa1a2106786bb88de14aebdbeceba120ea372ba95788f7f505"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/dynamic-themes/word97-390.png",
+      "sha256": "993c89655dd50e1bb1048bf79199483c11554307e7cbfa3f10f6aa3374ef6040"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-1280.png",
+      "sha256": "818a36bf1bae5eee72a1f85e8f53f4f0d8904492d70b40166dce1f8aed2c26ad"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-390.png",
+      "sha256": "c00582c4a323e0736f0fd02364ce6793363c5a7e662349181d8813db38196c7e"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/chicago-1280.png",
+      "sha256": "7acdc8b21625d9d3ff759350defbb6f92f1a792918fc5833372e235b0a41e963"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/chicago-390.png",
+      "sha256": "e9f58481be8d936a0c16497a8bf1525fd680e89a0025118d95709d9e0b295c7d"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/default-1280.png",
+      "sha256": "c56c50239c7cd6d6f0b5991e97c07d9e4f301fbfb38d83e2b85eb9c061c23169"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/default-390.png",
+      "sha256": "655e4fc99392098db88fd2ef48d0a22ce5ebdfbda3f4e65a7331d5799e0c5602"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/midnight-1280.png",
+      "sha256": "c978fb0e7922448c9b574de5c542a92a566a2faaaf15e13f597014e3ad20664a"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/midnight-390.png",
+      "sha256": "d8d392e6533b48302314da1528c1042893d94723bddccbb9226131e534b3bc2f"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/word97-1280.png",
+      "sha256": "95d22a8ef24d68fa1a2106786bb88de14aebdbeceba120ea372ba95788f7f505"
+    },
+    {
+      "path": "/tmp/docs-independent-baseline-state/browser/static-themes/word97-390.png",
+      "sha256": "993c89655dd50e1bb1048bf79199483c11554307e7cbfa3f10f6aa3374ef6040"
+    }
+  ],
+  "limitations": [
+    "Timings are individual local observations under uncontrolled load; not a speed guarantee.",
+    "Focused suites and served browser acceptance passed; full repository suite not run.",
+    "No deployment, production-host validation, merge or push.",
+    "Fixture has the frozen baseline docs inventory; current-checkout full-library regression separately covers newly added planning docs.",
+    "Temporary screenshots/logs remain local; hashes and results are preserved here."
+  ]
+}

@@ -252,7 +252,10 @@ final class PlatformDocsPageTest
         assertStringContains('_emphasis_', $html);
         assertStringContains('[ref][r]', $html);
         assertSame($html, PublicMarkdownRenderer::render($source));
-        $guide = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'));
+        // Keep renderer coverage independent of changes to the user guide.
+        $procedure = "1. Open the action.\n\n   Continue here.\n\n";
+        foreach (range(2, 6) as $number) $procedure .= "$number. Step $number.\n\n   Continue here.\n\n";
+        $guide = PublicMarkdownRenderer::render($procedure . str_repeat("| A | B |\n| --- | --- |\n| one | two |\n\n", 4));
         assertSame(4, substr_count($guide, '<table>'));
         assertSame(0, substr_count($guide, 'aria-label="Table source"'));
         // Continuations retain their source numbers rather than restarting each step at 1.
@@ -334,9 +337,9 @@ final class PlatformDocsPageTest
 
     public function testDocumentTemplatePreservesCodeBytes(): void
     {
-        $markdown = file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md');
-        $expected = PublicMarkdownRenderer::render($markdown, 'docs/reference/author_post_retraction.md');
-        $page = $this->render('/docs/reference/author_post_retraction.md');
+        $markdown = file_get_contents(dirname(__DIR__) . '/docs/reference/agent_api.md');
+        $expected = PublicMarkdownRenderer::render($markdown, 'docs/reference/agent_api.md');
+        $page = $this->render('/docs/reference/agent_api.md');
         preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $expected, $expectedBlocks);
         preg_match_all('~<pre\b[^>]*>(.*?)</pre>~s', $page, $actualBlocks);
         assertSame($expectedBlocks[1], $actualBlocks[1]);

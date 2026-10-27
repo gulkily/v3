@@ -48,14 +48,14 @@ final class GenericTextRecordParser
             throw new CanonicalRecordParseException('Canonical text record must be valid UTF-8.');
         }
 
-        foreach (preg_split('//u', $contents, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $character) {
-            if ($character === "\n" || $character === "\t" || preg_match('/^[\x20-\x7E]$/', $character) === 1) {
-                continue;
-            }
-
-            if (preg_match('/[\p{C}]/u', $character) === 1) {
-                throw new CanonicalRecordParseException('Canonical text record must not contain Unicode control or format characters.');
-            }
+        // Match category C except the two permitted controls, without allocating
+        // one PHP array entry per character (a small record could exhaust memory).
+        $invalid = preg_match('/[^\\P{C}\\t\\n]/u', $contents);
+        if ($invalid === false) {
+            throw new CanonicalRecordParseException('Unable to validate canonical text.');
+        }
+        if ($invalid === 1) {
+            throw new CanonicalRecordParseException('Canonical text record must not contain Unicode control or format characters.');
         }
     }
 

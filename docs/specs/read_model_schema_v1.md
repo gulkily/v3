@@ -28,7 +28,24 @@ and add a regression test for startup from the prior schema version. See
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the complete contributor
 checklist.
 
+Adding a **table** needs only its `CREATE TABLE` statement in
+`ReadModelSchema::statements()`: the rebuild drop step
+(`ReadModelBuilder::dropSchema()`) derives the tables to drop from
+`ReadModelSchema::tableNames()` (parsed from those statements), so a new table is
+dropped-and-recreated on in-place rebuild automatically — there is no separate
+drop list to keep in sync. (A forgotten entry previously caused in-place rebuilds
+to fail with `table <name> already exists`.) Indexes need no drop step; dropping
+a table drops its indexes. Read-model tables declare no foreign keys, so drop
+order is immaterial.
+
 ## Core read-model tables
+
+Version 31 adds the public identity-history query contract (no new tables):
+counts and bounded histories select authored posts by exact identity, excluding
+hidden, retracted, identity/bootstrap-board and scripture-expansion rows. Thread histories
+add authored-root and visible thread requirements. Counts use the same predicate
+as the corresponding history. Approval and username do not establish authorship.
+Startup rebuilds version 30 read models before these queries run.
 
 Defined in `src/ForumRewrite/ReadModel/ReadModelBuilder.php`'s
 `createSchema()`. Fully rebuilt (not incrementally patched) on every
@@ -46,6 +63,12 @@ Single-row-per-key bookkeeping about the last rebuild.
 ### `posts`
 
 One row per canonical post record (both thread roots and replies).
+
+Schema 27 adds `posts_author_identity_idx (author_identity_id)`. Together with
+the primary-key index on `post_id`, it supports the identity-link predicate
+`post_id = :bootstrap_post_id OR author_identity_id = :author_identity_id`
+using SQLite's multi-index OR plan, retaining single-update semantics when a
+row matches both branches. Normal startup rebuilds schema-26 and older models.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -71,6 +94,11 @@ One row per canonical post record (both thread roots and replies).
 | `retraction_attribution` | TEXT NULL | accepted display attribution: author or operator, independent of authorization |
 | `sequence_number` | INTEGER | |
 
+Indexes: `posts_thread_sequence_idx (thread_id, sequence_number)` backing the
+per-thread reply query (`ORDER BY sequence_number`); `posts_author_identity_idx
+(author_identity_id)` backing the `profiles` identity join used by the board and
+reply queries. Added in schema version 26.
+
 ### `threads`
 
 One row per thread (keyed by its root post).
@@ -92,7 +120,16 @@ One row per thread (keyed by its root post).
 | `retraction_class` | TEXT NULL | root author/operator authorization classification |
 | `retraction_attribution` | TEXT NULL | root accepted display attribution |
 
+Index: `threads_last_activity_idx (last_activity_at DESC, root_post_id DESC)`
+backing the board/tags/RSS listing sort. Added in schema version 26.
+
 ### `profiles`
+
+Schema 28 changes identity-registration derived-state writes to update profile
+approval/attribution/count fields only when their values differ. Comparisons are
+NULL-safe (`IS NOT`), and the updater retains the changed profile identities for
+targeted downstream work. No columns or indexes change; the version increment
+and prior-schema startup check accompany this core query change.
 
 One row per identity with a bootstrapped profile.
 
@@ -163,7 +200,19 @@ Feed of indexed activity entries (see `docs/specs/php_forum_rewrite_spec_v1.md`
 | `source_commit_sha` | TEXT NULL | |
 
 Indexes: `activity_recent_idx (created_at DESC, post_id DESC, id DESC)`,
-`activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`.
+`activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`,
+`activity_author_identity_idx (author_identity_id)` (schema 26). The author
+index supports identity-specific attribution/approval updates without scanning
+all activity rows for each profile. Schema-25 databases are rebuilt at normal
+startup before serving the current application; this index is also present in
+manual rebuilds and candidate databases.
+
+Schema 29 limits registration activity refresh to the newly linked identity
+and profiles whose derived state changed. Attribution updates use NULL-safe
+changed-value comparisons and the computed approval state for those profiles;
+they no longer refresh every profile's activity. Normal startup rebuilds older
+derived models before the changed query path runs. Table/index shapes are
+unchanged from schema 27.
 
 ### `commits`
 
@@ -301,16 +350,13 @@ account authorship from `retraction_class`, which continues to reflect signed
 author/operator authorization. Both are null for unretracted posts. Startup
 rebuilds version 18 caches before queries use the new field.
 
-New operator retractions record a versioned `Retraction-Attribution` JSON trailer
-in their local acceptance commit. It binds the decision to the canonical record
-SHA-256, actual actor, target author, and shared canonical username (when both
-keys are approved). The shared resolver requires the same local acceptance event
-as operator authority; a trailer is local operator evidence, not signer evidence
-or an imported claim. Missing or invalid evidence retains operator wording.
-Signed records, signatures, permissions, and source suppression do not change.
-Later approval changes and rebuilds preserve the accepted decision. Retain the
-canonical repository's local Git history in backups and deployment transfers;
-a records-only copy cannot establish local operator acceptance or attribution.
+New retractions retain a separate [text acceptance receipt](post_retraction_record_v1.md)
+with `Retraction-Attribution`, bound to the exact signed request and detached
+signature. This is local acceptance metadata, not a signed attribution claim or
+imported authority. Action-time account evidence determines author/operator
+wording; later approval changes and rebuilds preserve that decision. A missing
+or mismatched receipt/evidence set is not accepted retraction input. The earlier
+JSON-trailer representation is no longer written or required for new retractions.
 
 ## Profile name projections (schema versions 20–21)
 
@@ -385,3 +431,63 @@ by original activity time and canonical action key, independent of disposable
 SQLite row IDs. Version 25 rebuilds prior models at normal startup before the
 new query contract runs. Existing Forte and RSS queries/return shapes remain
 unchanged; canonical records and Activity membership are unaffected.
+
+
+Schema version 27 also rebuilds existing derived rows using accepted deletion records as structural placeholders. Core columns are unchanged; legacy suppression-only records no longer gate indexing. This version bump also triggers normal startup refresh on code-only deployments.
+
+### Hot-path indexes (schema version 26)
+
+No table shape changes. Version 26 adds three covering-free indexes to speed the
+hottest read paths: `posts_thread_sequence_idx (thread_id, sequence_number)` and
+`posts_author_identity_idx (author_identity_id)` on `posts`, and
+`threads_last_activity_idx (last_activity_at DESC, root_post_id DESC)` on
+`threads`. These remove full table scans and in-memory sorts from the single-thread
+reply query and the board/tags/RSS listing sort; query results and return shapes
+are unchanged. Normal startup rebuilds prior models before the indexed queries
+run. `posts_thread_sequence_idx` mirrors the index the public offline snapshot
+builder already creates, keeping the two models consistent.
+
+### Viewer-tag projection (schema version 27)
+
+Version 27 adds the `viewer_tags` table and its `viewer_tags_identity_idx` index:
+
+```
+viewer_tags (
+    record_family TEXT NOT NULL,       -- 'post-reactions' | 'thread-labels'
+    target_id TEXT NOT NULL,           -- post_id for post-reactions, thread_id for thread-labels
+    author_identity_id TEXT NOT NULL,
+    tag TEXT NOT NULL,                 -- reaction tag / thread label, e.g. 'like', 'flag', 'upvote'
+    PRIMARY KEY (record_family, target_id, author_identity_id, tag)
+)
+Index: viewer_tags_identity_idx (author_identity_id, record_family, tag, target_id)
+```
+
+This projects per-(identity, target, tag) reaction/label state so viewer-tag
+questions (`ViewerTagLookup::postTags`/`threadTags`) are answered by an indexed
+`WHERE author_identity_id = ? AND record_family = ? AND tag = ? AND target_id IN (…)`
+query instead of globbing and parsing the whole `records/post-reactions/` and
+`records/thread-labels/` directories per request. The projection mirrors the
+prior file-scan record set exactly — it applies no `inactive`/publication
+exclusion — so viewer like/flag/vote/label results are unchanged, including on
+retracted or removed-source threads. The index column order matches the lookup
+predicate. Null-identity records are not projected (the file scan never matched
+them). Normal startup rebuilds prior models before the indexed query runs.
+
+### Schema 30 integration
+
+Schema 30 combines the main-branch registration changes through version 29 with
+the viewer-tag projection and hot-path indexes from the image-backup branch
+ancestry. The new identity forces existing models from either branch to rebuild.
+Startup regression coverage includes a version 29 model without `viewer_tags`,
+with the repository revision unchanged.
+
+### Public identity history queries (schema version 31)
+
+`AuthoredContentRepository::visibleIdentityPage` returns at most 100 rows
+(default 50), newest creation time first with descending post ID as the stable
+tie-breaker. Both threads and posts use these authored-post keys. Position
+boundaries contain `created_at` and `post_id`, never transient SQLite row IDs.
+Counts and page/existence queries share `identityEligibility`; existing username
+aggregate interfaces retain their previous behavior. A deleted boundary remains
+usable through key comparisons. An empty positioned list offers first-page
+recovery and a return direction when eligible rows remain.

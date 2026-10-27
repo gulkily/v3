@@ -6,7 +6,6 @@ namespace ForumRewrite\Import;
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\LegacyPostTimestamp;
-use Throwable;
 
 final class ArchiveRecordCatalog
 {
@@ -26,6 +25,7 @@ final class ArchiveRecordCatalog
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-reactions/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-retractions/post-retraction-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/post-retraction-acceptances/post-retraction-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/identity/identity-openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
             || preg_match('#^records/approval-seeds/openpgp-[A-Fa-f0-9]{40}\.txt$#', $relativePath) === 1
             || preg_match('#^records/public-keys/openpgp-[A-Fa-f0-9]{40}\.asc$#', $relativePath) === 1;
@@ -55,6 +55,7 @@ final class ArchiveRecordCatalog
         return match ($family) {
             'posts' => 'post:' . $name,
             'post-removals' => 'post-removal:' . $name,
+            'post-retraction-acceptances' => 'post-retraction-acceptance:' . $name,
             'approval-acceptances' => 'approval-acceptance:' . $name,
             'post-timestamps' => 'post-timestamp:' . $name,
             'identity' => 'identity:openpgp:' . strtolower(substr($name, strlen('identity-openpgp-'))),
@@ -131,6 +132,10 @@ final class ArchiveRecordCatalog
                 return 'post-reaction:' . $repository->loadPostReaction($relativePath)->recordId;
             }
 
+            if (str_starts_with($relativePath, 'records/post-retraction-acceptances/')) {
+                $id = substr(basename($relativePath, '.txt'), strlen('post-retraction-'));
+                return \ForumRewrite\Canonical\AcceptedRetraction::read($repositoryRoot, $id) === null ? null : 'post-retraction-acceptance:post-retraction-' . $id;
+            }
             if (str_starts_with($relativePath, 'records/post-retractions/')) {
                 return 'post-retraction:' . $repository->loadPostRetraction($relativePath)->recordId;
             }
@@ -142,7 +147,7 @@ final class ArchiveRecordCatalog
             if ($relativePath === 'records/instance/feature-flags.txt') {
                 return 'instance:feature-flags';
             }
-        } catch (Throwable) {
+        } catch (\ForumRewrite\Support\OperationLimitException|\ForumRewrite\Canonical\RecordReadException|\ForumRewrite\Canonical\RecordSizeException $error) { throw $error; } catch (\RuntimeException|\JsonException) {
             return null;
         }
 

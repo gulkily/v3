@@ -1,0 +1,360 @@
+{
+  "scope": "REG-01 local QDB baseline before performance changes; packed Git clones, not production host timings",
+  "runs": [
+    {
+      "started_at": "2026-10-24T17:24:31+00:00",
+      "application_head": "56cbe951d97a275b390d0d780288ebfcd33fcd2b",
+      "application_changes": "M src/ForumRewrite/Support/HealthIndicators.php",
+      "php_version": "8.1.2-1ubuntu2.28",
+      "sqlite_version": "3.37.2",
+      "site": "qdb",
+      "source_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+      "source_database_sha256": "7b93d656a31eb0aec723147eedac5ec0b6123821bb15338c7babb9c7762c753e",
+      "source_metadata": {
+        "source_removal_generation": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "thread_label_invalid_count": "0",
+        "post_reaction_invalid_count": "0",
+        "thread_subject_invalid_count": "0",
+        "schema_version": "25",
+        "schema_fingerprint": "1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce",
+        "repository_root": "/home/qdb/v3/state/local_repository",
+        "repository_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+        "rebuilt_at": "2026-10-24T07:27:00+00:00",
+        "rebuild_reason": "write_incremental"
+      },
+      "source_counts": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3845,
+        "activity": 18863
+      },
+      "rebuild_copy": false,
+      "timing_scope": "LocalWriteService on isolated clones; setup/key generation excluded. Fresh total includes local signing; server timings reported separately. No HTTP, cron, or host-load simulation.",
+      "cases": {
+        "fresh_signed": {
+          "wall_ms": 13463.512393,
+          "timings_ms": {
+            "lock_wait": 0,
+            "identity_signature_verify": 49.6,
+            "gpg_public_key_packet_inspection": 4,
+            "gpg_public_key_import": 16.6,
+            "gpg_post_import_key_lookup": 6,
+            "gpg_signature_verify": 5.7,
+            "canonical_record_parse": 0.2,
+            "identity_write_files": 1.3,
+            "identity_commit": 330.9,
+            "git_add": 212.7,
+            "git_commit": 115.6,
+            "git_rev_parse": 2.5,
+            "identity_derived_state": 13030.8,
+            "read_model_incremental_update": 13030.8,
+            "read_model_incremental_insert_profile": 0.6,
+            "read_model_incremental_ensure_bootstrap_post": 11.6,
+            "read_model_incremental_ensure_username_route": 0,
+            "read_model_incremental_link_posts": 3.9,
+            "read_model_incremental_link_activity": 3.2,
+            "read_model_incremental_refresh_profile_state": 12997.8,
+            "read_model_incremental_write_metadata": 0.3,
+            "artifact_invalidate": 1,
+            "prepared_post_delete": 0.1,
+            "write_total": 13414.8
+          },
+          "preparation_timings_ms": {
+            "lock_wait": 0,
+            "gpg_key_inspect": 26,
+            "prepared_post_store": 0.4,
+            "write_total": 31.5
+          },
+          "counts_before": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3845,
+            "activity": 18863
+          },
+          "counts_after": {
+            "posts": 18761,
+            "threads": 18740,
+            "profiles": 3846,
+            "activity": 18864
+          },
+          "rebuild_reason": "write_incremental",
+          "process_peak_memory_bytes": 37748736,
+          "quick_check": "ok"
+        },
+        "historical_link": {
+          "wall_ms": 18325.098018,
+          "timings_ms": {
+            "lock_wait": 0,
+            "git_add": 71.3,
+            "git_commit": 226,
+            "git_rev_parse": 2.6,
+            "read_model_incremental_update": 18009.3,
+            "read_model_incremental_insert_profile": 0.5,
+            "read_model_incremental_ensure_bootstrap_post": 0,
+            "read_model_incremental_ensure_username_route": 0,
+            "read_model_incremental_link_posts": 5.4,
+            "read_model_incremental_link_activity": 4.8,
+            "read_model_incremental_refresh_profile_state": 17987.3,
+            "read_model_incremental_write_metadata": 0.3
+          },
+          "preparation_timings_ms": null,
+          "counts_before": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3845,
+            "activity": 18863
+          },
+          "counts_after": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3846,
+            "activity": 18863
+          },
+          "rebuild_reason": "write_incremental",
+          "process_peak_memory_bytes": 37748736,
+          "quick_check": "ok"
+        }
+      },
+      "source_inputs_unchanged": true,
+      "finished_at": "2026-10-24T17:25:14+00:00"
+    },
+    {
+      "started_at": "2026-10-24T17:25:26+00:00",
+      "application_head": "56cbe951d97a275b390d0d780288ebfcd33fcd2b",
+      "application_changes": "M src/ForumRewrite/Support/HealthIndicators.php",
+      "php_version": "8.1.2-1ubuntu2.28",
+      "sqlite_version": "3.37.2",
+      "site": "qdb",
+      "source_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+      "source_database_sha256": "7b93d656a31eb0aec723147eedac5ec0b6123821bb15338c7babb9c7762c753e",
+      "source_metadata": {
+        "source_removal_generation": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "thread_label_invalid_count": "0",
+        "post_reaction_invalid_count": "0",
+        "thread_subject_invalid_count": "0",
+        "schema_version": "25",
+        "schema_fingerprint": "1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce",
+        "repository_root": "/home/qdb/v3/state/local_repository",
+        "repository_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+        "rebuilt_at": "2026-10-24T07:27:00+00:00",
+        "rebuild_reason": "write_incremental"
+      },
+      "source_counts": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3845,
+        "activity": 18863
+      },
+      "rebuild_copy": false,
+      "timing_scope": "LocalWriteService on isolated clones; setup/key generation excluded. Fresh total includes local signing; server timings reported separately. No HTTP, cron, or host-load simulation.",
+      "cases": {
+        "fresh_signed": {
+          "wall_ms": 20204.728918,
+          "timings_ms": {
+            "lock_wait": 0,
+            "identity_signature_verify": 66.6,
+            "gpg_public_key_packet_inspection": 6.1,
+            "gpg_public_key_import": 25,
+            "gpg_post_import_key_lookup": 7.9,
+            "gpg_signature_verify": 7.2,
+            "canonical_record_parse": 0.3,
+            "identity_write_files": 1.3,
+            "identity_commit": 369.1,
+            "git_add": 212.4,
+            "git_commit": 152.9,
+            "git_rev_parse": 3.7,
+            "identity_derived_state": 19713.6,
+            "read_model_incremental_update": 19713.5,
+            "read_model_incremental_insert_profile": 0.9,
+            "read_model_incremental_ensure_bootstrap_post": 14.2,
+            "read_model_incremental_ensure_username_route": 0.1,
+            "read_model_incremental_link_posts": 7,
+            "read_model_incremental_link_activity": 6.6,
+            "read_model_incremental_refresh_profile_state": 19657.5,
+            "read_model_incremental_write_metadata": 1,
+            "artifact_invalidate": 0.9,
+            "prepared_post_delete": 0.1,
+            "write_total": 20153.6
+          },
+          "preparation_timings_ms": {
+            "lock_wait": 0,
+            "gpg_key_inspect": 26.6,
+            "prepared_post_store": 0.5,
+            "write_total": 33.1
+          },
+          "counts_before": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3845,
+            "activity": 18863
+          },
+          "counts_after": {
+            "posts": 18761,
+            "threads": 18740,
+            "profiles": 3846,
+            "activity": 18864
+          },
+          "rebuild_reason": "write_incremental",
+          "process_peak_memory_bytes": 37748736,
+          "quick_check": "ok"
+        },
+        "historical_link": {
+          "wall_ms": 22138.735589,
+          "timings_ms": {
+            "lock_wait": 0,
+            "git_add": 185.9,
+            "git_commit": 185.2,
+            "git_rev_parse": 3.8,
+            "read_model_incremental_update": 21722.6,
+            "read_model_incremental_insert_profile": 0.5,
+            "read_model_incremental_ensure_bootstrap_post": 0,
+            "read_model_incremental_ensure_username_route": 0,
+            "read_model_incremental_link_posts": 6.7,
+            "read_model_incremental_link_activity": 6.2,
+            "read_model_incremental_refresh_profile_state": 21698.8,
+            "read_model_incremental_write_metadata": 0.2
+          },
+          "preparation_timings_ms": null,
+          "counts_before": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3845,
+            "activity": 18863
+          },
+          "counts_after": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3846,
+            "activity": 18863
+          },
+          "rebuild_reason": "write_incremental",
+          "process_peak_memory_bytes": 37748736,
+          "quick_check": "ok"
+        }
+      },
+      "source_inputs_unchanged": true,
+      "finished_at": "2026-10-24T17:26:31+00:00"
+    },
+    {
+      "started_at": "2026-10-24T17:26:32+00:00",
+      "application_head": "56cbe951d97a275b390d0d780288ebfcd33fcd2b",
+      "application_changes": "M src/ForumRewrite/Support/HealthIndicators.php",
+      "php_version": "8.1.2-1ubuntu2.28",
+      "sqlite_version": "3.37.2",
+      "site": "qdb",
+      "source_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+      "source_database_sha256": "7b93d656a31eb0aec723147eedac5ec0b6123821bb15338c7babb9c7762c753e",
+      "source_metadata": {
+        "source_removal_generation": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "thread_label_invalid_count": "0",
+        "post_reaction_invalid_count": "0",
+        "thread_subject_invalid_count": "0",
+        "schema_version": "25",
+        "schema_fingerprint": "1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce",
+        "repository_root": "/home/qdb/v3/state/local_repository",
+        "repository_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+        "rebuilt_at": "2026-10-24T07:27:00+00:00",
+        "rebuild_reason": "write_incremental"
+      },
+      "source_counts": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3845,
+        "activity": 18863
+      },
+      "rebuild_copy": false,
+      "timing_scope": "LocalWriteService on isolated clones; setup/key generation excluded. Fresh total includes local signing; server timings reported separately. No HTTP, cron, or host-load simulation.",
+      "cases": {
+        "fresh_signed": {
+          "wall_ms": 18910.432505,
+          "timings_ms": {
+            "lock_wait": 0,
+            "identity_signature_verify": 42.4,
+            "gpg_public_key_packet_inspection": 3.9,
+            "gpg_public_key_import": 12.9,
+            "gpg_post_import_key_lookup": 3.6,
+            "gpg_signature_verify": 5.5,
+            "canonical_record_parse": 0.1,
+            "identity_write_files": 1.1,
+            "identity_commit": 340.3,
+            "git_add": 226.7,
+            "git_commit": 110.5,
+            "git_rev_parse": 3,
+            "identity_derived_state": 18491.1,
+            "read_model_incremental_update": 18491.1,
+            "read_model_incremental_insert_profile": 0.8,
+            "read_model_incremental_ensure_bootstrap_post": 10.8,
+            "read_model_incremental_ensure_username_route": 0,
+            "read_model_incremental_link_posts": 4.8,
+            "read_model_incremental_link_activity": 3.7,
+            "read_model_incremental_refresh_profile_state": 18436.1,
+            "read_model_incremental_write_metadata": 0.6,
+            "artifact_invalidate": 0.7,
+            "prepared_post_delete": 0.1,
+            "write_total": 18876.5
+          },
+          "preparation_timings_ms": {
+            "lock_wait": 0,
+            "gpg_key_inspect": 16.6,
+            "prepared_post_store": 0.4,
+            "write_total": 21.5
+          },
+          "counts_before": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3845,
+            "activity": 18863
+          },
+          "counts_after": {
+            "posts": 18761,
+            "threads": 18740,
+            "profiles": 3846,
+            "activity": 18864
+          },
+          "rebuild_reason": "write_incremental",
+          "process_peak_memory_bytes": 37748736,
+          "quick_check": "ok"
+        },
+        "historical_link": {
+          "wall_ms": 17455.909875,
+          "timings_ms": {
+            "lock_wait": 0,
+            "git_add": 129,
+            "git_commit": 182.9,
+            "git_rev_parse": 3.1,
+            "read_model_incremental_update": 17087.5,
+            "read_model_incremental_insert_profile": 0.3,
+            "read_model_incremental_ensure_bootstrap_post": 0,
+            "read_model_incremental_ensure_username_route": 0,
+            "read_model_incremental_link_posts": 4,
+            "read_model_incremental_link_activity": 3.2,
+            "read_model_incremental_refresh_profile_state": 17067.1,
+            "read_model_incremental_write_metadata": 0.3
+          },
+          "preparation_timings_ms": null,
+          "counts_before": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3845,
+            "activity": 18863
+          },
+          "counts_after": {
+            "posts": 18760,
+            "threads": 18739,
+            "profiles": 3846,
+            "activity": 18863
+          },
+          "rebuild_reason": "write_incremental",
+          "process_peak_memory_bytes": 37748736,
+          "quick_check": "ok"
+        }
+      },
+      "source_inputs_unchanged": true,
+      "finished_at": "2026-10-24T17:27:25+00:00"
+    }
+  ],
+  "medians_ms": {
+    "fresh_signed": 18910.432505,
+    "historical_link": 18325.098018
+  }
+}

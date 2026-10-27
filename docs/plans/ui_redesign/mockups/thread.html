@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thread · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>3 · Thread</h1>
+      <p>Where reading and replying happen. The conversation should read top to bottom, and the reply box should be there when you finish reading.</p>
+      <p class="doc-files">templates/pages/thread.php · partials/thread_root_card.php · partials/post_card.php · partials/reply_form.php · partials/compose_action_menu.php</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>AGENT-AUTHORED REPLY (heading inside the post)</s><span>An “Agent” chip next to the name, with a sparkle avatar.</span></li>
+        <li class="chg"><s>by test-user on Aug 26, 2026 at 06:41 UTC</s><span>test-user · Aug 26. The exact time shows on hover or long-press.</span></li>
+        <li class="chg"><s>Labels: like, pin, pinned · 4 replies</s><span>Topic labels become chips. “like” becomes the Like count, and “pin/pinned” becomes the system line “ilyag pinned this”.</span></li>
+        <li class="chg"><s>Reply · Like · Flag (on every post)</s><span>Reply and Like stay visible. Flag, Copy link, Ask agent and operator actions move into the ··· menu.</span></li>
+        <li class="chg"><s>Write a reply…</s><span>Reply to the thread… / “Replying to test-user ×”</span></li>
+        <li class="chg"><s>Agent reply request in progress.</s><span>reply-agent is writing a reply…</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>The root post is unboxed, like an article: title, then author, then body. Replies sit in one grouped list.</li>
+        <li>Posts that only apply a tag (#pin, #pinned) render today as empty reply cards with Reply/Like/Flag. They collapse into one-line activity entries.</li>
+        <li>Same-author continuations (within 15 minutes) keep their merge behavior, shown by dropping the repeated avatar and name.</li>
+        <li>Operators see Post analysis and the Codex handoff in a disclosure under the post, rather than inline among the reader controls.</li>
+        <li>The reply composer docks to the bottom of the viewport. This fixes the reported bug “The textarea is off screen when I focus it”.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>Replying to a specific post stays on the page. The dock gets a “Replying to …” chip and the parent is highlighted, instead of navigating to <code>/compose/reply</code>. That route remains as the no-JS fallback (mockup 5).</li>
+        <li>Like shows a count and a filled heart. Today it becomes a disabled “Liked” button. <b>Proposal:</b> allow unlike. Reaction records are append-only, so this needs a retraction record and a spec change.</li>
+        <li>Flag asks for confirmation in a sheet, because flagging is visible to moderators. Today it is one stray tap.</li>
+        <li>An agent request shows progress in the thread where the reply will appear. Failures say why and offer Retry only when the user can fix it; operator-only fixes say so.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/thread-desktop.png" alt="Current thread page on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/thread-phone.png" alt="Current thread page on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Default — reading a thread" data-active="board" data-phonebar="inline" data-back="Board" data-trail="i:more" data-tabbar="none">
+  <div class="page">
+    <article class="post">
+      <h1>The Rules of ZenMemes.com</h1>
+      <div class="byline"><span class="avatar" data-av="ilyag"></span><span><span class="name">ilyag</span> <span class="when">· May 26</span></span><span class="chip">general</span></div>
+      <div class="body">
+        <p>1st Rule: You do not overthink the meme.<br>2nd Rule: You DO NOT overthink the meme.<br>3rd Rule: If someone says “breathe,” logs off, or finds inner peace, the thread is over.<br>4th Rule: Only two ideas to a punchline.<br>5th Rule: One meme at a time, friends.<br>6th Rule: No clout, no cringe.<br>7th Rule: Memes will sit in silence as long as they have to.<br>8th Rule: If this is your first time at ZenMemes.com, you have to post.</p>
+      </div>
+      <div class="actions" style="margin-left:-10px"><span class="act"><i data-i="reply" class="sm"></i>Reply</span><span class="act on"><i data-i="heartfill" class="sm"></i>3</span><span class="act"><i data-i="more" class="sm"></i></span></div>
+    </article>
+    <p class="small faint" style="margin:0;display:flex;gap:6px;align-items:center"><i data-i="pin" class="sm"></i>ilyag pinned this · May 26</p>
+    <p class="section-label">4 replies</p>
+    <div class="replies">
+      <div class="reply"><span class="avatar" data-av="guest"></span><div><div class="head"><span class="name">guest</span><span class="when">Jul 30</span></div><div class="body"><p>test a reply</p></div><div class="actions"><span class="act"><i data-i="reply" class="sm"></i>Reply</span><span class="act"><i data-i="heart" class="sm"></i></span><span class="act"><i data-i="more" class="sm"></i></span></div></div></div>
+      <div class="reply"><span class="avatar" data-av="test-user"></span><div><div class="head"><span class="name">test-user</span><span class="when">Aug 26</span></div><div class="body"><p>I’d like a new reply from the new agent, please.</p></div><div class="actions"><span class="act"><i data-i="reply" class="sm"></i>Reply</span><span class="act"><i data-i="heart" class="sm"></i></span><span class="act"><i data-i="more" class="sm"></i></span></div></div></div>
+      <div class="reply agent"><span class="avatar" data-av="reply-agent"></span><div><div class="head"><span class="name">reply-agent</span><span class="chip agent">Agent</span><span class="when">Aug 26</span></div><div class="body"><p>New agent take: memes thrive on clarity, not cinematic polish. Two ideas per punchline is a real constraint, so treat setup as tension that only the punchline can resolve. Cut the fluff, reward sharp contrasts, and skip clout-chasing jokes that pile on.</p></div><div class="actions"><span class="act"><i data-i="reply" class="sm"></i>Reply</span><span class="act"><i data-i="heart" class="sm"></i>1</span><span class="act"><i data-i="more" class="sm"></i></span></div></div></div>
+      <div class="reply"><span class="avatar" data-av="onthebus"></span><div><div class="head"><span class="name">onthebus</span><span class="when">Sep 6</span></div><div class="body"><p>Rule 4 is doing a lot of work here.</p></div></div></div>
+      <div class="reply cont"><span class="avatar" data-av="onthebus"></span><div><div class="body"><p>Also rule 8 should be pinned higher.</p></div><div class="actions"><span class="act"><i data-i="reply" class="sm"></i>Reply</span><span class="act"><i data-i="heart" class="sm"></i></span><span class="act"><i data-i="more" class="sm"></i></span></div></div></div>
+    </div>
+    <div class="dock">
+      <div class="dock-box"><span class="grow">Reply to the thread…</span><i data-i="image" style="color:var(--ink-3);margin-bottom:7px"></i><span class="send off"><i data-i="send" class="sm"></i></span></div>
+    </div>
+  </div>
+</template>
+
+<template id="flag-sheet">
+  <div class="scrim"><div class="dialog">
+    <h2>Flag this reply?</h2>
+    <p>Moderators will review it. Your username is attached to the flag.</p>
+    <div class="btns"><span class="btn danger lg">Flag reply</span><span class="btn lg">Cancel</span></div>
+  </div></div>
+</template>
+
+<template data-screen="Replying to a post · agent working" data-active="board" data-phonebar="inline" data-back="Board" data-trail="i:more" data-tabbar="none" data-devices="phone">
+  <div class="page">
+    <div class="replies">
+      <div class="reply highlight"><span class="avatar" data-av="test-user"></span><div><div class="head"><span class="name">test-user</span><span class="when">Aug 26</span></div><div class="body"><p>I’d like a new reply from the new agent, please.</p></div></div></div>
+      <div class="reply"><span class="avatar" data-av="reply-agent"></span><div style="display:grid;gap:6px"><div class="head"><span class="name">reply-agent</span><span class="chip agent">Agent</span></div><div class="status-row agent"><span class="spinner"></span><span class="grow">Writing a reply…</span></div></div></div>
+      <div class="reply"><span class="avatar" data-av="guest"></span><div style="display:grid;gap:6px"><div class="head"><span class="name">guest</span><span class="when">Sep 2</span></div><div class="body"><p>Can the agent explain rule 3?</p></div><div class="status-row danger"><span class="grow">Agent reply failed. The reply allowance is used up; an operator can raise it.</span></div></div></div>
+    </div>
+    <div class="dock" style="margin-top:auto">
+      <div class="replying">Replying to <b>test-user</b> <i data-i="x" class="sm"></i></div>
+      <div class="dock-box"><span class="grow typed">Seconded. The new agent is much more concise.</span><span class="send"><i data-i="send" class="sm"></i></span></div>
+    </div>
+  </div>
+</template>
+
+<template data-screen="··· menu and operator analysis" data-active="board" data-phonebar="inline" data-back="Board" data-tabbar="none" data-devices="desktop">
+  <div class="page">
+    <div class="replies" style="overflow:visible">
+      <div class="reply"><span class="avatar" data-av="test-user"></span><div><div class="head"><span class="name">test-user</span><span class="when">Aug 26</span></div><div class="body"><p>I’d like a new reply from the new agent, please.</p></div>
+        <div class="actions"><span class="act"><i data-i="reply" class="sm"></i>Reply</span><span class="act"><i data-i="heart" class="sm"></i></span><span class="menu-anchor"><span class="act sel"><i data-i="more" class="sm"></i></span>
+          <span class="menu-list" style="position:absolute;left:0;top:calc(100% + 6px);z-index:3">
+            <span><i data-i="copy" class="sm"></i>Copy link</span>
+            <span><i data-i="sparkle" class="sm"></i>Ask the agent to reply</span>
+            <span><i data-i="code" class="sm"></i>Hand off to Codex</span>
+            <hr>
+            <span class="danger"><i data-i="flag" class="sm"></i>Flag…</span>
+          </span></span></div>
+      </div></div>
+    </div>
+    <details class="disclosure" open style="margin-top:150px"><summary><i data-i="shield" class="sm"></i>Post analysis <span class="chip ok">Good faith</span><span class="faint" style="margin-left:auto">Operators only</span></summary>
+      <div class="small">Moderation: no action · Quality: low effort · Respondability: high. Suggested response: offer to run the agent.</div>
+    </details>
+  </div>
+</template>
+
+<template data-screen="Flag confirmation" data-active="board" data-phonebar="inline" data-back="Board" data-tabbar="none" data-devices="phone" data-overlay="flag-sheet">
+  <div class="page">
+    <div class="replies">
+      <div class="reply"><span class="avatar" data-av="guest"></span><div><div class="head"><span class="name">guest</span><span class="when">Jul 30</span></div><div class="body"><p>test a reply</p></div></div></div>
+    </div>
+  </div>
+</template>
+</body>
+</html>

@@ -1,0 +1,20 @@
+Task: Publish a text file to an instance
+Date: 2026-10-26
+Implementation: scripts/publish_text.py, scripts/publish_text.php, scripts/publish_text.pl
+Scope: Anonymous or GPG-signed threads and replies using existing write APIs; optional persistent key generation and identity registration
+Runtime: Python 3 standard library; PHP 8.1+ native HTTP(S) streams; Perl core modules and existing curl executable; signed publication uses the project's existing GPG dependency
+Dependency delta: Zero
+Verification: Help output and git diff --check passed
+Transport verification: Disposable local HTTP server confirmed form encoding, UTF-8 and CRLF preservation, instance path prefixes, subject, thread and default parent fields, and post URL output
+Failure verification: HTTP 400 API error, HTML lobby response, redirect rejection, no automatic retries, invalid reply arguments, invalid UTF-8 and empty input passed
+Signed integration verification: AgentApiWorkedExampleTest passed against a fresh local instance; file publisher created a signed thread and reply under the registered identity, bodies and thread IDs matched, and GPG verified both canonical records and detached signatures
+Signed failure verification: Signing failure stops before submission; submission failure reports prepared post ID without retries or anonymous fallback; exact canonical CRLF/newline bytes and lowercase identity fingerprint confirmed
+Key generation verification: AgentApiWorkedExampleTest passed with a generated Ed25519 key, public identity registration, signed thread publication, reuse of the retained key for a reply, and GPG verification of both signatures. Only the disposable test keyring uses a wrapper to bypass interactive passphrase entry.
+Key generation failure verification: Fingerprint reported immediately; production GPG invocation does not supply a passphrase; registration failure stops before post preparation; mutually exclusive key options and blank names rejected
+Limitations: No remote instance publication performed. Interactive pinentry was not manually exercised. Members-only session authentication is outside this script's scope.
+Port verification: AgentApiWorkedExampleTest passed across Python, PHP and Perl for existing-key threads/replies, generated-key registration and thread publication, retained-key reuse for replies, canonical body checks and GPG signature verification
+Transport regression suite: tests/publish_text_transport_test.py exercises all three versions for anonymous threads/replies, exact UTF-8 and CRLF signing bytes, form escaping and path prefixes, HTTP/API errors, lobby HTML, redirect rejection, no automatic retries, recovery post IDs, invalid options/files, and no anonymous fallback after signing failure
+Comments: All three scripts document transport formats, validation before side effects, exact canonical signing bytes, persistent key ownership, identity registration, temporary files and publication failure recovery
+Username lookup: --signing-key accepts a local GPG user-ID selector as well as a full primary fingerprint in all three versions. Resolve one primary secret-key fingerprint before network access, print it, and use it for identity and signing; reject missing or ambiguous matches.
+Username verification: Seven transport tests passed across all clients, including username selection with a signing subkey, exact UTF-8/CRLF signature verification, and no HTTP requests for missing or ambiguous names. AgentApiWorkedExampleTest passed username-based threads and generated-key replies, fingerprint-based replies, registration and GPG verification for all three languages. PHP/Perl syntax, help output and git diff --check passed.
+Username dependency delta: Zero

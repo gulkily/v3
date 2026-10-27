@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversation · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+<style>
+  .chat { display: grid; grid-template-rows: 1fr auto; height: 100%; }
+  .chat .scroll { overflow: auto; padding: 4px 14px 10px; }
+  .chat .foot { padding: 8px 12px 26px; display: grid; gap: 6px; background: var(--bg); border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>10 · Conversation</h1>
+      <p>One private conversation. Every message is encrypted, signed and verified in the browser, and the interface should only bring that up when something goes wrong.</p>
+      <p class="doc-files">templates/pages/private_message_conversation.php · partials/private_message_composer.php · partials/private_message_item.php</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>Conversation with onthebus · Back to Messages</s><span>onthebus, as the title, with a back chevron.</span></li>
+        <li class="chg"><s>Encrypted to all approved keys. / Encrypted to every approved key associated with this username.</s><span>“Only you and onthebus can read these, on your approved devices.” It says who can read the messages, in plain terms, and stays visible because it is the privacy promise.</span></li>
+        <li class="chg"><s>Send private message</s><span>A send arrow button with the accessible name “Send”.</span></li>
+        <li class="chg"><s>Check previous send</s><span>“Not confirmed · Check” under the bubble it applies to.</span></li>
+        <li class="chg"><s>Message unavailable · Details / Retry reading message</s><span>“Couldn’t verify this message” bubble, with Details and Retry.</span></li>
+        <li class="chg"><s>Load older · Restart history · Reopen conversation</s><span>Older messages load as you scroll up. Restart history is under ··· because it is a recovery tool.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>Bubbles: yours on the right in the accent color, theirs on the left. Day separators replace the per-message “Sent: 2026-10-23T19:30:10Z”.</li>
+        <li>“Seen” appears under your last message only.</li>
+        <li>The signature check mark (✓ “Signature verified”) disappears from every message. Verification is the default, so only failures are shown.</li>
+        <li>The composer is pinned above the keyboard, as on the thread page.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>Sending shows the bubble immediately at reduced opacity, then full once delivered. A failure shows “Not sent · Retry” on that bubble and keeps the text.</li>
+        <li>An uncertain send (network dropped after submit) shows “Not confirmed · Check”. Today this is a detached button.</li>
+        <li>Offline: the composer says “You’re offline. Messages send when you reconnect.” <b>Proposal:</b> queue private messages to the Outbox like posts. Check that the offline queue supports encrypted messages before promising this.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Conversation with all three edge states" data-active="messages" data-phonebar="inline" data-back="Messages" data-title="onthebus" data-trail="i:more" data-tabbar="none" data-devices="phone">
+  <div class="chat">
+    <div class="scroll">
+      <div class="bubbles">
+        <div class="lock-line" style="margin:6px 0 4px"><i data-i="lock" class="sm"></i>Only you and onthebus can read these, on your approved devices.</div>
+        <div class="day">Oct 22</div>
+        <div class="bubble fail" style="display:grid;gap:4px"><span style="display:flex;gap:6px;align-items:center"><i data-i="shield" class="sm"></i><b>Couldn’t verify this message</b></span><span class="small">Details · Retry</span></div>
+        <div class="bubble me">Yes, it’s the next thing I’m fixing.</div>
+        <div class="day">Yesterday</div>
+        <div class="bubble me">Try it now, the reply box docks to the bottom.</div>
+        <div class="bubble-meta fail">Not confirmed · <b>Check</b></div>
+        <div class="day">Today 9:41</div>
+        <div class="bubble">ok the new reply box is way better on my phone</div>
+        <div class="bubble me" style="opacity:.55">Ship it tonight?</div>
+        <div class="bubble-meta fail">Not sent · <b>Retry</b></div>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="dock-box"><span class="grow">Message</span><span class="send off"><i data-i="send" class="sm"></i></span></div>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Empty — first message" data-active="messages" data-phonebar="inline" data-back="Messages" data-title="lucas" data-tabbar="none" data-devices="phone">
+  <div class="chat">
+    <div class="scroll" style="display:grid;place-items:center;text-align:center">
+      <div style="display:grid;gap:10px;justify-items:center;max-width:260px">
+        <span class="avatar lg" data-av="lucas"></span>
+        <b style="font-size:18px">lucas</b>
+        <div class="lock-line"><i data-i="lock" class="sm"></i>Only you and lucas can read these, on your approved devices.</div>
+      </div>
+    </div>
+    <div class="foot"><div class="dock-box"><span class="grow typed">hey, is mykull the friend you mentioned?</span><span class="send"><i data-i="send" class="sm"></i></span></div></div>
+  </div>
+</template>
+</body>
+</html>

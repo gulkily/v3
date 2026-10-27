@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, copyFile, utimes, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, copyFile, utimes, rm } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -19,10 +19,16 @@ const env={...process.env,FORUM_SITE_ID:'zenmemes',FORUM_APPROVED_MEMBERS_ONLY:'
 const seed=spawnSync('php',[join(project,'tests/Support/fastmod_browser_fixture.php'),root],{input:JSON.stringify(keys),encoding:'utf8',env});
 assert.equal(seed.status,0,seed.stderr);const {identity}=JSON.parse(seed.stdout);
 await writeFile(join(root,'repository/records/posts/traffic-visible.txt'),'Post-ID: traffic-visible\nCreated-At: 2026-04-10T12:00:00Z\nBoard-Tags: general\nSubject: Traffic browser fixture\n\nA visible public thread.\n');
-for(const args of [['add','records/posts/traffic-visible.txt'],['commit','-m','Seed a visible browser fixture thread']]) {
+await mkdir(join(root,'repository/records/post-retractions'),{recursive:true});
+for(const id of ['reply-20260526032118-654b2b08','reply-20260526032816-a1447d49']) {
+ await writeFile(join(root,`repository/records/post-retractions/post-retraction-${id}.txt`),`Record-ID: post-retraction-${id}\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: ${id}\nOperation: retract\nAuthor-Identity-ID: openpgp:${'a'.repeat(40)}\n\n`);
+}
+for(const args of [['add','records'],['commit','-m','Seed visible thread and absent production retraction targets']]) {
  const seeded=spawnSync('git',['-C',join(root,'repository'),...args],{encoding:'utf8'});assert.equal(seeded.status,0,seeded.stderr);
 }
 
+const prepared=spawnSync('php',[join(project,'scripts/high_traffic.php'),'prepare'],{encoding:'utf8',env});
+assert.equal(prepared.status,0,prepared.stderr);
 const normal=await readFile(join(project,'public/.htaccess'),'utf8');await writeFile(join(root,'public/.htaccess'),normal);
 const socket=createServer().listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
 const base=`http://127.0.0.1:${port}`;
@@ -36,9 +42,16 @@ try {
  await context.addInitScript(({keys,fingerprint})=>{
   for(const [key,value] of Object.entries({forum_pki_private_key:keys.privateKey,forum_pki_public_key:keys.publicKey,forum_pki_fingerprint:fingerprint,forum_pki_published_fingerprint:fingerprint,forum_pki_username:'traffic-operator'}))localStorage.setItem(key,value);
  },{keys,fingerprint});
- const page=await context.newPage();page.on('pageerror',e=>console.error(e));await page.goto(base+'/tools/feature-flags/');await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
+ const page=await context.newPage();page.on('pageerror',e=>console.error(e));await page.goto(base+'/tools/operations/');await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  const toggle=page.locator('[data-high-traffic-control] button');const status=page.locator('[data-high-traffic-status]');
  assert.equal(await toggle.getAttribute('aria-checked'),'false');
+ const state=page.locator('[data-high-traffic-state]');
+ assert.equal(await state.textContent(),'disabled');
+ assert.equal(await page.locator('[data-high-traffic-control] .switch').count(),1,'high-traffic control uses the shared switch');
+ assert.equal(await page.locator('.tools-nav .nav-link.is-active[href="/tools/operations/"]').count(),1);
+ const flagsPage=await context.newPage();await flagsPage.goto(base+'/tools/feature-flags/');
+ assert.equal(await flagsPage.locator('[data-high-traffic-control]').count(),0,'Feature Flags no longer hosts high-traffic mode');
+ assert.equal(await flagsPage.getByText('High-traffic mode').count(),0);await flagsPage.close();
  await verifyLayout('disabled');
  await page.route('**/api/finalize_high_traffic',async route=>{await new Promise(r=>setTimeout(r,250));await route.continue();});
  await toggle.click();await toggle.waitFor({state:'visible'});
@@ -46,6 +59,7 @@ try {
  await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').disabled);
  await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').getAttribute('aria-checked')==='true' || document.querySelector('[data-high-traffic-status]').textContent.includes('CLI recovery'));
  assert.equal(await toggle.getAttribute('aria-checked'),'true',await status.textContent());
+ assert.equal(await state.textContent(),'enabled');
  assert((await readFile(join(root,'public/.htaccess'),'utf8')).includes('BEGIN V3 HIGH TRAFFIC'));
  const shared=await context.newPage();const sharedAuthRequests=[];shared.on('request',r=>{if(/\/api\/(auth_challenge|authenticate_identity)$/.test(new URL(r.url()).pathname))sharedAuthRequests.push(r.url());});await shared.goto(base+'/');await shared.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  assert.equal(await shared.locator('meta[name="v3-generated-at"]').count(),1);
@@ -53,6 +67,13 @@ try {
  assert.equal(posted.status(),200,await posted.text());
  await shared.goto(base+'/threads/traffic-visible/');await shared.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  assert.equal(await shared.locator('meta[name="v3-generated-at"]').count(),1);
+ await shared.getByText('A visible public thread.',{exact:true}).waitFor();
+ for(const width of [375,1150]) {
+  await shared.setViewportSize({width,height:850});
+  await shared.evaluate(()=>document.fonts.ready);
+  assert.equal(await shared.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`loaded thread ${width} overflow`);
+  await shared.screenshot({path:join(root,`absent-target-thread-${width}.png`),fullPage:true});
+ }
  const like=shared.locator('[data-action="apply-thread-tag"][data-tag="like"]').first();
  await like.locator('xpath=ancestor::article[1]').hover();
  const voted=shared.waitForResponse(r=>r.url().endsWith('/api/apply_thread_tag')&&r.request().method()==='POST');
@@ -88,8 +109,10 @@ try {
  await writeFile(join(root,'public/.htaccess'),normal);
  await toggle.focus();await page.keyboard.press('Space');await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').getAttribute('aria-checked')==='false');
  assert.equal(await status.isVisible(),false);
- const denied=await browser.newContext({serviceWorkers:'block'});const no=await denied.newPage();await no.goto(base+'/tools/feature-flags/');
+ const denied=await browser.newContext({serviceWorkers:'block'});const no=await denied.newPage();await no.goto(base+'/tools/operations/');
  assert.equal(await no.locator('[data-high-traffic-control]').count(),0);
+ const readOnly=no.locator('.switch[role="switch"]');assert.equal(await readOnly.isDisabled(),true);assert.equal(await readOnly.getAttribute('aria-checked'),'false');
+ assert.equal(await no.locator('[data-high-traffic-status]').count(),0,'non-managers see no status details');
  const forbidden=await denied.request.post(base+'/api/prepare_high_traffic',{form:{enabled:'true'}});assert.equal(forbidden.status(),403);
  await context.close();await denied.close();
  console.log(JSON.stringify({status:'passed',fixture:root,checks:['real operator signing','live action and signed like from shared page','timestamp hint via browser clock','enable/disable','pending','failure and retry','unauthorized rejection','phone/desktop all shared themes']}));

@@ -61,7 +61,7 @@ final class ReadModelPostRetractionsTest
         $original = (string) file_get_contents($root . '/records/posts/thread-gone.txt');
         unlink($root . '/records/posts/thread-gone.txt');
         $withoutPost = $this->rebuild($root);
-        assertSame(0, (int) $withoutPost->query("SELECT COUNT(*) FROM posts WHERE post_id = 'thread-gone'")->fetchColumn());
+        assertSame(1, (int) $withoutPost->query("SELECT COUNT(*) FROM posts WHERE post_id = 'thread-gone'")->fetchColumn());
 
         file_put_contents($root . '/records/posts/thread-gone.txt', $original);
         $pdo = $this->rebuild($root);
@@ -181,6 +181,18 @@ final class ReadModelPostRetractionsTest
             $root . '/records/post-retractions/post-retraction-' . $postId . '.txt',
             "Record-ID: post-retraction-{$postId}\nCreated-At: 2026-10-13T12:00:00Z\nPost-ID: {$postId}\nOperation: retract\nAuthor-Identity-ID: {$authorIdentityId}\n\n"
         );
+        $source = $root . '/records/posts/' . $postId . '.txt';
+        $requestPath = $root . '/records/post-retractions/post-retraction-' . $postId . '.txt';
+        $post = (new CanonicalRecordRepository($root))->loadPost('records/posts/' . $postId . '.txt');
+        $request = (new \ForumRewrite\Canonical\PostRetractionRecordParser())->parse(file_get_contents($requestPath));
+        if (\ForumRewrite\Canonical\RetractedPosts::applies($post, $request)) {
+            $record = \ForumRewrite\Canonical\AcceptedRetraction::prepare($post, $request, file_get_contents($requestPath), 'fixture signature', 'author', hash_file('sha256', $source));
+            foreach (\ForumRewrite\Canonical\AcceptedRetraction::files($record) as $path => $bytes) {
+                if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0775, true);
+                file_put_contents($root . '/' . $path, $bytes);
+            }
+        }
+
     }
 
     private function rebuild(string $root): PDO

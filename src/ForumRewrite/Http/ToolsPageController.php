@@ -98,6 +98,7 @@ final class ToolsPageController
             [
                 'toolPages' => array_map(
                     static fn (array $tool): array => [
+                        'key' => $tool['key'],
                         'label' => $tool['label'],
                         'href' => $tool['href'],
                         'description' => $tool['description'],
@@ -224,11 +225,29 @@ final class ToolsPageController
                 'registry' => new FeatureFlagRegistry(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('feature-flags'),
                 'canManageFeatureFlags' => $this->viewerCanManageFeatureFlags($viewerProfile),
-                'highTraffic' => $this->viewerCanManageFeatureFlags($viewerProfile) ? $this->routeServices->highTrafficStatus() : null,
             ],
             'Feature Flags',
             'tools',
-            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/feature_flags.js', '/assets/high_traffic_control.js'],
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/feature_flags.js'],
+        );
+    }
+
+    public function operations(): string
+    {
+        $canManage = $this->viewerCanManageFeatureFlags(($this->resolveViewerProfileFromIdentityHint)());
+        $status = $this->routeServices->highTrafficStatus();
+
+        return $this->routeServices->renderPageTemplate(
+            'operations.php',
+            [
+                'toolNavOptions' => ToolsPageSupport::navOptions('operations'),
+                'canManageOperations' => $canManage,
+                'highTrafficEnabled' => ($status['effective_mode'] ?? '') === 'high-traffic',
+                'highTrafficError' => $canManage ? ($status['error'] ?? null) : null,
+            ],
+            'Operations',
+            'tools',
+            $canManage ? ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/high_traffic_control.js'] : [],
         );
     }
 

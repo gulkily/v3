@@ -80,6 +80,94 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion25StartupBuildsActivityAuthorIndexBeforeServingPage(): void
+    {
+        $database = sys_get_temp_dir() . '/registration-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('DROP INDEX activity_author_identity_idx');
+            $pdo->exec('DROP INDEX IF EXISTS posts_author_identity_idx');
+            $pdo->exec("UPDATE metadata SET value='25' WHERE key='schema_version'");
+            $pdo->exec("UPDATE metadata SET value='1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce' WHERE key='schema_fingerprint'");
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            $plan = $pdo->query("EXPLAIN QUERY PLAN UPDATE activity SET author_label='test', author_is_approved=0 WHERE author_identity_id='openpgp:test'")->fetchAll(PDO::FETCH_ASSOC);
+            assertStringContains('USING INDEX activity_author_identity_idx', implode(' ', array_column($plan, 'detail')));
+            assertStringNotContains('SCAN activity', implode(' ', array_column($plan, 'detail')));
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion26StartupBuildsPostAuthorIndexAndPreservesOrSemantics(): void
+    {
+        $database = sys_get_temp_dir() . '/post-author-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('DROP INDEX posts_author_identity_idx');
+            $previous = array_values(array_filter(\ForumRewrite\ReadModel\ReadModelSchema::statements(), static fn (string $sql): bool => !str_contains($sql, 'posts_author_identity_idx')));
+            $pdo->exec("UPDATE metadata SET value='26' WHERE key='schema_version'");
+            $pdo->prepare("UPDATE metadata SET value=? WHERE key='schema_fingerprint'")->execute([hash('sha256', implode("\n", $previous))]);
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            $ids = $pdo->query('SELECT post_id FROM posts ORDER BY post_id LIMIT 2')->fetchAll(PDO::FETCH_COLUMN);
+            $pdo->prepare("UPDATE posts SET author_identity_id='openpgp:test', post_score_total=0 WHERE post_id IN (?,?)")->execute($ids);
+            $sql = "UPDATE posts SET post_score_total=post_score_total+1 WHERE post_id=? OR author_identity_id='openpgp:test'";
+            $plan = $pdo->prepare('EXPLAIN QUERY PLAN ' . $sql);
+            $plan->execute([$ids[0]]);
+            $details = implode(' ', array_column($plan->fetchAll(PDO::FETCH_ASSOC), 'detail'));
+            assertStringContains('MULTI-INDEX OR', $details);
+            assertStringContains('posts_author_identity_idx', $details);
+            assertStringNotContains('SCAN posts', $details);
+            $update = $pdo->prepare($sql);
+            $update->execute([$ids[0]]);
+            assertSame(2, $update->rowCount());
+            assertSame([1, 1], array_map('intval', $pdo->query("SELECT post_score_total FROM posts WHERE author_identity_id='openpgp:test' ORDER BY post_id")->fetchAll(PDO::FETCH_COLUMN)));
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion27StartupRebuildsBeforeChangedProfileUpdates(): void
+    {
+        $database = sys_get_temp_dir() . '/profile-query-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $expected = $pdo->query('SELECT identity_id, post_count, thread_count FROM profiles ORDER BY identity_id')->fetchAll(PDO::FETCH_ASSOC);
+            $pdo->exec("UPDATE metadata SET value='27' WHERE key='schema_version'");
+            $pdo->exec('UPDATE profiles SET post_count=999, thread_count=999');
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame($expected, $pdo->query('SELECT identity_id, post_count, thread_count FROM profiles ORDER BY identity_id')->fetchAll(PDO::FETCH_ASSOC));
+        } finally { @unlink($database); }
+    }
+
+    public function testVersion28StartupRebuildsBeforeTargetedActivityUpdates(): void
+    {
+        $database = sys_get_temp_dir() . '/activity-query-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $expected = $pdo->query('SELECT post_id, author_identity_id, author_label, author_is_approved FROM activity ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+            $pdo->exec("UPDATE metadata SET value='28' WHERE key='schema_version'");
+            $pdo->exec("UPDATE activity SET author_label='stale attribution'");
+            $pdo = null;
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/activity/'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame($expected, $pdo->query('SELECT post_id, author_identity_id, author_label, author_is_approved FROM activity ORDER BY id')->fetchAll(PDO::FETCH_ASSOC));
+        } finally { @unlink($database); }
+    }
+
     public function testVersion24StartupRebuildsBeforeServingStandardActivityPages(): void
     {
         $database = sys_get_temp_dir() . '/activity-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -307,7 +395,10 @@ final class LocalAppSmokeTest
             assertStringContains('[1/4] Read-model candidate is ready.', $text);
             assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
             assertStringContains('[2/4] Fingerprinting and copying assets referenced by rendered pages...', $text);
-            assertStringContains('[2/4] Rendering shared pages (1/20): /.', $text);
+            assertStringContains('[2/4] Rendering shared pages (1/10): /.', $text);
+            assertStringNotContains('Rendering documentation', $text);
+            assertStringNotContains('Reusing documentation', $text);
+            assertStringContains('./v3 docs publish', $text);
             assertStringContains('Skipping individual thread and post pages', $text);
             assertStringNotContains('Rendering thread pages', $text);
             assertStringNotContains('Rendering post pages', $text);
@@ -377,7 +468,9 @@ final class LocalAppSmokeTest
                 assertSame(0, $exitCode, $text);
                 assertStringContains('Starting shared static release refresh', $text);
                 assertStringContains('does not rebuild the read model', $text);
-                assertStringContains('[1/2] Rendering shared pages (10/20): /tags/.', $text);
+                assertStringContains('[1/2] Rendering shared pages (10/10): /tags/.', $text);
+                assertStringNotContains('Reusing documentation', $text);
+                assertStringNotContains('Rendering documentation', $text);
                 assertStringContains('[2/2] Shared static release activated.', $text);
                 assertStringNotContains('Rendering thread pages', $text);
                 assertStringNotContains('Rendering post pages', $text);
@@ -416,8 +509,8 @@ final class LocalAppSmokeTest
             $board = $this->render($application, '/');
             $authStatus = $this->render($application, '/api/auth_status');
 
-            assertStringContains('Member activity', $profile);
-            assertStringContains('User Access', $profile);
+            assertStringContains('<h2>Threads</h2>', $profile);
+            assertStringContains('Approval details', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);
@@ -712,7 +805,7 @@ PHP;
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
-            assertStringContains('Member activity', $ownProfileAfterClear);
+            assertStringContains('<h2>Threads</h2>', $ownProfileAfterClear);
             assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
@@ -1455,11 +1548,10 @@ PHP;
         assertTrue(is_file($root . '/records/posts/reply-001.txt'));
     }
 
-    public function testSourceRemovalCommitFailureResumesAndRejectsStalePublication(): void
+    public function testSourceRemovalCommitFailureResumesWithoutPublicationGate(): void
     {
         [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
         (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
-        $old = \ForumRewrite\Retraction\PublicationGuard::begin($database, $root);
         file_put_contents($root . '/.git/hooks/pre-commit', "#!/bin/sh\nexit 1\n");
         chmod($root . '/.git/hooks/pre-commit', 0755);
         $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts, '--json']));
@@ -1470,11 +1562,9 @@ PHP;
         exec($command . ' 2>&1', $retryOutput, $retryStatus);
         assertSame(0, $retryStatus);
         assertSame(false, is_file($root . '/.git/source-label-removal-root-001.json'));
-        $staleRejected = false;
-        try { \ForumRewrite\Retraction\PublicationGuard::publish($old, $artifacts . '/stale.html', static function (): void {}); }
-        catch (RuntimeException) { $staleRejected = true; }
-        assertTrue($staleRejected);
-        assertTrue(\ForumRewrite\Retraction\PublicationGuard::begin($database, $root) !== null);
+        $builder = new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $database, $artifacts);
+        assertStringContains('</head>', $builder->renderHighTrafficRoute('/'));
+
     }
 
     public function testZenMemesDeletedPinRepliesRepairWithoutRemovingConversation(): void
@@ -1610,6 +1700,10 @@ PHP;
                 $repositoryRoot . '/records/post-reactions/post-reaction-20261002120000-replylike.txt',
                 "Record-ID: post-reaction-20261002120000-replylike\nCreated-At: 2026-10-02T12:00:00Z\nPost-ID: reply-002\nOperation: add\nTags: like\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"
             );
+            // The read model is the source of truth for viewer-tag state; rebuild
+            // it so the out-of-band reaction is projected (real writes go through
+            // the write API, which refreshes the read model for us).
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
             $_COOKIE = ['identity_hint' => 'guest'];
             $likedForte = $this->render($application, '/forte?selected=root-001');
 
@@ -1725,12 +1819,9 @@ PHP;
 
         foreach (['/instance/', '/backup/', '/tools/backup/'] as $path) {
             $backupPage = $this->render($application, $path);
-            assertStringContains('Public content and history only', $backupPage);
-            assertStringContains('not a complete instance backup.', $backupPage);
-            assertStringContains('Private messages, browser keys and drafts, operational data', $backupPage);
-            assertStringContains('software, configuration, secrets, and externally hosted media need separate backups', $backupPage);
-            assertStringContains('include supplemental workflow records', $backupPage);
-            assertStringContains('may lag behind the repository', $backupPage);
+            assertStringContains('Public content only; not a full site backup.', $backupPage);
+            assertStringContains('Index generated:', $backupPage);
+            assertStringContains('(may be out of date)', $backupPage);
             assertStringNotContains('complete snapshots of the forum data', $backupPage);
             assertStringNotContains('save everything', $backupPage);
             assertStringNotContains("board's full state", $backupPage);
@@ -1840,6 +1931,7 @@ PHP;
         $tools = $this->render($application, '/tools/');
         $codebase = $this->render($application, '/tools/codebase/');
         $featureFlags = $this->render($application, '/tools/feature-flags/');
+        $operations = $this->render($application, '/tools/operations/');
         $visitorStatistics = $this->render($application, '/tools/visitor-statistics/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
@@ -1981,39 +2073,23 @@ PHP;
         assertStringContains('commit unavailable', $post);
         assertStringContains('Signature:', $post);
         assertStringContains('anonymous unsigned', $post);
-        assertStringContains('zenmemes', $instance);
-        assertStringContains('Backup', $backup);
-        assertStringContains('Backup', $toolsBackup);
-        assertStringContains('Snapshot freshness', $instance);
-        assertStringContains('<table class="backup-downloads" data-role="text-content-downloads">', $instance);
-        foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $downloadHref) {
-            assertSame(1, substr_count($instance, 'href="' . $downloadHref));
+        foreach ([$instance, $backup, $toolsBackup] as $page) {
+            assertStringContains('Backup', $page);
+            assertStringContains('Public content only; not a full site backup.', $page);
+            assertStringContains('Index generated:', $page);
+            assertStringNotContains('Snapshot freshness', $page);
+            assertStringContains('Recent included items', $page);
+            assertStringContains('<strong>Instance:</strong>', $page);
+            assertStringContains('<strong>Admins:</strong>', $page);
+            assertStringContains('<strong>Snapshot:</strong>', $page);
+            assertStringNotContains('About these downloads', $page);
+            foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3'] as $href) {
+                assertSame(1, substr_count($page, 'href="' . $href));
+            }
         }
-        assertStringContains('Generated at:', $instance);
-        assertStringContains('Recent included items', $instance);
-        assertStringContains('href="/activity/">See all recent activity</a>', $instance);
-        assertStringContains('Repository snapshot:', $instance);
-        assertStringContains('Recent included items', $instance);
-        assertStringContains('class="nav"', $toolsBackup);
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
-        // The tools tab bar must be the first thing in the page body, before any page content.
         assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
-        assertOrdered($toolsBackup, '<h1>Backup</h1>', '>Text content</h2>');
-        assertStringNotContains('>Downloads</h2>', $toolsBackup);
-        assertStringContains('>About these downloads</h2>', $toolsBackup);
-        if (str_contains($toolsBackup, '>Images</h2>')) {
-            assertOrdered($toolsBackup, 'tools-nav', '>Images</h2>');
-            assertOrdered($toolsBackup, '>Text content</h2>', '>Images</h2>');
-            assertOrdered($toolsBackup, '>Images</h2>', '>Recent included items</h2>');
-        }
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
-        assertStringNotContains('href="/posts/">', $toolsBackup);
-        assertStringContains('/user/guest', $instance);
-        assertStringContains('/downloads/repository.tar.gz', $instance);
-        assertStringContains('/downloads/repository.zip', $instance);
-        assertStringContains('/downloads/read_model.sqlite3', $instance);
-        assertStringContains('Public content and history only', $instance);
-        assertStringContains('not a complete instance backup.', $instance);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
@@ -2028,6 +2104,8 @@ PHP;
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
+        assertStringContains('tool-launcher-button" href="/tools/operations/"', $tools);
+        assertStringContains('Control how the site is served, including high-traffic mode.', $tools);
         assertStringContains('/tools/visitor-statistics/', $tools);
         assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
         assertStringContains('/forte', $tools);
@@ -2060,6 +2138,15 @@ PHP;
         assertStringContains('Feature Flags', $featureFlags);
         assertStringContains('class="nav"', $featureFlags);
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
+        assertStringNotContains('High-traffic mode', $featureFlags);
+        assertStringContains('<h1>Operations</h1>', $operations);
+        assertStringContains('class="nav-link is-active" href="/tools/operations/"', $operations);
+        assertStringContains('High-traffic mode', $operations);
+        assertStringContains('aria-label="Read-only, requires a root-approved identity to change."', $operations);
+        assertStringNotContains('data-high-traffic-control', $operations);
+        assertStringNotContains('data-high-traffic-status', $operations);
+        assertStringNotContains('high_traffic_control', $operations);
+        assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         assertStringContains('tools-nav-divider', $featureFlags);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $featureFlags);
@@ -2083,8 +2170,8 @@ PHP;
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringNotContains('Identity ID', $profile);
-        assertStringNotContains('Public key', $profile);
-        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
+        assertStringContains('<summary>Public key</summary>', $profile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);
@@ -2452,10 +2539,11 @@ PHP;
             preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
             'Expected to find the root card block.'
         );
-        assertStringNotContains('<p class="meta">', $rootBlockMatch[0]);
+        // Bylines carry data-post-byline, so match the class without the closing bracket.
+        assertStringNotContains('<p class="meta"', $rootBlockMatch[0]);
 
         assertTrue(
-            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
+            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta"[^>]*>(.*?)<\/p>/s', $thread, $metaMatch) === 1,
             'Expected to find the run tail (r2) meta line.'
         );
         assertStringContains('2 replies', $metaMatch[1]);
@@ -2469,7 +2557,7 @@ PHP;
         assertStringContains('4 replies', $separate);
         foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
             assertSame(1, preg_match('/<article id="post-cont-merge-' . $suffix . '"[^>]*>(.*?)<\/article>/s', $separate, $card));
-            assertStringContains('<p class="meta">', $card[1]);
+            assertStringContains('<p class="meta"', $card[1]);
             assertStringContains('post-card-actions', $card[1]);
         }
         unlink($flagPath);
@@ -4970,7 +5058,8 @@ PHP;
             putenv('FORUM_SITE_ID');
         }
 
-        assertStringContains('<p class="eyebrow">zenmemes</p>', $zenmemesBoard);
+        // ZenMemes uses the app shell, whose wordmark links home.
+        assertStringContains('<span class="site-brand__mark" aria-hidden="true"></span>zenmemes</a></p>', $zenmemesBoard);
         assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
         assertStringContains('data-default-theme="auto"', $zenmemesBoard);
         assertStringContains('data-default-theme="chouse"', $chouseBoard);
@@ -5079,6 +5168,16 @@ PHP;
         assertTrue(isset($result['timings']['lock_wait']));
         assertTrue(is_float($result['timings']['lock_wait']));
         assertTrue($result['timings']['lock_wait'] >= 0.0);
+        assertTrue(is_float($result['timings']['lock_hold']));
+        assertTrue($result['timings']['lock_hold'] >= 0.0);
+        assertSame(false, $lock->isLocked());
+        try {
+            $lock->withExclusiveLockTimed(static function (): void { throw new RuntimeException('callback failed'); });
+            throw new RuntimeException('Expected callback failure.');
+        } catch (RuntimeException $error) {
+            assertSame('callback failed', $error->getMessage());
+        }
+        assertSame(false, $lock->isLocked());
     }
 
     private function render(Application $application, string $path): string
