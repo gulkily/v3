@@ -29,6 +29,7 @@ $testFiles = [
     __DIR__ . '/RepositoryArchiveValidationTest.php',
     __DIR__ . '/ContentImportPlannerTest.php',
     __DIR__ . '/AgentReplyCommandTest.php',
+    __DIR__ . '/AppNavigationPlacementTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
     __DIR__ . '/ApprovalAcceptanceTest.php',

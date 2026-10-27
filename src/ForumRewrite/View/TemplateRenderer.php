@@ -166,7 +166,7 @@ final class TemplateRenderer
             ]);
         }
 
-        $navItems = $this->navItems($viewerProfile);
+        $navItems = $this->navigationItems($viewerProfile);
         if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')) {
             $scriptPaths = array_merge($scriptPaths, $this->messagingScriptPaths());
         }
@@ -244,6 +244,8 @@ final class TemplateRenderer
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
+            'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
+            'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
         ]);
     }
 
@@ -305,7 +307,7 @@ final class TemplateRenderer
     /** Canonical navigation and dependencies for the current authenticated viewer. */
     public function navigationState(?array $viewerProfile, string $activeSection): array
     {
-        $items = $this->navItems($viewerProfile);
+        $items = $this->navigationItems($viewerProfile);
         $messages = array_values(array_filter($items, static fn (array $item): bool => $item['section'] === 'messages'));
         return [
             'html' => $this->renderFragment('partials/nav.php', ['navItems' => $items, 'activeSection' => $activeSection]),

@@ -37,3 +37,32 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - Estimate details: original scope as planned; uncertainty was low; no revisions. Retrospective 0.12 because the rendering switch moved to Stage 2.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Shell markup and account menu
+
+**Original estimate: 0.12**
+**Retrospective: 0.12**
+
+- Changes:
+  - `templates/layout.php`: renders `partials/app_header.php` when the `navigation` slot is `app`, adds `data-shell="app"` and an empty decorative sky layer (`.shell-sky`, theme hook) to the shell, and loads `account_menu.js`; the `forum`/`qdb` header is unchanged.
+  - `templates/partials/app_header.php` (new): wordmark with an empty `.site-brand__mark` slot (theme hook); the single main nav; New post (`/compose/thread`, only when Board is a destination, so not in members-only mode); account menu on a native `<details>` with the `menu` destinations, the density toggle where shown, and the existing theme menu.
+  - `templates/partials/nav.php`: skips `menu` items and adds `data-tab` (theme hook) only when placements exist, so other sites' output is unchanged.
+  - `TemplateRenderer`: layout and `navigationState()` both use `navigationItems()`, keeping the page nav equal to the live-refresh HTML; passes the slot and the new script path.
+  - `public/assets/account_menu.js` (new): Escape and outside click close the account menu; Escape handled by a nested popover is left alone.
+  - Tests: the Stage 1 "header unchanged" test replaced by checks of the bar/menu split, the theme hooks, the members-only case (no New post) and the `forum` switch-back.
+- Verification:
+  - Baseline diff: 24 headers (Chouse, QDB, MIT Rap Club, and ZenMemes switched to `forum`; guest, unapproved, approved; Messages on and off) captured before the change are byte-identical after it.
+  - Browser (Chrome, local server, desktop 1280px): with JavaScript off, opening the menu exposes every destination (`/`, `/users/`, `/compose/thread`, `/about/`, `/tools/`, `/account/key/`) as plain links; with JavaScript on, Enter opens the menu, Tab reaches its first link, Escape closes it and returns focus to the trigger, the theme popover opens inside the menu within the viewport, Escape closes only the popover first, an outside click closes the menu; no page errors.
+  - `php tests/run.php AppNavigationPlacementTest`: 7 run, 7 passed.
+  - Markup-sensitive smoke tests (`testInviteNavigationHighlightsOnlyInvite`, `testClearingIdentityRevokesApprovedPrivateSession`, `testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount`, `testApplicationRendersCoreRoutes`, `testApprovedPublicSessionIsResumedForBoardAndInvite`) plus `PrivateMessageFeatureFlagTest`: 10 run, 10 passed, with no test edits.
+  - Visual styling not checked: unstyled by design until Stage 3.
+  - Baked artifacts: `php scripts/build_static_artifacts.php` on the fixture repository succeeds on this branch and on the baseline (exit 0); 2,036 baked pages carry the account menu and `account_menu.<hash>.js` is copied. `check_static_artifacts.php` reports the same 11 missing fingerprints on both builds (documentation pages; none involve this change).
+  - Pre-existing failures, identical on the baseline worktree at `062c19f4b`: `testBuildStaticCommandReportsProgressAndArtifactSummary`, `testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel` (progress-text assertions) and `testThreadMergesSameAuthorQuickRepliesIntoContinuations`. Not caused by this cycle; left for separate follow-up.
+- Notes:
+  - **Correction to Stage 1:** `tests/AppNavigationPlacementTest.php` was not registered in `tests/run.php`, so Stage 1's "46 run, 46 passed" did not include it and its tests never ran in Stage 1. It is registered in this stage; the current 7 tests pass. Stage 1's committed code was not changed by this correction.
+  - `data-tab` is written as the first attribute of each link. Existing tests assert exact strings such as `class="nav-link" href="/tools/">Tools</a>`, including negative assertions; keeping the original attribute order unchanged keeps all of them meaningful without edits.
+  - Members-only mode shows the personal Profile link in the account menu (it was in the header row before).
+  - Removed a stale `public/index.html` before browser checks, per the theme guide; it regenerates on page load.
+- Estimate details: original scope plus the layout switch moved from Stage 1; no revision.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*

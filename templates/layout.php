@@ -137,6 +137,9 @@
   <script src="<?= $e($replyViewportScriptPath) ?>" defer></script>
   <script src="<?= $e($composeDisclosureScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
+<?php if ($navigationSlot === 'app'): ?>
+  <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
@@ -154,7 +157,11 @@
   </div>
 <?php endif; ?>
   <!-- route-source: <?= $e($routeSource) ?> -->
-  <div class="shell">
+  <div class="shell"<?= $navigationSlot === 'app' ? ' data-shell="app"' : '' ?>>
+<?php if ($navigationSlot === 'app'): ?>
+    <div class="shell-sky" aria-hidden="true"></div>
+<?= $indent($partial('partials/app_header.php'), 2) ?>
+<?php else: ?>
     <header class="site-header">
       <p class="eyebrow"><?= $e($siteName) ?></p>
       <div class="site-header-actions">
@@ -165,6 +172,7 @@
 <?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>
+<?php endif; ?>
     <main class="main">
 <?= $indent($content, 3) ?>
     </main>

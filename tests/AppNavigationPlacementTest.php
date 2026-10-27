@@ -70,25 +70,55 @@ final class AppNavigationPlacementTest
         }
     }
 
-    public function testZenmemesHeaderIsUnchangedUntilTheShellRendersPlacements(): void
+    public function testAppHeaderSplitsDestinationsBetweenTheBarAndTheAccountMenu(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            $html = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true])
+                ->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
+            preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $bar);
+            preg_match('/<details class="account-menu".*?<\/details>/s', $html, $menu);
+            foreach (['/', '/users/', '/messages'] as $href) {
+                assertStringContains('href="' . $href . '"', $bar[0]);
+            }
+            foreach (['/about/', '/tools/', '/account/key/', '/invites/'] as $href) {
+                assertSame(false, str_contains($bar[0], 'href="' . $href . '"'), $href);
+                assertStringContains('href="' . $href . '"', $menu[0]);
+            }
+            assertStringContains('data-tab="board"', $bar[0]);
+            assertStringContains('data-invite-navigation', $menu[0]);
+            assertStringContains('data-role="theme-menu"', $menu[0]);
+            assertStringContains('class="new-post-button" href="/compose/thread"', $html);
+            assertStringContains('<div class="shell-sky" aria-hidden="true"></div>', $html);
+            assertStringContains('/assets/account_menu.', $html);
+        });
+    }
+
+    public function testMembersOnlyViewersGetNoNewPostButton(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            $html = $this->renderer([FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => true])
+                ->renderLayout('Lobby', '', 'lobby', viewerProfile: self::VIEWERS['unapproved']);
+            assertSame(false, str_contains($html, 'new-post-button'));
+            assertStringContains('href="/profiles/mouse"', $html);
+        });
+    }
+
+    public function testForumSlotKeepsTodaysHeaderForZenmemes(): void
     {
         $profiles = SiteProfileRegistry::all();
-        $forum = $profiles;
-        $forum['zenmemes']['presentationSlots']['navigation'] = 'forum';
-        $headers = [];
-        foreach (['app' => $profiles, 'forum' => $forum] as $slot => $set) {
-            SiteProfileRegistry::setProfilesForTesting($set);
-            try {
-                $this->withSite('zenmemes', function () use ($slot, &$headers): void {
-                    $html = $this->renderer()->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
-                    preg_match('/<header class="site-header">.*?<\/header>/s', $html, $matches);
-                    $headers[$slot] = $matches[0];
-                });
-            } finally {
-                SiteProfileRegistry::setProfilesForTesting(null);
-            }
+        $profiles['zenmemes']['presentationSlots']['navigation'] = 'forum';
+        SiteProfileRegistry::setProfilesForTesting($profiles);
+        try {
+            $this->withSite('zenmemes', function (): void {
+                $html = $this->renderer()->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
+                assertStringContains('<header class="site-header">', $html);
+                foreach (['account-menu', 'new-post-button', 'data-tab=', 'shell-sky', '/assets/account_menu.'] as $marker) {
+                    assertSame(false, str_contains($html, $marker), $marker);
+                }
+            });
+        } finally {
+            SiteProfileRegistry::setProfilesForTesting(null);
         }
-        assertSame($headers['forum'], $headers['app']);
     }
 
     /** @param array<string, bool> $flags */
