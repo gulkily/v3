@@ -148,3 +148,17 @@ execution. Keep archive-wide safety violations fatal before destination mutation
 keep ordinary malformed supported records as truthful per-record rejections when
 independent content can safely proceed. Do not implement blanket exception skipping.
 Author: Codex
+
+Remediation: 2026-10-27, fix/import-archive-hardening
+Outcome: F1-F4 and C1 addressed through the approved follow-up cycle.
+Evidence: import_archive_hardening/import_archive_hardening_step4_implementation_summary.md
+F1: whole-string validation; 16 MiB within 128 MiB child regression.
+F2: shared bounded direct/indirect reads and destination preflight.
+F3: reverse-edge propagation; deterministic linear-work regression.
+F4: UTF-8 archive-name rejection before extraction, including excluded categories.
+C1: ten-second aggregate verification budget, one-MiB output cap and owned process cleanup.
+Additional admission correction: ignored tar headers now count toward entry limits.
+Limits: prior findings/evidence remain historical; no universal security guarantee,
+OS sandbox, new trust model or deployment claim. Full invocation supervision and
+hard-stop resume are included; abandoned temporary artifacts and uninterruptible
+kernel/device failures retain explicit operator recovery guidance.

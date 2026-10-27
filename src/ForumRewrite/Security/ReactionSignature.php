@@ -33,7 +33,11 @@ final class ReactionSignature
             $cacheKey = hash('sha256', serialize([$contents, $signature, $key, $fingerprint]));
             if (!isset(self::$cache[$cacheKey])) {
                 if (count(self::$cache) >= 1024) self::$cache = [];
-                self::$cache[$cacheKey] = (new OpenPgpSignatureVerifier())->verifyDetached($key, $contents, $signature, $fingerprint)['ok'];
+                try {
+                    self::$cache[$cacheKey] = (new OpenPgpSignatureVerifier())->verifyDetached($key, $contents, $signature, $fingerprint)['ok'];
+                } catch (\ForumRewrite\Support\OperationLimitException $error) {
+                    throw new \ForumRewrite\Support\OperationLimitException('Verification for ' . $path . ': ' . $error->getMessage(), 0, $error);
+                }
             }
             if (!self::$cache[$cacheKey]) return 'invalid';
         }

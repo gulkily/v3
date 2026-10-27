@@ -4,6 +4,14 @@ require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 require_once __DIR__ . '/Support/ImportHttpServer.php';
 final class InvocationSupervisorTest
 {
+    public function testUnexpectedWorkerExitRetainsFailureExitContract(): void
+    {
+        $w = new ImportTestWorkspace();
+        $w->put($w->root . '/exit.php', '<?php require ' . var_export(__DIR__ . '/../autoload.php', true) . ';exit(ForumRewrite\\Support\\InvocationSupervisor::run(static fn()=>77,1));');
+        [$code, $output] = $w->command([PHP_BINARY, $w->root . '/exit.php']);
+        assertSame(1, $code); assertStringContains('status 77', $output);
+    }
+
     public function testNestedProcessAndLockAreReleasedOnDeadline(): void
     {
         $w = new ImportTestWorkspace();

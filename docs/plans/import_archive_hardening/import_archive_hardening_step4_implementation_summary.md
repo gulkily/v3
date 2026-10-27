@@ -96,3 +96,27 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 - Notes: Linux uninterruptible kernel/device failures cannot be repaired by signals; if an owned child has not exited, locks are retained for operator inspection. Ordinary process stalls and deadline fixtures meet the cleanup allowance. Hard-killed temporary download/candidate files may remain; they are not canonical or resumed payloads and no broad cleanup deletes unrelated files. No rollback of local edits.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 8 - Operator acceptance and final review
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.25**
+
+- Changes: documented supported Linux/WSL runtime, byte/time limits, override, retry/resume, owned-lock handling and retained temporary artifacts. Final adversarial review also counts ignored tar headers toward the entry ceiling, bounds retained malformed-record diagnostics to 1 KiB, preserves unexpected programming failures, identifies the record on verification exhaustion and normalizes unexpected worker exits to failure status 1. Historical review evidence remains intact with remediation links. S7 commit: `46544762`.
+- Verification: combined affected parser/import/archive/recovery/verification/Railspike/authentication/signed-write regression run **130/130 passed**. After the final diagnostic and exit-status guards, `php tests/run.php InvocationSupervisorTest ImportAdmissionTest ContentImportPlannerTest` **20/20 passed**, including both new tests. The entire repository suite was not run. All changed PHP files pass syntax validation; final diff whitespace and local plan navigation checked. No UI, dependency or schema changes; UI/theme and migration checks are not applicable.
+- Adversarial evidence: original 4,194,396-byte text reproduction now parses under 128 MiB, and the permanent test covers the full 16 MiB boundary. Original 17,825,792-byte signature is rejected before parsing. The 4,000-record chain replay took approximately 0.408 seconds versus the original 4.677 seconds; deterministic dependency-visit assertions establish complexity independently of timing. Invalid UTF-8 filenames fail before extraction; slow/noisy GPG and owned-descendant fixtures verify operational failure and termination. Ignored tar-directory headers cannot bypass the entry count. Malformed two-MiB headers produce bounded report diagnostics.
+- Normal acceptance: isolated normal CLI preview/import/repeat against current `https://zenmemes.com` downloaded 613,977 bytes. Preview and import each reported 3,008 imports, 13 invalid, 8 unsupported and 239 excluded entries, exit 2 (truthful partial success). Repeat reported zero imports and 3,008 duplicates; destination retained two commits including seed. Live SQLite integrity passed. HTTP thread/API routes and the offline snapshot served successfully; offline bytes matched the published file. A deliberately interrupted publication resumed through normal `--resume`, exit 0, without download or additional commit. Largest accepted text/armor were 28,170/811 bytes. Tests ran on Linux 6.6.87.2-microsoft-standard-WSL2 with default invocation budget; the user's existing repository/cache/static data were not used as destinations.
+- Notes: no new dependency, deployment or merge. Physical Lenovo execution and production deployment are not claimed. This bounds known resource paths; it is not a general OS sandbox. Hard-killed temporary workspaces may remain, and uninterruptible kernel/device faults require operator recovery as documented. Existing invalid/unsupported archive records were reported, not repaired or silently accepted. Scope and original estimate retained; no measured labor.
+
+*— Codex · 2026-10-27 UTC*
+
+## Study closeout and release limits
+
+**Original Step 4 cycle projection: 1.00**
+
+**Retrospective cycle scope assessment: 1.05**
+
+All eight stages completed locally on `fix/import-archive-hardening`; stage commits retain their individual verification and summaries. Same stable cycle `v3/import_archive_hardening`, scope v1 clarified, original baseline, R1/P2 and single exposed Codex rater. Earlier 0.90 intake/Step 1/Step 2 projections and Step 3/4 1.00 remain unchanged in history. Stage retrospectives are 0.15, 0.10, 0.25, 0.20, 0.25, 0.30, 0.25, 0.25; they are not added to infer cycle work. The separate 1.05 retrospective reflects lifecycle/recovery validation and final defensive review. Measured labor and independent rating unavailable; maintainer comfortable-fit/acceptance pending. No accepted-count increment or new child observation. Deployment, merge and full-suite verification remain unperformed. Final stage revision is recorded in the debug handoff after its commit.
+
+*— Codex · 2026-10-27 UTC*

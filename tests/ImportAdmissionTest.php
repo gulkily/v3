@@ -5,6 +5,16 @@ use ForumRewrite\Canonical\{RecordLimits, RecordSizeException};
 use ForumRewrite\Import\{ContentImportPlanner, RepositoryArchive};
 final class ImportAdmissionTest
 {
+    public function testMalformedHeaderDiagnosticsAreBounded(): void
+    {
+        $w = new ImportTestWorkspace(); $source = $w->repository('source'); $target = $w->repository('target');
+        $w->put($source . '/records/posts/invalid.txt', str_repeat('x', 2 * 1024 * 1024) . "\n\nbody\n");
+        $entry = (new ContentImportPlanner())->plan($source, $target)['records/posts/invalid.txt'];
+        assertSame('invalid', $entry['state']);
+        assertTrue(strlen($entry['reason']) < 1100);
+        assertStringContains('[truncated]', $entry['reason']);
+    }
+
     public function testBoundariesAndIndirectReads(): void
     {
         $w = new ImportTestWorkspace();

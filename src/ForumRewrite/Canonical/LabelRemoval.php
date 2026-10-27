@@ -68,7 +68,7 @@ final class LabelRemoval
                 $id = basename($path, '.json');
                 $records[$id] = self::read($root, $id);
             } catch (\ForumRewrite\Support\OperationLimitException|RecordReadException|RecordSizeException $error) { throw $error; }
-            catch (\Throwable) { /* Unresolved legacy evidence belongs to explicit migration. */ }
+            catch (\RuntimeException|\JsonException) { /* Unresolved legacy evidence belongs to explicit migration. */ }
         }
         return $records;
     }

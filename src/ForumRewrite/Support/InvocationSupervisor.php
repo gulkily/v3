@@ -49,7 +49,11 @@ final class InvocationSupervisor
                 $waited = pcntl_waitpid($pid, $status, WNOHANG);
                 if ($waited === $pid) {
                     $reaped = true;
-                    if (pcntl_wifexited($status)) return pcntl_wexitstatus($status);
+                    if (pcntl_wifexited($status)) {
+                        $code = pcntl_wexitstatus($status);
+                        if (in_array($code, [0, 1, 2], true)) return $code;
+                        throw new OperationLimitException('Import worker exited with status ' . $code . ' during ' . $lastStage . '.');
+                    }
                     throw new OperationLimitException('Import worker terminated during ' . $lastStage . '.');
                 }
                 if ($interrupted) throw new OperationLimitException('Import interrupted during ' . $lastStage . '.');

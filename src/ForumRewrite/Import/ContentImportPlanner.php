@@ -12,7 +12,6 @@ use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
-use Throwable;
 use ForumRewrite\Canonical\{RecordLimits, RecordSizeException, RecordReadException};
 use ForumRewrite\Support\OperationLimitException;
 
@@ -214,12 +213,20 @@ final class ContentImportPlanner
         return $entries;
     }
 
+    private static function reason(\Throwable $error): string
+    {
+        $message = $error->getMessage();
+        // A malformed header can be as large as the record; do not retain one
+        // full input-sized exception per rejected entry in the report/journal.
+        return strlen($message) > 1024 ? mb_strcut($message, 0, 1024, 'UTF-8') . ' [truncated]' : $message;
+    }
+
     private function describe(string $root, string $path, ?string $keyFallbackRoot = null): array
     {
         $entry = ['state' => 'import', 'reason' => '', 'key' => ArchiveRecordCatalog::pathIdentityKey($path), 'dependencies' => []];
         if (ArchiveRecordCatalog::isRecordPath($path) || ArchiveRecordCatalog::isSignaturePath($path)) {
             try { RecordLimits::assertFile($root . '/' . $path); }
-            catch (RecordSizeException $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
+            catch (RecordSizeException $error) { return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)]; }
         }
         if (preg_match('#^records/(post-retractions|post-retraction-acceptances)/post-retraction-([A-Za-z0-9][A-Za-z0-9._-]*)\.txt(?:\.asc)?$#D', $path, $match)) {
             $id = $match[2];
@@ -228,7 +235,7 @@ final class ContentImportPlanner
                 $local = $keyFallbackRoot === null ? null : \ForumRewrite\Canonical\AcceptedRetraction::read($keyFallbackRoot, $id);
                 if ($incoming === null || $local === null || $incoming !== $local) throw new RuntimeException('Retraction requires matching local acceptance evidence; imported records grant no authority.');
                 return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local retraction'];
-            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (Throwable $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
+            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) { return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)]; }
         }
         if (str_starts_with($path, 'records/post-removals/')) {
             try {
@@ -238,7 +245,7 @@ final class ContentImportPlanner
                     throw new RuntimeException('Removal evidence requires existing trusted local acceptance; restore trusted repository history.');
                 }
                 return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local removal evidence'];
-            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (Throwable $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
+            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) { return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)]; }
         }
         if (ArchiveRecordCatalog::isSignaturePath($path) && !ArchiveRecordCatalog::isRecordPath($path)) {
             $record = substr($path, 0, -4);
@@ -316,9 +323,9 @@ final class ContentImportPlanner
             if ($entry['key'] === null) {
                 throw new RuntimeException('Unrecognized canonical identity');
             }
-        } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (Throwable $error) {
+        } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) {
             $entry['state'] = 'invalid';
-            $entry['reason'] = $error->getMessage();
+            $entry['reason'] = self::reason($error);
         }
         return $entry;
     }

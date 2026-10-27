@@ -66,7 +66,7 @@ final class AcceptedRetraction
             $id = substr(basename($path, '.txt'), strlen('post-retraction-'));
             try { $records[$id] = self::read($root, $id); }
             catch (\ForumRewrite\Support\OperationLimitException|RecordReadException|RecordSizeException $error) { throw $error; }
-            catch (\Throwable) { /* Operator migration/inspection reports malformed records; readers remain available. */ }
+            catch (\RuntimeException|\JsonException) { /* Operator migration/inspection reports malformed records; readers remain available. */ }
         }
         return $records;
     }

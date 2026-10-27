@@ -565,8 +565,8 @@ controlled operator workflow.
 ## Import content from a remote instance
 
 ```
-./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
-./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
+./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
 ```
 
 Downloads the source's public repository archive, merges supported public forum
@@ -584,6 +584,9 @@ and retained as hash-bound metadata without changing signed post bytes. See the
   duplicates, conflicts, and exclusions without changing destination records,
   commits, the read model, or published views. Temporary downloads and lock files
   may be created. Cannot be combined with `--resume`.
+- `--time-limit=SECONDS` — positive finite whole-invocation budget (default 300),
+  including lock waits/publication, with up to five seconds process cleanup.
+  Linux/WSL PCNTL/POSIX supervision is required; file limits remain unchanged.
 - `--verbose` — list every rejected/excluded file and dependency root cause.
   The default output groups review causes and summarizes intentional exclusions.
 

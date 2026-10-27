@@ -31,6 +31,7 @@ final class RepositoryArchive
         $progress->start('Archive validation: scanning entries...');
         $offset = 0;
         $entries = [];
+        $entryCount = 0;
         $roots = [];
         $longName = null;
         try {
@@ -64,7 +65,7 @@ final class RepositoryArchive
                     $prefix = rtrim(substr($header, 345, 155), "\0");
                     $name = ($prefix !== '' ? $prefix . '/' : '') . $name;
                 }
-                if (count($entries) >= $this->maxEntries) {
+                if (++$entryCount > $this->maxEntries) {
                     throw new RuntimeException('Archive exceeds entry count limit.');
                 }
                 if ($type === 'L') {
