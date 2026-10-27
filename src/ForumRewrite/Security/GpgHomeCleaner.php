@@ -9,14 +9,14 @@ namespace ForumRewrite\Security;
  */
 final class GpgHomeCleaner
 {
-    public static function dispose(string $home): void
+    public static function dispose(string $home, bool $stopAgents = true): void
     {
         if (!is_dir($home)) {
             return;
         }
 
         // Agent sockets are keyed to the home path, so stop them before it is removed.
-        @exec('timeout 10 gpgconf --homedir ' . escapeshellarg($home) . ' --kill all >/dev/null 2>&1');
+        if ($stopAgents) @exec('timeout 10 gpgconf --homedir ' . escapeshellarg($home) . ' --kill all >/dev/null 2>&1');
 
         self::deleteTree($home);
     }

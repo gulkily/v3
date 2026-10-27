@@ -60,3 +60,15 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 - Notes: initial path order and dependency order remain deterministic; rejection wakes only affected entries. Scope/estimate unchanged.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 5 - Bounded signature verification
+
+**Original estimate: 0.25**
+
+**Retrospective stage work: 0.25**
+
+- Changes: all GPG steps share a ten-second monotonic verification budget and one-MiB aggregate output ceiling; process-group cleanup runs on every outcome. Private homes use no-options/no-autostart, so verification does not start detached agents; its cleanup avoids an additional unbounded agent lifecycle. Shared callers receive explicit operational exceptions; reaction indexing does not mask them. Raw verifier inputs are also bounded.
+- Verification: signed import/reaction/audit 3/3; budget, Railspike and signed profile/post/settings/approval/invitation groups 15/15; HTTP authentication and author retraction 2/2. Slow/noisy fixtures and actual planner exhaustion prove limits remain operational failures. S4 commit: `733d953c`.
+- Notes: existing non-verifier GPG-home cleanup behavior retained. No weakened signer validation or new dependency. Scope/estimate unchanged.
+
+*— Codex · 2026-10-27 UTC*
