@@ -43,7 +43,7 @@ final class InstancePageController
     public function renderBackup(): string
     {
         $imageStore = new \ForumRewrite\Images\ImageStore($this->repositoryRoot);
-        $imageBackupAvailable = is_dir($imageStore->root) || \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
+        $imageBackupAvailable = $this->backupEnabled(FeatureFlagRegistry::IMAGE_BACKUP_ENABLED) && (is_dir($imageStore->root) || \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED));
         $revision = ReadModelMetadata::repositoryHead($this->repositoryRoot);
         $revisionQuery = $imageBackupAvailable ? '?revision=' . rawurlencode($revision) : '';
         return $this->routeServices->renderPageTemplate(
@@ -85,7 +85,7 @@ final class InstancePageController
     public function downloadImageBackup(string $method, string $kind = 'images', ?string $revision = null): void
     {
         if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
-        if ($kind !== 'images' && !$this->allowBackup(FeatureFlagRegistry::TEXT_BACKUP_ENABLED)) { return; }
+        if (!$this->allowBackup($kind === 'images' ? FeatureFlagRegistry::IMAGE_BACKUP_ENABLED : FeatureFlagRegistry::TEXT_BACKUP_ENABLED)) { return; }
         try {
             $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision);
         } catch (\ForumRewrite\Images\ArchiveBusyException $error) {

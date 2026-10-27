@@ -15,7 +15,11 @@
 <?php endif; ?>
     </ul>
 <?php if ($imageBackupAvailable ?? false): ?>
+<?php if ($textBackupEnabled ?? true): ?>
     <p class="meta">Keep content and image downloads with matching revisions.</p>
+<?php else: ?>
+    <p class="meta">Restoring images requires a matching content backup. Text downloads are disabled here.</p>
+<?php endif; ?>
 <?php endif; ?>
 <?php if ($textBackupEnabled ?? true): ?>
     <p class="meta">The SQLite index may be out of date.</p>

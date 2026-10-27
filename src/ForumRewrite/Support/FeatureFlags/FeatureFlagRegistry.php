@@ -7,6 +7,7 @@ namespace ForumRewrite\Support\FeatureFlags;
 final class FeatureFlagRegistry
 {
     public const COLLAPSE_SAME_AUTHOR_POSTS_ENABLED = 'FORUM_COLLAPSE_SAME_AUTHOR_POSTS_ENABLED';
+    public const IMAGE_BACKUP_ENABLED = 'FORUM_IMAGE_BACKUP_ENABLED';
     public const TEXT_BACKUP_ENABLED = 'FORUM_TEXT_BACKUP_ENABLED';
     public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
     public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
@@ -38,6 +39,15 @@ final class FeatureFlagRegistry
     {
         return [
             new FeatureFlagDefinition(
+                self::IMAGE_BACKUP_ENABLED,
+                'Image backups',
+                'Allow image archive downloads, including retained images when attachments are disabled. Stored images are preserved.',
+                true,
+                self::IMAGE_BACKUP_ENABLED,
+                siteMutable: true,
+                group: 'BACKUP',
+            ),
+            new FeatureFlagDefinition(
                 self::TEXT_BACKUP_ENABLED,
                 'Text backups',
                 'Allow repository and SQLite downloads. Disabling also makes SQLite Viewer and query dialogs unavailable; stored content is preserved.',
@@ -58,7 +68,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::IMAGE_CONTENT_ENABLED,
                 'Image attachments',
-                'Allow approved members to attach JPEG/PNG images. Disabling blocks image delivery and authoring; retained image backups remain available.',
+                'Allow approved members to attach JPEG/PNG images. Disabling blocks image delivery and authoring; retained images can still be backed up when image backups are enabled.',
                 false,
                 self::IMAGE_CONTENT_ENABLED,
                 siteMutable: true,

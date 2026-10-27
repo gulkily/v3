@@ -20,3 +20,14 @@ Status: Implementation in progress; four planned stages, zero complete.
 - Notes: Expanded inspection found embedded query and Codebase links; treated as shared-surface wiring within approved text-control scope. FeatureFlagChangePageTest: 1/2 pass, activity-link assertion fails identically in detached baseline 6797de0f. UI/host acceptance remains Stage 4. No dependency/schema change. S1/v1 unchanged, single exposed Codex rater, R1/P2; no measured labor.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 2 — Image backup control
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes: Independent default-enabled FORUM_IMAGE_BACKUP_ENABLED, site/environment control and non-template schema registration. Image archive gate applies before revision checks/cache lookup; retained-image availability remains separate from image authoring. Image-only warning identifies the matching-content requirement.
+- Verification: BackupFeatureFlagTest, FeatureFlagEvaluatorTest, PrivateConfigSchemaTest and PrivateConfigCommandTest: 33/33 pass. Four combinations, warm archives, revision bypass denial, re-enable and retained PNG bytes with authoring disabled covered. Initial test used an invalid image-store fixture; replaced it with a valid stored PNG and reran successfully.
+- Notes: Stage 1 commit 74ff9dc0. S2/v1 unchanged, single exposed rater/R1/P2; no measured labor. UI/host acceptance remains pending. No dependencies or schema changes.
+
+*— Codex · 2026-10-27 UTC*

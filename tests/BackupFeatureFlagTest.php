@@ -12,7 +12,7 @@ final class BackupFeatureFlagTest
 {
     public function testTextDefaultsAndEnvironmentPrecedence(): void
     {
-        $key = FeatureFlagRegistry::TEXT_BACKUP_ENABLED;
+        foreach ([FeatureFlagRegistry::TEXT_BACKUP_ENABLED, FeatureFlagRegistry::IMAGE_BACKUP_ENABLED] as $key) {
         $previous = getenv($key);
         try {
             putenv($key);
@@ -25,6 +25,7 @@ final class BackupFeatureFlagTest
             assertTrue(in_array($key, PrivateConfigSchema::environmentKeys(), true));
             assertSame(false, array_key_exists($key, PrivateConfigSchema::templateDefaults()));
         } finally { putenv($previous === false ? $key : $key . '=' . $previous); }
+        }
     }
 
     public function testTextDownloadDenialAndRecoveryIncludesWarmArchivesAndViewer(): void
@@ -51,11 +52,42 @@ final class BackupFeatureFlagTest
         assertStringContains('HTTP_STATUS=200', $this->request($w, $root, '/downloads/images.tar', false));
     }
 
-    private function request(ImportTestWorkspace $w, string $root, string $path, bool $text): string
+    public function testIndependentImagePolicyPreservesRetainedImagesAndArchives(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source', true); $w->git($root);
+        mkdir($w->root . '/images');
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=');
+        $w->put($w->root . '/pixel.png', $png);
+        $ref = \ForumRewrite\Images\ImageStore::inspect($w->root . '/pixel.png', '');
+        $store = new \ForumRewrite\Images\ImageStore($root, $w->root . '/images');
+        $store->put($w->root . '/pixel.png', $ref);
+        $retained = $store->resolve($ref);
+        foreach ([true, false] as $text) {
+            foreach ([true, false, true] as $images) {
+                $body = $this->request($w, $root, '/downloads/images.tar', $text, $images);
+                assertStringContains('HTTP_STATUS=' . ($images ? '200' : '403'), $body);
+                $body = $this->request($w, $root, '/downloads/repository.zip', $text, $images);
+                assertStringContains('HTTP_STATUS=' . ($text ? '200' : '403'), $body);
+                $page = $this->request($w, $root, '/tools/backup/', $text, $images);
+                assertSame($images, str_contains($page, 'href="/downloads/images.tar'));
+                assertSame($text, str_contains($page, 'href="/downloads/repository.zip'));
+                if ($images && !$text) { assertStringContains('requires a matching content backup', $page); }
+                assertSame($png, file_get_contents($retained));
+            }
+        }
+        // Refusal precedes revision validation even for a previously built archive.
+        assertSame("Backup unavailable.\n\nHTTP_STATUS=403", $this->request($w, $root,
+            '/downloads/images.tar?revision=' . str_repeat('0', 40), true, false));
+        assertTrue(count(glob($w->root . '/archive-exports/*/metadata')) > 0);
+    }
+
+    private function request(ImportTestWorkspace $w, string $root, string $path, bool $text, bool $images = true): string
     {
         $code = 'require $argv[1]."/autoload.php"; http_response_code(200); (new ForumRewrite\\Application($argv[1],$argv[2],$argv[3]))->handle("GET",$argv[4]); fwrite(STDOUT,"\nHTTP_STATUS=".http_response_code());';
         [$status, $body] = $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=false',
             'FORUM_TEXT_BACKUP_ENABLED=' . ($text ? 'true' : 'false'),
+            'FORUM_IMAGE_BACKUP_ENABLED=' . ($images ? 'true' : 'false'),
+            'FORUM_IMAGE_CONTENT_ENABLED=false',
             'FORUM_IMAGE_ROOT=' . $w->root . '/images', PHP_BINARY, '-r', $code,
             dirname(__DIR__), $root, $w->root . '/index.sqlite3', $path]);
         assertSame(0, $status, $body);
