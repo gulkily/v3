@@ -204,3 +204,18 @@
 ### Uncertain assessments
 
 - The release check needs counts "with the flag on (cutoff now)", but a cutoff comes only from an operator-signed record, which cannot be made on a read-only copy. A test-only override in a scratch copy of the code supplied it. Railspike does not say whether such a harness is acceptable evidence.
+
+## 2026-10-26T23:55Z · Step 3 revision 3 (signature check cache)
+
+### Necessary/useful instructions
+
+- Railspike Enhancement Requests classification: the cache adds a state file and changes the shared signature checker, outside Step 3's components, so it is changed scope rather than a Stage 8 fix; it returned to Step 3 before any code. Retain.
+- Railspike "eight Step 3 stages": the offered Stage 9 would have exceeded the limit; the work joined the unfinished Stage 8 instead. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- The maintainer's "Go ahead" answered an offer to add the stage; `AGENTS.md` asks for an explicit `Approved Step N`, so the revision waits for one. Railspike does not say whether such an answer to a specific offer counts.

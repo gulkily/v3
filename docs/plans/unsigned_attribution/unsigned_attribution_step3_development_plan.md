@@ -8,6 +8,8 @@ Effort study: railspike-effort / v3/unsigned_attribution · [Host ledger](../eff
 
 Revision 2 follows Step 2 revision 3 (scope v6): the rule ships behind a default-off verified attribution flag with an automatically written cutoff, and the accept-unsigned-content flag moves to its own cycle. Stage 1 is unchanged and already committed (`e061eea9`); later stages are renumbered.
 
+Revision 3 (scope v7, 2026-10-26) follows an enhancement request at Stage 8: with the flag on, every full rebuild and many writes rerun GPG for each signed item after the cutoff (74 s on the zenmemes copy with an August cutoff, growing each month). Stage 8 now also saves signature check results so each record is checked once. Stages 1–7 are unchanged; the Stage 8 evidence already committed (`f5d485bd`) stays and is rerun after the change.
+
 ## Completion Contract
 
 - Normal entry: board, thread, Outbox and API posting and voting, as today; operators turn the flag on from the Feature Flags page.
@@ -20,6 +22,7 @@ Revision 2 follows Step 2 revision 3 (scope v6): the rule ships behind a default
 
 - **High risk:** counts change when an operator turns the flag on. Impact: profile, post-count and ranking shifts. Early validation: zenmemes counts with the flag off, and on with a cutoff of now, equal the Stage 1 before-counts. Mitigation: the cutoff is written in the same request that first turns the flag on.
 - **High risk:** rebuild, incremental update, flag toggles and cutoff moves disagree. Impact: scores differ depending on how the read model got there. Early validation: parity tests in Stages 3–4. Mitigation: the read model keeps both today's totals and verified totals, computed by one shared rule; the flag only chooses which to show, and a cutoff change recomputes verified totals automatically.
+- **Medium risk:** signature checks grow with signed activity after the cutoff. Impact: rebuilds and cutoff moves slow by roughly 110 ms per signed record (about 15–40 s per month on zenmemes), and votes re-check their thread's signed votes. Early validation: Stage 8 measurement on the zenmemes copy. Mitigation: a persistent cache of check results (Stage 8).
 - The reply agent's replies turn unverified once an instance turns the flag on, unless Stage 7 lands. Mitigation: Stage 7 ships in the same release.
 
 ## Stage 1 (done, `e061eea9`)
@@ -85,15 +88,16 @@ Revision 2 follows Step 2 revision 3 (scope v6): the rule ships behind a default
 - Canonical components/API contracts touched: agent reply fulfillment, signed post path.
 
 ## Stage 8
-- Goal: acceptance and release evidence.
+- Goal: signature checks run once per record, then acceptance and release evidence.
 - Dependencies: Stages 1–7.
-- Expected changes: none beyond fixes; after-counts recorded.
-- Verification approach: full suite against the known 9 failures; zenmemes counts with the flag off and on (cutoff now) equal the before-counts; prior-schema startup.
-- Risks or open questions: none.
-- Canonical components/API contracts touched: none new.
+- Expected changes: `ReactionSignature::status` keeps check results in a SQLite file beside the read model (`signature_checks.sqlite3`), keyed by the hash it already uses in memory (record, signature, public key, fingerprint). Only finished checks are stored; timeouts and limit errors are not. A missing or unwritable file falls back to running GPG. The web app, CLI rebuild and write path set the file location where they resolve the read-model path; callers that do not keep memory-only behavior. Otherwise none beyond fixes; after-counts recorded.
+- Verification approach: two rebuilds in a row, the second without GPG runs; a changed signature misses; missing or unwritable cache falls back; existing parity tests unchanged; full suite against `main`'s failures; zenmemes counts with the flag off and on (cutoff now) equal the before-counts, and rebuild time with an August cutoff before and after the cache; prior-schema startup.
+- Risks or open questions: the cache is derived server state at the read model's trust level; deleting it is always safe.
+- Canonical components/API contracts touched: `ReactionSignature::status` (shared signature checks); no record format or read-model schema change.
 
 ## Effort snapshot
 
 
 - Step 3 handoff — 2026-10-23T14:42Z; study `railspike-effort`, cycle `v3/unsigned_attribution`, scope v4, R1/P2; starting revision `9f33caff` (mapped `764fdd82`), planned at `6f8e4189`. Claude (claude-opus-5-5), single exposed rater. **About 0.95 total projected**, up from about 0.90: the reply agent's signing path and rebuild/incremental parity add verification work. New understanding, not a scope change. Approval context: Approved Step 2 (revision 1).
 - Step 3 revision 2 — 2026-10-23T15:35Z; same study, cycle, R1/P2 and rater; scope v6. **About 1.0 total projected**, reaffirming Step 2 revision 3: keeping both totals avoids rebuilds on toggle but adds parity cases. Approval context: Approved Step 2 (revision 3).
+- Step 3 revision 3 — 2026-10-26; same study, cycle, R1/P2 and exposed single rater; scope v7 (signature check cache added to Stage 8). **About 1.1 total projected**, up from about 1.0 (scope change): one shared cache, its wiring into three entry points and the timing evidence. Earlier snapshots and the technical-closeout retrospective (about 1.05, v6) are preserved. Approval context: awaiting Approved Step 3 (revision 3).
