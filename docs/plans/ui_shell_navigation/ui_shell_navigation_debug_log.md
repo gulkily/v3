@@ -72,3 +72,27 @@ Railspike debug reports for cycle `v3/ui_shell_navigation`. Debug mode was enabl
 - "Numbered plan (<=1 page)" versus eight stages each requiring six fields plus estimate lines: the plan is well over one page. The stage-field requirements and the page limit appear to conflict for an eight-stage plan.
 - "Stages should be about <=1 hour or <=50 lines of change": Stage 4 (phone tab bar) and Stage 6 (13-theme pass) may still exceed an hour of agent time; they were judged indivisible without creating layer-only stages.
 
+
+## 2026-10-27 — Step 4 (Implementation) completed-step report
+
+### Necessary/useful instructions
+
+- `step4_implementation_after.md`, item 7 ("A focused pass is never reported as a full-suite or user-outcome result"): the full suite was stopped at 712 of about 1,417 tests and is recorded as partial, with the untested remainder named. Retain.
+- `step4_implementation_after.md`, item 7, "Identify reproduced baseline failures": separating baseline failures from cycle regressions (Stage 2 baseline worktree, Stage 8 test history) kept stale tests from being read as shell regressions. Retain.
+- Commit cadence ("each completed stage must be committed with its Step 4 summary update"): the Stage 4 false pass was found and corrected in its own commit without amending; the summary keeps both the wrong claim and the correction. Retain.
+
+### Redundant/unnecessary instructions
+
+- None observed that cost measurable time in this step.
+
+### Inapplicable instructions
+
+- Documentation-only verification variant: application change.
+- Database and read-model schema notes: no schema change.
+- Deployment verification: production deploy outside approved scope; recorded as unverified.
+
+### Uncertain assessments
+
+- Full-suite expectation versus suite cost: on this branch every static build renders all platform docs pages, so the suite exceeds an hour. Workflow text does not say whether a partial run plus a post-merge full run satisfies Step 4; treated here as partial with the full run deferred to the merge follow-up.
+- Editing tracked docs while the suite runs makes `ImportedContentPublicationTest` fail ("Documentation changed during publication"). Workflow does not warn about this; an agent writing the summary during verification will hit it.
+- Fixing pre-existing failing tests within the final stage: recorded as corrective work; unclear whether the workflow prefers a separate cycle for this.
