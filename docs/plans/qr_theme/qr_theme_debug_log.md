@@ -68,3 +68,27 @@ Database-signature and documentation-only requirements are inapplicable; this cy
 Existing LCD palettes and deferred theme styles increase the transition matrix within the approved scope. Stage sizing assumes reusable fixture/browser tooling; missing decoder availability is an explicit early gate, not an assumption of a passing check.
 
 *— Codex · 2026-10-27 UTC*
+
+## 2026-10-27 UTC — Step 4 handoff
+
+Implementation revision: 58ebab6bb; planning 0b52b2251, Stage 1 d52c39997, Stage 2 7ee61aadd, Stage 3 58ebab6bb. Three stages complete locally; working tree clean before this log-only handoff addition. Debug mode remains enabled. No deployment, merge or push.
+
+### Necessary/useful instructions
+
+Source: step4_implementation_do.md, Stage Boundary Protocol. Separate color and synchronization commits preserved verified generation before adding asynchronous redraw, with each stage's evidence in its own summary. Retain the stage evidence requirement.
+
+Source: step4_implementation_after.md, Final Verification Checklist. The normal-flow contract led to real signed issuance, Copy and recipient redemption alongside the 38 theme/palette/viewport checks. Physical scans, full suite and deployment remain explicitly unverified. Retain these evidence boundaries.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Schema migration, documentation-only runtime exclusions and deployment verification are inapplicable to this local presentation change. No new dependencies or UI-copy edits required separate approval.
+
+### Uncertain assessments
+
+OpenCV failed on some samples even after conversion to black and white; jsQR independently decoded every accepted raw and displayed matrix sample. This establishes browser pixel readability, not physical camera reliability. The 0.35 retrospective cycle judgment is a single exposed rating, not measured labor or maintainer comfortable-fit acceptance.
+
+*— Codex · 2026-10-27 UTC*
