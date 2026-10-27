@@ -295,3 +295,5 @@ and repair its navigation and affected references. See the
 - [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.
 
 - [Retraction simplification](./retraction_simplification/retraction_simplification_step3_development_plan.md): approved release-1 implementation plan.
+
+- [Backup feature flags](./backup_feature_flags/backup_feature_flags_step1_solution_assessment.md): independent text and image backup controls.
