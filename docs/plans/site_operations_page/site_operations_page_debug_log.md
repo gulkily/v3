@@ -28,3 +28,18 @@
 
 **Uncertain assessments**
 - Stage 1 likely exceeds 50 changed lines (route, controller, template, test moves); kept together because splitting would leave the control on two pages or none.
+
+## 2026-10-27 — Step 4
+
+**Necessary/useful instructions**
+- Follow-up Cycles Before Merge, "reuse only when the user requests it": led to a new branch from the unmerged predecessor instead of silently reusing it. Retain.
+- RAILSPIKE.md / AGENTS.md navigation icon verification in each icon theme: caught the near-invisible grey gear in Midnight. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only checks; blocked/split stage handling.
+
+**Uncertain assessments**
+- Whether clarifying the branch line in the approved Step 2 during organization counts as a substantive change; treated as a factual note.
