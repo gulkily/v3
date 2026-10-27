@@ -16,6 +16,32 @@ use PDOStatement;
  */
 final class AuthoredContentRepository
 {
+    /** Counts use the same eligibility predicate as the bounded public identity history. */
+    public static function countVisibleIdentity(PDO $pdo, string $identityId, string $kind): int
+    {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM posts WHERE ' . self::identityEligibility($kind));
+        $stmt->execute(['identity' => $identityId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    private static function identityEligibility(string $kind): string
+    {
+        if (!in_array($kind, ['threads', 'posts'], true)) {
+            throw new \InvalidArgumentException('Unknown profile history.');
+        }
+        $where = "posts.author_identity_id = :identity
+            AND posts.is_hidden = 0 AND posts.retracted_at IS NULL
+            AND COALESCE(json_extract(posts.agent_response_json, '$.type'), '') <> 'scripture_expansion'
+            AND NOT EXISTS (SELECT 1 FROM json_each(posts.board_tags_json) WHERE value = 'identity')";
+        if ($kind === 'threads') {
+            $where .= " AND posts.post_id = posts.thread_id
+                AND EXISTS (SELECT 1 FROM threads WHERE threads.root_post_id = posts.post_id
+                    AND threads.retracted_at IS NULL
+                    AND NOT EXISTS (SELECT 1 FROM json_each(threads.board_tags_json) WHERE value = 'identity'))";
+        }
+        return $where;
+    }
+
     /**
      * @param list<string> $identityIds
      * @return array<int, array<string, mixed>>

@@ -40,6 +40,13 @@ order is immaterial.
 
 ## Core read-model tables
 
+Version 31 adds the public identity-history query contract (no new tables):
+counts and bounded histories select authored posts by exact identity, excluding
+hidden, retracted, identity/bootstrap-board and scripture-expansion rows. Thread histories
+add authored-root and visible thread requirements. Counts use the same predicate
+as the corresponding history. Approval and username do not establish authorship.
+Startup rebuilds version 30 read models before these queries run.
+
 Defined in `src/ForumRewrite/ReadModel/ReadModelBuilder.php`'s
 `createSchema()`. Fully rebuilt (not incrementally patched) on every
 `ReadModelBuilder::build()` run.
