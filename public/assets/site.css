@@ -415,6 +415,129 @@ pre {
   overflow-wrap: anywhere;
 }
 
+/* App shell (`navigation` slot `app`): one row with the wordmark, the main
+   destinations, New post and the account menu. Scoped so other sites keep
+   today's header. The phone tab bar reuses the same nav. */
+[data-shell="app"] .site-header--app {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0 1rem;
+}
+
+[data-shell="app"] .site-header--app .eyebrow {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-brand__mark:empty {
+  display: none;
+}
+
+[data-shell="app"] .site-header--app .site-header-actions {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+}
+
+[data-shell="app"] .site-header--app .nav {
+  flex: 0 1 auto;
+}
+
+.new-post-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--active-line);
+  background: var(--active-bg);
+  color: var(--active-ink);
+  font-family: var(--ui-font);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.new-post-button__icon {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.account-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.account-menu > summary {
+  list-style: none;
+}
+
+.account-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  font-family: var(--ui-font);
+  cursor: pointer;
+}
+
+.account-menu__icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  flex: 0 0 auto;
+}
+
+.account-menu[open] > .account-menu__trigger {
+  background: var(--panel);
+}
+
+.account-menu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 30;
+  display: grid;
+  gap: 0.75rem;
+  min-width: 14rem;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+}
+
+.account-menu__links {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.account-menu__links .nav-link {
+  display: block;
+}
+
+.account-menu__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* critical-css-end */
 
 .post-card {

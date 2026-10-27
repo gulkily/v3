@@ -66,3 +66,22 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - Estimate details: original scope plus the layout switch moved from Stage 1; no revision.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Desktop top bar styles
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `public/assets/site.css` (critical section, before `critical-css-end`): one-row app header (wordmark, main nav, New post pushed right, account menu); New post styled with the active-state variables; account menu trigger with a person mark; dropdown panel (right-aligned, `z-index: 30`, theme `--panel`/`--line` variables) with full-width menu links and a controls row for the theme menu. All rules scoped to `[data-shell="app"]` or new class names, so other sites are unaffected.
+- Verification:
+  - Chrome, local server, 1280px, account menu open, all 13 permitted themes plus Auto: every header control visible (8 per page) in each theme; header height 59–68px (one row) in all 14; no page errors. Screenshots reviewed.
+  - Light, Dark and Chicago match the mockup's arrangement; theme popover and LCD palette render inside the panel.
+  - Baseline header diff (other sites) unchanged: new CSS selectors do not match `forum`/`qdb` markup.
+- Notes (early theme check, fixes deferred to Stage 6 as planned):
+  - Word97: New post label is navy on navy; the theme draws a separator after the account menu.
+  - Arena: the active Board link renders blank (the board's own active Liked/Newest buttons do too, so likely pre-existing); the theme adds a decorative "New Post" caption that lands inside the menu panel.
+  - Vapor and Arena: the menu panel lets page content show through.
+- Estimate details: original scope; no revision.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
