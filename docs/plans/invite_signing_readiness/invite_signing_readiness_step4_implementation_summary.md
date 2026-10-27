@@ -34,3 +34,14 @@ Status: Implementing on feature/invite-signing-readiness; Step 3 approved
 - Notes: Stage 1 ad1ff0608. Scoped authentication helper changes preserve default consumers; identity binding during async preparation/signing follows in Stage 3. No dependency/schema changes.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 3 - Bind signing and recover without reissuing
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.20**
+
+- Changes: Invite compares prepared author to authenticated issuer. Optional expected identity in the shared signer checks the actual key fingerprint and unchanged saved key bytes before/after async signing; existing callers retain the one-argument behavior. Only the typed identity-change error permits one fresh authenticated preparation. Issuance finalization is never automatically repeated. A lost/malformed response changes Generate to Check invitation; read-only bearer inspection can recover the same available link/QR. Pending uncertainty keeps the page's original token and destination, with clear keep-page-open guidance. Revocation uses the same signing guard and an in-flight guard. Genuine verification errors retain technical status with actionable key-preserving recovery text.
+- Verification: Real browser cases pass both access modes: cross-tab change during prepare produces two prepares/one correct finalization; repeated drift stops after two prepares with no finalization; actual server commit followed by lost response recovers by inspection without another issuance, and recipient redeems to the preserved destination. A real wrong-key signature remains rejected without automatic retry; subsequent retry and actual revocation UI work. Focused PHP signing/invitation/authentication checks 105/105 and Node identity-binding/lifecycle checks pass.
+- Notes: Corrected a test selector matching both the Revoke summary and button, then reran successfully. Recovery state for uncertain issuance is intentionally page-local: keep the page open while checking; no new issuance occurs from Check. An unavailable/not-found inspection remains honestly unconfirmed rather than starting another invitation. S2 dff267679. Retrospective 0.20 reflects response-uncertainty UI and actual race/negative verification coverage, not a scope change or measured labor.
+
+*— Codex · 2026-10-27 UTC*

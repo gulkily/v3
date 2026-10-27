@@ -42,16 +42,24 @@ function invitationPage() {
         if (state.pause) await state.pause;
         if (state.missingKey) return false;
       },
-      async signCanonicalRecord() { if (state.failure === 'sign') throw Error('sign failed'); return 'signature'; }
+      async signCanonicalRecord(_record, expectedIdentity) {
+        assert.equal(expectedIdentity, 'openpgp:test');
+        if (state.identityChanges > 0) { state.identityChanges--; throw Object.assign(Error('identity changed'), {code:'identity_changed'}); }
+        if (state.failure === 'sign') throw Error('sign failed'); return 'signature';
+      }
     } };
   const sandbox = { window, document, crypto: webcrypto, TextEncoder, URLSearchParams,
     navigator: { clipboard: { async writeText(value) { state.copied = value; } } },
     fetch: async (endpoint, options) => {
       calls.push({ endpoint, values: new URLSearchParams(options.body) });
+      if (endpoint === '/api/inspect_invitation') return {json: async () => state.inspection || {status:'ok',state:'available'}};
+      if (state.failure === 'lost' && endpoint === '/api/create_prepared_invitation') throw Error('connection lost');
+      const wrongAuthor = endpoint === '/api/prepare_invitation' && state.wrongAuthors > 0;
+      if (wrongAuthor) state.wrongAuthors--;
       const failing = (state.failure === 'prepare' && endpoint === '/api/prepare_invitation')
         || (state.failure === 'finalize' && endpoint === '/api/create_prepared_invitation');
       return { json: async () => failing ? { status: 'error', error: 'issuance failed' }
-        : { status: 'ok', canonical_record: 'Author-Identity-ID: openpgp:test', prepare_token: 'prepared', post_id: 'post', record_path: 'path' } };
+        : { status: 'ok', canonical_record: 'Author-Identity-ID: openpgp:' + (wrongAuthor ? 'other' : 'test'), prepare_token: 'prepared', post_id: 'post', record_path: 'path' } };
     }
   };
   vm.createContext(sandbox);
@@ -69,6 +77,29 @@ function invitationPage() {
 }
 
 async function main() {
+  for (const kind of ['wrongAuthors', 'identityChanges']) {
+    for (const count of [1, 2]) {
+      const changed = invitationPage(); changed.state[kind] = count;
+      await changed.issue();
+      assert.equal(changed.calls.filter(call => call.endpoint === '/api/prepare_invitation').length, 2);
+      assert.equal(changed.calls.filter(call => call.endpoint === '/api/create_prepared_invitation').length, count === 1 ? 1 : 0);
+      assert.equal(changed.result.hidden, count === 2);
+    }
+  }
+  const lost = invitationPage(); lost.state.failure = 'lost';
+  await lost.issue();
+  assert.equal(lost.result.hidden, true);
+  assert.equal(lost.submit.textContent, 'Check invitation');
+  assert.match(lost.feedback.textContent, /Could not confirm/);
+  lost.state.inspection = {status:'error',error:'Invitation not found.'};
+  await lost.issue();
+  assert.equal(lost.result.hidden, true);
+  assert.equal(lost.calls.filter(call => call.endpoint === '/api/create_prepared_invitation').length, 1);
+  lost.state.inspection = {status:'ok',state:'available'};
+  await lost.issue();
+  assert.equal(lost.qr.hidden, false);
+  assert.equal(lost.calls.filter(call => call.endpoint === '/api/prepare_invitation').length, 1);
+  assert.equal(lost.calls.filter(call => call.endpoint === '/api/create_prepared_invitation').length, 1);
   for (const problem of ['missing', 'pending', 'not-configured', 'helper']) {
     const blocked = invitationPage();
     if (problem === 'missing') blocked.state.missingKey = true;

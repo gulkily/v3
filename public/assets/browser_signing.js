@@ -1063,7 +1063,7 @@
     return parsePreparedPostJsonResponse(result.text, result.serverTiming, "Unable to prepare thread for signing.");
   }
 
-  async function signCanonicalRecord(canonicalRecord) {
+  async function signCanonicalRecord(canonicalRecord, expectedIdentityId) {
     const privateKeyArmored = localStorage.getItem(storageKeys.privateKey) || "";
     if (!privateKeyArmored) {
       throw new Error("No saved browser private key is available to sign this post.");
@@ -1086,6 +1086,17 @@
       );
     }
 
+    const assertExpectedIdentity = function () {
+      if (expectedIdentityId && ("openpgp:" + publicFingerprint.toLowerCase() !== expectedIdentityId
+        || localStorage.getItem(storageKeys.publicKey) !== publicKeyArmored
+        || localStorage.getItem(storageKeys.privateKey) !== privateKeyArmored)) {
+        const error = new Error("Your browser identity changed. Try again when it has finished changing.");
+        error.code = "identity_changed";
+        throw error;
+      }
+    };
+    assertExpectedIdentity();
+
     localStorage.setItem(storageKeys.fingerprint, publicFingerprint);
     const message = await openpgp.createMessage({ text: canonicalRecord });
     const signature = await openpgp.sign({
@@ -1093,6 +1104,7 @@
       signingKeys: privateKey,
       detached: true,
     });
+    assertExpectedIdentity();
 
     return normalizeNewlines(String(signature || "")).trim() + "\n";
   }

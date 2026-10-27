@@ -66,15 +66,19 @@ try {
    const finalPromise=page.waitForResponse(r=>r.url().endsWith('/api/create_prepared_invitation'));
    await page.locator('[data-invitation-issue-form] button[type=submit]').click();
    const prepared=await(await preparedPromise).json(); const final=await(await finalPromise).json();
-   return {author:prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m)[1],status:final.status,error:final.error||''};
+   return {...final,author:prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m)[1],error:final.error||''};
   }
   const before=await page.evaluate(()=>[localStorage.getItem('forum_pki_public_key'),localStorage.getItem('forum_pki_private_key')]);
   let releaseAuthentication;
   const authenticationGate = new Promise(resolve => { releaseAuthentication = resolve; });
   let preparedRequests = 0, finalRequests = 0;
+  const submittedAuthors = [];
   page.on('request', request => {
     if (request.url().endsWith('/api/prepare_invitation')) preparedRequests++;
-    if (request.url().endsWith('/api/create_prepared_invitation')) finalRequests++;
+    if (request.url().endsWith('/api/create_prepared_invitation')) {
+      finalRequests++;
+      submittedAuthors.push(new URLSearchParams(request.postData()).get('author_identity_id'));
+    }
   });
   if (!baseline) await page.route('**/api/authenticate_identity', async route => { await authenticationGate; await route.continue(); });
   const firstPending = issue();
@@ -103,6 +107,81 @@ try {
   assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('forum_pki_public_key'),localStorage.getItem('forum_pki_private_key')]),before);
   assert.equal(await page.locator('[data-role=invitation-qr]').isVisible(),true);
   console.log(`PASS ${privateSite?'members-only':'public'}/${staleFingerprint?'stale':'current'} fingerprint: ${baseline?'baseline exact failure and Account recovery':'first-attempt recovery without Account; delayed authentication awaited'}, keys unchanged`);
+  if (!baseline && !staleFingerprint) {
+    const tab = await context.newPage(); await tab.goto(base + '/api/version');
+    async function setKeys(selected, fp) {
+      await tab.evaluate(({selected, fp}) => {
+        localStorage.setItem('forum_pki_public_key', selected.publicKey);
+        localStorage.setItem('forum_pki_private_key', selected.privateKey);
+        localStorage.setItem('forum_pki_fingerprint', fp);
+        localStorage.setItem('forum_pki_published_fingerprint', fp.toUpperCase());
+      }, {selected, fp});
+    }
+    await page.locator('[name=include_destination]').check();
+    await page.locator('[name=destination]').fill('/threads/root-001?identity=recovered');
+    const beforePrepare = preparedRequests, beforeFinal = finalRequests;
+    let switched = false;
+    await page.route('**/api/prepare_invitation', async route => {
+      const response = await route.fetch();
+      if (!switched) { switched = true; await setKeys(keys, fingerprint); }
+      await route.fulfill({response});
+    });
+    assert.equal((await issue()).status, 'ok');
+    assert.equal(preparedRequests - beforePrepare, 2);
+    assert.equal(finalRequests - beforeFinal, 1);
+    assert.equal(submittedAuthors.at(-1), 'openpgp:' + fingerprint);
+    assert.equal(await page.locator('[name=destination]').inputValue(), '/threads/root-001?identity=recovered');
+    await page.unroute('**/api/prepare_invitation');
+    const driftStart = preparedRequests, finalStart = finalRequests;
+    let nextB = true;
+    await page.route('**/api/prepare_invitation', async route => {
+      const response = await route.fetch();
+      await setKeys(nextB ? keysB : keys, nextB ? fpB : fingerprint); nextB = !nextB;
+      await route.fulfill({response});
+    });
+    await page.locator('[data-invitation-issue-form] button[type=submit]').click();
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent.includes('finished changing'));
+    assert.equal(preparedRequests - driftStart, 2); assert.equal(finalRequests, finalStart);
+    assert.equal(await page.locator('[data-role=invitation-result]').isVisible(), false);
+    await page.unroute('**/api/prepare_invitation');
+    // Let the real server commit, then lose only the response. Recovery must inspect, not reissue.
+    await page.route('**/api/create_prepared_invitation', async route => {
+      const response = await route.fetch(); assert.equal((await response.json()).status, 'ok'); await route.abort();
+    });
+    await page.locator('[data-invitation-issue-form] button[type=submit]').click();
+    await page.getByRole('button', {name:'Check invitation', exact:true}).waitFor();
+    assert.equal(finalRequests, finalStart + 1);
+    await page.unroute('**/api/create_prepared_invitation');
+    await page.getByRole('button', {name:'Check invitation', exact:true}).click();
+    await page.locator('[data-role=invitation-qr]').waitFor({state:'visible'});
+    assert.equal(finalRequests, finalStart + 1);
+    const recovered = await page.locator('[data-role=invitation-link]').inputValue();
+    const recipient = await contextWithIdentity(base);
+    await recipient.page.goto(recovered);
+    await recipient.page.waitForURL(base + '/threads/root-001?identity=recovered');
+    const invalidStart = finalRequests;
+    await page.route('**/api/create_prepared_invitation', async route => {
+      const body = new URLSearchParams(route.request().postData());
+      body.set('detached_signature', await pgp.sign({message:await pgp.createMessage({text:body.get('canonical_record')}), signingKeys:await pgp.readPrivateKey({armoredKey:keysB.privateKey}), detached:true,format:'armored'}));
+      await route.continue({postData:body.toString()});
+    });
+    assert.equal((await issue()).status, 'error');
+    assert.equal(finalRequests, invalidStart + 1);
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent.includes('signature could not be verified'));
+    assert.equal(await page.locator('[data-role=invitation-qr]').isVisible(), false);
+    await page.unroute('**/api/create_prepared_invitation');
+    const revocable = await issue();
+    const token = (await page.locator('[data-role=invitation-link]').inputValue()).split('#invite=')[1];
+    await page.locator('summary').filter({hasText:'Revoke invite'}).click();
+    await page.locator('[name=invitation_id]').fill(revocable.invitation_id);
+    await page.locator('[name=verification_hash]').fill(revocable.verification_hash);
+    await page.locator('[data-invitation-revoke-form] button[type=submit]').click();
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent === 'Invitation revoked.');
+    const revoked = await (await context.request.post(base+'/api/inspect_invitation',{form:{invite_token:token}})).json();
+    assert.equal(revoked.status, 'error'); assert.match(revoked.error, /revoked/);
+    console.log(`PASS ${privateSite?'members-only':'public'}: cross-tab preparation race, bounded repeat drift, lost-response check without reissuance and recipient redemption`);
+    console.log(`PASS ${privateSite?'members-only':'public'}: wrong-key signature rejected without retry; retry and actual revocation UI`);
+  }
   await context.close();
   }
 
