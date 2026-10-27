@@ -28,7 +28,7 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Start a thread...',
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
+                'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
                 'name' => 'chouse',

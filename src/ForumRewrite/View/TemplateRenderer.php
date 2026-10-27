@@ -326,8 +326,33 @@ final class TemplateRenderer
     }
 
     /**
+     * Navigation items for the viewer. With the `app` navigation slot each
+     * item also carries its placement: `main` (top bar / phone tab bar) or
+     * `menu` (account menu). Other slots return items without placement.
+     *
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string,viewer?:string}>
+     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool,placement?:string}>
+     */
+    public function navigationItems(?array $viewerProfile): array
+    {
+        $items = $this->navItems($viewerProfile);
+        if (PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'navigation') !== 'app') {
+            return $items;
+        }
+
+        $mainSections = ['board', 'profiles', 'messages', 'lobby'];
+        foreach ($items as $index => $item) {
+            // Users is main; a personal profile link (members-only mode) belongs in the account menu.
+            $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
+            $items[$index]['placement'] = in_array($item['section'], $mainSections, true) && $isUsers ? 'main' : 'menu';
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<string, mixed>|null $viewerProfile
+     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool}>
      */
     private function navItems(?array $viewerProfile): array
     {
