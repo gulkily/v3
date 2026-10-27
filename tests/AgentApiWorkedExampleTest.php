@@ -13,7 +13,7 @@ final class AgentApiWorkedExampleTest
 {
     public function testWorkedExamplePublishesASignedThread(): void
     {
-        foreach (['gpg', 'curl', 'python3', 'bash'] as $tool) {
+        foreach (['gpg', 'curl', 'python3', 'php', 'perl', 'bash'] as $tool) {
             exec('command -v ' . escapeshellarg($tool), $unused, $code);
             if ($code !== 0) {
                 throw new RuntimeException("The agent API worked example needs {$tool}, which is not installed.");
@@ -64,6 +64,57 @@ final class AgentApiWorkedExampleTest
             $profile = (string) file_get_contents($server->url . '/api/get_profile?profile_slug=' . str_replace(':', '-', $identity[1]));
             assertStringContains('Username: example-agent', $profile);
             assertStringContains('Posts: 1', $profile);
+
+            // Exercise the file publisher with a real instance and GPG key.
+            $body = "File publisher body & + =\n\nSecond paragraph.\n";
+            file_put_contents($root . '/post.txt', $body);
+            // Only this disposable test keyring bypasses interactive passphrase entry.
+            exec('command -v gpg', $gpgPaths);
+            mkdir($root . '/bin', 0700);
+            file_put_contents($root . '/bin/gpg', "#!/bin/sh\nexec " . escapeshellarg($gpgPaths[0])
+                . " --batch --pinentry-mode loopback --passphrase '' \"\$@\"\n");
+            chmod($root . '/bin/gpg', 0700);
+            foreach (['py' => 'python3', 'php' => 'php', 'pl' => 'perl'] as $extension => $interpreter) {
+                $generatedName = 'file-publisher-' . $extension . '-agent';
+                $threadId = null;
+                $signingFingerprint = substr($identity[1], strlen('openpgp:'));
+                foreach (['thread', 'reply', 'generated', 'generated-reply'] as $kind) {
+                    if ($kind === 'generated') {
+                        $threadId = null;
+                    }
+                    $isReply = str_contains($kind, 'reply');
+                    $publishCommand = 'GNUPGHOME=' . escapeshellarg($root . '/gnupg')
+                        . ' PATH=' . escapeshellarg($root . '/bin:' . getenv('PATH'))
+                        . ' ' . $interpreter . ' ' . escapeshellarg($projectRoot . '/scripts/publish_text.' . $extension)
+                        . ' ' . escapeshellarg($server->url) . ' ' . escapeshellarg($root . '/post.txt')
+                        . ($kind === 'generated' ? ' --generate-key ' . escapeshellarg($generatedName)
+                            : ' --signing-key ' . escapeshellarg($signingFingerprint))
+                        . (!$isReply ? ' --subject ' . escapeshellarg('Signed file')
+                            : ' --thread-id ' . escapeshellarg($threadId));
+                    $publishOutput = [];
+                    exec($publishCommand . ' 2>&1', $publishOutput, $publishCode);
+                    $publishTranscript = implode("\n", $publishOutput);
+                    assertTrue($publishCode === 0, $publishTranscript);
+                    if ($kind === 'generated') {
+                        preg_match('/^Signing-key: ([A-F0-9]+)$/m', $publishTranscript, $generated);
+                        assertTrue(isset($generated[1]), $publishTranscript);
+                        $signingFingerprint = $generated[1];
+                        assertStringContains('Identity-ID: openpgp:' . strtolower($signingFingerprint), $publishTranscript);
+                    }
+                    preg_match('/^Post-ID: (\S+)$/m', $publishTranscript, $published);
+                    assertTrue(isset($published[1]), $publishTranscript);
+                    $threadId ??= $published[1];
+                    $contents = (string) file_get_contents($server->url . '/api/get_post?post_id=' . rawurlencode($published[1]));
+                    assertStringContains('Thread-ID: ' . $threadId, $contents);
+                    assertStringContains('Author: ' . (str_starts_with($kind, 'generated') ? $generatedName : 'example-agent'), $contents);
+                    assertStringContains(trim($body), $contents);
+                    $files = glob($root . '/repository/records/posts/*/*/*/' . $published[1] . '.txt');
+                    assertTrue(count($files) === 1, 'Expected a canonical post file.');
+                    exec('gpg --homedir ' . escapeshellarg($root . '/gnupg') . ' --verify '
+                        . escapeshellarg($files[0] . '.asc') . ' ' . escapeshellarg($files[0]) . ' 2>&1', $verification, $verifyCode);
+                    assertTrue($verifyCode === 0, 'File publisher signature did not verify.');
+                }
+            }
         } finally {
             $server->close();
             exec('rm -rf ' . escapeshellarg($root));
