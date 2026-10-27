@@ -34,7 +34,7 @@
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
 </head>
-<body data-image-content-state="<?= ($imageContentEnabled ?? false) ? '1' : '0' ?>" class="<?= $e($bodyClass) ?>">
+<body data-backup-state="<?= ($textBackupEnabled ?? true) ? '1' : '0' ?><?= ($imageBackupEnabled ?? true) ? '1' : '0' ?>" data-image-content-state="<?= ($imageContentEnabled ?? false) ? '1' : '0' ?>" class="<?= $e($bodyClass) ?>">
 <?= $content ?>
 </body>
 </html>

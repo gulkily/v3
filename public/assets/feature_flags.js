@@ -211,6 +211,13 @@
       if (state.status !== 'ok' || typeof state.html !== 'string' || typeof state.messaging_enabled !== 'boolean') {
         throw new Error('Invalid navigation');
       }
+      var toolsNav = document.querySelector('.tools-nav');
+      if (toolsNav && typeof state.tools_html === 'string') {
+        var toolsTemplate = document.createElement('template');
+        toolsTemplate.innerHTML = state.tools_html;
+        var replacement = toolsTemplate.content.querySelector('.tools-nav');
+        if (replacement) toolsNav.replaceWith(replacement);
+      }
       var nav = document.querySelector('nav.nav');
       if (!nav) throw new Error('Navigation missing');
       var template = document.createElement('template');

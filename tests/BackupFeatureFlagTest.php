@@ -81,6 +81,46 @@ final class BackupFeatureFlagTest
         assertTrue(count(glob($w->root . '/archive-exports/*/metadata')) > 0);
     }
 
+    public function testNavigationAliasesAndStaticPolicyTransitions(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source', true); $w->git($root);
+        foreach ([true, false, true] as $enabled) {
+            foreach (['/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/', '/tools/'] as $path) {
+                $page = $this->request($w, $root, $path, $enabled, $enabled);
+                assertSame($enabled, str_contains($page, 'href="/tools/backup/"'), $path . ' navigation');
+                if (!$enabled && $path !== '/tools/') assertStringContains('Backups are unavailable.', $page);
+            }
+            $nav = $this->request($w, $root, '/api/feature_flags/navigation', $enabled, $enabled);
+            $state = json_decode(explode("\nHTTP_STATUS=", $nav)[0], true);
+            assertSame($enabled, str_contains($state['tools_html'], 'href="/tools/backup/"'), 'API navigation');
+        }
+        $static = $w->root . '/static'; mkdir($static . '/current/instance', 0700, true);
+        $w->put($static . '/current/instance/index.html', '<body data-backup-state="11">CACHED BACKUP PAGE</body>');
+        $code = 'require $argv[1]."/autoload.php"; (new ForumRewrite\\Host\\FrontController($argv[1],$argv[2],$argv[3],$argv[4]))->handle("GET","/tools/backup/");';
+        foreach ([true, false, true] as $enabled) {
+            [$status, $html] = $w->command(['env', 'FORUM_APPROVED_MEMBERS_ONLY=false', 'FORUM_IMAGE_CONTENT_ENABLED=false',
+                'FORUM_TEXT_BACKUP_ENABLED=' . ($enabled ? 'true' : 'false'), 'FORUM_IMAGE_BACKUP_ENABLED=true',
+                PHP_BINARY, '-r', $code, dirname(__DIR__), $root, $w->root . '/index.sqlite3', $static]);
+            assertSame(0, $status, $html);
+            assertSame($enabled, str_contains($html, 'CACHED BACKUP PAGE'), 'static policy');
+        }
+    }
+
+    public function testBusyHighTrafficCacheNeverReturnsWrongPolicy(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source');
+        $cache = new \ForumRewrite\Host\HighTrafficCache($w->root, $root, $w->root . '/index.sqlite3', $w->root . '/public');
+        $cache->initialize(); $cache->limits['wait_ms'] = 1;
+        $cache->atomic($cache->path('/'), '<body data-backup-state="11">WARM</body>');
+        $lock = fopen($cache->root . '/locks/' . substr(hash('sha256', '/'), 0, 3) . '.lock', 'c'); flock($lock, LOCK_EX);
+        $key = FeatureFlagRegistry::TEXT_BACKUP_ENABLED; $old = getenv($key);
+        try {
+            putenv($key . '=true'); assertStringContains('WARM', $cache->generate('/'));
+            putenv($key . '=false'); assertSame(null, $cache->generate('/'));
+            putenv($key . '=true'); assertStringContains('WARM', $cache->generate('/'));
+        } finally { fclose($lock); putenv($old === false ? $key : $key . '=' . $old); }
+    }
+
     private function request(ImportTestWorkspace $w, string $root, string $path, bool $text, bool $images = true): string
     {
         $code = 'require $argv[1]."/autoload.php"; http_response_code(200); (new ForumRewrite\\Application($argv[1],$argv[2],$argv[3]))->handle("GET",$argv[4]); fwrite(STDOUT,"\nHTTP_STATUS=".http_response_code());';

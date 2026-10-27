@@ -31,3 +31,14 @@ Status: Implementation in progress; four planned stages, zero complete.
 - Notes: Stage 1 commit 74ff9dc0. S2/v1 unchanged, single exposed rater/R1/P2; no measured labor. UI/host acceptance remains pending. No dependencies or schema changes.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 3 — Shared navigation and cache transitions
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes: Backup launcher/subnavigation hide only when both flags are off; all bookmarked aliases render unavailability. Existing flag-navigation response refreshes Tools subnavigation after a signed save. HTML carries the two effective policy bits; static and high-traffic cached pages are admitted only for matching policy. Legacy HTML without markers is compatible only when both flags remain at the legacy enabled defaults; cache-lock contention cannot return a mismatched page.
+- Verification: BackupFeatureFlagTest, FeatureFlagsBehaviorTest, HighTrafficTest and HighTrafficPublicationTest: 17/17 pass. Includes aliases, launcher, navigation API, actual FrontController static hit/bypass/re-enable and locked high-traffic stale-page refusal. Fixed test setup to use the host's active-release directory. Existing signed feature writes already withdraw high-traffic publication and invalidate static artifacts; retained that mechanism.
+- Notes: Stage 2 commit d40980d4. S3/v1 unchanged, single exposed rater/R1/P2; no measured labor. Browser/theme and signed operator acceptance follow in Stage 4. No new/renamed navigation destination or icon mapping; no dependency delta.
+
+*— Codex · 2026-10-27 UTC*

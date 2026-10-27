@@ -6,6 +6,9 @@
 <?php endif; ?>
   <article class="card">
     <h1>Backup</h1>
+<?php if ($downloads === [] && !($imageBackupAvailable ?? false)): ?>
+    <p>Backups are unavailable.</p>
+<?php else: ?>
     <ul>
 <?php foreach ($downloads as $download): ?>
       <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a></li>
@@ -25,5 +28,6 @@
     <p class="meta">The SQLite index may be out of date.</p>
 <?php endif; ?>
     <p>Public content only. Back up Git history, private data, browser keys and drafts, software, settings and external media separately.</p>
+<?php endif; ?>
   </article>
 </section>
