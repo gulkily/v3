@@ -85,3 +85,24 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - Estimate details: original scope; no revision.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Phone tab bar
+
+**Original estimate: 0.20**
+**Retrospective: 0.15**
+
+- Changes:
+  - `public/assets/site.css` (critical section), below 640px with the app shell: the header's action row becomes a fixed bottom tab bar (`--app-tabbar-height`, safe-area padding) holding the same nav links, New post and the account menu in document order; the nav uses `display: contents` so its links are tabs; page content reserves the bar height; the account panel opens upward and scrolls; the theme popover opens upward within the screen.
+  - Bottom-pinned parts move above the bar: the private-message composer (sticky) and, on touch phones, the thread reply panel's reading state; the decorative Word 97 / Midnight status bars are hidden on phones in the app shell.
+- Verification:
+  - Chrome, 390×844, touch emulation (`isMobile`, `hasTouch`), guest: board, a thread, compose, account and tools all show the bar at the bottom (top 781, height 63), no fixed page element under the bar, no horizontal overflow, no page errors. Screenshots reviewed, including the open menu and the theme popover (spans 249–783 of 844, fully on screen).
+  - Word 97 and Midnight at 390px: status bar `display: none`, bar flush with the bottom edge.
+  - `php tests/run.php AppNavigationPlacementTest`: 7 run, 7 passed.
+  - Not verified: the thread reply panel's reading state (it appears only after a reply is started, which needs a signed-in browser identity); the offset rule is in place but unexercised. Landscape phone not checked.
+- Notes (deviations from the mockup, within the approved requirements):
+  - Tab order is document order (Board, Users, Messages, New post, You) rather than New post in the middle, so keyboard and screen-reader order match what is shown.
+  - Guests and unapproved members see four tabs; About stays in the account menu instead of replacing Messages in the bar. Every destination stays reachable; revisit with the Board cycle if a fifth tab is wanted.
+  - The Board page still shows its own "New Post" control in the board toolbar, next to the shell's New post; removing it belongs to cycle 2 (Board).
+- Estimate details: original scope; the single-nav design made the bar mostly CSS, so the retrospective is below the original.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
