@@ -36,3 +36,15 @@ Step 3 approved. Planning commit: `17ae0250`; branch `fix/import-archive-hardeni
 - Notes: no signed-byte changes; this bounds parser overhead, not whole-import memory. Original scope unchanged; no new dependencies.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 3 - Shared admission and filename policy
+
+**Original estimate: 0.25**
+
+**Retrospective stage work: 0.25**
+
+- Changes: bounded actual reads plus stat admission for canonical records/companions, reaction keys and metadata; local preflight prevents swallowed destination-limit errors. UTF-8 archive names required before extraction, including excluded categories. Storage/resource exceptions propagate instead of being categorized as malformed content.
+- Verification: planner/archive/canonical groups 62/62; new admission and normal HTTP/CLI tests 12/12. Exact/over limits, both companion suffixes, oversized indirect source/fallback keys, independent valid content, bad filenames and untouched extraction destination covered. S2 commit: `b679f23c`.
+- Notes: accepted retraction/removal evidence retains existing 1 MiB restrictions; timestamps retain 4 KiB. No signature repair or byte rewriting. Scope/estimate unchanged.
+
+*— Codex · 2026-10-27 UTC*

@@ -14,7 +14,7 @@ final class ReactionSignature
         $signatures = [];
         foreach (['.asc', '.sig'] as $suffix) {
             if (file_exists($root . '/' . $path . $suffix)) {
-                $signatures[] = (string) file_get_contents($root . '/' . $path . $suffix);
+                $signatures[] = \ForumRewrite\Canonical\RecordLimits::read($root . '/' . $path . $suffix);
             }
         }
         if ($signatures === []) return 'unsigned';
@@ -24,7 +24,7 @@ final class ReactionSignature
         $key = '';
         foreach (array_filter([$root, $keyFallbackRoot]) as $keyRoot) {
             if (is_file($keyRoot . $keyPath)) {
-                $key = (string) file_get_contents($keyRoot . $keyPath);
+                $key = \ForumRewrite\Canonical\RecordLimits::read($keyRoot . $keyPath);
                 break;
             }
         }

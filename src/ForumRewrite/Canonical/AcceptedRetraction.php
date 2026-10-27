@@ -49,7 +49,7 @@ final class AcceptedRetraction
         if (is_link($path) || is_link(dirname($path)) || !is_file($path) || filesize($path) > 1048576) {
             throw new RuntimeException('Missing or unsafe retraction evidence: ' . basename($path));
         }
-        $bytes = file_get_contents($path);
+        $bytes = RecordLimits::read($path);
         if ($bytes === false) throw new RuntimeException('Cannot read retraction evidence.');
         return $bytes;
     }
@@ -65,6 +65,7 @@ final class AcceptedRetraction
         foreach (glob($root . '/records/post-retraction-acceptances/post-retraction-*.txt') ?: [] as $path) {
             $id = substr(basename($path, '.txt'), strlen('post-retraction-'));
             try { $records[$id] = self::read($root, $id); }
+            catch (\ForumRewrite\Support\OperationLimitException|RecordReadException|RecordSizeException $error) { throw $error; }
             catch (\Throwable) { /* Operator migration/inspection reports malformed records; readers remain available. */ }
         }
         return $records;

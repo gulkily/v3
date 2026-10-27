@@ -232,7 +232,7 @@ final class RepositoryArchive
             $path = substr($path, 2);
         }
         $path = rtrim($path, '/');
-        if ($path === '' || $path[0] === '/' || preg_match('/[\x00-\x1f\x7f\\\\]/', $path)
+        if (!mb_check_encoding($path, 'UTF-8') || $path === '' || $path[0] === '/' || preg_match('/[\x00-\x1f\x7f\\\\]/', $path)
             || array_intersect(explode('/', $path), ['', '.', '..']) !== []) {
             throw new RuntimeException('Unsafe archive path.');
         }
