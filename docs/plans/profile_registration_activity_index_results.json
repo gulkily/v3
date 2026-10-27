@@ -1,0 +1,156 @@
+{
+  "started_at": "2026-10-24T17:44:05+00:00",
+  "application_head": "16d7fc2b1230c77b28547c5455549fd769e40c82",
+  "application_changes": "M src/ForumRewrite/ReadModel/ReadModelMetadata.php\n M src/ForumRewrite/ReadModel/ReadModelSchema.php\n M src/ForumRewrite/Support/HealthIndicators.php",
+  "php_version": "8.1.2-1ubuntu2.28",
+  "sqlite_version": "3.37.2",
+  "site": "qdb",
+  "source_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+  "source_database_sha256": "7b93d656a31eb0aec723147eedac5ec0b6123821bb15338c7babb9c7762c753e",
+  "source_metadata": {
+    "source_removal_generation": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "thread_label_invalid_count": "0",
+    "post_reaction_invalid_count": "0",
+    "thread_subject_invalid_count": "0",
+    "schema_version": "25",
+    "schema_fingerprint": "1137ca6c37e45632a60a8e915488dce0719f19da3cec1526f1d388b01566a7ce",
+    "repository_root": "/home/qdb/v3/state/local_repository",
+    "repository_head": "f13b31c925715d0f3fcf06dfebcd9a48ab04714f",
+    "rebuilt_at": "2026-10-24T07:27:00+00:00",
+    "rebuild_reason": "write_incremental"
+  },
+  "source_counts": {
+    "posts": 18760,
+    "threads": 18739,
+    "profiles": 3845,
+    "activity": 18863
+  },
+  "rebuild_copy": true,
+  "timing_scope": "LocalWriteService on isolated clones; setup/key generation excluded. Fresh total includes local signing; server timings reported separately. No HTTP, cron, or host-load simulation.",
+  "cases": {
+    "fresh_signed": {
+      "wall_ms": 1284.733567,
+      "timings_ms": {
+        "lock_wait": 0,
+        "lock_hold": 1232.9,
+        "identity_signature_verify": 63.9,
+        "gpg_public_key_packet_inspection": 5.7,
+        "gpg_public_key_import": 22.8,
+        "gpg_post_import_key_lookup": 7.5,
+        "gpg_signature_verify": 8.1,
+        "canonical_record_parse": 0.2,
+        "identity_write_files": 1.7,
+        "identity_commit": 356.8,
+        "git_add": 213.5,
+        "git_commit": 139.5,
+        "git_rev_parse": 3.8,
+        "identity_derived_state": 806.7,
+        "read_model_incremental_update": 806.6,
+        "read_model_incremental_insert_profile": 0.6,
+        "read_model_incremental_ensure_bootstrap_post": 14.8,
+        "read_model_incremental_ensure_username_route": 0.1,
+        "read_model_incremental_link_posts": 7.9,
+        "read_model_incremental_link_activity": 0.2,
+        "read_model_incremental_profile_load": 11.5,
+        "read_model_incremental_profile_posts_load": 95.2,
+        "read_model_incremental_profile_approval_derive": 505,
+        "read_model_incremental_profile_counts_derive": 14.9,
+        "read_model_incremental_profile_rows_update": 25.2,
+        "read_model_incremental_profile_activity_refresh": 93.5,
+        "read_model_incremental_refresh_profile_state": 750.5,
+        "read_model_incremental_write_metadata": 0.4,
+        "read_model_incremental_transaction_commit": 26.3,
+        "artifact_invalidate": 2.3,
+        "prepared_post_delete": 0.1,
+        "write_total": 1233.2
+      },
+      "identity_update_metrics": {
+        "path": "incremental",
+        "profiles_considered": 3846,
+        "posts_considered": 18761,
+        "profile_rows_updated": 3846,
+        "activity_update_statements": 3847,
+        "activity_row_updates": 3954,
+        "process_peak_memory_bytes": 132120576
+      },
+      "preparation_timings_ms": {
+        "lock_wait": 0,
+        "lock_hold": 26.4,
+        "gpg_key_inspect": 24.6,
+        "prepared_post_store": 0.4,
+        "write_total": 27.9
+      },
+      "counts_before": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3845,
+        "activity": 18863
+      },
+      "counts_after": {
+        "posts": 18761,
+        "threads": 18740,
+        "profiles": 3846,
+        "activity": 18864
+      },
+      "rebuild_reason": "write_incremental",
+      "process_peak_memory_bytes": 132120576,
+      "quick_check": "ok"
+    },
+    "historical_link": {
+      "wall_ms": 2710.722887,
+      "timings_ms": {
+        "lock_wait": 0,
+        "lock_hold": 2708.1,
+        "git_add": 732.4,
+        "git_commit": 283,
+        "git_rev_parse": 5,
+        "gpg_key_inspect": 65.5,
+        "read_model_incremental_update": 1619.4,
+        "read_model_incremental_insert_profile": 1,
+        "read_model_incremental_ensure_bootstrap_post": 0.1,
+        "read_model_incremental_ensure_username_route": 0.1,
+        "read_model_incremental_link_posts": 13.2,
+        "read_model_incremental_link_activity": 0.4,
+        "read_model_incremental_profile_load": 35.3,
+        "read_model_incremental_profile_posts_load": 174.2,
+        "read_model_incremental_profile_approval_derive": 1048.8,
+        "read_model_incremental_profile_counts_derive": 51.7,
+        "read_model_incremental_profile_rows_update": 58.5,
+        "read_model_incremental_profile_activity_refresh": 202.1,
+        "read_model_incremental_refresh_profile_state": 1588.7,
+        "read_model_incremental_write_metadata": 0.3,
+        "read_model_incremental_transaction_commit": 13.2,
+        "artifact_invalidate": 0.2,
+        "write_total": 2707.2
+      },
+      "identity_update_metrics": {
+        "path": "incremental",
+        "profiles_considered": 3846,
+        "posts_considered": 18760,
+        "profile_rows_updated": 3846,
+        "activity_update_statements": 3847,
+        "activity_row_updates": 3952,
+        "process_peak_memory_bytes": 146800640
+      },
+      "preparation_timings_ms": null,
+      "counts_before": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3845,
+        "activity": 18863
+      },
+      "counts_after": {
+        "posts": 18760,
+        "threads": 18739,
+        "profiles": 3846,
+        "activity": 18863
+      },
+      "rebuild_reason": "write_incremental",
+      "process_peak_memory_bytes": 146800640,
+      "quick_check": "ok"
+    }
+  },
+  "source_inputs_unchanged": true,
+  "finished_at": "2026-10-24T17:45:56+00:00",
+  "measurement_caveat": "This first indexed run rebuilt each working copy in the benchmark process. Retained rebuild allocations inflate process peak memory; timing includes normal local load variance. Subsequent rebuild-copy runs use a subprocess to isolate setup memory."
+}

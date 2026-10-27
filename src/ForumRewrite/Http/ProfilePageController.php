@@ -28,7 +28,7 @@ final class ProfilePageController
 {
     /**
      * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfile
-     * @param \Closure(array<string, mixed>, bool, ?string, ?string): string $renderProfilePage
+     * @param \Closure(array<string, mixed>, bool, ?string, ?string, bool, array): string $renderProfilePage
      */
     public function __construct(
         private readonly RouteServices $routeServices,
@@ -44,7 +44,7 @@ final class ProfilePageController
             return null;
         }
 
-        return ($this->renderProfilePage)($profile, $self, $this->profileNoticeFromQuery($profile, $query));
+        return ($this->renderProfilePage)($profile, $self, $this->profileNoticeFromQuery($profile, $query), null, false, $query);
     }
 
     public function username(string $username, array $query = []): ?string

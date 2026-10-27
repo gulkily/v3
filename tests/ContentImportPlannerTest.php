@@ -9,6 +9,76 @@ use ForumRewrite\Import\ContentImportPlanner;
 
 final class ContentImportPlannerTest
 {
+    public function testAdversarialChainsAndCyclesHaveBoundedDependencyWork(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source'); $target = $w->repository('target');
+        $count = 4000;
+        for ($i = 0; $i < $count; $i++) {
+            $id = sprintf('p%06d', $i); $next = sprintf('p%06d', $i + 1);
+            $w->put($source . '/records/posts/' . $id . '.txt', $w->post($id, "Thread-ID: {$next}\nParent-ID: {$next}\n"));
+        }
+        foreach (['cycle-a' => 'cycle-b', 'cycle-b' => 'cycle-a'] as $id => $parent) {
+            $w->put($source . '/records/posts/' . $id . '.txt', $w->post($id, "Thread-ID: {$parent}\nParent-ID: {$parent}\n"));
+        }
+        $w->put($source . '/records/posts/diamond.txt', $w->post('diamond', "Thread-ID: p000001\nParent-ID: p000002\n"));
+        $planner = new ContentImportPlanner(); $plan = $planner->plan($source, $target);
+        assertSame('invalid', $plan['records/posts/p000000.txt']['state']);
+        assertSame('records/posts/p003999.txt', $plan['records/posts/p000000.txt']['root_cause']);
+        assertSame('invalid', $plan['records/posts/diamond.txt']['state']);
+        assertSame('import', $plan['records/posts/cycle-a.txt']['state']);
+        assertSame('import', $plan['records/posts/cycle-b.txt']['state']);
+        assertTrue($planner->dependencyVisits() < 10 * count($plan), 'Dependency work must remain linear');
+    }
+
+    public function testSignedLabelsKeepTheirClassificationAndFallbackKeys(): void
+    {
+        foreach ([['.asc'], ['.sig'], ['.asc', '.sig']] as $suffixes) {
+            foreach ([false, true] as $fallback) {
+                $w = new ImportTestWorkspace();
+                $source = $w->repository('source', true);
+                $target = $w->repository('target');
+                $path = $w->signedLabel($source, $suffixes);
+                $key = '/records/public-keys/openpgp-066236E516A3B74EC51B3B423A26034600DE67FD.asc';
+                if ($fallback) {
+                    $w->put($target . $key, file_get_contents($source . $key));
+                    unlink($source . $key);
+                }
+                $plan = (new ContentImportPlanner())->plan($source, $target);
+                assertSame('import', $plan[$path]['state']);
+                foreach ($suffixes as $suffix) {
+                    assertSame('import', $plan[$path . $suffix]['state']);
+                    assertSame($path, $plan[$path . $suffix]['record']);
+                    assertSame(hash_file('sha256', $source . '/' . $path . $suffix), $plan[$path . $suffix]['hash']);
+                }
+                // Invalid companions reject the pair, while unrelated posts remain usable.
+                $w->put($source . '/' . $path . $suffixes[0], "tampered\n");
+                $plan = (new ContentImportPlanner())->plan($source, $target);
+                assertSame('invalid', $plan[$path]['state']);
+                assertStringContains('Invalid reaction signature', $plan[$path]['reason']);
+                foreach ($suffixes as $suffix) assertSame('invalid', $plan[$path . $suffix]['state']);
+                assertSame('import', $plan['records/posts/root-001.txt']['state']);
+            }
+        }
+    }
+
+    public function testRemovedSignedLabelsExcludeEveryCompanion(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source', true);
+        $target = $w->repository('target', true);
+        $path = $w->signedLabel($source, ['.asc', '.sig']);
+        $w->git($target);
+        $removal = \ForumRewrite\Canonical\LabelRemoval::prepare($target, 'root-001', 'delete', [basename($path, '.txt')]);
+        $receipt = \ForumRewrite\Canonical\LabelRemoval::store($target, $removal);
+        $git = static fn (array $args): string => \ForumRewrite\Canonical\LabelRemoval::git($target, $args);
+        $git(['add', $receipt]);
+        $git(['rm', 'records/posts/root-001.txt', $path]);
+        $git(['commit', '-qm', 'Accept source label cleanup root-001']);
+        $plan = (new ContentImportPlanner())->plan($source, $target);
+        foreach (['', '.asc', '.sig'] as $suffix) assertSame('excluded', $plan[$path . $suffix]['state']);
+    }
+
     public function testOldArchiveCannotRestoreRemovedSourceOrItsOwnedLabels(): void
     {
         $w = new ImportTestWorkspace();
@@ -71,10 +141,10 @@ final class ContentImportPlannerTest
         $w->put($source . '/records/post-retractions/post-retraction-absent.txt', "Record-ID: post-retraction-absent\nCreated-At: 2026-10-13T12:00:00Z\nPost-ID: absent\nOperation: retract\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n");
         $plan = (new ContentImportPlanner())->plan($source, $target);
         assertSame('invalid', $plan[$record]['state']);
-        assertStringContains('Invalid retraction signature', $plan[$record]['reason']);
+        assertStringContains('local acceptance evidence', $plan[$record]['reason']);
         assertSame('invalid', $plan[$record . '.asc']['state']);
         assertSame('invalid', $plan['records/post-retractions/post-retraction-absent.txt']['state']);
-        assertStringContains('verified actor signature', $plan['records/post-retractions/post-retraction-absent.txt']['reason']);
+        assertStringContains('local acceptance evidence', $plan['records/post-retractions/post-retraction-absent.txt']['reason']);
     }
 
     public function testConflictsRejectDependentRecordsAndSignatures(): void

@@ -113,6 +113,31 @@ final class ImageStore
         return $result;
     }
 
+    /**
+     * Cheap listing for freshness identity only: content-addressed filenames and
+     * sizes, without reading or re-hashing image bytes. Trusts the filename, which
+     * is the content sha256 (enforced on write and re-verified by inventory() on
+     * the build path). Use inventory() — not this — wherever integrity matters.
+     *
+     * @return array<string, array{sha256:string,bytes:int}>
+     */
+    public function identityListing(): array
+    {
+        if (!is_dir($this->root)) { return []; }
+        $result = [];
+        foreach (scandir($this->root) ?: [] as $name) {
+            if ($name === '.' || $name === '..' || str_starts_with($name, '.upload-')) { continue; }
+            if (!preg_match('/^([a-f0-9]{64})\.(png|jpg)$/D', $name, $m)) {
+                throw new RuntimeException('Unexpected entry in image store: ' . $name);
+            }
+            $bytes = filesize($this->root . '/' . $name);
+            if ($bytes === false) { throw new RuntimeException('Cannot size image store entry: ' . $name); }
+            $result[$name] = ['sha256' => $m[1], 'bytes' => $bytes];
+        }
+        ksort($result);
+        return $result;
+    }
+
     private function ensureRoot(): void
     {
         if (!is_dir($this->root) && !mkdir($this->root, 0700, true) && !is_dir($this->root)) {

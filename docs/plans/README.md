@@ -10,11 +10,36 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Markdown work checklist](markdown_work_checklist.md) — relevance-sorted completed work, acceptance, follow-ups and optional compatibility decisions.
 
+[Human-readable format audit](human_readable_formats_checklist.md) — JSON conversion checklist and boundaries; [retraction text assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md).
+
 ## Production feedback
+
+[Retraction simplification handoff](retraction_simplification_handoff.md) — current user direction, canceled sweep diagnostics plan, and coordination with registration and high-traffic work.
+
+[Profile registration cost and remediation](profile_registration_cost_and_remediation.md) — QDB incident evidence, global work hidden inside incremental registration, and proposed performance and recovery fixes.
+
+[Profile registration fix checklist](profile_registration_fix_checklist.md) — implementation and verification tasks, excluding incident containment.
+
+[Retraction sweep evidence diagnostics](retraction_sweep_evidence_diagnostics_report.md) — historical production findings and failure-path inventory; the proposed diagnostics project is canceled (see the simplification handoff).
 
 [Request register](production_feedback_register.md) — current tracking for migrated requests; [intake and update guide](../reference/production_feedback_management.md). Older inventories are linked from the register and await reconciliation.
 
 ## Feature folders
+
+- [Profile public details](profile_public_details/)
+
+- [Image backup ZIP](image_backup_zip/)
+
+- [Reusable archive exports](archive_export_contention/)
+
+- [Readable retraction records](retraction_text_format/)
+
+- [Repository archive README](repository_archive_readme/)
+
+- [Independent documentation publication](docs_independent_publication/)
+
+- [Documentation publication policy](docs_publication_policy/)
+- [High-traffic absent retractions](high_traffic_absent_retractions/)
 
 - [UI shell and navigation](ui_shell_navigation/)
 
@@ -34,6 +59,8 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Markdown task lists](markdown_task_lists/)
 
 - [Standard Activity and shared pagination](activity_feed_pagination/)
+
+- [Read-model hot indexes](read_model_hot_indexes/)
 
 - [Thread-like Activity reporting](thread_like_activity/)
 
@@ -280,3 +307,12 @@ and repair its navigation and affected references. See the
 - [Status frontend target](status_frontend_target/)
 
 - [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.
+
+- [Retraction simplification](./retraction_simplification/retraction_simplification_step3_development_plan.md): approved release-1 implementation plan.
+
+- [Backup feature flags](./backup_feature_flags/backup_feature_flags_step1_solution_assessment.md): independent text and image backup controls.
+- [Import archive hardening](./import_archive_hardening/import_archive_hardening_step1_solution_assessment.md) — bounded hostile-input processing and CLI recovery.
+
+- [High-traffic toggle](high_traffic_toggle/) — switch row under the Feature Flags heading.
+
+- [Operations page](site_operations_page/) — Tools › Operations holds high-traffic mode.

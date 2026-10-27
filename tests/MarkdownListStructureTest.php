@@ -116,13 +116,16 @@ final class MarkdownListStructureTest
         } finally { unlink($root . '/docs/escape.md'); rmdir($root . '/docs'); rmdir($root); }
     }
 
-    public function testRetractionGuideKeepsSixProcedureParagraphs(): void
+    public function testLooseSixStepProcedureKeepsItsParagraphs(): void
     {
-        $html = PublicMarkdownRenderer::render(file_get_contents(dirname(__DIR__) . '/docs/reference/author_post_retraction.md'), 'docs/reference/author_post_retraction.md');
+        // Frozen shape of the former guide, independent of evolving product copy.
+        $source = "1. Open the action.\n\n   The browser prepares a signed request.\n\n";
+        foreach (range(2, 6) as $step) $source .= "$step. Procedure step $step.\n\n   Continuation paragraph $step.\n\n";
+        $html = PublicMarkdownRenderer::render($source);
         assertSame(1, substr_count($html, '<ol start="1">'));
         preg_match_all('/<li value="([0-9]+)">/', $html, $numbers);
         assertSame(['1', '2', '3', '4', '5', '6'], $numbers[1]);
-        assertStringContains("retraction record, signs it with the acting identity, and submits it.</p></li>", $html);
-        assertSame(4, substr_count($html, '<table>'));
+        assertStringContains('The browser prepares a signed request.</p></li>', $html);
+        assertStringContains('Continuation paragraph 6.</p></li>', $html);
     }
 }

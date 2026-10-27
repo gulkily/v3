@@ -6,6 +6,7 @@
     <h2>Tools</h2>
     <ul class="tool-launcher-list">
 <?php foreach ($toolPages as $toolPage): ?>
+<?php if (($textBackupEnabled ?? true) === false && ($imageBackupEnabled ?? true) === false && ($toolPage['key'] ?? '') === 'backup') { continue; } ?>
       <li class="tool-launcher-item">
         <a class="tool-launcher-button" href="<?= $e($toolPage['href']) ?>"><?= $e($toolPage['label']) ?></a>
         <p class="tool-launcher-description"><?= $e($toolPage['description']) ?></p>

@@ -34,7 +34,7 @@ final class LabelOwnership
     public static function inactive(string $root): array
     {
         $removed = RetractedPosts::effectivePostIds($root);
-        $evidence = LabelRemoval::all($root);
+        $evidence = AcceptedRetraction::removals($root) + LabelRemoval::all($root);
         foreach ($evidence as $id => $entry) if ($entry['operation'] === 'delete') $removed[$id] = 'operator';
         $inactive = [];
         foreach (glob($root . '/records/thread-labels/*.txt') ?: [] as $path) {
@@ -44,7 +44,7 @@ final class LabelOwnership
             $source = $label->sourcePostId;
             $deleted = $source === null ? null : ($evidence[$source] ?? null);
             $deletionBound = ($deleted['operation'] ?? null) === 'delete'
-                && $label->sourcePostSha256 === $deleted['source_hash']
+                && $label->sourcePostSha256 !== null && $label->sourcePostSha256 === ($deleted['source_hash'] ?? null)
                 && $label->threadId === $deleted['post']['thread_id']
                 && $label->authorIdentityId === $deleted['post']['author_identity_id'];
             if ($source !== null && isset($removed[$source]) && ($deletionBound || self::inspect($label, $root)['status'] === 'proven')) {

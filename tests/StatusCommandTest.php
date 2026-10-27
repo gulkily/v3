@@ -36,7 +36,7 @@ final class StatusCommandTest
             assertStringContains('Task queue executor: not_observed (last completed: none)', $stdout);
             assertStringContains('Automatic schema recovery: not_observed (detached launch: none)', $stdout);
             assertStringContains('Run ./v3 task-queue enqueue-rebuild', $stdout);
-            assertStringNotContains('Waiting for shared lock before collecting status...', $stdout);
+            assertStringNotContains('Shared lock is held; collecting status without acquiring it...', $stdout);
             assertSame('', $stderr);
             assertSame(false, is_file($databasePath));
             assertSame(false, is_file($queuePath));
@@ -77,7 +77,7 @@ final class StatusCommandTest
         }
     }
 
-    public function testStatusReportsLockWaitingBeforeItsFinalReport(): void
+    public function testStatusReportsHeldLockBeforeItsFinalReport(): void
     {
         $directory = $this->directory();
         $databasePath = $directory . '/read-model.sqlite3';
@@ -91,8 +91,8 @@ final class StatusCommandTest
             $holder = $this->startExclusiveLockHolder($lockPath, $databasePath);
             $statusProcess = $this->startStatusProcess($databasePath, $queuePath);
 
-            $initialOutput = $this->readUntil($statusProcess['stdout'], 'Waiting for shared lock before collecting status...', 2.0);
-            assertStringContains('Waiting for shared lock before collecting status...', $initialOutput);
+            $initialOutput = $this->readUntil($statusProcess['stdout'], 'Shared lock is held; collecting status without acquiring it...', 2.0);
+            assertStringContains('Shared lock is held; collecting status without acquiring it...', $initialOutput);
             assertSame(true, proc_get_status($statusProcess['process'])['running']);
 
             $this->releaseLockHolder($holder);

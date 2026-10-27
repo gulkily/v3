@@ -30,7 +30,7 @@ try {
     $frontendTarget = $frontendResolver->resolve($options['url'] ?? null);
     $executionLock = new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock');
     if ($executionLock->isLocked()) {
-        fwrite(STDOUT, "Waiting for shared lock before collecting status...\n");
+        fwrite(STDOUT, "Shared lock is held; collecting status without acquiring it...\n");
         fflush(STDOUT);
     }
 

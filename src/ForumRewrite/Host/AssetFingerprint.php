@@ -8,6 +8,16 @@ final class AssetFingerprint
 {
     private const HASH_LENGTH = 12;
 
+    /**
+     * Per-request memo of asset hashes keyed by absolute path. Each request runs
+     * in its own PHP process, so this static cache is request-scoped (mirroring
+     * ReactionSignature / ViewerTagLookup). resetHashCache() is for tests and any
+     * long-lived process.
+     *
+     * @var array<string, ?string>
+     */
+    private static array $hashCache = [];
+
     public static function fingerprintedPath(string $publicRoot, string $path): string
     {
         if (!str_starts_with($path, '/assets/')) {
@@ -125,6 +135,9 @@ final class AssetFingerprint
         }
 
         $targetAssetRoot = $targetPublicRoot . '/assets';
+        if (is_link($targetAssetRoot)) {
+            throw new \RuntimeException('Static asset destination must not be a symlink.');
+        }
         if (!is_dir($targetAssetRoot) && !mkdir($targetAssetRoot, 0777, true) && !is_dir($targetAssetRoot)) {
             return;
         }
@@ -149,20 +162,42 @@ final class AssetFingerprint
             }
 
             $targetPath = $targetPublicRoot . $fingerprintedPath;
-            if (!is_file($targetPath) && !copy($sourcePath, $targetPath)) {
+            if (is_file($targetPath) && !is_link($targetPath)
+                && hash_file('sha256', $sourcePath) === hash_file('sha256', $targetPath)) {
                 continue;
+            }
+            // Repair corrupt seeded assets and avoid writing through old hard links.
+            $temporary = tempnam($targetAssetRoot, '.asset-');
+            if ($temporary === false) {
+                throw new \RuntimeException('Unable to create static asset candidate.');
+            }
+            try {
+                if (!copy($sourcePath, $temporary) || !rename($temporary, $targetPath)) {
+                    throw new \RuntimeException('Unable to publish fingerprinted asset.');
+                }
+            } finally {
+                if (is_file($temporary)) {
+                    unlink($temporary);
+                }
             }
         }
     }
 
     private static function assetHash(string $path): ?string
     {
-        $hash = hash_file('sha256', $path);
-        if ($hash === false) {
-            return null;
+        if (array_key_exists($path, self::$hashCache)) {
+            return self::$hashCache[$path];
         }
 
-        return substr($hash, 0, self::HASH_LENGTH);
+        $hash = hash_file('sha256', $path);
+
+        return self::$hashCache[$path] = $hash === false ? null : substr($hash, 0, self::HASH_LENGTH);
+    }
+
+    /** Clear the per-request asset-hash memo (tests / long-lived processes). */
+    public static function resetHashCache(): void
+    {
+        self::$hashCache = [];
     }
 
     private static function isFingerprintedAssetFilename(string $filename): bool

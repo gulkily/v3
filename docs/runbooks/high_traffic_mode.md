@@ -34,11 +34,12 @@ validate `.htaccess`.
 
 ## Enable and verify
 
-Use **Tools → Feature Flags → High-traffic mode**, or run commands from the
+Use **Tools → Operations → High-traffic mode**, or run commands from the
 application checkout with the same environment as PHP:
 
 ```bash
 ./v3 high-traffic status
+./v3 high-traffic prepare
 ./v3 high-traffic enable
 ```
 
@@ -64,7 +65,7 @@ page. If these checks fail, disable and correct host configuration before use.
 Configure cron every minute, using the deployment's normal environment:
 
 ```cron
-* * * * * cd /path/to/application && ./v3 high-traffic run /path/to/access.log >> /path/to/private/high-traffic-cron.log 2>&1
+* * * * * cd /path/to/application && { ./v3 high-traffic prepare && ./v3 high-traffic run /path/to/access.log; } >> /path/to/private/high-traffic-cron.log 2>&1
 ```
 
 The sysop owns log location, permissions, rotation, retention and cron monitoring.
@@ -203,3 +204,155 @@ CLI output is readable by default; use `--json` for automation.
 and crontab line; `run` executes one refresh. Existing schedules using `cron`
 as the worker must change to `run`. Enable/status also report the cron line;
 they do not install or verify a schedule. Use the web app's environment and user.
+
+## Retained retractions with absent targets
+
+A valid retained retraction can outlive a physically deleted source. Run
+`./v3 high-traffic prepare` before warming pages. It builds one private, reusable
+SQLite model that excludes absent targets and explicitly linked generated
+responses/labels and recomputes summaries. A missing root retains a content-free
+structural row for surviving replies. Independent replies and label actions remain
+intact. The live database and canonical records are unchanged by this preparation
+when absent targets exist.
+
+The prepared file is beside the configured live database, with suffix
+`.high-traffic.sqlite3`, and has mode 0600. Preparation atomically replaces it only
+after validation, preserves the previous model on failure, and rejects competing
+preparations. Repeating preparation with unchanged inputs reuses the file.
+Preparation is explicit maintenance: it can take longer than 30 seconds, streams
+indexing progress, and is outside the page-render timeout. This moves the expensive
+rebuild out of requests; it does not make that rebuild itself faster.
+
+Cold pages and forced refreshes copy the prepared SQLite model into a private
+workspace, validate it, render HTML, then remove the workspace. Neither the worker
+nor its Application fallback can rebuild a model. Missing/stale preparation fails
+with `./v3 high-traffic prepare` recovery guidance. Warm cached hits remain fast.
+The parent and worker recheck retraction evidence and repository HEAD before and
+after rendering and at publication. Whole-record fingerprints are computed only
+by preparation, never by refresh or a cold request. Existing prepared databases
+remain compatible with this optimization. Changed retraction/absence evidence invalidates the prepared model. Routine
+content changes may continue using the earlier safe model until preparation
+updates it; run prepare before refreshing when new content must appear. The generated cron command now does both.
+Update an existing run-only cron line using `./v3 high-traffic cron /path/to/access.log`.
+Preparation time adds to freshness latency, so the one-to-two-minute target is not
+established on the affected production host.
+
+Without absent targets, prepare validates the live model and rebuilds/promotes it
+through the existing candidate workflow when necessary. Rendering uses that model
+but refuses an implicit rebuild. Ordinary in-flight routine-write tolerance is
+unchanged. No prepared SQLite file is published as an asset.
+
+Malformed, missing tracked, unreadable or unsafe evidence and untrusted removal
+records remain failures. Other strict publication consumers retain their existing
+rules; successful HTML generation does not grant permanent deletion authority.
+Do not delete retraction evidence, restore removed prose, or purge remaining usable
+pages to silence a validation error. Inspect the reported cause and use disable or
+restore while correcting invalid evidence through the supported operator process.
+
+### zenmemes production recovery checklist
+
+Keep high-traffic mode **disabled during deployment**. Deploy the tested application
+revision, including its completed absent-target offline-snapshot changes, using the
+normal release process. Do not reset or modify the separate canonical repository.
+Use the deployed checkout, web app's normal user/environment, PHP CLI and public-root
+configuration. For the observed host the checkout is `/home/dh_zsagad/v3`.
+
+First verify ordinary `/` and a surviving thread return HTTP 200. Then prepare, enable and
+explicitly warm the homepage; on generation failure immediately disable again:
+
+```bash
+cd /home/dh_zsagad/v3
+./v3 high-traffic status
+./v3 high-traffic prepare
+./v3 high-traffic enable
+./v3 high-traffic refresh /
+```
+
+If either command fails, run `./v3 high-traffic disable`, inspect its error and verify
+ordinary `/` still returns 200. If managed routing is damaged, use
+`./v3 high-traffic restore`. Keep mode disabled while investigating. Deployment and
+production re-enablement are operator actions, not automatically performed by tests.
+
+After successful warming, request `https://zenmemes.com/` twice and a representative
+surviving thread twice. Confirm HTTP 200, `X-V3-High-Traffic: hit`, normal controls,
+surviving replies and absence of deleted content; a second request must avoid PHP
+in host instrumentation. The two incident targets were
+`reply-20260526032118-654b2b08` and `reply-20260526032816-a1447d49`. No source restoration
+or accepted-removal fabrication is needed for these valid absent-target retractions.
+
+Install refresh automation using the actual per-vhost access log path:
+
+```bash
+./v3 high-traffic cron /path/to/vhost-access.log
+```
+
+This **prints** installation instructions and the once-per-minute `run` command;
+it does not install cron. Add that printed line to the deployment user's crontab,
+retaining its normal environment. The production investigation found no such job.
+Verify a manual `run` and the subsequent scheduled run report successful refreshes
+in `refresh-status.json` and the private cron log. Age a test page only in an isolated
+fixture; on production wait for the configured freshness interval, run refresh and
+confirm the HTML `v3-generated-at` timestamp advances. A route seen only as 503 may
+not be selected by the popularity sampler; explicit `refresh /` ensures recovery.
+
+Confirm direct and queued offline snapshot publication through the existing
+snapshot runbook if those artifacts were previously failing. The separate
+uncaught-error handling of invalid-evidence offline HTTP bootstrap remains a
+follow-up; this change does not weaken invalid-evidence checks. Local Apache and
+browser acceptance do not establish DreamHost acceptance: record the deployed
+revision, home/thread cache hits, refresh/cron results and rollback outcome on that
+host before calling production recovery verified.
+
+### Diagnosing a refused explicit refresh
+
+`./v3 high-traffic refresh /` reports the specific refusal on stderr and exits 1
+(including with `--json`), rather than combining inactive mode and capacity:
+
+- **Page generation is already running:** the route's bounded page-lock bucket is
+  occupied. Let that render finish, then retry; the default lock wait is 250 ms.
+- **All generator slots are occupied:** other cold/refresh renders hold every
+  configured slot. Retry after they finish; the default is two slots.
+- **Cache page limit reached:** inspect cache usage and `FORUM_HIGH_TRAFFIC_PAGES`;
+  the message includes the observed count and limit. Do not purge usable pages just
+  to diagnose this condition.
+- **Inactive or profile/public-root link mismatch:** inspect `./v3 high-traffic status`
+  in the same environment/user and correct the configuration before retrying.
+- **Route not eligible:** choose `/`, `/threads/`, `/about/` or a canonical visible
+  thread route. Query strings and tool pages are not cache-generation targets.
+
+Generator-slot file-open failures report a cache-permissions error separately.
+These diagnostics retain existing bounded admission and HTTP busy-page behavior.
+
+### Renderer resource-limit diagnostics
+
+Renderer failures distinguish the time limit, HTML-output byte limit and
+stderr-output byte limit. Each message includes the observed elapsed time and the
+last reported stage (evidence validation, prepared SQLite copy, candidate
+validation, public HTML rendering or asset copying). Read-model signature indexing
+is timed separately. Progress contains operation names/counts, not record payloads.
+Normal result stdout is unchanged. CLI `prepare`, `refresh` and `run` stream timestamped
+progress to stderr as work happens, including with `--json`; redirect stderr to a
+log when automating. The parent also retains worker progress for failure diagnosis. If no stage arrived, the error says worker startup.
+
+An approximately 30-second failure is not proof that a rebuild is the bottleneck.
+Use the reported stage to select the next check. Do not raise limits or relax
+publication guards to hide an unlocalized delay. The reported timeout during `Read model: index thread subjects` exposed a full
+rebuild inside rendering. That rebuild now belongs to explicit preparation;
+production recovery still requires host verification.
+
+CLI progress starts before repository/configuration resolution and identifies the
+selected repository, database, public root and cache directory. It then reports
+page/publication locks, generator admission, absent-target count, isolated-worker
+limits, SQLite copying, HTML rendering, asset copying, validation and publication.
+A quiet running renderer emits a heartbeat every five seconds with its current
+stage and HTML byte count. Failures report total command elapsed time; renderer
+failures additionally report their own elapsed time/limit and last stage. Website
+requests do not receive this CLI progress output.
+
+To capture both live diagnostics and the machine-readable result separately:
+
+```bash
+./v3 high-traffic refresh / --json > /tmp/high-traffic-result.json 2> /tmp/high-traffic-progress.log
+```
+
+For interactive diagnosis, run the command normally to see progress immediately.

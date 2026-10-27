@@ -95,6 +95,13 @@ final class ImageContentTest
             assertSame($images['revision'], $repo['revision']);
             $repositoryTar = new PharData($repo['path']);
             assertSame(file_get_contents($base . '/repo/records/posts/legacy.txt'), $repositoryTar['repository/records/posts/legacy.txt']->getContent());
+            $repositoryTar->extractTo($base . '/snapshot');
+            $snapshotRoot = $base . '/snapshot/repository';
+            assertSame(false, is_dir($snapshotRoot . '/.git'));
+            assertSame($head, \ForumRewrite\Images\RepositorySnapshot::revision($snapshotRoot));
+            $snapshotRestore = (new \ForumRewrite\Images\ImageRestore())->run($images['path'], $snapshotRoot, $base . '/cache/snapshot.sqlite3', $base . '/snapshot-images');
+            assertSame('restored', $snapshotRestore['status']);
+            assertSame(self::png(), file_get_contents($base . '/snapshot-images/' . ImageReference::filename($ref)));
             $tar = new PharData($images['path']);
             $manifest = json_decode($tar['manifest.json']->getContent(), true, 512, JSON_THROW_ON_ERROR);
             assertSame($head, $manifest['repository_head']);

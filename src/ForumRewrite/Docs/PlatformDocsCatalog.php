@@ -92,9 +92,9 @@ final class PlatformDocsCatalog
     }
 
     /** Discover from the deployed source tree, without a separately maintained catalog. */
-    public static function inventory(string $projectRoot): array
+    public static function inventory(string $projectRoot, bool $fresh = false): array
     {
-        if (isset(self::$snapshots[$projectRoot])) {
+        if (!$fresh && isset(self::$snapshots[$projectRoot])) {
             return self::$snapshots[$projectRoot];
         }
         $paths = self::ROOT_DOCUMENTS;

@@ -478,12 +478,12 @@ It refuses recovery while the lock or an open file holder is detected.
 ## Sweep retracted local content
 
 ```
-./v3 retraction-sweep preview|run|status [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
+./v3 retraction-sweep preview|run|status|migrate [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
 ```
 
 Preview is non-mutating. Run executes one bounded batch immediately; repeat while
 `remaining` is true. The normal queue worker also discovers and continues sweeps.
-See [coverage, exclusions, progress and recovery](retraction_sweep.md).
+See [coverage, exclusions, progress and recovery](retraction_sweep.md). `migrate` handles legacy source-removal receipts only; previous retractions are not migrated.
 
 ## Manage the background task queue
 
@@ -565,13 +565,16 @@ controlled operator workflow.
 ## Import content from a remote instance
 
 ```
-./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
-./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
+./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
 ```
 
 Downloads the source's public repository archive, merges supported public forum
-content while preserving destination settings/approval authority, and publishes
-local views. Hostnames use HTTPS; short names require a JSON object mapping names
+content while preserving destination settings/approval authority, refreshes the
+read model and public offline data, and withdraws stale static HTML. Import and
+`--resume` never render pages or fingerprint/copy presentation assets. PHP serves
+imported content; run `./v3 build-static` separately when static output is needed.
+Hostnames use HTTPS; short names require a JSON object mapping names
 to URLs in `--sources`. URLs may include an instance base path. Conflicts retain
 local records. Legacy creation dates are recovered from isolated source history
 and retained as hash-bound metadata without changing signed post bytes. See the
@@ -581,6 +584,9 @@ and retained as hash-bound metadata without changing signed post bytes. See the
   duplicates, conflicts, and exclusions without changing destination records,
   commits, the read model, or published views. Temporary downloads and lock files
   may be created. Cannot be combined with `--resume`.
+- `--time-limit=SECONDS` — positive finite whole-invocation budget (default 300),
+  including lock waits/publication, with up to five seconds process cleanup.
+  Linux/WSL PCNTL/POSIX supervision is required; file limits remain unchanged.
 - `--verbose` — list every rejected/excluded file and dependency root cause.
   The default output groups review causes and summarizes intentional exclusions.
 
@@ -705,13 +711,41 @@ deterministic detection only.
 - `--with-llm` — also run the configured LLM provider, not just deterministic detection
 - `--deterministic-only` — explicitly disable LLM use (useful after `--with-llm` earlier in the same invocation)
 
+## Publish documentation independently
+
+```sh
+./v3 docs publish [--json] [--repository-root=/path/records] [--static-html-root=/path/static]
+```
+
+Publishes the complete eligible docs library, browse/search pages, downloads and
+assets atomically under `<static-root>-docs/releases/`, selected by its own
+`current` pointer. Use the site's normal `FORUM_SITE_ID` profile/environment.
+Options default to `FORUM_REPOSITORY_ROOT` (or `state/local_repository`) and
+`FORUM_STATIC_HTML_ROOT` (or the active profile's default static root).
+Readable output reports progress; `--json` returns status, docs root, release,
+version and document count, or an error with a next action and nonzero exit.
+`./v3 docs publish --help` describes setup and retry.
+
+Run separately for initial static docs setup or after docs/application/profile/
+asset changes. Failure retains the prior docs library; correct the reported cause
+and retry with the same destination/profile. Legacy combined-release docs remain
+available until successful migration. This command does not replace forum HTML,
+the read model or forum offline snapshot. `/api/docs-version` and docs reload
+notifications are independent of forum `/api/version`.
+
+Imports/resumes, full forum builds and shared refreshes do no docs rendering or
+bulk inventory/validation/copying. Missing/broken docs cannot block those commands.
+Without a docs publication, PHP readers remain available; static-only hosting
+needs this separate publication and its docs/asset routing.
+
 ## Build static HTML artifacts
 
 ```
 ./v3 build-static [repository_root] [database_path] [artifact_root]
 ```
 
-Builds and atomically activates a complete static HTML release. It creates the
+Builds and atomically activates a complete forum static HTML release. Docs use
+`./v3 docs publish` separately. It creates the
 candidate read model and HTML release before replacing either live pointer, so
 normal requests continue using the prior complete state while the command runs.
 
@@ -939,8 +973,9 @@ Startup dependency failures list missing capabilities, group required Ubuntu ext
 
 ## Verify or restore image backups
 
-`./v3 images verify|restore <images.tar> <repository_root> <database_path>
+`./v3 images verify|restore <images.zip> <repository_root> <database_path>
 [--image-root=/private/images]` checks a revision-matched image/repository pair.
+ZIP and legacy TAR image archives are supported.
 `verify` stages and validates without activation; `restore` atomically installs
 into a fresh private image directory or accepts an identical existing store.
 It never overwrites a different store. Exit 0 means complete verification/restore;

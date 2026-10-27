@@ -20,14 +20,15 @@ use RuntimeException;
 
 final class StaticArtifactBuilder
 {
-    private ?array $retractionToken = null;
     private array $metaToken = [];
+    private array $copiedAssets = [];
     public function __construct(
         private readonly string $projectRoot,
         private readonly string $repositoryRoot,
         private readonly string $databasePath,
         private readonly string $artifactRoot,
         private readonly ?\Closure $progressReporter = null,
+        private readonly ?string $forumStaticRoot = null,
     ) {
     }
 
@@ -45,8 +46,8 @@ final class StaticArtifactBuilder
 
     public function buildFromReadModel(): void
     {
+        $this->copiedAssets = [];
         $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-        $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         if (!is_dir($this->artifactRoot)) {
             mkdir($this->artifactRoot, 0777, true);
         }
@@ -97,8 +98,8 @@ final class StaticArtifactBuilder
      */
     public function refreshSharedPagesFromReadModel(): void
     {
+        $this->copiedAssets = [];
         $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-        $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         if (!is_dir($this->artifactRoot)) {
             throw new RuntimeException('Shared static refresh requires an existing release directory.');
         }
@@ -107,7 +108,7 @@ final class StaticArtifactBuilder
     }
 
     /** Run only in an isolated renderer process: no visitor globals or active session. */
-    public function renderHighTrafficRoute(string $route): string
+    public function renderHighTrafficRoute(string $route, bool $allowStaleReadModel = false): string
     {
         if (HighTrafficRoute::canonical($route) === null || $_COOKIE !== [] || session_status() === PHP_SESSION_ACTIVE) {
             throw new RuntimeException('Shared rendering requires an eligible route and isolated session context.');
@@ -117,9 +118,10 @@ final class StaticArtifactBuilder
             throw new RuntimeException('High-traffic rendering is unavailable on private instances.');
         }
         http_response_code(200);
+        $this->reportProgress('rendering public HTML');
         ob_start();
         try {
-            $this->application()->handle('GET', $route);
+            $this->application(allowReadModelRebuild: false, requireCurrentReadModel: !$allowStaleReadModel)->handle('GET', $route);
             $html = (string) ob_get_contents();
         } finally { ob_end_clean(); }
         if (http_response_code() !== 200 || !str_contains(strtolower($html), '</head>')) {
@@ -139,6 +141,7 @@ final class StaticArtifactBuilder
         $configuredBytes=getenv('FORUM_HIGH_TRAFFIC_BYTES');
         $assetLimit=$configuredBytes!==false && ctype_digit($configuredBytes) && (int)$configuredBytes>0 ? min(2684354560,(int)$configuredBytes) : 268435456;
         if ($assetBytes>$assetLimit) throw new RuntimeException('Referenced assets exceed cache capacity.');
+        $this->reportProgress('copying referenced public assets');
         $this->copyReferencedAssets($html);
         $this->assertFingerprintReferencesAvailable($html);
         $stamp = '<meta name="v3-generated-at" content="' . gmdate('Y-m-d\TH:i:s\Z') . '">';
@@ -147,26 +150,17 @@ final class StaticArtifactBuilder
 
     private function buildSharedPages(Application $application): void
     {
-        PlatformDocsCatalog::withSnapshot($this->projectRoot, fn () => $this->renderSharedPages($application));
+        $this->renderSharedPages($application);
+        if ((new \ForumRewrite\Docs\DocsReleaseLocator($this->forumStaticRoot ?? $this->artifactRoot))->active() === null) {
+            $this->reportProgress('Static docs are not published; run ./v3 docs publish with the same destination/profile.');
+        }
     }
 
     private function renderSharedPages(Application $application): void
     {
-        // Shared refreshes are built in a seeded candidate release; remove stale docs there.
-        $docsDirectory = $this->artifactRoot . '/docs';
-        if (is_dir($docsDirectory)) {
-            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($docsDirectory, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($files as $file) {
-                if ($file->isDir() && !$file->isLink()) { rmdir($file->getPathname()); }
-                else { unlink($file->getPathname()); }
-            }
-        }
-
         $this->reportProgress('Fingerprinting and copying assets referenced by rendered pages...');
         $this->copyOfflineRuntimeFiles();
-        $docsInventory = PlatformDocsCatalog::inventory($this->projectRoot);
-        $browseQueries = PlatformDocsCatalog::browseQueries($docsInventory, PlatformDocsCatalog::PAGE_SIZE);
-        $totalSharedPages = 11 + count($docsInventory) + count($browseQueries);
+        $totalSharedPages = 10;
         $this->reportProgress("Rendering shared pages (0/{$totalSharedPages}).");
         $this->reportProgress("Rendering shared pages (1/{$totalSharedPages}): /.");
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
@@ -200,44 +194,6 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/tags.html',
             $this->artifactRoot . '/tags/index.html',
         ]);
-        $this->reportProgress("Rendering shared pages (11/{$totalSharedPages}): /docs/.");
-        $this->writeRouteArtifacts($application, '/docs/', [
-            $this->artifactRoot . '/docs.html',
-            $this->artifactRoot . '/docs/index.html',
-        ]);
-        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $index => $entry) {
-            $route = PlatformDocsCatalog::routeForPath($entry['path']);
-            if ($route === null) {
-                throw new RuntimeException('Unable to resolve platform docs route: ' . $entry['path']);
-            }
-
-            $completed = $index + 12;
-            $this->reportProgress("Rendering shared pages ({$completed}/{$totalSharedPages}): {$route}.");
-            $this->writeRouteArtifact($application, $route, $this->artifactRoot . $entry['href'] . '.html');
-        }
-        $this->writeRouteArtifact($application, '/docs/_missing.html', $this->artifactRoot . '/docs/_missing.html');
-        // Browse pages let readers without JavaScript filter and page the static library;
-        // anything else (search text, combined filters) is served the browser search shell.
-        $this->writeRouteArtifact($application, '/docs/_search.html', $this->artifactRoot . '/docs/_search.html');
-        foreach ($browseQueries as $index => $browseQuery) {
-            $route = '/docs/?' . http_build_query($browseQuery);
-            $completed = 12 + count($docsInventory) + $index;
-            $this->reportProgress("Rendering shared pages ({$completed}/{$totalSharedPages}): {$route}.");
-            $this->writeRouteArtifact($application, $route, $this->artifactRoot . PlatformDocsCatalog::browsePath($browseQuery));
-        }
-        foreach (PlatformDocsCatalog::inventory($this->projectRoot) as $entry) {
-            $source = PlatformDocsCatalog::resolveSource($this->projectRoot, $entry['path']);
-            $destination = $this->artifactRoot . '/docs/_download/' . $entry['path'] . '.bin';
-            if (!is_dir(dirname($destination))) { mkdir(dirname($destination), 0777, true); }
-            if ($source === null || !copy($source, $destination) || hash_file('sha256', $source) !== $entry['hash']
-                || hash_file('sha256', $destination) !== $entry['hash']) {
-                throw new RuntimeException('Documentation changed during publication; retry the build: ' . $entry['path']);
-            }
-        }
-        $index = json_encode(['entries' => PlatformDocsCatalog::inventory($this->projectRoot)], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
-        if (file_put_contents($this->artifactRoot . '/docs/_search.json', $index) === false) {
-            throw new RuntimeException('Unable to publish documentation search index.');
-        }
         $this->reportProgress("Rendering shared pages complete ({$totalSharedPages}/{$totalSharedPages}).");
     }
 
@@ -276,11 +232,11 @@ final class StaticArtifactBuilder
             throw new RuntimeException('Unable to create QDB numeric quote artifact directory.');
         }
 
-        \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $targetPath, function () use ($sourcePath, $targetPath): void {
+        (function () use ($sourcePath, $targetPath): void {
             \ForumRewrite\Scoring\FastmodMetaPublication::publish($this->metaToken,$targetPath,static function () use ($sourcePath,$targetPath): void {
             if (!link($sourcePath, $targetPath) && !copy($sourcePath, $targetPath)) throw new RuntimeException('Unable to create quote alias.');
             });
-        });
+        })();
     }
 
     private function copyOfflineRuntimeFiles(): void
@@ -323,7 +279,6 @@ final class StaticArtifactBuilder
     public function buildSingleRoute(string $route): bool
     {
         $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-        $this->retractionToken = \ForumRewrite\Retraction\PublicationGuard::begin($this->databasePath, $this->repositoryRoot);
         $normalizedRoute = $this->normalizeRoute($route);
         if ($normalizedRoute === null) {
             return false;
@@ -402,12 +357,12 @@ final class StaticArtifactBuilder
         }
 
         try {
-            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, function () use ($temporaryPath, $path, $contents): void {
+            (function () use ($temporaryPath, $path, $contents): void {
                 \ForumRewrite\Scoring\FastmodMetaPublication::publish($this->metaToken,$path,static function () use ($temporaryPath,$path,$contents): void {
                 if (file_put_contents($temporaryPath, $contents) === false) throw new RuntimeException('Unable to write temporary artifact.');
                 if (!rename($temporaryPath, $path)) throw new RuntimeException('Unable to publish artifact.');
                 });
-            });
+            })();
         } finally { if (is_file($temporaryPath)) @unlink($temporaryPath); }
     }
 
@@ -440,12 +395,12 @@ final class StaticArtifactBuilder
         }
 
         try {
-            \ForumRewrite\Retraction\PublicationGuard::publish($this->retractionToken, $path, function () use ($temporaryPath, $path, $contents): void {
+            (function () use ($temporaryPath, $path, $contents): void {
                 \ForumRewrite\Scoring\FastmodMetaPublication::publish($this->metaToken,$path,static function () use ($temporaryPath,$path,$contents): void {
                 if (file_put_contents($temporaryPath, $contents) === false) throw new RuntimeException('Unable to write temporary artifact.');
                 if (!rename($temporaryPath, $path)) throw new RuntimeException('Unable to publish artifact.');
                 });
-            });
+            })();
         } finally { if (is_file($temporaryPath)) @unlink($temporaryPath); }
     }
 
@@ -502,15 +457,22 @@ final class StaticArtifactBuilder
         }
 
         $sourcePaths = [];
+        $copied = [];
         foreach (array_unique($matches[0]) as $fingerprintedPath) {
+            if (isset($this->copiedAssets[$fingerprintedPath]) && is_file($this->artifactRoot . $fingerprintedPath)
+                && !is_link($this->artifactRoot . $fingerprintedPath)) {
+                continue;
+            }
             $sourcePath = AssetFingerprint::sourcePathForFingerprint($this->projectRoot . '/public', $fingerprintedPath);
             if ($sourcePath === null) {
                 continue;
             }
             $sourcePaths[] = substr($sourcePath, strlen($this->projectRoot . '/public'));
+            $copied[$fingerprintedPath] = true;
         }
 
         AssetFingerprint::copyReferencedFingerprintedAssets($this->projectRoot . '/public', $this->artifactRoot, $sourcePaths);
+        $this->copiedAssets += $copied;
     }
 
     /**
@@ -549,7 +511,7 @@ final class StaticArtifactBuilder
         }
     }
 
-    private function application(): Application
+    private function application(bool $allowReadModelRebuild = true, bool $requireCurrentReadModel = true): Application
     {
         return new Application(
             $this->projectRoot,
@@ -557,6 +519,8 @@ final class StaticArtifactBuilder
             $this->databasePath,
             null,
             routeSource: 'static-html',
+            allowReadModelRebuild: $allowReadModelRebuild,
+            requireCurrentReadModel: $requireCurrentReadModel,
         );
     }
 

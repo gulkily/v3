@@ -39,6 +39,7 @@ final class TemplateRenderer
         'codebase_state.php' => ['/assets/tool-details.css'],
         'instance.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
+        'operations.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -70,6 +71,8 @@ final class TemplateRenderer
         private readonly string $appVersion = 'unknown',
         private readonly FeatureFlagEvaluator $featureFlags = new FeatureFlagEvaluator(),
         private readonly MediaEmbedRenderer $mediaEmbedRenderer = new MediaEmbedRenderer(),
+        private readonly string $versionEndpoint = '/api/version',
+        private readonly string $versionStorageKey = 'forum_pending_app_version',
     ) {
     }
 
@@ -210,10 +213,13 @@ final class TemplateRenderer
             'showThreadDensityToggle' => $showThreadDensityToggle,
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
+            'versionEndpoint' => $this->versionEndpoint,
+            'versionStorageKey' => $this->versionStorageKey,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'navIconsCssPath' => $this->assetPath('/assets/theme-nav-icons.css'),
-            'faviconPath' => FaviconRegistry::resolve($profile),
+            'faviconPath' => $this->versionEndpoint === '/api/docs-version'
+                ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -311,6 +317,7 @@ final class TemplateRenderer
         $messages = array_values(array_filter($items, static fn (array $item): bool => $item['section'] === 'messages'));
         return [
             'html' => $this->renderFragment('partials/nav.php', ['navItems' => $items, 'activeSection' => $activeSection]),
+            'tools_html' => $this->renderFragment('partials/tools_nav.php', ['toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('feature-flags')]),
             'messaging_enabled' => $messages !== [],
             'viewer' => $messages[0]['viewer'] ?? null,
             'scripts' => $messages === [] ? [] : array_map($this->assetPath(...), $this->messagingScriptPaths()),
@@ -510,6 +517,8 @@ final class TemplateRenderer
         $data = array_merge([
             'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
+            'imageBackupEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_BACKUP_ENABLED),
+            'textBackupEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TEXT_BACKUP_ENABLED),
             'imageContentEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),

@@ -10,44 +10,46 @@ use ForumRewrite\ReadModel\ReadModelBuilder;
 
 final class BackupPageTest
 {
-    public function testImagesSectionHasItsOwnTableAndPairingNoteWhenImageBackupIsAvailable(): void
+    public function testDownloadsAreUniqueAndRetainEssentialWarnings(): void
     {
         $this->fixture(true, function (string $root, string $db): void {
-            $html = $this->render($root, $db, '/tools/backup/');
-            assertStringContains('>Text content</h2>', $html);
-            assertStringContains('data-role="text-content-downloads"', $html);
-            assertStringContains('data-role="image-downloads"', $html);
-            assertOrdered($html, '>Text content</h2>', '>Images</h2>');
-            assertOrdered($html, '>Images</h2>', 'data-role="image-downloads"');
-            assertOrdered($html, 'data-role="image-downloads"', 'Keep matching repository revisions together.');
-            assertOrdered($html, 'Keep matching repository revisions together.', '>Recent included items</h2>');
-            assertSame(1, substr_count($html, 'href="/downloads/images.tar'));
-            assertStringNotContains('>Image backup</h2>', $html);
-            assertStringNotContains('>Downloads</h2>', $html);
-        });
-    }
-
-    public function testClosingNoteFollowsRecentItemsAndEveryDownloadLinkAppearsOnce(): void
-    {
-        $this->fixture(true, function (string $root, string $db): void {
-            $html = $this->render($root, $db, '/tools/backup/');
-            assertOrdered($html, '>Recent included items</h2>', '>About these downloads</h2>');
-            assertOrdered($html, '>About these downloads</h2>', 'Public content and history only, not a complete instance backup.');
-            foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.tar'] as $href) {
-                assertSame(1, substr_count($html, 'href="' . $href));
+            foreach (['/instance/', '/backup/', '/tools/backup/'] as $route) {
+                $html = $this->render($root, $db, $route);
+                foreach (['/downloads/repository.tar.gz', '/downloads/repository.zip', '/downloads/read_model.sqlite3', '/downloads/images.zip'] as $href) {
+                    assertSame(1, substr_count($html, 'href="' . $href));
+                }
+                assertStringContains('Match the content revision.', $html);
+                assertStringContains('Public content only; not a full site backup.', $html);
+                assertStringContains('(may be out of date)', $html);
+                assertStringContains('<strong>Instance:</strong> ' . \ForumRewrite\SiteConfig::displayName(), $html);
+                assertStringContains('<strong>Admins:</strong>', $html);
+                assertStringContains('/user/guest', $html);
+                assertStringContains('<strong>Index generated:</strong>', $html);
+                $pdo = new PDO('sqlite:' . $db);
+                $generated = $pdo->query("SELECT value FROM metadata WHERE key = 'rebuilt_at'")->fetchColumn();
+                $revision = $pdo->query("SELECT value FROM metadata WHERE key = 'repository_head'")->fetchColumn();
+                assertStringContains('datetime="' . $generated . '"', $html);
+                assertTrue(is_string($revision) && strlen($revision) === 40);
+                assertStringContains(substr($revision, 0, 12), $html);
+                assertStringContains('Recent included items', $html);
+                assertStringContains('class="backup-preview"', $html);
+                assertStringContains('href="/posts/reply-001"', $html);
+                assertStringContains('Reply body.', $html);
+                assertStringContains('href="/activity/">All activity</a>', $html);
+                foreach (['Snapshot freshness', 'About these downloads', '<table'] as $removed) {
+                    assertStringNotContains($removed, $html);
+                }
             }
-            assertSame(2, substr_count($html, '<table class="backup-downloads"'));
         });
     }
 
-    public function testImagesSectionIsAbsentWhenImageBackupIsUnavailable(): void
+    public function testImagesLinkAndPairingNoteAreAbsentWhenUnavailable(): void
     {
         $this->fixture(false, function (string $root, string $db): void {
             $html = $this->render($root, $db, '/tools/backup/');
-            assertStringContains('data-role="text-content-downloads"', $html);
-            assertStringNotContains('>Images</h2>', $html);
-            assertStringNotContains('image-downloads', $html);
-            assertStringNotContains('/downloads/images.tar', $html);
+            assertStringContains('Content (.tar.gz)', $html);
+            assertStringNotContains('/downloads/images.zip', $html);
+            assertStringNotContains('Match the content revision.', $html);
         });
     }
 
@@ -55,6 +57,7 @@ final class BackupPageTest
     {
         $workspace = new ImportTestWorkspace();
         $root = $workspace->repository('repository', true);
+        $workspace->git($root);
         $db = $workspace->root . '/read.sqlite3';
         $images = $workspace->root . '/images-private';
         if ($withImages && !mkdir($images, 0700, true)) {

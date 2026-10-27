@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Agent\AgentResponseTask;
-use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Support\ThreadTitle;
@@ -93,16 +92,18 @@ final class ThreadAndPostPageController
         $qdbVoteTags = [];
         if ($viewerProfile !== null && \ForumRewrite\SiteConfig::siteName() === 'qdb') {
             $viewerIdentityId = (string) $viewerProfile['identity_id'];
-            $viewerHasVoted = isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'upvote', $viewerIdentityId)[$threadId])
-                || isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], 'downvote', $viewerIdentityId)[$threadId]);
+            $pdo = $this->routeServices->pdo();
+            $viewerHasVoted = isset(ViewerTagLookup::threadTags($pdo, [$threadId], 'upvote', $viewerIdentityId)[$threadId])
+                || isset(ViewerTagLookup::threadTags($pdo, [$threadId], 'downvote', $viewerIdentityId)[$threadId]);
         }
         if (\ForumRewrite\SiteConfig::siteName() === 'qdb') {
             $catalog = QdbVoteCaptionCatalog::forReadModel($this->routeServices->databasePath());
             $voteCaptionPair = $catalog->selectActivePair();
             $qdbVoteTags = array_values(array_unique(['upvote', 'downvote', ...$catalog->knownTags()]));
             if ($viewerProfile !== null) {
+                $pdo = $this->routeServices->pdo();
                 foreach ($qdbVoteTags as $tag) {
-                    $viewerHasVoted = $viewerHasVoted || isset(ViewerTagLookup::threadTags($this->repositoryRoot, [$threadId], $tag, (string) $viewerProfile['identity_id'])[$threadId]);
+                    $viewerHasVoted = $viewerHasVoted || isset(ViewerTagLookup::threadTags($pdo, [$threadId], $tag, (string) $viewerProfile['identity_id'])[$threadId]);
                 }
             }
         }
@@ -279,19 +280,9 @@ final class ThreadAndPostPageController
 
     private function viewerHasThreadTag(string $threadId, string $tag, string $identityId): bool
     {
-        $repository = new CanonicalRecordRepository($this->repositoryRoot);
-        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
-            try { $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path)); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
-            if ($record->threadId !== $threadId || $record->authorIdentityId !== $identityId) {
-                continue;
-            }
-
-            if (in_array($tag, $record->labels, true)) {
-                return true;
-            }
-        }
-
-        return false;
+        return isset(
+            ViewerTagLookup::threadTags($this->routeServices->pdo(), [$threadId], $tag, $identityId)[$threadId]
+        );
     }
 
     /**
@@ -300,7 +291,7 @@ final class ThreadAndPostPageController
      */
     private function viewerPostTagsForPosts(array $postIds, string $tag, string $identityId): array
     {
-        return ViewerTagLookup::postTags($this->repositoryRoot, $postIds, $tag, $identityId);
+        return ViewerTagLookup::postTags($this->routeServices->pdo(), $postIds, $tag, $identityId);
     }
 
     private function createdPostIdForThread(string $threadId, string $createdPostId): string

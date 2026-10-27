@@ -47,13 +47,13 @@ final class PageNavigation
      * @param array<string,string>|null $next
      * @return array{previous_href:?string,next_href:?string,restart_href:?string}
      */
-    public static function links(string $path, array $query, string $context, ?array $previous, ?array $next, bool $restart = false): array
+    public static function links(string $path, array $query, string $context, ?array $previous, ?array $next, bool $restart = false, string $positionParameter = 'position'): array
     {
-        unset($query['position']);
+        unset($query[$positionParameter]);
         $url = static fn (array $parameters): string => $path . ($parameters === [] ? '' : '?' . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986));
         return [
-            'previous_href' => $previous === null ? null : $url($query + ['position' => self::encode($context, 'previous', $previous)]),
-            'next_href' => $next === null ? null : $url($query + ['position' => self::encode($context, 'next', $next)]),
+            'previous_href' => $previous === null ? null : $url($query + [$positionParameter => self::encode($context, 'previous', $previous)]),
+            'next_href' => $next === null ? null : $url($query + [$positionParameter => self::encode($context, 'next', $next)]),
             'restart_href' => $restart ? $url($query) : null,
         ];
     }

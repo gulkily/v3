@@ -44,6 +44,7 @@ final class ReadModelSchema
                 retraction_attribution TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )',
+            'CREATE INDEX posts_author_identity_idx ON posts (author_identity_id)',
             'CREATE TABLE threads (
                 root_post_id TEXT PRIMARY KEY,
                 root_post_created_at TEXT NOT NULL,
@@ -115,6 +116,7 @@ final class ReadModelSchema
             'CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)',
             'CREATE INDEX activity_post_id_idx ON activity (post_id)',
             'CREATE INDEX activity_action_key_idx ON activity (action_key)',
+            'CREATE INDEX activity_author_identity_idx ON activity (author_identity_id)',
             'CREATE TABLE commits (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 sha TEXT NOT NULL UNIQUE,
@@ -125,11 +127,41 @@ final class ReadModelSchema
                 file_count INTEGER NOT NULL
             )',
             'CREATE INDEX commits_committed_at_idx ON commits (committed_at DESC, id DESC)',
+            'CREATE INDEX posts_thread_sequence_idx ON posts (thread_id, sequence_number)',
+            'CREATE INDEX threads_last_activity_idx ON threads (last_activity_at DESC, root_post_id DESC)',
+            'CREATE TABLE viewer_tags (
+                record_family TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                author_identity_id TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                PRIMARY KEY (record_family, target_id, author_identity_id, tag)
+            )',
+            'CREATE INDEX viewer_tags_identity_idx ON viewer_tags (author_identity_id, record_family, tag, target_id)',
         ];
     }
 
     public static function fingerprint(): string
     {
         return hash('sha256', implode("\n", self::statements()));
+    }
+
+    /**
+     * Names of every table the schema creates, in creation order, parsed from the
+     * CREATE TABLE statements. Single source of truth for callers that must act on
+     * all tables (e.g. ReadModelBuilder::dropSchema()), so a new table added to
+     * statements() is covered automatically without a parallel hand-maintained list.
+     *
+     * @return list<string>
+     */
+    public static function tableNames(): array
+    {
+        $names = [];
+        foreach (self::statements() as $statement) {
+            if (preg_match('/^\s*CREATE TABLE\s+([A-Za-z_][A-Za-z0-9_]*)/', $statement, $match) === 1) {
+                $names[] = $match[1];
+            }
+        }
+
+        return $names;
     }
 }

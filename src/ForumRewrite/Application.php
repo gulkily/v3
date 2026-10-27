@@ -85,6 +85,7 @@ final class Application
     private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
     private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
     private ?string $appVersion = null;
+    private bool $docsPage = false;
     private ?FeatureFlagEvaluator $featureFlags = null;
     private ?RouteServices $routeServices = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
@@ -106,6 +107,8 @@ final class Application
         private readonly ?string $artifactRoot = null,
         private readonly ?string $staticHtmlRoot = null,
         private readonly string $routeSource = 'php-fallback',
+        private readonly bool $allowReadModelRebuild = true,
+        private readonly bool $requireCurrentReadModel = true,
     ) {
     }
 
@@ -126,6 +129,15 @@ final class Application
     public function handle(string $method, string $requestUri): void
     {
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
+        if ($docsPage !== $this->docsPage) {
+            $this->routeServices = null;
+        }
+        $this->docsPage = $docsPage;
+        if ($path === '/api/docs-version') {
+            (new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->docsStaticRoot()))->serve($method, $requestUri);
+            return;
+        }
         $query = [];
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         $securityReviewRequest = ($query['view'] ?? '') === 'security'
@@ -694,8 +706,8 @@ final class Application
             return;
         }
 
-        if ($path === '/downloads/images.tar') {
-            $this->instancePageController()->downloadImageBackup($method, 'images', isset($query['revision']) ? (string) $query['revision'] : null);
+        if (in_array($path, ['/downloads/images.zip', '/downloads/images.tar'], true)) {
+            $this->instancePageController()->downloadImageBackup($method, 'images', isset($query['revision']) ? (string) $query['revision'] : null, $path === '/downloads/images.tar' ? 'tar' : 'zip');
             return;
         }
 
@@ -820,6 +832,11 @@ final class Application
 
         if ($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') {
             $this->sendHtml($this->toolsPageController()->featureFlags(), 200);
+            return;
+        }
+
+        if ($path === '/tools/operations/' || $path === '/tools/operations') {
+            $this->sendHtml($this->toolsPageController()->operations(), 200);
             return;
         }
 
@@ -1053,12 +1070,12 @@ final class Application
                 $metadata = $this->readMetadata($pdo);
                 $pdo = null;
 
-                $currentRepositoryHead = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+                $currentRepositoryHead = $this->requireCurrentReadModel ? ReadModelMetadata::repositoryHead($this->repositoryRoot) : null;
                 if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) {
                     $rebuildReason = 'repository_root_mismatch';
                 } elseif (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
                     $rebuildReason = 'schema_identity_mismatch';
-                } elseif (($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
+                } elseif ($this->requireCurrentReadModel && ($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
                     $rebuildReason = 'repository_head_mismatch';
                 } else {
                     return;
@@ -1067,6 +1084,10 @@ final class Application
                 $pdo = null;
                 $rebuildReason = 'metadata_unreadable';
             }
+        }
+
+        if (!$this->allowReadModelRebuild) {
+            throw new \RuntimeException('High-traffic read model needs maintenance (' . $rebuildReason . '). Run ./v3 high-traffic prepare with the configured repository/database and retry refresh. Page rendering does not rebuild read models.');
         }
 
         $this->executionLock()->withExclusiveLock(function () use ($rebuildReason): void {
@@ -1134,6 +1155,7 @@ final class Application
                 $this->repositoryRoot,
                 $this->resolveViewerProfileFromIdentityHint(...),
                 QdbVoteCaptionCatalog::forReadModel($this->databasePath),
+                $this->routeServices()->pdo(),
             ),
             $this->routeServices(),
             $this->threadAndPostPageController(),
@@ -1180,7 +1202,7 @@ final class Application
     /**
      * @param array<string, mixed> $profile
      */
-    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false): string
+    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false, array $query = []): string
     {
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $isOwnProfile = $viewerProfile !== null
@@ -1222,6 +1244,7 @@ final class Application
                 'accessManagement' => $accessManagement,
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
+                'profileHistory' => $accessManagement ? [] : \ForumRewrite\Http\ProfileHistoryView::build($this->pdo(), $profile, $query),
                 'approvalHistory' => $accessManagement ? $this->routeServices()->approvalHistory()->forKey($profile) : null,
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
@@ -1235,11 +1258,11 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             $accessManagement ? 'tools' : 'profiles',
-            $accessManagement && $canApprove
+            array_merge($accessManagement ? [] : ['/assets/public_key.js'], $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
-                    : []),
+                    : [])),
         );
     }
 
@@ -1450,10 +1473,26 @@ final class Application
     {
         return new TemplateRenderer(
             $this->projectRoot . '/templates',
-            $this->appVersion(),
+            $this->docsPage ? $this->docsVersion() : $this->appVersion(),
             $this->featureFlags(),
             new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
+            versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
+            versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
         );
+    }
+
+    private function docsStaticRoot(): string
+    {
+        return $this->staticHtmlRoot ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($this->projectRoot, SiteProfileRegistry::active()));
+    }
+
+    private function docsVersion(): string
+    {
+        try {
+            return (new \ForumRewrite\Docs\DocsReleaseLocator($this->docsStaticRoot()))->active()['version'] ?? 'unpublished';
+        } catch (\Throwable) {
+            return 'unpublished';
+        }
     }
 
     private function featureFlags(): FeatureFlagEvaluator
@@ -2027,7 +2066,7 @@ final class Application
             '/tools/sqlite', '/tools/sqlite/',
             '/offline', '/offline/', '/offline/reader', '/offline/reader/',
             '/tools/llm-exchanges', '/tools/llm-exchanges/',
-            '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
+            '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
             '/activity', '/activity/',
@@ -2035,7 +2074,7 @@ final class Application
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',

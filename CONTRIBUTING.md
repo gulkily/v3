@@ -1,5 +1,19 @@
 # Contributing
 
+## Human-readable formats
+
+Canonical records and files intended for people to read or edit must use the
+project's `Key: value` headers and plain-text body, not JSON. Apply this to source
+views, human-facing exports, and editable configuration; keep multiline content
+readable rather than embedding escaped strings. Existing JSON is migration debt,
+not precedent for new formats.
+
+JSON is appropriate for machine APIs/protocols, explicit `--json` output, and
+internal caches or state. A human-facing exception requires explicit maintainer
+approval. Document canonical formats in `docs/specs/`; format changes must
+preserve signed bytes and trust decisions and explicitly define existing-record handling.
+Track outstanding conversions in [the format audit](docs/plans/human_readable_formats_checklist.md).
+
 ## UI copy and verification
 
 Remove explanations that repeat controls, visible results, or other feedback.
@@ -13,6 +27,20 @@ decision, with actionable recovery. Use contextual help only for information
 the interface cannot convey, and make it accessible without hover. Preserving
 a warning does not by itself require adding a confirmation step; preserve the
 existing interaction unless changing it is part of the requested work.
+
+Pages must look final on first paint. Do not add UI that appears, disappears,
+resizes, or changes caption after load because data arrives late; remove such
+changes where you find them. Decide viewer-specific UI before first paint in the
+client, from locally available state (cookies, browser storage), so server HTML
+stays identical for every viewer and shared/high-traffic pages remain fully
+static. Do not add server work or cookies just to personalize markup. An in-place
+update after paint is acceptable only when the client learns of a real state
+change during the visit, such as sign-in, sign-out, identity switch, or approval
+gained or revoked.
+
+Keep optional technical details collapsed using the shared
+[progressive disclosure guidance](docs/reference/progressive_disclosure.md).
+Keep primary information, essential warnings, and recovery actions visible.
 
 Before marking a UI change complete:
 
@@ -29,6 +57,21 @@ Before marking a UI change complete:
   `docs/plans/ui_copy_audit_checklist.md` for copy cleanup, or the relevant
   implementation document for other UI work. Distinguish completed cleanup
   from unresolved layout or behavior issues.
+
+## Feature flag presentation order
+
+`FeatureFlagRegistry::PRESENTATION_ORDER` is the canonical UI order: Access and
+identity, Authored content, Forum experience, Site rendering, Backups, Fastmod,
+Agent replies, then LLM exchanges. The page uses `presentationGroups()` rather
+than definition insertion order, labels, status or configuration source.
+
+Every registered flag must appear exactly once in its assigned group. Append new
+flags to that group's list by default; place dependent controls together immediately
+after their parent (after existing siblings). Add new groups at the end unless an
+explicit UI change approves another position. Reordering existing controls is an
+intentional UI change, not a side effect of registering a flag. Search and status
+filters must preserve this order. Keep the registry completeness/dependency and
+rendered-order checks current; do not bypass them for new flags.
 
 ## Operator CLI
 
