@@ -5058,7 +5058,8 @@ PHP;
             putenv('FORUM_SITE_ID');
         }
 
-        assertStringContains('<p class="eyebrow">zenmemes</p>', $zenmemesBoard);
+        // ZenMemes uses the app shell, whose wordmark links home.
+        assertStringContains('<span class="site-brand__mark" aria-hidden="true"></span>zenmemes</a></p>', $zenmemesBoard);
         assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
         assertStringContains('data-default-theme="auto"', $zenmemesBoard);
         assertStringContains('data-default-theme="chouse"', $chouseBoard);

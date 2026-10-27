@@ -204,3 +204,13 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - Maintainer comfortable-fit judgment: **pending.** No study accepted-count increment.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Post-closeout: merge of main
+
+- Merged `origin/main` (215 commits) as `8ddb7fa18`; conflicts were in Railspike, CLI docs, the plans index, the effort ledger and two tests, none in shell code (resolution in the merge message).
+- Full suite on the merged branch (`php tests/run.php`, complete run, about 5 minutes): 1588 run, 1582 passed, 6 failed. Five also fail on main (the maintainer's `~/v3` run): `LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets`, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, and two `WriteApiSmokeTest` approval tests. One was this cycle's: `LocalAppSmokeTest::testBoardPageRendersActiveSiteProfilePerFormSiteId` expected the old plain-text site name; it now checks the wordmark link and passes.
+- Headers for Chouse, QDB, MIT Rap Club and ZenMemes switched to `forum`: all 24 byte-identical to `origin/main`. Guest matrix (JavaScript on/off, 1280px/390px): passes.
+- Navigation browser tests: 14 of 15 pass. `invite_zero_click` fails intermittently (about 1 run in 5; 4 of 4 passed on main) at its "username changes disabled" step, which came from main: the account page's automatic sign-in reloads the page and aborts the test's next navigation. Left unfixed; the same wait used in `high_traffic_control.mjs` (`data-public-auth-resume`) would remove the race.
+- Maintainer reviewed the UI manually on 2026-10-27.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
