@@ -96,8 +96,8 @@ final class AppNavigationPlacementTest
     public function testMembersOnlyViewersGetNoNewPostButton(): void
     {
         $this->withSite('zenmemes', function (): void {
-            $html = $this->renderer([FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => true])
-                ->renderLayout('Lobby', '', 'lobby', viewerProfile: self::VIEWERS['unapproved']);
+            $html = $this->markup($this->renderer([FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => true])
+                ->renderLayout('Lobby', '', 'lobby', viewerProfile: self::VIEWERS['unapproved']));
             assertSame(false, str_contains($html, 'new-post-button'));
             assertStringContains('href="/profiles/mouse"', $html);
         });
@@ -110,7 +110,7 @@ final class AppNavigationPlacementTest
         SiteProfileRegistry::setProfilesForTesting($profiles);
         try {
             $this->withSite('zenmemes', function (): void {
-                $html = $this->renderer()->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
+                $html = $this->markup($this->renderer()->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']));
                 assertStringContains('<header class="site-header">', $html);
                 foreach (['account-menu', 'new-post-button', 'data-tab=', 'shell-sky', '/assets/account_menu.'] as $marker) {
                     assertSame(false, str_contains($html, $marker), $marker);
@@ -119,6 +119,12 @@ final class AppNavigationPlacementTest
         } finally {
             SiteProfileRegistry::setProfilesForTesting(null);
         }
+    }
+
+    /** The page without its inline critical CSS, which names every shell class. */
+    private function markup(string $html): string
+    {
+        return (string) preg_replace('/<style data-role="critical-css">.*?<\/style>/s', '', $html);
     }
 
     /** @param array<string, bool> $flags */

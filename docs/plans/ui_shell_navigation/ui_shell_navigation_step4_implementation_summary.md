@@ -104,5 +104,6 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
   - Guests and unapproved members see four tabs; About stays in the account menu instead of replacing Messages in the bar. Every destination stays reachable; revisit with the Board cycle if a fifth tab is wanted.
   - The Board page still shows its own "New Post" control in the board toolbar, next to the shell's New post; removing it belongs to cycle 2 (Board).
 - Estimate details: original scope; the single-nav design made the bar mostly CSS, so the retrospective is below the original.
+- **Correction (after commit `650fe55d9`):** the line above stating "`AppNavigationPlacementTest`: 7 run, 7 passed" was wrong. That run reported 5 passed, 2 failed, and the commit went ahead because the command chain did not stop on the failure. Cause: the Stage 3–4 shell CSS is inlined into every page as critical CSS, so two tests that searched the whole page for `new-post-button` / `account-menu` found the class names in the `<style>` block. The shell behavior was correct. Fix: those tests now check the page markup without the inline critical CSS. Rerun: 7 run, 7 passed, exit 0. From here on, test runs gate commits on the exit code.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
