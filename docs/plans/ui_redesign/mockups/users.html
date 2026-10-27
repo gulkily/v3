@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>7 · Users</h1>
+      <p>The member directory and, for approved members, the queue of people waiting to be let in.</p>
+      <p class="doc-files">templates/pages/users.php · templates/pages/users_pending.php</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>435 threads, 657 posts</s><span>435 threads · 657 posts</span></li>
+        <li class="chg"><s>Users Awaiting Approval (separate page, no link from Users)</s><span>A “Waiting (3)” segment on the Users page.</span></li>
+        <li class="chg"><s>No users are awaiting approval.</s><span>No one is waiting. (Heading, plus one short line.)</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>A compact list with one 56px row per person, replacing 150px cards. All 38 members fit in about two screens instead of eight.</li>
+        <li>A search field filters the list as you type. The data is already on the page, so no server change is needed.</li>
+        <li>Sort by Activity (the current order) or Name.</li>
+        <li>Pending approvals live beside the directory instead of at an unlinked URL (<code>/users/pending</code>).</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>Approving someone happens in the row. <b>Proposal:</b> the row shows “Approved · Undo” for about 5 seconds, and the signed approval record is published only after that window closes. A published approval is permanent, so Undo has to come before publication.</li>
+        <li>Each pending row shows the person’s first post, so approvers can judge without opening a new page.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/users-desktop.png" alt="Current users page on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/users-phone.png" alt="Current users page on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Directory" data-active="users" data-title="Users">
+  <div class="page">
+    <div class="page-head desk-only"><h1>Users</h1></div>
+    <div class="toolbar">
+      <div class="seg"><span aria-pressed="true">Members</span><span>Waiting (3)</span></div>
+      <span class="grow"></span>
+      <span class="select">Activity <i data-i="chevdown" class="sm"></i></span>
+    </div>
+    <div class="search"><i data-i="search" class="sm"></i>Search 38 members</div>
+    <div class="group">
+      <a class="row user-row" href="#"><span class="avatar" data-av="ilyag"></span><span class="grow"><span class="title">ilyag</span><span class="sub">435 threads · 657 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="guest"></span><span class="grow"><span class="title">guest</span><span class="sub">62 threads · 91 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="test-user"></span><span class="grow"><span class="title">test-user</span><span class="sub">25 threads · 44 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="onthebus"></span><span class="grow"><span class="title">onthebus</span><span class="sub">10 threads · 12 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="chrome"></span><span class="grow"><span class="title">chrome</span><span class="sub">4 threads · 12 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="reply-agent"></span><span class="grow"><span class="title">reply-agent <span class="chip agent">Agent</span></span><span class="sub">0 threads · 31 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="win10"></span><span class="grow"><span class="title">win10</span><span class="sub">2 threads · 7 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="pathdowntothewater"></span><span class="grow"><span class="title">pathdowntothewater</span><span class="sub">2 threads · 3 posts</span></span><i data-i="chev" class="chev"></i></a>
+      <a class="row user-row" href="#"><span class="avatar" data-av="shoesoffbytheriver"></span><span class="grow"><span class="title">shoesoffbytheriver</span><span class="sub">1 thread · 2 posts</span></span><i data-i="chev" class="chev"></i></a>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Waiting for approval" data-active="users" data-title="Users" data-devices="phone">
+  <div class="page">
+    <div class="toolbar"><div class="seg"><span>Members</span><span aria-pressed="true">Waiting (3)</span></div></div>
+    <div class="group">
+      <div class="row" style="align-items:flex-start"><span class="avatar" data-av="mykull"></span><span class="grow" style="display:grid;gap:4px"><span class="title">mykull</span><span class="sub">“hey, friend of lucas here, is this the meme place?” · 2h</span><span style="display:flex;gap:8px;margin-top:4px"><span class="btn primary">Approve</span><span class="btn">View</span></span></span></div>
+      <div class="row"><span class="avatar" data-av="zurcd"></span><span class="grow" style="display:grid;gap:2px"><span class="title">zurcd</span><span class="sub" style="color:var(--ok)">Approved · <a href="#" style="color:var(--accent);font-weight:600">Undo</a></span></span></div>
+      <div class="row" style="align-items:flex-start"><span class="avatar" data-av="ppsqqk"></span><span class="grow" style="display:grid;gap:4px"><span class="title">ppsqqk</span><span class="sub">No posts yet · joined yesterday</span><span style="display:flex;gap:8px;margin-top:4px"><span class="btn primary">Approve</span><span class="btn">View</span></span></span></div>
+    </div>
+  </div>
+</template>
+</body>
+</html>

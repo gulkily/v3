@@ -42,9 +42,16 @@ try {
  await context.addInitScript(({keys,fingerprint})=>{
   for(const [key,value] of Object.entries({forum_pki_private_key:keys.privateKey,forum_pki_public_key:keys.publicKey,forum_pki_fingerprint:fingerprint,forum_pki_published_fingerprint:fingerprint,forum_pki_username:'traffic-operator'}))localStorage.setItem(key,value);
  },{keys,fingerprint});
- const page=await context.newPage();page.on('pageerror',e=>console.error(e));await page.goto(base+'/tools/feature-flags/');await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
+ const page=await context.newPage();page.on('pageerror',e=>console.error(e));await page.goto(base+'/tools/operations/');await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  const toggle=page.locator('[data-high-traffic-control] button');const status=page.locator('[data-high-traffic-status]');
  assert.equal(await toggle.getAttribute('aria-checked'),'false');
+ const state=page.locator('[data-high-traffic-state]');
+ assert.equal(await state.textContent(),'disabled');
+ assert.equal(await page.locator('[data-high-traffic-control] .switch').count(),1,'high-traffic control uses the shared switch');
+ assert.equal(await page.locator('.tools-nav .nav-link.is-active[href="/tools/operations/"]').count(),1);
+ const flagsPage=await context.newPage();await flagsPage.goto(base+'/tools/feature-flags/');
+ assert.equal(await flagsPage.locator('[data-high-traffic-control]').count(),0,'Feature Flags no longer hosts high-traffic mode');
+ assert.equal(await flagsPage.getByText('High-traffic mode').count(),0);await flagsPage.close();
  await verifyLayout('disabled');
  await page.route('**/api/finalize_high_traffic',async route=>{await new Promise(r=>setTimeout(r,250));await route.continue();});
  await toggle.click();await toggle.waitFor({state:'visible'});
@@ -52,6 +59,7 @@ try {
  await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').disabled);
  await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').getAttribute('aria-checked')==='true' || document.querySelector('[data-high-traffic-status]').textContent.includes('CLI recovery'));
  assert.equal(await toggle.getAttribute('aria-checked'),'true',await status.textContent());
+ assert.equal(await state.textContent(),'enabled');
  assert((await readFile(join(root,'public/.htaccess'),'utf8')).includes('BEGIN V3 HIGH TRAFFIC'));
  const shared=await context.newPage();const sharedAuthRequests=[];shared.on('request',r=>{if(/\/api\/(auth_challenge|authenticate_identity)$/.test(new URL(r.url()).pathname))sharedAuthRequests.push(r.url());});await shared.goto(base+'/');await shared.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  assert.equal(await shared.locator('meta[name="v3-generated-at"]').count(),1);
@@ -101,8 +109,10 @@ try {
  await writeFile(join(root,'public/.htaccess'),normal);
  await toggle.focus();await page.keyboard.press('Space');await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').getAttribute('aria-checked')==='false');
  assert.equal(await status.isVisible(),false);
- const denied=await browser.newContext({serviceWorkers:'block'});const no=await denied.newPage();await no.goto(base+'/tools/feature-flags/');
+ const denied=await browser.newContext({serviceWorkers:'block'});const no=await denied.newPage();await no.goto(base+'/tools/operations/');
  assert.equal(await no.locator('[data-high-traffic-control]').count(),0);
+ const readOnly=no.locator('.switch[role="switch"]');assert.equal(await readOnly.isDisabled(),true);assert.equal(await readOnly.getAttribute('aria-checked'),'false');
+ assert.equal(await no.locator('[data-high-traffic-status]').count(),0,'non-managers see no status details');
  const forbidden=await denied.request.post(base+'/api/prepare_high_traffic',{form:{enabled:'true'}});assert.equal(forbidden.status(),403);
  await context.close();await denied.close();
  console.log(JSON.stringify({status:'passed',fixture:root,checks:['real operator signing','live action and signed like from shared page','timestamp hint via browser clock','enable/disable','pending','failure and retry','unauthorized rejection','phone/desktop all shared themes']}));

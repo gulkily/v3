@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account, themed · ZenMemes redesign</title>
+<link rel="stylesheet" href="../mockup.css">
+<link rel="stylesheet" href="zen.css">
+<link rel="stylesheet" href="ma.css">
+<script src="../mockup.js" defer></script>
+</head>
+<body data-skin="ma">
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="../index.html">← All mockups</a>
+      <h1>T4 · Account, themed</h1>
+      <p>Getting an identity should feel like an event. The account card is a night sky in both modes, lit by your color once you have one.</p>
+      <p class="doc-files">Structure: <a href="../account.html">08 · Account</a> · Skin: mockups/zen/zen.css</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="skin-toggle" role="group" aria-label="Skin"><button type="button" data-skin="base">Base</button><button type="button" data-skin="zen">Living Sky</button><button type="button" data-skin="ma">Ma</button></div>
+      <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+    </div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>In Ma</h2>
+      <ul>
+        <li><b>At night</b>, the key art glows like neon tubing, and the card reads like an ID chip: corner brackets and a caption of real key data.</li>
+        <li><b>Your key, drawn</b> (Hobbs): the account card opens with a flow field generated from your key, mostly in your color with some ink and, rarely, one vermilion stroke.</li>
+        <li><b>Creating the account</b>: the ensō face closes its eyes while a brush goes round.</li>
+        <li>The backup sheet’s Starfield thumbnail keeps its stars, because that is what the file looks like.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What the theme adds</h2>
+      <ul>
+        <li><b>A night card on any sky:</b> deep space with your seeded stars and constellation, glowing in your color. In light mode it sits on the dawn sky like a window.</li>
+        <li><b>Colored glyphs</b> on rows: Back up (blue), Restore (teal), Advanced (slate), Remove (red). No colored tiles; the icon carries the color.</li>
+        <li><b>The backup format choice is visual:</b> “Starfield image” shows a small starfield.</li>
+        <li><b>Orbit loader:</b> while the key is generated, your planet appears in the card with a moon circling it (second screen). The same loader fits restoring a backup and decrypting messages.</li>
+        <li>Warnings keep plain danger styling; the theme never decorates them.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What it needs from the base</h2>
+      <ul>
+        <li>A <code>night</code> class and starfield slot on the account card; <code>data-sky</code> on the page; <code>data-tone</code> on rows.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Checks</h2>
+      <ul>
+        <li>Text on the night card is white or 80% white on near-black: well above AA.</li>
+        <li>Row glyphs are 4.1:1 or better on glass in both modes (icon minimum 3:1).</li>
+        <li>The orbit is decorative; the heading is a status message and the card is marked busy. Under reduced motion the moon holds still.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Guest — first visit" data-active="account" data-title="Account" data-guest>
+  <div class="page">
+    <div class="page-head desk-only"><h1>Account</h1></div>
+    <div class="hero-card night">
+      <div class="starfield" data-seed="welcome"></div>
+      <p class="hud">No key in this browser yet</p>
+      <span class="avatar lg" data-av="guest" style="--av:#9aa1ab">?</span>
+      <h2>Pick a name to start posting</h2>
+      <p>Your account is created in this browser. No email or password.</p>
+      <div class="field" style="width:100%;max-width:360px"><label for="acct-name">Name</label><div class="input" id="acct-name">mouse</div></div>
+      <span class="btn primary">Continue</span>
+    </div>
+    <div class="group">
+      <a class="row" href="#" data-tone="restore"><span class="ic"><i data-i="upload" class="sm"></i></span><span class="grow"><span class="title">Restore from backup</span><br><span class="sub">Use an account you already have</span></span><i data-i="chev" class="chev"></i></a>
+    </div>
+  </div>
+</template>
+
+<template data-sky="mouse" data-screen="Guest — creating the account after Continue" data-active="account" data-title="Account" data-guest data-devices="phone">
+  <div class="page">
+    <div class="hero-card night" data-person="mouse" aria-busy="true">
+      <div class="starfield" data-seed="mouse"></div>
+      <span class="orbit" aria-hidden="true"><span class="planet"></span><span class="arm"><span class="moon"></span></span></span>
+      <p class="hud">Generating key pair</p>
+      <h2 role="status">Creating your account…</h2>
+      <p>This takes a few seconds, and only happens once.</p>
+    </div>
+  </div>
+</template>
+
+<template data-sky="mouse" data-screen="Set up — waiting for approval, not backed up" data-active="account" data-title="Account" data-viewer="mouse" data-unapproved>
+  <div class="page">
+    <div class="page-head desk-only"><h1>Account</h1></div>
+    <div class="hero-card night" data-person="mouse">
+      <div class="starfield" data-seed="mouse" data-constellation></div>
+      <p class="hud">Key 4D54 F649 … 0320 · Awaiting approval</p>
+      <div class="id-card" style="width:100%">
+        <span class="avatar lg" data-av="mouse"></span>
+        <div class="grow"><span class="name">mouse</span><span class="chip warn" style="justify-self:start">Waiting for approval</span></div>
+      </div>
+      <p>You can post now. Your posts show as pending until a member approves you.</p>
+    </div>
+    <div class="status-row danger"><i data-i="shield" class="sm"></i><span class="grow"><b>Not backed up.</b> If this browser’s data is cleared, this account is gone.</span><a href="#">Back up</a></div>
+    <div class="group">
+      <div class="row"><span class="grow title">Name</span><span class="muted">mouse</span><i data-i="chev" class="chev"></i></div>
+      <div class="row"><span class="grow title">Fingerprint</span><span class="mono muted">4D54 F649 … 0320</span><i data-i="copy" class="sm faint"></i></div>
+    </div>
+    <div class="group">
+      <a class="row" href="#" data-tone="save"><span class="ic"><i data-i="download" class="sm"></i></span><span class="grow title">Back up account</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#" data-tone="restore"><span class="ic"><i data-i="upload" class="sm"></i></span><span class="grow title">Restore from backup</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#" data-tone="advanced"><span class="ic"><i data-i="key" class="sm"></i></span><span class="grow title">Advanced</span><span class="faint small hide-phone">Keys, linking, storage</span><i data-i="chev" class="chev"></i></a>
+    </div>
+    <div class="group">
+      <a class="row danger" href="#" data-tone="remove"><span class="ic"><i data-i="signout" class="sm"></i></span><span class="grow title">Remove from this browser</span></a>
+    </div>
+  </div>
+</template>
+
+<template id="backup-sheet">
+  <div class="scrim"><div class="dialog">
+    <h2>Back up your account</h2>
+    <p>You’ll need this passphrase to restore. We can’t recover it for you.</p>
+    <div class="passphrase">
+      <div class="field"><label>Passphrase</label><div class="input">••••••••••••••</div><div class="meter"><i></i></div></div>
+      <div class="field"><label>Confirm passphrase</label><div class="input">••••••••••••••</div></div>
+      <div class="field"><label>Format</label>
+        <div class="group" style="box-shadow:0 0 0 1px var(--line)">
+          <div class="row" style="min-height:56px"><span class="ic" data-tone="advanced" style="width:44px;height:44px"><i data-i="doc" class="sm"></i></span><span class="grow title">Text file</span></div>
+          <div class="row" style="min-height:56px;background:var(--accent-soft)"><span class="starfield thumb" data-seed="backup-preview"></span><span class="ic hide-zen"><i data-i="image" class="sm"></i></span><span class="grow title">Starfield image</span><i data-i="check" class="sm" style="color:var(--accent)"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="btns"><span class="btn primary lg"><i data-i="download" class="sm"></i>Download backup</span><span class="btn lg">Cancel</span></div>
+  </div></div>
+</template>
+
+<template data-sky="mouse" data-screen="Back up sheet — Starfield chosen" data-active="account" data-title="Account" data-viewer="mouse" data-unapproved data-devices="phone" data-overlay="backup-sheet">
+  <div class="page"><div class="hero-card night" data-person="mouse"><div class="starfield" data-seed="mouse"></div><div class="id-card"><span class="avatar lg" data-av="mouse"></span><div class="grow"><span class="name">mouse</span></div></div></div></div>
+</template>
+
+<template data-sky="ilyag" data-screen="Approved and backed up" data-active="account" data-title="Account" data-devices="desktop">
+  <div class="page">
+    <div class="page-head"><h1>Account</h1></div>
+    <div class="hero-card night" data-person="ilyag">
+      <div class="starfield" data-seed="ilyag" data-constellation></div>
+      <p class="hud">Key 8E21 07BA … C4D9 · Approved · Signatures verified</p>
+      <div class="id-card" style="width:100%"><span class="avatar lg" data-av="ilyag"></span><div class="grow"><span class="name">ilyag</span><span class="chip ok" style="justify-self:start">Approved</span></div></div>
+    </div>
+    <div class="status-row ok"><i data-i="check" class="sm"></i><span class="grow">Backed up Oct 24</span></div>
+    <div class="group">
+      <a class="row" href="#" data-tone="save"><span class="ic"><i data-i="download" class="sm"></i></span><span class="grow title">Back up account</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#" data-tone="restore"><span class="ic"><i data-i="upload" class="sm"></i></span><span class="grow title">Restore from backup</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#" data-tone="advanced"><span class="ic"><i data-i="key" class="sm"></i></span><span class="grow title">Advanced</span><span class="faint small hide-phone">Keys, linking, storage</span><i data-i="chev" class="chev"></i></a>
+    </div>
+  </div>
+</template>
+</body>
+</html>

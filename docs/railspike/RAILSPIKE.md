@@ -3,6 +3,14 @@
 ## Overview
 Planning, documentation, development, bug fixes, test suites, and checklists can use this four-step workflow, with an optional solution assessment upfront. Review and revise the current artifact before approving the next step; a planning handoff can pause before implementation. To keep the instructions inside the context window, the detailed guidance for each step now lives in separate files that you open only when you are ready for that step.
 
+## Choose the execution mode
+
+Use the staged workflow below when approaches or scope need review. For explicitly authorized, bounded execution with a clear outcome and proportionate verification, use the [one-shot workflow](docs/workflow/one_shot.md). It preserves comparable development evidence in one evolving record without intermediate step approvals. Ordinary tasks outside Railspike remain possible; size alone does not select a mode or enroll a task in a study.
+
+Before work, read applicable project instructions, including `AGENTS.md`, and the selected workflow. If required instructions cannot be found or read, resolve that before dependent work. A mode label, plan reference, or implementation question is not execution authorization. Record the user's actual authorization and its boundary; do not manufacture approval from agent-authored scope. Questions leave existing authority unchanged. Clarify unresolved authority before dependent actions while continuing independent authorized work.
+
+Step/phase order, separate step artifacts, `Approved Step N` gates, and planning/stage commit rules below govern **staged cycles**. One-shot cycles use the linked lifecycle and commit rules instead. Repository boundaries, instruction summaries, scope protection, attribution, honest verification, and applicable study/debug policies apply to both modes. This is an instruction contract, not programmatic enforcement.
+
 ## Repository Boundary
 Instruction files under `docs/workflow/` belong to the Railspike repository. If Railspike is included in another repository as a submodule or vendored directory, resolve those paths relative to the Railspike repository root, not the host repository root. Planning artifacts still belong in the host repository under `docs/plans/`.
 
@@ -58,6 +66,8 @@ When enabled, every Step 1 option gets a complete scoped-cycle estimate; every S
 
 **Checkpoints**
 
+The table below applies to staged cycles. One-shot cycles use [intake, execution-entry, revision and closeout checkpoints](docs/effort-estimation.md#one-shot-checkpoints) in their consolidated record, with the same reference, scope-history and outcome semantics.
+
 | Checkpoint | Required record for selected cycles |
 | --- | --- |
 | Intake | Preserve initial scoped estimate in the ledger or first artifact before detailed implementation inspection; disclose earlier inspection instead of pretending it was prospective. |
@@ -82,6 +92,8 @@ At closeout, retain delivered scope, starting/final revisions, commits/diffs, pl
 ## Railspike Debug Mode
 
 Debug mode is optional feedback for improving Railspike's instructions, not application debugging. New workflows default to disabled unless the consuming project opts in. Enable or disable it for a workflow with a plain-language request such as “Enable Railspike debug mode for this workflow” or “Disable Railspike debug mode.”
+
+Precedence, content and recovery rules apply to both execution modes. One-shot records use a cycle/index line instead of Plan navigation and follow [one-shot report timing and commit rules](docs/workflow/one_shot.md#study-and-debug-state) instead of the staged handoff/commit cadence below.
 
 **Project default**:
 - An optional `.railspike_debug_on` file at the consuming-project root enables debug by default for new workflows. Only file presence matters: do not read or validate its contents. Empty, arbitrary, or “false” contents all enable the default; unreadable contents do not matter when file presence is established. An absent marker leaves the default disabled.
@@ -111,7 +123,7 @@ Debug mode is optional feedback for improving Railspike's instructions, not appl
 Move the log with the plans into `docs/plans/{feature_name}/` and repair links without altering mode state or log history. Keep it uncommitted during Steps 1–3; include this feature's existing log in the initial planning commit. During Step 4, include additions in the next authorized stage commit, or make a separate log-only handoff commit after the final stage for the completed-step report. This narrow allowance does not authorize unrelated changes or replace stage commits. Do not amend completed commits.
 
 ## Planning Artifacts
-Each step MUST be a separate file in `docs/plans/`:
+In staged cycles, each step MUST be a separate file in `docs/plans/`:
 - **Step 1**: `{feature_name}_step1_solution_assessment.md`
 - **Step 2**: `{feature_name}_step2_feature_description.md`
 - **Step 3**: `{feature_name}_step3_development_plan.md`
@@ -123,7 +135,7 @@ The initial planning commit contains only approved Steps 1–3 (Steps 2–3 if S
 
 Inspect destinations and affected references before moving files. If files conflict, the destination is ambiguous, or organization requires substantive changes, stop and resolve the issue before committing or implementing. Do not overwrite artifacts or silently revise approved scope; seek renewed approval for substantive changes.
 
-**Plan navigation**: Start every artifact with this relative-link bar; omit Step 1 only when skipped.
+**Plan navigation**: Start every staged artifact with this relative-link bar; omit Step 1 only when skipped.
 
 ```md
 > **Feature plan:** [Step 1](./{feature_name}_step1_solution_assessment.md) · [Step 2](./{feature_name}_step2_feature_description.md) · [Step 3](./{feature_name}_step3_development_plan.md) · [Step 4](./{feature_name}_step4_implementation_summary.md)
@@ -131,7 +143,7 @@ Inspect destinations and affected references before moving files. If files confl
 
 ### Agent attribution
 
-Sign beneath each authored or revised option, stage or other substantive plan section in Steps 1–4. Use one short italic attribution line per coherent contribution, not per bullet. A compact single-contribution artifact may use one footer. Attribution applies independently of debug mode and effort-study enrollment.
+Sign beneath each authored or revised option, stage or other substantive plan section in Steps 1–4 or a one-shot record. Use one short italic attribution line per coherent contribution, not per bullet. A compact single-contribution artifact may use one footer. Attribution applies independently of debug mode and effort-study enrollment.
 
 For Step 3, when one agent generates the entire plan in one pass, use a single attribution footer for the whole plan, regardless of plan length. Use stage-level attribution only for stages subsequently authored or substantively revised separately. Preserve the original plan footer and prior stage attribution when recording revisions.
 
@@ -141,14 +153,14 @@ Minimal form: `*— Agent name · YYYY-MM-DD UTC*`. With verified metadata: `*�
 
 Preserve prior attribution when revising another agent's work; append `*— Revised by Agent name · YYYY-MM-DD UTC*` beneath the changed contribution, with verified model/settings if available. Preserve earlier dated entries for later revisions, including changes of model/settings by the same agent. Attribute only work actually authored or revised; a reviewer or agent merely copying an earlier estimate does not become its original author/rater. Do not backfill unknown historical authorship. These are textual authorship records, not cryptographic signatures, approvals or independent ratings.
 
-**Commit discipline**:
+**Commit discipline (staged cycles)**:
 - Keep Step 1-3 planning documents uncommitted while they are being drafted/revised.
 - Do not commit Step 1-3 planning documents when Step 1 or Step 2 is approved.
-- After the user explicitly responds `Approved Step 3`, create the Step 4 feature branch or confirm eligible reuse under [Follow-up Cycles Before Merge](#follow-up-cycles-before-merge).
+- After the user explicitly responds `Approved Step 3`, create the Step 4 feature branch or confirm eligible reuse under [Follow-up Cycles Before Merge](#follow-up-cycles-before-merge). A same-cycle transition from one-shot execution may continue its unmerged branch under the [transition rules](docs/workflow/one_shot.md#resumption-and-scope-changes); it still requires the staged planning-only commit.
 - Before this cycle’s planning commit on that branch, organize the plans under the rule above; limit the commit to approved planning documents and its organization allowance.
 - During Step 4, each completed stage must be committed with its Step 4 summary update in the same commit before starting the next stage.
 
-**Plan review**: Plans are working documents. The user may edit the current artifact or request revisions, including a combination of compatible Step 1 options. Recheck tradeoffs and scope after revisions; a revision request is not approval to advance. Do not begin Step 4 until the user explicitly responds `Approved Step 3`. Organize and commit the approved plans under the organization rule above before implementation.
+**Plan review (staged cycles)**: Plans are working documents. The user may edit the current artifact or request revisions, including a combination of compatible Step 1 options. Recheck tradeoffs and scope after revisions; a revision request is not approval to advance. Do not begin Step 4 until the user explicitly responds `Approved Step 3`. Organize and commit the approved plans under the organization rule above before implementation.
 
 **Step 4 commit cadence (mandatory)**:
 - Make one planning commit at the start of Step 4 containing approved plans and only the organization allowance above.
@@ -160,7 +172,7 @@ Preserve prior attribution when revising another agent's work; append `*— Revi
 - Do not squash/rebase/amend stage commits during active Step 4 execution.
 - Expected minimum commit count by end of Step 4: `1 + (# of Step 3 stages)`.
 
-**Documentation-only scope**:
+**Documentation-only scope (staged cycles; one-shot boundaries are recorded before execution in its cycle record)**:
 - Documentation-only work is permitted only when Step 2 names it as the work type and names the allowed documentation file scope; Step 3 must retain that boundary in its Completion Contract.
 - Branching and commit cadence always apply. Documentation-only verification is proportional to the approved artifact: document integrity, evidence, links, and authorized-file-scope checks are required; runtime, UI, deployment, migration, and release checks are not applicable unless the approved documents make a claim that requires one.
 - Do not alter application source, tests, CI, deployment configuration, generated artifacts, or other files outside the approved documentation scope. Return to Step 2/3 for approval if such a change becomes necessary.
@@ -168,11 +180,13 @@ Preserve prior attribution when revising another agent's work; append `*— Revi
 ## Key Rules
 
 **AI coding agent**
+
+Step/phase-specific rules below govern staged cycles; one-shot lifecycle and commit exceptions are defined in its workflow. Shared scope, verification and recovery principles still apply.
 - Recommend Step 1 for complex features or whenever multiple solutions exist
 - Stay in the current step; do not draft/edit later deliverables without approval
 - After delivering each step, explicitly request “Approved Step N” and pause until the user responds with that exact phrase
 - Create separate files for each step only after receiving the relevant approval
-- ALWAYS establish a feature branch before Step 4 implementation; reuse only under [Follow-up Cycles Before Merge](#follow-up-cycles-before-merge)
+- ALWAYS establish a feature branch before Step 4 implementation; reuse only under [Follow-up Cycles Before Merge](#follow-up-cycles-before-merge) or the explicit same-cycle one-shot transition rule
 - Enforce Step 4 commit cadence: first organize and commit approved plans under the organization rule above; each completed stage has a stage-scoped commit that includes the Step 4 summary update
 - Report Step 4 checks as passed, failed, blocked, pending, or inapplicable; a focused pass is never an unqualified full-suite or user-outcome result
 - Treat documentation-only work as a Step 4 implementation only when its allowed documentation file scope was approved in Steps 2 and 3; use applicable verification and record non-applicable runtime checks in the summary
@@ -201,9 +215,13 @@ Completed Step 4 means the approved cycle is complete, not necessarily ready to 
 
 Give each follow-up its own descriptive feature prefix (for example, `search_filters` following `search`) or a unique numbered fallback (`search_cycle2`), independent of branch name. Check for collisions before writing; never overwrite another cycle's artifacts. In the follow-up's first artifact, link the predecessor and record the intended reused branch; inherit this cycle identity into later artifacts and restore it on resumption. Keep the predecessor's completed content intact; record requests and backlinks separately when necessary.
 
-Use fresh approvals for this cycle (Step 1 optional). After `Approved Step 3`, create a new branch or confirm the explicitly requested eligible branch reuse, then organize this cycle's plans and make its own planning commit before implementation. Create its summary afterward. Each cycle retains one planning commit plus at least one stage-scoped commit per stage, with stage-summary updates; prior cycle commits and approvals do not count. Count from this cycle's planning commit, not the branch's creation. Branch reuse does not authorize merging, publishing, or rewriting completed history.
+For a one-shot follow-up, use fresh explicit bounded authorization and its own record/commit rules; branch eligibility and predecessor history requirements above still apply.
+
+For a staged follow-up, use fresh approvals for this cycle (Step 1 optional). After `Approved Step 3`, create a new branch or confirm the explicitly requested eligible branch reuse, then organize this cycle's plans and make its own planning commit before implementation. Create its summary afterward. Each cycle retains one planning commit plus at least one stage-scoped commit per stage, with stage-summary updates; prior cycle commits and approvals do not count. Count from this cycle's planning commit, not the branch's creation. Branch reuse does not authorize merging, publishing, or rewriting completed history.
 
 ## Enhancement Requests
+
+For one-shot cycles, use the consolidated record instead of a step artifact, record actual implementation commit references when available, and apply [one-shot scope-change and transition rules](docs/workflow/one_shot.md#resumption-and-scope-changes) for changed scope. The classification and evidence requirements below apply to both modes.
 
 Record every enhancement request before acting in the current planning artifact or Step 4 summary. Use a concise record: **Request / Disposition and reason / Approval status / Outcome or follow-up link**. Keep deferred and declined requests visible; conversation and commit messages alone are insufficient. An implemented request must identify changes, verification, and its stage commit. Record the commit after creation without amending it; include the reference in the next authorized summary update.
 
@@ -222,5 +240,6 @@ On resumption, recover pending requests, their approval status, and the active c
 - **Step 4**: Missing branch/planning commit/stage commit + summary, scope changes, direct-only behavior, or too few commits
 
 ## Workflows
+- **One-shot**: explicit bounded execution authorization → record intent → implement/verify → record outcome and commit status; see [one-shot instructions](docs/workflow/one_shot.md).
 - **Simple**: Step 2 → Step 3 → Step 4 (create or eligible reuse of feature branch → implement stages → test/commit → complete)
 - **Complex**: Step 1 (solution assessment) → Step 2 → Step 3 → Step 4

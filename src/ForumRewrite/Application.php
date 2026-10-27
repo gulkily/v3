@@ -605,6 +605,7 @@ final class Application
                 $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
+                    position: $query['position'] ?? null,
                 ),
                 200
             );
@@ -832,6 +833,11 @@ final class Application
 
         if ($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') {
             $this->sendHtml($this->toolsPageController()->featureFlags(), 200);
+            return;
+        }
+
+        if ($path === '/tools/operations/' || $path === '/tools/operations') {
+            $this->sendHtml($this->toolsPageController()->operations(), 200);
             return;
         }
 
@@ -2069,7 +2075,7 @@ final class Application
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',

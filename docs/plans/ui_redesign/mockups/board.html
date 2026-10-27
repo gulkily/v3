@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Board · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>2 · Board</h1>
+      <p>The home page and the most visited screen. Its job is to show what is new and make posting one tap away.</p>
+      <p class="doc-files">templates/pages/board.php · partials/thread_card.php · partials/board_pagination_nav.php</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>Tags · All · Liked · Newest · Oldest · Top · New Post</s><span>All | Liked segmented control, a “Newest ▾” sort menu and a Tags link. The New Post button moves to the app bar so it isn’t shown twice.</span></li>
+        <li class="chg"><s>by ilyag (unapproved) on Oct 6, 2026 at 12:37 UTC</s><span>ilyag · Oct 6 · a “Pending” chip. The full UTC timestamp moves to a tooltip and long-press.</span></li>
+        <li class="chg"><s>6 replies</s><span>A reply count in its own column, so you can scan the right edge for busy threads.</span></li>
+        <li class="chg"><s>Start a thread…</s><span>What’s on your mind?</span></li>
+        <li class="chg"><s>PINNED</s><span>A “Pinned” section header with a pin icon, instead of a badge on each pinned row.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>Threads sit in one list separated by hairlines, not a stack of boxed cards. About three times as many threads fit above the fold: 9 rows on desktop instead of 3.</li>
+        <li>Rows show an avatar, the title, a one-line excerpt (only when the body adds something beyond the title), metadata and the count.</li>
+        <li>Today both Liked and Newest render as “pressed” buttons. Filter and sort become two separate controls, so the current view is unambiguous.</li>
+        <li>On phone, the filter row stays on one line and the tab bar replaces the five wrapping nav buttons.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>The quick-compose row opens the full composer (mockup 4) rather than expanding a second, inline copy of the form inside the list.</li>
+        <li>Pagination becomes “Show older threads”, which loads more into the same list. This follows the pagination contract in <code>docs/reference/pagination.md</code>, so the position stays in the URL.</li>
+        <li>An empty Liked view explains itself and offers a way back to All.</li>
+        <li><b>Proposal:</b> show the Pending chip only to the author and to approvers. Today everyone sees “(unapproved)”. This changes access behavior, so it needs a product decision.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/board-desktop.png" alt="Current board on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/board-phone.png" alt="Current board on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Default — signed in, newest first" data-active="board" data-title="Board" data-trail="i:search">
+  <div class="page">
+    <div class="page-head desk-only"><h1>Board</h1></div>
+    <div class="toolbar">
+      <div class="seg"><span aria-pressed="true">All</span><span>Liked</span></div>
+      <span class="select">Newest <i data-i="chevdown" class="sm"></i></span>
+      <span class="grow"></span>
+      <a class="btn plain" href="#"><i data-i="hash" class="sm"></i>Tags</a>
+    </div>
+    <div class="quick-compose hide-phone"><span class="avatar" data-av="ilyag"></span><span class="grow">What’s on your mind?</span><i data-i="image"></i></div>
+    <p class="section-label"><i data-i="pin" class="sm"></i>Pinned</p>
+    <div class="thread-list">
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>The Rules of ZenMemes.com</h3><span class="count">6<span class="faint small">replies</span></span><p class="excerpt">1st Rule: You do not overthink the meme. 2nd Rule: You DO NOT overthink the meme.</p><span class="meta">ilyag · May 26</span></a>
+    </div>
+    <p class="section-label">Latest</p>
+    <div class="thread-list">
+      <a class="thread unread" href="#"><span class="avatar" data-av="ilyag"></span><h3>testing</h3><span class="count"></span><span class="meta">ilyag · Oct 6 <span class="chip warn">Pending</span></span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>Happy Birthday, Google!</h3><span class="count"></span><span class="meta">ilyag · Sep 27</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>On Accessibility</h3><span class="count hot">3</span><span class="meta">ilyag · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="guest"></span><h3>16-bit Intel 8088 chip by Charles Bukowski</h3><span class="count">1</span><span class="meta">guest · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="guest"></span><h3>On Maintaining Relationships…</h3><span class="count hot">4</span><span class="meta">guest · Sep 15</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>claim from mit bitcoin expo talk</h3><span class="count"></span><p class="excerpt">communication should be instant, and near-free.</p><span class="meta">ilyag · Sep 8</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>I got a “load failed” error while submitting a new post, wtf is that?</h3><span class="count"></span><span class="meta">onthebus · Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="chrome"></span><h3>Feature request: repo viewer/search</h3><span class="count hot">3</span><span class="meta">chrome · Sep 6 <span class="chip">feature</span></span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="mouse"></span><h3>Hi, I am a mouse, I like to run and scurry around in the basement.</h3><span class="count">1</span><span class="meta">mouse · Sep 6</span></a>
+    </div>
+    <div class="pager"><span class="btn tinted">Show older threads</span></div>
+  </div>
+</template>
+
+<template data-screen="Liked — empty state · Sort menu open" data-active="board" data-title="Board" data-trail="i:search" data-devices="phone">
+  <div class="page">
+    <div class="toolbar">
+      <div class="seg"><span>All</span><span aria-pressed="true">Liked</span></div>
+      <span class="menu-anchor"><span class="select" style="background:var(--surface-2)">Newest <i data-i="chevdown" class="sm"></i></span>
+        <span class="menu-list" style="position:absolute;left:0;top:calc(100% + 6px);z-index:3;width:180px">
+          <span><i data-i="check" class="sm"></i>Newest</span><span style="padding-left:36px">Oldest</span><span style="padding-left:36px">Top</span>
+        </span>
+      </span>
+    </div>
+    <div class="empty" style="margin-top:120px">
+      <span class="big"><i data-i="heart"></i></span>
+      <h2>No liked threads yet</h2>
+      <p>Threads you like will show up here.</p>
+      <span class="btn tinted">Show all threads</span>
+    </div>
+  </div>
+</template>
+</body>
+</html>

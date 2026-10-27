@@ -53,6 +53,9 @@ try {
     let lastInvitation;
     async function issue(target = '/threads/root-001?from=invite#reply-001', enabled = true) {
       await inviter.page.goto(base + target);
+      // The app shell keeps Invite in the account menu; open it first.
+      const menu = inviter.page.locator('details[data-role="account-menu"]');
+      if (await menu.count()) await menu.locator('summary').click();
       await inviter.page.locator('[data-invite-navigation]').first().click();
       const checkbox = inviter.page.locator('[name=include_destination]');
       assert.equal(await checkbox.isChecked(), false);

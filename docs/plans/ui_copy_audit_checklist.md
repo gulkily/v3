@@ -487,6 +487,17 @@ Reviewed candidates; decisions and verification are recorded above.
 - Targeted PHP and controlled rendered phone/desktop checks passed as recorded above. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and deployment acceptance remain unverified. Changes remain local; origin has advanced and synchronization is still needed before publication.
 - Two further source observations are collected below for later review.
 
+## App shell navigation (ZenMemes) — October 27, 2026
+
+- Cycle [`ui_shell_navigation`](./ui_shell_navigation/ui_shell_navigation_step4_implementation_summary.md) moved ZenMemes to a new shell; Chouse, QDB and MIT Rap Club headers are unchanged. Copy added: "New post" (one button instead of none in the header), "You" for the account menu trigger (accessible name "You, account menu"), and "Account and more" as the menu's navigation label. No destination label changed; About, Tools, Account, Invite and a members-only Profile link moved into the account menu. Icon mappings updated for Word 97, Chicago and Midnight (Messages, Profile, New post, the account trigger).
+- Verification: placement and render tests for guest, unapproved, approved and members-only viewers; existing markup-sensitive smoke tests unchanged and passing; Chrome checks with JavaScript on and off at 1280px and 390px (every guest destination reachable, New post reaches the composer, theme choice persists); all 13 permitted themes plus Auto reviewed with the menu open. Limitations: signed-in viewer states were checked through server-rendered tests, not in a browser session; no physical device.
+- Follow-up for the Board cycle: the board toolbar still has its own "New Post" control beside the shell's New post.
+
+## Board list (ZenMemes) — October 27, 2026
+
+- Cycle 2 of the [UI redesign checklist](./ui_redesign/implementation_checklist.md#cycle-2-ui_board_list), Direct process. Removed: the board's "New Post" link (the shell has New post), "by … on … at HH:MM UTC" bylines (now "author · Oct 6", full UTC time in the date's tooltip), "(unapproved)" (now a "Pending" chip), the "Pinned" badge on each pinned thread (now one "Pinned" section label). Added: "Latest" section label, the sort menu's hidden "Sort by" prefix for screen readers, "Show older threads" / "Newer threads" pager links, and the empty Liked state ("No liked threads yet", "Threads you like will show up here.", "Show all threads"). Chouse, QDB and MIT Rap Club boards unchanged.
+- Verification and limitations are recorded in the redesign checklist entry.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -553,6 +564,18 @@ Verification: `node tests/browser/archive_export_browser.mjs` exercises normal B
 Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
 Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).
 
+## High-traffic toggle — 2026-10-27
+
+- [x] Replaced the separate High-traffic mode card and its full-width “Enable/Disable high-traffic mode” button with one flag-style row beneath the Feature Flags heading: label, existing staleness line, shared switch and on/off state. Shortened the failure text while keeping reload and `./v3 high-traffic restore` visible. No navigation destination or icon change.
+- Verification: `node tests/browser/high_traffic_control.mjs` passed real signed enable/disable, failure and keyboard retry, unauthorized absence, and 13 themes at 375/1150px without clipping or overflow; toolbar counts/search unaffected. Row screenshots inspected for light, dark, Word97, Chicago and Midnight in disabled, enabled and failure states at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](high_traffic_toggle/high_traffic_toggle_step4_implementation_summary.md).
+- [x] Feature Flags toolbar: removed the visible “Search flags” label and “N of N flags shown” line at the user's request. The search input keeps “Search flags” as its accessible name; the count remains a screen-reader-only live region. Toolbar, High-traffic and Fastmod browser tests passed.
+
+## Operations page — 2026-10-27
+
+- [x] Moved High-traffic mode from Feature Flags to a new **Tools › Operations** page (`/tools/operations/`), named for site-serving controls generally. The row reuses the flag-row/switch layout; managers can switch it, others see a disabled switch with the existing read-only hint and no error details. Launcher description: “Control how the site is served, including high-traffic mode.” Teal gear icon in Word97/Chicago/Midnight.
+- Verification: high-traffic browser test passed on the new page (signing, failure/retry, 403, 13 themes at 375/1150px); launcher, subnav and row screenshots inspected in light, dark, Word97, Chicago and Midnight at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](site_operations_page/site_operations_page_step4_implementation_summary.md).
 
 ## Backup feature flags — 2026-10-27
 
