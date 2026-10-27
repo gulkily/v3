@@ -12,11 +12,17 @@ use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
-use Throwable;
+use ForumRewrite\Canonical\{RecordLimits, RecordSizeException, RecordReadException};
+use ForumRewrite\Support\OperationLimitException;
 
 /** Builds a byte-preserving, additive public-content merge without mutating either repository. */
 final class ContentImportPlanner
 {
+    private int $dependencyVisits = 0;
+
+    /** Diagnostic work counter; enables deterministic complexity regression checks. */
+    public function dependencyVisits(): int { return $this->dependencyVisits; }
+
     public static function files(string $root): array
     {
         $paths = [];
@@ -25,7 +31,9 @@ final class ContentImportPlanner
         }
         foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/records', FilesystemIterator::SKIP_DOTS)) as $file) {
             if ($file->isFile() && !$file->isLink()) {
-                $paths[] = substr($file->getPathname(), strlen($root) + 1);
+                $path = substr($file->getPathname(), strlen($root) + 1);
+                if (!mb_check_encoding($path, 'UTF-8')) throw new RuntimeException('Unsupported filename encoding in records/.');
+                $paths[] = $path;
             }
         }
         sort($paths);
@@ -34,6 +42,12 @@ final class ContentImportPlanner
 
     public function plan(string $source, string $destination): array
     {
+        // Local limit violations must fail before tolerant identity/removal discovery.
+        foreach (self::files($destination) as $localPath) {
+            if (ArchiveRecordCatalog::isRecordPath($localPath) || ArchiveRecordCatalog::isSignaturePath($localPath)) {
+                RecordLimits::assertFile($destination . '/' . $localPath);
+            }
+        }
         $removals = \ForumRewrite\Canonical\AcceptedRetraction::removals($destination) + \ForumRewrite\Canonical\LabelRemoval::all($destination);
         $target = [];
         foreach (self::files($destination) as $path) {
@@ -52,8 +66,13 @@ final class ContentImportPlanner
             if (str_starts_with($postPath, 'records/posts/') && ($removals[basename($postPath, '.txt')]['operation'] ?? null) === 'delete') {
                 $entry = [...$entry, 'state' => 'duplicate', 'reason' => 'Source removed locally; structural placeholder retained', 'dependencies' => []];
             }
-            if (str_starts_with($path, 'records/thread-labels/') && $entry['state'] === 'import') {
-                $label = (new CanonicalRecordRepository($source))->loadThreadLabel($path);
+            // Directory membership alone also matches detached signatures. Only
+            // apply record policy to records; companions follow their parent in
+            // dependency propagation below. Keep validation context identical to describe().
+            if (str_starts_with($path, 'records/thread-labels/') && ArchiveRecordCatalog::isRecordPath($path)
+                && $entry['state'] === 'import') {
+                $label = (new CanonicalRecordRepository($source, requireLegacyTimestampMetadata: true,
+                    signatureKeyFallbackRoot: $destination))->loadThreadLabel($path);
                 if ($label->sourcePostId !== null && ($removals[$label->sourcePostId]['operation'] ?? null) === 'delete') {
                     $entry = [...$entry, 'state' => 'excluded', 'reason' => 'Label source was removed locally'];
                 }
@@ -110,11 +129,27 @@ final class ContentImportPlanner
         foreach ($entries as $path => $entry) {
             if ($entry['key'] !== null) { $byKey[$entry['key']] ??= $path; }
         }
-        // Records and their detached signatures are inseparable on conflicts; then
-        // propagate rejected dependencies to a fixed point (bootstrap cycles are valid).
-        do {
-            $changed = false;
-            foreach ($entries as $path => $entry) {
+        // Each rejected entry wakes only its dependents, rather than rescanning
+        // the entire archive for every link in an adversarially ordered chain.
+        $reverse = [];
+        foreach ($entries as $path => $entry) {
+            foreach ($entry['dependencies'] as $dependency) {
+                if (isset($byKey[$dependency])) $reverse[$byKey[$dependency]][$path] = true;
+            }
+            if (isset($entry['record'])) {
+                $reverse[$entry['record']][$path] = true;
+                $reverse[$path][$entry['record']] = true;
+            }
+        }
+        $queue = new \SplQueue();
+        $queued = [];
+        foreach ($entries as $path => $_) { $queue->enqueue($path); $queued[$path] = true; }
+        $this->dependencyVisits = 0;
+        while (!$queue->isEmpty()) {
+                $path = $queue->dequeue(); unset($queued[$path]);
+                if (!isset($entries[$path])) continue;
+                $entry = $entries[$path];
+                $this->dependencyVisits++;
                 if (!in_array($entry['state'], ['import', 'duplicate'], true)) {
                     continue;
                 }
@@ -122,6 +157,7 @@ final class ContentImportPlanner
                 $blockedBy = null;
                 $state = 'invalid';
                 foreach ($entry['dependencies'] as $dependency) {
+                    $this->dependencyVisits++;
                     $sourcePath = $byKey[$dependency] ?? null;
                     if ($sourcePath !== null) {
                         if (!in_array($entries[$sourcePath]['state'], ['import', 'duplicate'], true)) {
@@ -169,16 +205,29 @@ final class ContentImportPlanner
                         $entries[$path]['blocked_by'] = $blockedBy;
                         $entries[$path]['root_cause'] = $entries[$blockedBy]['root_cause'] ?? $blockedBy;
                     }
-                    $changed = true;
+                    foreach ($reverse[$path] ?? [] as $dependent => $_) {
+                        if (!isset($queued[$dependent])) { $queue->enqueue($dependent); $queued[$dependent] = true; }
+                    }
                 }
-            }
-        } while ($changed);
+        }
         return $entries;
+    }
+
+    private static function reason(\Throwable $error): string
+    {
+        $message = $error->getMessage();
+        // A malformed header can be as large as the record; do not retain one
+        // full input-sized exception per rejected entry in the report/journal.
+        return strlen($message) > 1024 ? mb_strcut($message, 0, 1024, 'UTF-8') . ' [truncated]' : $message;
     }
 
     private function describe(string $root, string $path, ?string $keyFallbackRoot = null): array
     {
         $entry = ['state' => 'import', 'reason' => '', 'key' => ArchiveRecordCatalog::pathIdentityKey($path), 'dependencies' => []];
+        if (ArchiveRecordCatalog::isRecordPath($path) || ArchiveRecordCatalog::isSignaturePath($path)) {
+            try { RecordLimits::assertFile($root . '/' . $path); }
+            catch (RecordSizeException $error) { return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)]; }
+        }
         if (preg_match('#^records/(post-retractions|post-retraction-acceptances)/post-retraction-([A-Za-z0-9][A-Za-z0-9._-]*)\.txt(?:\.asc)?$#D', $path, $match)) {
             $id = $match[2];
             try {
@@ -186,17 +235,17 @@ final class ContentImportPlanner
                 $local = $keyFallbackRoot === null ? null : \ForumRewrite\Canonical\AcceptedRetraction::read($keyFallbackRoot, $id);
                 if ($incoming === null || $local === null || $incoming !== $local) throw new RuntimeException('Retraction requires matching local acceptance evidence; imported records grant no authority.');
                 return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local retraction'];
-            } catch (Throwable $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
+            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) { return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)]; }
         }
         if (str_starts_with($path, 'records/post-removals/')) {
             try {
                 $id = basename($path, '.json');
                 $accepted = $keyFallbackRoot === null ? null : \ForumRewrite\Canonical\LabelRemoval::read($keyFallbackRoot, $id);
-                if ($accepted === null || file_get_contents($root . '/' . $path) !== file_get_contents($keyFallbackRoot . '/' . $path)) {
+                if ($accepted === null || RecordLimits::read($root . '/' . $path) !== RecordLimits::read($keyFallbackRoot . '/' . $path)) {
                     throw new RuntimeException('Removal evidence requires existing trusted local acceptance; restore trusted repository history.');
                 }
                 return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local removal evidence'];
-            } catch (Throwable $error) { return [...$entry, 'state' => 'invalid', 'reason' => $error->getMessage()]; }
+            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) { return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)]; }
         }
         if (ArchiveRecordCatalog::isSignaturePath($path) && !ArchiveRecordCatalog::isRecordPath($path)) {
             $record = substr($path, 0, -4);
@@ -222,7 +271,7 @@ final class ContentImportPlanner
         try {
             $repository = new CanonicalRecordRepository($root, requireLegacyTimestampMetadata: true, signatureKeyFallbackRoot: $keyFallbackRoot);
             if (str_starts_with($path, 'records/posts/')) {
-                $contents = (string) file_get_contents($root . '/' . $path);
+                $contents = (string) RecordLimits::read($root . '/' . $path);
                 $post = $repository->loadPost($path); // Includes path and timestamp metadata validation.
                 try {
                     (new PostRecordParser())->parse($contents);
@@ -258,7 +307,7 @@ final class ContentImportPlanner
                 $entry['dependencies'][] = 'post:' . ($record->threadId ?? $record->postId);
                 $author = $record->authorIdentityId;
                 if ($record instanceof \ForumRewrite\Canonical\PostRetractionRecord) {
-                    $contents = (string) file_get_contents($root . '/' . $path);
+                    $contents = (string) RecordLimits::read($root . '/' . $path);
                     if (\ForumRewrite\Security\ReactionSignature::status($root, $path, $contents,
                         $record->signerIdentityId(), $keyFallbackRoot) !== 'verified') {
                         throw new RuntimeException('Imported retractions require a verified actor signature.');
@@ -274,9 +323,9 @@ final class ContentImportPlanner
             if ($entry['key'] === null) {
                 throw new RuntimeException('Unrecognized canonical identity');
             }
-        } catch (Throwable $error) {
+        } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) {
             $entry['state'] = 'invalid';
-            $entry['reason'] = $error->getMessage();
+            $entry['reason'] = self::reason($error);
         }
         return $entry;
     }

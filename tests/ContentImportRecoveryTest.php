@@ -13,7 +13,10 @@ final class ContentImportRecoveryTest
     {
         foreach (['copied', 'staged', 'committed', 'published'] as $failurePhase) {
             $w = new ImportTestWorkspace();
-            $source = $w->repository('source');
+            $source = $w->repository('source', true);
+            $label = $w->signedLabel($source, ['.asc', '.sig']);
+            $signedBytes = [];
+            foreach (['', '.asc', '.sig'] as $suffix) $signedBytes[$suffix] = file_get_contents($source . '/' . $label . $suffix);
             $target = $w->repository('target');
             $w->git($target);
             $bytes = str_replace("Created-At: 2026-04-10T12:00:00Z\n", '', $w->post('root'));
@@ -35,6 +38,7 @@ final class ContentImportRecoveryTest
             $calls = 0;
             $result = (new ContentImportRunner($target, $database))->run(null, static function () use (&$calls): void { $calls++; });
             assertSame('2026-04-10T12:00:00Z', (new \ForumRewrite\Canonical\CanonicalRecordRepository($target))->loadPost('records/posts/root.txt')->createdAt);
+            foreach ($signedBytes as $suffix => $expected) assertSame($expected, file_get_contents($target . '/' . $label . $suffix));
             assertSame(1, $calls);
             assertSame('complete', $result['status']);
             assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));

@@ -261,17 +261,47 @@ pending forum import; it does not retry docs publication.
 
 ## Requirements, limits, and deployment check
 
-Use the application's supported PHP runtime with SQLite, zlib, HTTPS stream
-support/OpenSSL, Git, and `gzip` on `PATH`. The source needs its existing public
-repository download endpoint; no API upgrade or database migration is required.
+Use the application's supported Linux/WSL PHP runtime with SQLite, zlib,
+HTTPS/OpenSSL, PCNTL and POSIX, plus Git, gzip, GPG and `/usr/bin/setsid`.
+Unavailable supervision fails before import writes; this command does not install
+runtime components. Records and `.git` must share a filesystem for atomic installs.
+The source needs its existing public download endpoint; no schema migration is needed.
 
-Transfers allow at most 256 MiB compressed, a 120-second deadline, and five
-validated redirects. Archive validation allows at most 1 GiB expanded and
-100,000 entries; individual canonical records over 16 MiB are reported as invalid
-before parsing. Regular GNU/ustar archives and GNU long filenames are supported;
-links, special files, traversal, multiple repository roots, and unsupported tar
-extensions are rejected before destination changes. These limits are fixed in
-this release; exceeding them is a reported failure, not a truncated import.
+Transfers allow 256 MiB compressed, 120 seconds and five validated redirects.
+Archives allow 1 GiB expanded and 100,000 headers, including ignored directory and
+GNU long-name headers. All names must be valid UTF-8. GNU/ustar and GNU long names
+remain supported; links, special files, traversal, duplicate names, ambiguous roots
+and unsupported extensions fail before extraction.
+
+Canonical text is limited to 16 MiB, signatures and public-key files to 1 MiB,
+and legacy timestamps to 4 KiB; existing stricter metadata limits remain. Limits
+apply to actual reads as well as admission, including indirect/fallback reads.
+Oversized source records and dependent companions are rejected together, while
+independent valid content may proceed. Oversized local files stop the operation
+with their path; do not delete or rewrite signed data just to evade a limit.
+
+The entire invocation, including lock waits and publication, has a 300-second
+budget and up to five seconds for process cleanup. `--time-limit=600`, for example,
+explicitly selects a longer finite budget; it does not raise file/format limits
+or the stricter download/history budgets. Each signature verification has a
+10-second budget and 1 MiB aggregate captured output. Timeout/output exhaustion
+is an operation failure, never evidence that a signature is invalid.
+
+On failure, use the reported stage and path. If no prepared merge is pending,
+correct or reduce the source and retry. With a pending journal, use `--resume`
+with the original destination options and site profile; a finite time override
+may change on resume. The journal resumes without the remote source. A failure
+after promotion may leave offline publication pending until resume finishes.
+Divergent local edits remain protected. Unrelated or unproven Git locks are never
+automatically removed: stop competing Git operations and inspect lock ownership
+before retrying; do not blindly delete `.git/*.lock`.
+
+Hard termination can leave private `/tmp/forum-instance-import-*` download
+workspaces or read-model/offline candidate files. Inspect ownership and confirm
+no import is active before removing a particular abandoned temporary artifact;
+retain `.git/instance-import/` journals and payloads needed by resume. Kernel/device
+failures that prevent a process from exiting require operator intervention; the
+supervisor retains locks when termination is not confirmed.
 
 For a production smoke check, preview a compatible source first and inspect the
 resolved source/destination and exclusions. Import into a disposable destination

@@ -196,10 +196,11 @@
     document.querySelectorAll('[data-private-message-unread]').forEach(function (link) { link.remove(); });
   }
 
-  function refreshNavigation(result, status) {
+  function refreshNavigation(result, status, flagKey) {
+    var messagingChange = flagKey === 'FORUM_PRIVATE_MESSAGES_ENABLED';
     var current = ++navigationGeneration;
     var savedIdentity = identity();
-    if (result.effective_value === 'false') stopMessaging();
+    if (messagingChange && result.effective_value === 'false') stopMessaging();
     return window.fetch('/api/feature_flags/navigation', {
       credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' }
     }).then(function (response) {
@@ -207,10 +208,18 @@
       return response.json();
     }).then(function (state) {
       if (current !== navigationGeneration) return;
-      if (savedIdentity !== identity()) { stopMessaging(); throw new Error('Identity changed'); }
+      if (savedIdentity !== identity()) { if (messagingChange) stopMessaging(); throw new Error('Identity changed'); }
       if (state.status !== 'ok' || typeof state.html !== 'string' || typeof state.messaging_enabled !== 'boolean') {
         throw new Error('Invalid navigation');
       }
+      var toolsNav = document.querySelector('.tools-nav');
+      if (toolsNav && typeof state.tools_html === 'string') {
+        var toolsTemplate = document.createElement('template');
+        toolsTemplate.innerHTML = state.tools_html;
+        var replacement = toolsTemplate.content.querySelector('.tools-nav');
+        if (replacement) toolsNav.replaceWith(replacement);
+      }
+      if (!messagingChange) return;
       var nav = document.querySelector('nav.nav');
       if (!nav) throw new Error('Navigation missing');
       var template = document.createElement('template');
@@ -227,9 +236,9 @@
       }
     }).catch(function () {
       if (current !== navigationGeneration || !status) return;
-      if (savedIdentity !== identity()) stopMessaging();
+      if (messagingChange && savedIdentity !== identity()) stopMessaging();
       var link = document.querySelector('[data-private-message-unread]');
-      if (link) {
+      if (messagingChange && link) {
         link.dataset.unreadState = 'unavailable';
         link.title = 'Unread status unavailable. Reload the page.';
         link.querySelector('#private-message-unread-status').textContent = link.title;
@@ -293,7 +302,7 @@
         }
         refreshFilters();
         if (result.attribution_cutoff_at !== undefined) showAttributionCutoff(result.attribution_cutoff_at, result.effective_value === 'true');
-        if (fields.key === 'FORUM_PRIVATE_MESSAGES_ENABLED') return refreshNavigation(result, status);
+        if (['FORUM_PRIVATE_MESSAGES_ENABLED', 'FORUM_TEXT_BACKUP_ENABLED', 'FORUM_IMAGE_BACKUP_ENABLED'].includes(fields.key)) return refreshNavigation(result, status, fields.key);
       }).catch(function (error) {
         if (status) {
           status.hidden = false;

@@ -289,7 +289,7 @@ final class CanonicalRecordRepository
         if (!is_file($path)) {
             throw new CanonicalRecordParseException('Unable to read canonical record: ' . $relativePath);
         }
-        $contents = file_get_contents($path);
+        $contents = RecordLimits::read($path);
         if ($contents === false) {
             throw new CanonicalRecordParseException('Unable to read canonical record: ' . $relativePath);
         }

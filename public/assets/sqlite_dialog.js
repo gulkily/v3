@@ -32,7 +32,7 @@
       // Let the shell paint before database initialization or query execution.
       requestAnimationFrame(function () {
         setTimeout(function () {
-          if (version !== openVersion || !dialog.open) { return; }
+          if (version !== openVersion || !dialog.open || !root || !root.sqliteViewer) { return; }
           root.sqliteViewer.open({ key: action.dataset.queryKey, sql: action.dataset.querySql });
         }, 0);
       });
