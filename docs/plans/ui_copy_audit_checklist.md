@@ -493,6 +493,11 @@ Reviewed candidates; decisions and verification are recorded above.
 - Verification: placement and render tests for guest, unapproved, approved and members-only viewers; existing markup-sensitive smoke tests unchanged and passing; Chrome checks with JavaScript on and off at 1280px and 390px (every guest destination reachable, New post reaches the composer, theme choice persists); all 13 permitted themes plus Auto reviewed with the menu open. Limitations: signed-in viewer states were checked through server-rendered tests, not in a browser session; no physical device.
 - Follow-up for the Board cycle: the board toolbar still has its own "New Post" control beside the shell's New post.
 
+## Board list (ZenMemes) — October 27, 2026
+
+- Cycle 2 of the [UI redesign checklist](./ui_redesign/implementation_checklist.md#cycle-2-ui_board_list), Direct process. Removed: the board's "New Post" link (the shell has New post), "by … on … at HH:MM UTC" bylines (now "author · Oct 6", full UTC time in the date's tooltip), "(unapproved)" (now a "Pending" chip), the "Pinned" badge on each pinned thread (now one "Pinned" section label). Added: "Latest" section label, the sort menu's hidden "Sort by" prefix for screen readers, "Show older threads" / "Newer threads" pager links, and the empty Liked state ("No liked threads yet", "Threads you like will show up here.", "Show all threads"). Chouse, QDB and MIT Rap Club boards unchanged.
+- Verification and limitations are recorded in the redesign checklist entry.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.

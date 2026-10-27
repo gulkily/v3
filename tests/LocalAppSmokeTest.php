@@ -1959,7 +1959,7 @@ PHP;
         assertSame($board, $threadsIndexNoSlash);
         assertStringContains('href="/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
-        assertStringContains('New Post', $board);
+        assertStringContains('New post', $board);
         assertStringContains('href="/compose/thread"', $board);
         assertStringNotContains('href="/compose/thread">Compose</a>', $board);
         assertStringContains('>Tags</a>', $board);
@@ -2261,7 +2261,7 @@ PHP;
         assertStringNotContains('data-thread-density-option="comfortable"', $board);
         assertStringNotContains('data-thread-density-option="compact"', $board);
         assertStringNotContains('thread-density-menu-popover', $board);
-        assertStringContains('class="card thread-card"', $boardAllThreads);
+        assertStringContains('class="thread-row"', $boardAllThreads);
         assertStringContains('class="card thread-card"', $tagPage);
         assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
@@ -2687,18 +2687,18 @@ PHP;
             $tagPage = $this->render($application, '/tags/bug');
             $thread = $this->render($application, '/threads/root-001');
 
-            assertFingerprintedAsset($board, 'thread_density_toggle.js');
-            assertStringContains('data-role="thread-density-toggle"', $board);
+            assertFingerprintedAsset($tagPage, 'thread_density_toggle.js');
             assertStringContains('data-role="thread-density-toggle"', $tagPage);
+            // ZenMemes' list board is already the dense view, so it has no density toggle.
+            assertStringNotContains('data-role="thread-density-toggle"', $board);
             assertStringNotContains('data-role="thread-density-toggle"', $thread);
-            assertStringContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $board);
             assertStringContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $tagPage);
             assertStringNotContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $thread);
-            assertStringContains('"threadDensityStorageKey":"forum-zenmemes-thread-density"', $board);
-            assertStringContains('data-role="thread-density-menu"', $board);
-            assertStringContains('data-thread-density-option="comfortable"', $board);
-            assertStringContains('data-thread-density-option="compact"', $board);
-            assertStringContains('thread-density-menu-popover', $board);
+            assertStringContains('"threadDensityStorageKey":"forum-zenmemes-thread-density"', $tagPage);
+            assertStringContains('data-role="thread-density-menu"', $tagPage);
+            assertStringContains('data-thread-density-option="comfortable"', $tagPage);
+            assertStringContains('data-thread-density-option="compact"', $tagPage);
+            assertStringContains('thread-density-menu-popover', $tagPage);
         } finally {
             if ($previousFlag === false) {
                 putenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED');
