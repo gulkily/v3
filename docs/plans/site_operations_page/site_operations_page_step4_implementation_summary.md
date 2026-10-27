@@ -31,3 +31,18 @@ Branch: `feat/operations-page`, created from unmerged `feat/high-traffic-toggle`
 - Estimate details: original scope unchanged; no revisions.
 
 *— Claude Code · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Operations icon and visual verification
+
+**Original estimate: 0.07**
+**Retrospective: 0.07**
+
+- Changes: `theme-nav-icons.css` adds a 16px teal gear for `/tools/operations/` on the Tools launcher button and subnavigation, and includes the subnav link in the shared icon sizing list. No layout CSS needed.
+- Verification:
+  - Passed: scratch copy of the browser test (outside the repository) captured the launcher item, Tools subnav and the Operations row in light, dark, Word97, Chicago and Midnight at 375/1150px (30 images), with no horizontal overflow on `/tools/`. Icon inspected at 3× zoom in each icon theme. Light/dark show no icon, as with other destinations.
+  - Correction: the first grey gear (`#404040`) was nearly invisible in Midnight; changed to teal `#008080` and re-verified.
+  - Passed: `node tests/browser/high_traffic_control.mjs` after the icon change.
+- Notes: none.
+- Estimate details: original scope unchanged; the icon colour correction is ordinary correction within the stage.
+
+*— Claude Code · 2026-10-27 UTC · Model: claude-opus-5-5*
