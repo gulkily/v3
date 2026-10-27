@@ -487,6 +487,12 @@ Reviewed candidates; decisions and verification are recorded above.
 - Targeted PHP and controlled rendered phone/desktop checks passed as recorded above. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and deployment acceptance remain unverified. Changes remain local; origin has advanced and synchronization is still needed before publication.
 - Two further source observations are collected below for later review.
 
+## App shell navigation (ZenMemes) — October 27, 2026
+
+- Cycle [`ui_shell_navigation`](./ui_shell_navigation/ui_shell_navigation_step4_implementation_summary.md) moved ZenMemes to a new shell; Chouse, QDB and MIT Rap Club headers are unchanged. Copy added: "New post" (one button instead of none in the header), "You" for the account menu trigger (accessible name "You, account menu"), and "Account and more" as the menu's navigation label. No destination label changed; About, Tools, Account, Invite and a members-only Profile link moved into the account menu. Icon mappings updated for Word 97, Chicago and Midnight (Messages, Profile, New post, the account trigger).
+- Verification: placement and render tests for guest, unapproved, approved and members-only viewers; existing markup-sensitive smoke tests unchanged and passing; Chrome checks with JavaScript on and off at 1280px and 390px (every guest destination reachable, New post reaches the composer, theme choice persists); all 13 permitted themes plus Auto reviewed with the menu open. Limitations: signed-in viewer states were checked through server-rendered tests, not in a browser session; no physical device.
+- Follow-up for the Board cycle: the board toolbar still has its own "New Post" control beside the shell's New post.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -553,6 +559,18 @@ Verification: `node tests/browser/archive_export_browser.mjs` exercises normal B
 Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
 Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).
 
+## High-traffic toggle — 2026-10-27
+
+- [x] Replaced the separate High-traffic mode card and its full-width “Enable/Disable high-traffic mode” button with one flag-style row beneath the Feature Flags heading: label, existing staleness line, shared switch and on/off state. Shortened the failure text while keeping reload and `./v3 high-traffic restore` visible. No navigation destination or icon change.
+- Verification: `node tests/browser/high_traffic_control.mjs` passed real signed enable/disable, failure and keyboard retry, unauthorized absence, and 13 themes at 375/1150px without clipping or overflow; toolbar counts/search unaffected. Row screenshots inspected for light, dark, Word97, Chicago and Midnight in disabled, enabled and failure states at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](high_traffic_toggle/high_traffic_toggle_step4_implementation_summary.md).
+- [x] Feature Flags toolbar: removed the visible “Search flags” label and “N of N flags shown” line at the user's request. The search input keeps “Search flags” as its accessible name; the count remains a screen-reader-only live region. Toolbar, High-traffic and Fastmod browser tests passed.
+
+## Operations page — 2026-10-27
+
+- [x] Moved High-traffic mode from Feature Flags to a new **Tools › Operations** page (`/tools/operations/`), named for site-serving controls generally. The row reuses the flag-row/switch layout; managers can switch it, others see a disabled switch with the existing read-only hint and no error details. Launcher description: “Control how the site is served, including high-traffic mode.” Teal gear icon in Word97/Chicago/Midnight.
+- Verification: high-traffic browser test passed on the new page (signing, failure/retry, 403, 13 themes at 375/1150px); launcher, subnav and row screenshots inspected in light, dark, Word97, Chicago and Midnight at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](site_operations_page/site_operations_page_step4_implementation_summary.md).
 
 ## Backup feature flags — 2026-10-27
 
@@ -583,3 +601,15 @@ Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all
 
 - [x] Expanding the board thread composer or inline reply no longer moves the editor down. Two causes: the logged-in identity status (empty, `hidden`, `data-kind="ok"`) was forced visible with 1rem margin, and the expanded padding top was 1rem against the collapsed 0.8rem. Hidden statuses now stay hidden; expanded top padding matches collapsed. Real identity messages still display.
 - Verification: `board_compose_focus.mjs` and `reply_compose_focus.mjs` now assert equal editor-to-card-top distance collapsed/expanded, failing before the fix; both pass in light, Word97, Chicago and Midnight at 390px/1280px. The touch-phone reply's fixed panel is excluded by design. Inspected light board and Word97 reply desktop screenshots. Status display checked for empty-hidden, info and error states.
+
+## 2026-10-27 — Public profile identity details
+
+- Change: Replaced the misleading “Member activity” destination label with a supplementary username link; the profile now shows its own Threads and Posts. Public key material is initially collapsed, with concise Copy/unavailable/manual-copy recovery states.
+- Verification: Real Chromium HTTP flows with JavaScript on/off; keyboard disclosure and navigation; exact copying and denied-clipboard fallback; independent pagination and invalid-position recovery; 13 permitted themes at 390px and 1280px, initial/expanded/loaded/empty/unavailable states and overflow. Inspected Word97, Chicago and Midnight screenshots. Shared account/access/Forte/source and messaging tests passed.
+- Limits: No physical-device or production deployment verification; zenmemes.com replay remains pending. Full suite not run. No navigation destinations added or renamed, so icon mapping unchanged.
+- Record: [Implementation evidence and host handoff](profile_public_details/profile_public_details_step4_implementation_summary.md).
+
+### Accepted profile navigation refinement — 2026-10-27
+
+- Removed the supplementary “User <username>” link and standalone “User Access” link from the standard profile. Approval now reads “Approved” or “Not approved” with “Approval details” beside it; the existing Tools route and account-keys anchor remain intact. The detail-link text stays together on narrow screens.
+- Verification: Focused profile/access/messaging/core-route checks 16/16 plus private-session/recovery checks 2/2; actual HTTP Chromium flows with JavaScript on/off and 13 themes at phone/desktop widths passed, including expanded/empty/unavailable states and overflow. Reviewed updated phone screenshot. No new navigation destination or icon mapping; production and physical-device checks remain pending.

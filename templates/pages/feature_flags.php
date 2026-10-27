@@ -7,17 +7,6 @@ $flagGroups = $registry->presentationGroups($flags);
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
-<?php if ($canManageFeatureFlags && isset($highTraffic)): ?>
-  <article class="card">
-    <h2>High-traffic mode</h2>
-    <p class="meta">Public pages may be about two minutes old.</p>
-<?php $highTrafficEnabled = ($highTraffic['effective_mode'] ?? '') === 'high-traffic'; ?>
-    <form data-high-traffic-control>
-      <button type="submit" role="switch" aria-checked="<?= $highTrafficEnabled ? 'true' : 'false' ?>" data-enabled="<?= $highTrafficEnabled ? 'true' : 'false' ?>"><?= $highTrafficEnabled ? 'Disable' : 'Enable' ?> high-traffic mode</button>
-      <p role="status" aria-live="polite" data-high-traffic-status<?= empty($highTraffic['error']) ? ' hidden' : '' ?>><?= $e($highTraffic['error'] ?? '') ?></p>
-    </form>
-  </article>
-<?php endif; ?>
   <article class="card">
     <h1>Feature Flags</h1>
     <p class="feature-flags-notice meta">These settings apply to the whole site for all users as soon as you change them.</p>
@@ -25,14 +14,13 @@ $flagGroups = $registry->presentationGroups($flags);
     <div class="feedback feedback-error"><?= $e($siteError) ?></div>
 <?php endif; ?>
     <div class="feature-flags-toolbar" data-feature-flags-toolbar hidden>
-      <label for="feature-flags-search">Search flags</label>
-      <input id="feature-flags-search" type="search" placeholder="Name, key, or description" aria-keyshortcuts="/">
+      <input id="feature-flags-search" type="search" placeholder="Name, key, or description" aria-label="Search flags" aria-keyshortcuts="/">
       <div class="feature-flags-filters" role="group" aria-label="Filter flags by status">
 <?php foreach (['all' => 'All', 'enabled' => 'Enabled', 'overridden' => 'Overridden', 'locked' => 'Locked'] as $status => $label): ?>
         <button type="button" class="feature-flags-chip" data-flag-filter="<?= $e($status) ?>" aria-pressed="<?= $status === 'all' ? 'true' : 'false' ?>"><?= $e($label) ?> <span data-flag-filter-count>0</span></button>
 <?php endforeach; ?>
       </div>
-      <p class="meta" role="status" aria-live="polite" aria-atomic="true" data-feature-flags-results></p>
+      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-feature-flags-results></p>
     </div>
     <p data-feature-flags-empty hidden>No flags match.</p>
 <?php foreach ($flagGroups as $groupKey => $groupFlags): ?>

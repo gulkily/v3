@@ -117,6 +117,10 @@ NODE;
         ];
         $pageData = [
             'profile' => $profile,
+            'profileHistory' => array_fill_keys(['threads', 'posts'], [
+                'total' => 0, 'items' => [], 'error' => null,
+                'pagination' => ['previous_href' => null, 'next_href' => null, 'restart_href' => null],
+            ]),
             'self' => false,
             'identityHint' => '',
             'notice' => null,

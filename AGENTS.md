@@ -10,7 +10,7 @@ Use the project's `Key: value` plain-text format for canonical records and human
 
 ## UI copy
 
-Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Follow the UI verification guidance in `CONTRIBUTING.md`. Track cleanup and verification in `docs/plans/ui_copy_audit_checklist.md`.
+Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Pages must look final on first paint: decide viewer-specific UI in the client before paint so server HTML stays static, and allow post-paint updates only for real state changes (see `CONTRIBUTING.md`). Follow the UI verification guidance in `CONTRIBUTING.md`. Track cleanup and verification in `docs/plans/ui_copy_audit_checklist.md`.
 
 ## Todo
 

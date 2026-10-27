@@ -527,8 +527,8 @@ final class LocalAppSmokeTest
             $board = $this->render($application, '/');
             $authStatus = $this->render($application, '/api/auth_status');
 
-            assertStringContains('Member activity', $profile);
-            assertStringContains('User Access', $profile);
+            assertStringContains('<h2>Threads</h2>', $profile);
+            assertStringContains('Approval details', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);
@@ -823,7 +823,7 @@ PHP;
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
-            assertStringContains('Member activity', $ownProfileAfterClear);
+            assertStringContains('<h2>Threads</h2>', $ownProfileAfterClear);
             assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
@@ -1949,6 +1949,7 @@ PHP;
         $tools = $this->render($application, '/tools/');
         $codebase = $this->render($application, '/tools/codebase/');
         $featureFlags = $this->render($application, '/tools/feature-flags/');
+        $operations = $this->render($application, '/tools/operations/');
         $visitorStatistics = $this->render($application, '/tools/visitor-statistics/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
@@ -2120,6 +2121,8 @@ PHP;
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
+        assertStringContains('tool-launcher-button" href="/tools/operations/"', $tools);
+        assertStringContains('Control how the site is served, including high-traffic mode.', $tools);
         assertStringContains('/tools/visitor-statistics/', $tools);
         assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
         assertStringContains('/forte', $tools);
@@ -2152,6 +2155,15 @@ PHP;
         assertStringContains('Feature Flags', $featureFlags);
         assertStringContains('class="nav"', $featureFlags);
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
+        assertStringNotContains('High-traffic mode', $featureFlags);
+        assertStringContains('<h1>Operations</h1>', $operations);
+        assertStringContains('class="nav-link is-active" href="/tools/operations/"', $operations);
+        assertStringContains('High-traffic mode', $operations);
+        assertStringContains('aria-label="Read-only, requires a root-approved identity to change."', $operations);
+        assertStringNotContains('data-high-traffic-control', $operations);
+        assertStringNotContains('data-high-traffic-status', $operations);
+        assertStringNotContains('high_traffic_control', $operations);
+        assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         assertStringContains('tools-nav-divider', $featureFlags);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $featureFlags);
@@ -2175,8 +2187,8 @@ PHP;
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringNotContains('Identity ID', $profile);
-        assertStringNotContains('Public key', $profile);
-        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
+        assertStringContains('<summary>Public key</summary>', $profile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);
@@ -2544,10 +2556,11 @@ PHP;
             preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
             'Expected to find the root card block.'
         );
-        assertStringNotContains('<p class="meta">', $rootBlockMatch[0]);
+        // Bylines carry data-post-byline, so match the class without the closing bracket.
+        assertStringNotContains('<p class="meta"', $rootBlockMatch[0]);
 
         assertTrue(
-            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
+            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta"[^>]*>(.*?)<\/p>/s', $thread, $metaMatch) === 1,
             'Expected to find the run tail (r2) meta line.'
         );
         assertStringContains('2 replies', $metaMatch[1]);
@@ -2561,7 +2574,7 @@ PHP;
         assertStringContains('4 replies', $separate);
         foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
             assertSame(1, preg_match('/<article id="post-cont-merge-' . $suffix . '"[^>]*>(.*?)<\/article>/s', $separate, $card));
-            assertStringContains('<p class="meta">', $card[1]);
+            assertStringContains('<p class="meta"', $card[1]);
             assertStringContains('post-card-actions', $card[1]);
         }
         unlink($flagPath);
@@ -5062,7 +5075,8 @@ PHP;
             putenv('FORUM_SITE_ID');
         }
 
-        assertStringContains('<p class="eyebrow">zenmemes</p>', $zenmemesBoard);
+        // ZenMemes uses the app shell, whose wordmark links home.
+        assertStringContains('<span class="site-brand__mark" aria-hidden="true"></span>zenmemes</a></p>', $zenmemesBoard);
         assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
         assertStringContains('data-default-theme="auto"', $zenmemesBoard);
         assertStringContains('data-default-theme="chouse"', $chouseBoard);

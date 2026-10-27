@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Post · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>4 · New post</h1>
+      <p>Starting a thread. Write first and decide the details later. A first-time poster should never meet a browser dialog or a wait they didn’t ask for.</p>
+      <p class="doc-files">templates/pages/compose_thread.php · partials/thread_compose_form.php · partials/image_compose_fields.php · partials/compose_action_menu.php · assets/browser_signing.js (identity states)</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>New thread · Body · Create thread</s><span>New post · Title (optional) · Post</span></li>
+        <li class="chg"><s>Subject &amp; tags  general</s><span>A “# general” tag chip in the toolbar. The subject becomes the Title line at the top.</span></li>
+        <li class="chg"><s>Event (disclosure) → Event date / Event time / Event location / Event link</s><span>An “Event” toolbar button that inserts a card with Date, Time, Place and Link.</span></li>
+        <li class="chg"><s>You may be asked to choose a username.</s><span>“Posting as guest · Choose a name”, inline in the composer before you post.</span></li>
+        <li class="chg"><s>Create thread anonymously / Remove timestamps / Clear fields / Save thread to Outbox</s><span>The ··· menu offers Post anonymously, Save to Outbox, Remove timestamps and Discard draft.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>The order follows how people write: Title, then Body, then tools (image, tag, event), then the identity line, then Post.</li>
+        <li>Leaving Title empty keeps today’s behavior: the first line becomes the title. The placeholder previews this (“Title — or we’ll use your first line”).</li>
+        <li>On phone this is a full-screen sheet with Cancel and Post in the header bar, so the keyboard never hides the main action.</li>
+        <li>“Remove unsupported characters” stays a just-in-time inline warning under the affected field. It is a recovery action and must stay visible.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li><b>First post:</b> today the user writes, presses Create thread, gets a native <code>window.prompt("Choose your username:")</code>, then waits for “Generating browser keypair…” and “Publishing your public key…”. This was reported in the thread “First of all new account bootstrapping is unacceptably slow”.</li>
+        <li>New flow: the name field sits in the composer. Key generation starts in the background when the composer opens, so Post only has to sign and send.</li>
+        <li>Offline: Post becomes “Save to Outbox” with one line explaining when it will send. Today Save to Outbox is hidden in a menu, and a failed submit shows “load failed”.</li>
+        <li>Drafts autosave as they do today. Cancel on a non-empty draft asks “Keep draft / Discard”.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/compose-thread-desktop.png" alt="Current new-thread page on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/compose-thread-phone.png" alt="Current new-thread page on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Writing — signed in" data-active="compose" data-phonebar="inline" data-title="New post" data-back="Cancel" data-trail="Post" data-tabbar="none">
+  <div class="page">
+    <div class="page-head desk-only"><h1>New post</h1></div>
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="compose-title typed">Feature request: show when a backup was made</div>
+        <div class="compose-body typed">The backup page should tell me when the backup is from and show me what’s inside before I restore it. Right now I have to guess which file is newest.</div>
+      </div>
+      <div class="compose-tools">
+        <span class="tool"><i data-i="image" class="sm"></i><span class="hide-phone">Image</span></span>
+        <span class="tool on"><i data-i="hash" class="sm"></i>feature</span>
+        <span class="tool"><i data-i="calendar" class="sm"></i><span class="hide-phone">Event</span></span>
+        <span class="grow"></span>
+        <span class="tool"><i data-i="more" class="sm"></i></span>
+      </div>
+    </div>
+    <div class="identity-line"><span class="avatar xs" data-av="ilyag"></span>Posting as <b>ilyag</b><span class="grow" style="flex:1"></span><span class="btn primary desk-only">Post</span></div>
+  </div>
+</template>
+
+<template data-screen="First post as a guest — name inline, key already prepared" data-active="compose" data-phonebar="inline" data-title="New post" data-back="Cancel" data-trail="Post" data-tabbar="none" data-guest data-devices="phone">
+  <div class="page">
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="compose-title">Title — or we’ll use your first line</div>
+        <div class="compose-body typed">Hi, I am a mouse, I like to run and scurry around in the basement.</div>
+      </div>
+      <div class="compose-tools">
+        <span class="tool"><i data-i="image" class="sm"></i></span>
+        <span class="tool on"><i data-i="hash" class="sm"></i>general</span>
+        <span class="tool"><i data-i="calendar" class="sm"></i></span>
+        <span class="grow"></span>
+        <span class="tool"><i data-i="more" class="sm"></i></span>
+      </div>
+    </div>
+    <div class="group">
+      <div class="row"><span class="avatar xs" data-av="mouse"></span><span class="grow"><span class="sub">Post as</span><br><span class="title">mouse</span></span><span class="btn plain">Change</span></div>
+    </div>
+    <p class="hint" style="padding:0 6px">Your name is saved in this browser. Back it up from Account to use it elsewhere.</p>
+  </div>
+</template>
+
+<template data-screen="Event, tag editor and ··· menu" data-active="compose" data-phonebar="inline" data-title="New post" data-back="Cancel" data-trail="Post" data-tabbar="none" data-devices="desktop">
+  <div class="page">
+    <div class="page-head"><h1>New post</h1></div>
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="compose-title typed">MIT Bitcoin Expo meetup</div>
+        <div class="compose-body typed" style="min-height:70px">Who’s going? Let’s grab lunch after the morning talks.</div>
+        <div class="event-card">
+          <div class="field"><label>Date</label><div class="input">Apr 11, 2027</div></div>
+          <div class="field"><label>Time</label><div class="input">12:30 PM</div></div>
+          <div class="field full"><label>Place</label><div class="input">Kresge Auditorium, MIT</div></div>
+          <div class="field full"><label>Link</label><div class="input ph">https://</div></div>
+        </div>
+        <div class="chips"><span class="chip accent"># events <i data-i="x" class="sm"></i></span><span class="chip accent"># bitcoin <i data-i="x" class="sm"></i></span><span class="chip">+ Add tag</span></div>
+      </div>
+      <div class="compose-tools">
+        <span class="tool"><i data-i="image" class="sm"></i>Image</span>
+        <span class="tool on"><i data-i="hash" class="sm"></i>Tags</span>
+        <span class="tool on"><i data-i="calendar" class="sm"></i>Event</span>
+        <span class="grow"></span>
+        <span class="menu-anchor"><span class="tool on"><i data-i="more" class="sm"></i></span>
+          <span class="menu-list" style="position:absolute;right:0;bottom:calc(100% + 6px);z-index:3">
+            <span><i data-i="person" class="sm"></i>Post anonymously</span>
+            <span><i data-i="inbox" class="sm"></i>Save to Outbox</span>
+            <span><i data-i="clock" class="sm"></i>Remove timestamps</span>
+            <hr>
+            <span class="danger"><i data-i="trash" class="sm"></i>Discard draft</span>
+          </span></span>
+      </div>
+    </div>
+    <div class="identity-line"><span class="avatar xs" data-av="ilyag"></span>Posting as <b>ilyag</b><span style="flex:1"></span><span class="btn primary">Post</span></div>
+  </div>
+</template>
+
+<template data-screen="Offline — saves to Outbox" data-active="compose" data-phonebar="inline" data-title="New post" data-back="Cancel" data-trail="Save" data-tabbar="none" data-devices="phone">
+  <div class="page">
+    <div class="status-row warn"><i data-i="offline" class="sm"></i><span class="grow">You’re offline. This post will be saved to your Outbox and sent when you reconnect.</span></div>
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="compose-title typed">The textarea is off screen when I focus it</div>
+        <div class="compose-body typed">On iPhone the reply box scrolls under the keyboard.</div>
+      </div>
+      <div class="compose-tools"><span class="tool"><i data-i="image" class="sm"></i></span><span class="tool on"><i data-i="hash" class="sm"></i>bug</span><span class="tool"><i data-i="calendar" class="sm"></i></span><span class="grow"></span><span class="tool"><i data-i="more" class="sm"></i></span></div>
+    </div>
+  </div>
+</template>
+</body>
+</html>

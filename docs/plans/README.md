@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Profile public details](profile_public_details/)
+
 - [Image backup ZIP](image_backup_zip/)
 
 - [Reusable archive exports](archive_export_contention/)
@@ -38,6 +40,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Documentation publication policy](docs_publication_policy/)
 - [High-traffic absent retractions](high_traffic_absent_retractions/)
+
+- [UI shell and navigation](ui_shell_navigation/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
@@ -310,3 +314,7 @@ and repair its navigation and affected references. See the
 
 - [Backup feature flags](./backup_feature_flags/backup_feature_flags_step1_solution_assessment.md): independent text and image backup controls.
 - [Import archive hardening](./import_archive_hardening/import_archive_hardening_step1_solution_assessment.md) — bounded hostile-input processing and CLI recovery.
+
+- [High-traffic toggle](high_traffic_toggle/) — switch row under the Feature Flags heading.
+
+- [Operations page](site_operations_page/) — Tools › Operations holds high-traffic mode.

@@ -39,6 +39,7 @@ final class TemplateRenderer
         'codebase_state.php' => ['/assets/tool-details.css'],
         'instance.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
+        'operations.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -168,7 +169,7 @@ final class TemplateRenderer
             ]);
         }
 
-        $navItems = $this->navItems($viewerProfile);
+        $navItems = $this->navigationItems($viewerProfile);
         if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')) {
             $scriptPaths = array_merge($scriptPaths, $this->messagingScriptPaths());
         }
@@ -249,6 +250,8 @@ final class TemplateRenderer
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
+            'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
+            'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
         ]);
     }
 
@@ -310,7 +313,7 @@ final class TemplateRenderer
     /** Canonical navigation and dependencies for the current authenticated viewer. */
     public function navigationState(?array $viewerProfile, string $activeSection): array
     {
-        $items = $this->navItems($viewerProfile);
+        $items = $this->navigationItems($viewerProfile);
         $messages = array_values(array_filter($items, static fn (array $item): bool => $item['section'] === 'messages'));
         return [
             'html' => $this->renderFragment('partials/nav.php', ['navItems' => $items, 'activeSection' => $activeSection]),
@@ -332,8 +335,33 @@ final class TemplateRenderer
     }
 
     /**
+     * Navigation items for the viewer. With the `app` navigation slot each
+     * item also carries its placement: `main` (top bar / phone tab bar) or
+     * `menu` (account menu). Other slots return items without placement.
+     *
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string,viewer?:string}>
+     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool,placement?:string}>
+     */
+    public function navigationItems(?array $viewerProfile): array
+    {
+        $items = $this->navItems($viewerProfile);
+        if (PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'navigation') !== 'app') {
+            return $items;
+        }
+
+        $mainSections = ['board', 'profiles', 'messages', 'lobby'];
+        foreach ($items as $index => $item) {
+            // Users is main; a personal profile link (members-only mode) belongs in the account menu.
+            $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
+            $items[$index]['placement'] = in_array($item['section'], $mainSections, true) && $isUsers ? 'main' : 'menu';
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<string, mixed>|null $viewerProfile
+     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool}>
      */
     private function navItems(?array $viewerProfile): array
     {

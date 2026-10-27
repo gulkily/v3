@@ -26,7 +26,8 @@ final class AgentIdentityServiceTest
         $result = $service->ensureReplyAgentIdentity();
         assertSame($homesBefore, count(glob(sys_get_temp_dir() . '/forum-rewrite-agent-gpg-*') ?: []), 'Temporary GPG home should be removed.');
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $profile = $this->renderMethod($application, 'GET', '/profiles/' . $result['profile_slug']);
+        // Username and approval state live on the access-management profile since the member/access split.
+        $profile = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $result['profile_slug']);
         $privateKeyPath = (string) $result['private_key_path'];
 
         assertSame(true, $result['created']);

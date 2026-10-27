@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profile, themed · ZenMemes redesign</title>
+<link rel="stylesheet" href="../mockup.css">
+<link rel="stylesheet" href="zen.css">
+<link rel="stylesheet" href="ma.css">
+<script src="../mockup.js" defer></script>
+</head>
+<body data-skin="ma">
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="../index.html">← All mockups</a>
+      <h1>T3 · Profile, themed</h1>
+      <p>The screen people will screenshot. The page sky becomes the person’s color, their constellation is drawn across the top, and they are a ringed planet.</p>
+      <p class="doc-files">Structure: <a href="../profile.html">06 · Profile</a> · Skin: mockups/zen/zen.css</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="skin-toggle" role="group" aria-label="Skin"><button type="button" data-skin="base">Base</button><button type="button" data-skin="zen">Living Sky</button><button type="button" data-skin="ma">Ma</button></div>
+      <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+    </div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>In Ma</h2>
+      <ul>
+        <li><b>A skyspace</b> (Turrell): the banner is a crisp opening onto light in the person’s color, dark at the top and pale at the horizon.</li>
+        <li>The avatar sits on the edge of the opening, in a paper ring. The name is set in mincho.</li>
+        <li><b>Identities show the key drawn as a flow field</b> (Hobbs), so each key has its own small picture.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What the theme adds</h2>
+      <ul>
+        <li><b>The person’s own sky:</b> nebula in their color behind the whole page.</li>
+        <li><b>Their constellation:</b> a starfield seeded from the person, with lines through its brightest stars, drawn straight onto the sky and fading out.</li>
+        <li><b>A ringed planet avatar</b> at 116px, with a ring in their color. Name in heavy 46px display type.</li>
+        <li><b>Each key has its own small sky</b> under Identities, seeded from its fingerprint, which helps where usernames aren’t unique.</li>
+        <li>Stats sit in glass pills; Message uses the brand gradient.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What it needs from the base</h2>
+      <ul>
+        <li><code>data-sky</code> on the profile page; a <code>.starfield.banner</code> slot and an identity thumbnail slot (both hidden in the base).</li>
+        <li>A seed per person and per key. The mockup seeds from names. <b>Open:</b> whether the person-level sky follows their first approved key (question 3).</li>
+        <li>Drawing is a few lines of client JS into SVG from the seed: no dependency, no network.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Checks</h2>
+      <ul>
+        <li>Sky and constellation are decorative (<code>aria-hidden</code>).</li>
+        <li>The sky is not a backup and encodes nothing; a Starfield backup PNG is a separate, encrypted image.</li>
+        <li>On phone the header centers and Message becomes full width.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<template data-sky="onthebus" data-screen="Someone else’s profile" data-active="users" data-phonebar="inline" data-back="Users" data-trail="i:more">
+  <div class="page">
+    <div class="starfield banner" data-seed="onthebus" data-person="onthebus" data-constellation></div>
+    <div class="profile-head">
+      <span class="avatar lg" data-av="onthebus"></span>
+      <div class="grow">
+        <h1>onthebus</h1>
+        <div class="stats"><span><b>10</b> threads</span><span><b>12</b> posts</span><span class="chip ok">Approved</span></div>
+      </div>
+      <span class="btn primary"><i data-i="message" class="sm"></i>Message</span>
+    </div>
+    <div class="toolbar"><div class="seg"><span aria-pressed="true">Threads</span><span>Replies</span></div></div>
+    <div class="thread-list">
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>I got a “load failed” error while submitting a new post, wtf is that?</h3><span class="count"></span><span class="meta">Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>What would be nice is if the interface looks so good that an observer asks…</h3><span class="count">2</span><span class="meta">Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>The textarea is off screen when I focus it, HORRIBLE</h3><span class="count"></span><span class="meta">Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>First of all new account bootstrapping is unacceptably slow</h3><span class="count">1</span><span class="meta">Sep 6</span></a>
+    </div>
+    <p class="group-title" style="margin:6px 0 -12px 14px">Identities</p>
+    <div class="group">
+      <a class="row" href="#" data-person="onthebus"><span class="starfield thumb" data-seed="4D54F6490320"></span><span class="ic hide-zen"><i data-i="key" class="sm"></i></span><span class="grow"><span class="title mono">4D54 F649 … 0320</span><br><span class="sub">Approved by ilyag · Sep 6</span></span><i data-i="chev" class="chev"></i></a>
+    </div>
+  </div>
+</template>
+
+<template data-sky="ilyag" data-screen="Your own profile" data-active="account" data-phonebar="inline" data-devices="phone">
+  <div class="page">
+    <div class="starfield banner" data-seed="ilyag" data-person="ilyag" data-constellation></div>
+    <div class="profile-head">
+      <span class="avatar lg" data-av="ilyag"></span>
+      <div class="grow">
+        <h1>ilyag</h1>
+        <div class="stats"><span><b>434</b> threads</span><span><b>656</b> posts</span></div>
+      </div>
+    </div>
+    <span class="btn tinted">Edit in Account</span>
+    <div class="toolbar"><div class="seg"><span aria-pressed="true">Threads</span><span>Replies</span></div></div>
+    <div class="thread-list">
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>Happy Birthday, Google!</h3><span class="count"></span><span class="meta">Sep 27</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>On Accessibility</h3><span class="count hot">3</span><span class="meta">Sep 23</span></a>
+    </div>
+  </div>
+</template>
+</body>
+</html>

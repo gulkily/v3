@@ -7415,7 +7415,7 @@ NODE;
 
         assertSame(true, isset($result['timings']['read_model_approval_incremental_update']));
         assertSame(false, isset($result['timings']['read_model_approval_rebuild']));
-        assertStringContains('Approved:</strong> yes', $profilePage);
+        assertStringContains('Approval:</strong> Approved ·', $profilePage);
         assertStringContains('>guest</a>', $profilePage);
     }
 
@@ -7507,7 +7507,7 @@ NODE;
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
         assertSame(true, isset($result['timings']['read_model_approval_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_approval_rebuild_fallback']));
-        assertStringContains('Approved:</strong> yes', $profilePage);
+        assertStringContains('Approval:</strong> Approved ·', $profilePage);
         $this->assertReadModelHealthy($databasePath);
     }
 
