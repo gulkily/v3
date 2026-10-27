@@ -219,3 +219,18 @@
 ### Uncertain assessments
 
 - The maintainer's "Go ahead" answered an offer to add the stage; `AGENTS.md` asks for an explicit `Approved Step N`, so the revision waits for one. Railspike does not say whether such an answer to a specific offer counts.
+
+## 2026-10-27T01:00Z · Step 4 Stage 8 (signature check cache)
+
+### Necessary/useful instructions
+
+- `AGENTS.md` "wait for each required `Approved Step N`": no code was written until the explicit approval, and the plan text it approved fixed the cache's location and boundaries. Retain.
+- Step 3's verification list ("two rebuilds in a row, the second without GPG runs"): led to counting GPG calls with a logging wrapper rather than inferring from timing. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Step 3 said "only finished checks are stored"; implementation found the verifier reports GPG failing to run like a bad signature, so only successes are kept. Treated as a stricter implementation detail and recorded as a deviation, not a return to Step 3.
