@@ -38,7 +38,11 @@ final class ProfileRegressionContract
 
         return [
             'boardPath' => $isQdbExperience ? '/latest' : '/?view=all&sort=newest',
-            'boardMarker' => $card === 'quote' ? 'class="card post-card quote-card"' : 'class="card thread-card"',
+            'boardMarker' => match ($card) {
+                'quote' => 'class="card post-card quote-card"',
+                'list' => 'class="thread-row"',
+                default => 'class="card thread-card"',
+            },
             'navigationMarker' => $navigation === 'qdb' ? '>Welcome</a>' : '>Board</a>',
             'composePath' => $isQdbExperience ? '/add' : '/compose/thread',
             'composeMarker' => $compose === 'qdb' ? 'class="stack qdb-add-page"' : '<h1>New thread</h1>',

@@ -33,6 +33,7 @@ final class TemplateRenderer
         'private_message_list.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
+        'board_list.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'compose_reply.php' => ['/assets/compose.css'],
         'compose_thread.php' => ['/assets/compose.css'],
         'qdb_add.php' => ['/assets/compose.css'],
@@ -538,6 +539,7 @@ final class TemplateRenderer
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
+        $rowMeta = fn (array $record, string $timeField = 'created_at'): string => $this->renderRowMeta($record, $timeField, $e);
         $forteContentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e, true);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
@@ -649,6 +651,31 @@ final class TemplateRenderer
         }
 
         return ($prefix !== '' ? $prefix . ' ' : '') . 'by ' . $authorHtml;
+    }
+
+    /**
+     * Compact list metadata: "author · Oct 6", with a "Pending" chip for an
+     * unapproved author and the full UTC timestamp as the date's tooltip.
+     *
+     * @param callable(mixed): string $escape
+     */
+    private function renderRowMeta(array $record, string $timeField, callable $escape): string
+    {
+        $authorHtml = $this->renderAuthorHtml($record, $escape);
+        $authorHtml = str_replace(' <span class="meta">(unapproved)</span>', '', $authorHtml, $unapproved);
+        $value = trim((string) ($record[$timeField] ?? ''));
+        $parts = [$authorHtml];
+        if ($value !== '') {
+            try {
+                $date = (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'));
+                $short = $date->format($date->format('Y') === gmdate('Y') ? 'M j' : 'M j, Y');
+                $parts[] = '<time datetime="' . $escape($value) . '" title="' . $escape($this->formatFriendlyTimestamp($value)) . '">' . $escape($short) . '</time>';
+            } catch (\Exception) {
+                $parts[] = $escape($value);
+            }
+        }
+
+        return implode(' · ', $parts) . ($unapproved > 0 ? ' <span class="chip chip--pending">Pending</span>' : '');
     }
 
     /**

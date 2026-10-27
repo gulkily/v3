@@ -1,11 +1,11 @@
 (function () {
   "use strict";
-  // The account menu is a native <details>, so it already opens and closes
-  // without this script. This adds the expected menu behavior: Escape and
-  // outside clicks close it. Nested popovers (theme, LCD palette) handle their
-  // own Escape first and mark the event as handled.
+  // The account menu and the board's sort menu are native <details>, so they
+  // already open and close without this script. This adds the expected menu
+  // behavior: Escape and outside clicks close them. Nested popovers (theme,
+  // LCD palette) handle their own Escape first and mark the event as handled.
   function menus() {
-    return document.querySelectorAll("[data-role='account-menu'][open]");
+    return document.querySelectorAll("[data-role='account-menu'][open], [data-role='board-sort'][open]");
   }
 
   document.addEventListener("click", function (event) {

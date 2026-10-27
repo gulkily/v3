@@ -75,13 +75,13 @@ alternatives.
 App shell and navigation. Mockup: `shell.html`. Templates: `templates/layout.php`,
 `templates/partials/nav.php`, `templates/partials/theme_menu.php`.
 
-- [ ] Top bar with three destinations (Board, Users, Messages), one New post, and an account menu.
-- [ ] Rare destinations (Tools, About, Invite, theme choice) move into the account menu.
-- [ ] Phone bottom tab bar with a central compose button; About replaces Messages for guests and unapproved members.
-- [ ] Theme menu as swatches inside the account menu.
-- [ ] Hooks: `data-tab` on navigation items, an empty `aria-hidden` sky layer as the first child of the app shell, an empty `.mark` slot in the wordmark.
-- [ ] Icon themes: tab bar and account menu icons mapped for Word97, Chicago and Midnight.
-- Done when: every page uses the new shell in every theme, with no lost destination.
+- [x] Top bar with three destinations (Board, Users, Messages), one New post, and an account menu.
+- [x] Rare destinations (Tools, About, Invite, theme choice) move into the account menu.
+- [x] Phone bottom tab bar. Shipped in document order (New post not centered) and with About kept in the account menu rather than replacing Messages; see the [Step 4 summary](../ui_shell_navigation/ui_shell_navigation_step4_implementation_summary.md#stage-4---phone-tab-bar).
+- [ ] Theme menu as swatches inside the account menu. The existing theme menu moved into the account menu; swatches were not built.
+- [x] Hooks: `data-tab` on navigation items, an empty `aria-hidden` sky layer as the first child of the app shell, an empty `.site-brand__mark` slot in the wordmark.
+- [x] Icon themes: tab bar and account menu icons mapped for Word97, Chicago and Midnight.
+- Done when: every page uses the new shell in every theme, with no lost destination. **Done 2026-10-27**, merged to `main` (`5ac1432de`).
 
 ### Cycle 2: `ui_board_list`
 
@@ -90,13 +90,23 @@ App shell and navigation. Mockup: `shell.html`. Templates: `templates/layout.php
 Mockup: `board.html`. Templates: `pages/board.php`, `partials/thread_card.php`.
 Depends on cycle 1.
 
-- [ ] Denser thread rows with separate filter (All / Liked) and sort (Newest / Oldest / Top) controls.
-- [ ] Pinned threads grouped above Latest.
-- [ ] Designed empty state for Liked.
-- [ ] "Show older threads" pager.
-- [ ] "(unapproved)" restyled as a "Pending" chip, still shown to everyone (decided 2026-10-26).
-- [ ] Hooks: `--person` on each row (from the author's avatar color), `pinned-list` class, star icon for Like.
+- [x] Denser thread rows with separate filter (All / Liked) and sort (Newest / Oldest / Top) controls.
+- [x] Pinned threads grouped above Latest.
+- [x] Designed empty state for Liked.
+- [x] "Show older threads" pager.
+- [x] "(unapproved)" restyled as a "Pending" chip, still shown to everyone (decided 2026-10-26).
+- [ ] Hooks: `pinned-list` class and an empty `.like-mark` slot on Liked are in; `--person` waits for cycle D4, since no avatar or person color exists yet (decided 2026-10-27).
 - Done when: browsing, filtering, sorting and paging work in all themes.
+
+Built 2026-10-27 on `feat/ui-board-list` as a `boardCard` presentation choice `list` selected only by ZenMemes; Chouse and MIT Rap Club keep the card board, QDB its quote board. Decisions and limits:
+
+- Paging uses the shared native-link pagination (`docs/reference/pagination.md`): 50 latest threads per page, pinned threads on the first page only, "Show older threads" / "Newer threads" links, and First page after an expired or foreign position. It does not load more into the same list.
+- Sort is a native `<details>` menu ("Newest ▾"); filter links and sort items keep `.nav-link[data-nav-key]`, so the icon themes' existing icons apply with no new mapping.
+- The board's own "New Post" link is gone (the shell has New post), matching `ae0ab8859` on `ui/remove-board-new-post`.
+- Rows have no avatars. Excerpts are plain text and skip image references; the quick-compose row is unchanged (composers are cycle 6).
+- The flag-gated thread density toggle is not shown on the list board, which is already the dense view; it stays on tag pages and the card boards.
+- Unchanged: the offline reader's own board rendering, and pending-post insertion after the composer.
+- Verification: `BoardListTest` (paging both ways, pinned placement, recovery, empty Liked, sort menu, Pending chip, image excerpts, other sites unchanged); one full suite run (1594 run, failures limited to five that also fail on `main` plus three board tests since updated and passing); guest JavaScript on/off matrix at 1280px and 390px; all 13 themes plus Auto with the sort menu open on desktop and phone; `board_compose_focus`, `listing_query_dialog`, `nav_active_theme_styles`, `feature_flags_toolbar`, `standard_activity_pagination` pass. `signed_reactions` failed once and passed on rerun; `compose_layout_stability` also fails on `main`. Signed-in viewers and a real Pending author were checked through server-rendered tests, not in a browser.
 
 ### Cycle 3: `ui_thread_reply_dock`
 
