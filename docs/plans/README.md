@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Profile public details](profile_public_details/)
+
 - [Image backup ZIP](image_backup_zip/)
 
 - [Reusable archive exports](archive_export_contention/)

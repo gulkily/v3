@@ -573,3 +573,15 @@ Dependency delta: Zero. No navigation destination/icon, schema, canonical record
 
 Resolution: Preserve upstream instance/admin/snapshot details, recent items, image ZIP link, inline SQLite freshness and compact public-scope copy alongside the new flag-based unavailable state. Image-only mode retains the matching-content requirement. ZIP and legacy TAR remain under one image flag.
 Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all 240 states across six themes and 390/1280 widths; actual ZIP/TAR denial, recovery and icon checks pass. Merged Midnight phone image-only screenshot inspected at /tmp/backup-flags-browser-lBKMAg/backup-01.png. Canonical-order toolbar suite passes. See backup feature-flags implementation summary for 50 passing PHP checks and evidence paths. No new layout/overflow issue observed; full suite, physical devices and deployment remain unverified.
+
+## 2026-10-27 — Public profile identity details
+
+- Change: Replaced the misleading “Member activity” destination label with a supplementary username link; the profile now shows its own Threads and Posts. Public key material is initially collapsed, with concise Copy/unavailable/manual-copy recovery states.
+- Verification: Real Chromium HTTP flows with JavaScript on/off; keyboard disclosure and navigation; exact copying and denied-clipboard fallback; independent pagination and invalid-position recovery; 13 permitted themes at 390px and 1280px, initial/expanded/loaded/empty/unavailable states and overflow. Inspected Word97, Chicago and Midnight screenshots. Shared account/access/Forte/source and messaging tests passed.
+- Limits: No physical-device or production deployment verification; zenmemes.com replay remains pending. Full suite not run. No navigation destinations added or renamed, so icon mapping unchanged.
+- Record: [Implementation evidence and host handoff](profile_public_details/profile_public_details_step4_implementation_summary.md).
+
+### Accepted profile navigation refinement — 2026-10-27
+
+- Removed the supplementary “User <username>” link and standalone “User Access” link from the standard profile. Approval now reads “Approved” or “Not approved” with “Approval details” beside it; the existing Tools route and account-keys anchor remain intact. The detail-link text stays together on narrow screens.
+- Verification: Focused profile/access/messaging/core-route checks 16/16 plus private-session/recovery checks 2/2; actual HTTP Chromium flows with JavaScript on/off and 13 themes at phone/desktop widths passed, including expanded/empty/unavailable states and overflow. Reviewed updated phone screenshot. No new navigation destination or icon mapping; production and physical-device checks remain pending.
