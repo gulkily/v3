@@ -32,6 +32,47 @@ final class FeatureFlagRegistry
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
 
+    /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
+    public const PRESENTATION_ORDER = [
+        'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
+            self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED],
+        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::UNICODE_AUTHORED_TEXT,
+            self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED],
+        'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED],
+        'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED,
+            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED],
+        'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
+        'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
+            self::FASTMOD_AUTOMATIC_TAGGING_ENABLED],
+        'DEDALUS' => [self::DEDALUS_AGENT_REPLIES_ENABLED, self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
+            self::AGENT_RESPONSE_REQUESTS_ENABLED],
+        'LLM' => [self::LLM_CONVERSATION_RECORDING_ENABLED, self::LLM_CONVERSATION_UI_ENABLED],
+    ];
+
+    /** @param list<FeatureFlagState> $flags @return array<string, list<FeatureFlagState>> */
+    public function presentationGroups(array $flags): array
+    {
+        $groups = [];
+        foreach ($flags as $flag) {
+            $groups[$flag->definition->groupKey()][$flag->definition->key] = $flag;
+        }
+        $ordered = [];
+        foreach (self::PRESENTATION_ORDER as $group => $keys) {
+            if (!isset($groups[$group])) continue;
+            $ordered[$group] = [];
+            foreach ($keys as $key) {
+                if (!isset($groups[$group][$key])) continue;
+                $ordered[$group][] = $groups[$group][$key];
+                unset($groups[$group][$key]);
+            }
+            // Keep unexpected entries visible at the end; completeness is enforced by tests.
+            array_push($ordered[$group], ...array_values($groups[$group]));
+            unset($groups[$group]);
+        }
+        foreach ($groups as $group => $entries) $ordered[$group] = array_values($entries);
+        return $ordered;
+    }
+
     /**
      * @return list<FeatureFlagDefinition>
      */
@@ -172,6 +213,7 @@ final class FeatureFlagRegistry
                 false,
                 self::MEDIA_EMBEDS_ENABLED,
                 siteMutable: true,
+                group: 'RENDERING',
             ),
             new FeatureFlagDefinition(
                 self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
@@ -181,6 +223,7 @@ final class FeatureFlagRegistry
                 self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
                 siteMutable: true,
                 requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
+                group: 'RENDERING',
             ),
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,
@@ -215,6 +258,7 @@ final class FeatureFlagRegistry
                 true,
                 self::AGENT_RESPONSE_REQUESTS_ENABLED,
                 'private',
+                group: 'DEDALUS',
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_RECORDING_ENABLED,

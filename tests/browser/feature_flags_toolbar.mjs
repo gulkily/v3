@@ -165,6 +165,36 @@ try {
   assert.equal(await nojs.locator('[data-feature-flags-empty]').isVisible(), false);
   assert.equal(await nojs.locator('[data-feature-flag-row]:visible').count(), 4);
   assert.equal(await nojs.locator('form[method="post"][action="/tools/feature-flags/"]:visible').count(), 3);
+  // Production registry, deliberately reversed before rendering: filters may hide, never reorder.
+  const canonical = await setup(await browser.newContext(), 'canonical');
+  const expectedGroups = ['Access and identity', 'Authored content', 'Forum experience', 'Site rendering',
+    'Backups', 'Fastmod', 'Agent replies', 'LLM exchanges'];
+  assert.deepEqual(await canonical.locator('.feature-flag-group-heading').allTextContents(), expectedGroups);
+  const canonicalKeys = await canonical.locator('[data-flag-key]').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
+  const visibleKeys = () => canonical.locator('[data-flag-key]:visible').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
+  for (const status of ['enabled', 'overridden', 'locked', 'all']) {
+    await canonical.locator(`[data-flag-filter="${status}"]`).click();
+    const visible = await visibleKeys();
+    assert.deepEqual(visible, canonicalKeys.filter(key => visible.includes(key)));
+  }
+  const canonicalSearch = canonical.getByRole('searchbox', { name: 'Search flags' });
+  await canonicalSearch.fill('backup');
+  const matches = await visibleKeys();
+  assert.deepEqual(matches, canonicalKeys.filter(key => matches.includes(key)));
+  await canonicalSearch.fill('no-such-flag-unique');
+  assert.equal(await canonical.getByText('No flags match.', { exact: true }).isVisible(), true);
+  await canonicalSearch.fill('');
+  assert.deepEqual(await visibleKeys(), canonicalKeys);
+  for (const width of [375, 1150]) {
+    await canonical.setViewportSize({ width, height: 800 });
+    for (const theme of ['light', 'dark', 'console', 'word97', 'chicago', 'midnight']) {
+      await canonical.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+      assert.deepEqual(await visibleKeys(), canonicalKeys);
+      assert.equal(await canonical.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `canonical ${theme}/${width}`);
+      await canonical.screenshot({ path: `/tmp/feature-flags-order-${theme}-${width}.png`, fullPage: true });
+    }
+  }
+  console.log('PASS canonical groups/flags from reversed input, stable status/search/empty recovery and 12 real-registry theme/viewport states');
   console.log('PASS toolbar search/status/counts/empty recovery, keyboard, read-only/no-JS, six themes at 375/1150px and sticky banner');
 } finally {
   await browser.close();
