@@ -99,7 +99,7 @@ local_server_report_finish() {
 }
 
 local_server_dependencies_check() {
-  local mode="$1" failed=0 git_ready=1 runtime version_id version binary platform report_fd
+  local mode="$1" failed=0 git_ready=1 runtime version_id version binary extensions platform report_fd
   local missing_php=0 probe_details='' green='' red='' amber='' dim='' cyan='' bold='' reset=''
   local -a recovery=() extension_guidance=()
   local php_series ubuntu_suite php_version_pattern
@@ -153,7 +153,7 @@ local_server_dependencies_check() {
     local_server_report_finish
     return 1
   fi
-  if ! runtime="$(php -r 'echo PHP_VERSION_ID, "\n", PHP_VERSION, "\n", PHP_BINARY;' 2>/dev/null)"; then
+  if ! runtime="$(php -r 'echo PHP_VERSION_ID, "\n", PHP_VERSION, "\n", PHP_BINARY, "\n"; echo (int) class_exists("PDO", false), (int) (class_exists("PDO", false) && in_array("sqlite", PDO::getAvailableDrivers(), true)), (int) extension_loaded("mbstring"), (int) class_exists("Normalizer", false);' 2>/dev/null)"; then
     local_server_dependency_line FAIL 'PHP is on PATH but cannot run' \
       'Check permissions, CLI configuration, and installation; then retry.'
     failed=1
@@ -161,7 +161,7 @@ local_server_dependencies_check() {
     local_server_report_finish
     return 1
   fi
-  { IFS= read -r version_id; IFS= read -r version; IFS= read -r binary || true; } <<<"${runtime}"
+  { IFS= read -r version_id; IFS= read -r version; IFS= read -r binary || true; IFS= read -r extensions || true; } <<<"${runtime}"
   if [[ ! "${version_id}" =~ ^[0-9]{5,6}$ || -z "${binary}" ]]; then
     local_server_dependency_line FAIL 'PHP CLI returned an unreadable runtime identity' \
       'Check CLI configuration and php --version.'
@@ -180,7 +180,17 @@ local_server_dependencies_check() {
   fi
   local_server_dependency_line OK "PHP ${version} (${binary}), minimum 8.1"
   if php_setup_mapping "${platform}"; then
-    extension_guidance+=("$(php_setup_extension_guidance common pdo)" "$(php_setup_extension_guidance sqlite3 pdo_sqlite)" "$(php_setup_extension_guidance mbstring mbstring)" "$(php_setup_extension_guidance intl intl)")
+    # Package verification is only needed for recovery advice. Keep the full
+    # capability probes below, but do not inspect APT/dpkg for usable extensions.
+    local index
+    local -a packages=(common sqlite3 mbstring intl) modules=(pdo pdo_sqlite mbstring intl)
+    for index in 0 1 2 3; do
+      if [[ "${extensions:index:1}" == 1 ]]; then
+        extension_guidance+=("")
+      else
+        extension_guidance+=("$(php_setup_extension_guidance "${packages[index]}" "${modules[index]}")")
+      fi
+    done
   fi
   if [[ "${mode}" == report ]]; then
     # Keep status rows on the original stdout; collect runtime/recovery details in memory.
