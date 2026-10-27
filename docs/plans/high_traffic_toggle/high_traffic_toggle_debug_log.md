@@ -59,3 +59,19 @@
 
 **Uncertain assessments**
 - "Stages ≤1 hour or ≤50 lines": Stage 1 includes a browser-test update whose size may exceed 50 lines of diff; kept as one stage because it is the vertical slice.
+
+## 2026-10-27 — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` Planning Docs Commit Gate: kept the summary and ledger out of the planning commit and made folder organization explicit. Retain.
+- `step4_implementation_after.md` item 7, "Identify reproduced baseline failures": prompted reproducing the two LocalAppSmoke failures at the baseline commit instead of relying on the runner's history. Retain.
+- Stage Boundary Protocol: clear per-stage commit sequence. Retain.
+
+**Redundant/unnecessary instructions**
+- Effort-estimation paragraphs in Step 4 Before/Do/After overlap heavily with RAILSPIKE.md; consolidation would reduce reading for small cycles.
+
+**Inapplicable instructions**
+- Follow-up Cycles Before Merge (new branch); documentation-only checks; blocked/split stage handling.
+
+**Uncertain assessments**
+- Ledger link repair after moving plans into the feature folder: the organization rule asks to repair affected references, while the effort rules exclude the ledger from the planning commit. Repaired in the working tree and committed with closeout.
