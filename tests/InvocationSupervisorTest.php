@@ -4,6 +4,30 @@ require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 require_once __DIR__ . '/Support/ImportHttpServer.php';
 final class InvocationSupervisorTest
 {
+    public function testIncompleteProcessStatsDoNotProduceWarningsOrInventIdentity(): void
+    {
+        $parse = new ReflectionMethod(\ForumRewrite\Support\InvocationSupervisor::class, 'parseStat');
+        $fields = ['S', '42', '43', ...array_fill(0, 16, '0'), '123456'];
+        $valid = "123 (worker ) name\nwith parentheses) " . implode(' ', $fields) . "\n";
+        set_error_handler(static function (int $severity, string $message): never {
+            throw new ErrorException($message, 0, $severity);
+        });
+        try {
+            foreach (['', '123 (worker', '123 (worker) ', '123 (worker) S',
+                '123 (worker) S 42 43', substr($valid, 0, strrpos($valid, ' ')),
+                str_replace('123456', 'invalid', $valid), str_replace('S 42', 'S invalid', $valid),
+                str_replace('42 43', '42 invalid', $valid)] as $raw) {
+                assertSame(null, $parse->invoke(null, $raw));
+            }
+            assertSame(['state' => 'S', 'parent' => 42, 'group' => 43, 'birth' => '123456'], $parse->invoke(null, $valid));
+            $live = $parse->invoke(null, file_get_contents('/proc/self/stat'));
+            assertSame(posix_getppid(), $live['parent']);
+            assertSame(posix_getpgrp(), $live['group']);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     public function testUnexpectedWorkerExitRetainsFailureExitContract(): void
     {
         $w = new ImportTestWorkspace();

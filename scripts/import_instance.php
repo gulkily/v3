@@ -12,6 +12,7 @@ use ForumRewrite\Import\InstanceSourceResolver;
 use ForumRewrite\PresentationPathResolver;
 use ForumRewrite\SiteProfileRegistry;
 
+$startedAt = hrtime(true);
 try {
     $options = importInstanceOptions(array_slice($argv, 1));
     if (isset($options['help'])) { fwrite(STDOUT, importInstanceUsage()); exit(0); }
@@ -21,11 +22,15 @@ try {
     }
     @fwrite(STDOUT, 'Import time limit: ' . $rawLimit . " seconds\n");
     $repository = realpath($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
-    exit(\ForumRewrite\Support\InvocationSupervisor::run(static fn (): int => importInstanceMain($argv), (float) $rawLimit, $repository === false ? null : $repository));
+    $exitCode = \ForumRewrite\Support\InvocationSupervisor::run(static fn (): int => importInstanceMain($argv), (float) $rawLimit, $repository === false ? null : $repository);
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");
-    exit(1);
+    $exitCode = 1;
 }
+// Report after worker and supervisor cleanup, including failures and timeouts.
+// A closed output pipe must not change the import outcome.
+@fwrite(STDOUT, sprintf("Elapsed time: %.2f seconds\n", (hrtime(true) - $startedAt) / 1e9));
+exit($exitCode);
 
 function importInstanceMain(array $argv): int
 {
@@ -90,10 +95,6 @@ try {
     $publisher = new ImportedContentPublisher($projectRoot, $repository, $database, $static, $progress);
     $progress(isset($options['dry-run']) ? 'Previewing content merge...' : 'Importing content and publishing local views...');
     $result = (new ContentImportRunner($repository, $database, progress: $progress, publicationContext: ['static_root' => $static, 'site_profile' => SiteProfileRegistry::active()['name']]))->run($root, $publisher->publishWhileLocked(...), isset($options['dry-run']), $source ?? '', $excluded);
-    $progress(($result['preview'] ? 'Preview' : 'Import') . ' result: ' . $result['status']);
-    foreach ($result['counts'] as $category => $count) {
-        $progress($category . ': ' . $count);
-    }
     foreach ($result['excluded_archive_categories'] as $category => $count) {
         $progress('Excluded archive category ' . $category . ': ' . $count);
     }
@@ -113,10 +114,15 @@ try {
                 . (isset($entry['root_cause']) ? '; root cause: ' . $entry['root_cause'] : ''));
         }
     }
+    $progress($result['media_notice'] ?? 'Image files are not transferred by repository imports.');
+    $progress('');
+    $progress(($result['preview'] ? 'Preview' : 'Import') . ' result: ' . $result['status']);
+    foreach ($result['counts'] as $category => $count) {
+        $progress($category . ': ' . $count);
+    }
     if (isset($result['review_path'])) {
         $progress('Review: ' . $result['review_path'] . '/report.json');
     }
-    $progress($result['media_notice'] ?? 'Image files are not transferred by repository imports.');
     $exitCode = $result['status'] === 'complete' ? 0 : 2;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");

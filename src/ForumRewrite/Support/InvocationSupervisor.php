@@ -126,8 +126,19 @@ final class InvocationSupervisor
     private static function stat(int $pid): ?array
     {
         $raw = @file_get_contents('/proc/' . $pid . '/stat');
-        if ($raw === false) return null;
-        $fields = explode(' ', substr($raw, strrpos($raw, ')') + 2));
+        return $raw === false ? null : self::parseStat($raw);
+    }
+
+    private static function parseStat(string $raw): ?array
+    {
+        // /proc entries can disappear during discovery. An empty or incomplete
+        // read is not process identity evidence and must not become PID/group 0.
+        // comm may itself contain spaces, newlines and closing parentheses.
+        $end = strrpos($raw, ')');
+        if ($end === false || !preg_match('/^[0-9]+ \(/', $raw)) return null;
+        $fields = preg_split('/\s+/', trim(substr($raw, $end + 1)));
+        if (!isset($fields[19]) || !preg_match('/^[A-Za-z]$/D', $fields[0])
+            || !ctype_digit($fields[1]) || !ctype_digit($fields[2]) || !ctype_digit($fields[19])) return null;
         return ['state' => $fields[0], 'parent' => (int) $fields[1], 'group' => (int) $fields[2], 'birth' => $fields[19]];
     }
 
