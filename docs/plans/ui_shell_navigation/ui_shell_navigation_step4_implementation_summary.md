@@ -129,3 +129,24 @@ Branch `feat/ui-shell-navigation`, cut from `ui-redesign-mockups` at `83fba5980`
 - Estimate details: original scope; retrospective above the original because of the race investigation and the phone popover fixes.
 
 *— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Permitted themes
+
+**Original estimate: 0.15**
+**Retrospective: 0.12**
+
+- Changes (all in `public/assets/site.css`; no theme stylesheet needed edits):
+  - New post and the highlighted phone tabs use `:root`-scoped rules so themes' general link colors don't override their text (Word 97 showed navy on navy).
+  - The account menu panel and the phone tab bar layer `--panel` over `--page-bg`, so themes with a translucent or transparent `--panel` (Vapor, Arena) no longer show the page through them; the "New Post" text seen in Arena's menu was the board's own button showing through.
+  - Highlighted phone tabs (active link, open "You") get `--active-ink`, fixing blank or unreadable tabs in Sticker, Arena and Word 97.
+- Verification:
+  - Chrome, all 13 permitted themes plus Auto, account menu open: desktop 1280px and phone 390px (touch) screenshots reviewed as contact sheets; every header control, menu item and tab readable.
+  - Sweep of a thread, tools, users and about in every theme at 1280px and 380px: no horizontal overflow, no page errors, account-menu trigger shows a focus indicator (focus set programmatically; a real keyboard focus ring per theme was not inspected individually). 0 problems.
+  - Gated: `php tests/run.php AppNavigationPlacementTest PrivateMessageFeatureFlagTest` 12/12; baseline header diff identical; `nav_unread_outline` (16 themes) and `nav_active_theme_styles` (16 themes) pass.
+- Notes:
+  - Arena's active nav link renders blank on the old header too (compared on a baseline server); with the app shell, the highlighted Board tab on phones is now readable, but the desktop active link is unchanged and remains a pre-existing Arena issue.
+  - Word 97's decorative separator after the account menu is the theme's own toolbar chrome; left as styled.
+  - Headless Chromium was used rather than headed Chrome; custom scrollbars were not part of these checks.
+- Estimate details: original scope; shared fixes in `site.css` made per-theme edits unnecessary.
+
+*— Claude · 2026-10-27 UTC · Model: claude-opus-5-5*

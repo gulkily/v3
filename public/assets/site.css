@@ -451,7 +451,8 @@ pre {
   flex: 0 1 auto;
 }
 
-.new-post-button {
+/* `:root` outranks themes' general link colors so the button keeps its own ink. */
+:root [data-shell="app"] .new-post-button {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -517,7 +518,8 @@ pre {
   min-width: 14rem;
   padding: 0.6rem;
   border: 1px solid var(--line);
-  background: var(--panel);
+  /* Some themes make --panel translucent; the page color underneath keeps the menu opaque. */
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
 }
 
@@ -565,7 +567,7 @@ pre {
     min-height: var(--app-tabbar-height);
     padding: 0.3rem 0.3rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line);
-    background: var(--panel);
+    background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
   }
 
   [data-shell="app"] .site-header--app .nav {
@@ -594,10 +596,12 @@ pre {
     background: transparent;
   }
 
-  [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
-  [data-shell="app"] .account-menu[open] > .account-menu__trigger {
+  /* `:root` outranks themes' general link colors so the highlighted tab keeps readable ink. */
+  :root [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root [data-shell="app"] .account-menu[open] > .account-menu__trigger {
     border-color: var(--line);
     background: var(--active-bg);
+    color: var(--active-ink);
   }
 
   [data-shell="app"] .site-header--app .new-post-button__label {
