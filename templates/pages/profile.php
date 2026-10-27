@@ -40,5 +40,6 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
     <p><strong>Posts:</strong> <?= (int) $profile['post_count'] ?></p>
     <p><a href="/user/<?= $e($profile['username_token']) ?>">Member activity</a></p>
     <p id="account-keys"><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>#account-keys">User Access</a></p>
+<?= $indent($partial('partials/public_key.php', ['publicKey' => (string) $profile['public_key']]), 2) ?>
   </article>
 </section>

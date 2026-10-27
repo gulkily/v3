@@ -29,3 +29,14 @@ Dependencies: No additions or updates authorized or planned.
 - Notes: SQL bootstrap exclusion follows existing `identity` board-tag semantics (not merely `internal`). No dependencies. Original stage scope/estimate unchanged; no labor measurement.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 2 - Public key on the normal profile
+
+**Original estimate: 0.12**
+**Retrospective stage work: 0.12**
+
+- Changes: Reusable escaped public-key disclosure using existing themed viewer styles; independent public-only copy script with manual-selection recovery. Normal public profile loads it without browser identity/private-key dependencies. Updated obsolete key-absence tests.
+- Verification: ProfilePublicDetailsTest and UserAccessTest 8/8; browser profile_public_details.mjs passed collapsed default, keyboard expansion, exact clipboard text, denied clipboard recovery, no-JS key availability and phone overflow. PHP lint passed.
+- Notes: Stage 1 commit 7cbdd8163. Full theme acceptance remains Stage 5. Original scope/estimate unchanged; no dependencies or measured labor.
+
+*— Codex · 2026-10-27 UTC*

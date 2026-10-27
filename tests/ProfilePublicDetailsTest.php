@@ -86,4 +86,23 @@ final class ProfilePublicDetailsTest
             assertTrue(AuthoredContentRepository::countVisibleIdentity($pdo, $profile['identity_id'], 'posts') >= 0);
         } finally { @unlink($database); }
     }
+
+    public function testPublicKeyIsEscapedCompleteAndCollapsedWithUnavailableRecovery(): void
+    {
+        [$app, $pdo, $database] = $this->environment();
+        try {
+            $profile = $pdo->query('SELECT * FROM profiles LIMIT 1')->fetch();
+            $url = '/profiles/' . $profile['profile_slug'];
+            $html = $this->render($app, $url);
+            assertStringContains('<details class="account-key-advanced" data-public-key-details>', $html);
+            assertStringContains(htmlspecialchars($profile['public_key'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $html);
+            assertFingerprintedAsset($html, 'public_key.js');
+            $pdo->exec("UPDATE profiles SET public_key='<script>not markup</script>'");
+            assertStringContains('&lt;script&gt;not markup&lt;/script&gt;', $this->render($app, $url));
+            $pdo->exec("UPDATE profiles SET public_key=''");
+            $html = $this->render($app, $url);
+            assertStringContains('Public key unavailable.', $html);
+            assertStringNotContains('data-copy-public-key', $html);
+        } finally { @unlink($database); }
+    }
 }
