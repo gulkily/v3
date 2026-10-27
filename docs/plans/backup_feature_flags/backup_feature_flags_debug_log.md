@@ -88,3 +88,43 @@ Suggestion: Consider a short main comparison/plan with linked metadata, or make 
 
 Verification: Source/test inventory and exact R1 hashes checked; plan covers all approved requirements. Local links and diff checked. Runtime tests remain implementation work; no execution or deployment results claimed.
 Outcome: Await Approved Step 3. Planning remains uncommitted; dependency delta zero.
+
+## Step 4 completed report
+
+Timestamp: 2026-10-27T01:33:49Z
+Debug mode: enabled; restored from current implementation summary and debug contract before handoff.
+Approval: Step 3 explicitly approved; four stages complete within Option A scope.
+Final implementation commit: 5480b0ca. Planning 6797de0f; stages 74ff9dc0, d40980d4, 41244f96, 5480b0ca. Each stage contains its summary; this report is a separate log-only handoff commit.
+
+### Necessary/useful instructions
+
+Source: step4_implementation_before.md — planning commit gate and organization.
+Observation: Feature branch/folder and approved plans were committed before the summary or code; accumulated ledger updates remained outside the planning commit and joined closeout.
+Suggestion: Retain the file boundary.
+
+Source: step4_implementation_do.md — normal-flow completion and stage verification.
+Observation: Signed-browser acceptance detected the missing live-navigation trigger after direct server checks passed. Shared SQLite review identified the absent-viewer dialog guard; browser open/close validation and existing dialog suite passed after correction.
+Suggestion: Retain actual-flow verification and explicit recovery requirements.
+
+Source: step4_implementation_after.md — evidence limits and commit cadence.
+Observation: Four stage commits, focused PHP/browser successes and an identically reproduced baseline activity-link assertion failure are separately documented. Full suite/production/physical-device/maintainer acceptance remain unverified.
+Suggestion: Retain evidence distinctions and stage summary requirements.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Source: Step 4 — documentation-only boundaries and migration verification.
+Observation: This is an application feature with no schema/format migration or dependency changes. No migration, package installation or deployment was performed.
+Suggestion: Retain conditional applicability.
+
+### Uncertain assessments
+
+Source: Experimental Effort Estimation — scope ratings.
+Observation: Original cycle 0.40 is preserved; independently judged retrospective 0.45 reflects shared-surface acceptance/corrections. Original/retrospective stage values remain separate, single exposed rater and no measured labor.
+Suggestion: Retain uncertainty; maintainer comfortable-fit judgment is pending.
+
+Verification: Final focused batch 61/61, strengthened backup/behavior 8/8, selected smoke 7/7; final signed backup browser 240 states plus expanded disabled dialog passes; existing listing-query, toolbar, messaging-navigation and archive recovery browser suites pass. Local link/diff/syntax checks pass. Dependency delta zero; todo.txt untouched. Temporary baseline worktree removed after reproducing the existing failure.
+Outcome: Local implementation complete on feat/backup-feature-flags, clean working tree expected after this log commit. No merge, push, deployment, upload, independent outcome or accepted-count increment.
