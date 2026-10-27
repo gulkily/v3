@@ -45,6 +45,16 @@ try {
  const page=await context.newPage();page.on('pageerror',e=>console.error(e));await page.goto(base+'/tools/feature-flags/');await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  const toggle=page.locator('[data-high-traffic-control] button');const status=page.locator('[data-high-traffic-status]');
  assert.equal(await toggle.getAttribute('aria-checked'),'false');
+ const state=page.locator('[data-high-traffic-state]');
+ assert.equal(await state.textContent(),'disabled');
+ assert.equal(await page.locator('[data-high-traffic-control] .switch').count(),1,'high-traffic control uses the shared switch');
+ assert.equal(await page.locator('[data-high-traffic-control][data-feature-flag-row], [data-high-traffic-control] [data-feature-flag-form]').count(),0);
+ const flagRows=await page.locator('[data-feature-flag-row]').count();
+ await page.locator('[data-feature-flags-results]').filter({hasText:`${flagRows} of ${flagRows} flags shown`}).waitFor();
+ await page.fill('#feature-flags-search','no-such-flag-xyz');
+ await page.locator('[data-feature-flags-results]').filter({hasText:`0 of ${flagRows} flags shown`}).waitFor();
+ assert.equal(await toggle.isVisible(),true,'search must not hide the high-traffic row');
+ await page.fill('#feature-flags-search','');
  await verifyLayout('disabled');
  await page.route('**/api/finalize_high_traffic',async route=>{await new Promise(r=>setTimeout(r,250));await route.continue();});
  await toggle.click();await toggle.waitFor({state:'visible'});
@@ -52,6 +62,7 @@ try {
  await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').disabled);
  await page.waitForFunction(()=>document.querySelector('[data-high-traffic-control] button').getAttribute('aria-checked')==='true' || document.querySelector('[data-high-traffic-status]').textContent.includes('CLI recovery'));
  assert.equal(await toggle.getAttribute('aria-checked'),'true',await status.textContent());
+ assert.equal(await state.textContent(),'enabled');
  assert((await readFile(join(root,'public/.htaccess'),'utf8')).includes('BEGIN V3 HIGH TRAFFIC'));
  const shared=await context.newPage();const sharedAuthRequests=[];shared.on('request',r=>{if(/\/api\/(auth_challenge|authenticate_identity)$/.test(new URL(r.url()).pathname))sharedAuthRequests.push(r.url());});await shared.goto(base+'/');await shared.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
  assert.equal(await shared.locator('meta[name="v3-generated-at"]').count(),1);

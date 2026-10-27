@@ -352,6 +352,11 @@
   gap: 0.3rem;
 }
 
+.high-traffic-control {
+  margin-top: 0.9rem;
+}
+
+form.feature-flag-control,
 .feature-flag-control form {
   margin: 0;
   display: flex;

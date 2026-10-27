@@ -10,20 +10,25 @@ foreach ($flags as $flag) {
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
-<?php if ($canManageFeatureFlags && isset($highTraffic)): ?>
-  <article class="card">
-    <h2>High-traffic mode</h2>
-    <p class="meta">Public pages may be about two minutes old.</p>
-<?php $highTrafficEnabled = ($highTraffic['effective_mode'] ?? '') === 'high-traffic'; ?>
-    <form data-high-traffic-control>
-      <button type="submit" role="switch" aria-checked="<?= $highTrafficEnabled ? 'true' : 'false' ?>" data-enabled="<?= $highTrafficEnabled ? 'true' : 'false' ?>"><?= $highTrafficEnabled ? 'Disable' : 'Enable' ?> high-traffic mode</button>
-      <p role="status" aria-live="polite" data-high-traffic-status<?= empty($highTraffic['error']) ? ' hidden' : '' ?>><?= $e($highTraffic['error'] ?? '') ?></p>
-    </form>
-  </article>
-<?php endif; ?>
   <article class="card">
     <h1>Feature Flags</h1>
     <p class="feature-flags-notice meta">These settings apply to the whole site for all users as soon as you change them.</p>
+<?php if ($canManageFeatureFlags && isset($highTraffic)): ?>
+<?php $highTrafficEnabled = ($highTraffic['effective_mode'] ?? '') === 'high-traffic'; ?>
+    <div class="feature-flag-list high-traffic-control">
+      <div class="feature-flag-row" data-high-traffic-control>
+        <div class="feature-flag-info">
+          <div class="feature-flag-name">High-traffic mode</div>
+          <p class="feature-flag-description meta">Public pages may be about two minutes old.</p>
+          <p class="meta" role="status" aria-live="polite" data-high-traffic-status<?= empty($highTraffic['error']) ? ' hidden' : '' ?>><?= $e($highTraffic['error'] ?? '') ?></p>
+        </div>
+        <form class="feature-flag-control">
+          <button type="submit" role="switch" aria-checked="<?= $highTrafficEnabled ? 'true' : 'false' ?>" aria-label="High-traffic mode" class="switch" data-enabled="<?= $highTrafficEnabled ? 'true' : 'false' ?>"></button>
+          <span class="feature-flag-state<?= $highTrafficEnabled ? ' is-on' : '' ?>" data-high-traffic-state><?= $highTrafficEnabled ? 'enabled' : 'disabled' ?></span>
+        </form>
+      </div>
+    </div>
+<?php endif; ?>
 <?php if ($siteError !== null): ?>
     <div class="feedback feedback-error"><?= $e($siteError) ?></div>
 <?php endif; ?>
