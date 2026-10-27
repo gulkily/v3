@@ -51,7 +51,8 @@ async function contextWithIdentity(base, identity) {
 try {
  for(const privateSite of [false,true]) {
   const base=await start(privateSite);
-  const {context,page}=await contextWithIdentity(base,{keys:keysB,fingerprint});
+  for (const staleFingerprint of baseline ? [true] : [true, false]) {
+  const {context,page}=await contextWithIdentity(base,{keys:keysB,fingerprint: staleFingerprint ? fingerprint : fpB});
   await context.addInitScript(fp=>{localStorage.setItem('forum_pki_published_fingerprint',fp.toUpperCase());},fpB);
   // Establish a real session for A through authentication APIs, without visiting Account.
   const challenge=(await (await context.request.get(base+'/api/auth_challenge')).text()).match(/^challenge=([a-f0-9]+)$/m)[1];
@@ -68,7 +69,22 @@ try {
    return {author:prepared.canonical_record.match(/^Author-Identity-ID: (.+)$/m)[1],status:final.status,error:final.error||''};
   }
   const before=await page.evaluate(()=>[localStorage.getItem('forum_pki_public_key'),localStorage.getItem('forum_pki_private_key')]);
-  const first=await issue();
+  let releaseAuthentication;
+  const authenticationGate = new Promise(resolve => { releaseAuthentication = resolve; });
+  let preparedRequests = 0, finalRequests = 0;
+  page.on('request', request => {
+    if (request.url().endsWith('/api/prepare_invitation')) preparedRequests++;
+    if (request.url().endsWith('/api/create_prepared_invitation')) finalRequests++;
+  });
+  if (!baseline) await page.route('**/api/authenticate_identity', async route => { await authenticationGate; await route.continue(); });
+  const firstPending = issue();
+  if (!baseline) {
+    await page.waitForRequest(request => request.url().endsWith('/api/authenticate_identity'));
+    assert.equal(preparedRequests, 0, 'preparation must wait for authentication');
+    assert.equal(await page.locator('[data-invitation-issue-form] button[type=submit]').isDisabled(), true);
+    releaseAuthentication();
+  }
+  const first=await firstPending;
   if (baseline) {
     const second=await issue();
     assert.equal(first.author,'openpgp:'+fingerprint);
@@ -82,10 +98,13 @@ try {
   } else {
     assert.equal(first.status,'ok',first.error);
     assert.equal(first.author,'openpgp:'+fpB);
+    assert.equal(preparedRequests, 1); assert.equal(finalRequests, 1);
   }
   assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('forum_pki_public_key'),localStorage.getItem('forum_pki_private_key')]),before);
   assert.equal(await page.locator('[data-role=invitation-qr]').isVisible(),true);
-  console.log(`PASS ${privateSite?'members-only':'public'}: ${baseline?'baseline exact failure and Account recovery':'first-attempt recovery without Account'}, keys unchanged`);
+  console.log(`PASS ${privateSite?'members-only':'public'}/${staleFingerprint?'stale':'current'} fingerprint: ${baseline?'baseline exact failure and Account recovery':'first-attempt recovery without Account; delayed authentication awaited'}, keys unchanged`);
+  await context.close();
+  }
 
  }
 } finally {await browser.close();if(server)server.kill();await rm(root,{recursive:true,force:true});}

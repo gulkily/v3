@@ -2750,9 +2750,10 @@
 
   async function ensureActionIdentity(root, statusNode, options) {
     const config = options || {};
-    await ensureReadyIdentity(root, statusNode, {
+    return ensureReadyIdentity(root, statusNode, {
       promptForUsername: config.promptForUsername,
       temporaryName: config.temporaryName,
+      existingIdentityOnly: config.existingIdentityOnly === true,
       verifyPublishedIdentity: config.verifyPublishedIdentity === true,
       timing: config.timing || null,
     });

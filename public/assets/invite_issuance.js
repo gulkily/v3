@@ -58,7 +58,13 @@
       throw new Error("Browser signing is unavailable.");
     }
 
-    await signing.ensureActionIdentity(root, feedback);
+    const ready = await signing.ensureActionIdentity(root, feedback, { existingIdentityOnly: true, verifyPublishedIdentity: true });
+    if (ready === false) throw new Error("Your saved key is unavailable. Restore it on Account, then return here and try again.");
+    const auth = window.PrivateSiteAuth;
+    if (!auth || typeof auth.authenticate !== "function") throw new Error("Authentication is unavailable. Reload this page and try again.");
+    const authenticated = await auth.authenticate({ force: true, navigate: false, existingIdentityOnly: true });
+    if (authenticated.status === "not-configured") throw new Error("Your saved key is unavailable. Restore it on Account, then return here and try again.");
+    if (authenticated.status !== "approved") throw new Error("Your current identity is not approved to create invitations. Use Account to restore your approved identity.");
     return signing;
   }
 

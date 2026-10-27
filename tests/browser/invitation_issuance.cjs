@@ -30,9 +30,18 @@ function invitationPage() {
   const state = { failure: '', pause: null, copied: '' };
   let themeChanged;
   const window = { location: { origin: 'https://forum.test' },
+    PrivateSiteAuth: { async authenticate(options) {
+      assert.equal(options.force, true); assert.equal(options.navigate, false); assert.equal(options.existingIdentityOnly, true);
+      if (state.authPause) await state.authPause;
+      return { status: state.authStatus || 'approved', identityId: 'openpgp:test' };
+    } },
     MutationObserver: class { constructor(callback) { themeChanged = callback; } observe() {} },
     ForumBrowserSigning: {
-      async ensureActionIdentity() { if (state.pause) await state.pause; },
+      async ensureActionIdentity(_root, _feedback, options) {
+        assert.equal(options.existingIdentityOnly, true); assert.equal(options.verifyPublishedIdentity, true);
+        if (state.pause) await state.pause;
+        if (state.missingKey) return false;
+      },
       async signCanonicalRecord() { if (state.failure === 'sign') throw Error('sign failed'); return 'signature'; }
     } };
   const sandbox = { window, document, crypto: webcrypto, TextEncoder, URLSearchParams,
@@ -60,6 +69,26 @@ function invitationPage() {
 }
 
 async function main() {
+  for (const problem of ['missing', 'pending', 'not-configured', 'helper']) {
+    const blocked = invitationPage();
+    if (problem === 'missing') blocked.state.missingKey = true;
+    else if (problem === 'helper') delete blocked.window.PrivateSiteAuth;
+    else blocked.state.authStatus = problem;
+    await blocked.issue();
+    assert.equal(blocked.calls.length, 0, problem);
+    assert.equal(blocked.result.hidden, true);
+    assert.equal(blocked.submit.disabled, false);
+    assert.match(blocked.feedback.textContent, /Account|Reload/);
+  }
+  const authenticating = invitationPage();
+  let authenticated;
+  authenticating.state.authPause = new Promise(resolve => { authenticated = resolve; });
+  const action = authenticating.issue();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(authenticating.calls.length, 0);
+  assert.equal(authenticating.submit.disabled, true);
+  authenticated(); await action;
+  assert.equal(authenticating.calls.length, 2);
   const page = invitationPage();
   assert.equal(page.qr.hidden, true);
   await page.issue();

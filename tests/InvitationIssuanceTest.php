@@ -254,6 +254,7 @@ async function issue(finalStatus, storageUnavailable) {
   const context = {
     window: {
       location: { origin: 'https://forum.test' }, localStorage: storage,
+      PrivateSiteAuth: { async authenticate() { return { status: 'approved', identityId: 'openpgp:test' }; } },
       ForumBrowserSigning: { async ensureActionIdentity() {}, async signCanonicalRecord() { return 'signature'; } }
     },
     document,
