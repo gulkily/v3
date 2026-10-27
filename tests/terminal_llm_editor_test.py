@@ -29,6 +29,10 @@ count=int((p/'count').read_text()) if (p/'count').exists() else 0
 (p/'count').write_text(str(count+1))
 answers=(p/'answers').read_text().splitlines()
 answer=answers[count] if count<len(answers) else 'CANCEL'
+if answer=='CONFLICT':
+    config=Path(os.environ['FORUM_SECRETS_PATH'])
+    config.write_text(config.read_text().replace("'preserved'", "'external'"))
+    answer=''
 if answer=='CANCEL': sys.exit(1)
 os.write(3, answer.encode())
 ''')
@@ -60,3 +64,13 @@ assert "'LLM_TIMEOUT_SECONDS' => 99" in saved
 saved, log = run_editor(['LLM_API_KEY', '', 'CANCEL'])
 assert saved == CONFIG
 print('PASS: current values/sources, cancel, preserve unrelated/secret/timeout, locks, validation correction, blank secret')
+
+saved, log = run_editor(['LLM_MODEL', 'after-conflict', 'review', 'CONFLICT', '', 'review', '', 'CANCEL'])
+assert "'LLM_MODEL' => 'after-conflict'" in saved and "'UNRELATED' => 'external'" in saved
+assert 'Configuration changed; review again.' in log
+saved, log = run_editor(['LLM_API_KEY', 'replacement-secret', 'review', '', 'CANCEL'])
+assert 'replacement-secret' in saved and 'replacement-secret' not in log
+assert '(replacement)' in log
+saved, log = run_editor(['preset', 'stub', 'review', '', 'CANCEL'])
+assert "'LLM_PROVIDER' => 'stub'" in saved and "'LLM_TIMEOUT_SECONDS' => 137" in saved
+print('PASS: conflict reload/re-review, replacement-secret redaction, deliberate preset')

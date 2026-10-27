@@ -42,7 +42,8 @@ function editorSave(array $request): array
 
 $path = getenv('FORUM_SECRETS_PATH') ?: dirname(__DIR__, 2) . '/forum-private/secrets.php';
 try {
-    $file = PrivateConfig::fileValues($path);
+    $snapshot = PrivateConfig::snapshot($path);
+    $file = $snapshot['file'];
     $resolved = PrivateConfigSchema::resolve($file);
     $before = array_map(static fn (array $field): mixed => $field['value'], $resolved);
     $locked = PrivateConfigSchema::lockedLlmKeys($file);
@@ -100,37 +101,45 @@ try {
         if ($choice !== 'review') {
             continue;
         }
-        // Normalize unchanged input before comparing; a blank key is never a deletion.
-        foreach ($draft as $key => $value) {
-            if ((string) $value === (string) $before[$key]) {
-                unset($draft[$key]);
-            }
-        }
-        $after = array_replace($before, $draft);
-        $errors = PrivateConfigSchema::validateLlmConnection($after);
-        if ($errors !== []) {
-            editorDialog('--msgbox', implode("\n", $errors));
+        $update = PrivateConfigSchema::llmUpdate($file, $draft);
+        if ($update['errors'] !== []) {
+            editorDialog('--msgbox', implode("\n", $update['errors']));
             continue;
         }
-        $diff = PrivateConfigSchema::redactedLlmDiff($before, $after);
+        $draft = $update['values'];
+        $diff = $update['diff'];
         if ($diff === []) {
             editorDialog('--msgbox', 'No changes.');
             continue;
         }
         $review = '';
         foreach ($diff as $key => $change) {
-            $review .= $key . ': ' . editorText($change['before']) . ' → ' . editorText($change['after']) . "\n";
+            $review .= $key . ': ' . editorText($change['before']) . ' → ' . editorText($change['after']) . ($key === 'LLM_API_KEY' ? ' (replacement)' : '') . "\n";
         }
         if (editorDialog('--yesno', $review, [], 'Save LLM changes?') === null) {
             continue;
         }
-        [$code, $output] = editorSave(['values' => $draft]);
+        [$code, $output] = editorSave(['values' => $draft, 'expected_revision' => $snapshot['revision']]);
+        if ($code === 3) {
+            $snapshot = PrivateConfig::snapshot($path);
+            $file = $snapshot['file'];
+            $resolved = PrivateConfigSchema::resolve($file);
+            $before = array_map(static fn (array $field): mixed => $field['value'], $resolved);
+            $locked = PrivateConfigSchema::lockedLlmKeys($file);
+            unset($draft['LLM_API_KEY']);
+            foreach ($locked as $key) {
+                unset($draft[$key]);
+            }
+            editorDialog('--msgbox', "Configuration changed; review again.\nNon-secret draft retained; locked fields refreshed. Re-enter any replacement key.");
+            continue;
+        }
         if ($code !== 0) {
             editorDialog('--msgbox', editorText($output) . "\nCorrect the draft or cancel; no partial save.");
             continue;
         }
         // The current-value menu itself shows the successful result.
-        $file = PrivateConfig::fileValues($path);
+        $snapshot = PrivateConfig::snapshot($path);
+        $file = $snapshot['file'];
         $resolved = PrivateConfigSchema::resolve($file);
         $before = array_map(static fn (array $field): mixed => $field['value'], $resolved);
         $locked = PrivateConfigSchema::lockedLlmKeys($file);

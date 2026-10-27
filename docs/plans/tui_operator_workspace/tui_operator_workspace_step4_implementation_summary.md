@@ -52,3 +52,13 @@ Boundary: No dependency/schema changes, deployment or todo.txt edits. Stage comm
 - Notes: Stage 3 commit f3125f4ff. Stage 5 adds coordinated stale-review protection before release; current saves still use the established stdin writer. Original estimate unchanged; dependency delta zero.
 
 *— Codex · 2026-10-27 UTC*
+
+## Stage 5 - Review and save the exact change safely
+**Original estimate: 0.18**
+**Retrospective stage work: 0.18**
+
+- Changes: Shared schema update policy validates and normalizes preview/save, including real redacted differences and explicit secret replacement. Config snapshot binds file bytes and effective LLM sources/values; save rechecks before replacement. Persistent private sidecar lock coordinates writer/edit/refresh operations with a three-second busy response. Conflicts reload sources, retain non-secret unlocked drafts and require review again. No-op leaves bytes unchanged; temporary files are private from creation and failed writes/renames clean up.
+- Verification: Config/schema PHP checks 12/12; editor regression passed deliberate presets, replacement-key redaction and concurrent edit/re-review preserving external unrelated changes. Writer regression passed no-op, invalid/unsupported input, file/environment conflicts, bounded lock contention, permissions, legacy stdin compatibility and failed rename cleanup. PHP syntax passed.
+- Notes: Stage 4 commit 5ce25b1e5. An uncooperative external writer can still race after the final check; coordinated project writers are serialized. No new dependency/schema or secret-bearing argument/log. Original estimate unchanged; remote/real-terminal integrated acceptance remains S6.
+
+*— Codex · 2026-10-27 UTC*
