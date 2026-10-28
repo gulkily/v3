@@ -101,9 +101,8 @@ final class ActivityService
         if (!in_array($direction, ['next', 'previous'], true)) throw new \InvalidArgumentException('This page position is invalid.');
         // Source-less local events have no canonical key. Never silently use
         // an old local row id after those events are changed or re-indexed.
-        $localRows = $this->pdo()->query('SELECT id, created_at, kind, post_id, thread_id, label, author_identity_id
-            FROM activity WHERE action_key IS NULL ORDER BY id')->fetchAll();
-        $localRevision = $localRows === [] ? '' : hash('sha256', json_encode($localRows, JSON_THROW_ON_ERROR));
+        $local = $this->pdo()->query('SELECT events, revision FROM activity_local_state WHERE singleton = 1')->fetch(PDO::FETCH_ASSOC);
+        $localRevision = (int) $local['events'] === 0 ? '' : (string) $local['revision'];
         if ($position !== null) {
             if (!isset($position['created_at'], $position['action_key']) || !is_string($position['created_at'])
                 || !is_string($position['action_key']) || $position['created_at'] === '' || $position['action_key'] === ''

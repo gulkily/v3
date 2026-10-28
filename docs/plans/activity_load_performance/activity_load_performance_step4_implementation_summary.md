@@ -39,3 +39,13 @@ Baseline data-layer p95: standard 7.457 ms, Forte 5.018 ms, detail 4.921 ms; 851
 - Notes: Stage 2 commit d372c401a. No reader switch yet. Full signed/identity/retraction acceptance continues in Stage 7.
 
 *— Codex · 2026-10-28 UTC*
+
+## Stage 4 - Transactional counts and positions
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes: Schema 33 adds maintained totals with/without profile-name events, commit totals, a source-less cursor revision, and standard/Forte ordering indexes. Triggers cover all Activity writers and post visibility changes; standard pagination no longer reads/hashes every source-less event. Count read switch remains Stage 6.
+- Verification: Projection/schema checks 7/7; standard navigation suite 11/11. Membership parity covers malformed/scalar/case-varied tags, feature-name variants, direct inserts/updates/deletes and post hide/retract/delete. Prior schema 32 startup rebuilds missing counters; actual CLI rebuild on the bulk fixture passed.
+- Notes: Stage 3 commit 307cb5633. Trigger maintenance is within the same transaction as mutations; no new worker or configuration. Schema inventory assertion updated for new objects.
+
+*— Codex · 2026-10-28 UTC*

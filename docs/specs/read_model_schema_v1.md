@@ -40,6 +40,14 @@ order is immaterial.
 
 ## Core read-model tables
 
+Version 33 adds `activity_counts` (view, total, without_profile_names) and
+`activity_local_state` (singleton, events, revision). SQL triggers maintain counts
+on every Activity writer and target-post visibility change, plus commit totals.
+Local-event mutations advance a cursor token transactionally; canonical-only
+changes do not. Standard paging reads that token instead of hashing local history.
+Activity indexes cover the standard date/coalesced-key order and Forte date,
+kind and label/action-key/id orders. Schema-32 startup rebuild is required.
+
 Version 32 adds compact `activity.evidence_json`: an internal tuple of signature path/status and relevant-file tuples (path, status, previous path, role, signer, key path, key status). No rendered HTML, deleted prose or full commit manifests are stored. NULL means indexing is incomplete; a partial pending index and source-field triggers mark affected evidence for write-time refresh. Source-less events receive explicit empty evidence. Startup rebuilds version 31 before querying the new projection.
 
 Version 31 adds the public identity-history query contract (no new tables):

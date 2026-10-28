@@ -145,6 +145,7 @@ final class ReadModelSchema
                 PRIMARY KEY (record_family, target_id, author_identity_id, tag)
             )',
             'CREATE INDEX viewer_tags_identity_idx ON viewer_tags (author_identity_id, record_family, tag, target_id)',
+            ...ActivityCounterSchema::statements(),
         ];
     }
 

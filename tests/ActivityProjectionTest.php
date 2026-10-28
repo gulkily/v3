@@ -56,6 +56,55 @@ final class ActivityProjectionTest
         } finally { $fixture->remove(); }
     }
 
+    public function testCountersMatchLegacyMembershipAcrossDirectWritesAndVisibility(): void
+    {
+        $fixture = new RebuildHistoryFixture(1, 1);
+        try {
+            $db = $fixture->root . '/model.sqlite';
+            (new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository)))->rebuild();
+            $pdo = new PDO('sqlite:' . $db, null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+            $check = function () use ($pdo, $fixture, $db): void {
+                foreach ([false, true] as $names) {
+                    $service = new ActivityService(static fn (): PDO => $pdo, $fixture->repository, $db, $names, static fn (): bool => true);
+                    foreach (['all','content','identity','bootstrap','approval','security'] as $view) {
+                        $stmt = $pdo->prepare('SELECT ' . ($names ? 'total' : 'without_profile_names') . ' FROM activity_counts WHERE view=?');
+                        $stmt->execute([$view]);
+                        assertSame($service->countActivityViewTotal($view), (int) $stmt->fetchColumn(), $view);
+                    }
+                }
+            };
+            $check();
+            $insert = $pdo->prepare("INSERT INTO activity(created_at,kind,record_family,label,board_tags_json,author_label,post_id) VALUES ('now','approval',?,'test',?,'guest','root-001')");
+            foreach (['[]','["identity","approval"]','["identity","internal"]','["IDENTITY"]','"identity"','broken'] as $tags) {
+                $insert->execute(['profile_name', $tags]);
+                $insert->execute(['post', $tags]);
+            }
+            $check();
+            $pdo->exec("UPDATE posts SET is_hidden=1 WHERE post_id='root-001'"); $check();
+            $pdo->exec("UPDATE posts SET is_hidden=0, retracted_at='now' WHERE post_id='root-001'"); $check();
+            $pdo->exec("DELETE FROM posts WHERE post_id='root-001'"); $check();
+            $pdo->exec("UPDATE activity SET kind='test',board_tags_json='[]' WHERE kind='approval'"); $check();
+            $pdo->exec('DELETE FROM activity WHERE action_key IS NULL'); $check();
+            assertSame(0, (int) $pdo->query('SELECT events FROM activity_local_state')->fetchColumn());
+        } finally { $fixture->remove(); }
+    }
+
+    public function testSchema32StartupRecoversCountersBeforePaging(): void
+    {
+        $fixture = new RebuildHistoryFixture(0);
+        try {
+            $db = $fixture->root . '/model.sqlite';
+            (new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository)))->rebuild();
+            $pdo = new PDO('sqlite:' . $db);
+            foreach ($pdo->query("SELECT name FROM sqlite_master WHERE type='trigger' AND name NOT LIKE 'activity_evidence_%'")->fetchAll(PDO::FETCH_COLUMN) as $name) $pdo->exec('DROP TRIGGER ' . $name);
+            $pdo->exec("DROP TABLE activity_counts; DROP TABLE activity_local_state; UPDATE metadata SET value='32' WHERE key='schema_version'");
+            ob_start();
+            try { (new Application(dirname(__DIR__), $fixture->repository, $db))->handle('GET', '/activity/'); }
+            finally { ob_end_clean(); }
+            assertSame((int) $pdo->query('SELECT COUNT(*) FROM activity')->fetchColumn(), (int) $pdo->query("SELECT total FROM activity_counts WHERE view='all'")->fetchColumn());
+        } finally { $fixture->remove(); }
+    }
+
     public function testPriorSchemaStartupRebuildsBeforeActivityQuery(): void
     {
         $fixture = new RebuildHistoryFixture(0);
