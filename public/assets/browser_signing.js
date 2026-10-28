@@ -2613,7 +2613,7 @@
       if (config.existingIdentityOnly === true) {
         return false;
       }
-      setStatus(statusNode, "Generating browser keypair...", "info");
+      setStatus(statusNode, "Creating your account…", "info");
       await generateBrowserKey(root, config.temporaryName || "", timing);
     }
 
@@ -2634,7 +2634,7 @@
     }
 
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
-      setStatus(statusNode, "Publishing your public key in the background...", "info");
+      setStatus(statusNode, "Creating your account…", "info");
       await publishPublicKeyWithRetry(root, timing);
     } else if (verifyPublishedIdentity && !(await serverKnowsCurrentIdentity(fingerprint))) {
       setStatus(statusNode, "Finishing browser identity setup...", "info");
@@ -2668,7 +2668,7 @@
     }
 
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
-      setStatus(statusNode, "Publishing your public key in the background...", "info");
+      setStatus(statusNode, "Creating your account…", "info");
       await publishPublicKeyWithRetry(root, timing);
     } else if (verifyPublishedIdentity && !(await serverKnowsCurrentIdentity(fingerprint))) {
       setStatus(statusNode, "Finishing browser identity setup...", "info");
@@ -2771,8 +2771,21 @@
     }
   }
 
+  // A failed key creation or registration, reported beside the action with Retry; the cause stays in the details.
+  function accountCreationFailure(error) {
+    const failure = new Error("Couldn't create your account.");
+    const status = statusFromError(error, "Unable to prepare your browser identity.");
+    failure.technicalDetails = [status.message, status.technicalDetails].filter(Boolean).join(" ");
+    failure.accountCreationFailure = true;
+    return failure;
+  }
+
   async function ensureComposeIdentity(root, statusNode, timing) {
-    await ensureActionIdentity(root, statusNode, { timing: timing });
+    try {
+      await ensureActionIdentity(root, statusNode, { timing: timing });
+    } catch (error) {
+      throw accountCreationFailure(error);
+    }
   }
 
   async function ensureActionIdentity(root, statusNode, options) {
@@ -2801,6 +2814,7 @@
       scheduleIdentityPrewarm: scheduleIdentityPrewarm,
       scheduleAutomaticGuestIdentity: scheduleAutomaticGuestIdentity,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
+      accountCreationFailure: accountCreationFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
       deriveIdentityFromPrivateKey: deriveIdentityFromPrivateKey,
@@ -3760,7 +3774,13 @@
         card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
         prepare: async function (captured, attachment, description) {
           let fields = Object.assign({}, captured);
-          await ensureActionIdentity(null, null);
+          try {
+            await ensureActionIdentity(null, isRegisteredIdentity() ? null : statusNode);
+          } catch (error) {
+            throw accountCreationFailure(error);
+          } finally {
+            if (statusNode && statusNode.dataset.kind === "info") setStatus(statusNode, "", "ok");
+          }
           const identity = currentAuthorIdentityId();
           if (fields.author_identity_id && fields.author_identity_id !== identity) throw new Error("The signing identity changed. Restore that identity and retry.");
           fields.author_identity_id = identity;
@@ -3919,6 +3939,18 @@
           "error",
           { technicalDetails: status.technicalDetails }
         );
+        if (error && error.accountCreationFailure && statusNode) {
+          // Retry posts the same draft again; registration is re-checked first.
+          const retry = document.createElement("button");
+          retry.type = "button";
+          retry.className = "compose-identity-retry";
+          retry.textContent = "Retry";
+          retry.addEventListener("click", function () {
+            setStatus(statusNode, "", "ok");
+            form.requestSubmit(submitter && submitter.form === form ? submitter : undefined);
+          });
+          statusNode.append(" ", retry);
+        }
         markFirstFeedback(timing);
         completeActionTiming(timing, "error");
         restoreComposeUiState();

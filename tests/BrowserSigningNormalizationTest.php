@@ -1994,7 +1994,7 @@ NODE;
         assertSame(2, count(array_filter($result['fetches'], static fn (array $fetch): bool => $fetch['url'] === '/api/link_identity')));
         assertStringContains('public_key=', implode('\n', array_map(static fn (array $fetch): string => $fetch['body'] ?? '', $result['fetches'])));
         assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
-        assertSame('Publishing your public key in the background...', $result['status']);
+        assertSame('Creating your account…', $result['status']);
     }
 
     public function testReadyIdentityRetriesBootstrapSignatureVerificationFailure(): void

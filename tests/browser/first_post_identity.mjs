@@ -85,6 +85,79 @@ try {
 
   assert.deepEqual(dialogs, [], 'no browser dialog may open');
   assert.deepEqual(errors, []);
+
+  // A first action shows "Creating your account…"; a failed registration shows Retry beside the action and keeps the draft.
+  async function visitor() {
+    const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    const seen = { dialogs: [], errors: [] };
+    page.on('dialog', d => { seen.dialogs.push(d.message()); void d.dismiss(); });
+    page.on('pageerror', e => seen.errors.push(e.message));
+    return { context, page, seen };
+  }
+  // Holds the first registration until released, so the creation state can be seen; then fails it.
+  async function failRegistrationOnce(page) {
+    let release; const held = new Promise(r => { release = r; });
+    await page.route('**/api/create_identity', async route => { await held; await route.abort(); });
+    return async () => { release(); await page.waitForTimeout(100); await page.unroute('**/api/create_identity'); };
+  }
+
+  // Like.
+  const liker = await visitor();
+  await liker.page.goto(base + '/threads/root-001');
+  const releaseLike = await failRegistrationOnce(liker.page);
+  const likeButton = liker.page.locator('[data-action="apply-thread-tag"][data-tag="like"]').first();
+  await likeButton.locator('xpath=ancestor::article[1]').hover();
+  await likeButton.click();
+  const likeFeedback = liker.page.locator('[data-role="thread-reaction-feedback"]').first();
+  await liker.page.waitForFunction(() => /Creating your account…/.test(document.querySelector('[data-role="thread-reaction-feedback"]')?.textContent || ''));
+  await releaseLike();
+  const likeRetry = likeFeedback.getByRole('button', { name: 'Retry' });
+  await likeRetry.waitFor({ state: 'visible', timeout: 30000 });
+  assert.match(await likeFeedback.textContent(), /^Couldn't create your account\./);
+  await liker.page.screenshot({ path: '/tmp/first-post-like-retry-390.png' });
+  const likeApplied = liker.page.waitForResponse(r => /\/api\/apply_thread_tag$/.test(r.url()), { timeout: 30000 });
+  await likeRetry.click();
+  assert.match(await (await likeApplied).text(), /status=ok/);
+  assert.deepEqual(liker.seen, { dialogs: [], errors: [] });
+  await liker.context.close();
+
+  // Board quick compose: the draft stays; Retry posts it.
+  const poster = await visitor();
+  await poster.page.goto(base + '/');
+  const board = poster.page.locator('[data-compose-kind="thread"]').first();
+  await board.locator('textarea[name="body"]').fill('My first thread');
+  const releasePost = await failRegistrationOnce(poster.page);
+  await board.locator('.compose-form-actions > button[type="submit"]').click();
+  const composeStatus = poster.page.locator('[data-role="compose-identity-status"]').first();
+  await poster.page.waitForFunction(() => /Creating your account…/.test(document.querySelector('[data-role="compose-identity-status"]')?.textContent || ''));
+  await releasePost();
+  const postRetry = composeStatus.getByRole('button', { name: 'Retry' });
+  await postRetry.waitFor({ state: 'visible', timeout: 30000 });
+  assert.match(await composeStatus.textContent(), /^Couldn't create your account\./);
+  assert.equal(await board.locator('textarea[name="body"]').inputValue(), 'My first thread', 'the draft is kept');
+  assert.equal(await board.locator('[data-action="submit-anonymous-compose"]').count(), 1, 'Post anonymously stays');
+  await poster.page.screenshot({ path: '/tmp/first-post-compose-retry-390.png' });
+  await postRetry.click();
+  await poster.page.waitForURL(/\/threads\//, { timeout: 30000 });
+  assert.match(await poster.page.content(), /My first thread/);
+  assert.deepEqual(poster.seen, { dialogs: [], errors: [] });
+  await poster.context.close();
+
+  // Inline reply: the pending reply card offers Retry with the same wording.
+  const replier = await visitor();
+  await replier.page.goto(base + '/threads/root-001');
+  const replyForm = replier.page.locator('[data-compose-kind="reply"]').first();
+  await replyForm.locator('textarea[name="body"]').fill('My first reply');
+  await replier.page.route('**/api/create_identity', route => route.abort());
+  await replyForm.locator('.compose-form-actions > button[type="submit"]').click();
+  await replier.page.waitForFunction(() => /Couldn't create your account\./.test(document.body.textContent));
+  await replier.page.unroute('**/api/create_identity');
+  const replyCreated = replier.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 30000 });
+  await replier.page.getByRole('button', { name: 'Retry' }).first().click();
+  assert.match(await (await replyCreated).text(), /ok/);
+  assert.deepEqual(replier.seen, { dialogs: [], errors: [] });
+  await replier.context.close();
   console.log(`first_post_identity: ok (create_identity ${timings[base + '/api/create_identity']} ms on the fixture)`);
 } catch (error) {
   console.error(serverLog.slice(-4000));

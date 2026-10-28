@@ -229,6 +229,23 @@
     renderTechnicalFeedback(node, technicalDetails);
   }
 
+  // Retry beside a failed account creation presses the same reaction again.
+  function offerReactionRetry(node, button) {
+    if (!node || typeof document.createElement !== "function") {
+      return;
+    }
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "reaction-retry";
+    retry.textContent = "Retry";
+    retry.addEventListener("click", function (event) {
+      event.stopPropagation();
+      node.hidden = true;
+      button.click();
+    });
+    node.append(" ", retry);
+  }
+
   function qdbFeedbackNode(root) {
     return root.querySelector('[data-role="qdb-reaction-feedback"]');
   }
@@ -739,6 +756,7 @@
       if (loaderFailure instanceof Error) {
         const failure = new Error("Couldn't load identity tools. Reload the page and try again. If this keeps happening, contact the site operator.");
         failure.technicalDetails = loaderFailure.technicalDetails || loaderFailure.message;
+        failure.accountCreationFailure = true;
         throw failure;
       }
 
@@ -755,13 +773,19 @@
     const readinessState = typeof helper.storedVoteIdentityReadinessState === "function"
       ? helper.storedVoteIdentityReadinessState()
       : "";
+    const registered = typeof helper.isRegisteredIdentity === "function" && helper.isRegisteredIdentity();
     if (readinessState !== "ready") {
-      setFeedback(feedbackNode, "Preparing identity...", "ok");
+      setFeedback(feedbackNode, registered ? "Preparing identity..." : "Creating your account…", "ok");
     }
-    await readiness().call(helper, root, feedbackNode, {
-      verifyPublishedIdentity: readinessState === "failed",
-      timing: timing,
-    });
+    try {
+      await readiness().call(helper, root, feedbackNode, {
+        verifyPublishedIdentity: readinessState === "failed",
+        timing: timing,
+      });
+    } catch (error) {
+      if (typeof helper.accountCreationFailure === "function") throw helper.accountCreationFailure(error);
+      throw error;
+    }
     markActionTiming(timing, "forum_identity_ready");
   }
 
@@ -876,6 +900,9 @@
           "error",
           { technicalDetails: feedback.technicalDetails }
         );
+        if (error && error.accountCreationFailure) {
+          offerReactionRetry(feedbackNode, button);
+        }
         completeActionTiming(timing, "error");
       } finally {
         clearPendingReaction(operationKey);
@@ -967,6 +994,9 @@
           "error",
           { technicalDetails: feedback.technicalDetails }
         );
+        if (error && error.accountCreationFailure) {
+          offerReactionRetry(feedbackNode, button);
+        }
         completeActionTiming(timing, "error");
       } finally {
         clearPendingReaction(operationKey);

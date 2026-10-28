@@ -1041,8 +1041,19 @@ pre {
   line-height: 1.45;
 }
 
-[data-role="browser-key-status"][data-kind="error"] {
+[data-role="browser-key-status"][data-kind="error"],
+[data-role="compose-identity-status"][data-kind="error"] {
   color: var(--status-error);
+}
+
+/* Retry beside a failed account creation, inline with its message. */
+.compose-identity-retry,
+.reaction-retry {
+  display: inline-block;
+  width: auto;
+  min-height: 2.75rem;
+  margin: 0 0 0 0.35rem;
+  padding: 0 0.9rem;
 }
 
 [data-role="browser-key-status"][data-kind="ok"] {

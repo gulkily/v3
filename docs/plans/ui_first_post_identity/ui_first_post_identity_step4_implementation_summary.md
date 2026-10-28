@@ -20,7 +20,7 @@ Extended estimates: enabled
 | 2 - One registered check; guests shown as guests | 0.15 | done |
 | 3 - Composer name row on first paint | 0.15 | done |
 | 4 - Change the name from the composer | 0.12 | done |
-| 5 - Creating your account, failures and Retry | 0.12 | pending |
+| 5 - Creating your account, failures and Retry | 0.12 | done |
 | 6 - Other signed paths and members-only sites | 0.10 | pending |
 | 7 - Sites, themes, copy and docs | 0.10 | pending |
 | 8 - Acceptance and closeout | 0.06 | pending |
@@ -132,5 +132,31 @@ Stage estimates are not summed.
 - Notes:
   - Retrospective 0.14 against the original 0.12, because of the Outbox read that must not create the database, and the lazy-loading path for Done.
   - The error in the row is plain text in the theme's error color. Stage 5 adds Retry for creation failures at Post and Like; the row's own retry is Done again.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Creating your account, failures and Retry
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.12**
+
+- Changes:
+  - `browser_signing.js`: during a signed action, key creation and registration both show "Creating your account…". This replaces "Generating browser keypair..." and "Publishing your public key in the background...". New `accountCreationFailure()` turns any failure in key creation or registration into "Couldn't create your account."; the original message stays under details.
+  - Board, New post, QDB, Forte and the compose pages: the status line shows the failure with a Retry button that resubmits the same form with the same submitter. The draft stays, and Post anonymously stays in the menu. Inline replies show "Creating your account…" in the composer status while registering; a failure appears on the existing pending reply card with its own Retry.
+  - `thread_reactions.js`: the first Like or tag on an unregistered key shows "Creating your account…" ("Preparing identity..." stays for registered keys). Failures, including the library-load ones, add Retry beside the message, which presses the same reaction again. The library-load messages keep their wording.
+  - `site.css`: inline Retry buttons (`.compose-identity-retry`, `.reaction-retry`), and the composer status in the error color.
+- Verification:
+  - `tests/browser/first_post_identity.mjs` (extended) **passed**. Each case holds `create_identity`, sees "Creating your account…", then aborts it:
+    - Like: "Couldn't create your account." with Retry; Retry applies the Like.
+    - Board quick compose: the same message and Retry; the draft "My first thread" is kept and Post anonymously is still there; Retry posts and opens the new thread.
+    - Inline reply: the pending card shows the message; its Retry posts the reply.
+    - No dialogs or page errors.
+    - 390px screenshots of both Retry states were reviewed. Retry sits inline with the message.
+  - `BrowserSigningNormalizationTest` 82/82 passed (one status assertion updated to "Creating your account…"). `PrivateSiteAuthTest` 11/11 passed. `LocalAppSmokeTest` 153/154 passed (the same unrelated failure).
+  - Browser tests passed: `signed_reactions`, `board_compose_focus` and `reply_compose_focus` (both include real failure/retry), `compose_identity_row`, `account_states`, `invite_zero_click`, `invite_redemption.cjs` and `private_message_compose.cjs`.
+- Notes:
+  - Duplicate-post risk on Retry: a composer Retry re-runs the identity check (an already-registered key is not registered again) and starts the post from scratch, because the failure happened before any post was prepared. Inline replies keep the existing continuation, which confirms a prepared reply before resending.
+  - In the thread card, the Like Retry ends next to the card's `#` link at 390px. Stage 7 checks this across themes.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
