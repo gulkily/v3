@@ -568,6 +568,13 @@ pre {
     padding: 0.3rem 0.3rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line);
     background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+    transition: transform 0.2s ease;
+  }
+
+  /* tab_bar_scroll.js hides the bar while scrolling down. The shown state keeps
+     `transform: none` so the menu's fixed popovers position against the screen. */
+  [data-shell="app"][data-tabbar="hidden"] .site-header--app .site-header-actions {
+    transform: translateY(100%);
   }
 
   [data-shell="app"] .site-header--app .nav {
@@ -639,6 +646,12 @@ pre {
   /* Decorative theme status bars (Word 97, Midnight) give way to the tab bar. */
   :root [data-shell="app"] > .site-status-bar {
     display: none;
+  }
+}
+
+@media (max-width: 639px) and (prefers-reduced-motion: reduce) {
+  [data-shell="app"] .site-header--app .site-header-actions {
+    transition: none;
   }
 }
 
