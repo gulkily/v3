@@ -45,6 +45,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [UI shell and navigation](ui_shell_navigation/)
 - [UI tab bar scroll-away](ui_tab_bar_scroll_away/)
+- [UI account states](ui_account_states/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
