@@ -62,3 +62,25 @@ Railspike debug reports for cycle `v3/ui_account_states`. Debug mode was enabled
 
 - Whether a new `/api/get_username` endpoint counts as an API change needing separate review; scoped read-only, behind the existing access gate, documented in `agent_api.md`.
 - None beyond the endpoint question (MIT Rap Club permits 15 themes, checked).
+
+## 2026-10-28 — Step 4 (Implementation) report
+
+### Necessary/useful instructions
+
+- `step3_development_plan`, early validation in Key Risks: running the invite, approval and self-approval browser tests in Stages 1–3 exposed the sign-in reload race (Stage 3) and the session-bound self-approval button while the change was still small. Retain.
+- `RAILSPIKE.md`, commit per stage with Step 4 updates: kept the in-place sign-in change reviewable as part of Stage 3 with its reason. Retain.
+- Project bounded-verification practice: one full suite; unfamiliar failures rerun alone (`gpg` step) instead of rerunning the suite. Retain.
+
+### Redundant/unnecessary instructions
+
+- Per-stage "Estimate details" when nothing changed. Suggestion: allow "as expected".
+
+### Inapplicable instructions
+
+- Static rebuild after deploy: the account page is not pre-built.
+- Read-model schema rules: no schema change (the new endpoint reads the existing `profiles` index).
+
+### Uncertain assessments
+
+- Whether the in-place sign-in on the account page is within the approved scope: it fixes a race that the approved prompt-free naming made reachable, and touches only the account page on public sites; recorded as corrective work, with the wider reload change left as the user's follow-up.
+- The theme review relied on reduced-size contact sheets plus automatic checks; fine text contrast inside each theme was not measured.
