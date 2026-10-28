@@ -49,3 +49,13 @@ Baseline data-layer p95: standard 7.457 ms, Forte 5.018 ms, detail 4.921 ms; 851
 - Notes: Stage 3 commit 307cb5633. Trigger maintenance is within the same transaction as mutations; no new worker or configuration. Schema inventory assertion updated for new objects.
 
 *— Codex · 2026-10-28 UTC*
+
+## Stage 5 - Standard stored-data reader
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes: Standard Activity hydrates compact evidence and URLs without canonical reads, Git or GPG. Missing/malformed projections render an honest unavailable state with Reload through the existing shared source component. Schema 34 identifies the new read contract; unavailable historical links remain unavailable.
+- Verification: Projection suite 6/6 and standard suite 11/11; repository-removal test proves fresh standard readers return identical evidence without source access. Prior-version normal startup and CLI rebuild pass. Initial strict array-order parity failure corrected without changing output values.
+- Notes: Stage 4 commit bca0fa451. UI phone/theme acceptance remains Stage 7. No runtime evidence reconstruction fallback.
+
+*— Codex · 2026-10-28 UTC*

@@ -138,7 +138,7 @@ final class ActivityService
         $first = $rows === [] ? $position : $boundary($rows[0]);
         $last = $rows === [] ? $position : $boundary($rows[count($rows) - 1]);
         return [
-            'items' => array_map(fn (array $row): array => $this->enrichActivityItem($view === 'security' ? $this->securityReviewItem($row) : $row, false), $rows),
+            'items' => array_map(fn (array $row): array => $this->projectedActivityItem($view === 'security' ? $this->securityReviewItem($row) : $row), $rows),
             'previous' => $first !== null && $read($first, 'previous', 1) !== [] ? $first : null,
             'next' => $last !== null && $read($last, 'next', 1) !== [] ? $last : null,
         ];
@@ -297,15 +297,54 @@ final class ActivityService
         return $item;
     }
 
+    /** Read-only hydration: all filesystem/Git/signature work belongs to indexing. */
+    private function projectedActivityItem(array $row): array
+    {
+        $evidence = json_decode((string) ($row['evidence_json'] ?? ''), true);
+        $valid = is_array($evidence) && count($evidence) === 3
+            && is_string($evidence[0] ?? null) && is_string($evidence[1] ?? null) && is_array($evidence[2] ?? null);
+        if ($valid) foreach ($evidence[2] as $file) {
+            if (!is_array($file) || !in_array(count($file), [7,8], true) || count(array_filter(array_slice($file, 0, 7), 'is_string')) !== 7 || (isset($file[7]) && $file[7] !== false)) { $valid = false; break; }
+        }
+        if (!$valid) $evidence = ['', '', []];
+        [$signature, $status, $files] = $evidence;
+        $path = (string) ($row['source_path'] ?? '');
+        $sha = (string) ($row['source_commit_sha'] ?? '');
+        $item = array_intersect_key($row, array_flip([
+            'created_at','kind','record_family','action_key','post_id','thread_id','label','board_tags_json',
+            'author_label','author_profile_slug','author_username_token','security_review','security_account',
+        ]));
+        return $item + [
+            'id' => (int) $row['id'], 'author_is_approved' => (int) $row['author_is_approved'],
+            'source_path' => $path, 'source_commit_sha' => $sha,
+            'source_path_href' => $this->sourcePathHref($path, $sha),
+            'source_commit_href' => $this->sourceCommitHref($sha), 'source_commit_files' => [],
+            'source_signature_path' => $signature,
+            'source_signature_href' => $signature === '' ? '' : '/source/current/' . $this->encodeSourcePathForUrl($signature),
+            'source_signature_status' => $status, 'evidence_unavailable' => !$valid,
+            'relevant_files' => array_map(function (array $file) use ($path, $sha): array {
+                [$filePath, $fileStatus, $previous, $role, $signer, $key, $keyStatus] = $file;
+                $href = $fileStatus === 'current' && $filePath !== $path
+                    ? '/source/current/' . $this->encodeSourcePathForUrl($filePath)
+                    : $this->sourceCommitFileHref($filePath, $fileStatus, $sha);
+                if (($file[7] ?? true) === false) $href = '';
+                return ['status' => $fileStatus, 'path' => $filePath, 'previous_path' => $previous, 'role' => $role,
+                    'href' => $href, 'signature_signer_identity' => $signer, 'signature_public_key_path' => $key,
+                    'signature_public_key_href' => $key === '' ? '' : '/source/current/' . $this->encodeSourcePathForUrl($key),
+                    'signature_key_status' => $keyStatus];
+            }, $files),
+        ];
+    }
+
     /** Index-time only: compact relevant evidence, never a full commit or rendered HTML. */
     public function buildIndexedEvidence(array $row, ?array $signatureStatuses = null): string
     {
         $this->indexedSignatureStatuses ??= $signatureStatuses ?? $this->pdo()->query('SELECT source_path, signature_status FROM reaction_signatures')->fetchAll(PDO::FETCH_KEY_PAIR);
         $item = $this->enrichActivityItem($row, false);
-        $files = array_map(static fn (array $file): array => [
+        $files = array_map(static fn (array $file): array => array_merge([
             $file['path'], $file['status'], $file['previous_path'], $file['role'],
             $file['signature_signer_identity'], $file['signature_public_key_path'], $file['signature_key_status'],
-        ], $item['relevant_files']);
+        ], $file['href'] === '' ? [false] : []), $item['relevant_files']);
         return json_encode([$item['source_signature_path'], $item['source_signature_status'], $files], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
     }
 

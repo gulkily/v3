@@ -8,6 +8,9 @@ $sourceSignatureHref = (string) ($source_signature_href ?? '');
 $sourceSignatureStatus = (string) ($source_signature_status ?? '');
 $sourceCommitIsUnavailable = $sourceCommit === '' || $sourceCommit === 'no-git' || $sourceCommit === 'git-error';
 ?>
+<?php if ($evidence_unavailable ?? false): ?>
+<p role="status">Evidence unavailable. <a href="">Reload</a></p>
+<?php endif; ?>
 <?php if ($sourcePath !== ''): ?>
 <p class="meta">Source:
 <?php if ($sourcePathHref !== ''): ?>

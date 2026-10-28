@@ -89,7 +89,7 @@ final class ActivityProjectionTest
         } finally { $fixture->remove(); }
     }
 
-    public function testSchema32StartupRecoversCountersBeforePaging(): void
+    public function testPreviousSchemaStartupRecoversCountersBeforePaging(): void
     {
         $fixture = new RebuildHistoryFixture(0);
         try {
@@ -97,11 +97,32 @@ final class ActivityProjectionTest
             (new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository)))->rebuild();
             $pdo = new PDO('sqlite:' . $db);
             foreach ($pdo->query("SELECT name FROM sqlite_master WHERE type='trigger' AND name NOT LIKE 'activity_evidence_%'")->fetchAll(PDO::FETCH_COLUMN) as $name) $pdo->exec('DROP TRIGGER ' . $name);
-            $pdo->exec("DROP TABLE activity_counts; DROP TABLE activity_local_state; UPDATE metadata SET value='32' WHERE key='schema_version'");
+            $pdo->exec("DROP TABLE activity_counts; DROP TABLE activity_local_state; UPDATE metadata SET value='" . ((int) ReadModelMetadata::SCHEMA_VERSION - 1) . "' WHERE key='schema_version'");
             ob_start();
             try { (new Application(dirname(__DIR__), $fixture->repository, $db))->handle('GET', '/activity/'); }
             finally { ob_end_clean(); }
             assertSame((int) $pdo->query('SELECT COUNT(*) FROM activity')->fetchColumn(), (int) $pdo->query("SELECT total FROM activity_counts WHERE view='all'")->fetchColumn());
+        } finally { $fixture->remove(); }
+    }
+
+    public function testStandardReadsEvidenceWithoutRepositoryAndReportsMissingProjection(): void
+    {
+        $fixture = new RebuildHistoryFixture(1, 1);
+        try {
+            $db = $fixture->root . '/model.sqlite';
+            (new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository)))->rebuild();
+            $pdo = new PDO('sqlite:' . $db, null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+            $service = new ActivityService(static fn (): PDO => $pdo, $fixture->repository, $db);
+            $expected = $service->fetchActivityPage('all');
+            rename($fixture->repository, $fixture->root . '/offline');
+            $freshService = new ActivityService(static fn (): PDO => $pdo, $fixture->repository, $db);
+            assertSame($expected, $freshService->fetchActivityPage('all'));
+            $id = $expected['items'][0]['id'];
+            $pdo->exec('UPDATE activity SET evidence_json = NULL WHERE id=' . $id);
+            $missing = $freshService->fetchActivityPage('all')['items'][0];
+            assertSame(true, $missing['evidence_unavailable']);
+            assertSame([], $missing['relevant_files']);
+            assertSame('', $missing['source_signature_status']);
         } finally { $fixture->remove(); }
     }
 
