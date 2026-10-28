@@ -52,3 +52,35 @@ Extended estimates: enabled
 - Estimate details: as expected.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Themes, acceptance and closeout
+
+**Original estimate: 0.13**
+
+**Retrospective: 0.12**
+
+- Changes:
+  - No theme fixes were needed.
+  - `docs/plans/ui_copy_audit_checklist.md`: entry "Phone tab bar scroll-away (ZenMemes)" (no copy change).
+  - `docs/plans/ui_redesign/implementation_checklist.md`: follow-up note under Cycle 1.
+  - No navigation destination changed, so `public/assets/theme-nav-icons.css` is untouched.
+- Verification:
+  - 13 permitted themes plus Auto at 390px with the bar shown and hidden, on the board with a mock private message conversation: hidden, the composer's bottom edge sits at the screen bottom (700px of 700px) in all 14; shown, it sits on the bar. No page errors.
+  - Desktop and other sites: the script loads only with the `app` navigation slot (`AppNavigationPlacementTest` asserts it is absent with `forum`), and every new rule is scoped to `[data-shell="app"]` inside the phone media query. Other sites' pages still carry the new rules in their inlined critical CSS, where they match nothing.
+  - Full suite once: 1595 run, 1589 passed, 6 failed. Five also fail on `main` (`testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest`, `ReadModelBuilderTimingTest`, two `WriteApiSmokeTest` approval tests). The sixth, `WriteApiSmokeTest::testVerifiedProfileNamesWriteOneOrderedActivityRowEach`, failed on a `gpg` signing command and passed when rerun alone.
+- Notes:
+  - Observed, not changed: the private message composer is see-through in Vapor and Arena, whether or not the bar is shown. Candidate follow-up, together with making that composer non-sticky.
+- Estimate details: as expected.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- All three stages are complete. Whole-cycle projection **0.45** held throughout; separate **0.40 retrospective scope assessment** (stage retrospectives 0.20 / 0.08 / 0.12, not summed).
+- Pending:
+  - The user's real-iPhone check: bounce and Safari toolbar resizing, and whether the 8px threshold and 48px end distance feel right.
+  - Deployment and merge (only when the user asks).
+  - The reply dock cycle revision (remove the docked reply box) is separate and still pending.
+- Dependency delta: zero.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

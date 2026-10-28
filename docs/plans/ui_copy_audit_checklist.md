@@ -616,3 +616,10 @@ Verification: Focused terminal/status/config/schema/collector/health PHP checks 
 Limits: Terminal-only change; browser phone/theme/icon checks are inapplicable because no web destination or markup changed. Actual remote SSH, physical-device terminals, full suite and deployment were not verified; SSH-style PTY environment is explicitly distinct from remote evidence.
 Record: [Implementation summary](tui_operator_workspace/tui_operator_workspace_step4_implementation_summary.md).
 Dependency delta: Zero.
+
+## 2026-10-28 — Phone tab bar scroll-away (ZenMemes)
+
+Change: No copy added, removed or moved. The ZenMemes phone tab bar hides while scrolling down and returns on scroll up, at either page end, on focus and while the account menu is open; the post-send reply box and private message composer follow it. Without JavaScript the bar stays as before.
+Verification: `tab_bar_scroll` browser test (phone, desktop, reduced motion, no JavaScript); 13 permitted themes plus Auto at 390px with the bar shown and hidden, including a private message composer; no page errors. No navigation destination added or renamed, so icon mapping unchanged.
+Limits: Real-iPhone feel (bounce, Safari toolbar resizing) pending with the user. Observed, not changed: the private message composer is see-through in Vapor and Arena, with or without the bar.
+Record: [Implementation summary](ui_tab_bar_scroll_away/ui_tab_bar_scroll_away_step4_implementation_summary.md).
