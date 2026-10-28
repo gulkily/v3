@@ -78,9 +78,33 @@ Extended estimates: enabled
 
 - All three stages are complete. Whole-cycle projection **0.45** held throughout; separate **0.40 retrospective scope assessment** (stage retrospectives 0.20 / 0.08 / 0.12, not summed).
 - Pending:
-  - The user's real-iPhone check: bounce and Safari toolbar resizing, and whether the 8px threshold and 48px end distance feel right.
+  - ~~The user's real-iPhone check~~ Done 2026-10-28 on production after merge (`1f44958db`): iOS Safari hides the bar as intended; iOS Firefox does not fully hide it (see [Known issue](#known-issue-ios-firefox)). Threshold and end-distance feel not yet reported.
   - Deployment and merge (only when the user asks).
   - The reply dock cycle revision (remove the docked reply box) is separate and still pending.
 - Dependency delta: zero.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Known issue: iOS Firefox
+
+Reported by the user 2026-10-28 on production. Left as is for now at the user's request; this records the proposed fix.
+
+**Observed.** In iOS Safari the bar slides off screen. In iOS Firefox it slides down but stays visible, parked at the bottom of the visible page under Firefox's bottom address bar. It looks deliberate and is kind of nice, but it still covers content and catches taps near the address bar.
+
+**Likely cause.** The hidden state moves the bar by its own height (`translateY(100%)`), which is only enough when the bottom of the layout viewport (where `position: fixed; bottom: 0` anchors) is at or above the bottom of the screen. Firefox for iOS draws its toolbar over the web view, and the web view, and with it the layout viewport, extends below the visible area while the toolbar is shown or collapsing. One bar height then lands the bar under the toolbar instead of off screen. Not yet confirmed: Firefox may instead report a large `env(safe-area-inset-bottom)`, which enlarges the bar and its 100% move together.
+
+**Diagnosis first (about 0.05).**
+- Add a temporary query-flag overlay (for example `?tabbar-debug=1`, never on by default) that prints `innerHeight`, `visualViewport.height` and `offsetTop`, `document.documentElement.clientHeight`, the computed `env(safe-area-inset-bottom)` and the bar's `getBoundingClientRect()` in both states, while the Firefox toolbar is expanded and collapsed.
+- Remote Web Inspector works only if Firefox's web view is inspectable, so the overlay is the dependable route.
+- Gives the numbers that decide between the two fixes below and serves as the regression check on a real phone.
+
+**Fix (about 0.10 to 0.15), two layers:**
+1. **Make the hidden bar invisible, whatever the geometry.** Pure CSS: add `visibility: hidden` to the hidden state with a delayed transition (`transition: transform 0.2s ease, visibility 0s linear 0.2s`, and `visibility 0s` with no delay when shown). The bar still slides, then disappears and stops taking taps; under reduced motion both happen at once. Cost: a hidden bar is skipped by Tab, so the "show on focus" path only applies while it is visible; keyboard users get it back by scrolling up or reaching a page end, as everyone else does. This layer alone removes the bar from under Firefox's toolbar.
+2. **Make the slide end off screen.** In `tab_bar_scroll.js`, when hiding, measure how far the bar's top sits above the bottom of the visible area (`visualViewport.offsetTop + visualViewport.height - bar.getBoundingClientRect().top`) and set it as `--app-tabbar-hide-distance` on `.shell`; the CSS becomes `translateY(max(100%, var(--app-tabbar-hide-distance, 100%)))`. Re-measure on `visualViewport` `resize` while hidden. Without this the slide visibly stops short before layer 1 hides the bar.
+   - Dependents: `--app-tabbar-offset` while hidden stays at the safe-area inset; if diagnosis shows Firefox's inset is the toolbar height, use `0px` there instead so the reply box and message composer sit right above the toolbar.
+
+**Tests.** Extend `tests/browser/tab_bar_scroll.mjs`: computed `visibility` is `hidden` after the transition and `visible` when shown; with the hidden bar, `document.elementFromPoint` at the bar's last position does not return the bar; a stubbed `visualViewport` shorter than `innerHeight` produces a hide distance larger than the bar height. Emulation cannot reproduce Firefox's toolbar, so acceptance stays the user's check in iOS Firefox and iOS Safari.
+
+**Recommendation.** Ship layer 1 on its own first: it is small, CSS-only, and fixes the visible symptom in every browser. Add layer 2 only if the slide stopping short is noticeable.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
