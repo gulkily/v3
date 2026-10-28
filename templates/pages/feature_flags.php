@@ -47,6 +47,22 @@ $flagGroups = $registry->presentationGroups($flags);
 <?php endif; ?>
             </div>
             <p class="feature-flag-description meta"><?= $e($definition->description) ?></p>
+<?php if ($definition->key === 'FORUM_VERIFIED_ATTRIBUTION'): ?>
+<?php
+  $cutoffAt = $attributionCutoff['cutoff_at'] ?? null;
+  $cutoffShown = $cutoffAt !== null || $flag->effectiveValue;
+?>
+            <div class="meta" data-attribution-cutoff<?= $cutoffShown ? '' : ' hidden' ?>>
+              <p>Cutoff: <time data-attribution-cutoff-at<?= $cutoffAt !== null ? ' datetime="' . $e($cutoffAt) . '"' : '' ?>><?= $cutoffAt !== null ? $e(str_replace(['T', 'Z'], [' ', ' UTC'], $cutoffAt)) : 'not set' ?></time></p>
+<?php if ($canManageFeatureFlags): ?>
+              <form class="inline-form" data-attribution-cutoff-form>
+                <label>Move to (UTC) <input type="datetime-local" name="cutoff_at" step="60" value="<?= $cutoffAt !== null ? $e(substr($cutoffAt, 0, 16)) : '' ?>" required></label>
+                <button type="submit">Move cutoff</button>
+                <span role="status" aria-live="polite" data-attribution-cutoff-status></span>
+              </form>
+<?php endif; ?>
+            </div>
+<?php endif; ?>
 <?php if ($definition->key === 'FAST_SCORING_ENABLED'): ?>
             <p class="meta"><a href="/tools/fastmod/">Fastmod</a></p>
 <?php endif; ?>

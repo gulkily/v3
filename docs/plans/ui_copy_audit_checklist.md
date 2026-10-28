@@ -597,6 +597,23 @@ Dependency delta: Zero. No navigation destination/icon, schema, canonical record
 Resolution: Preserve upstream instance/admin/snapshot details, recent items, image ZIP link, inline SQLite freshness and compact public-scope copy alongside the new flag-based unavailable state. Image-only mode retains the matching-content requirement. ZIP and legacy TAR remain under one image flag.
 Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all 240 states across six themes and 390/1280 widths; actual ZIP/TAR denial, recovery and icon checks pass. Merged Midnight phone image-only screenshot inspected at /tmp/backup-flags-browser-lBKMAg/backup-01.png. Canonical-order toolbar suite passes. See backup feature-flags implementation summary for 50 passing PHP checks and evidence paths. No new layout/overflow issue observed; full suite, physical devices and deployment remain unverified.
 
+## Invitation signing recovery — October 27, 2026
+
+- [x] Recover session/signing-key disagreement on Invite without an Account detour. Reserve Account restore guidance for genuinely unusable/unapproved saved identities; retain keys and input.
+- [x] Provide actionable signature failure text with the diagnostic status. For unknown creation outcomes, retain the pending token in this page and use Check invitation rather than issuing again; keep-page-open guidance remains visible.
+- Verified 160 rendered public/members-only, five-theme, phone/desktop states covering initial, pending, successful, uncertain, invalid-signature, unapproved, missing-key and restored flows. No page overflow; main action remains available and recovery stays beneath it. Representative screenshots reviewed with expanded revocation/long values. Existing app-version notifications appeared during the fixtures; notification behavior is outside this correction.
+- Actual signing, permission denial, restore/retry, lost-response inspection, recipient redemption and revocation checks passed. Full suite, production and physical-device verification are not claimed. [Implementation evidence](invite_signing_readiness/invite_signing_readiness_step4_implementation_summary.md).
+
+## Board New Post link — 2026-10-27
+
+- [x] Removed the board controls' New Post link; the inline composer replaces it. `/compose/thread` stays as the full-page and no-JS route, and the Tags page and offline reader controls are unchanged. The controls' right-aligned last-item rule now skips view/sort options, so Top stays with its group.
+- Verification: `php tests/run.php LocalAppSmokeTest` passes except the two failures that were already present (quick-reply continuations, archive filename). `node tests/browser/board_compose_focus.mjs` passes across light, Word97, Chicago and Midnight at 390px/1280px, including no-JS controls. Nav alignment was not inspected in screenshots.
+
+## Inline composer expand spacing — 2026-10-27
+
+- [x] Expanding the board thread composer or inline reply no longer moves the editor down. Two causes: the logged-in identity status (empty, `hidden`, `data-kind="ok"`) was forced visible with 1rem margin, and the expanded padding top was 1rem against the collapsed 0.8rem. Hidden statuses now stay hidden; expanded top padding matches collapsed. Real identity messages still display.
+- Verification: `board_compose_focus.mjs` and `reply_compose_focus.mjs` now assert equal editor-to-card-top distance collapsed/expanded, failing before the fix; both pass in light, Word97, Chicago and Midnight at 390px/1280px. The touch-phone reply's fixed panel is excluded by design. Inspected light board and Word97 reply desktop screenshots. Status display checked for empty-hidden, info and error states.
+
 ## 2026-10-27 — Public profile identity details
 
 - Change: Replaced the misleading “Member activity” destination label with a supplementary username link; the profile now shows its own Threads and Posts. Public key material is initially collapsed, with concise Copy/unavailable/manual-copy recovery states.

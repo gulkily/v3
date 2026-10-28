@@ -13,7 +13,7 @@ cat >"${FIXTURE}/bin/php" <<'EOF'
 #!/usr/bin/env bash
 [[ "${V3_TEST_PHP_BROKEN:-0}" == 0 ]] || exit 99
 if [[ "${1:-}" == -r ]]; then
-  printf '%s\n%s\n/fake/php\n' "${V3_TEST_PHP_VERSION:-80300}" 'test-runtime'
+  printf '%s\n%s\n/fake/php\n%s\n' "${V3_TEST_PHP_VERSION:-80300}" 'test-runtime' "${V3_TEST_EXTENSIONS:-1111}"
 elif [[ "${1:-}" != */check_local_server_dependencies.php ]]; then
   printf '%s\n' "$@" >"${V3_TEST_SERVER_MARKER}"
 fi
@@ -80,3 +80,20 @@ if PATH="${FIXTURE}/bin" "${ROOT}/v3" check-dependencies --unknown >"${FIXTURE}/
   fail 'unknown diagnostic argument accepted'
 fi
 echo 'PASS: shared executable/version checks, failures, recovery, and read-only report'
+
+# Supported Ubuntu must not inspect package metadata for available extensions.
+(
+  source "${ROOT}/scripts/local_server_dependencies.sh"
+  php_setup_platform() { printf '%s\n' ubuntu-24.04; }
+  php_setup_extension_guidance() { printf '%s\n' "$1" >>"${FIXTURE}/guidance"; }
+  PATH="${FIXTURE}/bin" local_server_dependencies_check startup
+  [[ ! -e "${FIXTURE}/guidance" ]] || fail 'healthy startup prepared package recovery'
+  PATH="${FIXTURE}/bin" local_server_dependencies_check report >"${FIXTURE}/out"
+  [[ ! -e "${FIXTURE}/guidance" ]] || fail 'healthy report prepared package recovery'
+  for pair in 0111:common 1011:sqlite3 1101:mbstring 1110:intl; do
+    : >"${FIXTURE}/guidance"
+    V3_TEST_EXTENSIONS="${pair%:*}" PATH="${FIXTURE}/bin" local_server_dependencies_check startup
+    [[ "$(cat "${FIXTURE}/guidance")" == "${pair#*:}" ]] || fail 'missing extension recovery selected wrong package'
+  done
+)
+echo 'PASS: package recovery prepared only for missing extensions'

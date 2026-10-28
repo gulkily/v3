@@ -80,6 +80,24 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion30StartupRebuildsBeforeServingVerifiedTotals(): void
+    {
+        $database = sys_get_temp_dir() . '/verified-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='30' WHERE key='schema_version'");
+            $pdo->exec('ALTER TABLE threads DROP COLUMN verified_score_total');
+            $pdo->exec("DELETE FROM metadata WHERE key='verified_attribution_enabled'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('0', $pdo->query("SELECT value FROM metadata WHERE key='verified_attribution_enabled'")->fetchColumn());
+            assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM threads WHERE score_total != claimed_score_total OR verified_score_total != claimed_score_total')->fetchColumn());
+        } finally { @unlink($database); }
+    }
+
     public function testVersion25StartupBuildsActivityAuthorIndexBeforeServingPage(): void
     {
         $database = sys_get_temp_dir() . '/registration-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -1959,6 +1977,7 @@ PHP;
         assertSame($board, $threadsIndexNoSlash);
         assertStringContains('href="/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
+        assertStringNotContains('New Post', $board);
         assertStringContains('New post', $board);
         assertStringContains('href="/compose/thread"', $board);
         assertStringNotContains('href="/compose/thread">Compose</a>', $board);

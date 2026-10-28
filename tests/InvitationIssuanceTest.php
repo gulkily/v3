@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 final class InvitationIssuanceTest
 {
+    public function testInvitationSignerBindsIdentityAcrossAsyncSigning(): void
+    {
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/invite_signer_identity.cjs') . ' 2>&1', $output, $status);
+        if ($status !== 0) throw new RuntimeException(implode("\n", $output));
+        assertSame(0, $status);
+    }
+
     public function testTargetedRedemptionAndRecovery(): void
     {
         exec('node ' . escapeshellarg(__DIR__ . '/browser/invite_redemption.cjs') . ' 2>&1', $output, $status);
@@ -254,6 +261,7 @@ async function issue(finalStatus, storageUnavailable) {
   const context = {
     window: {
       location: { origin: 'https://forum.test' }, localStorage: storage,
+      PrivateSiteAuth: { async authenticate() { return { status: 'approved', identityId: 'openpgp:test' }; } },
       ForumBrowserSigning: { async ensureActionIdentity() {}, async signCanonicalRecord() { return 'signature'; } }
     },
     document,

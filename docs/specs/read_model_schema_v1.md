@@ -57,7 +57,7 @@ Single-row-per-key bookkeeping about the last rebuild.
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| `key` | TEXT PK | e.g. `schema_version`, `schema_fingerprint`, `repository_root`, `repository_head`, `rebuilt_at`, `rebuild_reason`, `thread_label_invalid_count` |
+| `key` | TEXT PK | e.g. `schema_version`, `schema_fingerprint`, `repository_root`, `repository_head`, `rebuilt_at`, `rebuild_reason`, `thread_label_invalid_count`, `verified_attribution_enabled`, `attribution_cutoff_at` |
 | `value` | TEXT | |
 
 ### `posts`
@@ -85,8 +85,14 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |
 | `post_tags_json` | TEXT | JSON array, default `'[]'` |
-| `post_score_total` | INTEGER | default 0 |
-| `approved_flag_count` | INTEGER | default 0 |
+| `post_score_total` | INTEGER | default 0; effective: the claimed or verified value, chosen by the verified attribution flag |
+| `approved_flag_count` | INTEGER | default 0; effective, as `post_score_total` |
+| `attribution_verified` | INTEGER | default 1; 0 when the post names an identity but is neither signed by it nor created before the attribution cutoff (schema 31) |
+| `attribution_counted` | INTEGER | default 1; effective: `attribution_verified` with the verified attribution flag on, else 1. Profile lists and counts include only counted posts (schema 31) |
+| `claimed_post_score_total` | INTEGER | default 0; every scored tag naming an approved member (schema 31) |
+| `verified_post_score_total` | INTEGER | default 0; unsigned tags count only before the attribution cutoff (schema 31) |
+| `claimed_approved_flag_count` | INTEGER | default 0 (schema 31) |
+| `verified_approved_flag_count` | INTEGER | default 0 (schema 31) |
 | `is_hidden` | INTEGER | default 0; moderation flag |
 | `hidden_reason` | TEXT NULL | |
 | `retracted_at` | TEXT NULL | accepted retraction timestamp |
@@ -114,7 +120,9 @@ One row per thread (keyed by its root post).
 | `last_post_id` | TEXT | |
 | `board_tags_json` | TEXT | JSON array |
 | `thread_labels_json` | TEXT | JSON array |
-| `score_total` | INTEGER | default 0 |
+| `score_total` | INTEGER | default 0; effective: the claimed or verified value, chosen by the verified attribution flag |
+| `claimed_score_total` | INTEGER | default 0; every scored label naming an approved member (schema 31) |
+| `verified_score_total` | INTEGER | default 0; unsigned labels count only before the attribution cutoff (schema 31) |
 | `vote_count` | INTEGER | default 0; distinct upvote/downvote events |
 | `retracted_at` | TEXT NULL | root retraction timestamp |
 | `retraction_class` | TEXT NULL | root author/operator authorization classification |
@@ -148,8 +156,12 @@ One row per identity with a bootstrapped profile.
 | `approved_by_identity_id` | TEXT NULL | |
 | `approved_by_profile_slug` | TEXT NULL | |
 | `approved_by_label` | TEXT NULL | |
-| `post_count` | INTEGER | default 0 |
-| `thread_count` | INTEGER | default 0 |
+| `post_count` | INTEGER | default 0; effective: claimed or verified, chosen by the verified attribution flag |
+| `thread_count` | INTEGER | default 0; effective, as `post_count` |
+| `claimed_post_count` | INTEGER | default 0; every post naming the identity, plus its bootstrap post (schema 31) |
+| `verified_post_count` | INTEGER | default 0; only posts with `attribution_verified = 1`, plus its bootstrap post (schema 31) |
+| `claimed_thread_count` | INTEGER | default 0 (schema 31) |
+| `verified_thread_count` | INTEGER | default 0 (schema 31) |
 
 ### `username_routes`
 
@@ -198,6 +210,8 @@ Feed of indexed activity entries (see `docs/specs/php_forum_rewrite_spec_v1.md`
 | `author_is_approved` | INTEGER | default 0 |
 | `source_path` | TEXT NULL | |
 | `source_commit_sha` | TEXT NULL | |
+| `attribution_verified` | INTEGER | default 1; for post, label and reaction rows naming an identity: whether the underlying record counts under verified attribution (schema 31) |
+| `attribution_counted` | INTEGER | default 1; effective, as on `posts`. With 0 the author renders unlinked with `(unsigned)` (schema 31) |
 
 Indexes: `activity_recent_idx (created_at DESC, post_id DESC, id DESC)`,
 `activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`,
@@ -332,6 +346,37 @@ Metadata also includes `post_reaction_invalid_count`, parallel to
 `thread_label_invalid_count`. A missing signer key makes a supplied signature
 invalid, never unsigned. Raw source bytes are unchanged; current-source responses
 expose `X-Forum-Signature-Status`, and activity source metadata shows the status.
+
+## Verified attribution (schema version 31)
+
+Threads and posts keep two sets of approved-member totals. Claimed totals count
+every scored label or tag naming an approved member, as before. Verified totals
+count it only when its record is signed by that member, or was created (server
+`Created-At`, never `Action-At`) before the attribution cutoff; see
+[Attribution Cutoff Record V1](attribution_cutoff_record_v1.md). Imported score
+seeds count in both. A label written in a post's body follows that post's
+signature when its content-bound source is proven. Posts carry the same rule in
+`attribution_verified`, and profiles keep claimed and verified post and thread
+counts. The effective columns (`score_total`, `post_score_total`,
+`approved_flag_count`, `is_hidden`, `hidden_reason`, `attribution_counted`,
+posts' `author_profile_slug`, profiles' `post_count` and `thread_count`) copy one
+set, chosen by the
+`FORUM_VERIFIED_ATTRIBUTION` flag, so turning the flag on or off swaps them in
+place without a rebuild. Metadata `verified_attribution_enabled` records the set
+in use and `attribution_cutoff_at` the cutoff the verified totals were derived
+with; startup swaps the set if the flag changed outside the repository, and a
+change of cutoff rebuilds. `vote_count` is unchanged by the flag. Startup
+rebuilds a version 30 cache before serving queries that use the new columns.
+Activity rows for posts, labels and reactions carry the same markers, so an
+uncounted item renders its claimed name unlinked with `(unsigned)` in cards,
+Activity and record details.
+
+Signature checks behind these markers are saved in `signature_checks.sqlite3`
+beside the read model, outside its schema, so rebuilds and later requests do
+not run GPG again for the same record. Each row is a SHA-256 of the record,
+signature, public key and fingerprint; only successful checks are kept. The
+file is derived and safe to delete, and an unusable file falls back to running
+GPG.
 
 ## Operator retraction attribution
 

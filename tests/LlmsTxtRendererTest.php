@@ -21,6 +21,7 @@ final class LlmsTxtRendererTest
             Registry::APPROVED_MEMBERS_ONLY => ['Posting: members only.', 'Posting: open to any new identity'],
             Registry::IMAGE_CONTENT_ENABLED => ['Images: enabled for approved identities.', 'Images: disabled.'],
             Registry::USERNAME_CHANGES_ENABLED => ['Username changes: enabled', 'Username changes: disabled.'],
+            Registry::VERIFIED_ATTRIBUTION => ['Attribution: verified.', 'count as that identity\'s. Signing is still recommended.'],
         ];
         foreach ($cases as $flag => [$whenOn, $whenOff]) {
             $on = $this->render([$flag => true]);
@@ -46,7 +47,7 @@ final class LlmsTxtRendererTest
         assertStringContains('Label agent accounts as agent accounts', $text);
         assertStringNotContains('rate limit', strtolower($text));
         assertStringContains('6. GET /api/get_post?post_id=<post_id>', $text);
-        assertStringContains('create_thread and create_reply are anonymous only', $text);
+        assertStringContains('create_thread and create_reply are unsigned: without author_identity_id the post is anonymous', $text);
         assertStringContains('(/api/version)', $text);
         assertStringContains('(/api/)', $text);
         assertStringContains('(' . LlmsTxtRenderer::REFERENCE_PATH . ')', $text);

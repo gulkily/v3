@@ -30,6 +30,10 @@ Use Railspike by default when a task would benefit from comparing approaches, st
 
 Railspike is already installed as a Git subtree at `docs/railspike/`. Keep project planning artifacts in the host project's `docs/plans/`, outside the vendored tree. See `docs/reference/railspike_workflow.md` for project-specific workflow and update instructions.
 
+## Principles and project knowledge
+
+Read `PRINCIPLES.md` before weighing options; it wins over common industry defaults. Record durable project knowledge (decisions, preferences, background) in the repository where other contributors can find it, such as `PRINCIPLES.md`, `CONTRIBUTING.md`, reference docs or plans. Do not keep it only in a tool's private memory.
+
 ## Repository guidance
 
 Follow `CONTRIBUTING.md`, including its requirements for read-model schema changes.

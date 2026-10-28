@@ -72,6 +72,7 @@ try {
    await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
    await page.addStyleTag({content:readFileSync(join(project,'public/assets/theme-'+theme+'.css'),'utf8')});
    const composer=page.locator('[data-inline-thread-compose]');
+   const editorInset=()=>page.evaluate(()=>{const e=document.querySelector('[data-inline-thread-compose] textarea');return Math.round(e.getBoundingClientRect().top-e.closest('.card').getBoundingClientRect().top);});
    const body=composer.locator('textarea[name="body"]');
    const actions=composer.locator('.compose-form-actions');
    await page.waitForFunction(text=>document.querySelector('[data-inline-thread-compose] textarea[name="body"]').value===text,restoredDraft);
@@ -92,12 +93,14 @@ try {
    });
    assert.equal(await actions.isVisible(),false);
    const collapsedHeight=(await body.boundingBox()).height;
+   const collapsedInset=await editorInset();
    if(process.env.BOARD_SCREENSHOTS) await page.screenshot({path:process.env.BOARD_SCREENSHOTS+'/'+theme+'-'+width+'-collapsed.png'});
    await body.click();
    await page.waitForFunction(()=>document.querySelector('[data-inline-thread-compose]').dataset.inlineThreadExpanded==='1');
    assert.equal(await actions.isVisible(),true);
    assert.equal(await body.inputValue(),restoredDraft,'opening preserves the entire restored draft');
    assert.ok((await body.boundingBox()).height>collapsedHeight+4,'the prompt expands into a taller editor');
+   assert.equal(await editorInset(),collapsedInset,'expanding keeps the editor\'s distance from the card top');
    if(process.env.BOARD_SCREENSHOTS) await page.screenshot({path:process.env.BOARD_SCREENSHOTS+'/'+theme+'-'+width+'-expanded.png'});
    assert.deepEqual(await page.evaluate(()=>({same:editor===document.activeElement,focus:focusCalls,scroll:scrollCalls,events:focusEvents.length})),{same:true,focus:0,scroll:0,events:1});
    const draft='Board draft '+theme+' '+width;

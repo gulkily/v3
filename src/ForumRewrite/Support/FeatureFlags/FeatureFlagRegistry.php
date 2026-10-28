@@ -28,6 +28,7 @@ final class FeatureFlagRegistry
     public const ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL = 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL';
     public const AUTOMATIC_GUEST_KEYPAIR_ENABLED = 'FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED';
     public const USERNAME_CHANGES_ENABLED = 'FORUM_USERNAME_CHANGES_ENABLED';
+    public const VERIFIED_ATTRIBUTION = 'FORUM_VERIFIED_ATTRIBUTION';
     public const FASTMOD_AUTOMATIC_TAGGING_ENABLED = 'FASTMOD_AUTOMATIC_TAGGING_ENABLED';
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
@@ -35,7 +36,8 @@ final class FeatureFlagRegistry
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
         'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
-            self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED],
+            self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
+            self::VERIFIED_ATTRIBUTION],
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED],
@@ -157,6 +159,15 @@ final class FeatureFlagRegistry
                 'Let members change the username on their existing key from Account, and list each change in the activity report. Disabling stops new changes and hides their activity; saved names, keys and approvals are unchanged.',
                 false,
                 self::USERNAME_CHANGES_ENABLED,
+                siteMutable: true,
+                group: 'ACCESS',
+            ),
+            new FeatureFlagDefinition(
+                self::VERIFIED_ATTRIBUTION,
+                'Verified attribution',
+                'Unsigned posts and votes made after the cutoff stay visible but are marked unverified and do not change scores, post counts or profiles. Turning this on the first time sets the cutoff to now.',
+                false,
+                self::VERIFIED_ATTRIBUTION,
                 siteMutable: true,
                 group: 'ACCESS',
             ),

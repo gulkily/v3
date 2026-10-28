@@ -36,12 +36,12 @@ and the bootstrap flow.
 ## Synchronize Railspike workflow documentation
 
 ```bash
-./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.4.0-beta.1]
+./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.4.0]
 ./v3 fdp sync ... # deprecated alias; updates Railspike, never FDP
 ```
 
 Updates the vendored `docs/railspike/` subtree to an explicit release tag
-(`--ref`, default the pinned `v0.4.0-beta.1`), creating Git update commits. Branch
+(`--ref`, default the pinned `v0.4.0`), creating Git update commits. Branch
 names such as `main` are refused, so a plain sync never moves the installed
 version. The tag must descend from the commit in `docs/railspike/RAILSPIKE_SOURCE.md`,
 which the command updates and commits after a successful merge. The target defaults to this checkout; `--repository-root`

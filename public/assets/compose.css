@@ -24,8 +24,9 @@
 .inline-reply-details[open] .inline-reply-summary {
   display: none;
 }
+/* Top padding matches the collapsed prompt so expanding never moves the editor. */
 .inline-reply-expanded {
-  padding: 1rem 0.9rem;
+  padding: 0.8rem 0.9rem 1rem;
 }
 .inline-reply-expanded [data-compose-form] > :first-child {
   margin-top: 0;
@@ -39,7 +40,7 @@
 .inline-reply-identity-status {
   display: none;
 }
-.inline-reply-identity-status[data-kind]:not([data-kind=""]) {
+.inline-reply-identity-status[data-kind]:not([data-kind=""]):not([hidden]) {
   display: block;
   margin-bottom: 1rem;
 }

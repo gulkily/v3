@@ -166,7 +166,11 @@
       await loader.ready;
     }
     if (browserIdentity && typeof browserIdentity.ensureReadyIdentity === "function") {
-      await browserIdentity.ensureReadyIdentity(null, null, { verifyPublishedIdentity: true });
+      const ready = await browserIdentity.ensureReadyIdentity(null, null, {
+        verifyPublishedIdentity: true,
+        existingIdentityOnly: Boolean(options && options.existingIdentityOnly)
+      });
+      if (ready === false) return { status: "not-configured" };
       publicKey = stored("forum_pki_public_key");
       privateKey = stored("forum_pki_private_key");
       fingerprint = storedFingerprint();
@@ -274,6 +278,8 @@
 
   window.PrivateSiteAuth = { authenticate: authenticate };
   document.addEventListener("DOMContentLoaded", function () {
+    // Invite authenticates when an action starts, without redirecting away from its form.
+    if (document.querySelector("[data-invitation-page]")) return;
     if (window.location && /^#invite=/.test(window.location.hash || "")) return;
     var state = document.querySelector("[data-private-site-auth-state]");
     if (!state) {
