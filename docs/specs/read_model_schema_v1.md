@@ -40,6 +40,8 @@ order is immaterial.
 
 ## Core read-model tables
 
+Version 35 switches Forte initial/selected/compatibility details and category/commit counts to stored projections. RSS and full commit inspection retain their independent contracts; older schema startup rebuilds before the changed queries.
+
 Version 34 switches standard Activity to the indexed-evidence read contract; startup rebuilds prior versions before rendering it.
 
 Version 33 adds `activity_counts` (view, total, without_profile_names) and

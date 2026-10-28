@@ -59,3 +59,14 @@ Baseline data-layer p95: standard 7.457 ms, Forte 5.018 ms, detail 4.921 ms; 851
 - Notes: Stage 4 commit bca0fa451. UI phone/theme acceptance remains Stage 7. No runtime evidence reconstruction fallback.
 
 *— Codex · 2026-10-28 UTC*
+
+## Stage 6 - Forte stored-data reader
+**Original estimate: 0.12**
+**Retrospective stage work: 0.12**
+
+- Changes: Forte initial/selected and compatibility-page details hydrate stored evidence; categories/commits read maintained totals. Schema 35 records changed query contracts. RSS/full-commit inspection remain independent.
+- Verification: Projection 6/6, standard navigation 11/11, Forte recovery 2/2 after updating its deliberately partial schema fixture to current schema minus commits. Fresh readers without repository access preserve Forte detail and totals; real CLI rebuild passed.
+- Measurements: Same bulk fixture data-layer p95 standard 1.540 ms (baseline 7.457), Forte 0.265 ms (5.018), detail 0.196 ms (4.921). Database 1,146,880 vs 851,968 bytes: +294,912 / 210 events = 1,404 bytes/event. This long-path/long-label fixture exceeds the indicative 0.25–1 KB range because evidence plus ordering indexes retain those values; measure normal-length records in Stage 7 and report both, not a guaranteed cap.
+- Notes: Stage 5 commit e6ee91a5a. HTTP/browser and signed mutation acceptance remain Stage 7; local data-layer timings do not establish production resolution.
+
+*— Codex · 2026-10-28 UTC*

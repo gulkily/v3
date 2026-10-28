@@ -11,6 +11,43 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 
 final class ActivityProjectionTest
 {
+    private function legacyCount(PDO $pdo, ActivityService $service, string $view): int
+    {
+        $view = $service->normalizeActivityView($view);
+        [$viewWhere, $viewParameters] = (new ReflectionMethod($service, 'activityViewSql'))->invoke($service, $view);
+        $stmt = $pdo->prepare(
+            'SELECT activity.board_tags_json
+             FROM activity
+             LEFT JOIN posts ON posts.post_id = activity.post_id
+             WHERE 1 = 1
+             ' . $viewWhere
+        );
+        foreach ($viewParameters as $parameter => $value) {
+            $stmt->bindValue($parameter, $value);
+        }
+        $stmt->execute();
+
+        $hasTag = static fn (string $json, string $tag): bool => in_array($tag, \ForumRewrite\ReadModel\ThreadRowSupport::decodeStringList($json), true);
+        $count = 0;
+        while (($row = $stmt->fetch()) !== false) {
+            $boardTagsJson = (string) $row['board_tags_json'];
+            $hidden = \ForumRewrite\ReadModel\ThreadRowSupport::isHiddenBootstrapBoardTagsJson($boardTagsJson);
+            $matches = match ($view) {
+                'all' => true,
+                'content' => !$hidden,
+                'identity' => $hasTag($boardTagsJson, 'identity'),
+                'bootstrap' => $hasTag($boardTagsJson, 'identity') && $hasTag($boardTagsJson, 'internal'),
+                'approval' => $hasTag($boardTagsJson, 'identity') && $hasTag($boardTagsJson, 'approval'),
+                default => true,
+            };
+            if ($matches) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
     public function testRebuildStoresCompactRelevantEvidence(): void
     {
         $fixture = new RebuildHistoryFixture(2, 2);
@@ -69,7 +106,8 @@ final class ActivityProjectionTest
                     foreach (['all','content','identity','bootstrap','approval','security'] as $view) {
                         $stmt = $pdo->prepare('SELECT ' . ($names ? 'total' : 'without_profile_names') . ' FROM activity_counts WHERE view=?');
                         $stmt->execute([$view]);
-                        assertSame($service->countActivityViewTotal($view), (int) $stmt->fetchColumn(), $view);
+                        assertSame($this->legacyCount($pdo, $service, $view), (int) $stmt->fetchColumn(), $view);
+                        assertSame($this->legacyCount($pdo, $service, $view), $service->countActivityViewTotal($view), $view);
                     }
                 }
             };
@@ -114,9 +152,14 @@ final class ActivityProjectionTest
             $pdo = new PDO('sqlite:' . $db, null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
             $service = new ActivityService(static fn (): PDO => $pdo, $fixture->repository, $db);
             $expected = $service->fetchActivityPage('all');
+            $expectedDetail = $service->fetchActivityDetail($expected['items'][0]['id']);
+            $expectedCounts = array_map($service->countActivityViewTotal(...), ['all','content','identity','bootstrap','approval']);
             rename($fixture->repository, $fixture->root . '/offline');
             $freshService = new ActivityService(static fn (): PDO => $pdo, $fixture->repository, $db);
             assertSame($expected, $freshService->fetchActivityPage('all'));
+            assertSame($expectedDetail, $freshService->fetchActivityDetail($expected['items'][0]['id']));
+            assertSame($expectedCounts, array_map($freshService->countActivityViewTotal(...), ['all','content','identity','bootstrap','approval']));
+            assertSame($expectedDetail, $freshService->fetchIndexedActivity('all')['items'][0]);
             $id = $expected['items'][0]['id'];
             $pdo->exec('UPDATE activity SET evidence_json = NULL WHERE id=' . $id);
             $missing = $freshService->fetchActivityPage('all')['items'][0];

@@ -371,7 +371,7 @@ final class ForteActivityController
         $rowsOnly = ($query['rows_only'] ?? '') === '1';
         $result = $rowsOnly
             ? $activityService->fetchActivityRows($view, $sortColumn, $sortDirection, $cursor)
-            : $activityService->fetchActivity($view, $sortColumn, $sortDirection, $cursor);
+            : $activityService->fetchIndexedActivity($view, $sortColumn, $sortDirection, $cursor);
 
         $html = '';
         $detailHtml = '';

@@ -88,6 +88,13 @@ final class ActivityService
         ];
     }
 
+    /** Forte compatibility pages use the same indexed detail contract as selection. */
+    public function fetchIndexedActivity(string $view, string $sortColumn = 'date', string $sortDirection = 'desc', ?array $afterCursor = null): array
+    {
+        $result = $this->fetchActivityRows($view, $sortColumn, $sortDirection, $afterCursor);
+        return ['items' => array_map($this->projectedActivityItem(...), $result['items']), 'has_more' => $result['has_more']];
+    }
+
     /**
      * Standard Activity paging. Existing Forte/RSS contracts stay independent.
      * @param array<string,string>|null $position
@@ -183,7 +190,7 @@ final class ActivityService
             'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
-                    activity.source_path, activity.source_commit_sha,
+                    activity.source_path, activity.source_commit_sha, activity.evidence_json,
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
@@ -238,7 +245,7 @@ final class ActivityService
             'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
-                    activity.source_path, activity.source_commit_sha,
+                    activity.source_path, activity.source_commit_sha, activity.evidence_json,
                     activity.id, activity.author_label, activity.author_profile_slug,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
@@ -249,7 +256,7 @@ final class ActivityService
         $stmt->execute();
         $row = $stmt->fetch();
 
-        return $row === false ? null : $this->enrichActivityItem($row);
+        return $row === false ? null : $this->projectedActivityItem($row);
     }
 
     /**
@@ -387,37 +394,13 @@ final class ActivityService
     public function countActivityViewTotal(string $view): int
     {
         $view = $this->normalizeActivityView($view);
-        [$viewWhere, $viewParameters] = $this->activityViewSql($view);
-        $stmt = $this->pdo()->prepare(
-            'SELECT activity.board_tags_json
-             FROM activity
-             LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE 1 = 1
-             ' . $viewWhere
-        );
-        foreach ($viewParameters as $parameter => $value) {
-            $stmt->bindValue($parameter, $value);
-        }
-        $stmt->execute();
-
-        $count = 0;
-        while (($row = $stmt->fetch()) !== false) {
-            $boardTagsJson = (string) $row['board_tags_json'];
-            $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
-            $matches = match ($view) {
-                'all' => true,
-                'content' => !$hidden,
-                'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
-                'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
-                'approval' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'approval'),
-                default => true,
-            };
-            if ($matches) {
-                $count++;
-            }
-        }
-
-        return $count;
+        $this->activityViewSql($view); // Preserve live authorization for security totals.
+        $column = $this->showProfileNameChanges ? 'total' : 'without_profile_names';
+        $stmt = $this->pdo()->prepare('SELECT ' . $column . ' FROM activity_counts WHERE view = ?');
+        $stmt->execute([$view === 'commits' ? 'all' : $view]);
+        $count = $stmt->fetchColumn();
+        if ($count === false) throw new RuntimeException('Activity counts unavailable. Run ./v3 rebuild and retry.');
+        return (int) $count;
     }
 
     /**
@@ -612,7 +595,7 @@ final class ActivityService
      */
     public function countCommitsTotal(): int
     {
-        return (int) $this->pdo()->query('SELECT COUNT(*) FROM commits')->fetchColumn();
+        return (int) $this->pdo()->query("SELECT total FROM activity_counts WHERE view = 'commits'")->fetchColumn();
     }
 
     /**

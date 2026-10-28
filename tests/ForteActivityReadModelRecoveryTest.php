@@ -66,27 +66,8 @@ final class ForteActivityReadModelRecoveryTest
         putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
 
         $pdo = new PDO('sqlite:' . $databasePath);
-        $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, is_hidden INTEGER NOT NULL DEFAULT 0, retracted_at TEXT NULL)');
-        $pdo->exec(
-            'CREATE TABLE activity (
-                id INTEGER PRIMARY KEY,
-                created_at TEXT NOT NULL,
-                kind TEXT NOT NULL,
-                record_family TEXT NOT NULL,
-                action_key TEXT NULL,
-                post_id TEXT NULL,
-                thread_id TEXT NULL,
-                label TEXT NOT NULL,
-                board_tags_json TEXT NOT NULL,
-                author_identity_id TEXT NULL,
-                source_path TEXT NULL,
-                source_commit_sha TEXT NULL,
-                author_label TEXT NOT NULL,
-                author_profile_slug TEXT NULL,
-                author_username_token TEXT NULL,
-                author_is_approved INTEGER NOT NULL
-            )'
-        );
+        foreach (\ForumRewrite\ReadModel\ReadModelSchema::statements() as $statement) $pdo->exec($statement);
+        $pdo->exec('DROP TABLE commits');
 
         return [
             new Application(dirname(__DIR__), dirname(__DIR__) . '/state/local_repository', $databasePath),
