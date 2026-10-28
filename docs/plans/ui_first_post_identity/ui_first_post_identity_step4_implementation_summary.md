@@ -23,7 +23,7 @@ Extended estimates: enabled
 | 5 - Creating your account, failures and Retry | 0.12 | done |
 | 6 - Other signed paths and members-only sites | 0.10 | done |
 | 7 - Sites, themes, copy and docs | 0.10 | done |
-| 8 - Acceptance and closeout | 0.06 | pending |
+| 8 - Acceptance and closeout | 0.06 | done |
 
 Stage estimates are not summed.
 
@@ -204,5 +204,33 @@ Stage estimates are not summed.
 - Notes:
   - Correction to Stage 3's note: a capture-phase DOMContentLoaded listener runs after deferred scripts' top-level code but before their DOMContentLoaded handlers. The composer row check still holds, because nothing deferred touches the row at top level. The toolbar check above blocks the deferred script instead.
   - Real phones and production were not verified. The real-iPhone check stays pending (Stage 8).
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Acceptance and closeout
+
+**Original estimate: 0.06**
+
+**Retrospective: 0.06**
+
+- Changes: this closeout and the [ledger](../effort_estimation_trial.md#cycle-v3ui_first_post_identity) closeout row.
+- Verification: the reported failure was replayed with the scratchpad script `replay.mjs`. Setup: a ZenMemes-sized copy (`repository.tar.gz`, 1,619 posts) on a local PHP server, automatic guest keys and username changes on, Playwright's iPhone 13 profile (390px, touch, mobile Safari user agent, Chromium engine), a new visitor, run twice. Results for each success criterion:
+  - No `window.prompt` or `window.confirm`: **passed** (no dialogs in either run, or in any browser test this cycle).
+  - Reading makes no registration and no commit: **passed**. After the board loaded and 2 s of idle work, there were no identity requests. The repository gained exactly 4 commits over both runs (2 identities, 2 threads), all from posting.
+  - A first action registers exactly once, and later actions don't: **passed**. Each run sent one `prepare_identity` and one `create_identity`; `first_post_identity` covers later Likes.
+  - The name row is right on first paint for every key state, theme and size: **passed** (`compose_identity_row`, Stage 7 matrix). In the replay it read "Post as mouse · Change" after Change → mouse → Done.
+  - Failure states show Retry, keep the draft and recover: **passed** (Stage 5 tests).
+  - The replay showed "Creating your account…", then the new thread opened with the post "by mouse (unapproved)". Post to thread page took 787 ms (first run) and 97 ms (warm). Board load took 337 and 214 ms. Screenshot reviewed.
+- Notes: this is local emulation in Chromium, not WebKit on a phone over a mobile network. **The real-iPhone check on ZenMemes is pending with the user** and does not count as done until reported.
+
+## Closeout
+
+- Contract: the normal entry (every signed composer and Like, new visitor, phone and desktop, all four sites), the end-to-end outcome (first post or vote under the chosen name or `guest`, no dialogs, readers send nothing) and the required recovery (Retry with the draft kept; Post anonymously stays) are covered by the browser tests and the Stage 8 replay.
+- Commits: planning `33a76fb31`; stages `73c49904e`, `c8fbc7c7e`, `d81413f49`, `c17488068`, `089bf0640`, `e9d1ed102`, `e73d483cc`, and this Stage 8 commit. That is 1 + 8 commits, meeting the minimum.
+- Pending: the real-iPhone check (user), merge into `main` (only when asked), deployment, and the maintainer's comfortable-fit judgment for the study.
+- Follow-up proposed in Step 1, not started: G2, the server accepting the key with the first action (one request for a first vote), as its own cycle.
+- Uncommitted on the branch and outside this cycle: the cycle 3 pause note in `ui_redesign/implementation_checklist.md`.
+
+**Retrospective scope assessment (cycle): 0.90** against 0.85 projected and reaffirmed at entry. This is a retrospective assessment, not a measured actual or a new projection. Scope was unchanged. The extra work found during implementation (the public sign-in registration path, Outbox signed reactions, and the Forte toolbar's first paint) was corrective work inside scope. Maintainer comfortable-fit judgment: pending.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
