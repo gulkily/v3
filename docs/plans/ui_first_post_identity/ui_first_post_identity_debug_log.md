@@ -79,3 +79,20 @@ Railspike debug reports for cycle `v3/ui_first_post_identity`. Debug mode was en
 ### Uncertain assessments
 
 - The "<=1 page" limit and the required per-stage fields (seven bullets plus estimate) conflict at eight stages; the plan exceeds a page.
+
+## 2026-10-28T20:05Z — Step 4 handoff
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: "Run applicable verification for that stage … Commit … before beginning the next stage". Committing each stage with its summary kept eight stages auditable, and caught a regression early: Stage 3's `$indent` broke direct partial renders, and it was fixed before the commit. Retain.
+- `step4_implementation_after.md`, Final Verification 7: "Identify reproduced baseline failures." Checking failures against `main` in a scratch worktree separated five pre-existing failures (`compose_layout_stability`, `reply_full_card`, `account_key_approval`, `reply_continuation`, `private_message_list_browser`) and a flaky one (`invite_zero_click`) from regressions. Retain.
+- `step3_development_plan_do.md` (carried into Stage 8): replaying the reported failure as acceptance evidence, with the real-device check kept pending. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- `RAILSPIKE.md`, Planning Artifacts organization rule: pre-existing uncommitted edits to shared files (the ledger and a checklist containing an unrelated note) had no explicit guidance. The cycle-specific hunk was staged selectively and the unrelated note left uncommitted. A short rule for shared files with mixed pending edits would help.
+- `step4_implementation_do.md`, "keep each stage <2 hours": stages here ran well under that, so the guardrail never applied; there was no evidence either way.
