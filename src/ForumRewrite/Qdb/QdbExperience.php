@@ -174,7 +174,7 @@ final class QdbExperience
         return $this->routeServices->renderPageTemplate(
             $isQdbCompose ? 'qdb_add.php' : 'compose_thread.php',
             $data,
-            $isQdbCompose ? 'Add Quote' : 'Compose Thread',
+            $isQdbCompose ? 'Add Quote' : 'New Post',
             'compose',
             $isQdbCompose
                 ? ['/assets/openpgp_loader.js', '/assets/browser_signing.js']

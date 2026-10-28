@@ -162,9 +162,19 @@ Built 2026-10-28 on `feat/ui-first-post-identity` for all sites (not merged); se
 Mockups: `compose-thread.html`, `compose-reply.html`. Templates:
 `pages/compose_thread.php`, `pages/compose_reply.php`. Depends on cycle 5.
 
-- [ ] One shared composer component: title, body, tools.
-- [ ] Reply composer as the no-JavaScript fallback with parent context.
+- [x] One shared composer component: title, body, tools.
+- [x] Reply composer as the no-JavaScript fallback with parent context.
 - Done when: new threads and replies post from both pages, with and without JavaScript.
+
+Built 2026-10-28 on `feat/ui-composers`:
+- `partials/composer.php` is the one composer. `thread_compose_form.php` and `reply_form.php` set its options and include it, so every composer on every site renders there: New post, reply page, board quick compose, thread inline reply, QDB add, and Forte's new post dialog and reply panel.
+- Order: Title ("Title — or we’ll use your first line", full New post only), body, a tools row (`# tags` and Event disclosures, which work without JavaScript), the "Post as" row, then Post and the ··· menu.
+- Wording from the mockups: New post / Post / Post reply; ··· menu: Post anonymously or Reply anonymously, Save to Outbox, Remove timestamps (QDB), Discard draft.
+- Reply page: "Reply to {name}" with the parent as a quote, "author · date · in {thread title}". Long parents are clamped to four lines, with Show more linking to the post. A missing parent says "That post was removed or isn’t in this thread. Reply to the thread instead."
+- Scope notes, deviations from the mockups, deferred:
+  - Attach image stays in the ··· menu, not the tools row. It appears only once the browser knows the viewer may attach images, so in a toolbar it would shift the page after first paint; `compose_layout_stability` caught this.
+  - The ··· menu stays beside Post, not in the tools row, so the phone keyboard panel keeps its layout.
+  - Deferred: the phone header bar with Cancel/Post, the event card and tag chips (the existing fields are kept inside the tool disclosures), the offline "Save" mode, and "Keep draft / Discard" on Cancel.
 
 ### Cycle 7: `ui_profile_users`
 

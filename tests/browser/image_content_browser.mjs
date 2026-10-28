@@ -142,7 +142,6 @@ try {
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.evaluate(()=>window.ForumBrowserSigning.ensureActionIdentity());
  await page.locator('[name="body"]').fill('Browser image thread');
- await page.locator('[data-compose-disclosure="tags-subject"] > summary').click();
  await page.locator('[name="subject"]').fill('Image acceptance');
  await page.waitForFunction(()=>document.querySelector('[name="image"]')?.disabled===false);
  await page.setViewportSize({width:390,height:844});
@@ -299,7 +298,7 @@ try {
  const forteReply=page.locator('[data-paned-compose-panel]');
  await forteReply.locator('.image-compose-fields:not([hidden])').waitFor();
  await forteReply.locator('.compose-action-menu-toggle').click();
- assert.deepEqual(await forteReply.locator('.compose-action-menu-list > button').allTextContents(),['Attach image','Post anonymous reply','Clear fields','Save reply to Outbox']);
+ assert.deepEqual(await forteReply.locator('.compose-action-menu-list > button').allTextContents(),['Attach image','Reply anonymously','Save to Outbox','Discard draft']);
  assert.equal(await forteReply.locator('.image-upload-dropzone .image-upload-choose').count(),0,'no standalone chooser beside the preview');
  await forteReply.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  await forteReply.locator('.image-upload-preview img').waitFor();

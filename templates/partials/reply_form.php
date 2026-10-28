@@ -1,51 +1,21 @@
 <?php
-$formClass = (string) ($formClass ?? 'stack');
-$submitLabel = (string) ($submitLabel ?? 'Create reply');
-$bodyRows = (int) ($bodyRows ?? 7);
-if ($bodyRows < 1) {
-    $bodyRows = 7;
+// A reply: the shared composer without Title, tags or event.
+$composerKind = 'reply';
+$composerCompact = false;
+$composerAction = '/compose/reply';
+$composerFormClass = (string) ($formClass ?? 'stack');
+$composerBodyRows = (int) ($bodyRows ?? 7);
+if ($composerBodyRows < 1) {
+    $composerBodyRows = 7;
 }
-$bodyPlaceholder = (string) ($bodyPlaceholder ?? 'Reply body');
-$showBodyLabel = (bool) ($showBodyLabel ?? true);
-?>
-<form method="post" action="/compose/reply" class="<?= $e($formClass) ?>" data-compose-form data-compose-kind="reply"<?= ($phoneReplyEnabled ?? false) ? ' data-phone-reply' : '' ?>>
-<?php if ($showBodyLabel): ?>
-  <label>Body<textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="<?= $e($bodyPlaceholder) ?>"><?= $e($body) ?></textarea></label>
-<?php else: ?>
-  <textarea name="body" data-compose-field-label="Body" rows="<?= $e($bodyRows) ?>" placeholder="<?= $e($bodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
-<?php endif; ?>
-  <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="body" hidden>
-    <span data-role="compose-field-normalization-message"></span>
-    <button
-      type="button"
-      class="compose-normalization-inline-action"
-      data-action="remove-unsupported-compose-characters"
-      data-compose-field-remove-for="body"
-      hidden
-    >Remove unsupported characters</button>
-  </p>
-  <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
-    <span data-role="compose-normalization-message"></span>
-  </p>
-<?php if ($imageContentEnabled ?? false): ?>
-<?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
-<?php endif; ?>
-<?= $partial('partials/compose_identity_row.php') ?>
-  <div class="compose-form-actions">
-    <button type="submit"><?= $e($submitLabel) ?></button>
-<?php ob_start(); ?>
-<?php if ($imageContentEnabled ?? false): ?>
-        <button type="button" class="image-upload-choose" hidden>Attach image</button>
-<?php endif; ?>
-        <button type="submit" data-action="submit-anonymous-compose">Post anonymous reply</button>
-        <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Clear fields</button>
-        <button type="button" data-action="save-compose-outbox" disabled>Save reply to Outbox</button>
-<?php $replyMenuItems = (string) ob_get_clean(); ?>
-<?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $replyMenuItems]) ?>
-  </div>
-  <input type="hidden" name="thread_id" value="<?= $e($threadId) ?>">
-  <input type="hidden" name="parent_id" value="<?= $e($parentId) ?>">
-  <input type="hidden" name="author_identity_id" value="">
-  <input type="hidden" name="board_tags" value="<?= $e($boardTags) ?>">
-  <input type="hidden" name="return_to" value="<?= $e($returnTo ?? '') ?>">
-</form>
+$composerBodyPlaceholder = (string) ($bodyPlaceholder ?? 'Write your reply…');
+$composerSubmitLabel = (string) ($submitLabel ?? 'Post reply');
+$composerAnonymousLabel = 'Reply anonymously';
+$composerMenuExtra = '';
+$composerFormAttributes = ($phoneReplyEnabled ?? false) ? ' data-phone-reply' : '';
+$composerHiddenFields = '  <input type="hidden" name="thread_id" value="' . $e($threadId) . '">' . "\n"
+    . '  <input type="hidden" name="parent_id" value="' . $e($parentId) . '">' . "\n"
+    . '  <input type="hidden" name="author_identity_id" value="">' . "\n"
+    . '  <input type="hidden" name="board_tags" value="' . $e($boardTags) . '">' . "\n"
+    . '  <input type="hidden" name="return_to" value="' . $e($returnTo ?? '') . '">' . "\n";
+include __DIR__ . '/composer.php';

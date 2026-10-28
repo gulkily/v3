@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Security\OpenPgpKeyInspector;
+use ForumRewrite\Support\ThreadTitle;
 use RuntimeException;
 
 /**
@@ -290,7 +291,7 @@ final class ComposeAndAccountKeyController
             'eventLocation' => $eventLocation,
             'eventLink' => $eventLink,
             'eventTime' => $eventTime,
-        ], 'Compose Thread', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
+        ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
 
     private function renderComposeQuotePage(string $body, ?string $error = null): string
@@ -316,16 +317,22 @@ final class ComposeAndAccountKeyController
         if (is_array($parentPost) && $threadId !== '' && (string) ($parentPost['thread_id'] ?? '') !== $threadId) {
             $parentPost = null;
         }
+        // The reply context names the thread by its title, linking to it.
+        $threadRoot = $threadId !== '' ? ($this->fetchPost)($threadId) : null;
+        $threadTitle = is_array($threadRoot)
+            ? ThreadTitle::displayTitle((string) ($threadRoot['subject'] ?? ''), (string) ($threadRoot['body'] ?? ''), $threadId)
+            : '';
 
         return $this->routeServices->renderPageTemplate('compose_reply.php', [
             'threadId' => $threadId,
             'parentId' => $parentId,
             'parentPost' => $parentPost,
+            'replyThreadTitle' => $threadTitle,
             'notice' => $notice,
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
-        ], 'Compose Reply', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js', '/assets/thread_reactions.js', '/assets/post_retraction.js', '/assets/post_analysis.js']));
+        ], 'Reply', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js', '/assets/thread_reactions.js', '/assets/post_retraction.js', '/assets/post_analysis.js']));
     }
 
     private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string

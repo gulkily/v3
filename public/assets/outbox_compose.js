@@ -26,7 +26,7 @@
       action: "thread",
       state: "draft",
       target: { kind: "board" },
-      summary: subject || "New thread draft",
+      summary: subject || "New post draft",
       payload: { subject: subject, body: body, boardTags: boardTags }
     });
   }
