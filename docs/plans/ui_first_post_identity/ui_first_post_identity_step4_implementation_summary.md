@@ -234,3 +234,23 @@ Stage estimates are not summed.
 **Retrospective scope assessment (cycle): 0.90** against 0.85 projected and reaffirmed at entry. This is a retrospective assessment, not a measured actual or a new projection. Scope was unchanged. The extra work found during implementation (the public sign-in registration path, Outbox signed reactions, and the Forte toolbar's first paint) was corrective work inside scope. Maintainer comfortable-fit judgment: pending.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Requests after closeout
+
+| Request | Disposition and reason | Approval status | Outcome |
+| --- | --- | --- | --- |
+| 2026-10-28: "I clicked the Change button, but then got this message: Names can't be changed on this site." | Corrective, in scope (Stage 4 contract: Change works for a key not yet registered; it is hidden where it can't apply). Two causes found: (1) registering a key during a post or Like didn't notify the name row, so Change stayed visible for a now-registered key where renaming is off; (2) the Outbox guard counted every Outbox item (sent, cancelled, unsigned drafts), sending a local key down the server-rename path. Reproducing them exposed a third: after Change replaced a local key, the composer still named the old key and the post failed with "The signing identity changed." | Fix on this branch as corrective work; no scope change | See [Fix - Change on sites with renaming off](#fix---change-on-sites-with-renaming-off) |
+
+## Fix - Change on sites with renaming off
+
+- Changes (`browser_signing.js`):
+  - The Outbox guard (`outboxHasSignedWork`, was `outboxHasItems`) now counts only unsent items already signed by this key: a reaction signed offline, or a post with a prepared delivery. Drafts and unsigned items are signed when sent; accepted, rejected and cancelled items are history. If a local key does have such work where renaming is off, the message now says what to do: "Your Outbox has items signed under this name. Send or discard them first."
+  - `renderSavedState` without an Account root (inline replies, Outbox, composer Change) now fires `forum:identity-changed`. The name row now hides Change as soon as a reply registers the key on a site with renaming off.
+  - Each composer refreshes its hidden author field on `forum:identity-changed`. A draft written before Change is then signed by the new key. A key switched in another tab (a `storage` event) still trips the signing-identity check.
+- Verification:
+  - `tests/browser/first_post_identity.mjs` (server with renaming off, the default) **passed**. With a sent reaction and a draft in the Outbox, Change → pip on a local key replaces it without error; this reproduced the reported message before the fix. An inline reply then posts, registers the key, and the row hides Change on the same page; this fails without the notification fix. That reply also reproduced the stale author field ("The signing identity changed.") before the fix.
+  - `compose_identity_row.mjs` **passed**. Its Outbox case now uses a realistic queued reaction signed offline, and still registers and renames instead of replacing.
+  - Browser tests passed: `account_states`, `signed_reactions`, `reply_compose_focus`, `board_compose_focus` and `reply_viewport`. `BrowserSigningNormalizationTest` 82/82, `PrivateSiteAuthTest` 11/11, `OfflineOutboxSendTest` 3/3 and `AccountKeyPageHooksTest` 6/6 passed.
+- Notes: I don't know which cause the user hit, so both are fixed. The full suite was not re-run for this fix: it touches only browser scripts, which `tests/run.php` covers through the unit tests above.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

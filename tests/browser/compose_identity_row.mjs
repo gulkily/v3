@@ -160,12 +160,12 @@ try {
   assert.deepEqual(member.dialogs, []); assert.deepEqual(member.errors, []);
   await member.context.close();
 
-  // A local key with Outbox work is registered and renamed rather than replaced, so queued items keep their signer.
+  // A local key with an unsent reaction signed offline is registered and renamed rather than replaced, so it keeps its signer.
   const queued = await writer({ username: 'mouse', public_key: localKeys.publicKey, private_key: localKeys.privateKey, fingerprint: localFingerprint });
   await queued.page.evaluate(() => new Promise((resolve, reject) => {
     const open = indexedDB.open('forum-offline-outbox-v1', 1);
     open.onupgradeneeded = () => open.result.createObjectStore('items', { keyPath: 'id' });
-    open.onsuccess = () => { const tx = open.result.transaction('items', 'readwrite'); tx.objectStore('items').put({ id: 'queued-1' }); tx.oncomplete = () => { open.result.close(); resolve(); }; tx.onerror = reject; };
+    open.onsuccess = () => { const tx = open.result.transaction('items', 'readwrite'); tx.objectStore('items').put({ id: 'queued-1', state: 'queued', intent: { canonicalRecord: 'record', detachedSignature: 'signature' } }); tx.oncomplete = () => { open.result.close(); resolve(); }; tx.onerror = reject; };
     open.onerror = reject;
   }));
   await change(queued.row, 'squeak');

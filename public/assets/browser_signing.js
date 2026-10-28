@@ -2303,6 +2303,10 @@
 
   function renderSavedState(root) {
     if (!root || typeof root.querySelector !== "function") {
+      // Composers and other surfaces outside Account still follow a new key or its registration.
+      if (typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new Event("forum:identity-changed"));
+      }
       return;
     }
 
@@ -2716,8 +2720,10 @@
     return result.username;
   }
 
-  // Whether the offline Outbox holds anything. Reads the database without creating it.
-  function outboxHasItems() {
+  // Whether the offline Outbox holds work already signed by this key and not yet sent: a reaction signed
+  // offline, or a post whose delivery was prepared. Drafts and unsigned items are signed when sent, and
+  // sent, rejected or cancelled items are history. Reads the database without creating it.
+  function outboxHasSignedWork() {
     if (typeof indexedDB === "undefined" || !indexedDB) {
       return Promise.resolve(false);
     }
@@ -2736,9 +2742,16 @@
       request.onsuccess = function () {
         const database = request.result;
         try {
-          const count = database.transaction("items", "readonly").objectStore("items").count();
-          count.onsuccess = function () { database.close(); resolve(count.result > 0); };
-          count.onerror = function () { database.close(); resolve(false); };
+          const all = database.transaction("items", "readonly").objectStore("items").getAll();
+          all.onsuccess = function () {
+            database.close();
+            resolve((all.result || []).some(function (item) {
+              const open = ["accepted", "rejected", "cancelled"].indexOf(item && item.state) === -1;
+              const signed = Boolean(item && ((item.intent && item.intent.detachedSignature) || item.delivery));
+              return open && signed;
+            }));
+          };
+          all.onerror = function () { database.close(); resolve(false); };
         } catch (error) {
           database.close();
           resolve(false);
@@ -2755,13 +2768,15 @@
       return username;
     }
     const usernameChangesEnabled = (window.forumBrowserIdentityOptions || {}).usernameChangesEnabled === true;
-    if (!isRegisteredIdentity() && !(hasBrowserKeypair() && await outboxHasItems())) {
+    if (!isRegisteredIdentity() && !(hasBrowserKeypair() && await outboxHasSignedWork())) {
       await generateBrowserKey(null, username);
       window.dispatchEvent(new Event("forum:identity-changed"));
       return username;
     }
     if (!usernameChangesEnabled) {
-      throw new Error("Names can't be changed on this site.");
+      throw new Error(isRegisteredIdentity()
+        ? "Names can't be changed on this site."
+        : "Your Outbox has items signed under this name. Send or discard them first.");
     }
     try {
       return await saveRegisteredName(username);
@@ -3679,6 +3694,11 @@
     }
 
     refreshComposeIdentityFromStorage();
+    // A name changed in this window (the composer's Change) signs the draft with the new key.
+    // A key switched in another tab still trips the signing-identity check.
+    window.addEventListener("forum:identity-changed", function () {
+      ensureComposeAuthorIdentity(form);
+    });
 
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint()).catch(function () {});
