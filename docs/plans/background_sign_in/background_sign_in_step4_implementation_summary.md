@@ -20,3 +20,14 @@ Entry: 2026-10-28 UTC; scope v1 / Option A, baseline 49a9024412c7e7f6d9230fb7ed1
 - Notes: Concurrent-call semantics remain Stage 2. No schema/dependency changes. Original scope and estimate unchanged; single exposed Codex rater, R1/P2, 2026-10-28 UTC.
 
 *— Codex · 2026-10-28 UTC*
+
+## Stage 2 - Overlapping actions retain their intent
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.12**
+
+- Changes: Signing/challenge work is shared independently of each caller's continuation. Forced verification and incompatible identity/restriction work queue behind the active challenge; only one helper navigation occurs per shared flight. Key-material snapshots reject obsolete results before signing submission and after response. Existing public APIs/callers retain their contracts; already authenticated state is not reported as a new approval change.
+- Verification: PrivateSiteAuthTest, AuthNavigationTest and AccountKeyPageHooksTest 21/21 passed. Contract tests cover both caller orders, forced verification, and identity changes during loading, signing and authentication response. No navigation occurs for rejected stale results.
+- Notes: Stage 1 commit bb4355e2. Slight retrospective increase reflects serializing forced callers without sharing navigation side effects; prospective cycle 0.35 unchanged. No dependency changes.
+
+*— Codex · 2026-10-28 UTC*

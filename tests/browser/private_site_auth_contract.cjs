@@ -21,7 +21,7 @@ function fixture({ approved = false, matching = false, keyless = false, shared =
       attempts++; return { ok: !fail && !(expires && attempts === 1), text: async () => fail ? 'error=Unavailable.' : expires && attempts === 1 ? 'error=Authentication challenge is missing or expired.' : 'approved=' + Number(approved) }; }
   };
   vm.createContext(context); vm.runInContext(source, context);
-  return { ...context, storage, state, status, navigations, events, fetches, ready: () => ready() };
+  return { ...context, context, storage, state, status, navigations, events, fetches, ready: () => ready() };
 }
 (async () => {
   for (const options of [{}, { approved: true }, { matching: true }, { keyless: true }, { expires: true }]) {
@@ -41,6 +41,48 @@ function fixture({ approved = false, matching = false, keyless = false, shared =
       assert.equal(f.events[0].detail.approved, Boolean(options.approved));
     }
     if (options.keyless || options.shared) assert.equal(f.fetches.length, 0);
+  }
+  // Each caller owns navigation, regardless of which one starts signing.
+  for (const backgroundFirst of [true, false]) {
+    const f = fixture({ approved: true });
+    let release; f.window.__forumOpenPgpLoader.ready = new Promise(r => { release = r; });
+    const background = () => f.window.PrivateSiteAuth.authenticate({ navigate: false, quiet: true });
+    const explicit = () => f.window.PrivateSiteAuth.authenticate({ returnTo: '/requested/' });
+    const first = backgroundFirst ? background() : explicit();
+    const second = backgroundFirst ? explicit() : background();
+    release(); await Promise.all([first, second]);
+    assert.equal(f.fetches.length, 2, 'compatible callers share one challenge/signature');
+    assert.deepEqual(f.navigations, ['/requested/']);
+  }
+  {
+    const f = fixture({ approved: true });
+    let release; f.window.__forumOpenPgpLoader.ready = new Promise(r => { release = r; });
+    const background = f.window.PrivateSiteAuth.authenticate({ navigate: false });
+    const forced = f.window.PrivateSiteAuth.authenticate({ force: true, navigate: false, existingIdentityOnly: true });
+    release(); await Promise.all([background, forced]);
+    assert.equal(f.fetches.length, 4, 'forced verification gets a fresh serialized challenge');
+    assert.deepEqual(f.navigations, []);
+  }
+  for (const phase of ['loader', 'signature', 'response']) {
+    const f = fixture();
+    let release;
+    if (phase === 'loader') f.window.__forumOpenPgpLoader.ready = new Promise(r => { release = r; });
+    else if (phase === 'signature') f.window.openpgp.sign = () => new Promise(r => { release = () => r('signature'); });
+    else {
+      const fetch = f.context.fetch;
+      f.context.fetch = async url => {
+        const response = await fetch(url);
+        if (url.includes('authenticate_identity')) await new Promise(r => { release = r; });
+        return response;
+      };
+    }
+    const pending = f.window.PrivateSiteAuth.authenticate({ returnTo: '/requested/' });
+    const rejected = assert.rejects(pending, /Browser identity changed/);
+    while (!release) await new Promise(r => setImmediate(r));
+    f.storage.forum_pki_private_key = 'a different key';
+    release(); await rejected;
+    assert.deepEqual(f.navigations, []);
+    if (phase !== 'response') assert.ok(!f.fetches.includes('/api/authenticate_identity'), 'do not submit the obsolete key');
   }
   console.log('PASS in-place authentication contract');
 })().catch(error => { console.error(error); process.exitCode = 1; });

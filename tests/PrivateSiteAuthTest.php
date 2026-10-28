@@ -25,6 +25,14 @@ final class PrivateSiteAuthTest
         return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
     }
 
+    public function testInPlaceAndConcurrentAuthenticationContract(): void
+    {
+        $output = [];
+        $exitCode = 0;
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/private_site_auth_contract.cjs') . ' ' . escapeshellarg(__DIR__ . '/../public/assets/private_site_auth.js') . ' 2>&1', $output, $exitCode);
+        assertSame(0, $exitCode, implode("\n", $output));
+    }
+
     public function testApprovedIdentityCompletesChallengeAndReloadsWhenNoDestinationIsRequested(): void
     {
         $script = <<<'NODE'
