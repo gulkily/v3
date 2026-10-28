@@ -19,7 +19,7 @@
       function restore() {
         panel.classList.remove('reply-panel-active', 'reply-panel-reading');
         delete panel.dataset.replyReading;
-        form.classList.remove('reply-viewport-active');
+        form.classList.remove('reply-viewport-active', 'reply-viewport-short');
         for (const key of ['top', 'left', 'width', 'height', 'bottom', 'menu-space', 'menu-height']) {
           panel.style.removeProperty('--reply-panel-' + key);
         }
@@ -65,6 +65,8 @@
         panel.style.setProperty('--reply-panel-menu-height', Math.max(44, Math.min(200, viewport.height - 240)) + 'px');
         panel.classList.add('reply-panel-active');
         form.classList.add('reply-viewport-active');
+        // A landscape keyboard leaves room for the editor and actions only.
+        form.classList.toggle('reply-viewport-short', viewport.height < 320);
         // The existing menu stays in the form. Reserve its open footprint above
         // the action row instead of letting it obscure the editor or feedback.
         const list = menu && menu.open && menu.querySelector('.compose-action-menu-list');

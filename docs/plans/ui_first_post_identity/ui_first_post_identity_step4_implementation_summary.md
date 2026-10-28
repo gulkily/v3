@@ -18,7 +18,7 @@ Extended estimates: enabled
 | --- | --- | --- |
 | 1 - Keys stay local; no dialogs | 0.15 | done |
 | 2 - One registered check; guests shown as guests | 0.15 | done |
-| 3 - Composer name row on first paint | 0.15 | pending |
+| 3 - Composer name row on first paint | 0.15 | done |
 | 4 - Change the name from the composer | 0.12 | pending |
 | 5 - Creating your account, failures and Retry | 0.12 | pending |
 | 6 - Other signed paths and members-only sites | 0.10 | pending |
@@ -80,5 +80,28 @@ Stage estimates are not summed.
   - A key the server knows but whose published fingerprint isn't stored shows as a guest until its first action, which re-confirms it. No extra profile lookup was added.
   - The Forte toolbar label is still set by a deferred script, as before this cycle. The server renders "Guest" for a local key, because no hint is sent, so the name appears just after first paint. Stage 7's theme pass checks whether this flash is visible; the composer row (Stage 3) is set before paint.
   - Replacing a local key that already has queued Outbox items is handled with the composer rename in Stage 4.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Composer name row on first paint
+
+**Original estimate: 0.15**
+
+**Retrospective: 0.15**
+
+- Changes:
+  - New `templates/partials/compose_identity_row.php`: "Post as {name} · Change". The server always renders `hidden` with "guest". A small inline script right after the row fills in the saved name and shows it before first paint, so server HTML is the same for every viewer. It follows `forum:identity-changed` and `storage`. Without JavaScript the row stays hidden. Change is wired in Stage 4.
+  - The row is included once in `reply_form.php` and `thread_compose_form.php`, just above the actions. That covers board quick compose, thread reply, the New post and reply pages, QDB add, and Forte's reply panel and new post dialog. Collapsed inline composers hide it with their other non-editor parts, as before.
+  - `compose.css`: row styles (44px tap height, wraps, long names break). In the phone docked reply panel (keyboard open) the row is one text line. When the visible area is under 320px (landscape keyboard), it is hidden: `reply_viewport.js` adds `reply-viewport-short`.
+  - `browser_signing.js`: the old composer status messages "You may be asked to choose a username." (no key) and "Publish your browser identity before signed actions." (local key) are removed. Both were wrong now, and the row already says who you post as.
+- Verification:
+  - New `tests/browser/compose_identity_row.mjs` **passed**. It covers six composers × three key states (none, local named, registered) × 390/1280px. At parse time, before deferred scripts, every row is shown with the right name (guest / mouse / reaction-browser). Server HTML is the static hidden `guest` row on every composer. There is no page overflow, no dialog and no error. A rename elsewhere updates the row in place, and without JavaScript the row is hidden and the editor unchanged. 390px screenshots of the board quick compose and thread reply were reviewed: the row sits between the editor and Post, with no overlap.
+  - `tests/browser/reply_viewport.mjs` (extended) **passed** in light, Word97, Chicago and Midnight. The row is docked below the editor in the portrait keyboard panel and hidden in the 240px landscape case, and the editor and actions still fit.
+  - Browser tests passed: `board_compose_focus`, `reply_compose_focus`, `reply_viewport_flow`, `compose_disclosure`, `reply_actions_layout`, `inline_reply_link` and `first_post_identity`.
+  - `BrowserSigningNormalizationTest` 82/82 passed. `LocalAppSmokeTest` 153/154 passed (the same unrelated failure).
+  - Fail the same way on `main` (`74d044c1f`, checked in a scratch worktree), so not caused by this change: `compose_layout_stability` ("Draft remains intact" shown twice) and `reply_full_card` (Word97 card position).
+- Notes:
+  - The Forte row and every theme beyond the four above are checked in Stage 7.
+  - The first-paint check uses the document's parse point (DOMContentLoaded capture). That is the moment deferred scripts would otherwise change the page.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

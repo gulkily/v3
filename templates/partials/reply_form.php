@@ -30,6 +30,7 @@ $showBodyLabel = (bool) ($showBodyLabel ?? true);
 <?php if ($imageContentEnabled ?? false): ?>
 <?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
 <?php endif; ?>
+<?= $partial('partials/compose_identity_row.php') ?>
   <div class="compose-form-actions">
     <button type="submit"><?= $e($submitLabel) ?></button>
 <?php ob_start(); ?>

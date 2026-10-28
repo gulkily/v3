@@ -2038,12 +2038,13 @@
     switch (state) {
       case "loading_openpgp":
         return "Loading browser identity tools...";
-      case "needs_consent":
-        return "You may be asked to choose a username.";
       case "needs_fingerprint":
         return "Finishing saved browser identity...";
+      // No key yet, or a key kept in this browser: the composer's name row says who you post as,
+      // and the first signed action registers the key.
+      case "needs_consent":
       case "needs_publish":
-        return "Publish your browser identity before signed actions.";
+        return "";
       case "generating":
         return "Generating browser keypair...";
       case "publishing":
