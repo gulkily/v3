@@ -921,6 +921,15 @@ final class Application
             return;
         }
 
+        if ($path === '/api/get_username') {
+            $usernameToken = strtolower(trim((string) ($query['username'] ?? '')));
+            $this->apiTextController()->getUsername(
+                $usernameToken,
+                preg_match('/^[a-z0-9._-]{1,64}$/', $usernameToken) === 1 ? ProfileRepository::byUsernameToken($this->pdo(), $usernameToken) : [],
+            );
+            return;
+        }
+
         if ($path === '/api/get_username_claim_cta') {
             $this->apiTextController()->usernameClaimCta();
             return;
@@ -2110,7 +2119,7 @@ final class Application
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api/railspike_workflow', '/api', '/api/', '/api/version', '/api/list_index',
-            '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username_claim_cta',
+            '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',

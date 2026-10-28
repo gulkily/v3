@@ -180,3 +180,37 @@ button.account-row {
 .account-key-advanced summary .meta {
   margin-left: 0.35rem;
 }
+
+.account-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  max-width: 20rem;
+  text-align: left;
+}
+
+.account-name-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);
+}
+
+.account-name-editor[hidden] {
+  display: none;
+}
+
+.account-name-editor p,
+.account-retry {
+  margin: 0;
+}
+
+.account-name-editor .button-row {
+  justify-content: flex-end;
+}
+
+.account-retry button {
+  width: auto;
+}

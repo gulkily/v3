@@ -111,9 +111,9 @@ try {
     await recipient.page.goto(base + '/account/key/');
     await recipient.page.locator('[data-action=rename-profile]').waitFor({ state: 'visible' });
     assert.equal(await recipient.page.locator('[data-account-key-root]').getAttribute('data-account-state'), 'approved');
-    recipient.page.removeAllListeners('dialog');
-    recipient.page.once('dialog', dialog => dialog.accept(privateSite ? 'named-private-reader' : 'named-public-reader'));
     await recipient.page.locator('[data-action=rename-profile]').click();
+    await recipient.page.locator('[data-role=name-editor-input]').fill(privateSite ? 'named-private-reader' : 'named-public-reader');
+    await recipient.page.locator('[data-role=name-editor] [type=submit]').click();
     await recipient.page.waitForFunction(() => document.querySelector('[data-role=browser-key-status]').textContent.includes('Username saved'));
     assert.equal(await recipient.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint')), originalKey);
     await recipient.page.reload();

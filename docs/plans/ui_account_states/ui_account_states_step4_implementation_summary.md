@@ -36,3 +36,26 @@ Extended estimates: enabled
 - Estimate details: as expected; test churn matched the plan.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Naming without prompts
+
+**Original estimate: 0.20**
+
+**Retrospective: 0.22**
+
+- Changes:
+  - Guest card: an optional Name field and Continue replace "Choose a name" and its browser prompt. With no key, Continue creates a key with that name (empty means `guest`). With an unnamed automatic key and username changes enabled, Continue names that key in place, so its posts and any invitation stay with it; with username changes off it creates a new key, as today. Continue with an existing key and no name says "Type a name first."
+  - Name row: Change opens an in-place editor ("Posts from this key move to the new name.", Cancel, Save); Escape cancels. `browser_signing.js` saves through the existing signed `prepare_profile_name`/`finalize_profile_name` flow; the `window.prompt` rename stays only as a fallback for pages without the editor (none today). Compose and invitation prompts are unchanged.
+  - Retry: a failed rename or key publish shows its message with a Retry button that repeats only the failed step (a failed publish retries publishing, never creates another key). Publish failure reads "Couldn't publish your key."
+  - Join hint: a waiting key whose name approved members already use shows "Approved members already use {name}. Posts from this key join {name} once a member approves it."
+  - New `GET /api/get_username?username=` (`ApiTextController::getUsername`, route, known-route list, `ApiRouteCatalog`): `Username-Token` and `Approved-Keys` in `Key: value` text, `no-store`; invalid names get 400. Not on the members-only allowlist, so unapproved visitors on private sites get the usual access response.
+- Verification:
+  - `tests/browser/account_states.mjs` extended: naming a fresh key without any dialog, the join hint for "alice", naming an automatic key in place (fingerprint kept), rename with Escape, a failed save with Retry, and success closing the editor. Passes.
+  - `LocalAppSmokeTest::testUsernameApiCountsApprovedKeysForAName` (new), the members-only denial added to `testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces`, `ApiRouteCatalogTest`, `AccountKeyPageHooksTest`: pass.
+  - Browser tests pass: `invite_signing_readiness`, `testing_self_approval`, `key_backup_ui`, `access_history`. `invite_zero_click` (rename now through the editor) failed once at its expired-invitation step (a 5-second expiry followed by a 5.1-second wait) and passed on rerun; an `invite_zero_click` flake was already an open item before this cycle.
+- Notes:
+  - Deviation: no `docs/reference/agent_api.md` entry; that page points to `/api/`, which lists every route from `ApiRouteCatalog`, where the endpoint is documented.
+  - **Follow-up noted by the user (2026-10-28):** after a new key signs in, `private_site_auth.js` reloads the page once so the server can render the signed-in state. That reload should not be necessary; candidate improvement for later. The browser test waits for it.
+- Estimate details: slightly over; the sign-in reload and the automatic-key naming case took extra test work.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

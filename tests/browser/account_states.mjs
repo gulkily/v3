@@ -25,7 +25,7 @@ const seeded = spawnSync('php', [join(project, 'tests/Support/private_message_br
 assert.equal(seeded.status, 0, seeded.stderr);
 const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening'); const port = socket.address().port; await new Promise(r => socket.close(r));
 const base = `http://127.0.0.1:${port}`;
-const server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/private_message_browser_router.php')], { env: { ...process.env, PRIVATE_MESSAGE_TEST_ROOT: root, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php'), PRIVATE_MESSAGE_DATABASE_PATH: join(root, 'state/private/messages.sqlite3'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3'), FORUM_APPROVED_MEMBERS_ONLY: 'false' }, stdio: ['ignore', 'ignore', 'pipe'] });
+const server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/private_message_browser_router.php')], { env: { ...process.env, PRIVATE_MESSAGE_TEST_ROOT: root, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php'), PRIVATE_MESSAGE_DATABASE_PATH: join(root, 'state/private/messages.sqlite3'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3'), FORUM_APPROVED_MEMBERS_ONLY: 'false', FORUM_USERNAME_CHANGES_ENABLED: 'true' }, stdio: ['ignore', 'ignore', 'pipe'] });
 let serverLog = ''; server.stderr.on('data', d => { serverLog += d; });
 
 // Record which card is visible when the document finishes parsing, before deferred scripts run.
@@ -54,6 +54,9 @@ async function open(identity, options = {}) {
   return { context, page, errors };
 }
 const parsed = page => page.evaluate(() => window.__atParse);
+// Signing in a key reloads the page once so the server can show the session (private_site_auth.js); let it settle.
+const settle = page => page.waitForEvent('load', { timeout: 4000 }).catch(() => {}).then(() => page.waitForLoadState('load'));
+const state = page => page.locator('[data-account-key-root]').getAttribute('data-account-state');
 const shots = process.env.ACCOUNT_SCREENSHOT_DIR;
 const shot = (page, name) => shots ? page.screenshot({ path: join(shots, name + '.png'), fullPage: true }) : null;
 
@@ -107,12 +110,60 @@ try {
   await shot(waiting.page, 'waiting');
   await waiting.context.close();
 
+  // Naming without prompts: a fresh guest names a new key; the name approved members use shows the join hint.
+  const naming = await open(null, phone);
+  let dialogs = 0; naming.page.on('dialog', d => { dialogs++; d.dismiss(); });
+  await naming.page.locator('[data-role="account-name-input"]').fill('Alice');
+  await naming.page.getByRole('button', { name: 'Continue' }).click();
+  await naming.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'alice', null, { timeout: 30000 });
+  await settle(naming.page);
+  await naming.page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'waiting');
+  assert.equal(await naming.page.locator('[data-role="username-field"]').textContent(), 'alice');
+  await naming.page.locator('[data-role="join-hint"]').waitFor({ state: 'visible' });
+  assert.equal(await naming.page.locator('[data-role="join-hint"]').textContent(), 'Approved members already use alice. Posts from this key join alice once a member approves it.');
+  await shot(naming.page, 'waiting-join-hint');
+  assert.equal(dialogs, 0, 'no browser prompt while naming');
+  await naming.context.close();
+
+  // An unnamed automatic key is named in place, keeping its fingerprint.
+  const named = await open(withKey(unknown, unknownFingerprint, 'guest'));
+  await named.page.locator('[data-role="account-name-input"]').fill('carol');
+  await named.page.getByRole('button', { name: 'Continue' }).click();
+  await named.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'carol', null, { timeout: 30000 });
+  await settle(named.page);
+  assert.equal((await named.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'))).toLowerCase(), unknownFingerprint.toLowerCase());
+  assert.equal(await state(named.page), 'waiting');
+  assert.equal(await named.page.locator('[data-role="join-hint"]').isVisible(), false, 'no hint for a name nobody approved uses');
+  await named.context.close();
+
+  // Rename in place, Escape cancels, a failure offers Retry.
+  const renaming = await open(withKey(unknown, unknownFingerprint, 'carol'));
+  await settle(renaming.page);
+  await renaming.page.getByRole('button', { name: 'Change' }).click();
+  assert.equal(await renaming.page.locator('[data-role="name-editor-input"]').inputValue(), 'carol');
+  await renaming.page.keyboard.press('Escape');
+  assert.equal(await renaming.page.locator('[data-role="name-editor"]').isVisible(), false);
+  await renaming.page.getByRole('button', { name: 'Change' }).click();
+  await renaming.page.locator('[data-role="name-editor-input"]').fill('carol-two');
+  await renaming.page.route('**/api/prepare_profile_name', route => route.abort());
+  await renaming.page.getByRole('button', { name: 'Save' }).click();
+  await renaming.page.getByRole('button', { name: 'Retry' }).waitFor({ state: 'visible' });
+  await renaming.page.unroute('**/api/prepare_profile_name');
+  await renaming.page.getByRole('button', { name: 'Retry' }).click();
+  await renaming.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'carol-two', null, { timeout: 30000 });
+  await settle(renaming.page);
+  assert.equal(await renaming.page.locator('[data-role="name-editor"]').isVisible(), false);
+  assert.equal(await renaming.page.getByRole('button', { name: 'Retry' }).isVisible(), false);
+  assert.equal(await renaming.page.locator('[data-role="name-row-value"]').textContent(), 'carol-two');
+  assert.deepEqual(renaming.errors, []);
+  await renaming.context.close();
+
   const noScript = await open(null, { javaScriptEnabled: false });
   assert.equal(await noScript.page.locator('[data-account-card="guest"]').isVisible(), false, 'without JavaScript the cards are hidden');
   await noScript.page.locator('#key-advanced > summary').click();
   await noScript.page.locator('#key-link > summary').click();
   assert.equal(await noScript.page.locator('textarea[name="public_key"]').isVisible(), true, 'Link a public key still works');
   await noScript.context.close();
-  console.log('PASS account states: guest, automatic guest, member → approved, approved on first paint, waiting, no JavaScript');
+  console.log('PASS account states: guest, automatic guest, member → approved, approved on first paint, waiting, naming, join hint, rename and Retry, no JavaScript');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { if (browser) await browser.close(); server.kill(); }

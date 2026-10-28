@@ -24,7 +24,8 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     <span class="account-avatar" aria-hidden="true">?</span>
     <h2>You’re posting as guest</h2>
     <p class="meta">Pick a name if you like. No email or password.</p>
-    <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Choose a name</button>
+    <label class="account-name-field">Name <span class="meta">(optional)</span><input type="text" data-role="account-name-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="64"></label>
+    <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Continue</button>
   </div>
   <div class="account-card account-card--member night" data-account-card="member" data-tone="neutral">
     <div class="account-starfield" data-starfield-slot aria-hidden="true"></div>
@@ -36,12 +37,14 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
       </div>
     </div>
     <p class="meta" data-account-when="waiting">You can post now. Posts from this key show as pending until a member approves it.</p>
+    <p class="meta" data-role="join-hint" hidden>Approved members already use <span data-role="join-hint-name"></span>. Posts from this key join <span data-role="join-hint-name"></span> once a member approves it.</p>
     <p class="account-user-link" data-account-when="approved"><a data-role="user-link" href="/users/">All of <span data-role="user-link-name">your</span> posts</a></p>
 <?php if (($testingSelfApprovalToken ?? null) !== null): ?>
     <p><button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button></p>
 <?php endif; ?>
   </div>
   <p class="meta account-key-simple-status" id="simple-status" role="status" hidden></p>
+  <p class="account-retry"><button type="button" class="account-key-secondary-button" data-action="retry-account-action" hidden>Retry</button></p>
   <p class="meta" data-role="private-site-auth-status" hidden></p>
   <div class="account-group" data-account-when="member">
     <div class="account-row" data-tone="neutral">
@@ -49,6 +52,14 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
       <span class="account-row__value" data-role="name-row-value">guest</span>
       <button type="button" class="account-row__action" data-action="rename-profile"<?= $usernameChangesEnabled ? '' : ' hidden' ?>>Change</button>
     </div>
+    <form class="account-name-editor" data-role="name-editor" hidden>
+      <label>Name <input type="text" data-role="name-editor-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="64" required></label>
+      <p class="meta">Posts from this key move to the new name.</p>
+      <div class="button-row">
+        <button type="button" class="account-key-secondary-button" data-action="cancel-name">Cancel</button>
+        <button type="submit">Save</button>
+      </div>
+    </form>
     <div class="account-row" data-tone="neutral">
       <span class="account-row__title">Fingerprint</span>
       <code class="account-row__value account-key-fingerprint-value" data-role="fingerprint-field">No key yet</code>
@@ -322,6 +333,44 @@ No browser private key saved yet.
       if (state === 'member') {
         lookUpApproval(root);
       }
+      syncJoinHint(root, state, username);
+    }
+
+    // A waiting key whose name approved members already use joins that user once approved.
+    function syncJoinHint(root, state, username) {
+      var hint = root.querySelector('[data-role="join-hint"]');
+      if (!hint) {
+        return;
+      }
+      var token = usernameToken(username);
+      if (state !== 'waiting' || token === 'guest') {
+        hint.hidden = true;
+        return;
+      }
+      if (root.dataset.joinHintFor === token) {
+        hint.hidden = root.dataset.joinHintShown !== '1';
+        return;
+      }
+      root.dataset.joinHintFor = token;
+      root.dataset.joinHintShown = '0';
+      hint.hidden = true;
+      if (!window.fetch) {
+        return;
+      }
+      fetch('/api/get_username?username=' + encodeURIComponent(token), { credentials: 'same-origin' })
+        .then(function (response) { return response.ok ? response.text() : ''; })
+        .then(function (text) {
+          var match = /^Approved-Keys: (\d+)$/m.exec(text);
+          if (root.dataset.joinHintFor !== token || !match || Number(match[1]) < 1) {
+            return;
+          }
+          root.dataset.joinHintShown = '1';
+          hint.querySelectorAll('[data-role="join-hint-name"]').forEach(function (node) {
+            node.textContent = username;
+          });
+          hint.hidden = root.dataset.accountState !== 'waiting';
+        })
+        .catch(function () {});
     }
 
     function syncProfileLinks(root) {
@@ -432,6 +481,36 @@ No browser private key saved yet.
       });
     }
 
+    // Change opens the name editor in place; Cancel and Escape close it.
+    function bindNameEditor() {
+      var root = accountKeyRoot();
+      var editor = root && root.querySelector('[data-role="name-editor"]');
+      var change = root && root.querySelector('[data-action="rename-profile"]');
+      if (!editor || !change) {
+        return;
+      }
+      var input = editor.querySelector('[data-role="name-editor-input"]');
+
+      function close() {
+        editor.hidden = true;
+        change.focus();
+      }
+
+      change.addEventListener('click', function () {
+        editor.hidden = false;
+        input.value = readStorageValue('forum_pki_username') || '';
+        input.focus();
+        input.select();
+      });
+      editor.querySelector('[data-action="cancel-name"]').addEventListener('click', close);
+      editor.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          close();
+        }
+      });
+    }
+
     function initAccountKeySimpleUi() {
       var root = accountKeyRoot();
       if (!root) {
@@ -443,6 +522,7 @@ No browser private key saved yet.
       bindViewerCopyButtons();
       bindFingerprintCopy();
       bindBackupRows();
+      bindNameEditor();
       syncSimpleUI();
       mirrorAdvancedStatus();
       window.addEventListener('forum:identity-changed', syncSimpleUI);

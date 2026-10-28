@@ -2953,58 +2953,119 @@
     });
 
     const renameButton = root.querySelector('[data-action="rename-profile"]');
-    if (renameButton) renameButton.addEventListener("click", async function () {
+    const nameInput = root.querySelector('[data-role="account-name-input"]');
+    const nameEditor = root.querySelector('[data-role="name-editor"]');
+    const retryButton = root.querySelector('[data-action="retry-account-action"]');
+    let retryAction = null;
+
+    // A failed account action leaves a Retry beside its message.
+    function offerRetry(action) {
+      retryAction = action;
+      if (retryButton) retryButton.hidden = action === null;
+    }
+
+    if (retryButton) retryButton.addEventListener("click", function () {
+      const action = retryAction;
+      offerRetry(null);
+      if (action) void action();
+    });
+
+    async function saveProfileName(chosen) {
+      if (!hasBrowserKeypair()) {
+        throw new Error("Set up this browser first.");
+      }
+      await ensureActionIdentity(root, statusNode);
+      const identity = currentAuthorIdentityId();
+      const postName = async (endpoint, values) => {
+        const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
+        const result = await response.json();
+        if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
+        return result;
+      };
+      const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
+      const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
+      const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
+        record_path: prepared.record_path, author_identity_id: identity,
+        canonical_record: prepared.canonical_record, detached_signature: signature });
+      if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
+      localStorage.setItem(storageKeys.username, result.username);
+      root.dataset.authenticatedUsername = result.username;
+      if (nameEditor) nameEditor.hidden = true;
+      renderSavedState(root);
+      window.dispatchEvent(new Event("forum:identity-changed"));
+      setStatus(statusNode, "Username saved. Your key and approval are unchanged.", "ok");
+    }
+
+    async function renameTo(chosen, button) {
+      if (button) button.disabled = true;
+      offerRetry(null);
+      try {
+        await saveProfileName(chosen);
+      } catch (error) {
+        setStatus(statusNode, error.message || "Unable to save username.", "error");
+        offerRetry(function () { return renameTo(chosen, button); });
+      } finally {
+        if (button) button.disabled = false;
+      }
+    }
+
+    // The account page edits the name in place; elsewhere the prompt remains.
+    if (nameEditor) {
+      nameEditor.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const input = nameEditor.querySelector('[data-role="name-editor-input"]');
+        void renameTo(input ? input.value : "", nameEditor.querySelector('[type="submit"]'));
+      });
+    } else if (renameButton) renameButton.addEventListener("click", function () {
       if (!hasBrowserKeypair()) {
         setStatus(statusNode, "Set up this browser first.", "error");
         return;
       }
       const chosen = window.prompt("Choose your username:", localStorage.getItem(storageKeys.username) || "guest");
       if (chosen === null) return;
-      renameButton.disabled = true;
-      try {
-        await ensureActionIdentity(root, statusNode);
-        const identity = currentAuthorIdentityId();
-        const postName = async (endpoint, values) => {
-          const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
-          const result = await response.json();
-          if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
-          return result;
-        };
-        const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
-        const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
-        const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
-          record_path: prepared.record_path, author_identity_id: identity,
-          canonical_record: prepared.canonical_record, detached_signature: signature });
-        if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
-        localStorage.setItem(storageKeys.username, result.username);
-        root.dataset.authenticatedUsername = result.username;
-        renderSavedState(root);
-        window.dispatchEvent(new Event("forum:identity-changed"));
-        setStatus(statusNode, "Username saved. Your key and approval are unchanged.", "ok");
-      } catch (error) {
-        setStatus(statusNode, error.message || "Unable to save username.", "error");
-      } finally { renameButton.disabled = false; }
+      void renameTo(chosen, renameButton);
     });
+
+    async function publishNewKey(username) {
+      setStatus(statusNode, "Publishing your public key in the background...", "info");
+      try {
+        await publishPublicKeyWithRetry(root);
+        await authenticatePrivateSiteIfAvailable();
+      } catch (error) {
+        setStatus(statusNode, "Couldn't publish your key.", "error", { technicalDetails: error instanceof Error ? error.message : "" });
+        offerRetry(function () { return publishNewKey(username); });
+        return;
+      }
+      if (publicKeyField) {
+        publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+      }
+      setStatus(statusNode, `Browser keypair ready for ${username}. Public key linked.`, "ok");
+    }
 
     if (generateButton) {
       generateButton.addEventListener("click", async function () {
         generateButton.disabled = true;
+        offerRetry(null);
 
         try {
-          const username = await promptForAccountUsername();
+          const username = nameInput ? normalizeUsername(nameInput.value) : await promptForAccountUsername();
+          if (nameInput && hasBrowserKeypair()) {
+            // An unnamed automatic key keeps its posts and invitations: name it rather than replace it.
+            if (username === "guest") {
+              throw new Error("Type a name first.");
+            }
+            if (root.dataset.usernameChangesEnabled === "1") {
+              await renameTo(username, null);
+              return;
+            }
+          }
           setStatus(statusNode, "Generating browser keypair...", "info");
           await generateBrowserKey(root, username);
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
-          setStatus(statusNode, "Publishing your public key in the background...", "info");
-          await publishPublicKeyWithRetry(root);
-          await authenticatePrivateSiteIfAvailable();
-          if (publicKeyField) {
-            publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
-          }
-          setStatus(statusNode, `Browser keypair ready for ${username}. Public key linked.`, "ok");
+          await publishNewKey(username);
         } catch (error) {
           setStatus(statusNode, error instanceof Error ? error.message : "Unable to generate browser keypair.", "error");
         } finally {

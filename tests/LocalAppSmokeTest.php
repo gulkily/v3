@@ -936,6 +936,9 @@ PHP;
             $profileResume = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity');
             assertStringContains('data-auth-return-to="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity"', $profileResume);
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
+            $username = $this->render($application, '/api/get_username?username=guest');
+            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $username);
+            assertStringNotContains('Approved-Keys', $username);
             assertStringContains('<h1>Reconnecting</h1>', $this->render($application, '/backup/'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
             assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
@@ -4065,6 +4068,22 @@ PHP;
             '/^zenmemes-repository-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}Z-[a-f0-9]+\.tar\.gz$/',
             $filename
         );
+    }
+
+    public function testUsernameApiCountsApprovedKeysForAName(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+
+        $profile = $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+        preg_match('/^Username: (.+)$/m', $profile, $username);
+        $approvedHere = str_contains($profile, "Approved: yes") ? 1 : 0;
+        $known = $this->render($application, '/api/get_username?username=' . rawurlencode(strtoupper($username[1])));
+        assertStringContains('Username-Token: ' . strtolower($username[1]) . "\n", $known);
+        preg_match('/^Approved-Keys: (\d+)$/m', $known, $count);
+        assertTrue((int) $count[1] >= $approvedHere);
+        assertStringContains("Approved-Keys: 0\n", $this->render($application, '/api/get_username?username=nobody-uses-this-name'));
+        assertStringContains('invalid username', $this->render($application, '/api/get_username?username=' . rawurlencode("bad\nname")));
     }
 
     public function testIdentityHintRouteSetsCookieValue(): void
