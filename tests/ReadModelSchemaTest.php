@@ -21,6 +21,7 @@ final class ReadModelSchemaTest
             'activity',
             'activity_action_key_idx',
             'activity_author_identity_idx',
+            'activity_pending_evidence_idx',
             'activity_post_id_idx',
             'activity_recent_idx',
             'commits',

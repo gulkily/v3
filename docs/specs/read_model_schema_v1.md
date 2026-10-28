@@ -40,6 +40,8 @@ order is immaterial.
 
 ## Core read-model tables
 
+Version 32 adds compact `activity.evidence_json`: an internal tuple of signature path/status and relevant-file tuples (path, status, previous path, role, signer, key path, key status). No rendered HTML, deleted prose or full commit manifests are stored. NULL means indexing is incomplete; a partial pending index and source-field triggers mark affected evidence for write-time refresh. Source-less events receive explicit empty evidence. Startup rebuilds version 31 before querying the new projection.
+
 Version 31 adds the public identity-history query contract (no new tables):
 counts and bounded histories select authored posts by exact identity, excluding
 hidden, retracted, identity/bootstrap-board and scripture-expansion rows. Thread histories

@@ -46,6 +46,7 @@ final class ActivityService
     private ?SqliteActivityCommitManifestCache $activityCommitManifestCacheStore = null;
     private bool $activityCommitManifestCacheStoreInitialized = false;
     private ?PDO $pdo = null;
+    private ?array $indexedSignatureStatuses = null;
 
     /**
      * @param \Closure(): PDO $pdoFactory Lazy, like RouteServices::pdo() -
@@ -295,6 +296,18 @@ final class ActivityService
         $item['relevant_files'] = $this->activityItemRelevantFiles($evidence);
 
         return $item;
+    }
+
+    /** Index-time only: compact relevant evidence, never a full commit or rendered HTML. */
+    public function buildIndexedEvidence(array $row, ?array $signatureStatuses = null): string
+    {
+        $this->indexedSignatureStatuses ??= $signatureStatuses ?? $this->pdo()->query('SELECT source_path, signature_status FROM reaction_signatures')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $item = $this->enrichActivityItem($row, false);
+        $files = array_map(static fn (array $file): array => [
+            $file['path'], $file['status'], $file['previous_path'], $file['role'],
+            $file['signature_signer_identity'], $file['signature_public_key_path'], $file['signature_key_status'],
+        ], $item['relevant_files']);
+        return json_encode([$item['source_signature_path'], $item['source_signature_status'], $files], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
     }
 
     public function securityReviewItem(array $item): array
@@ -678,6 +691,9 @@ final class ActivityService
         bool $authorIdentityIdIsCanonical = false
     ): string
     {
+        if ($this->indexedSignatureStatuses !== null && isset($this->indexedSignatureStatuses[$sourcePath])) {
+            return $this->indexedSignatureStatuses[$sourcePath];
+        }
         if (preg_match('#^records/(thread-labels|post-reactions|post-retractions)/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $sourcePath)) {
             try {
                 $contents = (string) file_get_contents($this->repositoryRoot . '/' . $sourcePath);

@@ -18,3 +18,13 @@ Entry: 2026-10-28; Step 3 approved, branch feat/activity-load-performance, plann
 *— Codex · 2026-10-28 UTC*
 
 Baseline data-layer p95: standard 7.457 ms, Forte 5.018 ms, detail 4.921 ms; 851,968 bytes / 210 events. Warm manifest cache and unsigned bulk data make this a structural comparison, not a production latency prediction.
+
+## Stage 2 - Compact rebuild evidence
+**Original estimate: 0.18**
+**Retrospective stage work: 0.18**
+
+- Changes: Schema 32 adds compact evidence, pending index and source-field invalidation. Transactional rebuild computes relevant paths once per commit group and reuses stored signature statuses. Links/HTML/full manifests are not stored.
+- Verification: ActivityProjectionTest + schema/prior-index startup checks 6/6; earlier standard pagination checks 11/11. Actual `./v3 rebuild` on disposable bulk fixture passed. Prior schema test removes the new column/index/triggers and verifies normal Activity startup rebuilds before reading it.
+- Notes: Initial schema inventory assertion failed as expected and was updated; rerun passed. Live readers still use their prior paths until stages 5/6. Stage 1 commit 3e924f927. No dependency changes.
+
+*— Codex · 2026-10-28 UTC*
