@@ -253,6 +253,7 @@ final class TemplateRenderer
             'navItems' => $navItems,
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
+            'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
         ]);
     }
 

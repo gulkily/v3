@@ -58,8 +58,8 @@
   box-shadow: 0 -3px 8px var(--page-bg);
 }
 .private-conversation.composer-inline [data-private-message-composer] { position: static; }
-/* App shell phone tab bar: keep the sticky composer above it (`--app-tabbar-height` comes from site.css). */
-@media (max-width: 639px) { [data-shell="app"] .private-conversation [data-private-message-composer] { bottom: var(--app-tabbar-height); } }
+/* App shell phone tab bar: keep the sticky composer above it, or at the bottom while it is scrolled away (`--app-tabbar-offset` comes from site.css). */
+@media (max-width: 639px) { [data-shell="app"] .private-conversation [data-private-message-composer] { bottom: var(--app-tabbar-offset); } }
 .private-conversation [data-private-message-form] { gap: .35rem; }
 .private-conversation [data-private-message-composer] textarea { margin-top: 0; min-height: 3.5rem; resize: vertical; }
 .private-conversation [data-private-message-composer] button { width: auto; min-height: 44px; margin-top: 0; }

@@ -82,6 +82,7 @@ App shell and navigation. Mockup: `shell.html`. Templates: `templates/layout.php
 - [x] Hooks: `data-tab` on navigation items, an empty `aria-hidden` sky layer as the first child of the app shell, an empty `.site-brand__mark` slot in the wordmark.
 - [x] Icon themes: tab bar and account menu icons mapped for Word97, Chicago and Midnight.
 - Done when: every page uses the new shell in every theme, with no lost destination. **Done 2026-10-27**, merged to `main` (`5ac1432de`).
+- Follow-up (2026-10-28, [`ui_tab_bar_scroll_away`](../ui_tab_bar_scroll_away/)): on phones the tab bar slides away while scrolling down and returns on scroll up, at either page end, on focus and while the account menu is open, after the user reported that floating bars cover content and cannot be dismissed. Real-iPhone feel pending.
 
 ### Cycle 2: `ui_board_list`
 
