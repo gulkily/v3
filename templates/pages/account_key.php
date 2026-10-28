@@ -253,16 +253,16 @@ No browser private key saved yet.
         || root.dataset.viewerIdentityId === 'openpgp:' + fingerprint);
     }
 
-    // Guest: no saved key, a key not yet registered (shown under its name), or
-    // the automatic `guest` key that was never named.
+    // Guest: no saved key, or a key not yet registered (shown under its name).
+    // A registered key is a member whatever its name, `guest` included, so its
+    // name, Remove and Save a copy are always reachable.
     // Otherwise waiting or approved; the server's approval counts only for this
     // browser's own key, and an unknown approval is looked up after paint.
     function accountState(root) {
       var fingerprint = storedFingerprint();
-      var username = readStorageValue('forum_pki_username') || 'guest';
       var serverKnowsThisKey = fingerprint !== '' && root.dataset.viewerIdentityId === 'openpgp:' + fingerprint;
       var approval = serverKnowsThisKey ? (root.dataset.viewerApproved === '1' ? 'approved' : 'waiting') : (root.dataset.lookedUpApproval || '');
-      if (!hasBrowserKeypair() || !isRegistered(root) || (username === 'guest' && approval !== 'approved')) {
+      if (!hasBrowserKeypair() || !isRegistered(root)) {
         return 'guest';
       }
       return approval || 'member';

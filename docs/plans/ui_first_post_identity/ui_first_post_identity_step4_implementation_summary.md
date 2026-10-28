@@ -289,3 +289,16 @@ Stage estimates are not summed.
 - Still pending: the real-iPhone check, merge (only on request), deployment, and the maintainer's comfortable-fit judgment.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Request - guest is a regular user
+
+- Request (2026-10-28): "If I choose to make one post as guest, I have no way to sign out or change it." On review, cycle 4 (`ui_account_states`) showed an unapproved key named `guest` on Account's guest card, which hides Name, Remove this key and Save a copy. Together with this cycle's rule that Change is hidden for registered keys where renaming is off, that left no way out. The user confirmed the direction: "guest was just a regular user with username guest, no special cases", then "Yes, OK."
+- Disposition: corrective follow-up on this branch after closeout. Account shows the member card for any registered key, whatever its name; the guest card stays for "no key yet" and "not registered yet". Remove this key is how anyone signs out or starts over. Where renaming is off, Change in the composer stays hidden for every registered key (unchanged). This reverses part of cycle 4's design, with the user's approval.
+- Changes: `account_key.php` `accountState` drops the cycle 4 rule that put an unapproved key named `guest` on the guest card. Now the guest card means only "no key" or "not registered yet"; any registered key gets the member card (Name, Change where renaming is on, Fingerprint, Save a copy, Remove this key).
+- Verification:
+  - `account_states.mjs` (updated) **passed**. An unregistered automatic key shows the guest card. A registered `guest` shows the member card from first paint, then "Waiting for approval", with Name "guest", Remove this key and Save a copy visible. Renaming a registered `guest` uses Name → Change → Save and keeps the fingerprint. Phone screenshot reviewed.
+  - Browser tests passed: `invite_zero_click`, `testing_self_approval`, `first_post_identity`, `compose_identity_row`, `lobby_local_key` and `key_backup_ui`.
+  - `AccountKeyPageHooksTest` 6/6 and `BrowserSigningNormalizationTest` 82/82 passed. `LocalAppSmokeTest` 153/154 passed (the same unrelated failure).
+- Notes: what remains of guest handling is unchanged: `guest` is the default name for a new key, and the join hint is not shown for the name `guest`.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

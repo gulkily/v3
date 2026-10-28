@@ -78,9 +78,19 @@ try {
   assert.deepEqual(fresh.errors, []);
   await fresh.context.close();
 
-  const autoGuest = await open(withKey(unknown, unknownFingerprint, 'guest'));
-  assert.equal((await parsed(autoGuest.page)).state, 'guest', 'unnamed automatic key: guest');
+  // An automatic key the server doesn't have yet is a guest; once registered, `guest` is a regular user.
+  const autoGuest = await open(withKey(unknown, unknownFingerprint, 'guest', false));
+  assert.equal((await parsed(autoGuest.page)).state, 'guest', 'unregistered automatic key: guest');
   await autoGuest.context.close();
+  const registeredGuest = await open(withKey(unknown, unknownFingerprint, 'guest'), phone);
+  const registeredGuestParsed = await parsed(registeredGuest.page);
+  assert.ok(registeredGuestParsed.member && !registeredGuestParsed.guest, 'registered guest: member card from first paint');
+  await registeredGuest.page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'waiting');
+  assert.equal(await registeredGuest.page.locator('[data-role="name-row-value"]').textContent(), 'guest');
+  assert.equal(await registeredGuest.page.getByRole('button', { name: 'Remove this key' }).isVisible(), true, 'a guest can sign out');
+  assert.equal(await registeredGuest.page.getByRole('link', { name: 'Save a copy of this key' }).isVisible(), true);
+  await shot(registeredGuest.page, 'registered-guest');
+  await registeredGuest.context.close();
 
   const member = await open(withKey(approved, approvedFingerprint, 'alice'), phone);
   // First visit: the member card from first paint; approval is either known to the server or looked up after paint.
@@ -158,11 +168,13 @@ try {
   await shot(joining.page, 'waiting-join-hint');
   await joining.context.close();
 
-  // An unnamed automatic key is named in place, keeping its fingerprint.
+  // A registered key named guest is renamed in place like any other, keeping its fingerprint.
   const named = await open(withKey(unknown, unknownFingerprint, 'guest'));
   const namedNavigations = countNavigations(named.page);
-  await named.page.locator('[data-role="account-name-input"]').fill('carol');
-  await named.page.getByRole('button', { name: 'Continue' }).click();
+  await settle(named.page);
+  await named.page.getByRole('button', { name: 'Change' }).click();
+  await named.page.locator('[data-role="name-editor-input"]').fill('carol');
+  await named.page.getByRole('button', { name: 'Save' }).click();
   await named.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'carol', null, { timeout: 30000 });
   await settle(named.page);
   assert.equal((await named.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'))).toLowerCase(), unknownFingerprint.toLowerCase());
@@ -226,6 +238,6 @@ try {
   await noScript.page.locator('#key-link > summary').click();
   assert.equal(await noScript.page.locator('textarea[name="public_key"]').isVisible(), true, 'Link a public key still works');
   await noScript.context.close();
-  console.log('PASS account states: guest, automatic guest, member → approved, approved on first paint, waiting, local naming, local key replaced, join hint, rename and Retry, remove with Undo, no JavaScript');
+  console.log('PASS account states: guest, automatic guest (local), registered guest as a member with Remove, member → approved, approved on first paint, waiting, local naming, local key replaced, join hint, rename and Retry, remove with Undo, no JavaScript');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { if (browser) await browser.close(); server.kill(); }
