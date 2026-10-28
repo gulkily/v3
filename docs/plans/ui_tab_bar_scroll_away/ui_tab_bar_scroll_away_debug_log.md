@@ -58,3 +58,25 @@ Railspike debug reports for cycle `v3/ui_tab_bar_scroll_away`. Debug mode was en
 ### Uncertain assessments
 
 - Scroll threshold values cannot be validated without the user's iPhone; recorded as a tuning point in Stage 1.
+
+## 2026-10-28 — Step 4 (Implementation) report
+
+### Necessary/useful instructions
+
+- `step4_implementation_summary.md`, per-stage "Notes" for deviations: recorded the decision not to animate the dependents and why, which a reviewer would otherwise read as an omission. Retain.
+- `RAILSPIKE.md`, commit per stage: kept the script, the dependents and the closeout separately reviewable. Retain.
+- Project bounded-verification practice (focused tests per stage, one full suite): the suite ran once; the one unfamiliar failure was rerun alone instead of rerunning the suite. Retain.
+
+### Redundant/unnecessary instructions
+
+- Step 4 "Estimate details" per stage repeats the retrospective score with little new information when nothing changed. Suggestion: allow "as expected".
+
+### Inapplicable instructions
+
+- Deployment and static rebuild steps: CSS and script only, and not deployed.
+- Read-model schema rules in `CONTRIBUTING.md`: no schema change.
+
+### Uncertain assessments
+
+- Whether emulated bounce (a stubbed `window.scrollY` past the ends) represents iOS rubber-band scrolling closely enough; left to the user's iPhone check.
+- Whether "HTML unchanged" for other sites holds when the inlined critical CSS gains inert rules; recorded as a scoped-rules claim rather than byte-identical HTML.
