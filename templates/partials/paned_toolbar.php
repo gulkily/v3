@@ -71,4 +71,19 @@ $viewerStatusLabel = $viewerLoggedIn ? $viewerDisplayName : 'Guest';
     </svg>
     <span data-paned-identity-label><?= $e($viewerStatusLabel) ?></span>
   </a>
+  <script>
+    // Before first paint, a key kept in this browser shows its name and links to Account
+    // (toolbar_identity_status.js keeps it current afterwards).
+    (function (link) {
+      var stored = function (key) { try { return window.localStorage.getItem(key) || ''; } catch (error) { return ''; } };
+      var fingerprint = stored('forum_pki_fingerprint').trim().toUpperCase();
+      if (!stored('forum_pki_public_key') || !stored('forum_pki_private_key')
+        || (fingerprint !== '' && stored('forum_pki_published_fingerprint').trim().toUpperCase() === fingerprint)) {
+        return;
+      }
+      link.querySelector('[data-paned-identity-label]').textContent = stored('forum_pki_username') || 'guest';
+      link.setAttribute('data-identity-logged-in', '0');
+      link.setAttribute('href', '/account/key/');
+    })(document.currentScript.previousElementSibling);
+  </script>
 </div>

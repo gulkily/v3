@@ -5,7 +5,6 @@
     privateKey: "forum_pki_private_key",
     fingerprint: "forum_pki_fingerprint",
     publishedFingerprint: "forum_pki_published_fingerprint",
-    automaticGuestPublication: "forum_pki_automatic_guest_publication",
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
     composeDraftPrefix: "forum_compose_draft",
     recentlyClearedComposeDraft: "forum_recently_cleared_compose_draft",
@@ -117,7 +116,6 @@
       duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
       identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
       openpgp_ms: timingDelta(timing, "forum_identity_prewarm_start", "forum_openpgp_ready"),
-      username_prompt_ms: timingDelta(timing, "forum_username_prompt_start", "forum_username_prompt_returned"),
       key_generation_ms: timingDelta(timing, "forum_key_generation_start", "forum_key_generation_end"),
       link_identity_ms: timingDelta(timing, "forum_link_identity_fetch_start", "forum_link_identity_response"),
       identity_hint_ms: timingDelta(timing, "forum_identity_hint_fetch_start", "forum_identity_hint_response"),
@@ -1639,6 +1637,9 @@
   }
 
   async function syncIdentityHint(value, timing) {
+    if (/^openpgp:/.test(value) && !isRegisteredIdentity()) {
+      return;
+    }
     const query = new URLSearchParams({ identity_hint: value }).toString();
     markActionTiming(timing, "forum_identity_hint_fetch_start");
     await fetch(`/api/set_identity_hint?${query}`, {
@@ -1971,19 +1972,6 @@
     return options.automaticGuestKeypairEnabled === true;
   }
 
-  function automaticGuestPublicationIsImmediate() {
-    return localStorage.getItem(storageKeys.automaticGuestPublication) === "immediate";
-  }
-
-  function setAutomaticGuestPublicationIsImmediate(immediate) {
-    if (immediate) {
-      localStorage.setItem(storageKeys.automaticGuestPublication, "immediate");
-      return;
-    }
-
-    localStorage.removeItem(storageKeys.automaticGuestPublication);
-  }
-
   function storedFingerprint() {
     return (localStorage.getItem(storageKeys.fingerprint) || "")
       .trim()
@@ -1994,6 +1982,11 @@
     return (localStorage.getItem(storageKeys.publishedFingerprint) || "")
       .trim()
       .toUpperCase();
+  }
+
+  // A key is registered once the server has it; until then it is a guest key kept in this browser.
+  function isRegisteredIdentity() {
+    return hasBrowserKeypair() && publishedFingerprint() !== "" && publishedFingerprint() === storedFingerprint();
   }
 
   function identityPreparationState() {
@@ -2045,12 +2038,13 @@
     switch (state) {
       case "loading_openpgp":
         return "Loading browser identity tools...";
-      case "needs_consent":
-        return "You may be asked to choose a username.";
       case "needs_fingerprint":
         return "Finishing saved browser identity...";
+      // No key yet, or a key kept in this browser: the composer's name row says who you post as,
+      // and the first signed action registers the key.
+      case "needs_consent":
       case "needs_publish":
-        return "Publish your browser identity before signed actions.";
+        return "";
       case "generating":
         return "Generating browser keypair...";
       case "publishing":
@@ -2245,7 +2239,7 @@
         markActionTiming(timing, "forum_openpgp_ready");
 
         if (pageHasVoteSurfaces(root)) {
-          storedVoteIdentityReadiness = hasBrowserKeypair() ? "in_flight" : "not_applicable";
+          storedVoteIdentityReadiness = hasBrowserKeypair() && publishedFingerprint() !== "" ? "in_flight" : "not_applicable";
           const ready = await ensureStoredIdentityReady(root, timing);
           storedVoteIdentityReadiness = ready ? "ready" : "not_applicable";
         } else if (hasBrowserKeypair()) {
@@ -2274,7 +2268,9 @@
   }
 
   async function ensureStoredIdentityReady(root, timing) {
-    if (!hasBrowserKeypair()) {
+    // A key that was never registered stays local until its first signed action.
+    if (!hasBrowserKeypair() || publishedFingerprint() === ""
+      || publishedFingerprint() !== String(await ensureStoredFingerprint()).trim().toUpperCase()) {
       return false;
     }
 
@@ -2297,11 +2293,7 @@
     }
 
     automaticGuestIdentityStarted = true;
-    void ensureReadyIdentity(root, null, {
-      promptForUsername: async function () { return "guest"; },
-      publishPublicKey: automaticGuestPublicationIsImmediate(),
-      verifyPublishedIdentity: automaticGuestPublicationIsImmediate(),
-    }).catch(function () {
+    void ensureReadyIdentity(root, null, { publishPublicKey: false }).catch(function () {
       // A later signed action or the Account Key page retains the existing
       // recovery path. Do not surface background setup errors unprompted.
     });
@@ -2311,6 +2303,10 @@
 
   function renderSavedState(root) {
     if (!root || typeof root.querySelector !== "function") {
+      // Composers and other surfaces outside Account still follow a new key or its registration.
+      if (typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new Event("forum:identity-changed"));
+      }
       return;
     }
 
@@ -2367,56 +2363,13 @@
       }
     });
     profileLinkWraps.forEach(function (profileLinkWrap) {
-      profileLinkWrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : !fingerprint;
+      profileLinkWrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : !isRegisteredIdentity();
     });
 
     renderUndoState(root);
     if (typeof window.dispatchEvent === "function") {
       window.dispatchEvent(new Event("forum:identity-changed"));
     }
-  }
-
-  async function promptForUsername(promptMessage, cancellationMessage) {
-    const prompted = typeof window.prompt === "function"
-      ? window.prompt(
-          promptMessage,
-          localStorage.getItem(storageKeys.username) || "guest"
-        )
-      : "guest";
-
-    if (prompted === null || String(prompted).trim() === "") {
-      const continueAsGuest = typeof window.confirm === "function"
-        ? window.confirm("Continue with the default username 'guest'?")
-        : true;
-      if (!continueAsGuest) {
-        throw new Error(cancellationMessage);
-      }
-
-      return "guest";
-    }
-
-    return normalizeUsername(prompted);
-  }
-
-  async function promptForComposeUsername() {
-    try {
-      const username = await promptForUsername(
-        "What should we call you?",
-        "Choose a name before continuing."
-      );
-      localStorage.removeItem(storageKeys.composePromptCancelled);
-      return username;
-    } catch (error) {
-      localStorage.setItem(storageKeys.composePromptCancelled, "1");
-      throw error;
-    }
-  }
-
-  async function promptForAccountUsername() {
-    return promptForUsername(
-      "Choose a username for this browser keypair:",
-      "Key generation paused until you choose a username."
-    );
   }
 
   async function generateBrowserKey(root, preferredUsername, timing) {
@@ -2659,21 +2612,13 @@
   async function prepareReadyIdentity(root, statusNode, options) {
     const config = options || {};
     const timing = config.timing || null;
-    const promptForUsername = typeof config.promptForUsername === "function"
-      ? config.promptForUsername
-      : promptForComposeUsername;
 
     if (!hasBrowserKeypair()) {
       if (config.existingIdentityOnly === true) {
         return false;
       }
-      await ensureOpenPgpApi(["generateKey", "readKey"]);
-      setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
-      markActionTiming(timing, "forum_username_prompt_start");
-      const username = config.temporaryName ? normalizeUsername(config.temporaryName) : await promptForUsername();
-      markActionTiming(timing, "forum_username_prompt_returned");
-      setStatus(statusNode, "Generating browser keypair...", "info");
-      await generateBrowserKey(root, username, timing);
+      setStatus(statusNode, "Creating your account…", "info");
+      await generateBrowserKey(root, config.temporaryName || "", timing);
     }
 
     // Keep the normal action path flat: compose/reaction flows intentionally
@@ -2693,7 +2638,7 @@
     }
 
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
-      setStatus(statusNode, "Publishing your public key in the background...", "info");
+      setStatus(statusNode, "Creating your account…", "info");
       await publishPublicKeyWithRetry(root, timing);
     } else if (verifyPublishedIdentity && !(await serverKnowsCurrentIdentity(fingerprint))) {
       setStatus(statusNode, "Finishing browser identity setup...", "info");
@@ -2727,7 +2672,7 @@
     }
 
     if (fingerprint === "" || publishedFingerprint !== fingerprint) {
-      setStatus(statusNode, "Publishing your public key in the background...", "info");
+      setStatus(statusNode, "Creating your account…", "info");
       await publishPublicKeyWithRetry(root, timing);
     } else if (verifyPublishedIdentity && !(await serverKnowsCurrentIdentity(fingerprint))) {
       setStatus(statusNode, "Finishing browser identity setup...", "info");
@@ -2753,17 +2698,73 @@
     await privateSiteAuth.authenticate();
   }
 
+  // Renames a registered key with a signed profile-name record; its posts move to the new name.
+  async function saveRegisteredName(chosen, root, statusNode) {
+    await ensureActionIdentity(root || null, statusNode || null);
+    const identity = currentAuthorIdentityId();
+    const postName = async (endpoint, values) => {
+      const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
+      const result = await response.json();
+      if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
+      return result;
+    };
+    const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
+    const signature = await signCanonicalRecord(prepared.canonical_record);
+    const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
+      record_path: prepared.record_path, author_identity_id: identity,
+      canonical_record: prepared.canonical_record, detached_signature: signature });
+    if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
+    localStorage.setItem(storageKeys.username, result.username);
+    window.dispatchEvent(new Event("forum:identity-changed"));
+    return result.username;
+  }
+
+  // The composer's Change. A key kept in this browser is replaced by one under the new name, sending
+  // nothing; a registered key is renamed on the server instead. (Offline Likes signed by a replaced key
+  // carry its public key, so the Outbox can still send them.)
+  async function changeIdentityName(chosen) {
+    const username = normalizeUsername(chosen);
+    if (hasBrowserKeypair() && username === (localStorage.getItem(storageKeys.username) || "guest")) {
+      return username;
+    }
+    const usernameChangesEnabled = (window.forumBrowserIdentityOptions || {}).usernameChangesEnabled === true;
+    if (!isRegisteredIdentity()) {
+      await generateBrowserKey(null, username);
+      window.dispatchEvent(new Event("forum:identity-changed"));
+      return username;
+    }
+    if (!usernameChangesEnabled) {
+      throw new Error("Names can't be changed on this site.");
+    }
+    try {
+      return await saveRegisteredName(username);
+    } catch (error) {
+      // A dropped connection surfaces as a bare TypeError ("Failed to fetch"); say what to do instead.
+      throw error instanceof TypeError ? new Error("Couldn't save your name. Check your connection and try again.") : error;
+    }
+  }
+
+  // A failed key creation or registration, reported beside the action with Retry; the cause stays in the details.
+  function accountCreationFailure(error) {
+    const failure = new Error("Couldn't create your account.");
+    const status = statusFromError(error, "Unable to prepare your browser identity.");
+    failure.technicalDetails = [status.message, status.technicalDetails].filter(Boolean).join(" ");
+    failure.accountCreationFailure = true;
+    return failure;
+  }
+
   async function ensureComposeIdentity(root, statusNode, timing) {
-    await ensureActionIdentity(root, statusNode, {
-      promptForUsername: promptForComposeUsername,
-      timing: timing,
-    });
+    try {
+      await ensureActionIdentity(root, statusNode, { timing: timing });
+    } catch (error) {
+      throw accountCreationFailure(error);
+    }
   }
 
   async function ensureActionIdentity(root, statusNode, options) {
     const config = options || {};
     return ensureReadyIdentity(root, statusNode, {
-      promptForUsername: config.promptForUsername,
       temporaryName: config.temporaryName,
       existingIdentityOnly: config.existingIdentityOnly === true,
       verifyPublishedIdentity: config.verifyPublishedIdentity === true,
@@ -2779,14 +2780,15 @@
       ensureStoredIdentityReady: ensureStoredIdentityReady,
       storedVoteIdentityReadinessState: storedVoteIdentityReadinessState,
       hasBrowserKeypair: hasBrowserKeypair,
+      isRegisteredIdentity: isRegisteredIdentity,
       identityPreparationState: identityPreparationState,
       pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,
       pageHasVoteSurfaces: pageHasVoteSurfaces,
       renderIdentityPreparationState: renderIdentityPreparationState,
       scheduleIdentityPrewarm: scheduleIdentityPrewarm,
       scheduleAutomaticGuestIdentity: scheduleAutomaticGuestIdentity,
-      automaticGuestPublicationIsImmediate: automaticGuestPublicationIsImmediate,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
+      accountCreationFailure: accountCreationFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
       deriveIdentityFromPrivateKey: deriveIdentityFromPrivateKey,
@@ -2921,7 +2923,6 @@
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
     const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
-    const automaticGuestPublicationInput = root.querySelector('[data-role="automatic-guest-publication"]');
     if (window.ForumKeyBackupUI) {
       window.ForumKeyBackupUI.bind(root, {
         snapshot: browserIdentitySnapshot,
@@ -2935,9 +2936,6 @@
 
 
     renderSavedState(root);
-    if (automaticGuestPublicationInput) {
-      automaticGuestPublicationInput.checked = automaticGuestPublicationIsImmediate();
-    }
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
@@ -2952,7 +2950,6 @@
       }
     });
 
-    const renameButton = root.querySelector('[data-action="rename-profile"]');
     const nameInput = root.querySelector('[data-role="account-name-input"]');
     const nameEditor = root.querySelector('[data-role="name-editor"]');
     const retryButton = root.querySelector('[data-action="retry-account-action"]');
@@ -2974,26 +2971,10 @@
       if (!hasBrowserKeypair()) {
         throw new Error("Set up this browser first.");
       }
-      await ensureActionIdentity(root, statusNode);
-      const identity = currentAuthorIdentityId();
-      const postName = async (endpoint, values) => {
-        const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
-        const result = await response.json();
-        if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
-        return result;
-      };
-      const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
-      const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
-      const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
-        record_path: prepared.record_path, author_identity_id: identity,
-        canonical_record: prepared.canonical_record, detached_signature: signature });
-      if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
-      localStorage.setItem(storageKeys.username, result.username);
-      root.dataset.authenticatedUsername = result.username;
+      const username = await saveRegisteredName(chosen, root, statusNode);
+      root.dataset.authenticatedUsername = username;
       if (nameEditor) nameEditor.hidden = true;
       renderSavedState(root);
-      window.dispatchEvent(new Event("forum:identity-changed"));
       setStatus(statusNode, "Username saved. Your key and approval are unchanged.", "ok");
     }
 
@@ -3010,22 +2991,13 @@
       }
     }
 
-    // The account page edits the name in place; elsewhere the prompt remains.
     if (nameEditor) {
       nameEditor.addEventListener("submit", function (event) {
         event.preventDefault();
         const input = nameEditor.querySelector('[data-role="name-editor-input"]');
         void renameTo(input ? input.value : "", nameEditor.querySelector('[type="submit"]'));
       });
-    } else if (renameButton) renameButton.addEventListener("click", function () {
-      if (!hasBrowserKeypair()) {
-        setStatus(statusNode, "Set up this browser first.", "error");
-        return;
-      }
-      const chosen = window.prompt("Choose your username:", localStorage.getItem(storageKeys.username) || "guest");
-      if (chosen === null) return;
-      void renameTo(chosen, renameButton);
-    });
+    }
 
     async function publishNewKey(username) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
@@ -3049,13 +3021,13 @@
         offerRetry(null);
 
         try {
-          const username = nameInput ? normalizeUsername(nameInput.value) : await promptForAccountUsername();
+          const username = nameInput ? normalizeUsername(nameInput.value) : "guest";
           if (nameInput && hasBrowserKeypair()) {
-            // An unnamed automatic key keeps its posts and invitations: name it rather than replace it.
             if (username === "guest") {
               throw new Error("Type a name first.");
             }
-            if (root.dataset.usernameChangesEnabled === "1") {
+            // A registered automatic key keeps its posts and invitations: name it rather than replace it.
+            if (isRegisteredIdentity() && root.dataset.usernameChangesEnabled === "1") {
               await renameTo(username, null);
               return;
             }
@@ -3065,38 +3037,16 @@
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
-          await publishNewKey(username);
+          // Members-only sites need a registered key to sign in; elsewhere the first signed action registers it.
+          if (document.documentElement && document.documentElement.dataset.approvedMembersOnly === "1") {
+            await publishNewKey(username);
+          } else {
+            setStatus(statusNode, `Browser keypair ready for ${username}.`, "ok");
+          }
         } catch (error) {
           setStatus(statusNode, error instanceof Error ? error.message : "Unable to generate browser keypair.", "error");
         } finally {
           generateButton.disabled = false;
-        }
-      });
-    }
-
-    if (automaticGuestPublicationInput) {
-      automaticGuestPublicationInput.addEventListener("change", async function () {
-        const publishImmediately = automaticGuestPublicationInput.checked;
-        setAutomaticGuestPublicationIsImmediate(publishImmediately);
-
-        if (!publishImmediately || !hasBrowserKeypair()) {
-          return;
-        }
-
-        automaticGuestPublicationInput.disabled = true;
-        try {
-          const fingerprint = await ensureStoredFingerprint();
-          if (fingerprint !== "" && publishedFingerprint() !== fingerprint) {
-            setStatus(statusNode, "Publishing your public key in the background...", "info");
-            await publishPublicKeyWithRetry(root);
-            await authenticatePrivateSiteIfAvailable();
-          }
-          setStatus(statusNode, "Automatic guest public-key publication is enabled for this browser.", "ok");
-        } catch (error) {
-          const status = statusFromError(error, "Unable to publish the browser public key.");
-          setStatus(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
-        } finally {
-          automaticGuestPublicationInput.disabled = false;
         }
       });
     }
@@ -3703,6 +3653,11 @@
     }
 
     refreshComposeIdentityFromStorage();
+    // A name changed in this window (the composer's Change) signs the draft with the new key.
+    // A key switched in another tab still trips the signing-identity check.
+    window.addEventListener("forum:identity-changed", function () {
+      ensureComposeAuthorIdentity(form);
+    });
 
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint()).catch(function () {});
@@ -3798,7 +3753,13 @@
         card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
         prepare: async function (captured, attachment, description) {
           let fields = Object.assign({}, captured);
-          await ensureActionIdentity(null, null);
+          try {
+            await ensureActionIdentity(null, isRegisteredIdentity() ? null : statusNode);
+          } catch (error) {
+            throw accountCreationFailure(error);
+          } finally {
+            if (statusNode && statusNode.dataset.kind === "info") setStatus(statusNode, "", "ok");
+          }
           const identity = currentAuthorIdentityId();
           if (fields.author_identity_id && fields.author_identity_id !== identity) throw new Error("The signing identity changed. Restore that identity and retry.");
           fields.author_identity_id = identity;
@@ -3957,6 +3918,18 @@
           "error",
           { technicalDetails: status.technicalDetails }
         );
+        if (error && error.accountCreationFailure && statusNode) {
+          // Retry posts the same draft again; registration is re-checked first.
+          const retry = document.createElement("button");
+          retry.type = "button";
+          retry.className = "compose-identity-retry";
+          retry.textContent = "Retry";
+          retry.addEventListener("click", function () {
+            setStatus(statusNode, "", "ok");
+            form.requestSubmit(submitter && submitter.form === form ? submitter : undefined);
+          });
+          statusNode.append(" ", retry);
+        }
         markFirstFeedback(timing);
         completeActionTiming(timing, "error");
         restoreComposeUiState();
@@ -4009,6 +3982,7 @@
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
+  window.ForumBrowserSigning.changeIdentityName = changeIdentityName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;

@@ -36,15 +36,15 @@ const atParse = () => {
     window.__atParse = { state: root && root.dataset.accountState, guest: visible('guest'), member: visible('member') };
   }, { once: true, capture: true });
 };
-const withKey = (keys, fingerprint, username) => ({ keys, fingerprint, username });
+const withKey = (keys, fingerprint, username, registered = true) => ({ keys, fingerprint, username, registered });
 async function open(identity, options = {}) {
   const context = await browser.newContext({ serviceWorkers: 'block', ...options });
   await context.addInitScript(atParse);
   if (identity) {
-    await context.addInitScript(({ keys, fingerprint, username }) => {
+    await context.addInitScript(({ keys, fingerprint, username, registered }) => {
       if (sessionStorage.getItem('seeded')) return;
       sessionStorage.setItem('seeded', '1');
-      for (const [name, value] of Object.entries({ username, private_key: keys.privateKey, public_key: keys.publicKey, fingerprint, published_fingerprint: fingerprint })) localStorage.setItem('forum_pki_' + name, value);
+      for (const [name, value] of Object.entries({ username, private_key: keys.privateKey, public_key: keys.publicKey, fingerprint, published_fingerprint: registered ? fingerprint : '' })) if (value) localStorage.setItem('forum_pki_' + name, value);
     }, identity);
   }
   const page = await context.newPage();
@@ -78,9 +78,19 @@ try {
   assert.deepEqual(fresh.errors, []);
   await fresh.context.close();
 
-  const autoGuest = await open(withKey(unknown, unknownFingerprint, 'guest'));
-  assert.equal((await parsed(autoGuest.page)).state, 'guest', 'unnamed automatic key: guest');
+  // An automatic key the server doesn't have yet is a guest; once registered, `guest` is a regular user.
+  const autoGuest = await open(withKey(unknown, unknownFingerprint, 'guest', false));
+  assert.equal((await parsed(autoGuest.page)).state, 'guest', 'unregistered automatic key: guest');
   await autoGuest.context.close();
+  const registeredGuest = await open(withKey(unknown, unknownFingerprint, 'guest'), phone);
+  const registeredGuestParsed = await parsed(registeredGuest.page);
+  assert.ok(registeredGuestParsed.member && !registeredGuestParsed.guest, 'registered guest: member card from first paint');
+  await registeredGuest.page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'waiting');
+  assert.equal(await registeredGuest.page.locator('[data-role="name-row-value"]').textContent(), 'guest');
+  assert.equal(await registeredGuest.page.getByRole('button', { name: 'Remove this key' }).isVisible(), true, 'a guest can sign out');
+  assert.equal(await registeredGuest.page.getByRole('link', { name: 'Save a copy of this key' }).isVisible(), true);
+  await shot(registeredGuest.page, 'registered-guest');
+  await registeredGuest.context.close();
 
   const member = await open(withKey(approved, approvedFingerprint, 'alice'), phone);
   // First visit: the member card from first paint; approval is either known to the server or looked up after paint.
@@ -121,26 +131,50 @@ try {
   await shot(waiting.page, 'waiting');
   await waiting.context.close();
 
-  // Naming without prompts: a fresh guest names a new key; the name approved members use shows the join hint.
+  // Naming without prompts: a fresh guest names a key kept in this browser; nothing is sent until a first signed action.
   const naming = await open(null, phone);
   let dialogs = 0; naming.page.on('dialog', d => { dialogs++; d.dismiss(); });
+  const identityRequests = []; naming.page.on('request', r => { if (/\/api\/(prepare_identity|create_identity|link_identity|set_identity_hint)/.test(r.url())) identityRequests.push(r.url()); });
   await naming.page.locator('[data-role="account-name-input"]').fill('Alice');
   await naming.page.getByRole('button', { name: 'Continue' }).click();
   await naming.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'alice', null, { timeout: 30000 });
   await settle(naming.page);
-  await naming.page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'waiting');
-  assert.equal(await naming.page.locator('[data-role="username-field"]').textContent(), 'alice');
-  await naming.page.locator('[data-role="join-hint"]').waitFor({ state: 'visible' });
-  assert.equal(await naming.page.locator('[data-role="join-hint"]').textContent(), 'Approved members already use alice. Posts from this key join alice once a member approves it.');
-  await shot(naming.page, 'waiting-join-hint');
+  assert.equal(await state(naming.page), 'guest');
+  assert.equal(await naming.page.getByRole('heading', { name: 'You’re posting as alice' }).isVisible(), true);
+  assert.deepEqual(identityRequests, [], 'naming a new key sends nothing');
   assert.equal(dialogs, 0, 'no browser prompt while naming');
+  await shot(naming.page, 'guest-named');
   await naming.context.close();
 
-  // An unnamed automatic key is named in place, keeping its fingerprint.
+  // A local named key shows as a guest under its name from first paint; Continue replaces it locally.
+  const local = await open(withKey(unknown, unknownFingerprint, 'mouse', false), phone);
+  assert.deepEqual(await parsed(local.page), { state: 'guest', guest: true, member: false });
+  assert.equal(await local.page.getByRole('heading', { name: 'You’re posting as mouse' }).isVisible(), true);
+  const localRequests = []; local.page.on('request', r => { if (/\/api\/(prepare_identity|create_identity|link_identity|set_identity_hint)/.test(r.url())) localRequests.push(r.url()); });
+  await local.page.locator('[data-role="account-name-input"]').fill('kim');
+  await local.page.getByRole('button', { name: 'Continue' }).click();
+  await local.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'kim', null, { timeout: 30000 });
+  assert.notEqual((await local.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'))).toLowerCase(), unknownFingerprint.toLowerCase(), 'a local key is replaced, not renamed');
+  assert.equal(await local.page.getByRole('heading', { name: 'You’re posting as kim' }).isVisible(), true);
+  assert.deepEqual(localRequests, []);
+  assert.deepEqual(local.errors, []);
+  await local.context.close();
+
+  // A registered key waiting for approval under a name approved members use shows the join hint.
+  const joining = await open(withKey(unknown, unknownFingerprint, 'alice'), phone);
+  await joining.page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'waiting');
+  await joining.page.locator('[data-role="join-hint"]').waitFor({ state: 'visible' });
+  assert.equal(await joining.page.locator('[data-role="join-hint"]').textContent(), 'Approved members already use alice. Posts from this key join alice once a member approves it.');
+  await shot(joining.page, 'waiting-join-hint');
+  await joining.context.close();
+
+  // A registered key named guest is renamed in place like any other, keeping its fingerprint.
   const named = await open(withKey(unknown, unknownFingerprint, 'guest'));
   const namedNavigations = countNavigations(named.page);
-  await named.page.locator('[data-role="account-name-input"]').fill('carol');
-  await named.page.getByRole('button', { name: 'Continue' }).click();
+  await settle(named.page);
+  await named.page.getByRole('button', { name: 'Change' }).click();
+  await named.page.locator('[data-role="name-editor-input"]').fill('carol');
+  await named.page.getByRole('button', { name: 'Save' }).click();
   await named.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'carol', null, { timeout: 30000 });
   await settle(named.page);
   assert.equal((await named.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'))).toLowerCase(), unknownFingerprint.toLowerCase());
@@ -204,6 +238,6 @@ try {
   await noScript.page.locator('#key-link > summary').click();
   assert.equal(await noScript.page.locator('textarea[name="public_key"]').isVisible(), true, 'Link a public key still works');
   await noScript.context.close();
-  console.log('PASS account states: guest, automatic guest, member → approved, approved on first paint, waiting, naming, join hint, rename and Retry, remove with Undo, no JavaScript');
+  console.log('PASS account states: guest, automatic guest (local), registered guest as a member with Remove, member → approved, approved on first paint, waiting, local naming, local key replaced, join hint, rename and Retry, remove with Undo, no JavaScript');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { if (browser) await browser.close(); server.kill(); }

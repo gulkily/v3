@@ -80,6 +80,7 @@ $threadComposeEventSummary = implode(' · ', $threadComposeEventValues);
 <?php if ($imageContentEnabled ?? false): ?>
 <?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
 <?php endif; ?>
+<?= $partial('partials/compose_identity_row.php') ?>
   <div class="compose-form-actions<?= $isCompactThreadCompose ? ' compact-thread-compose-actions' : '' ?>">
     <button type="submit"><?= $e($threadComposeSubmitLabel) ?></button>
 <?php ob_start(); ?>

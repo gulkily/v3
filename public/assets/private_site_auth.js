@@ -146,6 +146,11 @@
       return { status: "not-configured" };
     }
 
+    // On public sites a key stays in the browser until its first signed action registers it.
+    if (!isApprovedMembersOnly() && stored("forum_pki_published_fingerprint").trim().toLowerCase() !== fingerprint) {
+      return { status: "not-configured" };
+    }
+
     var identityId = "openpgp:" + fingerprint;
     if (!(options && options.force === true) && authenticatedIdentityId() === identityId) {
       setStatus("", "ok");

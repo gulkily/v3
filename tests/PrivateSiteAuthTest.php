@@ -41,7 +41,8 @@ const state = { dataset: { authenticatedIdentityId: '' } };
 const storage = {
   forum_pki_public_key: 'public-key',
   forum_pki_private_key: 'private-key',
-  forum_pki_fingerprint: fingerprint
+  forum_pki_fingerprint: fingerprint,
+  forum_pki_published_fingerprint: fingerprint
 };
 
 global.window = {
@@ -130,7 +131,8 @@ const state = { dataset: { authenticatedIdentityId: 'openpgp:' + fingerprint } }
 const storage = {
   forum_pki_public_key: 'public-key',
   forum_pki_private_key: 'private-key',
-  forum_pki_fingerprint: fingerprint
+  forum_pki_fingerprint: fingerprint,
+  forum_pki_published_fingerprint: fingerprint
 };
 
 global.window = {
@@ -217,7 +219,7 @@ global.window = {
     getItem(key) {
       if (key === 'forum_pki_public_key') return 'public-key';
       if (key === 'forum_pki_private_key') return 'private-key';
-      if (key === 'forum_pki_fingerprint') return fingerprint;
+      if (key === 'forum_pki_fingerprint' || key === 'forum_pki_published_fingerprint') return fingerprint;
       return '';
     }
   },
@@ -265,7 +267,8 @@ global.window = {
       return {
         forum_pki_public_key: 'public-key',
         forum_pki_private_key: 'private-key',
-        forum_pki_fingerprint: fingerprint
+        forum_pki_fingerprint: fingerprint,
+        forum_pki_published_fingerprint: fingerprint
       }[key] || '';
     }
   },
@@ -408,6 +411,59 @@ NODE;
         assertSame(0, $result['fetchCount']);
     }
 
+    public function testUnregisteredKeyOnPublicAuthenticationResumeStaysLocal(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const domContentLoadedHandlers = [];
+let replacedUrl = '';
+let fetchCount = 0;
+
+global.window = {
+  localStorage: {
+    getItem(key) {
+      return {
+        forum_pki_public_key: 'public-key',
+        forum_pki_private_key: 'private-key',
+        forum_pki_fingerprint: '0123456789abcdef0123456789abcdef01234567'
+      }[key] || '';
+    }
+  },
+  __forumOpenPgpLoader: { ready: Promise.resolve({}) },
+  location: {
+    pathname: '/lobby/',
+    search: '',
+    replace(url) { replacedUrl = url; },
+    assign() {},
+    reload() {}
+  }
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') domContentLoadedHandlers.push(handler);
+  },
+  querySelector(selector) {
+    if (selector === '[data-private-site-auth-state]') {
+      return { dataset: { publicAuthResume: 'true', authenticatedIdentityId: '' } };
+    }
+    return null;
+  }
+};
+global.fetch = async function() { fetchCount += 1; throw new Error('an unregistered key must not sign in'); };
+
+vm.runInThisContext(source);
+domContentLoadedHandlers[0]();
+setImmediate(() => process.stdout.write(JSON.stringify({ replacedUrl, fetchCount })));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('', $result['replacedUrl']);
+        assertSame(0, $result['fetchCount']);
+    }
+
     public function testUnapprovedPublicIdentityReturnsToRequestedPage(): void
     {
         $script = <<<'NODE'
@@ -426,7 +482,8 @@ global.window = {
       return {
         forum_pki_public_key: 'public-key',
         forum_pki_private_key: 'private-key',
-        forum_pki_fingerprint: fingerprint
+        forum_pki_fingerprint: fingerprint,
+        forum_pki_published_fingerprint: fingerprint
       }[key] || '';
     }
   },
@@ -498,7 +555,8 @@ global.window = {
       return {
         forum_pki_public_key: 'public-key',
         forum_pki_private_key: 'private-key',
-        forum_pki_fingerprint: fingerprint
+        forum_pki_fingerprint: fingerprint,
+        forum_pki_published_fingerprint: fingerprint
       }[key] || '';
     }
   },
@@ -567,7 +625,7 @@ global.window = {
     getItem(key) {
       if (key === 'forum_pki_public_key') return 'public-key';
       if (key === 'forum_pki_private_key') return 'private-key';
-      if (key === 'forum_pki_fingerprint') return fingerprint;
+      if (key === 'forum_pki_fingerprint' || key === 'forum_pki_published_fingerprint') return fingerprint;
       return '';
     }
   },
@@ -622,7 +680,7 @@ global.window = {
     getItem(key) {
       if (key === 'forum_pki_public_key') return 'public-key';
       if (key === 'forum_pki_private_key') return 'private-key';
-      if (key === 'forum_pki_fingerprint') return fingerprint;
+      if (key === 'forum_pki_fingerprint' || key === 'forum_pki_published_fingerprint') return fingerprint;
       return '';
     }
   },

@@ -2309,7 +2309,7 @@ PHP;
         assertStringContains('data-role="compose-identity-status" hidden', $composeReply);
         assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
         assertStringContains('Storage and privacy', $account);
-        assertStringContains('You’re posting as guest', $account);
+        assertStringContains('You’re posting as <span data-role="guest-name">guest</span>', $account);
         assertStringContains('data-action="clear-browser-identity"', $account);
         assertStringContains('Remove this key', $account);
         assertStringNotContains('View user page', $account);
@@ -2797,8 +2797,7 @@ PHP;
         assertStringContains('automaticGuestKeypairEnabled: true', $board);
         assertFingerprintedAsset($board, 'openpgp_loader.js');
         assertFingerprintedAsset($board, 'browser_signing.js');
-        assertStringContains('data-role="automatic-guest-publication"', $accountKey);
-        assertStringContains("Otherwise, this browser publishes its public key at your first signed action.", $accountKey);
+        assertStringNotContains('data-role="automatic-guest-publication"', $accountKey);
         assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
         assertStringContains('Automatic guest keypair', $featureFlags);
     }

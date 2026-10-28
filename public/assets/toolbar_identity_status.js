@@ -11,6 +11,12 @@
     return readStorageValue('forum_pki_public_key') !== '' && readStorageValue('forum_pki_private_key') !== '';
   }
 
+  // A key the server doesn't have yet posts as a guest under its name, with no profile to link.
+  function isRegistered() {
+    var fingerprint = readStorageValue('forum_pki_fingerprint').trim().toUpperCase();
+    return fingerprint !== '' && readStorageValue('forum_pki_published_fingerprint').trim().toUpperCase() === fingerprint;
+  }
+
   function localDisplayName() {
     return readStorageValue('forum_pki_username') || 'guest';
   }
@@ -21,8 +27,8 @@
       return;
     }
 
-    var loggedIn = hasBrowserKeypair();
-    var label = loggedIn ? localDisplayName() : 'Guest';
+    var loggedIn = hasBrowserKeypair() && isRegistered();
+    var label = hasBrowserKeypair() ? localDisplayName() : 'Guest';
 
     for (var index = 0; index < statusNodes.length; index += 1) {
       var statusNode = statusNodes[index];
@@ -31,7 +37,7 @@
       if (labelNode) {
         labelNode.textContent = label;
       }
-      statusNode.setAttribute('href', '/forte/user/' + encodeURIComponent(loggedIn ? label : 'guest'));
+      statusNode.setAttribute('href', loggedIn ? '/forte/user/' + encodeURIComponent(label) : hasBrowserKeypair() ? '/account/key/' : '/forte/user/guest');
       statusNode.setAttribute('title', loggedIn ? 'Signed in as ' + label : 'Not signed in');
     }
   }

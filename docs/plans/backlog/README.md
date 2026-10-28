@@ -38,6 +38,8 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 - [Account Key Approval Policy Findings and Recommendations](account_key_approval_policy_findings_and_recommendations.md)
 - [Account Key Approval Policy FDP Checklist](account_key_approval_policy_fdp_checklist.md)
 - [Account Key Approval Visibility and Safety Checklist](account_key_approval_visibility_and_safety_checklist.md)
+- [Unexpected page reload: handoff](unexpected_page_reload_handoff.md) — 2026-10-28; public-site sign-in resume reloads the page under the user (plus the version check)
+- [Outbox and browser identity: findings to untangle](outbox_identity_coupling_findings.md) — 2026-10-28; signed Outbox items aren't tracked by key, and identity code reads the Outbox database directly
 - [Approved Members Identity Publication Debug Handoff](approved_members_identity_publication_debug_handoff.md)
 - [Identity Rename Option](identity_rename_option_step1_solution_assessment.md)
 - [`v3` Approval Seed Shortcut](v3_approval_seed_shortcut_step1_solution_assessment.md)
