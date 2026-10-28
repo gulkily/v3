@@ -51,6 +51,11 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='1' width='2' height='14' fill='%23404040'/><rect x='5' y='2' width='9' height='7' fill='%23cc0000'/><rect x='12' y='3' width='3' height='5' fill='%23cc0000'/></svg>");
 }
 
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/tools/operations/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/operations/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='7' y='1' width='2' height='3' fill='%23008080'/><rect x='7' y='12' width='2' height='3' fill='%23008080'/><rect x='1' y='7' width='3' height='2' fill='%23008080'/><rect x='12' y='7' width='3' height='2' fill='%23008080'/><rect x='3' y='3' width='2' height='2' fill='%23008080'/><rect x='11' y='3' width='2' height='2' fill='%23008080'/><rect x='3' y='11' width='2' height='2' fill='%23008080'/><rect x='11' y='11' width='2' height='2' fill='%23008080'/><rect x='4' y='5' width='8' height='6' fill='%23008080'/><rect x='5' y='4' width='6' height='8' fill='%23008080'/><rect x='5' y='5' width='6' height='6' fill='%23c0c0c0'/><rect x='5' y='5' width='6' height='1' fill='%23ffffff'/><rect x='7' y='7' width='2' height='2' fill='%23000000'/></svg>");
+}
+
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button[href="/offline/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/offline/"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='2' y='2' width='12' height='10' fill='%23008000'/><rect x='3' y='3' width='10' height='8' fill='%23ffffff'/><rect x='4' y='5' width='3' height='1' fill='%23808080'/><rect x='4' y='7' width='3' height='1' fill='%23808080'/><rect x='9' y='5' width='3' height='1' fill='%23808080'/><rect x='9' y='7' width='3' height='1' fill='%23808080'/><rect x='7' y='3' width='2' height='8' fill='%23008000'/><rect x='2' y='12' width='12' height='2' fill='%23008000'/></svg>");
@@ -108,9 +113,13 @@
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/tools/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/account/key/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/invites/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/messages"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href^="/profiles/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .new-post-button::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/compose/thread"]::before {
   content: "";
   display: inline-block;
+  flex: 0 0 auto;
   width: 16px;
   height: 16px;
   margin-right: 0.3rem;
@@ -142,6 +151,7 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='1' y='4' width='13' height='9' fill='%23000000'/><rect x='2' y='5' width='11' height='7' fill='%23ffffff'/><rect x='2' y='5' width='2' height='1' fill='%23000080'/><rect x='4' y='6' width='2' height='1' fill='%23000080'/><rect x='6' y='7' width='2' height='1' fill='%23000080'/><rect x='11' y='5' width='2' height='1' fill='%23000080'/><rect x='9' y='6' width='2' height='1' fill='%23000080'/><rect x='7' y='7' width='2' height='1' fill='%23000080'/><rect x='6' y='8' width='3' height='3' fill='%23c8a000'/><rect x='6' y='8' width='2' height='1' fill='%23ffd700'/><rect x='6' y='9' width='1' height='1' fill='%23ffd700'/><rect x='8' y='10' width='1' height='1' fill='%23806000'/></svg>");
 }
 
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .new-post-button::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/compose/thread"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='3' y='2' width='9' height='13' fill='%23000000'/><rect x='4' y='3' width='7' height='11' fill='%23ffffff'/><rect x='5' y='6' width='5' height='1' fill='%23808080'/><rect x='5' y='8' width='5' height='1' fill='%23808080'/><rect x='5' y='10' width='5' height='1' fill='%23808080'/><rect x='12' y='1' width='1' height='5' fill='%23ffd700'/><rect x='10' y='3' width='5' height='1' fill='%23ffd700'/></svg>");
 }
@@ -156,6 +166,7 @@
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/user-access/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/fastmod/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/feature-flags/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/operations/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/offline/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/docs/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/outbox/"]::before,
@@ -261,4 +272,26 @@
 
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[data-nav-key="top"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='4' y='2' width='8' height='5' fill='%23c8a000'/><rect x='5' y='7' width='6' height='1' fill='%23c8a000'/><rect x='2' y='3' width='2' height='1' fill='%23c8a000'/><rect x='2' y='4' width='1' height='2' fill='%23c8a000'/><rect x='3' y='5' width='1' height='1' fill='%23c8a000'/><rect x='12' y='3' width='2' height='1' fill='%23c8a000'/><rect x='13' y='4' width='1' height='2' fill='%23c8a000'/><rect x='12' y='5' width='1' height='1' fill='%23c8a000'/><rect x='5' y='3' width='1' height='3' fill='%23ffff80'/><rect x='7' y='8' width='2' height='3' fill='%23c8a000'/><rect x='4' y='11' width='8' height='2' fill='%23404040'/></svg>");
+}
+
+/* App shell: Messages and a personal Profile link in the bar or account menu,
+   New post (shares the composer icon above) and the "You" account trigger. */
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/messages"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='1' y='3' width='14' height='10' fill='%23000000'/><rect x='2' y='4' width='12' height='8' fill='%23ffffff'/><rect x='3' y='5' width='2' height='1' fill='%23000080'/><rect x='5' y='6' width='2' height='1' fill='%23000080'/><rect x='7' y='7' width='2' height='1' fill='%23000080'/><rect x='9' y='6' width='2' height='1' fill='%23000080'/><rect x='11' y='5' width='2' height='1' fill='%23000080'/></svg>");
+}
+
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href^="/profiles/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='6' y='2' width='4' height='4' fill='%23000080'/><rect x='4' y='7' width='8' height='6' fill='%23000080'/><rect x='5' y='8' width='6' height='4' fill='%234040c0'/></svg>");
+}
+
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .new-post-button__icon {
+  display: none;
+}
+
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .account-menu__icon {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='6' y='2' width='4' height='4' fill='%23000080'/><rect x='4' y='7' width='8' height='6' fill='%23000080'/><rect x='5' y='8' width='6' height='4' fill='%234040c0'/></svg>") no-repeat;
 }

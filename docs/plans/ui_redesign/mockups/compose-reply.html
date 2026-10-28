@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reply Composer · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>5 · Reply composer</h1>
+      <p>The standalone reply page. Every “Reply” link points here today. After the redesign it is the fallback for no-JS and deep links; the inline dock (mockup 3) handles normal replies.</p>
+      <p class="doc-files">templates/pages/compose_reply.php · partials/reply_form.php</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>Replying to · by test-user on Aug 26, 2026 at 06:41 UTC · Post reply-20260826064140-25fa14b7</s><span>Reply to test-user · Aug 26 · in “The Rules of ZenMemes.com”. The raw post ID goes; the thread title is the link.</span></li><li class="chg"><s>Parent post reply-… could not be found for this thread.</s><span>That post was removed or isn’t in this thread. Reply to the thread instead.</span></li>
+        <li class="chg"><s>Post anonymous reply</s><span>Reply anonymously, in the ··· menu, worded the same as on the thread composer.</span></li>
+        <li class="chg"><s>Save reply to Outbox · Clear fields</s><span>Save to Outbox · Discard draft</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>The parent post becomes a light quote above the field instead of a full boxed card. Long parents clamp to 4 lines with “Show more”.</li>
+        <li>It uses the same composer component as New post, minus Title, Tags and Event, so the two never drift apart.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>After posting, return to the thread scrolled to the new reply, highlighted briefly. This matches today’s <code>data-created-post-id</code> behavior.</li>
+        <li>An identity line and the first-post name step work the same as in mockup 4.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/compose-reply-desktop.png" alt="Current reply page on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/compose-reply-phone.png" alt="Current reply page on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Reply with parent context" data-active="board" data-phonebar="inline" data-title="Reply" data-back="Cancel" data-trail="Post" data-tabbar="none">
+  <div class="page">
+    <div class="page-head desk-only"><h1>Reply to test-user</h1></div>
+    <div class="quote">
+      <span class="small"><b>test-user</b> · Aug 26 · in <a href="#" style="color:var(--accent)">The Rules of ZenMemes.com</a></span>
+      <span>I’d like a new reply from the new agent, please.</span>
+    </div>
+    <div class="sheet">
+      <div class="sheet-body"><div class="compose-body" style="min-height:150px">Write your reply…</div></div>
+      <div class="compose-tools"><span class="tool"><i data-i="image" class="sm"></i><span class="hide-phone">Image</span></span><span class="grow"></span>
+        <span class="menu-anchor"><span class="tool on"><i data-i="more" class="sm"></i></span>
+          <span class="menu-list" style="position:absolute;right:0;top:calc(100% + 6px);z-index:3">
+            <span><i data-i="person" class="sm"></i>Reply anonymously</span>
+            <span><i data-i="inbox" class="sm"></i>Save to Outbox</span>
+            <hr>
+            <span class="danger"><i data-i="trash" class="sm"></i>Discard draft</span>
+          </span></span>
+      </div>
+    </div>
+    <div class="identity-line" style="margin-top:150px"><span class="avatar xs" data-av="ilyag"></span>Replying as <b>ilyag</b><span style="flex:1"></span><span class="btn primary desk-only" disabled>Post reply</span></div>
+  </div>
+</template>
+</body>
+</html>

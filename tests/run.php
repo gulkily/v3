@@ -8,12 +8,12 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
     __DIR__ . '/BackupFeatureFlagTest.php',
-
+    __DIR__ . '/ProfilePublicDetailsTest.php',
     __DIR__ . '/RegistrationBenchmarkTest.php',
-
     __DIR__ . '/ImportDeadlineRecoveryTest.php',
     __DIR__ . '/InvocationSupervisorTest.php',
     __DIR__ . '/SignatureBudgetTest.php',
+    __DIR__ . '/SignatureCheckCacheTest.php',
     __DIR__ . '/ImportAdmissionTest.php',
     __DIR__ . '/CanonicalTextBoundsTest.php',
     __DIR__ . '/BoundedProcessTest.php',
@@ -53,6 +53,8 @@ $testFiles = [
     __DIR__ . '/RepositoryContentExportTest.php',
     __DIR__ . '/ContentImportPlannerTest.php',
     __DIR__ . '/AgentReplyCommandTest.php',
+    __DIR__ . '/AppNavigationPlacementTest.php',
+    __DIR__ . '/BoardListTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
     __DIR__ . '/ApprovalAcceptanceTest.php',

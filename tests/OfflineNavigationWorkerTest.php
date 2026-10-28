@@ -24,7 +24,7 @@ const paths = [
   '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad',
   '/tools/outbox/',
   '/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security',
-  '/compose/thread', '/profiles/alice', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'
+  '/compose/thread', '/profiles/alice', '/profiles/alice?posts_position=test', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'
 ];
 vm.runInThisContext(source);
 const policy = Object.fromEntries(paths.map((path) => [
@@ -54,7 +54,7 @@ NODE;
         foreach (['/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001', '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad'] as $path) {
             assertSame(true, $policy[$path]);
         }
-        foreach (['/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/compose/thread', '/profiles/alice', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'] as $path) {
+        foreach (['/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/compose/thread', '/profiles/alice', '/profiles/alice?posts_position=test', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'] as $path) {
             assertSame(false, $policy[$path]);
         }
     }

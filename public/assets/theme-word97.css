@@ -182,6 +182,12 @@
   text-decoration: none;
 }
 
+/* Author marks such as (unapproved) and (unsigned) stay readable on the title bar. */
+:root[data-theme="word97"] .post-card > .meta:first-child .meta {
+  color: #e0e0e0;
+  font-weight: 400;
+}
+
 :root[data-theme="word97"] .tags-section-card {
   background: #c0c0c0;
 }

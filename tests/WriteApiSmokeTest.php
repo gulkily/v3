@@ -10,6 +10,8 @@ use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Security\AttributionCutoff;
+use ForumRewrite\ReadModel\VerifiedAttribution;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Host\StaticArtifactBuilder;
@@ -2106,6 +2108,9 @@ PHP);
             assertStringContains('Parent-ID: ' . $postId, $replyRecord);
             assertStringContains('Author-Identity-ID: openpgp:', $replyRecord);
             assertStringContains('Stub agent response.', $replyRecord);
+            $replyPath = $this->canonicalPostPath($repositoryRoot, $agentPostId);
+            assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($repositoryRoot, $replyPath, $replyRecord, (string) $row['agent_identity_id']), 'The reply agent signs its replies');
+            assertStringContains($replyPath . '.asc', $this->gitOutput($repositoryRoot, 'show --name-only --format= HEAD'));
             assertSame('already_posted', $second['generation_status']);
             assertSame($agentPostId, $second['agent_post_id']);
             assertSame($postCountAfterFirst, $postCountAfter);
@@ -4935,6 +4940,212 @@ NODE;
         }
     }
 
+    public function testVerifiedAttributionCutoffIsSetBySwitchOnKeptByToggleAndMovable(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $signingKey = $this->createSigningKey('attribution-cutoff-signer');
+
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            assertSame(null, AttributionCutoff::resolve($repositoryRoot));
+            $unauthorized = json_decode($this->renderMethod($application, 'POST', '/api/prepare_attribution_cutoff?cutoff_at=2026-01-01T00:00'), true, 512, JSON_THROW_ON_ERROR);
+            assertSame('error', $unauthorized['status']);
+
+            $_POST = ['public_key' => $signingKey['public_key']];
+            $identityId = $this->extractValue($this->renderMethod($application, 'POST', '/api/link_identity'), 'identity_id');
+            $_POST = [];
+            $this->seedApprovedIdentity($repositoryRoot, $identityId);
+            $this->renderMethod($application, 'GET', '/');
+            $_COOKIE = ['identity_hint' => $identityId];
+
+            $signedChange = function (string $prepareRoute, string $finalizeRoute) use ($application, $signingKey): array {
+                $prepared = json_decode($this->renderMethod($application, 'POST', $prepareRoute), true, 512, JSON_THROW_ON_ERROR);
+                assertSame('ok', $prepared['status']);
+                $_POST = [
+                    'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                    'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                    'detached_signature' => $this->signCanonicalRecord($signingKey['home'], $prepared['canonical_record']),
+                ];
+                $result = json_decode($this->renderMethod($application, 'POST', $finalizeRoute), true, 512, JSON_THROW_ON_ERROR);
+                $_POST = [];
+                assertSame('ok', $result['status']);
+
+                return $prepared + ['result' => $result];
+            };
+            $flagChange = fn (string $value): array => $signedChange(
+                '/api/prepare_feature_flag_change?key=FORUM_VERIFIED_ATTRIBUTION&value=' . $value,
+                '/api/finalize_feature_flag_change'
+            );
+
+            $switchOn = $flagChange('true');
+            preg_match('/^Created-At: (\S+)$/m', $switchOn['canonical_record'], $createdAt);
+            assertSame($createdAt[1], $switchOn['result']['attribution_cutoff_at']);
+            assertSame(['cutoff_at' => $createdAt[1], 'source' => 'switch-on', 'source_path' => $switchOn['record_path']], AttributionCutoff::resolve($repositoryRoot));
+            assertStringContains('Cutoff: <time data-attribution-cutoff-at datetime="' . $createdAt[1] . '"', $this->renderMethod($application, 'GET', '/tools/feature-flags/'));
+
+            sleep(1);
+            $flagChange('false');
+            $flagChange('true');
+            assertSame($createdAt[1], AttributionCutoff::resolve($repositoryRoot)['cutoff_at']);
+
+            $future = json_decode($this->renderMethod($application, 'POST', '/api/prepare_attribution_cutoff?cutoff_at=2999-01-01T00:00'), true, 512, JSON_THROW_ON_ERROR);
+            assertSame('The attribution cutoff cannot be in the future.', $future['error']);
+
+            $moved = $signedChange('/api/prepare_attribution_cutoff?cutoff_at=2026-01-01T00:00', '/api/finalize_attribution_cutoff');
+            assertSame('2026-01-01T00:00:00Z', $moved['result']['attribution_cutoff_at']);
+            assertSame(['cutoff_at' => '2026-01-01T00:00:00Z', 'source' => 'moved', 'source_path' => $moved['record_path']], AttributionCutoff::resolve($repositoryRoot));
+            $committedFiles = preg_split('/\R/', trim($this->gitOutput($repositoryRoot, 'show --name-only --format= HEAD')));
+            sort($committedFiles);
+            assertSame([$moved['record_path'], $moved['record_path'] . '.asc'], $committedFiles);
+            assertStringContains('2026-01-01 00:00:00 UTC', $this->renderMethod($application, 'GET', '/tools/feature-flags/'));
+
+            unlink($repositoryRoot . '/' . $moved['record_path'] . '.asc');
+            assertSame('switch-on', AttributionCutoff::resolve($repositoryRoot)['source']);
+        } finally {
+            $_POST = [];
+            $_COOKIE = [];
+            $this->deleteTree($signingKey['home']);
+        }
+    }
+
+    public function testVerifiedTotalsAgreeAcrossRebuildIncrementalToggleCutoffMoveAndEnvironment(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('verified-totals-signer');
+        $previousFlag = getenv('FORUM_VERIFIED_ATTRIBUTION');
+        putenv('FORUM_VERIFIED_ATTRIBUTION');
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $this->seedApprovedIdentity($root, $identity);
+            $this->renderMethod(new Application(dirname(__DIR__), $root, $database, $artifacts), 'GET', '/');
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $signed = function (string $prepare, string $finalize, array $input) use (&$writer, $identity, $key): array {
+                $prepared = $writer->{$prepare}($input, $identity);
+                return $writer->{$finalize}([
+                    'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                    'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                    'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record']),
+                ], $identity);
+            };
+            $flag = function (bool $value) use (&$writer, $signed, $root, $database, $artifacts): void {
+                $signed('prepareFeatureFlagChange', 'finalizePreparedFeatureFlagChange', ['key' => 'FORUM_VERIFIED_ATTRIBUTION', 'value' => $value ? 'true' : 'false']);
+                $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            };
+            $columns = static function (string $path): array {
+                $pdo = (new ReadModelConnection($path))->open();
+                return [
+                    $pdo->query("SELECT score_total, claimed_score_total, verified_score_total, vote_count FROM threads WHERE root_post_id = 'root-001'")->fetch(\PDO::FETCH_NUM),
+                    $pdo->query("SELECT post_score_total, claimed_post_score_total, verified_post_score_total, approved_flag_count, claimed_approved_flag_count, verified_approved_flag_count FROM posts WHERE post_id = 'reply-001'")->fetch(\PDO::FETCH_NUM),
+                    $pdo->query("SELECT score_total, claimed_score_total, verified_score_total FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetch(\PDO::FETCH_NUM),
+                    $pdo->query('SELECT post_id, attribution_verified, attribution_counted, author_profile_slug FROM posts ORDER BY post_id')->fetchAll(\PDO::FETCH_NUM),
+                    $pdo->query('SELECT identity_id, post_count, thread_count, claimed_post_count, verified_post_count, claimed_thread_count, verified_thread_count FROM profiles ORDER BY identity_id')->fetchAll(\PDO::FETCH_NUM),
+                    $pdo->query('SELECT source_path, label, attribution_verified, attribution_counted FROM activity WHERE source_path IS NOT NULL AND author_identity_id IS NOT NULL ORDER BY source_path, label')->fetchAll(\PDO::FETCH_NUM),
+                ];
+            };
+            $rebuilt = function () use ($root, $columns): array {
+                $path = sys_get_temp_dir() . '/forum-rewrite-verified-parity-' . bin2hex(random_bytes(6)) . '.sqlite3';
+                (new ReadModelBuilder($root, $path, new CanonicalRecordRepository($root)))->rebuild();
+                $result = $columns($path);
+                unlink($path);
+                return $result;
+            };
+
+            // Before any cutoff, an unsigned like and an unsigned flag naming the member count.
+            $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity]);
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'flag', 'author_identity_id' => $identity]);
+            sleep(1);
+            $flag(true);
+            $cutoff = AttributionCutoff::resolve($root)['cutoff_at'];
+            [$thread, $post] = $columns($database);
+            assertSame([1, 1, 1], array_slice($thread, 0, 3), 'Switch-on changes no counts');
+            assertSame([-100, -100, -100, 1, 1, 1], $post);
+            sleep(1);
+
+            // After the cutoff, an unsigned upvote naming the member is claimed only; a signed downvote counts.
+            $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'upvote', 'author_identity_id' => $identity]);
+            $created = gmdate('Y-m-d\TH:i:s\Z');
+            $record = "Record-ID: thread-label-verified-down\nCreated-At: {$created}\nThread-ID: root-001\nOperation: add\nLabels: downvote\nAuthor-Identity-ID: {$identity}\n\n";
+            $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'downvote', 'author_identity_id' => $identity,
+                'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($key['home'], $record)]);
+            [$thread] = $columns($database);
+            assertSame([0, 1, 0], array_slice($thread, 0, 3), 'Flag on: effective score uses verified totals');
+
+            // A signed reply and its body label count; an unsigned reply naming the member does not.
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $signedReply = $this->createAuthoredReply($app, ['identity_id' => $identity, 'home' => $key['home']], 'thread-zenmemes-rules', 'Agreed #upvote');
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $unsignedReply = $writer->createReply(['thread_id' => 'thread-zenmemes-rules', 'parent_id' => 'thread-zenmemes-rules', 'body' => 'Not me #downvote', 'author_identity_id' => $identity])['post_id'];
+            [, , $rules, $posts, $profiles] = $columns($database);
+            $postsById = array_column($posts, null, 0);
+            assertSame([1, 1], [$postsById[$signedReply][1], $postsById[$signedReply][2]]);
+            assertSame([$unsignedReply, 0, 0, null], $postsById[$unsignedReply], 'Unverified reply is unlinked and uncounted');
+            assertSame(1, $rules[2] - $rules[1], 'Body label of the unverified reply is claimed only');
+            assertSame($rules[2], $rules[0]);
+            $profile = array_column($profiles, null, 0)[$identity];
+            assertSame(1, $profile[3] - $profile[4], 'Profile counts drop the unverified reply');
+            assertSame($profile[4], $profile[1]);
+            $profileIds = array_column(\ForumRewrite\ReadModel\AuthoredContentRepository::visiblePosts((new ReadModelConnection($database))->open(), [$identity]), 'post_id');
+            assertTrue(in_array($signedReply, $profileIds, true));
+            assertFalse(in_array($unsignedReply, $profileIds, true));
+            $render = fn (string $path): string => $this->renderMethod(new Application(dirname(__DIR__), $root, $database, $artifacts), 'GET', $path);
+            assertSame(1, substr_count($render('/threads/thread-zenmemes-rules'), '(unsigned)'), 'Only the unverified reply is marked');
+            assertStringContains('(unsigned)', $render('/activity/?view=all'));
+            assertSame([0, 0], array_slice(array_values(array_filter($columns($database)[5], static fn (array $row): bool => str_contains($row[0], $unsignedReply)))[0], 2), 'Activity marks the unverified reply');
+            assertSame($rebuilt(), $columns($database), 'Incremental equals rebuild');
+
+            $metadata = static fn (): array => ReadModelMetadata::readMetadata((new ReadModelConnection($database))->open());
+            $flag(false);
+            assertSame('write_incremental', $metadata()['rebuild_reason'], 'Toggle needs no rebuild');
+            assertSame([1, 1, 0], array_slice($columns($database)[0], 0, 3));
+            $postsById = array_column($columns($database)[3], null, 0);
+            assertSame(1, $postsById[$unsignedReply][2], 'Flag off: the reply counts again');
+            assertTrue($postsById[$unsignedReply][3] !== null, 'Flag off: the reply links again');
+            assertSame(0, substr_count($this->renderMethod(new Application(dirname(__DIR__), $root, $database, $artifacts), 'GET', '/threads/thread-zenmemes-rules'), '(unsigned)'), 'Flag off: no marks');
+            assertSame($rebuilt(), $columns($database));
+            $flag(true);
+            assertSame($cutoff, AttributionCutoff::resolve($root)['cutoff_at'], 'Off and on keeps the cutoff');
+            assertSame([0, 1, 0], array_slice($columns($database)[0], 0, 3));
+
+            // Moving the cutoff before the first unsigned votes leaves only the signed vote verified.
+            $signed('prepareAttributionCutoff', 'finalizePreparedAttributionCutoff', ['cutoff_at' => '2026-01-01T00:00']);
+            [$thread, $post] = $columns($database);
+            assertSame([-1, 1, -1], array_slice($thread, 0, 3));
+            assertSame([0, -100, 0, 0, 1, 0], $post);
+            assertSame($rebuilt(), $columns($database));
+
+            // Unsigned writes naming the member say so and how to sign; anonymous and signed writes do not.
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            $_POST = ['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Named', 'author_identity_id' => $identity];
+            $named = $this->renderMethod($app, 'POST', '/api/create_reply');
+            assertStringContains("attribution=unsigned\n", $named);
+            assertStringContains('/api/prepare_reply, then /api/create_prepared_post', $named);
+            $_POST = ['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Anonymous'];
+            assertStringNotContains('attribution=', $this->renderMethod($app, 'POST', '/api/create_reply'));
+            $_COOKIE = ['identity_hint' => $identity];
+            $_POST = ['thread_id' => 'root-001', 'tag' => 'like'];
+            assertStringContains('attribution_notice=Recorded as unsigned', $this->renderMethod($app, 'POST', '/api/apply_thread_tag'));
+            $created = gmdate('Y-m-d\TH:i:s\Z');
+            $record = "Record-ID: post-reaction-verified-like\nCreated-At: {$created}\nPost-ID: root-001\nOperation: add\nTags: like\nAuthor-Identity-ID: {$identity}\n\n";
+            $_POST = ['post_id' => 'root-001', 'tag' => 'like', 'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
+            $signedTag = $this->renderMethod($app, 'POST', '/api/apply_post_tag');
+            assertStringContains('wrote_record=yes', $signedTag);
+            assertStringNotContains('attribution=', $signedTag);
+            $_POST = [];
+            $_COOKIE = [];
+
+            // An environment override is applied on the next request without a rebuild.
+            putenv('FORUM_VERIFIED_ATTRIBUTION=false');
+            $this->renderMethod(new Application(dirname(__DIR__), $root, $database, $artifacts), 'GET', '/');
+            assertSame([1, 1, -1], array_slice($columns($database)[0], 0, 3));
+            assertSame('0', $metadata()[VerifiedAttribution::METADATA_ENABLED]);
+        } finally {
+            putenv($previousFlag === false ? 'FORUM_VERIFIED_ATTRIBUTION' : 'FORUM_VERIFIED_ATTRIBUTION=' . $previousFlag);
+            $this->deleteTree($key['home']);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testSetFeatureFlagAcceptsDisplayedEnabledDisabledValues(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -7204,7 +7415,7 @@ NODE;
 
         assertSame(true, isset($result['timings']['read_model_approval_incremental_update']));
         assertSame(false, isset($result['timings']['read_model_approval_rebuild']));
-        assertStringContains('Approved:</strong> yes', $profilePage);
+        assertStringContains('Approval:</strong> Approved ·', $profilePage);
         assertStringContains('>guest</a>', $profilePage);
     }
 
@@ -7296,7 +7507,7 @@ NODE;
         $profilePage = $this->renderMethod($application, 'GET', '/profiles/' . $target['profile_slug']);
         assertSame(true, isset($result['timings']['read_model_approval_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_approval_rebuild_fallback']));
-        assertStringContains('Approved:</strong> yes', $profilePage);
+        assertStringContains('Approval:</strong> Approved ·', $profilePage);
         $this->assertReadModelHealthy($databasePath);
     }
 

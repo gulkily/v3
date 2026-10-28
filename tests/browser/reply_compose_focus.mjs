@@ -78,6 +78,7 @@ try {
    await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
    await page.addStyleTag({content:readFileSync(join(project,'public/assets/theme-'+theme+'.css'),'utf8')});
    const composer=page.locator('[data-inline-reply-compose]');
+   const editorInset=()=>page.evaluate(()=>{const e=document.querySelector('[data-inline-reply-compose] textarea');return Math.round(e.getBoundingClientRect().top-e.closest('.card').getBoundingClientRect().top);});
    const body=composer.locator('textarea[name="body"]');
    const actions=composer.locator('.compose-form-actions');
    assert.equal(await composer.locator('textarea').count(),1);
@@ -90,12 +91,17 @@ try {
     Element.prototype.scrollIntoView=function(){scrollCalls++;};
    });
    assert.equal(await actions.isVisible(),false);
+   // Logged-in identity leaves an empty, hidden status that must not take space.
+   await page.evaluate(()=>{const s=document.querySelector('[data-inline-reply-compose] [data-role="compose-identity-status"]');s.hidden=true;s.dataset.kind='ok';});
    const collapsedHeight=(await body.boundingBox()).height;
+   const collapsedInset=await editorInset();
    if(process.env.REPLY_FOCUS_SCREENSHOTS) await page.screenshot({path:process.env.REPLY_FOCUS_SCREENSHOTS+'/'+theme+'-'+width+'-collapsed.png'});
    await body.click();
    await page.waitForFunction(()=>document.querySelector('[data-inline-reply-compose]').dataset.inlineReplyExpanded==='1');
    assert.equal(await actions.isVisible(),true);
    assert.ok((await body.boundingBox()).height>collapsedHeight+4,'the prompt expands into a taller editor');
+   // Touch phones lift the expanded reply into its own fixed panel.
+   if(!await composer.evaluate(n=>n.classList.contains('reply-panel-active'))) assert.equal(await editorInset(),collapsedInset,'expanding keeps the editor\'s distance from the card top');
    if(process.env.REPLY_FOCUS_SCREENSHOTS) await page.screenshot({path:process.env.REPLY_FOCUS_SCREENSHOTS+'/'+theme+'-'+width+'-expanded.png'});
    assert.deepEqual(await page.evaluate(()=>({same:editor===document.activeElement,focus:focusCalls,scroll:scrollCalls,events:focusEvents.length})),{same:true,focus:0,scroll:0,events:1});
    const draft='Reply draft '+theme+' '+width;

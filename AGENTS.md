@@ -10,7 +10,7 @@ Use the project's `Key: value` plain-text format for canonical records and human
 
 ## UI copy
 
-Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Follow the UI verification guidance in `CONTRIBUTING.md`. Track cleanup and verification in `docs/plans/ui_copy_audit_checklist.md`.
+Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Pages must look final on first paint: decide viewer-specific UI in the client before paint so server HTML stays static, and allow post-paint updates only for real state changes (see `CONTRIBUTING.md`). Follow the UI verification guidance in `CONTRIBUTING.md`. Track cleanup and verification in `docs/plans/ui_copy_audit_checklist.md`.
 
 ## Todo
 
@@ -29,6 +29,10 @@ Follow the dependency approval policy in `CONTRIBUTING.md` before adding or upda
 Use Railspike by default when a task would benefit from comparing approaches, staged planning, or work across sessions, unless the user opts out. Read `docs/railspike/RAILSPIKE.md` and begin the appropriate planning step; wait for each required `Approved Step N` before advancing. Small, straightforward changes can proceed directly. Honor a decline for the same task without repeated offers. This guidance does not approve implementation.
 
 Railspike is already installed as a Git subtree at `docs/railspike/`. Keep project planning artifacts in the host project's `docs/plans/`, outside the vendored tree. See `docs/reference/railspike_workflow.md` for project-specific workflow and update instructions.
+
+## Principles and project knowledge
+
+Read `PRINCIPLES.md` before weighing options; it wins over common industry defaults. Record durable project knowledge (decisions, preferences, background) in the repository where other contributors can find it, such as `PRINCIPLES.md`, `CONTRIBUTING.md`, reference docs or plans. Do not keep it only in a tool's private memory.
 
 ## Repository guidance
 

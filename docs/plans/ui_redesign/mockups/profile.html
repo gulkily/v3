@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profile · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>6 · Profile</h1>
+      <p>Every author name links here. It should answer “who is this, and what have they said?”, with messaging one tap away.</p>
+      <p class="doc-files">templates/pages/username.php (/user/…) · templates/pages/profile.php (/profiles/…) · partials/private_message_composer.php</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>User ilyag</s><span>ilyag</span></li>
+        <li class="chg"><s>Combined threads: 434 · Combined posts: 656</s><span>434 threads · 656 posts. “Combined” describes how the numbers are computed, which readers don’t need.</span></li>
+        <li class="chg"><s>Approved by: root, onthebus, test-user, guest</s><span>An “Approved” chip. The approvers are listed per key under Identities.</span></li>
+        <li class="chg"><s>Approved: yes / no (on /profiles/…)</s><span>The same chip: Approved, or “Waiting for approval”.</span></li>
+        <li class="chg"><s>Member activity · User Access</s><span>Gone as links. Activity is the page itself; User Access appears only for operators, as “Manage access”.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>The header shows avatar, name, status and counts, with a <b>Message</b> button where messaging is allowed. Today the message composer is a full form embedded on the per-key profile page only.</li>
+        <li>Threads | Replies is a segmented control, instead of two long lists stacked one after the other.</li>
+        <li>Today there are two profile pages: <code>/user/ilyag</code> (the person) and <code>/profiles/&lt;slug&gt;</code> (one key). They become one page. Each key is a row under “Identities”; selecting it opens the key detail.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>Message opens the conversation (mockup 10) rather than a send-only form with no history.</li>
+        <li>Viewing your own profile shows “Edit in Account” in place of Message.</li>
+        <li>The agent profile says what it is (“Automated reply agent”) and hides Message.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/profile-desktop.png" alt="Current profile on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/profile-phone.png" alt="Current profile on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Someone else’s profile" data-active="users" data-phonebar="inline" data-back="Users" data-trail="i:more">
+  <div class="page">
+    <div class="profile-head">
+      <span class="avatar lg" data-av="onthebus"></span>
+      <div class="grow">
+        <h1>onthebus</h1>
+        <div class="stats"><span><b>10</b> threads</span><span><b>12</b> posts</span><span class="chip ok">Approved</span></div>
+      </div>
+      <span class="btn primary"><i data-i="message" class="sm"></i>Message</span>
+    </div>
+    <div class="toolbar"><div class="seg"><span aria-pressed="true">Threads</span><span>Replies</span></div></div>
+    <div class="thread-list">
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>I got a “load failed” error while submitting a new post, wtf is that?</h3><span class="count"></span><span class="meta">Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>What would be nice is if the interface looks so good that an observer asks…</h3><span class="count">2</span><span class="meta">Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>The textarea is off screen when I focus it, HORRIBLE</h3><span class="count"></span><span class="meta">Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>First of all new account bootstrapping is unacceptably slow</h3><span class="count">1</span><span class="meta">Sep 6</span></a>
+    </div>
+    <p class="group-title" style="margin:6px 0 -12px 14px">Identities</p>
+    <div class="group">
+      <a class="row" href="#"><span class="ic"><i data-i="key" class="sm"></i></span><span class="grow"><span class="title mono">4D54 F649 … 0320</span><br><span class="sub">Approved by ilyag · Sep 6</span></span><i data-i="chev" class="chev"></i></a>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Agent profile · empty Threads tab" data-active="users" data-phonebar="inline" data-back="Users" data-devices="phone">
+  <div class="page">
+    <div class="profile-head">
+      <span class="avatar lg" data-av="reply-agent"></span>
+      <div class="grow"><h1>reply-agent</h1><div class="stats"><span class="chip agent">Automated reply agent</span></div></div>
+    </div>
+    <div class="toolbar"><div class="seg"><span aria-pressed="true">Threads</span><span>Replies</span></div></div>
+    <div class="empty"><span class="big"><i data-i="board"></i></span><h2>No threads</h2><p>reply-agent only answers threads that others start. See Replies.</p></div>
+  </div>
+</template>
+</body>
+</html>

@@ -237,6 +237,40 @@ final class PrivateConfigSchema
         return $diff;
     }
 
+    /** Shared preview/save policy. Secret values remain internal, never rendered raw.
+     * @param array<string,mixed> $fileValues
+     * @param array<string,mixed> $changes
+     * @return array{values:array<string,mixed>,diff:array,errors:list<string>}
+     */
+    public static function llmUpdate(array $fileValues, array $changes): array
+    {
+        $resolved = self::resolve($fileValues);
+        $before = array_map(static fn (array $field): mixed => $field['value'], $resolved);
+        $values = [];
+        $errors = [];
+        foreach ($changes as $key => $value) {
+            if (!in_array($key, self::llmEditableKeys(), true) || !is_scalar($value)) {
+                $errors[] = 'LLM update contains an unsupported field or value.';
+                continue;
+            }
+            if ($key === 'LLM_API_KEY' && trim((string) $value) === '') {
+                continue;
+            }
+            if ((string) $value === (string) $before[$key]) {
+                continue;
+            }
+            if ($resolved[$key]['source'] === 'environment override') {
+                $errors[] = 'An LLM setting is locked by an environment override.';
+                continue;
+            }
+            $values[$key] = $key === 'LLM_TIMEOUT_SECONDS' && filter_var($value, FILTER_VALIDATE_INT) !== false
+                ? (int) $value : (string) $value;
+        }
+        $after = array_replace($before, $values);
+        return ['values' => $values, 'diff' => self::redactedLlmDiff($before, $after),
+            'errors' => array_values(array_unique([...$errors, ...self::validateLlmConnection($after)]))];
+    }
+
     /**
      * @return array{default:mixed,type:string,secret:bool,template:bool,required:bool}
      */

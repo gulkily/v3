@@ -132,6 +132,30 @@ final class RouteServices
      * calls one page render makes into it - see
      * docs/plans/activity_subsystem_extraction_plan_v1.md.
      */
+    /**
+     * With verified attribution on, an unsigned write naming someone is recorded but does not
+     * count; the response says so and how to sign instead.
+     */
+    public function unsignedAttributionLines(string $kind, ?string $authorIdentityId, bool $signed): string
+    {
+        if ($signed || $authorIdentityId === null || $authorIdentityId === ''
+            || !$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::VERIFIED_ATTRIBUTION)
+            || \ForumRewrite\ReadModel\VerifiedAttribution::storedCutoff($this->pdo()) === null) {
+            return '';
+        }
+        $how = $kind === 'post'
+            ? 'Sign posts with /api/prepare_thread or /api/prepare_reply, then /api/create_prepared_post.'
+            : 'Sign votes by sending canonical_record and detached_signature to the same route.';
+
+        return "attribution=unsigned\nattribution_notice=Recorded as unsigned: it does not count toward scores, post counts or the profile. {$how}\n";
+    }
+
+    /** @return array{cutoff_at:string,source:string,source_path:string}|null */
+    public function attributionCutoff(): ?array
+    {
+        return \ForumRewrite\Security\AttributionCutoff::resolve($this->repositoryRoot);
+    }
+
     public function securityReviewAllowed(): bool
     {
         $id = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));

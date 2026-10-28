@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messages · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+<style>
+  .split { display: grid; grid-template-columns: 300px 1fr; height: 100%; min-height: 560px; }
+  .split > aside { border-right: 1px solid var(--line); background: var(--surface); overflow: auto; }
+  .split > aside .row { border-top: 1px solid var(--line); }
+  .split > aside .row.sel { background: var(--accent-soft); }
+  .split > section { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+  .split .convo-head { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+  .split .convo-body { padding: 14px 18px; overflow: auto; }
+  .split .convo-foot { padding: 10px 18px 14px; display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>9 · Messages</h1>
+      <p>Private, end-to-end encrypted conversations between approved members. The list should read like any messaging app, even though every preview is decrypted in the browser.</p>
+      <p class="doc-files">templates/pages/private_message_list.php · partials/private_message_conversation_row.php · templates/pages/private_messages.php (legacy inbox/sent)</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>Authentication Required — Authenticate an approved browser identity to view private messages.</s><span>“Messages are for approved members”, a status-specific line and one button: Set up account, or Back up while you wait.</span></li>
+        <li class="chg"><s>Encrypted message · Retry preview</s><span>A lock icon and “Couldn’t decrypt preview” with a Retry icon, only on the affected row.</span></li>
+        <li class="chg"><s>Reload Messages · Retry loading · Retry unread status</s><span>One inline banner, “Couldn’t load messages. Retry”, shown only on failure.</span></li>
+        <li class="chg"><s>Enable JavaScript to load more conversations and decrypt previews.</s><span>Kept. It is the honest no-JS recovery message.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>Desktop is two panes: conversations on the left, the open conversation on the right. Phone is a list that pushes to the conversation (mockup 10).</li>
+        <li>Each row: avatar, name, time, a 2-line decrypted preview and an unread dot. A “You:” prefix marks your own last message.</li>
+        <li>The legacy Inbox / Sent mailbox pages fold into conversations; nobody needs to browse by direction.</li>
+        <li>A compose icon (new message) in the header opens a member picker.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>Unapproved members don’t see the Messages tab (same rule as today’s nav); anyone arriving by link lands on an explanation that names their actual next step, instead of a dead end.</li>
+        <li>Previews decrypt progressively. Rows show a shimmer, then text, and never the word “Decrypting…” repeated down the list.</li>
+        <li>“Load more” becomes automatic as you scroll, with a button fallback.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/messages-desktop.png" alt="Current messages page for a viewer without an approved identity"><figcaption>Desktop today (not authenticated)</figcaption></figure>
+        <figure><img class="ph" src="before/messages-phone.png" alt="Current messages page on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Two-pane on desktop" data-active="messages" data-title="Messages" data-devices="desktop">
+  <div class="split">
+    <aside>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px"><b style="font-size:18px">Messages</b><i data-i="plus"></i></div>
+      <div class="row unread sel" style="align-items:flex-start"><span class="avatar md" data-av="onthebus"></span><span class="grow"><span class="top" style="display:flex;justify-content:space-between"><span class="title">onthebus</span><span class="faint small">9:41</span></span><span class="sub">ok the new reply box is way better on my phone</span></span></div>
+      <div class="row unread" style="align-items:flex-start"><span class="avatar md" data-av="lucas"></span><span class="grow"><span class="top" style="display:flex;justify-content:space-between"><span class="title">lucas</span><span class="faint small">Yesterday</span></span><span class="sub">can you approve mykull? he’s legit</span></span></div>
+      <div class="row" style="align-items:flex-start"><span class="avatar md" data-av="test-user"></span><span class="grow"><span class="top" style="display:flex;justify-content:space-between"><span class="title">test-user</span><span class="faint small">Oct 19</span></span><span class="sub">You: thanks, fixed</span></span></div>
+      <div class="row" style="align-items:flex-start"><span class="avatar md" data-av="sasha"></span><span class="grow"><span class="top" style="display:flex;justify-content:space-between"><span class="title">sasha</span><span class="faint small">Oct 2</span></span><span class="sub" style="display:flex;gap:6px;align-items:center"><i data-i="lock" class="sm"></i>Couldn’t decrypt preview <i data-i="retry" class="sm"></i></span></span></div>
+    </aside>
+    <section>
+      <div class="convo-head"><span class="avatar" data-av="onthebus"></span><b>onthebus</b><span style="flex:1"></span><i data-i="more"></i></div>
+      <div class="convo-body">
+        <div class="bubbles">
+          <div class="day">Yesterday</div>
+          <div class="bubble">did you see my thread about the textarea</div>
+          <div class="bubble me">Yes, it’s the next thing I’m fixing.</div>
+          <div class="bubble-meta">Seen</div>
+          <div class="day">Today 9:41</div>
+          <div class="bubble">ok the new reply box is way better on my phone</div>
+        </div>
+      </div>
+      <div class="convo-foot">
+        <div class="dock-box"><span class="grow">Message onthebus</span><span class="send off"><i data-i="send" class="sm"></i></span></div>
+        <div class="lock-line"><i data-i="lock" class="sm"></i>Only you and onthebus can read these, on your approved devices.</div>
+      </div>
+    </section>
+  </div>
+</template>
+
+<template data-screen="Conversation list on phone" data-active="messages" data-title="Messages" data-trail="i:plus" data-devices="phone">
+  <div class="page">
+    <div class="search"><i data-i="search" class="sm"></i>Search</div>
+    <div class="group convo-list">
+      <div class="row unread"><span class="avatar md" data-av="onthebus"></span><span class="grow"><span class="top"><span class="name">onthebus</span><span class="when">9:41</span></span><span class="preview">ok the new reply box is way better on my phone</span></span></div>
+      <div class="row unread"><span class="avatar md" data-av="lucas"></span><span class="grow"><span class="top"><span class="name">lucas</span><span class="when">Yesterday</span></span><span class="preview">can you approve mykull? he’s legit</span></span></div>
+      <div class="row"><span class="avatar md" data-av="test-user"></span><span class="grow"><span class="top"><span class="name">test-user</span><span class="when">Oct 19</span></span><span class="preview">You: thanks, fixed</span></span></div>
+      <div class="row"><span class="avatar md" data-av="sasha"></span><span class="grow"><span class="top"><span class="name">sasha</span><span class="when">Oct 2</span></span><span class="preview" style="display:flex;gap:6px;align-items:center"><i data-i="lock" class="sm"></i>Couldn’t decrypt preview <i data-i="retry" class="sm"></i></span></span></div>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Not approved yet (reached by link)" data-active="none" data-viewer="mouse" data-unapproved data-title="Messages" data-devices="phone">
+  <div class="page">
+    <div class="empty" style="margin-top:80px">
+      <span class="big"><i data-i="lock"></i></span>
+      <h2>Messages are for approved members</h2>
+      <p>You’re waiting for approval as mouse. Messages unlock once someone approves you.</p>
+      <span class="btn tinted">Back up your account meanwhile</span>
+    </div>
+  </div>
+</template>
+</body>
+</html>

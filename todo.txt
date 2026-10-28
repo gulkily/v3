@@ -12,12 +12,12 @@ precisely, including interrupted-work recovery.
 
 terminal operator ui (`./v3 tui`)
 ----------------------------------
-	config-first status/config dashboard and command launcher
-	extract shared config schema: defaults, validation, redaction, precedence
-	private-config editor: presets, masked secrets, atomic writes, save diff
+x	config-first status/config dashboard and command launcher
+x	extract shared config schema: defaults, validation, redaction, precedence
+x	private-config editor: presets, masked secrets, atomic writes, save diff
 	later: guided destructive workflows with review, confirmation, output, cancellation
-	keep scripts as executor/validator; do not duplicate web feature-flags ui
-	use whiptail with dependency check and cli fallback
+x	keep scripts as executor/validator; do not duplicate web feature-flags ui
+x	use whiptail with dependency check and cli fallback
 
 scoring
 -------
@@ -179,6 +179,13 @@ Site-wide "Skip to content" link
 	No skip link exists; add one to templates/layout.php targeting <main>, visually hidden until focused
 	Shared chrome on every page: verify focus visibility and header layout in each theme
 	Raised by the docs_landing reviewer brief; deferred from that cycle (docs/plans/docs_landing/docs_landing_step3_development_plan.md)
+
+Reply-agent private key check in ./v3 status
+	report when the existing reply-agent identity has no private key at state/private/agent-reply/reply-agent-openpgp-<fingerprint>.private.asc
+	the key is generated only when the identity is first created; a lost key is never regenerated
+	since unsigned attribution Stage 7 the agent signs its replies, so a missing key makes replies fail instead of posting unsigned
+	recovery: restore the key from backup, or rotate deliberately (a new key is a new identity, splitting the agent's history)
+	before enabling verified attribution on zenmemes, confirm the key exists on the server
 
 Keep deployment-specific configuration outside tracked files
 	choose a persistent configuration source for site identity and instance paths,

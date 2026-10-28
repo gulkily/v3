@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// Private temporary files must be private from creation, before their first byte.
+umask(0077);
+
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/autoload.php';
 $defaultPath = getenv('FORUM_SECRETS_PATH') ?: (dirname($projectRoot) . '/forum-private/secrets.php');
@@ -74,6 +77,32 @@ if ($path === '') {
     exit(2);
 }
 
+// All cooperating writers share this lock, including the external-editor route.
+// A sidecar survives atomic rename; never unlink a lock another process may hold.
+$configLock = null;
+if (!$options['view'] && ($options['edit'] || $options['force'] || $options['api_key_stdin']
+    || $options['refresh_template'] || $options['update_llm'] || !is_file($path))) {
+    $directory = dirname($path);
+    if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+        fwrite(STDERR, "Unable to create private config directory.\n");
+        exit(1);
+    }
+    $configLock = @fopen($path . '.lock', 'c');
+    if ($configLock === false) {
+        fwrite(STDERR, "Unable to lock private configuration; check directory permissions.\n");
+        exit(1);
+    }
+    @chmod($path . '.lock', 0600);
+    $deadline = microtime(true) + 3;
+    while (!flock($configLock, LOCK_EX | LOCK_NB)) {
+        if (microtime(true) >= $deadline) {
+            fwrite(STDERR, "Private configuration is busy; retry after the other editor finishes.\n");
+            exit(1);
+        }
+        usleep(50000);
+    }
+}
+
 if ($options['edit']) {
     if ($options['view'] || $options['refresh_template'] || $options['force'] || $options['api_key_stdin'] || $options['update_llm']) {
         fwrite(STDERR, "edit cannot be combined with another private-config action.\n");
@@ -117,9 +146,12 @@ if ($options['edit']) {
 
 $defaults = \ForumRewrite\Support\PrivateConfigSchema::templateDefaults();
 
-$existing = [];
-if (is_file($path)) {
-    $existing = loadConfigFile($path);
+try {
+    $snapshot = \ForumRewrite\Support\PrivateConfig::snapshot($path);
+    $existing = $snapshot['file'];
+} catch (Throwable) {
+    fwrite(STDERR, "Cannot read private configuration; check the file and permissions.\n");
+    exit(1);
 }
 
 if ($options['view']) {
@@ -140,34 +172,27 @@ if ($options['update_llm']) {
         fwrite(STDERR, "LLM update request requires a values object.\n");
         exit(2);
     }
-    $values = $request['values'];
-    $editable = \ForumRewrite\Support\PrivateConfigSchema::llmEditableKeys();
-    foreach (array_keys($values) as $key) {
-        if (!is_string($key) || !in_array($key, $editable, true)) {
-            fwrite(STDERR, "LLM update request contains an unsupported field.\n");
-            exit(2);
-        }
+    if (isset($request['expected_revision']) && (!is_string($request['expected_revision'])
+        || !hash_equals($snapshot['revision'], $request['expected_revision']))) {
+        fwrite(STDERR, "Private configuration changed since review. Reload and review the draft again.\n");
+        exit(3);
     }
-    $locked = \ForumRewrite\Support\PrivateConfigSchema::lockedLlmKeys($existing, null);
-    if (array_intersect(array_keys($values), $locked) !== []) {
-        fwrite(STDERR, "An LLM setting is locked by an environment override.\n");
-        exit(1);
+    $update = \ForumRewrite\Support\PrivateConfigSchema::llmUpdate($existing, $request['values']);
+    if ($update['errors'] !== []) {
+        fwrite(STDERR, implode("\n", $update['errors']) . "\n");
+        exit(2);
     }
-    $llmUpdate = $values;
+    $llmUpdate = $update['values'];
+    if ($llmUpdate === []) {
+        fwrite(STDOUT, "No LLM changes.\n");
+        exit(0);
+    }
 }
 
 $config = resolvedTemplateConfig($existing);
 if ($llmUpdate !== null) {
     foreach ($llmUpdate as $key => $value) {
-        if ($key === 'LLM_API_KEY' && trim((string) $value) === '') {
-            continue;
-        }
         $config[$key] = $value;
-    }
-    $errors = \ForumRewrite\Support\PrivateConfigSchema::validateLlmConnection($config);
-    if ($errors !== []) {
-        fwrite(STDERR, implode("\n", $errors) . "\n");
-        exit(2);
     }
 }
 if ($options['api_key_stdin']) {
@@ -198,12 +223,25 @@ if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)
 $contents = renderPrivateConfigFile($config, $existing, true);
 
 $temporaryPath = $path . '.tmp-' . bin2hex(random_bytes(4));
-if (file_put_contents($temporaryPath, $contents, LOCK_EX) === false) {
+register_shutdown_function(static function () use ($temporaryPath): void { @unlink($temporaryPath); });
+if (file_put_contents($temporaryPath, $contents, LOCK_EX) !== strlen($contents)) {
+    @unlink($temporaryPath);
     fwrite(STDERR, "Unable to write temporary config file: {$temporaryPath}\n");
     exit(1);
 }
 
 @chmod($temporaryPath, 0600);
+try {
+    if (\ForumRewrite\Support\PrivateConfig::snapshot($path)['revision'] !== $snapshot['revision']) {
+        @unlink($temporaryPath);
+        fwrite(STDERR, "Private configuration changed during save. Reload and review again.\n");
+        exit(3);
+    }
+} catch (Throwable) {
+    @unlink($temporaryPath);
+    fwrite(STDERR, "Cannot recheck private configuration; no changes saved.\n");
+    exit(1);
+}
 if (!rename($temporaryPath, $path)) {
     @unlink($temporaryPath);
     fwrite(STDERR, "Unable to move temporary config into place: {$path}\n");
@@ -220,27 +258,6 @@ if (trim((string) ($config['LLM_PROVIDER'] ?? '')) === '') {
     fwrite(STDOUT, "LLM_PROVIDER is not set. Set it to anthropic, openai, openrouter, stub, or a custom OpenAI-compatible gateway name before enabling real analysis.\n");
 }
 printUpdateReminder($path);
-
-/**
- * @return array<string, mixed>
- */
-function loadConfigFile(string $path): array
-{
-    $loaded = require $path;
-    if (!is_array($loaded)) {
-        fwrite(STDERR, "Existing config did not return an array: {$path}\n");
-        exit(1);
-    }
-
-    $config = [];
-    foreach ($loaded as $key => $value) {
-        if (is_string($key)) {
-            $config[$key] = $value;
-        }
-    }
-
-    return $config;
-}
 
 /** @param array<string, mixed> $existing */
 function resolvedTemplateConfig(array $existing): array
@@ -471,6 +488,9 @@ The default local path is ../forum-private/secrets.php relative to this app chec
 LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
 Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
 update-llm accepts a JSON request only on standard input; never pass a secret in an argument.
+Its values object contains changed LLM fields; blank API key keeps the current key.
+An optional expected_revision binds a TUI review to the current file and value sources.
+Writers coordinate through a private .lock sidecar; busy saves return after three seconds.
 
 TEXT);
 }

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Board, themed · ZenMemes redesign</title>
+<link rel="stylesheet" href="../mockup.css">
+<link rel="stylesheet" href="zen.css">
+<link rel="stylesheet" href="ma.css">
+<script src="../mockup.js" defer></script>
+</head>
+<body data-skin="ma">
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="../index.html">← All mockups</a>
+      <h1>T1 · Board, themed</h1>
+      <p>The Board under a live sky. Each thread is lit by its author’s color, so the list reads as a field of people, not rows.</p>
+      <p class="doc-files">Structure: <a href="../board.html">02 · Board</a> · Skin: mockups/zen/zen.css</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="skin-toggle" role="group" aria-label="Skin"><button type="button" data-skin="base">Base</button><button type="button" data-skin="zen">Living Sky</button><button type="button" data-skin="ma">Ma</button></div>
+      <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+    </div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>In Ma</h2>
+      <ul>
+        <li><b>At night</b> (dark mode), the logo is a neon sign that flickers once, rain replaces petals, and times and counts use a data typeface.</li>
+        <li><b>Paper and space</b> (Hara): one sheet of paper for the list, hairlines, no glass and no blur. Titles in a quiet mincho serif.</li>
+        <li><b>One shaft of light</b> (Ando) crosses the page and moves as slowly as the sun. The page is lit from above in a soft field of color (Turrell).</li>
+        <li><b>Petals for the pulse</b> (teamLab): on a busy day seven petals fall; on an ordinary day three; on a quiet day none, and the light holds still.</li>
+        <li><b>People are flat shapes</b> (Tanaka): each avatar is a circle with its own cut (half, quarter or a small moon), fixed per name.</li>
+        <li><b>The logo is an ensō that is also a calm face</b> (Fukuda): a zen circle and a meme in one mark, next to a vermilion seal. Liked-empty: the face looks sideways at the star that isn’t there yet.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What the theme adds</h2>
+      <ul>
+        <li><b>The screen is a sky.</b> Dawn gradient in light mode; deep space with drifting nebulae, twinkling stars and an occasional shooting star in dark. Motion is slow (26–39 s cycles) and stops under reduced motion.</li>
+        <li><b>Frosted glass</b> for every surface, so color shows through around content but never behind text at full strength.</li>
+        <li><b>Author glow:</b> each row has a soft halo in its author’s color behind the avatar. Avatars are small glowing planets.</li>
+        <li><b>Gradient as the brand:</b> wordmark, New post, unread dots, badges and hot reply counts share one ember → magenta → violet gradient.</li>
+        <li>Colored dots on the navigation (Board blue, Users green, Messages pink). Pinned threads get a gold rim.</li>
+        <li><b>Ensō logo:</b> a one-stroke zen circle in the brand gradient replaces the star mark (desktop top bar).</li>
+        <li><b>Community pulse:</b> the sky reflects the last 24 hours. On a busy day nebulae are brighter and shooting stars come more often; on a quiet day the sky dims and holds still. Compare the first and second screens in dark mode.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What it needs from the base</h2>
+      <ul>
+        <li>A sky layer as the first child of the app shell (decorative, <code>aria-hidden</code>).</li>
+        <li><code>--person</code> on each thread row; <code>data-tab</code> on navigation items; an empty <code>.mark</code> slot in the wordmark.</li>
+        <li>Heart → star icon swap for Like.</li>
+        <li><code>data-pulse</code> (<code>quiet</code>, <code>steady</code> or <code>busy</code>) on the app shell, from one cached count of posts in the last 24 hours.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Checks</h2>
+      <ul>
+        <li>Text never sits directly on the moving sky except titles and section labels, which use ink at 6:1 or better on the lightest sky color.</li>
+        <li>White on every gradient stop is 4.6:1 or better.</li>
+        <li>Glass is 62% opaque, so the sky can’t lower body-text contrast below AA.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<template data-pulse="busy" data-screen="Default — signed in, newest first · busy day" data-active="board" data-title="Board" data-trail="i:search">
+  <div class="page">
+    <div class="page-head desk-only"><h1>Board</h1></div>
+    <div class="toolbar">
+      <div class="seg"><span aria-pressed="true">All</span><span>Liked</span></div>
+      <span class="select">Newest <i data-i="chevdown" class="sm"></i></span>
+      <span class="grow"></span>
+      <a class="btn plain" href="#"><i data-i="hash" class="sm"></i>Tags</a>
+    </div>
+    <div class="quick-compose hide-phone"><span class="avatar" data-av="ilyag"></span><span class="grow">What’s on your mind?</span><i data-i="image"></i></div>
+    <p class="section-label"><i data-i="pin" class="sm"></i>Pinned</p>
+    <div class="thread-list pinned-list">
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>The Rules of ZenMemes.com</h3><span class="count">6<span class="faint small">replies</span></span><p class="excerpt">1st Rule: You do not overthink the meme. 2nd Rule: You DO NOT overthink the meme.</p><span class="meta">ilyag · May 26</span></a>
+    </div>
+    <p class="section-label">Latest</p>
+    <div class="thread-list">
+      <a class="thread unread" href="#"><span class="avatar" data-av="ilyag"></span><h3>testing</h3><span class="count"></span><span class="meta">ilyag · Oct 6 <span class="chip warn">Pending</span></span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>Happy Birthday, Google!</h3><span class="count"></span><span class="meta">ilyag · Sep 27</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>On Accessibility</h3><span class="count hot">3</span><span class="meta">ilyag · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="guest"></span><h3>16-bit Intel 8088 chip by Charles Bukowski</h3><span class="count">1</span><span class="meta">guest · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="guest"></span><h3>On Maintaining Relationships…</h3><span class="count hot">4</span><span class="meta">guest · Sep 15</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>claim from mit bitcoin expo talk</h3><span class="count"></span><p class="excerpt">communication should be instant, and near-free.</p><span class="meta">ilyag · Sep 8</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>I got a “load failed” error while submitting a new post, wtf is that?</h3><span class="count"></span><span class="meta">onthebus · Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="chrome"></span><h3>Feature request: repo viewer/search</h3><span class="count hot">3</span><span class="meta">chrome · Sep 6 <span class="chip">feature</span></span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="mouse"></span><h3>Hi, I am a mouse, I like to run and scurry around in the basement.</h3><span class="count">1</span><span class="meta">mouse · Sep 6</span></a>
+    </div>
+    <div class="pager"><span class="btn tinted">Show older threads</span></div>
+  </div>
+</template>
+
+<template data-pulse="quiet" data-screen="Quiet day — nothing new for hours" data-active="board" data-title="Board" data-trail="i:search" data-devices="phone">
+  <div class="page">
+    <div class="toolbar">
+      <div class="seg"><span aria-pressed="true">All</span><span>Liked</span></div>
+      <span class="select">Newest <i data-i="chevdown" class="sm"></i></span>
+    </div>
+    <div class="thread-list">
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>Happy Birthday, Google!</h3><span class="count"></span><span class="meta">ilyag · Sep 27</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>On Accessibility</h3><span class="count">3</span><span class="meta">ilyag · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="guest"></span><h3>16-bit Intel 8088 chip by Charles Bukowski</h3><span class="count">1</span><span class="meta">guest · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="guest"></span><h3>On Maintaining Relationships…</h3><span class="count">4</span><span class="meta">guest · Sep 15</span></a>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Liked — empty state · Sort menu open" data-active="board" data-title="Board" data-trail="i:search" data-devices="phone">
+  <div class="page">
+    <div class="toolbar">
+      <div class="seg"><span>All</span><span aria-pressed="true">Liked</span></div>
+      <span class="menu-anchor"><span class="select" style="background:var(--surface-2)">Newest <i data-i="chevdown" class="sm"></i></span>
+        <span class="menu-list" style="position:absolute;left:0;top:calc(100% + 6px);z-index:3;width:180px">
+          <span><i data-i="check" class="sm"></i>Newest</span><span style="padding-left:36px">Oldest</span><span style="padding-left:36px">Top</span>
+        </span>
+      </span>
+    </div>
+    <div class="empty" style="margin-top:120px">
+      <span class="big starfield" data-seed="liked"><i data-i="star"></i></span>
+      <h2>No liked threads yet</h2>
+      <p>Threads you like will show up here.</p>
+      <span class="btn tinted">Show all threads</span>
+    </div>
+  </div>
+</template>
+</body>
+</html>

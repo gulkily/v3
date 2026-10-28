@@ -34,7 +34,7 @@ validate `.htaccess`.
 
 ## Enable and verify
 
-Use **Tools → Feature Flags → High-traffic mode**, or run commands from the
+Use **Tools → Operations → High-traffic mode**, or run commands from the
 application checkout with the same environment as PHP:
 
 ```bash

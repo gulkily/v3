@@ -33,12 +33,14 @@ final class TemplateRenderer
         'private_message_list.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
+        'board_list.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'compose_reply.php' => ['/assets/compose.css'],
         'compose_thread.php' => ['/assets/compose.css'],
         'qdb_add.php' => ['/assets/compose.css'],
         'codebase_state.php' => ['/assets/tool-details.css'],
         'instance.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
+        'operations.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -168,7 +170,7 @@ final class TemplateRenderer
             ]);
         }
 
-        $navItems = $this->navItems($viewerProfile);
+        $navItems = $this->navigationItems($viewerProfile);
         if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')) {
             $scriptPaths = array_merge($scriptPaths, $this->messagingScriptPaths());
         }
@@ -249,6 +251,8 @@ final class TemplateRenderer
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
+            'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
+            'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
         ]);
     }
 
@@ -310,7 +314,7 @@ final class TemplateRenderer
     /** Canonical navigation and dependencies for the current authenticated viewer. */
     public function navigationState(?array $viewerProfile, string $activeSection): array
     {
-        $items = $this->navItems($viewerProfile);
+        $items = $this->navigationItems($viewerProfile);
         $messages = array_values(array_filter($items, static fn (array $item): bool => $item['section'] === 'messages'));
         return [
             'html' => $this->renderFragment('partials/nav.php', ['navItems' => $items, 'activeSection' => $activeSection]),
@@ -332,8 +336,33 @@ final class TemplateRenderer
     }
 
     /**
+     * Navigation items for the viewer. With the `app` navigation slot each
+     * item also carries its placement: `main` (top bar / phone tab bar) or
+     * `menu` (account menu). Other slots return items without placement.
+     *
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string,viewer?:string}>
+     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool,placement?:string}>
+     */
+    public function navigationItems(?array $viewerProfile): array
+    {
+        $items = $this->navItems($viewerProfile);
+        if (PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'navigation') !== 'app') {
+            return $items;
+        }
+
+        $mainSections = ['board', 'profiles', 'messages', 'lobby'];
+        foreach ($items as $index => $item) {
+            // Users is main; a personal profile link (members-only mode) belongs in the account menu.
+            $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
+            $items[$index]['placement'] = in_array($item['section'], $mainSections, true) && $isUsers ? 'main' : 'menu';
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<string, mixed>|null $viewerProfile
+     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool}>
      */
     private function navItems(?array $viewerProfile): array
     {
@@ -510,6 +539,7 @@ final class TemplateRenderer
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
+        $rowMeta = fn (array $record, string $timeField = 'created_at'): string => $this->renderRowMeta($record, $timeField, $e);
         $forteContentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e, true);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
@@ -588,6 +618,10 @@ final class TemplateRenderer
             $authorLabel = 'guest';
         }
 
+        if (((int) ($record['attribution_counted'] ?? 1)) === 0) {
+            return $escape($authorLabel) . ' <span class="meta">(unsigned)</span>';
+        }
+
         $authorProfileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
         $authorUsernameToken = trim((string) ($record['author_username_token'] ?? ''));
         $authorIsApproved = ((int) ($record['author_is_approved'] ?? 0)) === 1;
@@ -621,6 +655,31 @@ final class TemplateRenderer
         }
 
         return ($prefix !== '' ? $prefix . ' ' : '') . 'by ' . $authorHtml;
+    }
+
+    /**
+     * Compact list metadata: "author · Oct 6", with a "Pending" chip for an
+     * unapproved author and the full UTC timestamp as the date's tooltip.
+     *
+     * @param callable(mixed): string $escape
+     */
+    private function renderRowMeta(array $record, string $timeField, callable $escape): string
+    {
+        $authorHtml = $this->renderAuthorHtml($record, $escape);
+        $authorHtml = str_replace(' <span class="meta">(unapproved)</span>', '', $authorHtml, $unapproved);
+        $value = trim((string) ($record[$timeField] ?? ''));
+        $parts = [$authorHtml];
+        if ($value !== '') {
+            try {
+                $date = (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'));
+                $short = $date->format($date->format('Y') === gmdate('Y') ? 'M j' : 'M j, Y');
+                $parts[] = '<time datetime="' . $escape($value) . '" title="' . $escape($this->formatFriendlyTimestamp($value)) . '">' . $escape($short) . '</time>';
+            } catch (\Exception) {
+                $parts[] = $escape($value);
+            }
+        }
+
+        return implode(' · ', $parts) . ($unapproved > 0 ? ' <span class="chip chip--pending">Pending</span>' : '');
     }
 
     /**
