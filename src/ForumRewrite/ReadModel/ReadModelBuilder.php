@@ -95,6 +95,7 @@ final class ReadModelBuilder
             $this->measure('mark_activity_attribution', fn (): mixed => VerifiedAttribution::markActivity($pdo, $this->repositoryRoot, $this->attributionCutoff, false));
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
             $this->measure('index_reaction_signatures', fn (): mixed => ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot));
+            $this->measure('index_activity_evidence', fn (): mixed => ActivityEvidenceIndex::refresh($pdo, $this->repositoryRoot, $this->databasePath));
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
             $this->measure('apply_verified_attribution', fn (): mixed => VerifiedAttribution::sync($pdo, $this->repositoryRoot, $this->attributionCutoff));
             $this->measure('commit_read_model', fn (): bool => $pdo->commit());

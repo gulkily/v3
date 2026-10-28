@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Activity load performance](activity_load_performance/)
+
 - [TUI operator workspace](tui_operator_workspace/)
 
 - [Profile public details](profile_public_details/)

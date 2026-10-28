@@ -40,6 +40,24 @@ order is immaterial.
 
 ## Core read-model tables
 
+Version 37 combines stored activity evidence and projections with verified-attribution columns. Startup rebuilds prior schemas before either activity reader queries the combined shape.
+
+Version 36 bounds signature lookups to pending evidence sources and batches index-time commit file reads; prior-version startup rebuild is covered before serving either reader.
+
+Version 35 switches Forte initial/selected/compatibility details and category/commit counts to stored projections. RSS and full commit inspection retain their independent contracts; older schema startup rebuilds before the changed queries.
+
+Version 34 switches standard Activity to the indexed-evidence read contract; startup rebuilds prior versions before rendering it.
+
+Version 33 adds `activity_counts` (view, total, without_profile_names) and
+`activity_local_state` (singleton, events, revision). SQL triggers maintain counts
+on every Activity writer and target-post visibility change, plus commit totals.
+Local-event mutations advance a cursor token transactionally; canonical-only
+changes do not. Standard paging reads that token instead of hashing local history.
+Activity indexes cover the standard date/coalesced-key order and Forte date,
+kind and label/action-key/id orders. Schema-32 startup rebuild is required.
+
+Version 32 adds compact `activity.evidence_json`: an internal tuple of signature path/status and relevant-file tuples (path, status, previous path, role, signer, key path, key status, optional false for an unavailable link). No rendered HTML, deleted prose or full commit manifests are stored. NULL means indexing is incomplete; a partial pending index and source-field triggers mark affected evidence for write-time refresh. Source-less events receive explicit empty evidence. Startup rebuilds version 31 before querying the new projection.
+
 Version 31 adds the public identity-history query contract (no new tables):
 counts and bounded histories select authored posts by exact identity, excluding
 hidden, retracted, identity/bootstrap-board and scripture-expansion rows. Thread histories
@@ -210,6 +228,7 @@ Feed of indexed activity entries (see `docs/specs/php_forum_rewrite_spec_v1.md`
 | `author_is_approved` | INTEGER | default 0 |
 | `source_path` | TEXT NULL | |
 | `source_commit_sha` | TEXT NULL | |
+| `evidence_json` | TEXT NULL | Internal compact tuple; NULL means unavailable/pending, explicit empty evidence for source-less events |
 | `attribution_verified` | INTEGER | default 1; for post, label and reaction rows naming an identity: whether the underlying record counts under verified attribution (schema 31) |
 | `attribution_counted` | INTEGER | default 1; effective, as on `posts`. With 0 the author renders unlinked with `(unsigned)` (schema 31) |
 
@@ -227,6 +246,36 @@ changed-value comparisons and the computed approval state for those profiles;
 they no longer refresh every profile's activity. Normal startup rebuilds older
 derived models before the changed query path runs. Table/index shapes are
 unchanged from schema 27.
+
+Additional indexes: `activity_pending_evidence_idx (source_commit_sha) WHERE evidence_json IS NULL`,
+`activity_page_idx (created_at DESC, COALESCE(action_key, 'local:' || id) DESC)`,
+`activity_date_key_idx (created_at, action_key, id)`, `activity_kind_key_idx (kind, action_key, id)`,
+`activity_label_key_idx (label, action_key, id)`.
+
+### `activity_counts`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `view` | TEXT PK | all/content/identity/bootstrap/approval/security/commits |
+| `total` | INTEGER NOT NULL | Including profile-name events |
+| `without_profile_names` | INTEGER NOT NULL | Excluding profile-name events |
+
+Transactional Activity insert/delete/update triggers maintain both variants.
+Target-post insert/delete/visibility changes adjust only affected content events;
+commit insert/delete triggers maintain commit totals. Security count reads still
+require live authorization. Internal tag membership preserves prior SQL/PHP semantics.
+
+### `activity_local_state`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `singleton` | INTEGER PK | One row, id 1 |
+| `events` | INTEGER NOT NULL | Number of source-less NULL-action-key events |
+| `revision` | TEXT NOT NULL | Random token replaced on local-event mutation |
+
+No local events means an empty cursor revision. Local-event changes/rebuilds expire
+old positions; canonical-only changes leave this token alone. All maintenance is
+inside the original mutation transaction.
 
 ### `commits`
 

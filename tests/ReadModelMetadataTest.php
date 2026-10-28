@@ -28,7 +28,7 @@ final class ReadModelMetadataTest
     public function testIncrementalUpdatesWriteTheExpectedSchemaIdentity(): void
     {
         $pdo = new PDO('sqlite::memory:');
-        $pdo->exec('CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+        foreach (\ForumRewrite\ReadModel\ReadModelSchema::statements() as $statement) $pdo->exec($statement);
 
         (new IncrementalReadModelUpdater('/tmp/read-model.sqlite3', '/repository'))->writeMetadata($pdo, 'commit-sha');
 

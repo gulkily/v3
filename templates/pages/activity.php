@@ -35,7 +35,8 @@
 <?php endif; ?>
 <?php if (($item['relevant_files'] ?? []) === []): ?>
 <?= $indent($partial('partials/source_metadata.php', [
-    'source_path' => $item['source_path'] ?? '',
+    'evidence_unavailable' => $item['evidence_unavailable'] ?? false,
+        'source_path' => $item['source_path'] ?? '',
     'source_commit_sha' => $item['source_commit_sha'] ?? '',
     'source_path_href' => $item['source_path_href'] ?? '',
     'source_commit_href' => $item['source_commit_href'] ?? '',

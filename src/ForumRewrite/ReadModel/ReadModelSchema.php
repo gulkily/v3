@@ -124,9 +124,17 @@ final class ReadModelSchema
                 author_is_approved INTEGER NOT NULL DEFAULT 0,
                 source_path TEXT NULL,
                 source_commit_sha TEXT NULL,
+                evidence_json TEXT NULL,
                 attribution_verified INTEGER NOT NULL DEFAULT 1,
                 attribution_counted INTEGER NOT NULL DEFAULT 1
             )',
+            "CREATE INDEX activity_pending_evidence_idx ON activity (source_commit_sha) WHERE evidence_json IS NULL",
+            "CREATE TRIGGER activity_evidence_insert AFTER INSERT ON activity WHEN COALESCE(NEW.source_path, '') = '' BEGIN
+                UPDATE activity SET evidence_json = '[\"\",\"\",[]]' WHERE id = NEW.id;
+             END",
+            "CREATE TRIGGER activity_evidence_update AFTER UPDATE OF source_path, source_commit_sha, author_identity_id, record_family ON activity BEGIN
+                UPDATE activity SET evidence_json = CASE WHEN COALESCE(NEW.source_path, '') = '' THEN '[\"\",\"\",[]]' ELSE NULL END WHERE id = NEW.id;
+             END",
             'CREATE INDEX activity_recent_idx ON activity (created_at DESC, post_id DESC, id DESC)',
             'CREATE INDEX activity_post_id_idx ON activity (post_id)',
             'CREATE INDEX activity_action_key_idx ON activity (action_key)',
@@ -151,6 +159,7 @@ final class ReadModelSchema
                 PRIMARY KEY (record_family, target_id, author_identity_id, tag)
             )',
             'CREATE INDEX viewer_tags_identity_idx ON viewer_tags (author_identity_id, record_family, tag, target_id)',
+            ...ActivityCounterSchema::statements(),
         ];
     }
 

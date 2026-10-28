@@ -46,6 +46,7 @@ final class ActivityService
     private ?SqliteActivityCommitManifestCache $activityCommitManifestCacheStore = null;
     private bool $activityCommitManifestCacheStoreInitialized = false;
     private ?PDO $pdo = null;
+    private ?array $indexedSignatureStatuses = null;
 
     /**
      * @param \Closure(): PDO $pdoFactory Lazy, like RouteServices::pdo() -
@@ -87,6 +88,13 @@ final class ActivityService
         ];
     }
 
+    /** Forte compatibility pages use the same indexed detail contract as selection. */
+    public function fetchIndexedActivity(string $view, string $sortColumn = 'date', string $sortDirection = 'desc', ?array $afterCursor = null): array
+    {
+        $result = $this->fetchActivityRows($view, $sortColumn, $sortDirection, $afterCursor);
+        return ['items' => array_map($this->projectedActivityItem(...), $result['items']), 'has_more' => $result['has_more']];
+    }
+
     /**
      * Standard Activity paging. Existing Forte/RSS contracts stay independent.
      * @param array<string,string>|null $position
@@ -100,9 +108,8 @@ final class ActivityService
         if (!in_array($direction, ['next', 'previous'], true)) throw new \InvalidArgumentException('This page position is invalid.');
         // Source-less local events have no canonical key. Never silently use
         // an old local row id after those events are changed or re-indexed.
-        $localRows = $this->pdo()->query('SELECT id, created_at, kind, post_id, thread_id, label, author_identity_id
-            FROM activity WHERE action_key IS NULL ORDER BY id')->fetchAll();
-        $localRevision = $localRows === [] ? '' : hash('sha256', json_encode($localRows, JSON_THROW_ON_ERROR));
+        $local = $this->pdo()->query('SELECT events, revision FROM activity_local_state WHERE singleton = 1')->fetch(PDO::FETCH_ASSOC);
+        $localRevision = (int) $local['events'] === 0 ? '' : (string) $local['revision'];
         if ($position !== null) {
             if (!isset($position['created_at'], $position['action_key']) || !is_string($position['created_at'])
                 || !is_string($position['action_key']) || $position['created_at'] === '' || $position['action_key'] === ''
@@ -138,7 +145,7 @@ final class ActivityService
         $first = $rows === [] ? $position : $boundary($rows[0]);
         $last = $rows === [] ? $position : $boundary($rows[count($rows) - 1]);
         return [
-            'items' => array_map(fn (array $row): array => $this->enrichActivityItem($view === 'security' ? $this->securityReviewItem($row) : $row, false), $rows),
+            'items' => array_map(fn (array $row): array => $this->projectedActivityItem($view === 'security' ? $this->securityReviewItem($row) : $row), $rows),
             'previous' => $first !== null && $read($first, 'previous', 1) !== [] ? $first : null,
             'next' => $last !== null && $read($last, 'next', 1) !== [] ? $last : null,
         ];
@@ -147,7 +154,7 @@ final class ActivityService
     /**
      * Returns an Activity list page without source, signature, or commit
      * manifest enrichment. Forte uses this for rows that are not selected;
-     * classic Activity continues to use fetchActivity() above.
+     * standard Activity and selected Forte details hydrate indexed evidence.
      *
      * @param array{sort_value: string, action_key: string, id: int}|null $afterCursor
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
@@ -183,7 +190,7 @@ final class ActivityService
             'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
-                    activity.source_path, activity.source_commit_sha,
+                    activity.source_path, activity.source_commit_sha, activity.evidence_json,
                     activity.id, activity.author_label, activity.author_profile_slug, activity.attribution_counted,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
@@ -228,7 +235,7 @@ final class ActivityService
 
     /**
      * Loads the full technical detail for one known Activity item. Unlike a
-     * list page, this is allowed to resolve its source/commit/signature data.
+     * list page, this hydrates the stored evidence for the selected row.
      *
      * @return array<string, mixed>|null
      */
@@ -238,7 +245,7 @@ final class ActivityService
             'SELECT activity.created_at, activity.kind, activity.record_family, activity.action_key,
                     activity.post_id, activity.thread_id, activity.label, activity.board_tags_json,
                     activity.author_identity_id,
-                    activity.source_path, activity.source_commit_sha,
+                    activity.source_path, activity.source_commit_sha, activity.evidence_json,
                     activity.id, activity.author_label, activity.author_profile_slug, activity.attribution_counted,
                     activity.author_username_token, activity.author_is_approved
              FROM activity
@@ -249,7 +256,7 @@ final class ActivityService
         $stmt->execute();
         $row = $stmt->fetch();
 
-        return $row === false ? null : $this->enrichActivityItem($row);
+        return $row === false ? null : $this->projectedActivityItem($row);
     }
 
     /**
@@ -298,6 +305,58 @@ final class ActivityService
         return $item;
     }
 
+    /** Read-only hydration: all filesystem/Git/signature work belongs to indexing. */
+    private function projectedActivityItem(array $row): array
+    {
+        $evidence = json_decode((string) ($row['evidence_json'] ?? ''), true);
+        $valid = is_array($evidence) && array_is_list($evidence) && count($evidence) === 3
+            && is_string($evidence[0] ?? null) && is_string($evidence[1] ?? null) && is_array($evidence[2] ?? null);
+        if ($valid) foreach ($evidence[2] as $file) {
+            if (!is_array($file) || !array_is_list($file) || !in_array(count($file), [7,8], true) || count(array_filter(array_slice($file, 0, 7), 'is_string')) !== 7 || (isset($file[7]) && $file[7] !== false)) { $valid = false; break; }
+        }
+        if (!$valid) $evidence = ['', '', []];
+        [$signature, $status, $files] = $evidence;
+        $path = (string) ($row['source_path'] ?? '');
+        $sha = (string) ($row['source_commit_sha'] ?? '');
+        $item = array_intersect_key($row, array_flip([
+            'created_at','kind','record_family','action_key','post_id','thread_id','label','board_tags_json',
+            'author_label','author_profile_slug','author_username_token','security_review','security_account',
+        ]));
+        return $item + [
+            'id' => (int) $row['id'], 'author_is_approved' => (int) $row['author_is_approved'],
+            'attribution_counted' => (int) ($row['attribution_counted'] ?? 1),
+            'source_path' => $path, 'source_commit_sha' => $sha,
+            'source_path_href' => $this->sourcePathHref($path, $sha),
+            'source_commit_href' => $this->sourceCommitHref($sha), 'source_commit_files' => [],
+            'source_signature_path' => $signature,
+            'source_signature_href' => $signature === '' ? '' : '/source/current/' . $this->encodeSourcePathForUrl($signature),
+            'source_signature_status' => $status, 'evidence_unavailable' => !$valid,
+            'relevant_files' => array_map(function (array $file) use ($path, $sha): array {
+                [$filePath, $fileStatus, $previous, $role, $signer, $key, $keyStatus] = $file;
+                $href = $fileStatus === 'current' && $filePath !== $path
+                    ? '/source/current/' . $this->encodeSourcePathForUrl($filePath)
+                    : $this->sourceCommitFileHref($filePath, $fileStatus, $sha);
+                if (($file[7] ?? true) === false) $href = '';
+                return ['status' => $fileStatus, 'path' => $filePath, 'previous_path' => $previous, 'role' => $role,
+                    'href' => $href, 'signature_signer_identity' => $signer, 'signature_public_key_path' => $key,
+                    'signature_public_key_href' => $key === '' ? '' : '/source/current/' . $this->encodeSourcePathForUrl($key),
+                    'signature_key_status' => $keyStatus];
+            }, $files),
+        ];
+    }
+
+    /** Index-time only: compact relevant evidence, never a full commit or rendered HTML. */
+    public function buildIndexedEvidence(array $row, ?array $signatureStatuses = null): string
+    {
+        $this->indexedSignatureStatuses ??= $signatureStatuses ?? $this->pdo()->query('SELECT source_path, signature_status FROM reaction_signatures')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $item = $this->enrichActivityItem($row, false);
+        $files = array_map(static fn (array $file): array => array_merge([
+            $file['path'], $file['status'], $file['previous_path'], $file['role'],
+            $file['signature_signer_identity'], $file['signature_public_key_path'], $file['signature_key_status'],
+        ], $file['href'] === '' ? [false] : []), $item['relevant_files']);
+        return json_encode([$item['source_signature_path'], $item['source_signature_status'], $files], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+    }
+
     public function securityReviewItem(array $item): array
     {
         if (!($this->authorizeSecurity !== null && ($this->authorizeSecurity)())) throw new RuntimeException('Authenticated root-approved operator access required.');
@@ -323,51 +382,17 @@ final class ActivityService
         return $item;
     }
 
-    /**
-     * Counts the full number of activity rows matching a view, independent
-     * of `ACTIVITY_ITEM_LIMIT`/pagination - for the left-pane folder counts,
-     * which should show real totals rather than "however many happen to be
-     * loaded so far". Mirrors `fetchActivity()`'s exact two-stage filter
-     * (the SQL `WHERE` from `activityViewSql()`, then the same tag-based
-     * PHP re-check) but selects only the columns that check needs, and
-     * skips the per-item transform `fetchActivity()` does for rendering
-     * (signature checks, link building, etc.) - unneeded and expensive
-     * across a potentially large, unlimited row set.
-     */
+    /** Read maintained totals; feature-name visibility and security authorization remain current. */
     public function countActivityViewTotal(string $view): int
     {
         $view = $this->normalizeActivityView($view);
-        [$viewWhere, $viewParameters] = $this->activityViewSql($view);
-        $stmt = $this->pdo()->prepare(
-            'SELECT activity.board_tags_json
-             FROM activity
-             LEFT JOIN posts ON posts.post_id = activity.post_id
-             WHERE 1 = 1
-             ' . $viewWhere
-        );
-        foreach ($viewParameters as $parameter => $value) {
-            $stmt->bindValue($parameter, $value);
-        }
-        $stmt->execute();
-
-        $count = 0;
-        while (($row = $stmt->fetch()) !== false) {
-            $boardTagsJson = (string) $row['board_tags_json'];
-            $hidden = $this->isHiddenBootstrapBoardTagsJson($boardTagsJson);
-            $matches = match ($view) {
-                'all' => true,
-                'content' => !$hidden,
-                'identity' => $this->hasBoardTag($boardTagsJson, 'identity'),
-                'bootstrap' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'internal'),
-                'approval' => $this->hasBoardTag($boardTagsJson, 'identity') && $this->hasBoardTag($boardTagsJson, 'approval'),
-                default => true,
-            };
-            if ($matches) {
-                $count++;
-            }
-        }
-
-        return $count;
+        $this->activityViewSql($view); // Preserve live authorization for security totals.
+        $column = $this->showProfileNameChanges ? 'total' : 'without_profile_names';
+        $stmt = $this->pdo()->prepare('SELECT ' . $column . ' FROM activity_counts WHERE view = ?');
+        $stmt->execute([$view === 'commits' ? 'all' : $view]);
+        $count = $stmt->fetchColumn();
+        if ($count === false) throw new RuntimeException('Activity counts unavailable. Run ./v3 rebuild and retry.');
+        return (int) $count;
     }
 
     /**
@@ -562,7 +587,9 @@ final class ActivityService
      */
     public function countCommitsTotal(): int
     {
-        return (int) $this->pdo()->query('SELECT COUNT(*) FROM commits')->fetchColumn();
+        $count = $this->pdo()->query("SELECT total FROM activity_counts WHERE view = 'commits'")->fetchColumn();
+        if ($count === false) throw new RuntimeException('Activity counts unavailable. Run ./v3 rebuild and retry.');
+        return (int) $count;
     }
 
     /**
@@ -679,6 +706,9 @@ final class ActivityService
         bool $authorIdentityIdIsCanonical = false
     ): string
     {
+        if ($this->indexedSignatureStatuses !== null && isset($this->indexedSignatureStatuses[$sourcePath])) {
+            return $this->indexedSignatureStatuses[$sourcePath];
+        }
         if (preg_match('#^records/(thread-labels|post-reactions|post-retractions)/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $sourcePath)) {
             try {
                 $contents = (string) file_get_contents($this->repositoryRoot . '/' . $sourcePath);
@@ -847,6 +877,37 @@ final class ActivityService
             return null;
         }
 
+        return $this->sourceCommitFileManifestCache[$commitSha] = self::parseCommitFiles($output);
+    }
+
+    /** Index-time batching avoids a process per event/commit during full rebuilds. */
+    public function primeCommitEvidence(array $commits): void
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) return;
+        $commits = array_values(array_filter(array_unique($commits), SourcePathValidator::isValidCommitSha(...)));
+        if ($commits === []) return;
+        $input = tempnam(sys_get_temp_dir(), 'activity-commits-');
+        if ($input === false) throw new RuntimeException('Cannot prepare Activity commit indexing.');
+        try {
+            if (file_put_contents($input, implode("\n", $commits) . "\n") === false) throw new RuntimeException('Cannot write Activity commit indexing input.');
+            $output = []; $code = 0;
+            exec('git -C ' . escapeshellarg($this->repositoryRoot) . ' diff-tree --stdin --root --name-status -r -M < ' . escapeshellarg($input) . ' 2>/dev/null', $output, $code);
+            // Preserve per-commit missing-history/error handling if a batch fails.
+            if ($code !== 0) return;
+            $groups = array_fill_keys($commits, []);
+            $current = null;
+            foreach ($output as $line) {
+                if (isset($groups[$line])) { $current = $line; continue; }
+                if ($current !== null) $groups[$current][] = $line;
+            }
+            foreach ($groups as $sha => $lines) {
+                $this->sourceCommitFileManifestCache[$sha] = self::parseCommitFiles($lines);
+            }
+        } finally { @unlink($input); }
+    }
+
+    private static function parseCommitFiles(array $output): array
+    {
         $files = [];
         foreach ($output as $line) {
             $parts = explode("\t", $line);
@@ -876,8 +937,6 @@ final class ActivityService
                 'previous_path' => $previousPath,
             ];
         }
-
-        $this->sourceCommitFileManifestCache[$commitSha] = $files;
 
         return $files;
     }

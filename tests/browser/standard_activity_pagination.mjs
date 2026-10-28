@@ -115,6 +115,53 @@ try {
     await commits.last().click();
     await page.locator('[data-paned-activity-commit-detail]:visible').waitFor();
     console.log('PASS unchanged Forte Activity/Commits: real append, appended-row selection and details');
+    await page.goto(base + '/forte/activity/');
+    const firstId = await page.locator('[data-paned-activity-id]:visible').first().getAttribute('data-paned-activity-id');
+    for (const route of ['/activity/?view=all', '/forte/activity/', '/api/forte_activity_detail?id=' + firstId]) {
+      const times = [];
+      for (let i = 0; i < 20; i++) {
+        const start = performance.now();
+        const response = await context.request.get(base + route);
+        assert.equal(response.status(), 200);
+        await response.body();
+        times.push(performance.now() - start);
+      }
+      times.sort((a,b) => a-b);
+      assert.ok(times[18] <= 1000, `${route} warm p95 exceeded 1s: ${times[18]}`);
+      console.log(`PASS HTTP ${route}: 20 requests, warm p95 ${times[18].toFixed(1)}ms`);
+    }
+    const mutate = sql => {
+      const result = spawnSync('php', ['-r', '$pdo=new PDO("sqlite:".$argv[1]); $pdo->exec($argv[2]);', join(root, 'read.sqlite3'), sql], { env, encoding:'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+    };
+    const recover = () => {
+      const result = spawnSync('php', ['-r', 'require $argv[1]."/autoload.php"; (new \\ForumRewrite\\ReadModel\\ReadModelBuilder($argv[2],$argv[3],new \\ForumRewrite\\Canonical\\CanonicalRecordRepository($argv[2])))->rebuild();', project, join(root,'repository'), join(root,'read.sqlite3')], { env, encoding:'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+    };
+    for (const width of [390,1280]) {
+      await page.setViewportSize({width,height:900});
+      mutate('UPDATE activity SET evidence_json=NULL WHERE source_path IS NOT NULL');
+      for (const route of ['/activity/?view=all','/forte/activity/']) {
+        await page.goto(base + route);
+        await page.getByRole('link', {name:'Reload',exact:true}).first().waitFor();
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth+1), true);
+        await page.screenshot({path:`/tmp/activity-evidence-unavailable-${route.startsWith('/forte')?'forte':'standard'}-${width}.png`});
+      }
+      recover();
+      await page.getByRole('link', {name:'Reload',exact:true}).first().click();
+      await page.waitForLoadState('load');
+      assert.equal(await page.getByRole('link', {name:'Reload',exact:true}).count(), 0);
+      for (const route of ['/activity/?view=all','/forte/activity/']) {
+        mutate('DELETE FROM activity');
+        await page.goto(base+route);
+        assert.equal(await page.locator('[data-paned-activity-id]:visible').count(),0);
+        assert.equal(await page.getByRole('link', {name:'Reload',exact:true}).count(),0);
+        recover();
+        await page.reload();
+      }
+    }
+    console.log('PASS indexed Activity phone/desktop: unavailable evidence, Reload after rebuild, empty state and recovery');
+
   } finally { await context.close(); }
 } catch (error) { console.error(logs.slice(-4000)); throw error; }
 finally { await browser.close(); server.kill(); await once(server, 'exit'); await rm(root, { recursive: true, force: true }); }

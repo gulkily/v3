@@ -51,6 +51,7 @@ $hasRelevantFiles = $relevantFiles !== [];
       ]), 3) ?>
 <?php else: ?>
 <?= $indent($partial('partials/source_metadata.php', [
+        'evidence_unavailable' => $item['evidence_unavailable'] ?? false,
         'source_path' => $item['source_path'] ?? '',
         'source_commit_sha' => $item['source_commit_sha'] ?? '',
         'source_path_href' => $item['source_path_href'] ?? '',
