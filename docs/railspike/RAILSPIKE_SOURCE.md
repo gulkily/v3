@@ -3,8 +3,8 @@
 Local record, not an upstream file.
 
 - Source: https://github.com/rlspk/railspike.git
-- Ref: tag v0.3.0-beta.4
-- Commit: f8c8d2588a4a849a12acc7c425d99f533e218f8d
+- Ref: tag v0.4.0
+- Commit: ea1ad5b524c2b447d3e61b15ccd3cd412ce6ecef
 - Previous archive origin: `git archive` of v0.2.0-beta.1, fetched 2026-10-16; Git metadata excluded.
 - Installation type: Git subtree path `docs/railspike`, updated with `git subtree merge --squash` on 2026-10-25.
 - Migrated from: https://github.com/gulkily/railspike.git at bf5cd25e1235f8dc661c121c0e6cab5f07132299 (`master`); the installed copy was byte-identical to that revision, with no local edits.
