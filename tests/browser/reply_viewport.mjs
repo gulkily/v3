@@ -102,11 +102,11 @@ try {
   // The original submit button remains the native submitter; retry uses the same form.
   await page.evaluate(()=>{window.submits=[];document.querySelector('form').addEventListener('submit',e=>{e.preventDefault();submits.push(e.submitter.textContent);});});
   await page.locator('.compose-form-actions > button').click();
-  assert.deepEqual(await page.evaluate(()=>submits),['Create reply']);
+  assert.deepEqual(await page.evaluate(()=>submits),['Post reply']);
   assert.equal(await body.inputValue(),draft);
   if (!await page.locator('.compose-action-menu').evaluate(el=>el.open)) await page.locator('.compose-action-menu-toggle').click();
   await page.locator('[data-action="submit-anonymous-compose"]').click();
-  assert.deepEqual(await page.evaluate(()=>submits),['Create reply','Post anonymous reply']);
+  assert.deepEqual(await page.evaluate(()=>submits),['Post reply','Reply anonymously']);
   // Forte never opts in, even on a touch phone.
   // Rebind on a fresh non-opted-in document to match Forte's server output.
   await page.setContent(`<style>${asset('compose.css')}</style><div data-reply-panel>${form.replace(' data-phone-reply','')}</div><script>${asset('reply_viewport.js')}</script>`);

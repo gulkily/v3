@@ -69,7 +69,7 @@ final class ToolsPageSupport
                 'key' => 'bookmarklets',
                 'label' => 'Bookmarklets',
                 'href' => '/tools/bookmarklets/',
-                'description' => 'Bookmarklet links for clipping URLs and selections straight into Compose Thread.',
+                'description' => 'Bookmarklet links for clipping URLs and selections straight into a new post.',
                 'standalone' => false,
             ],
             [
