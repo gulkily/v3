@@ -28,3 +28,14 @@ Baseline data-layer p95: standard 7.457 ms, Forte 5.018 ms, detail 4.921 ms; 851
 - Notes: Initial schema inventory assertion failed as expected and was updated; rerun passed. Live readers still use their prior paths until stages 5/6. Stage 1 commit 3e924f927. No dependency changes.
 
 *— Codex · 2026-10-28 UTC*
+
+## Stage 3 - Evidence follows writes
+**Original estimate: 0.18**
+**Retrospective stage work: 0.18**
+
+- Changes: Incremental metadata completion now refreshes pending evidence inside the write transaction, including direct flag inserts. Source-less handoffs receive empty evidence through the schema trigger. Identity/key arrival invalidates only that identity's prior evidence and refreshes its stored reaction status; imports/deletions use the already-wired rebuild path.
+- Verification: Projection/reaction/label/candidate recovery tests 13/13; new test checks incremental/rebuild parity and rollback, plus direct source-less insertion.
+- Discovery/fix: Parity exposed an existing reaction updater defect: refreshing a target assigned the newest commit to all older reaction events. It now resolves each source's actual commit, matching rebuild and preserving correct evidence. This is required evidence correctness within scope, not a new feature.
+- Notes: Stage 2 commit d372c401a. No reader switch yet. Full signed/identity/retraction acceptance continues in Stage 7.
+
+*— Codex · 2026-10-28 UTC*

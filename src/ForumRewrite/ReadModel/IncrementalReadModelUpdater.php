@@ -88,6 +88,7 @@ class IncrementalReadModelUpdater
             $this->measure($timings, 'ensure_username_route', fn (): mixed => $this->ensureUsernameRoute($pdo, $profile));
             $this->measure($timings, 'link_posts', fn (): mixed => $this->linkIdentityPosts($pdo, $profile));
             $this->measure($timings, 'link_activity', fn (): mixed => $this->linkIdentityActivity($pdo, $profile));
+            ActivityEvidenceIndex::invalidateIdentity($pdo, $this->repositoryRoot, $profile['identity_id']);
             $this->measure($timings, 'refresh_profile_state', function () use ($pdo, &$timings): void {
                 $this->refreshProfileState($pdo, $timings);
             });
@@ -1207,6 +1208,7 @@ class IncrementalReadModelUpdater
 
     public function writeMetadata(PDO $pdo, string $commitSha): void
     {
+        ActivityEvidenceIndex::refresh($pdo, $this->repositoryRoot, $this->databasePath);
         $stmt = $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
             'repository_root' => $this->repositoryRoot,
@@ -1700,7 +1702,7 @@ class IncrementalReadModelUpdater
                 'author_label' => $author['author_label'],
                 'author_is_approved' => $author['author_is_approved'],
                 'source_path' => $sourcePath,
-                'source_commit_sha' => $commitSha,
+                'source_commit_sha' => $this->sourceCommitShaForPath($sourcePath),
             ]);
         }
     }

@@ -28,6 +28,34 @@ final class ActivityProjectionTest
         } finally { $fixture->remove(); }
     }
 
+    public function testIncrementalReactionEvidenceMatchesRebuildAndRollsBack(): void
+    {
+        $fixture = new RebuildHistoryFixture(0, 1);
+        try {
+            $db = $fixture->root . '/model.sqlite';
+            $builder = new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository));
+            $builder->rebuild();
+            $fixture->write('post-reactions', 1);
+            $fixture->git('add', '.');
+            $fixture->git('commit', '-qm', 'reaction update');
+            $sha = $fixture->git('rev-parse', 'HEAD');
+            (new \ForumRewrite\ReadModel\IncrementalReadModelUpdater($db, $fixture->repository))->applyPostReactionWrite('root-001', $sha);
+            $pdo = new PDO('sqlite:' . $db, null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+            $before = $pdo->query('SELECT action_key, evidence_json FROM activity ORDER BY action_key')->fetchAll();
+            assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE evidence_json IS NULL')->fetchColumn());
+            $pdo->beginTransaction();
+            $pdo->exec("UPDATE activity SET source_commit_sha = NULL WHERE source_path IS NOT NULL");
+            assertTrue((int) $pdo->query('SELECT COUNT(*) FROM activity WHERE evidence_json IS NULL')->fetchColumn() > 0);
+            \ForumRewrite\ReadModel\ActivityEvidenceIndex::refresh($pdo, $fixture->repository, $db);
+            $pdo->rollBack();
+            assertSame($before, $pdo->query('SELECT action_key, evidence_json FROM activity ORDER BY action_key')->fetchAll());
+            $builder->rebuild();
+            assertSame($before, $pdo->query('SELECT action_key, evidence_json FROM activity ORDER BY action_key')->fetchAll());
+            $pdo->exec("INSERT INTO activity(created_at,kind,label,board_tags_json,author_label) VALUES ('now','codex_handoff','test','[]','guest')");
+            assertSame('["","",[]]', $pdo->query("SELECT evidence_json FROM activity WHERE kind='codex_handoff'")->fetchColumn());
+        } finally { $fixture->remove(); }
+    }
+
     public function testPriorSchemaStartupRebuildsBeforeActivityQuery(): void
     {
         $fixture = new RebuildHistoryFixture(0);
