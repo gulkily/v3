@@ -281,3 +281,11 @@ Stage estimates are not summed.
 - Notes: Likes queued before this change have no public key and still depend on the current key. A Like sent this way is credited to the key that signed it, under that key's name (e.g. `guest`), not the renamed one.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Cycle closed
+
+- Closed 2026-10-28 at the user's request ("let's close this cycle"), after three corrective fixes after closeout: the Change message (`a332f69f5`), the divider (`bef7f07da`) and offline first-action keys (`e08e5c737`). Every check recorded above still stands; the full suite was not re-run after those fixes.
+- Handed off, not part of this cycle: the unexpected page reload ([handoff](../backlog/unexpected_page_reload_handoff.md)) and the Outbox and identity findings ([backlog note](../backlog/outbox_identity_coupling_findings.md)).
+- Still pending: the real-iPhone check, merge (only on request), deployment, and the maintainer's comfortable-fit judgment.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

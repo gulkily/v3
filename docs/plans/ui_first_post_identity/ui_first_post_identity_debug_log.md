@@ -96,3 +96,17 @@ Railspike debug reports for cycle `v3/ui_first_post_identity`. Debug mode was en
 
 - `RAILSPIKE.md`, Planning Artifacts organization rule: pre-existing uncommitted edits to shared files (the ledger and a checklist containing an unrelated note) had no explicit guidance. The cycle-specific hunk was staged selectively and the unrelated note left uncommitted. A short rule for shared files with mixed pending edits would help.
 - `step4_implementation_do.md`, "keep each stage <2 hours": stages here ran well under that, so the guardrail never applied; there was no evidence either way.
+
+## 2026-10-28T21:10Z — Step 4 revision (post-closeout fixes and close), revises the 20:05Z entry
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md`, Enhancement Requests: "Record every enhancement request before acting". Recording each post-closeout report in the summary before fixing it kept three corrective fixes and two handoffs traceable to the user's words. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Railspike has no explicit step for corrective fixes requested after Step 4 closeout but before merge. The Enhancement Requests record plus fix commits worked; whether such fixes need their own stage commits, or a fresh follow-up cycle, is unstated.
