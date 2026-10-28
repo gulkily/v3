@@ -21,7 +21,7 @@ Extended estimates: enabled
 | 3 - Composer name row on first paint | 0.15 | done |
 | 4 - Change the name from the composer | 0.12 | done |
 | 5 - Creating your account, failures and Retry | 0.12 | done |
-| 6 - Other signed paths and members-only sites | 0.10 | pending |
+| 6 - Other signed paths and members-only sites | 0.10 | done |
 | 7 - Sites, themes, copy and docs | 0.10 | pending |
 | 8 - Acceptance and closeout | 0.06 | pending |
 
@@ -158,5 +158,25 @@ Stage estimates are not summed.
 - Notes:
   - Duplicate-post risk on Retry: a composer Retry re-runs the identity check (an already-registered key is not registered again) and starts the post from scratch, because the failure happened before any post was prepared. Inline replies keep the existing continuation, which confirms a prepared reply before resending.
   - In the thread card, the Like Retry ends next to the card's `#` link at 390px. Stage 7 checks this across themes.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Other signed paths and members-only sites
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - `outbox_sender.js`: a reaction signed while offline now registers its key (`ensureActionIdentity`) before `apply_signed_reaction`. Before this, a key kept in the browser would have sent a signature the server could not check. Outbox posts and unsigned reactions already registered first.
+  - The other paths needed no code change: messages, invitation issuance and redemption, operator tools (Fastmod, high-traffic control, feature flags), approvals, and members-only sign-in through `private_site_auth.js`. They all go through `ensureActionIdentity` / `ensureReadyIdentity`, which register an unregistered key first and, since Stage 1, never prompt. Stage 1's public-site guard leaves members-only sign-in unchanged.
+- Verification:
+  - Lobby first: new `tests/browser/lobby_local_key.mjs` (members-only, 390px) **passed**. A local, unregistered key opening `/lobby/` sends `prepare_identity`, `create_identity`, then `authenticate_identity`, stores the published fingerprint and shows "Approval pending." A new visitor goes Lobby → Account → Continue as newbie, is registered there and the Lobby shows "Approval pending." No dialogs or page errors.
+  - `OfflineOutboxSendTest` 3/3 passed. New: a signed reaction registers before `/api/apply_signed_reaction`; this test fails without the fix.
+  - Browser tests passed: `testing_self_approval` (public and `TEST_MEMBERS_ONLY=true`), `invitation_issuance.cjs`, `railspike_auth_navigation`, `private_message_feature_flag`, `private_message_operator_flag`, `private_message_history`, `fastmod`, `high_traffic_control`, `backup_feature_flags`, `feature_flags_toolbar`, `approval_review`, `root_approval_checks` and `access_history`.
+  - `invite_zero_click`: 2 of 3 runs passed on this branch (one timeout). It is also flaky on `main` (2 of 3 there, one assertion failure), so it is recorded as a flaky baseline.
+  - `private_message_list_browser` times out on `main` too, so it is not caused by this change.
+- Notes:
+  - Messaging with a never-registered key isn't a normal path (messages need an approved key). The code path registers first, as above.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

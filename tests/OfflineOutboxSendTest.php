@@ -42,6 +42,43 @@ NODE;
         assertSame('accepted', $result['saved'][2]['state']);
     }
 
+    public function testSignedReactionRegistersItsKeyBeforeSending(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+global.navigator = { onLine: true };
+global.window = { crypto: { randomUUID() { return 'send-uuid'; } } };
+const events = [];
+window.forumOutboxStorage = { save(item) { return Promise.resolve(item); } };
+window.ForumBrowserSigning = {
+  ensureActionIdentity() { events.push('register'); return Promise.resolve(); }
+};
+global.fetch = function (url) {
+  events.push(String(url));
+  return Promise.resolve({ text() { return Promise.resolve('status=ok\nthread_id=thread-1\n'); } });
+};
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+vm.runInThisContext(fs.readFileSync(process.argv[2], 'utf8'));
+const item = window.forumOutbox.createItem({ id: 'outbox-like', action: 'reaction', state: 'queued', payload: { kind: 'thread_tag', threadId: 'thread-1', tag: 'like' }, intent: { canonicalRecord: 'record', detachedSignature: 'signature' } });
+window.forumOutboxSender.send(item).then((result) => process.stdout.write(JSON.stringify({ state: result.state, events })));
+NODE;
+        $command = sprintf(
+            'node -e %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/outbox_store.js'),
+            escapeshellarg(__DIR__ . '/../public/assets/outbox_sender.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Outbox sender helper failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('accepted', $result['state']);
+        assertSame(['register', '/api/apply_signed_reaction'], $result['events']);
+    }
+
     public function testForegroundProcessorSendsQueuedItemsButLeavesDraftsLocal(): void
     {
         $script = <<<'NODE'

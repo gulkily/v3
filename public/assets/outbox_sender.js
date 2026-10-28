@@ -62,14 +62,21 @@
 
   function sendReaction(item) {
     if (item.intent && item.intent.canonicalRecord && item.intent.detachedSignature) {
-      return fetch("/api/apply_signed_reaction", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-        body: new URLSearchParams({
-          canonical_record: item.intent.canonicalRecord,
-          detached_signature: item.intent.detachedSignature
-        }).toString()
+      // A reaction signed while offline still needs its key registered before the server can check it.
+      var signing = window.ForumBrowserSigning;
+      var ready = signing && typeof signing.ensureActionIdentity === "function"
+        ? signing.ensureActionIdentity(null, null)
+        : Promise.resolve();
+      return ready.then(function () {
+        return fetch("/api/apply_signed_reaction", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+          body: new URLSearchParams({
+            canonical_record: item.intent.canonicalRecord,
+            detached_signature: item.intent.detachedSignature
+          }).toString()
+        });
       }).then(function (response) {
         return response.text();
       }).then(function (text) {
