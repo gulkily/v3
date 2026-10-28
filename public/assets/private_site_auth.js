@@ -52,9 +52,9 @@
     return fallback;
   }
 
-  function reportFailure(error) {
+  function reportFailure(error, options) {
     var message = error instanceof Error ? error.message : "Unable to authenticate this browser identity.";
-    setStatus(message, "error");
+    if (!(options && options.quiet)) setStatus(message, "error");
     if (typeof console !== "undefined" && typeof console.error === "function") {
       console.error("[private site authentication]", error);
     }
@@ -140,7 +140,7 @@
       // Public pages opportunistically resume a saved identity, but browsing
       // does not require one. Redirecting a keyless visitor to the Lobby
       // would make the Lobby try to resume again and redirect to itself.
-      if (returnTo !== "" && !isPublicAuthenticationResume()) {
+      if (returnTo !== "" && !isPublicAuthenticationResume() && !(options && options.navigate === false)) {
         window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
       }
       return { status: "not-configured" };
@@ -154,7 +154,7 @@
     var identityId = "openpgp:" + fingerprint;
     if (!(options && options.force === true) && authenticatedIdentityId() === identityId) {
       setStatus("", "ok");
-      if (requestedReturnDestination(options) !== "") {
+      if (requestedReturnDestination(options) !== "" && !(options && options.navigate === false)) {
         navigateAfterApproval(options);
       }
       return { status: "authenticated", identityId: identityId };
@@ -164,7 +164,7 @@
       throw new Error("OpenPGP support did not load. Reload the page and try again.");
     }
 
-    setStatus("Verifying this browser identity...", "info");
+    if (!(options && options.quiet)) setStatus("Verifying this browser identity...", "info");
     if (typeof loader.load === "function") {
       await loader.load();
     } else {
@@ -228,13 +228,16 @@
     }
 
     if (/^approved=1$/m.test(authenticationResult)) {
-      setStatus("Identity verified. Entering the site...", "ok");
+      if (!(options && options.quiet)) setStatus(options && options.navigate === false ? "" : "Identity verified. Entering the site...", "ok");
       if (!(options && options.navigate === false)) navigateAfterApproval(options);
       return { status: "approved", identityId: identityId };
     }
 
     var returnTo = requestedReturnDestination(options);
-    if (options && options.navigate === false) return { status: "pending", identityId: identityId };
+    if (options && options.navigate === false) {
+      if (!options.quiet) setStatus("", "ok");
+      return { status: isApprovedMembersOnly() ? "pending" : "authenticated", identityId: identityId };
+    }
     if (!isApprovedMembersOnly()) {
       setStatus("Identity verified.", "ok");
       if (returnTo !== "") {
@@ -267,11 +270,11 @@
           throw error;
         }
 
-        setStatus("Authentication challenge expired. Retrying...", "info");
+        if (!(options && options.quiet)) setStatus("Authentication challenge expired. Retrying...", "info");
         return authenticateOnce(options);
       })
       .catch(function (error) {
-        reportFailure(error);
+        reportFailure(error, options);
         throw error;
       })
       .finally(function () {
@@ -279,6 +282,16 @@
       });
 
     return authenticationInFlight;
+  }
+
+  function authenticateInPlace(state) {
+    authenticate({ navigate: false, quiet: true }).then(function (result) {
+      if (!result || !result.identityId) return;
+      state.dataset.authenticatedIdentityId = result.identityId;
+      window.dispatchEvent(new CustomEvent("forum:authenticated-in-place", {
+        detail: { identityId: result.identityId, approved: result.status === "approved" }
+      }));
+    }).catch(function () {});
   }
 
   window.PrivateSiteAuth = { authenticate: authenticate };
@@ -300,25 +313,12 @@
         delete state.dataset.publicAuthResume;
         return;
       }
-      authenticate({
-        returnTo: window.location.pathname + window.location.search,
-        replaceHistory: true
-      }).catch(function () {});
+      authenticateInPlace(state);
       return;
     }
 
-    // The account page shows the signed-in state itself, so on public sites it
-    // signs in without the reload that could interrupt a name being saved.
     if (state.hasAttribute("data-auth-in-place") && !isApprovedMembersOnly()) {
-      authenticate({ navigate: false }).then(function (result) {
-        if (!result || !result.identityId) return;
-        // Nothing navigates here, so drop the "Entering the site" progress text.
-        setStatus("", "ok");
-        state.dataset.authenticatedIdentityId = result.identityId;
-        window.dispatchEvent(new CustomEvent("forum:authenticated-in-place", {
-          detail: { identityId: result.identityId, approved: result.status === "approved" }
-        }));
-      }).catch(function () {});
+      authenticateInPlace(state);
       return;
     }
 

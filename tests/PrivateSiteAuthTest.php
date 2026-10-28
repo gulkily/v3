@@ -202,7 +202,7 @@ NODE;
         assertStringContains('identity_id=openpgp%3A0123456789abcdef0123456789abcdef01234567', $result['fetches'][1]['body']);
         assertSame('', $result['assignedUrl']);
         assertSame(0, $result['reloadCount']);
-        assertSame('Identity verified. Entering the site...', $result['status']['textContent']);
+        assertSame('', $result['status']['textContent']);
     }
 
     public function testMatchingAuthenticatedSessionSkipsRepeatedAuthentication(): void
