@@ -338,7 +338,7 @@ final class ComposeAndAccountKeyController
             'viewerProfile' => $viewerProfile,
             'notice' => $notice,
             'error' => $error,
-        ], 'Account Key', 'account', $this->identityScripts(['/assets/private_site_auth.js', '/assets/key_backup.js', '/assets/key_backup_status.js', '/assets/starfield.js', '/assets/key_backup_ui.js', '/assets/testing_self_approval.js']));
+        ], 'Account', 'account', $this->identityScripts(['/assets/private_site_auth.js', '/assets/key_backup.js', '/assets/key_backup_status.js', '/assets/starfield.js', '/assets/key_backup_ui.js', '/assets/testing_self_approval.js']));
     }
 
     private function resolveComposeReplyReturnTo(string $requestedReturnTo, string $threadId): string

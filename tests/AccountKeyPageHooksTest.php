@@ -23,7 +23,6 @@ final class AccountKeyPageHooksTest
         'data-action="clear-browser-key"',
         'data-action="undo-clear-browser-key"',
         'data-role="username-field"',
-        'data-role="simple-status-dot"',
         'data-role="simple-status-badge"',
         'data-role="profile-link"',
         'data-role="profile-link-wrap"',
@@ -78,23 +77,28 @@ final class AccountKeyPageHooksTest
                 new FeatureFlagRegistry(),
                 [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]
             ));
-            $html = $renderer->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account Key', 'account');
+            $html = $renderer->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account', 'account');
             preg_match('/<button\b[^>]*data-action="rename-profile"[^>]*>/', $html, $button);
             assertTrue($button !== []);
             assertSame(!$enabled, str_contains($button[0], ' hidden'));
             assertStringContains('data-username-changes-enabled="' . ($enabled ? '1' : '0') . '"', $html);
         }
         $default = (new TemplateRenderer(dirname(__DIR__) . '/templates'))
-            ->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account Key', 'account');
+            ->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account', 'account');
         preg_match('/<button\b[^>]*data-action="rename-profile"[^>]*>/', $default, $button);
         assertStringContains(' hidden', $button[0]);
     }
 
-    public function testKeyReplacementCaptionDependsOnUsernameChangesFlag(): void
+    public function testPageChoosesItsStateBeforeFirstPaint(): void
     {
-        $template = (string) file_get_contents(dirname(__DIR__) . '/templates/pages/account_key.php');
-        assertStringContains("root.dataset.usernameChangesEnabled === '1' ? 'Start over with a new key' : 'Re-setup / change name'", $template);
-        assertStringContains("'Set up this browser'", $template);
+        $html = (new TemplateRenderer(dirname(__DIR__) . '/templates'))
+            ->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account', 'account');
+        foreach (['data-account-state="guest"', 'data-account-card="guest"', 'data-account-card="member"', 'data-account-when="waiting"', 'data-account-when="approved"', 'data-viewer-identity-id=""', 'data-viewer-approved="0"', 'data-sky="account"', 'data-starfield-slot', 'class="account-card account-card--member night"', 'data-tone="neutral"'] as $hook) {
+            assertStringContains($hook, $html);
+        }
+        // The state script runs as soon as it is parsed, after the page markup, not on DOMContentLoaded.
+        $script = substr($html, (int) strpos($html, '</section>'));
+        assertStringContains("    syncSimpleUI();\n    document.addEventListener('DOMContentLoaded'", $script);
     }
 
     public function testSigningScriptStillTargetsPageHooks(): void

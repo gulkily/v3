@@ -135,7 +135,7 @@ try {
   await restored.waitForFunction(()=>Boolean(document.querySelector('[data-account-key-root]')?.dataset.authenticatedIdentityId));
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),keys.privateKey);
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_fingerprint').toLowerCase()),fingerprint);
-  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'Ready');
+  assert.notEqual(await restored.locator('[data-account-key-root]').getAttribute('data-account-state'),'guest');
   assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);
   // No manual reload: the restored session must work immediately on Messages.
   await restored.goto(base+'/messages/conversation/user-01');
@@ -147,12 +147,12 @@ try {
     for(const key of ['forum_pki_username','forum_pki_public_key','forum_pki_private_key','forum_pki_fingerprint'])localStorage.removeItem(key);
     window.dispatchEvent(new Event('storage'));
   });
-  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'Not set up yet');
+  assert.equal(await restored.locator('[data-account-key-root]').getAttribute('data-account-state'),'guest');
   let navigated=false;const onNavigation=frame=>{if(frame===restored.mainFrame())navigated=true;};
   restored.on('framenavigated',onNavigation);
   await upload();await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
   await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('Backup restored'));
-  assert.equal(await restored.locator('[data-role="simple-status-badge"]').textContent(),'Ready');
+  assert.notEqual(await restored.locator('[data-account-key-root]').getAttribute('data-account-state'),'guest');
   assert.equal(await restored.locator('#simple-status').isVisible(),false);
   assert.equal(await restored.locator('[data-role="username-field"]').textContent(),'alice');
   assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);

@@ -1980,7 +1980,7 @@ final class Application
             || $profile === null || $token === ''
             || !hash_equals($token, (string) ($input['token'] ?? ''))
             || $origin !== $expectedOrigin || array_diff(array_keys($input), ['token']) !== []) {
-            $this->routeServices()->sendJson(['error' => 'Testing approval is unavailable. Refresh Account Key and try again.'], 403, $headers);
+            $this->routeServices()->sendJson(['error' => 'Testing approval is unavailable. Refresh Account and try again.'], 403, $headers);
             return;
         }
         try {
