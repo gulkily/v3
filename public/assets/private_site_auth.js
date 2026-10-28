@@ -302,6 +302,21 @@
       return;
     }
 
+    // The account page shows the signed-in state itself, so on public sites it
+    // signs in without the reload that could interrupt a name being saved.
+    if (state.hasAttribute("data-auth-in-place") && !isApprovedMembersOnly()) {
+      authenticate({ navigate: false }).then(function (result) {
+        if (!result || !result.identityId) return;
+        // Nothing navigates here, so drop the "Entering the site" progress text.
+        setStatus("", "ok");
+        state.dataset.authenticatedIdentityId = result.identityId;
+        window.dispatchEvent(new CustomEvent("forum:authenticated-in-place", {
+          detail: { identityId: result.identityId, approved: result.status === "approved" }
+        }));
+      }).catch(function () {});
+      return;
+    }
+
     authenticate().catch(function () {});
   });
 })();

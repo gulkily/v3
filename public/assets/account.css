@@ -15,3 +15,291 @@
   outline-offset: 1px;
   border-color: color-mix(in srgb, var(--ink) 45%, var(--line) 55%);
 }
+
+/* Account states: the page script sets data-account-state before first paint. */
+.account-page:not([data-account-state="guest"]) [data-account-card="guest"],
+.account-page[data-account-state="guest"] [data-account-card="member"],
+.account-page[data-account-state="guest"] [data-account-when="member"],
+.account-page:not([data-account-state="waiting"]) [data-account-when="waiting"],
+.account-page:not([data-account-state="approved"]) [data-account-when="approved"] {
+  display: none;
+}
+
+/* Without JavaScript only Advanced (Link a public key) works. */
+@media (scripting: none) {
+  .account-page [data-account-card],
+  .account-page .account-group {
+    display: none;
+  }
+}
+
+.account-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--panel);
+}
+
+.account-card[data-account-card="guest"] {
+  align-items: center;
+  text-align: center;
+}
+
+.account-card h2,
+.account-card p {
+  margin: 0;
+}
+
+.account-card > .account-key-primary-button {
+  width: auto;
+  min-width: 10rem;
+}
+
+.account-starfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.account-id {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.account-id__text {
+  min-width: 0;
+}
+
+.account-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--active-bg, var(--line));
+  color: var(--active-ink, var(--ink));
+  font-family: var(--ui-font);
+  font-size: 1.35rem;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.account-name {
+  font-family: var(--ui-font);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.account-key-line {
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 0.85rem;
+}
+
+.chip--approved {
+  border-color: var(--status-ok, var(--line));
+  color: var(--status-ok, var(--ink));
+}
+
+.account-group {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.35rem 1rem;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+}
+
+.account-row:first-child {
+  border-top: 0;
+}
+
+.account-row__title {
+  flex: 1;
+}
+
+.account-row__value {
+  min-width: 0;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.account-row .account-row__action {
+  width: auto;
+  min-height: 2.75rem;
+  margin: 0 -0.5rem 0 0;
+  padding: 0 0.6rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+}
+
+.account-row--link::after {
+  content: "\203A";
+  content: "\203A" / "";
+  margin-left: auto;
+  color: var(--ink-soft);
+}
+
+button.account-row {
+  width: 100%;
+}
+
+.account-row--danger {
+  color: var(--status-error);
+}
+
+.account-key-advanced summary .meta {
+  margin-left: 0.35rem;
+}
+
+.account-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  max-width: 20rem;
+  text-align: left;
+}
+
+.account-name-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent 30%);
+}
+
+.account-name-editor[hidden] {
+  display: none;
+}
+
+.account-name-editor p,
+.account-retry {
+  margin: 0;
+}
+
+.account-name-editor .button-row {
+  justify-content: flex-end;
+}
+
+.account-retry button {
+  width: auto;
+}
+
+.account-sheet {
+  width: min(28rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 1.5rem);
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  /* Some themes use a see-through panel; layer it over the page so the sheet stays solid. */
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+  color: var(--ink);
+}
+
+.account-sheet > form {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.account-sheet::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+.account-sheet h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.account-sheet p {
+  margin: 0;
+}
+
+/* Phones: the dialog becomes a bottom sheet. */
+@media (max-width: 639px) {
+  .account-sheet {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 0;
+    border-radius: 0.9rem 0.9rem 0 0;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.account-strength {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.2rem;
+}
+
+.account-strength meter {
+  flex: 1;
+  max-width: 10rem;
+}
+
+.account-format {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.account-format legend {
+  margin-bottom: 0.3rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.account-format label {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+}
+
+/* The theme's own button, marked as destructive by its ink and border. */
+.account-danger-button {
+  border-color: var(--status-error);
+  color: var(--status-error);
+}
+
+.account-retry button + button {
+  margin-left: 0.5rem;
+}

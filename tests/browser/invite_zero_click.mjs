@@ -110,10 +110,10 @@ try {
     // Choose a name only after arrival, preserving key and approved session.
     await recipient.page.goto(base + '/account/key/');
     await recipient.page.locator('[data-action=rename-profile]').waitFor({ state: 'visible' });
-    assert.equal(await recipient.page.locator('[data-action=generate-browser-key]').innerText(), 'Start over with a new key');
-    recipient.page.removeAllListeners('dialog');
-    recipient.page.once('dialog', dialog => dialog.accept(privateSite ? 'named-private-reader' : 'named-public-reader'));
+    assert.equal(await recipient.page.locator('[data-account-key-root]').getAttribute('data-account-state'), 'approved');
     await recipient.page.locator('[data-action=rename-profile]').click();
+    await recipient.page.locator('[data-role=name-editor-input]').fill(privateSite ? 'named-private-reader' : 'named-public-reader');
+    await recipient.page.locator('[data-role=name-editor] [type=submit]').click();
     await recipient.page.waitForFunction(() => document.querySelector('[data-role=browser-key-status]').textContent.includes('Username saved'));
     assert.equal(await recipient.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint')), originalKey);
     await recipient.page.reload();
@@ -207,11 +207,11 @@ try {
     assert.match(await foreign.page.locator('[data-role=invitation-redemption-feedback]').innerText(), /another identity/);
     console.log(`PASS ${privateSite ? 'members-only' : 'public'}: source opt-in, QR, fresh/approved/recovery, same-key naming/rebuild, pending, lost-response/storage/missing recovery, manual, invalid/expired/revoked/foreign`);
   }
-  // Username changes are off by default: hidden button, original caption, refused endpoint, no rename activity.
+  // Username changes are off by default: hidden button, refused endpoint, no rename activity.
   const offBase = await start(false, false);
   const off = await contextWithIdentity(offBase, { keys, fingerprint });
   await off.page.goto(offBase + '/account/key/');
-  await off.page.waitForFunction(() => document.querySelector('[data-action=generate-browser-key]').textContent === 'Re-setup / change name');
+  await off.page.waitForFunction(() => !document.querySelector('[data-action=copy-fingerprint]').hidden);
   assert.equal(await off.page.locator('[data-action=rename-profile]').isVisible(), false);
   const refused = await off.page.evaluate(async fingerprintValue => (await fetch('/api/prepare_profile_name', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ author_identity_id: 'openpgp:' + fingerprintValue.toLowerCase(), username: 'blocked-name' }) })).json(), fingerprint);

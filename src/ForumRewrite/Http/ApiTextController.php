@@ -10,7 +10,7 @@ use ForumRewrite\ReadModel\ThreadRepository;
  * Fifteenth Phase 2 slice (see docs/plans/codebase_cleanup_audit_plan_v1.md
  * and docs/plans/codebase_cleanup_audit_findings_v1.md): the plain-text
  * `/api/*` informational endpoints - `/api/`, `/api/list_index`,
- * `/api/get_thread`, `/api/get_post`, `/api/get_profile`, and
+ * `/api/get_thread`, `/api/get_post`, `/api/get_profile`, `/api/get_username`, and
  * `/api/get_username_claim_cta`. These are pure read-only formatters with
  * no auth/session/write-flow coupling, unlike most of the `/api` group
  * (deliberately deferred as a whole - see the plan doc), so they were
@@ -138,6 +138,26 @@ final class ApiTextController
             . "\nAccount-Key-History: /user/" . rawurlencode((string) $profile['username_token']) . "#account-keys\n";
         $this->routeServices->sendText(
             "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nImage-Upload-Allowed: {$imageUpload}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n" . $historyText,
+            200,
+            ['Cache-Control: no-store']
+        );
+    }
+
+    /**
+     * How many approved keys use a username, so a new key can say it will join that user once approved.
+     *
+     * @param array<int, array<string, mixed>> $profiles profiles with this username token
+     */
+    public function getUsername(string $usernameToken, array $profiles): void
+    {
+        if (preg_match('/^[a-z0-9._-]{1,64}$/', $usernameToken) !== 1) {
+            $this->routeServices->sendText("invalid username\n", 400, ['Cache-Control: no-store']);
+            return;
+        }
+
+        $approvedKeys = count(array_filter($profiles, static fn (array $profile): bool => ((int) ($profile['is_approved'] ?? 0)) === 1));
+        $this->routeServices->sendText(
+            "Username-Token: {$usernameToken}\nApproved-Keys: {$approvedKeys}\n",
             200,
             ['Cache-Control: no-store']
         );
