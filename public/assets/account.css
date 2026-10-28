@@ -216,24 +216,6 @@ button.account-row {
   width: auto;
 }
 
-.account-note {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.75rem;
-  margin: 0;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  background: var(--panel);
-  font-family: var(--ui-font);
-  font-size: 0.9rem;
-}
-
-.account-note[data-tone="ok"] {
-  color: var(--status-ok);
-}
-
 .account-sheet {
   width: min(28rem, calc(100vw - 1.5rem));
   max-height: calc(100dvh - 1.5rem);

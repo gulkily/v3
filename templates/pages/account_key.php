@@ -43,10 +43,6 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     <p><button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button></p>
 <?php endif; ?>
   </div>
-  <p class="account-note" data-role="save-copy" data-account-when="approved" data-tone="neutral">
-    <span data-role="save-copy-text">Save a copy of this key to use it on another device without new approval, and keep your messages.</span>
-    <a href="#key-backup" data-backup-open="backup" data-role="save-copy-link">Save a copy</a>
-  </p>
   <p class="meta account-key-simple-status" id="simple-status" role="status" hidden></p>
   <p class="account-retry"><button type="button" class="account-key-secondary-button" data-action="retry-account-action" hidden>Retry</button><button type="button" class="account-key-secondary-button" data-action="undo-remove" hidden>Undo</button></p>
   <p class="meta" data-role="private-site-auth-status" hidden></p>
@@ -71,7 +67,7 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     </div>
   </div>
   <div class="account-group">
-    <a class="account-row account-row--link" data-tone="neutral" href="#key-backup" data-backup-open="backup" data-account-when="member">Save a copy of this key</a>
+    <a class="account-row account-row--link" data-tone="neutral" href="#key-backup" data-backup-open="backup" data-account-when="member"><span class="account-row__title">Save a copy of this key</span><span class="account-row__value" data-role="saved-copy-date"></span></a>
     <a class="account-row account-row--link" data-tone="neutral" href="#key-backup" data-backup-open="restore">Use a key from another device</a>
   </div>
   <dialog class="account-sheet" id="key-backup" data-key-backup aria-labelledby="key-backup-title">
@@ -349,21 +345,15 @@ No browser private key saved yet.
       syncSaveCopy(root, fingerprint);
     }
 
-    // Approved keys are asked to save a copy until this browser has saved one.
+    // The Save row shows when this browser last saved a copy of this key.
     function syncSaveCopy(root, fingerprint) {
-      var note = root.querySelector('[data-role="save-copy"]');
-      if (!note) {
+      var value = root.querySelector('[data-role="saved-copy-date"]');
+      if (!value) {
         return;
       }
       var saved = fingerprint ? readStorageValue('forum_pki_backup_verified_' + fingerprint) : '';
-      var text = note.querySelector('[data-role="save-copy-text"]');
-      var link = note.querySelector('[data-role="save-copy-link"]');
       var date = /^\d{4}-\d{2}-\d{2}$/.test(saved) ? new Date(saved + 'T00:00:00') : null;
-      note.dataset.tone = saved ? 'ok' : 'neutral';
-      link.hidden = saved !== '';
-      text.textContent = saved === ''
-        ? 'Save a copy of this key to use it on another device without new approval, and keep your messages.'
-        : 'Copy of this key saved' + (date ? ' ' + date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '') + '.';
+      value.textContent = saved === '' ? '' : 'Saved' + (date ? ' ' + date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
     }
 
     // A waiting key whose name approved members already use joins that user once approved.

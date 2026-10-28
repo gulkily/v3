@@ -96,8 +96,8 @@ try {
   await member.page.waitForFunction(() => document.cookie.includes('identity_hint='));
   await member.page.reload();
   assert.deepEqual(await parsed(member.page), { state: 'approved', guest: false, member: true }, 'approved from first paint once the server knows the key');
-  // Approved keys are asked to save a copy until one is saved, then see the date.
-  assert.equal(await member.page.locator('[data-role="save-copy-text"]').textContent(), 'Save a copy of this key to use it on another device without new approval, and keep your messages.');
+  // The Save row shows the date of the last saved copy, and nothing before one exists.
+  assert.equal(await member.page.locator('[data-role="saved-copy-date"]').textContent(), '');
   await member.page.getByRole('link', { name: 'Save a copy of this key', exact: true }).click();
   assert.equal(await member.page.locator('#key-backup').evaluate(d => d.open), true);
   assert.equal(await member.page.getByRole('dialog', { name: 'Save a copy of this key' }).isVisible(), true);
@@ -107,8 +107,7 @@ try {
   await member.page.keyboard.press('Escape');
   assert.equal(await member.page.locator('#key-backup').evaluate(d => d.open), false);
   await member.page.evaluate(fp => { localStorage.setItem('forum_pki_backup_verified_' + fp, '2026-10-28'); window.dispatchEvent(new Event('forum:key-backup-recorded')); }, approvedFingerprint.toLowerCase());
-  assert.match(await member.page.locator('[data-role="save-copy-text"]').textContent(), /^Copy of this key saved Oct 28\.$/);
-  assert.equal(await member.page.locator('[data-role="save-copy-link"]').isVisible(), false);
+  assert.equal(await member.page.locator('[data-role="saved-copy-date"]').textContent(), 'Saved Oct 28');
   await shot(member.page, 'approved-saved');
   await shot(member.page, 'approved');
   assert.deepEqual(member.errors, []);
@@ -119,7 +118,6 @@ try {
   assert.equal(await waiting.page.locator('[data-role="simple-status-badge"]').textContent(), 'Waiting for approval');
   assert.equal(await waiting.page.getByText('You can post now.').isVisible(), true);
   assert.equal(await waiting.page.locator('[data-role="user-link"]').isVisible(), false);
-  assert.equal(await waiting.page.locator('[data-role="save-copy"]').isVisible(), false, 'no save prompt for a key waiting for approval');
   await shot(waiting.page, 'waiting');
   await waiting.context.close();
 

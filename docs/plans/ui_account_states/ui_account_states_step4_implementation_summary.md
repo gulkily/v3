@@ -124,6 +124,13 @@ Extended estimates: enabled
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
 
+## Review revision - save reminder removed
+
+- The user asked (2026-10-28) whether the approved-key reminder ("Save a copy of this key to use it on another device without new approval, and keep your messages. Save a copy") was needed when the Save row sits right below it. Removed: the row already opens the sheet, and the sheet states why. The date moved onto the row: "Save a copy of this key · Saved Oct 28".
+- Verification: `account_states.mjs` (no date before a copy, "Saved Oct 28" after) and `AccountKeyPageHooksTest` pass; phone screenshot reviewed. `key_backups.md`, the copy record and the redesign checklist updated.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
 ## Closeout
 
 - All five stages complete. Whole-cycle projection **0.95** held throughout; separate **1.00 retrospective scope assessment** (stage retrospectives 0.25 / 0.22 / 0.26 / 0.08 / 0.20, not summed). The overrun is the sign-in race found in Stage 3.

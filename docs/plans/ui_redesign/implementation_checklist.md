@@ -130,10 +130,10 @@ Mockup: `thread.html`. Templates: `pages/thread.php`, `partials/thread_root_card
 Mockup: `account.html`. Template: `pages/account_key.php`.
 
 - [x] Three clear states: guest, set up and waiting for approval, approved.
-- [x] ~~"Not backed up" warning at the top until a backup exists.~~ Replaced 2026-10-28: keys are cheap and the user is the name, so only approved keys are asked to save a copy, without a warning tone.
+- [x] ~~"Not backed up" warning at the top until a backup exists.~~ Replaced 2026-10-28: keys are cheap and the user is the name, so there is no warning; the Save row shows the date of the last saved copy.
 - [x] Back up as a sheet with passphrase and format choice (text file or Starfield image), now "Save a copy of this key".
 - [x] Advanced key controls (keys, linking, storage) moved behind Advanced.
-- [x] Record the last backup date in the browser (drives "Copy of this key saved {date}").
+- [x] Record the last backup date in the browser (shown as "Saved {date}" on the Save row).
 - [x] Hooks: `data-tone` on rows, a starfield slot and `night` class on the account card, `data-sky` on the page.
 
 Built 2026-10-28 on `feat/ui-account-states` for all sites; see the [Step 4 summary](../ui_account_states/ui_account_states_step4_implementation_summary.md).
