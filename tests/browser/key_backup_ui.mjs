@@ -137,7 +137,7 @@ try {
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),keys.privateKey);
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_fingerprint').toLowerCase()),fingerprint);
   assert.notEqual(await restored.locator('[data-account-key-root]').getAttribute('data-account-state'),'guest');
-  assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);
+  assert.equal(await restored.locator('[data-action="remove-key"]').isVisible(),true);
   // No manual reload: the restored session must work immediately on Messages.
   await restored.goto(base+'/messages/conversation/user-01');
   await restored.locator('[data-role="private-message-plaintext"]').filter({hasText:'Original private conversation'}).first().waitFor({state:'visible'});
@@ -155,7 +155,7 @@ try {
   assert.notEqual(await restored.locator('[data-account-key-root]').getAttribute('data-account-state'),'guest');
   assert.equal(await restored.locator('#simple-status').isVisible(),false);
   assert.equal(await restored.locator('[data-role="username-field"]').textContent(),'alice');
-  assert.equal(await restored.locator('[data-action="clear-browser-identity"]').isVisible(),true);
+  assert.equal(await restored.locator('[data-action="remove-key"]').isVisible(),true);
   assert.equal(navigated,false);restored.off('framenavigated',onNavigation);
   const other=await pgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'other'}],format:'armored'});
   const different=await restored.evaluate(async({key,passphrase})=>(await window.ForumKeyBackup.createBackup(key,passphrase)).text,{key:other.privateKey,passphrase});

@@ -84,3 +84,23 @@ Extended estimates: enabled
 - Estimate details: over the plan by the sign-in race investigation and fix.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Remove this key
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - Remove this key (`data-action="remove-key"`) opens a confirmation dialog. For an approved key: "Your posts stay under {name}. To post as {name} again, a new key will wait for a member's approval, and messages sent to this key can't be read." (the messages clause is dropped when a copy is saved), with **Save a copy first** when no copy is saved; it closes this dialog and opens the save sheet. For a waiting key: "Your posts stay under {name}. A new key with this name will also wait for a member's approval." Then **Remove** (the existing `clear-browser-identity` handler) and **Cancel**.
+  - Undo appears as a button beside the removal message instead of only inside Advanced; it uses the existing undo link and its saved copy of the key, name included.
+  - The duplicate "Clear Saved Keypair" button in Storage and privacy is gone (`clear-browser-key` retired in `AccountKeyPageHooksTest`); `browser_signing.js` already tolerated its absence.
+  - The members-only redirect to the Lobby after removal is the unchanged `clearBrowserIdentity` code.
+- Verification:
+  - `account_states.mjs`: dialog by name and its text, Cancel keeps the key, Save a copy first switches to the save sheet, Remove clears the key (Guest state), Undo brings back the key and name. Passes.
+  - `AccountKeyPageHooksTest`, `BrowserSigningNormalizationTest`, two account smoke tests (90/90); `key_backup_ui`, `access_history` pass.
+- Notes:
+  - The members-only redirect was not exercised in a browser in this stage; its code is unchanged.
+- Estimate details: as expected.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

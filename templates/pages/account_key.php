@@ -48,7 +48,7 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     <a href="#key-backup" data-backup-open="backup" data-role="save-copy-link">Save a copy</a>
   </p>
   <p class="meta account-key-simple-status" id="simple-status" role="status" hidden></p>
-  <p class="account-retry"><button type="button" class="account-key-secondary-button" data-action="retry-account-action" hidden>Retry</button></p>
+  <p class="account-retry"><button type="button" class="account-key-secondary-button" data-action="retry-account-action" hidden>Retry</button><button type="button" class="account-key-secondary-button" data-action="undo-remove" hidden>Undo</button></p>
   <p class="meta" data-role="private-site-auth-status" hidden></p>
   <div class="account-group" data-account-when="member">
     <div class="account-row" data-tone="neutral">
@@ -167,16 +167,22 @@ No browser private key saved yet.
             <strong>Identity hint:</strong> <?= $e(((string) ($identityHint ?? '')) !== '' ? (string) $identityHint : 'none') ?>
             · <strong>Saved browser identity:</strong> <span data-role="identity-id-field">none</span>
           </p>
-          <div class="button-row account-key-advanced-actions">
-            <button type="button" data-action="clear-browser-key">Clear Saved Keypair</button>
-          </div>
         </div>
       </details>
     </div>
   </details>
   <div class="account-group" data-account-when="member">
-    <button type="button" class="account-row account-row--danger" data-tone="danger" data-action="clear-browser-identity" hidden>Remove this key</button>
+    <button type="button" class="account-row account-row--danger" data-tone="danger" data-action="remove-key" hidden>Remove this key</button>
   </div>
+  <dialog class="account-sheet" id="key-remove" data-role="remove-dialog" aria-labelledby="key-remove-title" aria-describedby="key-remove-text">
+    <form method="dialog" class="stack">
+      <h2 id="key-remove-title">Remove this key from this browser?</h2>
+      <p id="key-remove-text" data-role="remove-consequence">Your posts stay under your name.</p>
+      <a class="button-link" href="#key-backup" data-backup-open="backup" data-role="remove-save-first">Save a copy first</a>
+      <button type="submit" class="account-danger-button" value="remove" data-action="clear-browser-identity">Remove</button>
+      <button type="submit" class="account-key-secondary-button" value="cancel">Cancel</button>
+    </form>
+  </dialog>
 </section>
 <script>
   (function () {
@@ -289,7 +295,7 @@ No browser private key saved yet.
       var fingerprint = storedFingerprint();
       var state = accountState(root);
       var badge = root.querySelector('[data-role="simple-status-badge"]');
-      var clearIdentityButton = root.querySelector('[data-action="clear-browser-identity"]');
+      var clearIdentityButton = root.querySelector('[data-action="remove-key"]');
       var simpleStatus = root.querySelector('#simple-status');
       var fingerprintField = root.querySelector('[data-role="fingerprint-field"]');
       var copyFingerprint = root.querySelector('[data-action="copy-fingerprint"]');
@@ -436,6 +442,11 @@ No browser private key saved yet.
       );
       simpleStatus.hidden = simpleStatus.textContent === '';
       simpleStatus.dataset.kind = statusNode.dataset.kind || '';
+      var undoLink = statusNode.querySelector('[data-action="undo-clear-browser-key"]');
+      var undo = root.querySelector('[data-action="undo-remove"]');
+      if (undo && undoLink) {
+        undo.hidden = undoLink.hidden;
+      }
     }
 
     function bindViewerCopyButtons() {
@@ -481,6 +492,49 @@ No browser private key saved yet.
       });
     }
 
+    // Remove this key asks first, saying what stays and what a new key would need.
+    function bindRemoveDialog() {
+      var root = accountKeyRoot();
+      var open = root && root.querySelector('[data-action="remove-key"]');
+      var dialog = root && root.querySelector('[data-role="remove-dialog"]');
+      if (!open || !dialog) {
+        return;
+      }
+      var saveFirst = dialog.querySelector('[data-role="remove-save-first"]');
+
+      open.addEventListener('click', function () {
+        var name = readStorageValue('forum_pki_username') || 'guest';
+        var approved = root.dataset.accountState === 'approved';
+        var saved = readStorageValue('forum_pki_backup_verified_' + storedFingerprint()) !== '';
+        dialog.querySelector('[data-role="remove-consequence"]').textContent = approved
+          ? 'Your posts stay under ' + name + '. To post as ' + name + ' again, a new key will wait for a member’s approval' + (saved ? '' : ', and messages sent to this key can’t be read') + '.'
+          : 'Your posts stay under ' + name + '. A new key with this name will also wait for a member’s approval.';
+        saveFirst.hidden = !approved || saved;
+        if (typeof dialog.showModal === 'function') {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute('open', '');
+        }
+      });
+      // Save a copy first closes this dialog before the copy sheet opens.
+      saveFirst.addEventListener('click', function () {
+        dialog.close();
+      }, true);
+    }
+
+    // Undo is shown beside the removal message rather than inside Advanced.
+    function bindUndo() {
+      var root = accountKeyRoot();
+      var undo = root && root.querySelector('[data-action="undo-remove"]');
+      var link = root && root.querySelector('[data-action="undo-clear-browser-key"]');
+      if (!undo || !link) {
+        return;
+      }
+      undo.addEventListener('click', function () {
+        link.click();
+      });
+    }
+
     // Change opens the name editor in place; Cancel and Escape close it.
     function bindNameEditor() {
       var root = accountKeyRoot();
@@ -522,6 +576,8 @@ No browser private key saved yet.
       bindViewerCopyButtons();
       bindFingerprintCopy();
       bindNameEditor();
+      bindRemoveDialog();
+      bindUndo();
       syncSimpleUI();
       mirrorAdvancedStatus();
       window.addEventListener('forum:identity-changed', syncSimpleUI);
@@ -551,7 +607,7 @@ No browser private key saved yet.
           childList: true,
           characterData: true,
           attributes: true,
-          attributeFilter: ['data-kind'],
+          attributeFilter: ['data-kind', 'hidden'],
         });
       }
     }

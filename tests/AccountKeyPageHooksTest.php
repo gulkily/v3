@@ -20,7 +20,9 @@ final class AccountKeyPageHooksTest
         'data-action="restore-private-key"',
         'data-action="copy-public-key"',
         'data-action="copy-private-key"',
-        'data-action="clear-browser-key"',
+        'data-action="remove-key"',
+        'data-action="undo-remove"',
+        'data-role="remove-dialog"',
         'data-action="undo-clear-browser-key"',
         'data-role="username-field"',
         'data-role="simple-status-badge"',
@@ -128,10 +130,12 @@ final class AccountKeyPageHooksTest
         }
     }
 
-    /** Hooks retired by ui_account_states: the backup tabs became one dialog with two modes. */
+    /** Hooks retired by ui_account_states: the backup tabs became one dialog, and one Remove replaced two clear buttons. */
     private const RETIRED_HOOKS = [
         'data-backup-tab=', 'data-backup-download="text"', 'data-backup-download="png"',
         'id="key-backup-tab"', 'id="key-restore-tab"', 'id="key-backup-panel"', 'id="key-restore-panel"',
+        // One Remove this key (clear-browser-identity, behind a confirmation) replaces the duplicate Clear Saved Keypair.
+        'data-action="clear-browser-key"',
     ];
 
     public function testNoHookIsRetiredWithoutBeingListed(): void

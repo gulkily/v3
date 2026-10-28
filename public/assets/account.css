@@ -310,3 +310,30 @@ button.account-row {
   gap: 0.35rem;
   min-height: 2.75rem;
 }
+
+.account-sheet .button-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--active-bg, var(--panel));
+  color: var(--active-ink, var(--ink));
+  font-family: var(--ui-font);
+  text-decoration: none;
+}
+
+.account-sheet .button-link[hidden] {
+  display: none;
+}
+
+.account-danger-button {
+  border-color: var(--status-error);
+  background: var(--status-error);
+  color: var(--panel);
+}
+
+.account-retry button + button {
+  margin-left: 0.5rem;
+}

@@ -72,7 +72,7 @@ try {
   assert.equal(await fresh.page.getByRole('heading', { name: 'You’re posting as guest' }).isVisible(), true);
   assert.equal(await fresh.page.getByRole('link', { name: 'Save a copy of this key', exact: true }).isVisible(), false);
   assert.equal(await fresh.page.getByRole('link', { name: 'Use a key from another device' }).isVisible(), true);
-  assert.equal(await fresh.page.locator('[data-action="clear-browser-identity"]').isVisible(), false);
+  assert.equal(await fresh.page.locator('[data-action="remove-key"]').isVisible(), false);
   assert.equal(await fresh.page.title().then(t => t.startsWith('Account')), true);
   await shot(fresh.page, 'guest');
   assert.deepEqual(fresh.errors, []);
@@ -91,7 +91,7 @@ try {
   assert.equal(await member.page.locator('[data-role="user-link"]').getAttribute('href'), '/user/alice');
   assert.equal(await member.page.locator('[data-role="user-link"]').textContent(), 'All of alice’s posts');
   assert.match(await member.page.locator('[data-role="fingerprint-field"]').textContent(), /^[0-9A-F]{4} [0-9A-F]{4} … [0-9A-F]{4}$/);
-  assert.equal(await member.page.locator('[data-action="clear-browser-identity"]').isVisible(), true);
+  assert.equal(await member.page.locator('[data-action="remove-key"]').isVisible(), true);
   // Later visits: the identity hint lets the server state approval before paint.
   await member.page.waitForFunction(() => document.cookie.includes('identity_hint='));
   await member.page.reload();
@@ -173,12 +173,39 @@ try {
   assert.deepEqual(renaming.errors, []);
   await renaming.context.close();
 
+  // Remove this key: asks first, offers Save a copy first for an approved key without a copy, and Undo works.
+  const removing = await open(withKey(approved, approvedFingerprint, 'alice'), phone);
+  await removing.page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'approved');
+  await removing.page.getByRole('button', { name: 'Remove this key' }).click();
+  const removeDialog = removing.page.getByRole('dialog', { name: 'Remove this key from this browser?' });
+  assert.equal(await removeDialog.isVisible(), true);
+  assert.equal(await removing.page.locator('[data-role="remove-consequence"]').textContent(), 'Your posts stay under alice. To post as alice again, a new key will wait for a member’s approval, and messages sent to this key can’t be read.');
+  await shot(removing.page, 'remove');
+  await removeDialog.getByRole('button', { name: 'Cancel' }).click();
+  assert.equal(await removeDialog.isVisible(), false);
+  assert.notEqual(await removing.page.evaluate(() => localStorage.getItem('forum_pki_private_key')), null, 'Cancel keeps the key');
+  await removing.page.getByRole('button', { name: 'Remove this key' }).click();
+  await removeDialog.getByRole('link', { name: 'Save a copy first' }).click();
+  assert.equal(await removeDialog.isVisible(), false);
+  assert.equal(await removing.page.getByRole('dialog', { name: 'Save a copy of this key' }).isVisible(), true);
+  await removing.page.keyboard.press('Escape');
+  await removing.page.getByRole('button', { name: 'Remove this key' }).click();
+  await removeDialog.getByRole('button', { name: 'Remove' }).click();
+  await removing.page.waitForFunction(() => localStorage.getItem('forum_pki_private_key') === null);
+  assert.equal(await state(removing.page), 'guest');
+  await removing.page.getByRole('button', { name: 'Undo' }).click();
+  await removing.page.waitForFunction(() => localStorage.getItem('forum_pki_private_key') !== null);
+  await removing.page.waitForFunction(() => document.querySelector('[data-role="username-field"]').textContent === 'alice');
+  assert.notEqual(await state(removing.page), 'guest');
+  assert.deepEqual(removing.errors, []);
+  await removing.context.close();
+
   const noScript = await open(null, { javaScriptEnabled: false });
   assert.equal(await noScript.page.locator('[data-account-card="guest"]').isVisible(), false, 'without JavaScript the cards are hidden');
   await noScript.page.locator('#key-advanced > summary').click();
   await noScript.page.locator('#key-link > summary').click();
   assert.equal(await noScript.page.locator('textarea[name="public_key"]').isVisible(), true, 'Link a public key still works');
   await noScript.context.close();
-  console.log('PASS account states: guest, automatic guest, member → approved, approved on first paint, waiting, naming, join hint, rename and Retry, no JavaScript');
+  console.log('PASS account states: guest, automatic guest, member → approved, approved on first paint, waiting, naming, join hint, rename and Retry, remove with Undo, no JavaScript');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { if (browser) await browser.close(); server.kill(); }
