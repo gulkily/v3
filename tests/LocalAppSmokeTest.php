@@ -2797,8 +2797,7 @@ PHP;
         assertStringContains('automaticGuestKeypairEnabled: true', $board);
         assertFingerprintedAsset($board, 'openpgp_loader.js');
         assertFingerprintedAsset($board, 'browser_signing.js');
-        assertStringContains('data-role="automatic-guest-publication"', $accountKey);
-        assertStringContains("Otherwise, this browser publishes its public key at your first signed action.", $accountKey);
+        assertStringNotContains('data-role="automatic-guest-publication"', $accountKey);
         assertStringContains('FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED', $featureFlags);
         assertStringContains('Automatic guest keypair', $featureFlags);
     }

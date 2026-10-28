@@ -5,7 +5,6 @@
     privateKey: "forum_pki_private_key",
     fingerprint: "forum_pki_fingerprint",
     publishedFingerprint: "forum_pki_published_fingerprint",
-    automaticGuestPublication: "forum_pki_automatic_guest_publication",
     composePromptCancelled: "forum_pki_compose_prompt_cancelled",
     composeDraftPrefix: "forum_compose_draft",
     recentlyClearedComposeDraft: "forum_recently_cleared_compose_draft",
@@ -117,7 +116,6 @@
       duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
       identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
       openpgp_ms: timingDelta(timing, "forum_identity_prewarm_start", "forum_openpgp_ready"),
-      username_prompt_ms: timingDelta(timing, "forum_username_prompt_start", "forum_username_prompt_returned"),
       key_generation_ms: timingDelta(timing, "forum_key_generation_start", "forum_key_generation_end"),
       link_identity_ms: timingDelta(timing, "forum_link_identity_fetch_start", "forum_link_identity_response"),
       identity_hint_ms: timingDelta(timing, "forum_identity_hint_fetch_start", "forum_identity_hint_response"),
@@ -1971,19 +1969,6 @@
     return options.automaticGuestKeypairEnabled === true;
   }
 
-  function automaticGuestPublicationIsImmediate() {
-    return localStorage.getItem(storageKeys.automaticGuestPublication) === "immediate";
-  }
-
-  function setAutomaticGuestPublicationIsImmediate(immediate) {
-    if (immediate) {
-      localStorage.setItem(storageKeys.automaticGuestPublication, "immediate");
-      return;
-    }
-
-    localStorage.removeItem(storageKeys.automaticGuestPublication);
-  }
-
   function storedFingerprint() {
     return (localStorage.getItem(storageKeys.fingerprint) || "")
       .trim()
@@ -2245,7 +2230,7 @@
         markActionTiming(timing, "forum_openpgp_ready");
 
         if (pageHasVoteSurfaces(root)) {
-          storedVoteIdentityReadiness = hasBrowserKeypair() ? "in_flight" : "not_applicable";
+          storedVoteIdentityReadiness = hasBrowserKeypair() && publishedFingerprint() !== "" ? "in_flight" : "not_applicable";
           const ready = await ensureStoredIdentityReady(root, timing);
           storedVoteIdentityReadiness = ready ? "ready" : "not_applicable";
         } else if (hasBrowserKeypair()) {
@@ -2274,7 +2259,9 @@
   }
 
   async function ensureStoredIdentityReady(root, timing) {
-    if (!hasBrowserKeypair()) {
+    // A key that was never registered stays local until its first signed action.
+    if (!hasBrowserKeypair() || publishedFingerprint() === ""
+      || publishedFingerprint() !== String(await ensureStoredFingerprint()).trim().toUpperCase()) {
       return false;
     }
 
@@ -2297,11 +2284,7 @@
     }
 
     automaticGuestIdentityStarted = true;
-    void ensureReadyIdentity(root, null, {
-      promptForUsername: async function () { return "guest"; },
-      publishPublicKey: automaticGuestPublicationIsImmediate(),
-      verifyPublishedIdentity: automaticGuestPublicationIsImmediate(),
-    }).catch(function () {
+    void ensureReadyIdentity(root, null, { publishPublicKey: false }).catch(function () {
       // A later signed action or the Account Key page retains the existing
       // recovery path. Do not surface background setup errors unprompted.
     });
@@ -2374,49 +2357,6 @@
     if (typeof window.dispatchEvent === "function") {
       window.dispatchEvent(new Event("forum:identity-changed"));
     }
-  }
-
-  async function promptForUsername(promptMessage, cancellationMessage) {
-    const prompted = typeof window.prompt === "function"
-      ? window.prompt(
-          promptMessage,
-          localStorage.getItem(storageKeys.username) || "guest"
-        )
-      : "guest";
-
-    if (prompted === null || String(prompted).trim() === "") {
-      const continueAsGuest = typeof window.confirm === "function"
-        ? window.confirm("Continue with the default username 'guest'?")
-        : true;
-      if (!continueAsGuest) {
-        throw new Error(cancellationMessage);
-      }
-
-      return "guest";
-    }
-
-    return normalizeUsername(prompted);
-  }
-
-  async function promptForComposeUsername() {
-    try {
-      const username = await promptForUsername(
-        "What should we call you?",
-        "Choose a name before continuing."
-      );
-      localStorage.removeItem(storageKeys.composePromptCancelled);
-      return username;
-    } catch (error) {
-      localStorage.setItem(storageKeys.composePromptCancelled, "1");
-      throw error;
-    }
-  }
-
-  async function promptForAccountUsername() {
-    return promptForUsername(
-      "Choose a username for this browser keypair:",
-      "Key generation paused until you choose a username."
-    );
   }
 
   async function generateBrowserKey(root, preferredUsername, timing) {
@@ -2659,21 +2599,13 @@
   async function prepareReadyIdentity(root, statusNode, options) {
     const config = options || {};
     const timing = config.timing || null;
-    const promptForUsername = typeof config.promptForUsername === "function"
-      ? config.promptForUsername
-      : promptForComposeUsername;
 
     if (!hasBrowserKeypair()) {
       if (config.existingIdentityOnly === true) {
         return false;
       }
-      await ensureOpenPgpApi(["generateKey", "readKey"]);
-      setStatus(statusNode, "Choose a username to prepare your browser keypair...", "info");
-      markActionTiming(timing, "forum_username_prompt_start");
-      const username = config.temporaryName ? normalizeUsername(config.temporaryName) : await promptForUsername();
-      markActionTiming(timing, "forum_username_prompt_returned");
       setStatus(statusNode, "Generating browser keypair...", "info");
-      await generateBrowserKey(root, username, timing);
+      await generateBrowserKey(root, config.temporaryName || "", timing);
     }
 
     // Keep the normal action path flat: compose/reaction flows intentionally
@@ -2754,16 +2686,12 @@
   }
 
   async function ensureComposeIdentity(root, statusNode, timing) {
-    await ensureActionIdentity(root, statusNode, {
-      promptForUsername: promptForComposeUsername,
-      timing: timing,
-    });
+    await ensureActionIdentity(root, statusNode, { timing: timing });
   }
 
   async function ensureActionIdentity(root, statusNode, options) {
     const config = options || {};
     return ensureReadyIdentity(root, statusNode, {
-      promptForUsername: config.promptForUsername,
       temporaryName: config.temporaryName,
       existingIdentityOnly: config.existingIdentityOnly === true,
       verifyPublishedIdentity: config.verifyPublishedIdentity === true,
@@ -2785,7 +2713,6 @@
       renderIdentityPreparationState: renderIdentityPreparationState,
       scheduleIdentityPrewarm: scheduleIdentityPrewarm,
       scheduleAutomaticGuestIdentity: scheduleAutomaticGuestIdentity,
-      automaticGuestPublicationIsImmediate: automaticGuestPublicationIsImmediate,
       classifyIdentityBootstrapFailure: classifyIdentityBootstrapFailure,
       statusFromError: statusFromError,
       ensureOpenPgpApi: ensureOpenPgpApi,
@@ -2921,7 +2848,6 @@
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
     const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
-    const automaticGuestPublicationInput = root.querySelector('[data-role="automatic-guest-publication"]');
     if (window.ForumKeyBackupUI) {
       window.ForumKeyBackupUI.bind(root, {
         snapshot: browserIdentitySnapshot,
@@ -2935,9 +2861,6 @@
 
 
     renderSavedState(root);
-    if (automaticGuestPublicationInput) {
-      automaticGuestPublicationInput.checked = automaticGuestPublicationIsImmediate();
-    }
     if (hasBrowserKeypair()) {
       void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
@@ -2952,7 +2875,6 @@
       }
     });
 
-    const renameButton = root.querySelector('[data-action="rename-profile"]');
     const nameInput = root.querySelector('[data-role="account-name-input"]');
     const nameEditor = root.querySelector('[data-role="name-editor"]');
     const retryButton = root.querySelector('[data-action="retry-account-action"]');
@@ -3010,22 +2932,13 @@
       }
     }
 
-    // The account page edits the name in place; elsewhere the prompt remains.
     if (nameEditor) {
       nameEditor.addEventListener("submit", function (event) {
         event.preventDefault();
         const input = nameEditor.querySelector('[data-role="name-editor-input"]');
         void renameTo(input ? input.value : "", nameEditor.querySelector('[type="submit"]'));
       });
-    } else if (renameButton) renameButton.addEventListener("click", function () {
-      if (!hasBrowserKeypair()) {
-        setStatus(statusNode, "Set up this browser first.", "error");
-        return;
-      }
-      const chosen = window.prompt("Choose your username:", localStorage.getItem(storageKeys.username) || "guest");
-      if (chosen === null) return;
-      void renameTo(chosen, renameButton);
-    });
+    }
 
     async function publishNewKey(username) {
       setStatus(statusNode, "Publishing your public key in the background...", "info");
@@ -3049,7 +2962,7 @@
         offerRetry(null);
 
         try {
-          const username = nameInput ? normalizeUsername(nameInput.value) : await promptForAccountUsername();
+          const username = nameInput ? normalizeUsername(nameInput.value) : "guest";
           if (nameInput && hasBrowserKeypair()) {
             // An unnamed automatic key keeps its posts and invitations: name it rather than replace it.
             if (username === "guest") {
@@ -3070,33 +2983,6 @@
           setStatus(statusNode, error instanceof Error ? error.message : "Unable to generate browser keypair.", "error");
         } finally {
           generateButton.disabled = false;
-        }
-      });
-    }
-
-    if (automaticGuestPublicationInput) {
-      automaticGuestPublicationInput.addEventListener("change", async function () {
-        const publishImmediately = automaticGuestPublicationInput.checked;
-        setAutomaticGuestPublicationIsImmediate(publishImmediately);
-
-        if (!publishImmediately || !hasBrowserKeypair()) {
-          return;
-        }
-
-        automaticGuestPublicationInput.disabled = true;
-        try {
-          const fingerprint = await ensureStoredFingerprint();
-          if (fingerprint !== "" && publishedFingerprint() !== fingerprint) {
-            setStatus(statusNode, "Publishing your public key in the background...", "info");
-            await publishPublicKeyWithRetry(root);
-            await authenticatePrivateSiteIfAvailable();
-          }
-          setStatus(statusNode, "Automatic guest public-key publication is enabled for this browser.", "ok");
-        } catch (error) {
-          const status = statusFromError(error, "Unable to publish the browser public key.");
-          setStatus(statusNode, status.message, "error", { technicalDetails: status.technicalDetails });
-        } finally {
-          automaticGuestPublicationInput.disabled = false;
         }
       });
     }

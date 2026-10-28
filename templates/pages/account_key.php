@@ -157,8 +157,6 @@ No browser private key saved yet.
             <span data-role="browser-key-status-message">Ready.</span>
             <a href="#" data-action="undo-clear-browser-key" hidden>Undo</a>
           </p>
-          <label><input type="checkbox" data-role="automatic-guest-publication"> Publish guest key immediately</label>
-          <p class="meta">Otherwise, this browser publishes its public key at your first signed action.</p>
           <p class="meta">
             <strong>Identity hint:</strong> <?= $e(((string) ($identityHint ?? '')) !== '' ? (string) $identityHint : 'none') ?>
             · <strong>Saved browser identity:</strong> <span data-role="identity-id-field">none</span>

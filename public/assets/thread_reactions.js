@@ -102,7 +102,6 @@
       status: status,
       duration_ms: timingDelta(timing, "forum_action_start", "forum_action_complete"),
       identity_ms: timingDelta(timing, "forum_identity_start", "forum_identity_ready"),
-      username_prompt_ms: timingDelta(timing, "forum_username_prompt_start", "forum_username_prompt_returned"),
       key_generation_ms: timingDelta(timing, "forum_key_generation_start", "forum_key_generation_end"),
       link_identity_ms: timingDelta(timing, "forum_link_identity_fetch_start", "forum_link_identity_response"),
       identity_hint_ms: timingDelta(timing, "forum_identity_hint_fetch_start", "forum_identity_hint_response"),

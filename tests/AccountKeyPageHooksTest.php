@@ -31,7 +31,6 @@ final class AccountKeyPageHooksTest
         'data-role="private-site-auth-status"',
         'data-role="browser-key-status"',
         'data-role="browser-key-status-message"',
-        'data-role="automatic-guest-publication"',
         'data-role="identity-id-field"',
         'data-role="public-key-field"',
         'data-role="public-key-viewer"',
