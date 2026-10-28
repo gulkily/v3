@@ -79,6 +79,51 @@ NODE;
         assertSame(['register', '/api/apply_signed_reaction'], $result['events']);
     }
 
+    public function testFirstActionRegistersTheKeyThatSignedItEvenAfterTheBrowserKeyChanged(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+global.navigator = { onLine: true };
+global.window = { crypto: { randomUUID() { return 'send-uuid'; } } };
+const events = [];
+window.forumOutboxStorage = { save(item) { return Promise.resolve(item); } };
+window.__forumBrowserIdentity = { currentAuthorIdentityId() { return 'openpgp:new'; } };
+window.ForumBrowserSigning = { ensureActionIdentity() { events.push('register-current'); return Promise.resolve(); } };
+let linked = 0;
+global.fetch = function (url, options) {
+  events.push(String(url) + (options && options.body && String(url).endsWith('link_identity') ? ' ' + options.body : ''));
+  // The second item's key is already known to the server.
+  const text = String(url).endsWith('link_identity')
+    ? (linked++ === 0 ? 'status=ok\nidentity_id=openpgp:old\n' : 'error=Identity already exists for this fingerprint.\n')
+    : 'status=ok\nthread_id=thread-1\n';
+  return Promise.resolve({ text() { return Promise.resolve(text); } });
+};
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+vm.runInThisContext(fs.readFileSync(process.argv[2], 'utf8'));
+const item = id => window.forumOutbox.createItem({ id, action: 'reaction', state: 'queued', payload: { kind: 'thread_tag', threadId: 'thread-1', tag: 'like' }, intent: { authorIdentityId: 'openpgp:old', canonicalRecord: 'record', detachedSignature: 'signature', publicKey: 'old-public-key' } });
+window.forumOutboxSender.send(item('like-1'))
+  .then((first) => window.forumOutboxSender.send(item('like-2')).then((second) => process.stdout.write(JSON.stringify({ states: [first.state, second.state], events }))));
+NODE;
+        $command = sprintf(
+            'node -e %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/outbox_store.js'),
+            escapeshellarg(__DIR__ . '/../public/assets/outbox_sender.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Outbox sender helper failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame(['accepted', 'accepted'], $result['states']);
+        assertSame([
+            '/api/link_identity public_key=old-public-key', '/api/apply_signed_reaction',
+            '/api/link_identity public_key=old-public-key', '/api/apply_signed_reaction',
+        ], $result['events']);
+    }
+
     public function testForegroundProcessorSendsQueuedItemsButLeavesDraftsLocal(): void
     {
         $script = <<<'NODE'

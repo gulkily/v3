@@ -60,14 +60,36 @@
       .catch(function () { return false; });
   }
 
+  // A reaction signed while offline needs its signing key registered before the server can check it.
+  // A first action carries its public key, so it registers the key that signed it even if this
+  // browser's key has changed since; otherwise the current key is the signer.
+  function registerSigningKey(intent) {
+    var identity = window.__forumBrowserIdentity;
+    var currentId = identity && typeof identity.currentAuthorIdentityId === "function" ? identity.currentAuthorIdentityId() : "";
+    if (intent.publicKey && intent.authorIdentityId !== currentId) {
+      return fetch("/api/link_identity", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: new URLSearchParams({ public_key: intent.publicKey }).toString()
+      }).then(function (response) {
+        return response.text();
+      }).then(function (text) {
+        var error = responseValue(text, "error");
+        if (responseValue(text, "status") !== "ok" && error !== "Identity already exists for this fingerprint.") {
+          throw new Error(error || "Unable to register the key that signed this reaction.");
+        }
+      });
+    }
+    var signing = window.ForumBrowserSigning;
+    return signing && typeof signing.ensureActionIdentity === "function"
+      ? signing.ensureActionIdentity(null, null)
+      : Promise.resolve();
+  }
+
   function sendReaction(item) {
     if (item.intent && item.intent.canonicalRecord && item.intent.detachedSignature) {
-      // A reaction signed while offline still needs its key registered before the server can check it.
-      var signing = window.ForumBrowserSigning;
-      var ready = signing && typeof signing.ensureActionIdentity === "function"
-        ? signing.ensureActionIdentity(null, null)
-        : Promise.resolve();
-      return ready.then(function () {
+      return registerSigningKey(item.intent).then(function () {
         return fetch("/api/apply_signed_reaction", {
           method: "POST",
           credentials: "same-origin",

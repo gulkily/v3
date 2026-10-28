@@ -19,6 +19,18 @@
       : "";
   }
 
+  function stored(key) {
+    try { return String(window.localStorage.getItem(key) || ""); } catch (error) { return ""; }
+  }
+
+  // The public key travels with the item only while the server doesn't have it yet (a first action),
+  // so the item can be sent even if this browser's key changes before then.
+  function unregisteredPublicKey() {
+    var fingerprint = stored("forum_pki_fingerprint").trim().toUpperCase();
+    var registered = fingerprint !== "" && stored("forum_pki_published_fingerprint").trim().toUpperCase() === fingerprint;
+    return registered ? "" : stored("forum_pki_public_key");
+  }
+
   function canonicalRecord(input) {
     return [
       "Schema: Forum Offline Intent v1",
@@ -46,14 +58,15 @@
       authorIdentityId: authorIdentityId
     });
     var record = canonicalRecord(itemInput);
+    var publicKey = unregisteredPublicKey();
     return window.ForumBrowserSigning.signCanonicalRecord(record).then(function (signature) {
-      return window.forumOutbox.createItem(Object.assign({}, itemInput, {
-        intent: {
-          authorIdentityId: authorIdentityId,
-          canonicalRecord: record,
-          detachedSignature: String(signature || "")
-        }
-      }));
+      var intent = {
+        authorIdentityId: authorIdentityId,
+        canonicalRecord: record,
+        detachedSignature: String(signature || "")
+      };
+      if (publicKey) intent.publicKey = publicKey;
+      return window.forumOutbox.createItem(Object.assign({}, itemInput, { intent: intent }));
     });
   }
 

@@ -262,3 +262,22 @@ Stage estimates are not summed.
 - Verification: `first_post_identity.mjs` (the row reads exactly "Post as pip" with Change hidden) and `compose_identity_row.mjs` **passed**.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Request - offline Likes carry their key on a first action
+
+- Request (2026-10-28): store the public key with an offline Like so the composer's Change no longer depends on the Outbox; "store the key only if we are sending the first action, … not every single time."
+- Disposition: in scope as corrective work on Stage 4's Outbox guard; user-directed. The public key is added only when the signing key is not yet registered. The sender registers that item's own key from it, and Change drops its Outbox check. Outcome below.
+- Changes:
+  - `outbox_intent.js`: `createSignedIntent` adds `intent.publicKey` only when the browser's key is not yet registered (its stored published fingerprint doesn't match).
+  - `outbox_sender.js`: a signed reaction with `intent.publicKey` whose signer isn't the current key registers that key with `/api/link_identity` ("Identity already exists" counts as success); otherwise the current key is registered as before.
+  - `browser_signing.js`: `changeIdentityName` always replaces a local key. `outboxHasSignedWork`, its database read and the "Your Outbox has items signed under this name" message are removed.
+  - Docs: `authentication_modes.md`, and the [backlog note](../backlog/outbox_identity_coupling_findings.md) marks what this resolves.
+- Verification:
+  - `OfflineOutboxIntentTest` 2/2 passed. New: the key is stored for a first action and not for a registered key.
+  - `OfflineOutboxSendTest` 4/4 passed. New: two Likes signed by an old key are sent after the key changed, each first registering `old-public-key`; "already exists" is accepted.
+  - `compose_identity_row.mjs` **passed** three runs in a row. A real offline Like is signed by a local key and carries its public key. Change replaces the key and sends nothing. The Outbox then sends the Like (`link_identity`, `apply_signed_reaction`), and the server profile of the old key exists.
+  - The test now waits for a registered key's sign-in reload before typing. One earlier run had failed when the page reloaded mid-Change; that reload is existing behavior, the cycle 4 follow-up "sign-in reload elsewhere".
+  - Browser tests passed: `first_post_identity`, `account_states` and `signed_reactions`. `BrowserSigningNormalizationTest` 82/82 passed, and `LocalAppSmokeTest` 153/154 passed (the same unrelated failure).
+- Notes: Likes queued before this change have no public key and still depend on the current key. A Like sent this way is credited to the key that signed it, under that key's name (e.g. `guest`), not the renamed one.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

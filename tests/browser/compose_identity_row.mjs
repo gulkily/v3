@@ -106,6 +106,14 @@ try {
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); void d.dismiss(); });
     await page.goto(base + '/threads/root-001');
+    // A registered key signs in on load and the page may reload once (an existing behavior); wait for it before typing.
+    if (storage.published_fingerprint) {
+      for (let i = 0; i < 50; i++) {
+        try { if (await page.evaluate(() => document.readyState === 'complete' && document.querySelector('[data-private-site-auth-state]')?.dataset.authenticatedIdentityId)) break; } catch { /* reloading */ }
+        await page.waitForTimeout(200);
+      }
+      await page.waitForLoadState('load');
+    }
     const body = page.locator(reply + ' textarea[name="body"]');
     await body.fill('A draft that must survive');
     const row = page.locator(reply + ' [data-compose-identity]');
@@ -160,19 +168,25 @@ try {
   assert.deepEqual(member.dialogs, []); assert.deepEqual(member.errors, []);
   await member.context.close();
 
-  // A local key with an unsent reaction signed offline is registered and renamed rather than replaced, so it keeps its signer.
+  // A Like signed offline before the key was registered carries its public key, so Change can replace the key
+  // and the Outbox still sends the Like, registering the key that signed it.
   const queued = await writer({ username: 'mouse', public_key: localKeys.publicKey, private_key: localKeys.privateKey, fingerprint: localFingerprint });
-  await queued.page.evaluate(() => new Promise((resolve, reject) => {
-    const open = indexedDB.open('forum-offline-outbox-v1', 1);
-    open.onupgradeneeded = () => open.result.createObjectStore('items', { keyPath: 'id' });
-    open.onsuccess = () => { const tx = open.result.transaction('items', 'readwrite'); tx.objectStore('items').put({ id: 'queued-1', state: 'queued', intent: { canonicalRecord: 'record', detachedSignature: 'signature' } }); tx.oncomplete = () => { open.result.close(); resolve(); }; tx.onerror = reject; };
-    open.onerror = reject;
-  }));
+  queued.page.on('request', r => { const m = /\/api\/(apply_signed_reaction)$/.exec(r.url()); if (m) queued.sent.push(m[1]); });
+  await queued.page.evaluate(() => window.ForumLazyComposeSigning && window.ForumLazyComposeSigning.load());
+  await queued.page.waitForFunction(() => window.ForumBrowserSigning && window.ForumBrowserSigning.signCanonicalRecord && window.__forumBrowserIdentity);
+  for (const name of ['outbox_store', 'outbox_storage', 'outbox_intent', 'outbox_sender']) await queued.page.addScriptTag({ url: '/assets/' + name + '.js' });
+  const offlineLike = await queued.page.evaluate(() => window.forumOutboxIntent.createSignedIntent({ action: 'reaction', state: 'queued',
+    target: { kind: 'thread', id: 'root-001' }, summary: 'Like Hello world', payload: { kind: 'thread_tag', threadId: 'root-001', tag: 'like' } })
+    .then(item => window.forumOutboxStorage.save(item).then(() => item)));
+  assert.equal(offlineLike.intent.publicKey, localKeys.publicKey, 'a first action carries its public key');
   await change(queued.row, 'squeak');
   await queued.row.locator('[data-role="compose-identity-editor"]').waitFor({ state: 'hidden', timeout: 30000 });
-  assert.equal(await stored(queued.page, 'fingerprint'), localFingerprint);
-  assert.equal(await stored(queued.page, 'username'), 'squeak');
-  assert.deepEqual(queued.sent, ['prepare_identity', 'create_identity', 'prepare_profile_name', 'finalize_profile_name']);
+  assert.notEqual(await stored(queued.page, 'fingerprint'), localFingerprint, 'the local key is replaced');
+  assert.deepEqual(queued.sent, [], 'Change sends nothing');
+  const sent = await queued.page.evaluate(id => window.forumOutboxStorage.load(id).then(item => window.forumOutboxSender.send(item)), offlineLike.id);
+  assert.equal(sent.state, 'accepted', JSON.stringify(sent.outcome || sent.error || ''));
+  assert.deepEqual(queued.sent, ['link_identity', 'apply_signed_reaction']);
+  assert.match(await (await fetch(base + '/api/get_profile?profile_slug=openpgp-' + localFingerprint.toLowerCase())).text(), /mouse/, 'the Like is credited to the key that signed it');
   assert.deepEqual(queued.dialogs, []); assert.deepEqual(queued.errors, []);
   await queued.context.close();
 
@@ -183,6 +197,6 @@ try {
   assert.equal(await plain.locator('[data-compose-identity]').isVisible(), false);
   assert.equal(await plain.locator('textarea[name="body"]').isVisible(), true);
   await noScript.close();
-  console.log('PASS compose identity row: six composers × three key states × phone/desktop at parse, static server HTML, live rename, local Change then first reply, registered rename with failure/Retry, renaming off, Outbox keeps signer, no JavaScript');
+  console.log('PASS compose identity row: six composers × three key states × phone/desktop at parse, static server HTML, live rename, local Change then first reply, registered rename with failure/Retry, renaming off, offline Like sent after its key was replaced, no JavaScript');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

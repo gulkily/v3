@@ -2720,63 +2720,22 @@
     return result.username;
   }
 
-  // Whether the offline Outbox holds work already signed by this key and not yet sent: a reaction signed
-  // offline, or a post whose delivery was prepared. Drafts and unsigned items are signed when sent, and
-  // sent, rejected or cancelled items are history. Reads the database without creating it.
-  function outboxHasSignedWork() {
-    if (typeof indexedDB === "undefined" || !indexedDB) {
-      return Promise.resolve(false);
-    }
-    return new Promise(function (resolve) {
-      let request;
-      try {
-        request = indexedDB.open("forum-offline-outbox-v1");
-      } catch (error) {
-        resolve(false);
-        return;
-      }
-      request.onupgradeneeded = function () {
-        request.transaction.abort();
-      };
-      request.onerror = function () { resolve(false); };
-      request.onsuccess = function () {
-        const database = request.result;
-        try {
-          const all = database.transaction("items", "readonly").objectStore("items").getAll();
-          all.onsuccess = function () {
-            database.close();
-            resolve((all.result || []).some(function (item) {
-              const open = ["accepted", "rejected", "cancelled"].indexOf(item && item.state) === -1;
-              const signed = Boolean(item && ((item.intent && item.intent.detachedSignature) || item.delivery));
-              return open && signed;
-            }));
-          };
-          all.onerror = function () { database.close(); resolve(false); };
-        } catch (error) {
-          database.close();
-          resolve(false);
-        }
-      };
-    });
-  }
-
   // The composer's Change. A key kept in this browser is replaced by one under the new name, sending
-  // nothing; one with Outbox work, or a registered key, is renamed on the server instead.
+  // nothing; a registered key is renamed on the server instead. (Offline Likes signed by a replaced key
+  // carry its public key, so the Outbox can still send them.)
   async function changeIdentityName(chosen) {
     const username = normalizeUsername(chosen);
     if (hasBrowserKeypair() && username === (localStorage.getItem(storageKeys.username) || "guest")) {
       return username;
     }
     const usernameChangesEnabled = (window.forumBrowserIdentityOptions || {}).usernameChangesEnabled === true;
-    if (!isRegisteredIdentity() && !(hasBrowserKeypair() && await outboxHasSignedWork())) {
+    if (!isRegisteredIdentity()) {
       await generateBrowserKey(null, username);
       window.dispatchEvent(new Event("forum:identity-changed"));
       return username;
     }
     if (!usernameChangesEnabled) {
-      throw new Error(isRegisteredIdentity()
-        ? "Names can't be changed on this site."
-        : "Your Outbox has items signed under this name. Send or discard them first.");
+      throw new Error("Names can't be changed on this site.");
     }
     try {
       return await saveRegisteredName(username);
