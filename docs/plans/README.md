@@ -44,6 +44,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [High-traffic absent retractions](high_traffic_absent_retractions/)
 
 - [UI shell and navigation](ui_shell_navigation/)
+- [UI tab bar scroll-away](ui_tab_bar_scroll_away/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
