@@ -470,7 +470,8 @@ final class QuoteCardDisplayNumberTest
             '/?view=all&sort=newest',
         );
 
-        assertStringContains('class="nav board-controls-nav"', $forumBoard);
+        // ZenMemes, the default site, shows its list board's toolbar.
+        assertStringContains('<div class="board-toolbar">', $forumBoard);
     }
 
     public function testNonQdbBoardDoesNotLoadTheVoteButtonScript(): void

@@ -17,6 +17,8 @@ set -euo pipefail
 printf 'ARGS:%s\n' "$*" >> "$V3_TUI_TEST_LOG"
 if [[ " $* " == *' --menu '* ]]; then
   if [[ " $* " == *' Read-only commands '* ]]; then
+    if [[ -f "$V3_TUI_TEST_STATE-chooser" ]]; then exit 1; fi
+    touch "$V3_TUI_TEST_STATE-chooser"
     printf 'status\n' >&2
     exit 0
   fi
@@ -56,26 +58,30 @@ BASH);
                 'TERM=xterm V3_TUI_WHIPTAIL=' . escapeshellarg($fakeWhiptail)
                     . ' V3_TUI_TEST_LOG=' . escapeshellarg($logPath)
                     . ' V3_TUI_TEST_STATE=' . escapeshellarg($statePath)
-                    . " script -qec './v3 tui' /dev/null"
+                    . " script -qec 'stty rows 24 cols 80; ./v3 tui' /dev/null"
             );
             $log = (string) file_get_contents($logPath);
 
             assertSame(0, $exitCode);
             assertSame('', $stderr);
-            assertStringContains('ARGS:--title v3 terminal operator --menu', $log);
+            assertStringContains('--title v3 terminal operator', $log);
+            assertStringContains('Observed:', $log);
+            assertStringContains('Repository:', $log);
+            assertStringContains('Queue details', $log);
             assertStringContains('TEXTBOX:', $log);
-            assertStringContains('v3 status', $log);
-            assertStringContains('Private configuration (redacted)', $log);
+            assertStringContains('Operator status', $stdout);
+            assertStringContains('Private configuration', $log);
             assertStringContains('Private config path:', $log);
             assertStringContains('/tools/feature-flags/', $log);
             assertStringContains('./v3 task-queue status', $log);
-            assertStringContains('Run this existing read-only command?', $log);
+            assertStringNotContains('Run this existing read-only command?', $log);
             assertStringContains('./v3 status', $log);
             assertStringNotContains('LLM_API_KEY = ', $stdout);
         } finally {
             @unlink($fakeWhiptail);
             @unlink($logPath);
             @unlink($statePath);
+            @unlink($statePath . '-chooser');
             @rmdir($directory);
         }
     }
@@ -92,6 +98,7 @@ BASH);
             throw new RuntimeException('Unable to run command.');
         }
 
+        fwrite($pipes[0], "\n\n");
         fclose($pipes[0]);
         $stdout = stream_get_contents($pipes[1]);
         $stderr = stream_get_contents($pipes[2]);

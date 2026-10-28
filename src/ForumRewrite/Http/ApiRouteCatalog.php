@@ -54,14 +54,14 @@ final class ApiRouteCatalog
             ['POST', '/api/prepare_reply', 'signed', 'json', 'Prepare a signed reply to thread_id.'],
             ['POST', '/api/prepare_quote', 'signed', 'json', 'Prepare a signed quote (QDB sites only).'],
             ['POST', '/api/create_prepared_post', 'signed', 'json', 'Publish a prepared post: send prepare_token and signature.'],
-            ['POST', '/api/create_thread', 'anonymous', 'text', 'Anonymous thread only.'],
-            ['POST', '/api/create_reply', 'anonymous', 'text', 'Anonymous reply only.'],
-            ['POST', '/api/create_quote', 'anonymous', 'text', 'Anonymous quote only (QDB sites only).'],
+            ['POST', '/api/create_thread', 'anonymous', 'text', 'Unsigned thread; anonymous unless author_identity_id is sent.'],
+            ['POST', '/api/create_reply', 'anonymous', 'text', 'Unsigned reply; anonymous unless author_identity_id is sent.'],
+            ['POST', '/api/create_quote', 'anonymous', 'text', 'Unsigned quote; anonymous unless author_identity_id is sent (QDB sites only).'],
             ['POST', '/api/prepare_retraction', 'signed', 'json', 'Prepare a signed retraction of your own post.'],
             ['POST', '/api/create_prepared_retraction', 'signed', 'json', 'Publish a prepared retraction.'],
             // Tags and reactions
-            ['POST', '/api/apply_thread_tag', 'hint', 'text', 'Tag a thread.'],
-            ['POST', '/api/apply_post_tag', 'hint', 'text', 'Tag a post.'],
+            ['POST', '/api/apply_thread_tag', 'hint', 'text', 'Tag a thread; signed when canonical_record and detached_signature are sent.'],
+            ['POST', '/api/apply_post_tag', 'hint', 'text', 'Tag a post; signed when canonical_record and detached_signature are sent.'],
             ['POST', '/api/apply_signed_reaction', 'signed', 'text', 'Apply a reaction with a detached signature.'],
             // Approval and invitations
             ['POST', '/api/prepare_approval', 'signed', 'json', 'Prepare a signed approval of profile_slug.'],
@@ -97,6 +97,8 @@ final class ApiRouteCatalog
             // Operator tools
             ['POST', '/api/prepare_feature_flag_change', 'operator', 'json', 'Prepare a signed feature flag change.'],
             ['POST', '/api/finalize_feature_flag_change', 'operator', 'json', 'Publish a signed feature flag change.'],
+            ['POST', '/api/prepare_attribution_cutoff', 'operator', 'json', 'Prepare a signed move of the verified attribution cutoff.'],
+            ['POST', '/api/finalize_attribution_cutoff', 'operator', 'json', 'Publish a signed move of the verified attribution cutoff.'],
             ['POST', '/api/set_feature_flag', 'retired', 'text', 'Replaced by prepare_feature_flag_change.'],
             ['POST', '/api/prepare_high_traffic', 'operator', 'json', 'Prepare a signed high-traffic mode change.'],
             ['POST', '/api/finalize_high_traffic', 'operator', 'json', 'Publish a signed high-traffic mode change.'],

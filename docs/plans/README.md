@@ -26,6 +26,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [TUI operator workspace](tui_operator_workspace/)
+
+- [Profile public details](profile_public_details/)
+
 - [Image backup ZIP](image_backup_zip/)
 
 - [Reusable archive exports](archive_export_contention/)
@@ -38,6 +42,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Documentation publication policy](docs_publication_policy/)
 - [High-traffic absent retractions](high_traffic_absent_retractions/)
+
+- [UI shell and navigation](ui_shell_navigation/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
@@ -304,7 +310,17 @@ and repair its navigation and affected references. See the
 
 - [Activity workflow block removal](./railspike_workflow_visibility/railspike_workflow_visibility_step1_solution_assessment.md) — remove detached private workflow links; preserve thread controls.
 
+- [Unsigned attribution](./unsigned_attribution/unsigned_attribution_step1_solution_assessment.md) — default-off verified attribution flag: unsigned posts and votes after a cutoff are accepted but don't count.
+
 - [Retraction simplification](./retraction_simplification/retraction_simplification_step3_development_plan.md): approved release-1 implementation plan.
 
 - [Backup feature flags](./backup_feature_flags/backup_feature_flags_step1_solution_assessment.md): independent text and image backup controls.
 - [Import archive hardening](./import_archive_hardening/import_archive_hardening_step1_solution_assessment.md) — bounded hostile-input processing and CLI recovery.
+
+[QR theme](qr_theme/qr_theme_step4_implementation_summary.md) — restrained QR colors and live theme synchronization; maintainer visual review failed, appearance follow-up and physical-camera acceptance pending.
+
+[Invite signing readiness](invite_signing_readiness/invite_signing_readiness_step4_implementation_summary.md) — session/signing-key mismatch fixed locally; user/production confirmation pending.
+
+- [High-traffic toggle](high_traffic_toggle/) — switch row under the Feature Flags heading.
+
+- [Operations page](site_operations_page/) — Tools › Operations holds high-traffic mode.

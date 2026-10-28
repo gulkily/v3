@@ -238,7 +238,7 @@ pre {
   opacity: 0.7;
 }
 
-.board-controls-nav > *:last-child {
+.board-controls-nav > *:last-child:not([data-nav-key]) {
   margin-left: auto;
 }
 
@@ -413,6 +413,408 @@ pre {
   background: var(--panel);
   padding: 0.9rem;
   overflow-wrap: anywhere;
+}
+
+/* App shell (`navigation` slot `app`): one row with the wordmark, the main
+   destinations, New post and the account menu. Scoped so other sites keep
+   today's header. The phone tab bar reuses the same nav. */
+[data-shell="app"] .site-header--app {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0 1rem;
+}
+
+[data-shell="app"] .site-header--app .eyebrow {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-brand__mark:empty {
+  display: none;
+}
+
+[data-shell="app"] .site-header--app .site-header-actions {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+}
+
+[data-shell="app"] .site-header--app .nav {
+  flex: 0 1 auto;
+}
+
+/* `:root` outranks themes' general link colors so the button keeps its own ink. */
+:root [data-shell="app"] .new-post-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--active-line);
+  background: var(--active-bg);
+  color: var(--active-ink);
+  font-family: var(--ui-font);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.new-post-button__icon {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.account-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.account-menu > summary {
+  list-style: none;
+}
+
+.account-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  font-family: var(--ui-font);
+  cursor: pointer;
+}
+
+.account-menu__icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  flex: 0 0 auto;
+}
+
+.account-menu[open] > .account-menu__trigger {
+  background: var(--panel);
+}
+
+.account-menu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 30;
+  display: grid;
+  gap: 0.75rem;
+  min-width: 14rem;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  /* Some themes make --panel translucent; the page color underneath keeps the menu opaque. */
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+}
+
+.account-menu__links {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.account-menu__links .nav-link {
+  display: block;
+}
+
+.account-menu__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Phones: the same nav, New post and account menu become a bottom tab bar,
+   in document order. Bottom-pinned page parts move up by the bar height. */
+@media (max-width: 639px) {
+  [data-shell="app"] {
+    --app-tabbar-height: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  [data-shell="app"] .main {
+    padding-bottom: var(--app-tabbar-height);
+  }
+
+  [data-shell="app"] .site-header--app {
+    padding-bottom: 0.5rem;
+  }
+
+  [data-shell="app"] .site-header--app .site-header-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 25;
+    display: flex;
+    align-items: stretch;
+    gap: 0.25rem;
+    min-height: var(--app-tabbar-height);
+    padding: 0.3rem 0.3rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+  }
+
+  [data-shell="app"] .site-header--app .nav {
+    display: contents;
+  }
+
+  [data-shell="app"] .site-header--app .nav > .nav-link,
+  [data-shell="app"] .site-header--app .new-post-button,
+  [data-shell="app"] .site-header--app .account-menu,
+  [data-shell="app"] .site-header--app .account-menu__trigger {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  [data-shell="app"] .site-header--app .nav > .nav-link,
+  [data-shell="app"] .site-header--app .account-menu__trigger {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  /* `:root` outranks themes' general link colors so the highlighted tab keeps readable ink. */
+  :root [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root [data-shell="app"] .account-menu[open] > .account-menu__trigger {
+    border-color: var(--line);
+    background: var(--active-bg);
+    color: var(--active-ink);
+  }
+
+  [data-shell="app"] .site-header--app .new-post-button__label {
+    white-space: normal;
+    line-height: 1.1;
+  }
+
+  [data-shell="app"] .account-menu__panel {
+    top: auto;
+    bottom: calc(100% + 0.3rem);
+    right: 0;
+    width: min(18rem, calc(100vw - 0.6rem));
+    max-height: calc(100vh - var(--app-tabbar-height) - 1rem);
+    overflow-y: auto;
+  }
+
+  /* The LCD palette's centering transform would make its fixed popover
+     position against the palette instead of the screen. */
+  [data-shell="app"] .account-menu .lcd-palette {
+    top: 0;
+    transform: none;
+  }
+
+  /* Theme and LCD palette popovers open upward and stay inside the screen. */
+  [data-shell="app"] .account-menu .theme-menu__popover {
+    position: fixed;
+    top: auto;
+    right: 0.3rem;
+    /* clear the menu's controls row so the theme and palette buttons stay usable */
+    bottom: calc(var(--app-tabbar-height) + 3.75rem);
+    max-height: calc(100vh - var(--app-tabbar-height) - 4.5rem);
+    overflow-y: auto;
+  }
+
+  /* Decorative theme status bars (Word 97, Midnight) give way to the tab bar. */
+  :root [data-shell="app"] > .site-status-bar {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) and (pointer: coarse) {
+  :root [data-shell="app"] [data-reply-panel][data-reply-panel].reply-panel-reading {
+    bottom: calc(var(--app-tabbar-height) + max(var(--reply-panel-bottom, 8px), 0px));
+  }
+}
+
+/* List board (`boardCard` slot `list`): a toolbar with separate filter and
+   sort controls, then pinned and latest threads as hairline-separated rows. */
+.board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.board-filter {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.board-filter .nav-link[aria-current] {
+  border-color: var(--active-line);
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+.board-sort {
+  position: relative;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.board-sort > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.board-sort > summary::-webkit-details-marker {
+  display: none;
+}
+
+.board-sort > summary::after {
+  content: " \25BE";
+}
+
+.board-sort__menu {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 10rem;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+}
+
+.board-sort__menu .nav-link[aria-current] {
+  color: var(--active-ink);
+  background: var(--active-bg);
+}
+
+.board-tags-link {
+  margin-left: auto;
+}
+
+.section-label {
+  margin: 0.4rem 0 -0.4rem;
+  font-family: var(--ui-font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.thread-rows {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.thread-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.thread-row + .thread-row {
+  border-top: 1px solid var(--line);
+}
+
+.thread-row__title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.thread-row__count {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  margin: 0;
+  text-align: right;
+  font-family: var(--ui-font);
+  color: var(--ink-soft);
+}
+
+.thread-row__count-number {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.thread-row__count-label {
+  font-size: 0.75rem;
+}
+
+.thread-row__excerpt,
+.thread-row__meta,
+.thread-row > .event-block {
+  grid-column: 1;
+  margin: 0.15rem 0 0;
+}
+
+.thread-row__excerpt {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-soft);
+}
+
+.thread-row__meta {
+  font-size: 0.85rem;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--ui-font);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  vertical-align: 1px;
+}
+
+.chip--pending {
+  border-color: var(--status-warning, var(--line));
+  color: var(--status-warning, var(--ink-soft));
+}
+
+.board-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.board-empty h2 {
+  margin: 0 0 0.4rem;
+}
+
+.board-empty p {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
 }
 
 /* critical-css-end */

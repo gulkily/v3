@@ -26,7 +26,8 @@ final class AgentIdentityServiceTest
         $result = $service->ensureReplyAgentIdentity();
         assertSame($homesBefore, count(glob(sys_get_temp_dir() . '/forum-rewrite-agent-gpg-*') ?: []), 'Temporary GPG home should be removed.');
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $profile = $this->renderMethod($application, 'GET', '/profiles/' . $result['profile_slug']);
+        // Username and approval state live on the access-management profile since the member/access split.
+        $profile = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $result['profile_slug']);
         $privateKeyPath = (string) $result['private_key_path'];
 
         assertSame(true, $result['created']);
@@ -63,6 +64,37 @@ final class AgentIdentityServiceTest
         assertSame(false, $second['created']);
         assertSame($first['identity_id'], $second['identity_id']);
         assertSame($headAfterFirst, $headAfterSecond);
+    }
+
+    public function testReplyAgentSignsWithItsPrivateKeyAndRefusesWithoutIt(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $privateKeyDirectory = sys_get_temp_dir() . '/forum-rewrite-agent-private-' . bin2hex(random_bytes(6));
+        $service = new AgentIdentityService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            $privateKeyDirectory,
+            new CanonicalRecordRepository($repositoryRoot),
+        );
+        $identity = $service->ensureReplyAgentIdentity();
+        $contents = "Post-ID: reply-signed\nBody line\n";
+
+        $homesBefore = count(glob(sys_get_temp_dir() . '/forum-rewrite-agent-gpg-*') ?: []);
+        $signature = $service->signAsReplyAgent((string) $identity['identity_id'], $contents);
+        assertSame($homesBefore, count(glob(sys_get_temp_dir() . '/forum-rewrite-agent-gpg-*') ?: []), 'Temporary GPG home should be removed.');
+        $fingerprint = strtoupper(substr((string) $identity['identity_id'], strlen('openpgp:')));
+        $publicKey = (string) file_get_contents($repositoryRoot . '/records/public-keys/openpgp-' . $fingerprint . '.asc');
+        assertSame(true, (new \ForumRewrite\Security\OpenPgpSignatureVerifier())->verifyDetached($publicKey, $contents, $signature, $fingerprint)['ok']);
+
+        unlink((string) $identity['private_key_path']);
+        $refused = null;
+        try {
+            $service->signAsReplyAgent((string) $identity['identity_id'], $contents);
+        } catch (\RuntimeException $exception) {
+            $refused = $exception->getMessage();
+        }
+        assertSame('Reply-agent private key is missing; replies are not posted unsigned.', $refused);
     }
 
     /**

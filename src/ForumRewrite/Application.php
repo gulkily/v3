@@ -53,6 +53,7 @@ use ForumRewrite\Qdb\QdbExperience;
 use ForumRewrite\Qdb\QdbExperienceRouteResult;
 use ForumRewrite\Qdb\QdbBoardPolicy;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
+use ForumRewrite\Security\SignatureCheckCache;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -110,6 +111,7 @@ final class Application
         private readonly bool $allowReadModelRebuild = true,
         private readonly bool $requireCurrentReadModel = true,
     ) {
+        SignatureCheckCache::useBeside($databasePath);
     }
 
     /**
@@ -484,6 +486,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_attribution_cutoff' || $path === '/api/finalize_attribution_cutoff') {
+            $this->toolsPageController()->attributionCutoffApi($method, $query, $path === '/api/finalize_attribution_cutoff');
+            return;
+        }
+
         if ($path === '/api/link_identity') {
             $this->composeAndAccountKeyController()->linkIdentityApi($method, $query);
             return;
@@ -605,6 +612,7 @@ final class Application
                 $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
+                    position: $query['position'] ?? null,
                 ),
                 200
             );
@@ -832,6 +840,11 @@ final class Application
 
         if ($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') {
             $this->sendHtml($this->toolsPageController()->featureFlags(), 200);
+            return;
+        }
+
+        if ($path === '/tools/operations/' || $path === '/tools/operations') {
+            $this->sendHtml($this->toolsPageController()->operations(), 200);
             return;
         }
 
@@ -1073,6 +1086,7 @@ final class Application
                 } elseif ($this->requireCurrentReadModel && ($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
                     $rebuildReason = 'repository_head_mismatch';
                 } else {
+                    $this->applyVerifiedAttributionFlag($metadata);
                     return;
                 }
             } catch (\Throwable) {
@@ -1109,6 +1123,26 @@ final class Application
             );
             $builder->rebuild();
             $this->staleMarker()->clear();
+        });
+    }
+
+    /**
+     * The flag can also change outside the repository (environment), so the stored choice
+     * of totals is compared on each request and swapped in place; no rebuild is needed.
+     *
+     * @param array<string, string> $metadata
+     */
+    private function applyVerifiedAttributionFlag(array $metadata): void
+    {
+        $enabled = \ForumRewrite\ReadModel\VerifiedAttribution::enabled($this->repositoryRoot);
+        if (($metadata[\ForumRewrite\ReadModel\VerifiedAttribution::METADATA_ENABLED] ?? null) === ($enabled ? '1' : '0')) {
+            return;
+        }
+        $this->executionLock()->withExclusiveLock(function () use ($enabled): void {
+            $pdo = (new \ForumRewrite\ReadModel\ReadModelConnection($this->databasePath))->open();
+            $pdo->beginTransaction();
+            \ForumRewrite\ReadModel\VerifiedAttribution::apply($pdo, $enabled);
+            $pdo->commit();
         });
     }
 
@@ -1197,7 +1231,7 @@ final class Application
     /**
      * @param array<string, mixed> $profile
      */
-    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false): string
+    private function renderProfilePage(array $profile, bool $self = false, ?string $notice = null, ?string $error = null, bool $accessManagement = false, array $query = []): string
     {
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
         $isOwnProfile = $viewerProfile !== null
@@ -1239,6 +1273,7 @@ final class Application
                 'accessManagement' => $accessManagement,
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
+                'profileHistory' => $accessManagement ? [] : \ForumRewrite\Http\ProfileHistoryView::build($this->pdo(), $profile, $query),
                 'approvalHistory' => $accessManagement ? $this->routeServices()->approvalHistory()->forKey($profile) : null,
                 'self' => $self,
                 'identityHint' => $_COOKIE['identity_hint'] ?? '',
@@ -1252,11 +1287,11 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             $accessManagement ? 'tools' : 'profiles',
-            $accessManagement && $canApprove
+            array_merge($accessManagement ? [] : ['/assets/public_key.js'], $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
-                    : []),
+                    : [])),
         );
     }
 
@@ -1561,7 +1596,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
-                    threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug,
+                    threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time,
                     profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
              FROM threads
@@ -1587,7 +1622,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.agent_response_json,
-                    posts.author_profile_slug, profiles.username_token AS author_username_token,
+                    posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
@@ -1610,7 +1645,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
-                    posts.author_identity_id, posts.author_profile_slug, posts.agent_response_json, profiles.username_token AS author_username_token,
+                    posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, profiles.username_token AS author_username_token,
                     COALESCE(profiles.is_approved, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
@@ -2068,7 +2103,7 @@ final class Application
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
@@ -2084,7 +2119,7 @@ final class Application
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/link_identity', '/api/approve_user',
+            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {

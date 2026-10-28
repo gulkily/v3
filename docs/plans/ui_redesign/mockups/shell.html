@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App Shell · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>1 · App shell &amp; navigation</h1>
+      <p>Appears on every page. It should name where you are, get you to the three places people actually go, and keep everything else one click away.</p>
+      <p class="doc-files">templates/layout.php · partials/nav.php · partials/theme_menu.php · View/TemplateRenderer.php::navItems · public/assets/theme-nav-icons.css</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>ZENMEMES (small eyebrow above the nav)</s><span>ZenMemes as a wordmark on the left of the bar. It doubles as the link to Board.</span></li>
+        <li class="chg"><s>Board · About · Users · Tools · Account · Messages · Invite</s><span>Board · Users · Messages, plus <b>New post</b> and your avatar.</span></li>
+        <li class="chg"><s>Account</s><span>“You” on the phone tab bar. The menu shows your name and approval status, e.g. “ilyag · Approved”.</span></li>
+        <li class="chg"><s>Invite</s><span>Invite someone, inside the account menu.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li><b>Desktop:</b> one 56px bar. Primary destinations on the left; the one creation action and the account menu on the right.</li>
+        <li><b>Phone:</b> a large page title at the top and a bottom tab bar (Board, Users, compose, Messages, You). Today’s seven wrapping buttons take two rows (~120px) before any content appears.</li>
+        <li>About, Tools, Invite and the theme picker are occasional actions, so they move into the account menu. Theme swatches stay visual and one tap away.</li>
+        <li>Guests see About in place of Messages, because they cannot use Messages yet.</li>
+        <li>The decorative Word-97 status bar stays a theme feature, not part of the default shell.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>New post is reachable from every screen. Today it is only on the Board and Tags pages.</li>
+        <li>The unread Messages badge is a number, not a hidden “Unread status loading” string.</li>
+        <li>The account menu opens on click or tap, not hover, and closes with Escape. Its first item says who you are signed in as, which today you can only learn on the Account page.</li>
+        <li>Implementation: the tab bar is a new nav surface. Per AGENTS.md, give it icon mappings in <code>theme-nav-icons.css</code> for Word97, Chicago and Midnight.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Signed in — account menu open" data-active="board" data-title="Board" data-menu="open" data-devices="desktop">
+  <div class="page">
+    <div class="page-head"><h1>Board</h1></div>
+    <div class="thread-list">
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>The Rules of ZenMemes.com</h3><span class="count">6</span><span class="meta">ilyag · May 26</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>On Accessibility</h3><span class="count hot">3</span><span class="meta">ilyag · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="onthebus"></span><h3>The textarea is off screen when I focus it, HORRIBLE</h3><span class="count"></span><span class="meta">onthebus · Sep 6</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="chrome"></span><h3>Feature request: repo viewer/search</h3><span class="count hot">3</span><span class="meta">chrome · Sep 6</span></a>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Phone — “You” tab (account menu as a page)" data-active="account" data-title="You" data-devices="phone">
+  <div class="page">
+    <div class="group">
+      <a class="row" href="#"><span class="avatar md" data-av="ilyag"></span><span class="grow"><span class="title">ilyag</span><br><span class="sub">Approved · View profile</span></span><i data-i="chev" class="chev"></i></a>
+    </div>
+    <div class="group">
+      <a class="row" href="#"><span class="ic"><i data-i="key" class="sm"></i></span><span class="grow title">Account</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#"><span class="ic"><i data-i="invite" class="sm"></i></span><span class="grow title">Invite someone</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#"><span class="ic"><i data-i="palette" class="sm"></i></span><span class="grow title">Theme</span><span class="faint">Auto</span><i data-i="chev" class="chev"></i></a>
+    </div>
+    <div class="group">
+      <a class="row" href="#"><span class="ic"><i data-i="wrench" class="sm"></i></span><span class="grow title">Tools</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#"><span class="ic"><i data-i="info" class="sm"></i></span><span class="grow title">About ZenMemes</span><i data-i="chev" class="chev"></i></a>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Guest — not set up" data-active="board" data-title="Board" data-guest data-devices="desktop phone">
+  <div class="page">
+    <div class="page-head desk-only"><h1>Board</h1></div>
+    <div class="thread-list">
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>The Rules of ZenMemes.com</h3><span class="count">6</span><span class="meta">ilyag · May 26</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="ilyag"></span><h3>On Accessibility</h3><span class="count hot">3</span><span class="meta">ilyag · Sep 23</span></a>
+      <a class="thread" href="#"><span class="avatar" data-av="guest"></span><h3>On Maintaining Relationships…</h3><span class="count hot">4</span><span class="meta">guest · Sep 15</span></a>
+    </div>
+  </div>
+</template>
+</body>
+</html>

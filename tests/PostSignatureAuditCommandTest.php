@@ -69,6 +69,35 @@ final class PostSignatureAuditCommandTest
         assertStringContains("anonymous_unsigned\tanonymous\trecords/posts/anonymous.txt", $output);
     }
 
+    public function testCommandCountsUnsignedNamedAnonymousAndInvalidReactions(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-reaction-audit-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot . '/records/thread-labels', 0777, true);
+        mkdir($repositoryRoot . '/records/post-reactions', 0777, true);
+        $named = "Author-Identity-ID: openpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919\n";
+        file_put_contents($repositoryRoot . '/records/thread-labels/scored.txt', "Record-ID: thread-label-scored\nCreated-At: 2026-10-23T00:00:00Z\nThread-ID: t1\nOperation: add\nLabels: like\n{$named}\n");
+        file_put_contents($repositoryRoot . '/records/thread-labels/unscored.txt', "Record-ID: thread-label-unscored\nCreated-At: 2026-10-23T00:00:00Z\nThread-ID: t1\nOperation: add\nLabels: music\n{$named}\n");
+        file_put_contents($repositoryRoot . '/records/thread-labels/anonymous.txt', "Record-ID: thread-label-anonymous\nCreated-At: 2026-10-23T00:00:00Z\nThread-ID: t1\nOperation: add\nLabels: like\n\n");
+        file_put_contents($repositoryRoot . '/records/post-reactions/invalid.txt', "Record-ID: post-reaction-invalid\nCreated-At: 2026-10-23T00:00:00Z\nPost-ID: p1\nOperation: add\nTags: like\n{$named}\n");
+        file_put_contents($repositoryRoot . '/records/post-reactions/invalid.txt.asc', "not a signature\n");
+
+        [$exitCode, $output] = $this->runCommandAllowFailure(sprintf(
+            'php %s %s',
+            escapeshellarg(__DIR__ . '/../scripts/audit_post_signatures.php'),
+            escapeshellarg($repositoryRoot)
+        ));
+
+        assertSame(0, $exitCode);
+        assertStringContains('total_reactions: 4', $output);
+        assertStringContains('reaction_verified: 0', $output);
+        assertStringContains('reaction_unsigned_named: 2', $output);
+        assertStringContains('reaction_invalid: 1', $output);
+        assertStringContains('reaction_anonymous: 1', $output);
+        assertStringContains('scored_label_unsigned_named: 1', $output);
+        assertStringContains("reaction_unsigned_named\trecords/thread-labels/scored.txt\topenpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919\tlike", $output);
+        assertStringContains("reaction_invalid\trecords/post-reactions/invalid.txt", $output);
+    }
+
     private function installKnownIdentity(string $repositoryRoot): void
     {
         $fingerprintUpper = '15C2EF95BAEE78F4C635A43323B6AE7EC7AF9919';

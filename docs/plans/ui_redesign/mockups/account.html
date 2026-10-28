@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>8 · Account</h1>
+      <p>Your identity lives in this browser as a keypair. The page should make one thing obvious in each state: start, wait for approval, or protect what you have.</p>
+      <p class="doc-files">templates/pages/account_key.php · assets/browser_signing.js · assets/key_backup_ui (ForumKeyBackupUI)</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li class="chg"><s>Account Key</s><span>Account</span></li>
+        <li class="chg"><s>Not set up yet · Signed in as guest · Fingerprint: No key yet · Set up this browser</s><span>“Pick a name to start posting”, with a name field and Continue. Guests don’t need the words fingerprint or key yet.</span></li>
+        <li class="chg"><s>Choose username (separate button, then a browser prompt)</s><span>Name, an editable row in the account list.</span></li>
+        <li class="chg"><s>Clear identity / Clear Saved Keypair</s><span>“Remove from this browser”. One action, not two, with its consequence stated in the confirmation.</span></li>
+        <li class="chg"><s>Back up or restore · Keys · Storage and privacy</s><span>Back up account · Restore from backup · Advanced (keys, linking, storage)</span></li>
+        <li class="chg"><s>Download text backup / Download Starfield PNG</s><span>Format: Text file or Starfield image. One Download button.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>Three states each get their own top card: <b>Guest</b> (pick a name), <b>Waiting for approval</b> and <b>Approved</b>. Today one card shows “Not set up yet” with empty fields.</li>
+        <li>The “Not backed up” warning sits at the top whenever there is no backup. This is the most important data-loss consequence on the site: clearing site data loses the account.</li>
+        <li>Raw keys, Copy Private Key, Link a public key, identity hint and cookie details move under Advanced. “Never share this” stays beside the private key.</li>
+        <li>The fingerprint is shortened (first and last 4 groups) with Copy; the full value is under Advanced.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li><b>Set up:</b> name, then Continue. The keypair is generated and published in the background, and the card moves to Waiting for approval. This removes the separate “Set up this browser” and “Choose username” steps and both <code>window.prompt</code> dialogs.</li>
+        <li><b>Back up:</b> a sheet with passphrase, confirmation, a strength meter, a format choice and Download. Afterward the warning becomes “Backed up Oct 24”. <b>Proposal:</b> record the last backup date locally, since nothing tracks it today.</li>
+        <li><b>Remove:</b> a confirmation states the consequence (“Without a backup you can’t post as ilyag again”) and offers Back up first. The existing Undo link remains afterward.</li>
+        <li>Errors appear inline in the relevant row with a recovery action, e.g. “Couldn’t publish your key. Retry”.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/account-desktop.png" alt="Current account page on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/account-phone.png" alt="Current account page on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Guest — first visit" data-active="account" data-title="Account" data-guest>
+  <div class="page">
+    <div class="page-head desk-only"><h1>Account</h1></div>
+    <div class="hero-card">
+      <span class="avatar lg" data-av="guest" style="--av:#9aa1ab">?</span>
+      <h2>Pick a name to start posting</h2>
+      <p>Your account is created in this browser. No email or password.</p>
+      <div class="field" style="width:100%;max-width:360px"><label for="acct-name">Name</label><div class="input" id="acct-name">mouse</div></div>
+      <span class="btn primary">Continue</span>
+    </div>
+    <div class="group">
+      <a class="row" href="#"><span class="ic"><i data-i="upload" class="sm"></i></span><span class="grow"><span class="title">Restore from backup</span><br><span class="sub">Use an account you already have</span></span><i data-i="chev" class="chev"></i></a>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Set up — waiting for approval, not backed up" data-active="account" data-title="Account" data-viewer="mouse" data-unapproved>
+  <div class="page">
+    <div class="page-head desk-only"><h1>Account</h1></div>
+    <div class="hero-card">
+      <div class="id-card" style="width:100%">
+        <span class="avatar lg" data-av="mouse"></span>
+        <div class="grow"><span class="name">mouse</span><span class="chip warn" style="justify-self:start">Waiting for approval</span></div>
+      </div>
+      <p>You can post now. Your posts show as pending until a member approves you.</p>
+    </div>
+    <div class="status-row danger"><i data-i="shield" class="sm"></i><span class="grow"><b>Not backed up.</b> If this browser’s data is cleared, this account is gone.</span><a href="#">Back up</a></div>
+    <div class="group">
+      <div class="row"><span class="grow title">Name</span><span class="muted">mouse</span><i data-i="chev" class="chev"></i></div>
+      <div class="row"><span class="grow title">Fingerprint</span><span class="mono muted">4D54 F649 … 0320</span><i data-i="copy" class="sm faint"></i></div>
+    </div>
+    <div class="group">
+      <a class="row" href="#"><span class="ic"><i data-i="download" class="sm"></i></span><span class="grow title">Back up account</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#"><span class="ic"><i data-i="upload" class="sm"></i></span><span class="grow title">Restore from backup</span><i data-i="chev" class="chev"></i></a>
+      <a class="row" href="#"><span class="ic"><i data-i="key" class="sm"></i></span><span class="grow title">Advanced</span><span class="faint small hide-phone">Keys, linking, storage</span><i data-i="chev" class="chev"></i></a>
+    </div>
+    <div class="group">
+      <a class="row danger" href="#"><span class="ic"><i data-i="signout" class="sm"></i></span><span class="grow title">Remove from this browser</span></a>
+    </div>
+  </div>
+</template>
+
+<template id="backup-sheet">
+  <div class="scrim"><div class="dialog">
+    <h2>Back up your account</h2>
+    <p>You’ll need this passphrase to restore. We can’t recover it for you.</p>
+    <div class="passphrase">
+      <div class="field"><label>Passphrase</label><div class="input">••••••••••••••</div><div class="meter"><i></i></div></div>
+      <div class="field"><label>Confirm passphrase</label><div class="input">••••••••••••••</div></div>
+      <div class="field"><label>Format</label><div class="seg" style="justify-self:start"><span aria-pressed="true">Text file</span><span>Starfield image</span></div></div>
+    </div>
+    <div class="btns"><span class="btn primary lg"><i data-i="download" class="sm"></i>Download backup</span><span class="btn lg">Cancel</span></div>
+  </div></div>
+</template>
+
+<template data-screen="Back up sheet" data-active="account" data-title="Account" data-viewer="mouse" data-unapproved data-devices="phone" data-overlay="backup-sheet">
+  <div class="page"><div class="hero-card"><div class="id-card"><span class="avatar lg" data-av="mouse"></span><div class="grow"><span class="name">mouse</span></div></div></div></div>
+</template>
+
+<template id="remove-dialog">
+  <div class="scrim"><div class="dialog">
+    <h2>Remove ilyag from this browser?</h2>
+    <p>Your posts stay on the site. Without a backup, you won’t be able to post as ilyag again.</p>
+    <div class="btns"><span class="btn tinted lg">Back up first</span><span class="btn danger lg">Remove</span><span class="btn plain">Cancel</span></div>
+  </div></div>
+</template>
+
+<template data-screen="Approved, backed up · remove confirmation" data-active="account" data-title="Account" data-devices="desktop" data-overlay="remove-dialog">
+  <div class="page">
+    <div class="page-head"><h1>Account</h1></div>
+    <div class="hero-card"><div class="id-card" style="width:100%"><span class="avatar lg" data-av="ilyag"></span><div class="grow"><span class="name">ilyag</span><span class="chip ok" style="justify-self:start">Approved</span></div></div></div>
+    <div class="status-row ok"><i data-i="check" class="sm"></i><span class="grow">Backed up Oct 24</span></div>
+  </div>
+</template>
+</body>
+</html>

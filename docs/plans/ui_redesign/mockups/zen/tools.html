@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tools, themed · ZenMemes redesign</title>
+<link rel="stylesheet" href="../mockup.css">
+<link rel="stylesheet" href="zen.css">
+<link rel="stylesheet" href="ma.css">
+<script src="../mockup.js" defer></script>
+</head>
+<body data-skin="ma">
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="../index.html">← All mockups</a>
+      <h1>T5 · Tools, themed</h1>
+      <p>Colored icons, as asked: the glyph itself carries the color, the way avatars do. Each tool’s color is fixed, and groups share related shades.</p>
+      <p class="doc-files">Structure: <a href="../tools.html">11 · Tools</a> · Skin: mockups/zen/zen.css</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="skin-toggle" role="group" aria-label="Skin"><button type="button" data-skin="base">Base</button><button type="button" data-skin="zen">Living Sky</button><button type="button" data-skin="ma">Ma</button></div>
+      <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+    </div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>In Ma</h2>
+      <ul>
+        <li><b>Flat colored glyphs</b>: each icon is drawn in its tool’s color, with closed shapes filled flat. No glow.</li>
+        <li><b>Each group has a shape</b> (Tanaka): Your device a circle, Reading a square, Community a triangle, Operator a half-circle. Shape and color both mark the group.</li>
+        <li>Tool names in mincho; paper tiles with hairlines.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What the theme adds</h2>
+      <ul>
+        <li><b>Colored glyphs, not colored tiles.</b> Each icon is drawn in its tool’s color, with closed shapes lightly filled for a duotone look and a soft glow in the same color.</li>
+        <li><b>Group shades:</b> Your device in blues, Reading in pinks and violets, Community in greens, Operator in ambers and stones. Each group heading has a glowing dot.</li>
+        <li><b>Glass tiles</b> carry a faint wash of the tool’s color in one corner and light up in that color on hover.</li>
+        <li>The same glyph colors appear in the account menu, Account rows and the phone tab bar.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What it needs from the base</h2>
+      <ul>
+        <li>A stable <code>data-tone</code> key per tool, set in <code>ToolsPageSupport</code>, and on the group heading.</li>
+        <li>Colors live in the theme. Icon themes (Word97, Chicago, Midnight) keep their own icons in <code>theme-nav-icons.css</code>.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Checks</h2>
+      <ul>
+        <li>Every tool keeps a distinct glyph and a label; color is a second signal.</li>
+        <li>Glyph contrast is 3.6:1 or better on light glass and 4.5:1 or better on dark (dark mode lightens each tone 35%).</li>
+        <li>The Operator tones are the least distinct, on purpose: few people see that group.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Operator view" data-active="account" data-title="Tools" data-back="You" data-phonebar="large">
+  <div class="page wide">
+    <div class="page-head desk-only"><h1>Tools</h1></div>
+    <p class="section-label" data-shape="circle" style="--tone:#2563eb"><span class="dot"></span>Your device</p>
+    <div class="tiles">
+      <a class="tile" href="#" data-tone="outbox"><span class="ic"><i data-i="inbox" class="sm"></i></span><b>Outbox <span class="chip accent">2</span></b><span>Drafts and queued posts</span></a>
+      <a class="tile" href="#" data-tone="offline"><span class="ic"><i data-i="offline" class="sm"></i></span><b>Offline reading</b><span>Read saved posts offline</span></a>
+      <a class="tile" href="#" data-tone="bookmark"><span class="ic"><i data-i="bookmark" class="sm"></i></span><b>Bookmarklets</b><span>Clip pages into a new post</span></a>
+    </div>
+    <p class="section-label" data-shape="square" style="--tone:#7c3aed"><span class="dot"></span>Reading</p>
+    <div class="tiles">
+      <a class="tile" href="#" data-tone="activity"><span class="ic"><i data-i="activity" class="sm"></i></span><b>Activity</b><span>Everything that changed</span></a>
+      <a class="tile" href="#" data-tone="forte"><span class="ic"><i data-i="columns" class="sm"></i></span><b>Forte</b><span>Three-pane newsreader view</span></a>
+      <a class="tile" href="#" data-tone="docs"><span class="ic"><i data-i="doc" class="sm"></i></span><b>Platform docs</b><span>How the site works</span></a>
+    </div>
+    <p class="section-label" data-shape="triangle" style="--tone:#15803d"><span class="dot"></span>Community</p>
+    <div class="tiles">
+      <a class="tile" href="#" data-tone="access"><span class="ic"><i data-i="users" class="sm"></i></span><b>User access <span class="chip warn">3</span></b><span>Accounts, keys, approvals</span></a>
+      <a class="tile" href="#" data-tone="stats"><span class="ic"><i data-i="chart" class="sm"></i></span><b>Visitor statistics</b><span>Aggregate visit counts</span></a>
+    </div>
+    <p class="section-label" data-shape="half" style="--tone:#b45309"><span class="dot"></span>Operator</p>
+    <div class="tiles">
+      <a class="tile" href="#" data-tone="flags"><span class="ic"><i data-i="toggle" class="sm"></i></span><b>Feature flags</b><span>Turn site features on or off</span></a>
+      <a class="tile" href="#" data-tone="status"><span class="ic"><i data-i="server" class="sm"></i></span><b>System status</b><span>Version and health</span></a>
+      <a class="tile" href="#" data-tone="sqlite"><span class="ic"><i data-i="database" class="sm"></i></span><b>SQLite viewer</b><span>Query the read model</span></a>
+      <a class="tile" href="#" data-tone="backup"><span class="ic"><i data-i="download" class="sm"></i></span><b>Backup</b><span>Download the site’s data</span></a>
+      <a class="tile" href="#" data-tone="llm"><span class="ic"><i data-i="sparkle" class="sm"></i></span><b>LLM exchanges</b><span>Agent prompts and replies</span></a>
+      <a class="tile" href="#" data-tone="fastmod"><span class="ic"><i data-i="flag" class="sm"></i></span><b>Fastmod</b><span>Choose recorded scores</span></a>
+    </div>
+  </div>
+</template>
+
+<template data-screen="Account menu with tool tones" data-active="board" data-menu="open" data-devices="desktop">
+  <div class="page" style="min-height:420px">
+    <div class="page-head"><h1>Board</h1></div>
+  </div>
+</template>
+</body>
+</html>

@@ -6,8 +6,11 @@ require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\GenericTextRecordParser;
+use ForumRewrite\Security\ReactionSignature;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
+use ForumRewrite\TagScore;
 
 $projectRoot = dirname(__DIR__);
 
@@ -77,6 +80,44 @@ foreach (postRecordPaths($repositoryRoot) as $relativePath) {
     $rows[] = ['invalid_signature', $post->postId, $relativePath, $authorIdentityId, $verification['status']];
 }
 
+$reactionCounts = [
+    'reaction_verified' => 0,
+    'reaction_unsigned_named' => 0,
+    'reaction_invalid' => 0,
+    'reaction_anonymous' => 0,
+    'scored_label_unsigned_named' => 0,
+];
+$reactionRows = [];
+foreach (['thread-labels' => 'Labels', 'post-reactions' => 'Tags'] as $family => $tagHeader) {
+    foreach (glob($repositoryRoot . '/records/' . $family . '/*.txt') ?: [] as $file) {
+        $relativePath = 'records/' . $family . '/' . basename($file);
+        $contents = (string) file_get_contents($file);
+        try {
+            $headers = (new GenericTextRecordParser())->parse($contents)->headers;
+            $author = $headers['Author-Identity-ID'] ?? null;
+            $status = ReactionSignature::status($repositoryRoot, $relativePath, $contents, $author);
+        } catch (RuntimeException) {
+            $headers = [];
+            $author = null;
+            $status = 'invalid';
+        }
+
+        $tags = array_values(array_filter(explode(' ', trim((string) ($headers[$tagHeader] ?? ''))), static fn (string $tag): bool => $tag !== ''));
+        $category = match (true) {
+            $status === 'verified' => 'reaction_verified',
+            $status === 'invalid' => 'reaction_invalid',
+            $author === null || $author === '' => 'reaction_anonymous',
+            default => 'reaction_unsigned_named',
+        };
+        $reactionCounts[$category] += 1;
+        if ($category === 'reaction_unsigned_named' && $family === 'thread-labels'
+            && array_filter($tags, static fn (string $tag): bool => TagScore::isScoredTag($tag)) !== []) {
+            $reactionCounts['scored_label_unsigned_named'] += 1;
+        }
+        $reactionRows[] = [$category, $relativePath, (string) $author, implode(' ', $tags)];
+    }
+}
+
 fwrite(STDOUT, "Post Signature Audit\n");
 printField('repository_root', $repositoryRoot);
 printField('total_posts', (string) count($rows));
@@ -84,8 +125,18 @@ foreach ($counts as $status => $count) {
     printField($status, (string) $count);
 }
 
+printField('total_reactions', (string) count($reactionRows));
+foreach ($reactionCounts as $status => $count) {
+    printField($status, (string) $count);
+}
+
 fwrite(STDOUT, "\nstatus\tpost_id\trecord_path\tauthor_identity_id\tdetails\n");
 foreach ($rows as $row) {
+    fwrite(STDOUT, implode("\t", $row) . "\n");
+}
+
+fwrite(STDOUT, "\nstatus\trecord_path\tauthor_identity_id\ttags\n");
+foreach ($reactionRows as $row) {
     fwrite(STDOUT, implode("\t", $row) . "\n");
 }
 
@@ -99,6 +150,12 @@ Usage:
 
 Scans canonical post records and reports signed_valid, missing_signature,
 invalid_signature, unknown_author_key, and anonymous_unsigned counts.
+
+Also scans thread labels and post reactions and reports reaction_verified,
+reaction_unsigned_named, reaction_invalid and reaction_anonymous counts, plus
+scored_label_unsigned_named: unsigned thread labels naming an identity that
+include a scored tag (an upper bound; author approval is not checked).
+The exit status reflects post findings only.
 
 TEXT;
 }

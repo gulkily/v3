@@ -25,6 +25,7 @@ final class PrivateConfigCommandTest
             assertStringContains('Run with refresh-template to add current comments/examples while preserving values.', $output);
         } finally {
             @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
             @rmdir(dirname($secretsPath));
         }
     }
@@ -57,6 +58,7 @@ final class PrivateConfigCommandTest
             assertStringNotContains('https://example.test', $output);
         } finally {
             @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
             @rmdir(dirname($secretsPath));
         }
     }
@@ -80,6 +82,7 @@ final class PrivateConfigCommandTest
             assertStringNotContains('file-secret', $output);
         } finally {
             @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
             @rmdir(dirname($secretsPath));
         }
     }
@@ -127,6 +130,7 @@ final class PrivateConfigCommandTest
             assertStringContains('Additional existing values preserved by refresh-template.', $contents);
         } finally {
             @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
             @rmdir(dirname($secretsPath));
         }
     }
@@ -167,6 +171,7 @@ final class PrivateConfigCommandTest
             assertStringContains('Status frontend URL', (string) file_get_contents($secretsPath));
         } finally {
             @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
             @rmdir(dirname($secretsPath));
         }
     }
@@ -187,6 +192,7 @@ final class PrivateConfigCommandTest
             assertStringNotContains('secret-value', $output);
         } finally {
             @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
             @rmdir(dirname($secretsPath));
         }
     }
@@ -211,6 +217,7 @@ final class PrivateConfigCommandTest
             assertSame('kept', $config['CUSTOM_SETTING']);
         } finally {
             @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
             @rmdir(dirname($secretsPath));
         }
     }

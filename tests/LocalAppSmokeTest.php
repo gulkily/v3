@@ -80,6 +80,24 @@ final class LocalAppSmokeTest
         } finally { @unlink($database); }
     }
 
+    public function testVersion30StartupRebuildsBeforeServingVerifiedTotals(): void
+    {
+        $database = sys_get_temp_dir() . '/verified-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $database, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='30' WHERE key='schema_version'");
+            $pdo->exec('ALTER TABLE threads DROP COLUMN verified_score_total');
+            $pdo->exec("DELETE FROM metadata WHERE key='verified_attribution_enabled'");
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            assertStringContains('Hello world', $this->render($app, '/threads/root-001'));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('0', $pdo->query("SELECT value FROM metadata WHERE key='verified_attribution_enabled'")->fetchColumn());
+            assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM threads WHERE score_total != claimed_score_total OR verified_score_total != claimed_score_total')->fetchColumn());
+        } finally { @unlink($database); }
+    }
+
     public function testVersion25StartupBuildsActivityAuthorIndexBeforeServingPage(): void
     {
         $database = sys_get_temp_dir() . '/registration-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -509,8 +527,8 @@ final class LocalAppSmokeTest
             $board = $this->render($application, '/');
             $authStatus = $this->render($application, '/api/auth_status');
 
-            assertStringContains('Member activity', $profile);
-            assertStringContains('User Access', $profile);
+            assertStringContains('<h2>Threads</h2>', $profile);
+            assertStringContains('Approval details', $profile);
             assertStringContains('Board', $board);
             assertStringContains('<h1>#bug</h1>', $this->render($application, '/tags/BuG/'));
             assertStringContains('/assets/auth_navigation.', $board);
@@ -805,7 +823,7 @@ PHP;
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
             assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
-            assertStringContains('Member activity', $ownProfileAfterClear);
+            assertStringContains('<h2>Threads</h2>', $ownProfileAfterClear);
             assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
             assertStringContains(
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
@@ -1931,6 +1949,7 @@ PHP;
         $tools = $this->render($application, '/tools/');
         $codebase = $this->render($application, '/tools/codebase/');
         $featureFlags = $this->render($application, '/tools/feature-flags/');
+        $operations = $this->render($application, '/tools/operations/');
         $visitorStatistics = $this->render($application, '/tools/visitor-statistics/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
@@ -1958,7 +1977,8 @@ PHP;
         assertSame($board, $threadsIndexNoSlash);
         assertStringContains('href="/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
-        assertStringContains('New Post', $board);
+        assertStringNotContains('New Post', $board);
+        assertStringContains('New post', $board);
         assertStringContains('href="/compose/thread"', $board);
         assertStringNotContains('href="/compose/thread">Compose</a>', $board);
         assertStringContains('>Tags</a>', $board);
@@ -2103,6 +2123,8 @@ PHP;
         assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
         assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
+        assertStringContains('tool-launcher-button" href="/tools/operations/"', $tools);
+        assertStringContains('Control how the site is served, including high-traffic mode.', $tools);
         assertStringContains('/tools/visitor-statistics/', $tools);
         assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
         assertStringContains('/forte', $tools);
@@ -2135,6 +2157,15 @@ PHP;
         assertStringContains('Feature Flags', $featureFlags);
         assertStringContains('class="nav"', $featureFlags);
         assertStringContains('class="nav-link is-active" href="/tools/feature-flags/"', $featureFlags);
+        assertStringNotContains('High-traffic mode', $featureFlags);
+        assertStringContains('<h1>Operations</h1>', $operations);
+        assertStringContains('class="nav-link is-active" href="/tools/operations/"', $operations);
+        assertStringContains('High-traffic mode', $operations);
+        assertStringContains('aria-label="Read-only, requires a root-approved identity to change."', $operations);
+        assertStringNotContains('data-high-traffic-control', $operations);
+        assertStringNotContains('data-high-traffic-status', $operations);
+        assertStringNotContains('high_traffic_control', $operations);
+        assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         assertStringContains('tools-nav-divider', $featureFlags);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $featureFlags);
@@ -2158,8 +2189,8 @@ PHP;
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringNotContains('Identity ID', $profile);
-        assertStringNotContains('Public key', $profile);
-        assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
+        assertStringContains('<summary>Public key</summary>', $profile);
+        assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
         assertStringContains('User guest', $username);
@@ -2249,7 +2280,7 @@ PHP;
         assertStringNotContains('data-thread-density-option="comfortable"', $board);
         assertStringNotContains('data-thread-density-option="compact"', $board);
         assertStringNotContains('thread-density-menu-popover', $board);
-        assertStringContains('class="card thread-card"', $boardAllThreads);
+        assertStringContains('class="thread-row"', $boardAllThreads);
         assertStringContains('class="card thread-card"', $tagPage);
         assertStringContains('data-role="app-version-banner"', $board);
         assertStringContains('Compose Thread', $composeThread);
@@ -2527,10 +2558,11 @@ PHP;
             preg_match('/<article id="post-cont-merge-root"[^>]*>.*?<\/article>/s', $thread, $rootBlockMatch) === 1,
             'Expected to find the root card block.'
         );
-        assertStringNotContains('<p class="meta">', $rootBlockMatch[0]);
+        // Bylines carry data-post-byline, so match the class without the closing bracket.
+        assertStringNotContains('<p class="meta"', $rootBlockMatch[0]);
 
         assertTrue(
-            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta">(.*?)<\/p>/s', $thread, $metaMatch) === 1,
+            preg_match('/<article id="post-cont-merge-r2"[^>]*>.*?<p class="meta"[^>]*>(.*?)<\/p>/s', $thread, $metaMatch) === 1,
             'Expected to find the run tail (r2) meta line.'
         );
         assertStringContains('2 replies', $metaMatch[1]);
@@ -2544,7 +2576,7 @@ PHP;
         assertStringContains('4 replies', $separate);
         foreach (['root', 'r1', 'r2', 'r3', 'r4'] as $suffix) {
             assertSame(1, preg_match('/<article id="post-cont-merge-' . $suffix . '"[^>]*>(.*?)<\/article>/s', $separate, $card));
-            assertStringContains('<p class="meta">', $card[1]);
+            assertStringContains('<p class="meta"', $card[1]);
             assertStringContains('post-card-actions', $card[1]);
         }
         unlink($flagPath);
@@ -2674,18 +2706,18 @@ PHP;
             $tagPage = $this->render($application, '/tags/bug');
             $thread = $this->render($application, '/threads/root-001');
 
-            assertFingerprintedAsset($board, 'thread_density_toggle.js');
-            assertStringContains('data-role="thread-density-toggle"', $board);
+            assertFingerprintedAsset($tagPage, 'thread_density_toggle.js');
             assertStringContains('data-role="thread-density-toggle"', $tagPage);
+            // ZenMemes' list board is already the dense view, so it has no density toggle.
+            assertStringNotContains('data-role="thread-density-toggle"', $board);
             assertStringNotContains('data-role="thread-density-toggle"', $thread);
-            assertStringContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $board);
             assertStringContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $tagPage);
             assertStringNotContains('var densityStorageKey = browserRuntime.threadDensityStorageKey;', $thread);
-            assertStringContains('"threadDensityStorageKey":"forum-zenmemes-thread-density"', $board);
-            assertStringContains('data-role="thread-density-menu"', $board);
-            assertStringContains('data-thread-density-option="comfortable"', $board);
-            assertStringContains('data-thread-density-option="compact"', $board);
-            assertStringContains('thread-density-menu-popover', $board);
+            assertStringContains('"threadDensityStorageKey":"forum-zenmemes-thread-density"', $tagPage);
+            assertStringContains('data-role="thread-density-menu"', $tagPage);
+            assertStringContains('data-thread-density-option="comfortable"', $tagPage);
+            assertStringContains('data-thread-density-option="compact"', $tagPage);
+            assertStringContains('thread-density-menu-popover', $tagPage);
         } finally {
             if ($previousFlag === false) {
                 putenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED');
@@ -5045,7 +5077,8 @@ PHP;
             putenv('FORUM_SITE_ID');
         }
 
-        assertStringContains('<p class="eyebrow">zenmemes</p>', $zenmemesBoard);
+        // ZenMemes uses the app shell, whose wordmark links home.
+        assertStringContains('<span class="site-brand__mark" aria-hidden="true"></span>zenmemes</a></p>', $zenmemesBoard);
         assertStringContains('<p class="eyebrow">chouse</p>', $chouseBoard);
         assertStringContains('data-default-theme="auto"', $zenmemesBoard);
         assertStringContains('data-default-theme="chouse"', $chouseBoard);

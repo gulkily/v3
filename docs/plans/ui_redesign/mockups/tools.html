@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tools · ZenMemes redesign</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-head">
+    <div>
+      <a class="doc-crumb" href="index.html">← All mockups</a>
+      <h1>11 · Tools</h1>
+      <p>The launcher for 16 utilities, from personal ones (Outbox) to operator-only ones (Feature Flags). People should find their tool by what it is for.</p>
+      <p class="doc-files">templates/pages/tools.php · partials/tools_nav.php · Tools/ToolsPageSupport.php · public/assets/theme-nav-icons.css</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="Mockup appearance"><button type="button" data-mode="light">Light</button><button type="button" data-mode="dark">Dark</button></div>
+  </header>
+
+  <section class="stage"></section>
+
+  <section class="notes">
+    <div class="note">
+      <h2>Wording</h2>
+      <ul>
+        <li>Descriptions are cut to one short line that says what the tool is for. Examples:</li>
+        <li class="chg"><s>Classic three-pane newsreader view of the whole board - folders, thread list, and preview.</s><span>Three-pane newsreader view</span></li>
+        <li class="chg"><s>Portable downloads of the repository and current read-model database.</s><span>Download the site’s data</span></li>
+        <li class="chg"><s>Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.</s><span>Aggregate visit counts</span></li>
+        <li class="chg"><s>System State</s><span>System status</span></li>
+        <li class="chg"><s>↗ arrows on Activity, Forte, Offline Reading, Platform Docs, Account</s><span>Removed. Every tile opens a page.</span></li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Arrangement</h2>
+      <ul>
+        <li>Today the page shows every tool twice: a three-row button bar, then the same list with descriptions. One grid replaces both.</li>
+        <li>Tools are grouped by who uses them. <b>Your device:</b> Outbox, Offline reading, Bookmarklets. <b>Reading:</b> Activity, Forte, Platform docs. <b>Community:</b> User access, Visitor statistics. <b>Operator:</b> Feature flags, System status, SQLite viewer, Backup, LLM exchanges, Fastmod.</li>
+        <li>Account leaves Tools; it lives in the account menu.</li>
+        <li>On phone, tiles are two-up with descriptions hidden. The Tools subnav bar inside each tool becomes a back link to Tools.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Flow</h2>
+      <ul>
+        <li>Tiles show live counts where they help decide: Outbox (2 queued), User access (3 waiting).</li>
+        <li><b>Proposal:</b> hide groups the viewer can’t use (Operator, for non-operators) rather than showing them and then refusing. This needs a per-tool access check in <code>ToolsPageSupport</code>.</li>
+        <li>Implementation: tile icons reuse the Tools launcher mappings in <code>theme-nav-icons.css</code>; check Word97, Chicago and Midnight.</li>
+      </ul>
+    </div>
+    <div class="note before-after" style="grid-column: 1 / -1">
+      <h2>Before</h2>
+      <div class="before-shots">
+        <figure><img class="desk" src="before/tools-desktop.png" alt="Current tools page on desktop"><figcaption>Desktop today</figcaption></figure>
+        <figure><img class="ph" src="before/tools-phone.png" alt="Current tools page on phone"><figcaption>Phone today</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</div>
+
+<template data-screen="Operator view" data-active="account" data-title="Tools" data-back="You" data-phonebar="large">
+  <div class="page wide">
+    <div class="page-head desk-only"><h1>Tools</h1></div>
+    <p class="section-label">Your device</p>
+    <div class="tiles">
+      <a class="tile" href="#"><span class="ic"><i data-i="inbox" class="sm"></i></span><b>Outbox <span class="chip accent">2</span></b><span>Drafts and queued posts</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="offline" class="sm"></i></span><b>Offline reading</b><span>Read saved posts offline</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="bookmark" class="sm"></i></span><b>Bookmarklets</b><span>Clip pages into a new post</span></a>
+    </div>
+    <p class="section-label">Reading</p>
+    <div class="tiles">
+      <a class="tile" href="#"><span class="ic"><i data-i="activity" class="sm"></i></span><b>Activity</b><span>Everything that changed</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="columns" class="sm"></i></span><b>Forte</b><span>Three-pane newsreader view</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="doc" class="sm"></i></span><b>Platform docs</b><span>How the site works</span></a>
+    </div>
+    <p class="section-label">Community</p>
+    <div class="tiles">
+      <a class="tile" href="#"><span class="ic"><i data-i="users" class="sm"></i></span><b>User access <span class="chip warn">3</span></b><span>Accounts, keys, approvals</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="chart" class="sm"></i></span><b>Visitor statistics</b><span>Aggregate visit counts</span></a>
+    </div>
+    <p class="section-label">Operator</p>
+    <div class="tiles">
+      <a class="tile" href="#"><span class="ic"><i data-i="toggle" class="sm"></i></span><b>Feature flags</b><span>Turn site features on or off</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="server" class="sm"></i></span><b>System status</b><span>Version and health</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="database" class="sm"></i></span><b>SQLite viewer</b><span>Query the read model</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="download" class="sm"></i></span><b>Backup</b><span>Download the site’s data</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="sparkle" class="sm"></i></span><b>LLM exchanges</b><span>Agent prompts and replies</span></a>
+      <a class="tile" href="#"><span class="ic"><i data-i="flag" class="sm"></i></span><b>Fastmod</b><span>Choose recorded scores</span></a>
+    </div>
+  </div>
+</template>
+</body>
+</html>

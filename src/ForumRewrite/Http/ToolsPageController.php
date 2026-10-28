@@ -225,11 +225,30 @@ final class ToolsPageController
                 'registry' => new FeatureFlagRegistry(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('feature-flags'),
                 'canManageFeatureFlags' => $this->viewerCanManageFeatureFlags($viewerProfile),
-                'highTraffic' => $this->viewerCanManageFeatureFlags($viewerProfile) ? $this->routeServices->highTrafficStatus() : null,
+                'attributionCutoff' => $this->routeServices->attributionCutoff(),
             ],
             'Feature Flags',
             'tools',
-            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/feature_flags.js', '/assets/high_traffic_control.js'],
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/feature_flags.js'],
+        );
+    }
+
+    public function operations(): string
+    {
+        $canManage = $this->viewerCanManageFeatureFlags(($this->resolveViewerProfileFromIdentityHint)());
+        $status = $this->routeServices->highTrafficStatus();
+
+        return $this->routeServices->renderPageTemplate(
+            'operations.php',
+            [
+                'toolNavOptions' => ToolsPageSupport::navOptions('operations'),
+                'canManageOperations' => $canManage,
+                'highTrafficEnabled' => ($status['effective_mode'] ?? '') === 'high-traffic',
+                'highTrafficError' => $canManage ? ($status['error'] ?? null) : null,
+            ],
+            'Operations',
+            'tools',
+            $canManage ? ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/high_traffic_control.js'] : [],
         );
     }
 
@@ -247,6 +266,35 @@ final class ToolsPageController
     public function finalizeFeatureFlagChangeApi(string $method, array $query): void
     {
         $this->handlePreparedFeatureFlagChange($method, $query, true);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function attributionCutoffApi(string $method, array $query, bool $finalize): void
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Moving the attribution cutoff requires a root-approved identity.'], 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $operatorIdentityId = (string) ($viewerProfile['identity_id'] ?? '');
+            $input = $this->routeServices->requestData($query);
+            $result = $finalize
+                ? $this->routeServices->writer()->finalizePreparedAttributionCutoff($input, $operatorIdentityId)
+                : $this->routeServices->writer()->prepareAttributionCutoff($input, $operatorIdentityId);
+            if ($finalize) {
+                ($this->invalidateFeatureFlagsCache)();
+            }
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        }
     }
 
     /**

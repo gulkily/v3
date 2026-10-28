@@ -11,7 +11,6 @@
 <?php $class = $option['is_active'] ? 'nav-link is-active' : 'nav-link'; ?>
       <a class="<?= $e($class) ?>" href="<?= $e($option['href']) ?>" data-nav-key="<?= $e($option['key']) ?>"><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
-      <a class="nav-link" href="/compose/thread">New Post</a>
     </div>
   </article>
 <?php endif; ?>

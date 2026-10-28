@@ -29,6 +29,7 @@ final class HighTrafficTest
             touch($cache->path('/about/')); clearstatcache();
             assertSame(false,$refresh->hint('/about/'));
             assertSame(false,$refresh->hint('/tools/feature-flags/'));
+            assertSame(false,$refresh->hint('/tools/operations/'));
             assertSame([],$refresh->hints());
             $cache->limits['generators']=1;
             $slot=fopen($cache->root . '/locks/slot-0','c'); flock($slot, LOCK_EX);

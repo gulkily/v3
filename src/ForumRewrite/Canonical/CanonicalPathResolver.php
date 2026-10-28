@@ -75,6 +75,11 @@ final class CanonicalPathResolver
         return 'records/feature-flag-changes/' . $recordId . '.txt';
     }
 
+    public static function attributionCutoff(string $recordId): string
+    {
+        return 'records/attribution-cutoffs/' . $recordId . '.txt';
+    }
+
     public static function instancePublic(): string
     {
         return 'records/instance/public.txt';

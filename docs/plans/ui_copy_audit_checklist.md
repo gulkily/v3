@@ -487,6 +487,17 @@ Reviewed candidates; decisions and verification are recorded above.
 - Targeted PHP and controlled rendered phone/desktop checks passed as recorded above. No dependencies, navigation destinations, icon mappings, Fastmod prompts or `todo.txt` changes. Full-suite, physical-device and deployment acceptance remain unverified. Changes remain local; origin has advanced and synchronization is still needed before publication.
 - Two further source observations are collected below for later review.
 
+## App shell navigation (ZenMemes) — October 27, 2026
+
+- Cycle [`ui_shell_navigation`](./ui_shell_navigation/ui_shell_navigation_step4_implementation_summary.md) moved ZenMemes to a new shell; Chouse, QDB and MIT Rap Club headers are unchanged. Copy added: "New post" (one button instead of none in the header), "You" for the account menu trigger (accessible name "You, account menu"), and "Account and more" as the menu's navigation label. No destination label changed; About, Tools, Account, Invite and a members-only Profile link moved into the account menu. Icon mappings updated for Word 97, Chicago and Midnight (Messages, Profile, New post, the account trigger).
+- Verification: placement and render tests for guest, unapproved, approved and members-only viewers; existing markup-sensitive smoke tests unchanged and passing; Chrome checks with JavaScript on and off at 1280px and 390px (every guest destination reachable, New post reaches the composer, theme choice persists); all 13 permitted themes plus Auto reviewed with the menu open. Limitations: signed-in viewer states were checked through server-rendered tests, not in a browser session; no physical device.
+- Follow-up for the Board cycle: the board toolbar still has its own "New Post" control beside the shell's New post.
+
+## Board list (ZenMemes) — October 27, 2026
+
+- Cycle 2 of the [UI redesign checklist](./ui_redesign/implementation_checklist.md#cycle-2-ui_board_list), Direct process. Removed: the board's "New Post" link (the shell has New post), "by … on … at HH:MM UTC" bylines (now "author · Oct 6", full UTC time in the date's tooltip), "(unapproved)" (now a "Pending" chip), the "Pinned" badge on each pinned thread (now one "Pinned" section label). Added: "Latest" section label, the sort menu's hidden "Sort by" prefix for screen readers, "Show older threads" / "Newer threads" pager links, and the empty Liked state ("No liked threads yet", "Threads you like will show up here.", "Show all threads"). Chouse, QDB and MIT Rap Club boards unchanged.
+- Verification and limitations are recorded in the redesign checklist entry.
+
 ## How to continue this audit
 
 Work through the unchecked next-phase candidates one at a time, favoring removal of redundant copy while preserving necessary warnings, provenance, recovery actions and the full visible Fastmod prompts; verify each decision in rendered phone/desktop states and affected themes under `CONTRIBUTING.md`, then close the item and commit it separately with its decision, verification and limitations recorded in this checklist. As you work, collect newly observed verbosity candidates for the following phase, keep that candidate section at the very bottom of this file, and distinguish local completion from live-instance deployment.
@@ -553,6 +564,18 @@ Verification: `node tests/browser/archive_export_browser.mjs` exercises normal B
 Limits: No physical-device, screen-reader or qdb.us deployment/recovery claim. No expanded/empty widget state added; those states are inapplicable to this plaintext download response change. Existing page layout otherwise unchanged.
 Evidence: [Implementation summary](archive_export_contention/archive_export_contention_step4_implementation_summary.md); [operator recovery](../runbooks/archive_export_recovery.md).
 
+## High-traffic toggle — 2026-10-27
+
+- [x] Replaced the separate High-traffic mode card and its full-width “Enable/Disable high-traffic mode” button with one flag-style row beneath the Feature Flags heading: label, existing staleness line, shared switch and on/off state. Shortened the failure text while keeping reload and `./v3 high-traffic restore` visible. No navigation destination or icon change.
+- Verification: `node tests/browser/high_traffic_control.mjs` passed real signed enable/disable, failure and keyboard retry, unauthorized absence, and 13 themes at 375/1150px without clipping or overflow; toolbar counts/search unaffected. Row screenshots inspected for light, dark, Word97, Chicago and Midnight in disabled, enabled and failure states at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](high_traffic_toggle/high_traffic_toggle_step4_implementation_summary.md).
+- [x] Feature Flags toolbar: removed the visible “Search flags” label and “N of N flags shown” line at the user's request. The search input keeps “Search flags” as its accessible name; the count remains a screen-reader-only live region. Toolbar, High-traffic and Fastmod browser tests passed.
+
+## Operations page — 2026-10-27
+
+- [x] Moved High-traffic mode from Feature Flags to a new **Tools › Operations** page (`/tools/operations/`), named for site-serving controls generally. The row reuses the flag-row/switch layout; managers can switch it, others see a disabled switch with the existing read-only hint and no error details. Launcher description: “Control how the site is served, including high-traffic mode.” Teal gear icon in Word97/Chicago/Midnight.
+- Verification: high-traffic browser test passed on the new page (signing, failure/retry, 403, 13 themes at 375/1150px); launcher, subnav and row screenshots inspected in light, dark, Word97, Chicago and Midnight at both widths. No physical-device or deployment claim.
+- Evidence: [implementation summary](site_operations_page/site_operations_page_step4_implementation_summary.md).
 
 ## Backup feature flags — 2026-10-27
 
@@ -573,3 +596,40 @@ Dependency delta: Zero. No navigation destination/icon, schema, canonical record
 
 Resolution: Preserve upstream instance/admin/snapshot details, recent items, image ZIP link, inline SQLite freshness and compact public-scope copy alongside the new flag-based unavailable state. Image-only mode retains the matching-content requirement. ZIP and legacy TAR remain under one image flag.
 Verification: Backup/Tools/SQLite/Feature Flags signed browser matrix passes all 240 states across six themes and 390/1280 widths; actual ZIP/TAR denial, recovery and icon checks pass. Merged Midnight phone image-only screenshot inspected at /tmp/backup-flags-browser-lBKMAg/backup-01.png. Canonical-order toolbar suite passes. See backup feature-flags implementation summary for 50 passing PHP checks and evidence paths. No new layout/overflow issue observed; full suite, physical devices and deployment remain unverified.
+
+## Invitation signing recovery — October 27, 2026
+
+- [x] Recover session/signing-key disagreement on Invite without an Account detour. Reserve Account restore guidance for genuinely unusable/unapproved saved identities; retain keys and input.
+- [x] Provide actionable signature failure text with the diagnostic status. For unknown creation outcomes, retain the pending token in this page and use Check invitation rather than issuing again; keep-page-open guidance remains visible.
+- Verified 160 rendered public/members-only, five-theme, phone/desktop states covering initial, pending, successful, uncertain, invalid-signature, unapproved, missing-key and restored flows. No page overflow; main action remains available and recovery stays beneath it. Representative screenshots reviewed with expanded revocation/long values. Existing app-version notifications appeared during the fixtures; notification behavior is outside this correction.
+- Actual signing, permission denial, restore/retry, lost-response inspection, recipient redemption and revocation checks passed. Full suite, production and physical-device verification are not claimed. [Implementation evidence](invite_signing_readiness/invite_signing_readiness_step4_implementation_summary.md).
+
+## Board New Post link — 2026-10-27
+
+- [x] Removed the board controls' New Post link; the inline composer replaces it. `/compose/thread` stays as the full-page and no-JS route, and the Tags page and offline reader controls are unchanged. The controls' right-aligned last-item rule now skips view/sort options, so Top stays with its group.
+- Verification: `php tests/run.php LocalAppSmokeTest` passes except the two failures that were already present (quick-reply continuations, archive filename). `node tests/browser/board_compose_focus.mjs` passes across light, Word97, Chicago and Midnight at 390px/1280px, including no-JS controls. Nav alignment was not inspected in screenshots.
+
+## Inline composer expand spacing — 2026-10-27
+
+- [x] Expanding the board thread composer or inline reply no longer moves the editor down. Two causes: the logged-in identity status (empty, `hidden`, `data-kind="ok"`) was forced visible with 1rem margin, and the expanded padding top was 1rem against the collapsed 0.8rem. Hidden statuses now stay hidden; expanded top padding matches collapsed. Real identity messages still display.
+- Verification: `board_compose_focus.mjs` and `reply_compose_focus.mjs` now assert equal editor-to-card-top distance collapsed/expanded, failing before the fix; both pass in light, Word97, Chicago and Midnight at 390px/1280px. The touch-phone reply's fixed panel is excluded by design. Inspected light board and Word97 reply desktop screenshots. Status display checked for empty-hidden, info and error states.
+
+## 2026-10-27 — Public profile identity details
+
+- Change: Replaced the misleading “Member activity” destination label with a supplementary username link; the profile now shows its own Threads and Posts. Public key material is initially collapsed, with concise Copy/unavailable/manual-copy recovery states.
+- Verification: Real Chromium HTTP flows with JavaScript on/off; keyboard disclosure and navigation; exact copying and denied-clipboard fallback; independent pagination and invalid-position recovery; 13 permitted themes at 390px and 1280px, initial/expanded/loaded/empty/unavailable states and overflow. Inspected Word97, Chicago and Midnight screenshots. Shared account/access/Forte/source and messaging tests passed.
+- Limits: No physical-device or production deployment verification; zenmemes.com replay remains pending. Full suite not run. No navigation destinations added or renamed, so icon mapping unchanged.
+- Record: [Implementation evidence and host handoff](profile_public_details/profile_public_details_step4_implementation_summary.md).
+
+### Accepted profile navigation refinement — 2026-10-27
+
+- Removed the supplementary “User <username>” link and standalone “User Access” link from the standard profile. Approval now reads “Approved” or “Not approved” with “Approval details” beside it; the existing Tools route and account-keys anchor remain intact. The detail-link text stays together on narrow screens.
+- Verification: Focused profile/access/messaging/core-route checks 16/16 plus private-session/recovery checks 2/2; actual HTTP Chromium flows with JavaScript on/off and 13 themes at phone/desktop widths passed, including expanded/empty/unavailable states and overflow. Reviewed updated phone screenshot. No new navigation destination or icon mapping; production and physical-device checks remain pending.
+
+## 2026-10-27 — TUI operator workspace
+
+Change: Removed read-only launch confirmation, repeated config/feature-flag explanations and verbose launcher labels. Home shows concise shared health/queue observations and freshness; failures, stale observations and recovery remain visible. LLM fields show sources/locks before values, use explicit presets and show actual redacted differences. Successful saves are visible in the editor without a separate routine success notice.
+Verification: Focused terminal/status/config/schema/collector/health PHP checks 37/37; real whiptail WSL keyboard journeys at 80x24 and 50x18, live home/editor resizing, 40x12 recovery, unavailable health, no-match search, diagnostic return, edit/review/save/reopen/cancel and long-value scrolling review passed. PTY tests cover early output, interruption/child cleanup, failed commands and terminal restoration. Deterministic editor/writer tests cover locks, validation, conflicting/failed saves, correction, secret redaction and unchanged unrelated values. A clipped-buttons defect found during live resize was corrected with shared dialog recreation; keyboard acceptance waits for the replacement dialog.
+Limits: Terminal-only change; browser phone/theme/icon checks are inapplicable because no web destination or markup changed. Actual remote SSH, physical-device terminals, full suite and deployment were not verified; SSH-style PTY environment is explicitly distinct from remote evidence.
+Record: [Implementation summary](tui_operator_workspace/tui_operator_workspace_step4_implementation_summary.md).
+Dependency delta: Zero.

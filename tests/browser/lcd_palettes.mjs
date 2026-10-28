@@ -32,12 +32,21 @@ const themeKey = 'forum-zenmemes-theme';
 const paletteKey = themeKey + '-lcd-palette';
 const errors = [];
 const baselineComposeErrors = [];
+// The app shell keeps the theme controls in the account menu; open it first.
+async function openThemeControls(page) {
+  const menu = page.locator('details[data-role="account-menu"]');
+  if (await menu.count() && !(await menu.evaluate(details => details.open))) {
+    await menu.locator('summary').click();
+  }
+}
 async function theme(page, value) {
+  await openThemeControls(page);
   await page.locator('[data-action="theme-toggle"]').click();
   await page.locator(themeOption(value)).click();
   await page.waitForFunction(value => document.documentElement.dataset.theme === value, value);
 }
 async function palette(page, value) {
+  await openThemeControls(page);
   await page.locator(paletteToggle).click();
   await page.locator(paletteOption(value)).click();
 }
@@ -94,6 +103,7 @@ try {
       await page.goto(base + '/threads/?view=all');
       assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), value);
       // Compare the exact same rendered header with/without reserved palette space.
+      await openThemeControls(page);
       const before = await page.locator('.theme-menu').boundingBox();
       await page.addStyleTag({ content: ':root[data-theme="lcd"] .theme-menu {margin-left:0!important}.lcd-palette{display:none!important}' });
       const baseline = await page.locator('.theme-menu').boundingBox();
@@ -121,6 +131,7 @@ try {
       await page.locator('textarea').first().click(); // expand the real reply composer
       assert.ok(await page.locator('button[type="submit"]:visible').count());
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await openThemeControls(page);
       await page.locator(paletteToggle).click();
       await page.screenshot({ path: join(root, `${value}-${width}.png`), fullPage: true });
       await page.keyboard.press('Escape');
@@ -134,6 +145,7 @@ try {
     assert.equal(await page.locator('#lcd-palette-popover').isVisible(), false);
     await page.locator(paletteToggle).click(); await page.locator('h1').first().click({ position: { x: 2, y: 2 } });
     assert.equal(await page.locator('#lcd-palette-popover').isVisible(), false);
+    await openThemeControls(page); // the outside click above also closed the account menu
     await page.locator(paletteToggle).click(); await page.locator('[data-action="theme-toggle"]').click();
     assert.equal(await page.locator('#lcd-palette-popover').isVisible(), false);
     await page.keyboard.press('Escape');
@@ -157,7 +169,7 @@ try {
     assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'purple', 'direct selection sets rotation stop');
     await page.reload();
     assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'purple');
-    await cycle.focus(); await page.keyboard.press('Space');
+    await openThemeControls(page); await cycle.focus(); await page.keyboard.press('Space');
     assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'gray');
     // All permitted non-LCD themes retain their ordinary selection and hide palettes.
     const themes = await page.locator('[data-theme-option]').evaluateAll(es => es.map(e => e.dataset.themeOption).filter(t => !['lcd', 'auto'].includes(t)));
