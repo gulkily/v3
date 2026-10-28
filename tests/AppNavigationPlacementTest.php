@@ -90,6 +90,7 @@ final class AppNavigationPlacementTest
             assertStringContains('class="new-post-button" href="/compose/thread"', $html);
             assertStringContains('<div class="shell-sky" aria-hidden="true"></div>', $html);
             assertStringContains('/assets/account_menu.', $html);
+            assertStringContains('/assets/tab_bar_scroll.', $html);
         });
     }
 
@@ -112,7 +113,7 @@ final class AppNavigationPlacementTest
             $this->withSite('zenmemes', function (): void {
                 $html = $this->markup($this->renderer()->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']));
                 assertStringContains('<header class="site-header">', $html);
-                foreach (['account-menu', 'new-post-button', 'data-tab=', 'shell-sky', '/assets/account_menu.'] as $marker) {
+                foreach (['account-menu', 'new-post-button', 'data-tab=', 'shell-sky', '/assets/account_menu.', '/assets/tab_bar_scroll.'] as $marker) {
                     assertSame(false, str_contains($html, $marker), $marker);
                 }
             });

@@ -56,7 +56,7 @@ final class ApiRouteCatalogTest
         }
 
         assertStringContains('/llms.txt', $index);
-        assertStringContains('POST /api/create_thread [anonymous, text] Anonymous thread only.', $index);
+        assertStringContains('POST /api/create_thread [anonymous, text] Unsigned thread; anonymous unless author_identity_id is sent.', $index);
         assertStringContains('POST /api/create_prepared_post [signed, json]', $index);
         assertStringContains('GET /api/version [public, text]', $index);
         assertStringContains('Private conversation lists require an approved authenticated identity', $index);

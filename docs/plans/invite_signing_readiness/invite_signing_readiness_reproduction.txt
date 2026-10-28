@@ -1,0 +1,72 @@
+Title: Invitation signature failure targeted reproduction
+Date: 2026-10-27 UTC
+Cycle: v3/invite_signing_readiness
+Revision: 89a9abbe044a39240a30ab7787977ce735050762
+Authorization: Isolated diagnostic experiment following the user's approval of the proposed 30–60 minute investigation; product implementation still awaits Approved Step 3.
+Environment: Local isolated PHP fixture, Chromium, existing OpenPGP.js and actual server GPG verification; no production account or secrets used.
+Result: Reproduced the exact two-failures/Account-visit/success sequence.
+
+Setup:
+Create two valid approved fixture identities A and B. Establish a real authenticated
+session for A using the normal challenge/signature authentication API, without
+visiting Account. Load browser storage with B's matching public/private keypair
+and published-key marker. Test both a cached fingerprint of A and a correct
+cached fingerprint of B. Use the ordinary Invite form; do not mock signing,
+preparation, finalization or verification results.
+
+Experiment 1: Stale cached fingerprint; public and members-only modes
+Both first and second Generate attempts prepared records for session identity A
+and signed with saved key B. Both returned exactly:
+Detached signature verification failed: signature_verification_failed
+The first attempt corrected the stored fingerprint to B, but did not authenticate
+B or correct the session. No authentication request occurred during either attempt.
+Visiting Account authenticated B. Returning to Invite then generated successfully
+under B. Public/private key bytes were identical before and after the detour.
+
+Experiment 2: Same-page authentication control; both access modes
+Start with the same mismatch and reproduce both failures. Authenticate B through
+the existing challenge/signature API while keeping the Invite page open. Generate
+again on that same page: succeeds under B, without a reload, Account visit or key
+change. This isolates session reconciliation as sufficient for these failures.
+
+Experiment 3: Correct cached fingerprint; public mode
+Use B's correct fingerprint from the outset, with session A and keypair B.
+Both Generate attempts still fail with the exact reported error. Account then
+triggers authentication and subsequent generation succeeds with unchanged keys.
+Thus a stale cached fingerprint is not necessary for the public-site failure.
+
+Source explanation:
+LobbyController's Invite script list does not explicitly load private_site_auth.js.
+TemplateRenderer adds it conditionally for members-only access/public authentication
+resume; the already-authenticated public Invite page in this test had no
+PrivateSiteAuth helper. Account explicitly loads it. The Invite readiness path
+updates local identity metadata and identity hints but does not reconcile the
+session. Preparation chooses the session's issuer; signing uses the saved key;
+Invite lacks a prepared-author/signing-identity guard. In members-only mode, the
+authentication helper can also short-circuit on cached fingerprint/page-session
+agreement before deriving the fingerprint from the actual key.
+
+Harness correction:
+The first in-place control attempted to call PrivateSiteAuth.authenticate directly
+and discovered that helper was absent on public Invite. It was replaced with real
+authentication API calls; the corrected control passed in both access modes. This
+was an experiment correction, not a product change.
+
+Confidence:
+The session/key mismatch defect and its Account-page recovery are demonstrated,
+not merely inferred. This is strong evidence for the reported symptom sequence.
+The experiment does not establish how the user's browser reached that mismatch,
+or prove their historical incident had no other contributing factor.
+
+Temporary evidence:
+/tmp/invite-signing-repro/repro.mjs
+/tmp/invite-signing-repro/result.txt
+/tmp/invite-signing-repro/in-place-control.mjs
+/tmp/invite-signing-repro/in-place-result.txt
+/tmp/invite-signing-repro/public-current-fingerprint.mjs
+/tmp/invite-signing-repro/public-current-fingerprint-result.txt
+/tmp/invite-signing-repro/add-identity.php
+
+Scope: No production source, repository tests, dependencies or todo.txt changed. Temporary fixture repositories and browser contexts were cleaned up after each experiment. No commits made.
+Next: On Step 3 approval, preserve this reproduction as a permanent regression and repair authenticated-issuer/signing-key agreement, including public Invite authentication wiring, cached-identity shortcuts and changes during preparation. Existing cryptographic/approval checks remain intact.
+Author: Codex

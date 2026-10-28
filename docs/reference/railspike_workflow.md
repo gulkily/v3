@@ -7,7 +7,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 ## Provenance
 
-- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.4.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
+- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.4.0` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
 - The full upstream tree and license are retained. The historical local effort-estimation patch described below is now included upstream; only the host installation record differs from the release.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
@@ -44,7 +44,7 @@ Before a future subtree update, inspect and preserve this patch in branch histor
 ## Update commands
 
 ```bash
-./v3 railspike sync                      # pinned v0.4.0-beta.1: no-op when installed
+./v3 railspike sync                      # pinned v0.4.0: no-op when installed
 ./v3 railspike sync --ref=<newer-tag>    # deliberate upgrade
 ./v3 railspike sync --repository-root=/path/to/another/migrated/repository
 ```
@@ -178,3 +178,46 @@ What changed upstream (13 commits):
 Effect on the `railspike-effort` study: standing enrollment under protocol P2 still applies, now to one-shot cycles as well. New enrolled cycles get extended estimates unless the user overrides it; existing cycles keep their recorded state.
 
 Verification: installed product files match the tag byte-for-byte (the only difference is the host `RAILSPIKE_SOURCE.md`); the Railspike sync and workflow tests are recorded in the commit that updated the pin.
+
+## Upgrade — 2026-10-28
+
+Authorization: “Please upgrade railspike to latest.” Resolved the latest release
+from upstream tags to v0.4.0, commit ea1ad5b524c2b447d3e61b15ccd3cd412ce6ecef,
+and verified descent from installed v0.3.0-beta.4. Routine direct maintenance,
+without starting a new Railspike cycle or changing existing cycle modes.
+
+Inventory: Existing MIT-licensed instruction dependency from
+https://github.com/rlspk/railspike.git, delivered through the existing Git subtree
+at docs/railspike/. Eight Markdown files change (206 insertions, 26 deletions),
+including the new one-shot workflow; 18 upstream files total. No added packages,
+transitive dependencies, manifests or locks. The reduced-scope alternative was
+retaining beta.4. Maintenance remains reviewed tag updates and provenance checks.
+
+Changes: Optional explicitly authorized one-shot execution with a consolidated
+record, matching effort checkpoints, revised welcome guidance and uninstall
+instructions. Host subtree update instructions remain authoritative over upstream
+copy/submodule examples. Existing AGENTS.md guidance, standing P2 enrollment,
+frozen R1 references and historical cycle settings remain intact. Updated the
+CLI default pin, top-level help, reference and affected test expectation.
+
+Recovery: Prior installation is available from the subtree merge's first parent.
+No deployment or remote publication is included. Upgrade commits are on
+maintenance/railspike-v0.4.0.
+
+Verification: All 18 upstream files match the pinned revision byte-for-byte
+(163,487 bytes). RailspikeSyncCommandTest and RailspikeWorkflowTest passed 20/20.
+Shell syntax, CLI help and git diff --check passed. Local document link paths
+in the entrypoint, one-shot workflow, effort guide, index and welcome resolve;
+anchors and remote links were not checked. The initial link scan included fenced
+template examples; excluding those corrected that check. Actual dependency delta
+matches the inventory above. UI, deployment and full application-suite checks
+are inapplicable to this instruction and CLI-pin update.
+
+*— Codex · 2026-10-28 UTC*
+
+Merge handoff — 2026-10-28: User authorized merge and push. Integrated remote
+main at 631ebab0a, retaining its beta.1 upgrade history and both branches' planning,
+study and UI verification records; resolved current pins/product to v0.4.0.
+All 18 product files still match upstream. Focused Railspike checks passed 20/20
+again; startup dependency regressions, shell syntax and staged whitespace checks
+passed. Full application suite was not rerun. No new dependency changes.

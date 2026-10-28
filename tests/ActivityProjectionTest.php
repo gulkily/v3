@@ -212,21 +212,28 @@ final class ActivityProjectionTest
 
     public function testPriorSchemaStartupRebuildsBeforeActivityQuery(): void
     {
-        $fixture = new RebuildHistoryFixture(0);
-        try {
-            $db = $fixture->root . '/model.sqlite';
-            (new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository)))->rebuild();
-            $pdo = new PDO('sqlite:' . $db);
-            $pdo->exec("DROP TRIGGER activity_evidence_insert; DROP TRIGGER activity_evidence_update; DROP INDEX activity_pending_evidence_idx; ALTER TABLE activity DROP COLUMN evidence_json;
-                UPDATE metadata SET value = '31' WHERE key = 'schema_version'");
-            $pdo = null;
-            ob_start();
-            try { (new Application(dirname(__DIR__), $fixture->repository, $db))->handle('GET', '/activity/'); }
-            finally { $html = ob_get_clean(); }
-            assertStringContains('Activity', $html);
-            $pdo = new PDO('sqlite:' . $db);
-            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
-            assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE evidence_json IS NULL')->fetchColumn());
-        } finally { $fixture->remove(); }
+        foreach ([31, 36] as $priorVersion) {
+            $fixture = new RebuildHistoryFixture(0);
+            try {
+                $db = $fixture->root . '/model.sqlite';
+                (new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository)))->rebuild();
+                $pdo = new PDO('sqlite:' . $db);
+                if ($priorVersion === 31) {
+                    $pdo->exec("DROP TRIGGER activity_evidence_insert; DROP TRIGGER activity_evidence_update; DROP INDEX activity_pending_evidence_idx; ALTER TABLE activity DROP COLUMN evidence_json;
+                    UPDATE metadata SET value = '31' WHERE key = 'schema_version'");
+                } else {
+                    $pdo->exec("ALTER TABLE activity DROP COLUMN attribution_verified; ALTER TABLE activity DROP COLUMN attribution_counted; UPDATE metadata SET value = '36' WHERE key = 'schema_version'");
+                }
+                $pdo = null;
+                ob_start();
+                try { (new Application(dirname(__DIR__), $fixture->repository, $db))->handle('GET', '/activity/'); }
+                finally { $html = ob_get_clean(); }
+                assertStringContains('Activity', $html);
+                $pdo = new PDO('sqlite:' . $db);
+                assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+                assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE evidence_json IS NULL')->fetchColumn());
+                $pdo->query('SELECT attribution_verified, attribution_counted, evidence_json FROM activity')->fetchAll();
+            } finally { $fixture->remove(); }
+        }
     }
 }

@@ -76,6 +76,7 @@ final class TagApiController
             if (isset($result['commit_sha'])) {
                 $response .= "commit_sha={$result['commit_sha']}\n";
             }
+            $response .= $this->routeServices->unsignedAttributionLines('vote', $input['author_identity_id'], trim((string) ($input['detached_signature'] ?? '')) !== '');
 
             $this->routeServices->sendText($response, 200, $this->routeServices->serverTimingHeaders($result));
         } catch (ReactionClockSkew $exception) {
@@ -137,6 +138,7 @@ final class TagApiController
             if (isset($result['commit_sha'])) {
                 $response .= "commit_sha={$result['commit_sha']}\n";
             }
+            $response .= $this->routeServices->unsignedAttributionLines('vote', $input['author_identity_id'], trim((string) ($input['detached_signature'] ?? '')) !== '');
 
             $this->routeServices->sendText($response, 200, $this->routeServices->serverTimingHeaders($result));
         } catch (ReactionClockSkew $exception) {

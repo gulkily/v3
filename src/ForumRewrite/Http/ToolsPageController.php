@@ -225,6 +225,7 @@ final class ToolsPageController
                 'registry' => new FeatureFlagRegistry(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('feature-flags'),
                 'canManageFeatureFlags' => $this->viewerCanManageFeatureFlags($viewerProfile),
+                'attributionCutoff' => $this->routeServices->attributionCutoff(),
             ],
             'Feature Flags',
             'tools',
@@ -265,6 +266,35 @@ final class ToolsPageController
     public function finalizeFeatureFlagChangeApi(string $method, array $query): void
     {
         $this->handlePreparedFeatureFlagChange($method, $query, true);
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function attributionCutoffApi(string $method, array $query, bool $finalize): void
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+        if (!$this->viewerCanManageFeatureFlags($viewerProfile)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Moving the attribution cutoff requires a root-approved identity.'], 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $operatorIdentityId = (string) ($viewerProfile['identity_id'] ?? '');
+            $input = $this->routeServices->requestData($query);
+            $result = $finalize
+                ? $this->routeServices->writer()->finalizePreparedAttributionCutoff($input, $operatorIdentityId)
+                : $this->routeServices->writer()->prepareAttributionCutoff($input, $operatorIdentityId);
+            if ($finalize) {
+                ($this->invalidateFeatureFlagsCache)();
+            }
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        }
     }
 
     /**

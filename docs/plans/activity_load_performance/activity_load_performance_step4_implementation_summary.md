@@ -95,3 +95,12 @@ Release condition: Follow normal authorized deployment/rebuild/static-refresh wo
 Dependency inventory: Zero additions/updates, package manifests/locks/vendor unchanged. Canonical formats unchanged; compact JSON is internal derived state only.
 
 *— Codex · 2026-10-28 UTC*
+
+## Integration with remote main — 2026-10-28
+
+Request: Complete the in-progress merge of remote main cba7d54f9 into local main ac49a8980.
+Resolution: Preserve activity evidence/projections and verified-attribution fields together, including attribution_counted in projected items. Keep the complete-schema Forte recovery fixture with its commits table removed.
+Schema: Version 37; startup regression covers both version 31 without stored evidence and version 36 without activity attribution columns before serving /activity/.
+Verification: 26 focused tests passed across ActivityProjectionTest, ForteActivityReadModelRecoveryTest, StandardActivityPaginationTest, ActivityItemLinkTest, and two verified-attribution WriteApiSmokeTest methods. The attribution totals test caught a dropped unsigned marker in projected items; preserving attribution_counted fixed it. Isolated ./v3 rebuild passed. Whitespace and conflict-marker checks passed.
+Limitations: Full suite and interactive browser/theme checks were not rerun. No deployment or push.
+Dependencies: No new dependency changes introduced by conflict resolution. Incoming main retains its previously approved Railspike v0.4.0 update, documented in docs/reference/railspike_workflow.md.

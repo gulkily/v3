@@ -253,6 +253,7 @@ final class TemplateRenderer
             'navItems' => $navItems,
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
+            'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
         ]);
     }
 
@@ -616,6 +617,10 @@ final class TemplateRenderer
         $authorLabel = trim((string) ($record['author_label'] ?? ''));
         if ($authorLabel === '') {
             $authorLabel = 'guest';
+        }
+
+        if (((int) ($record['attribution_counted'] ?? 1)) === 0) {
+            return $escape($authorLabel) . ' <span class="meta">(unsigned)</span>';
         }
 
         $authorProfileSlug = trim((string) ($record['author_profile_slug'] ?? ''));

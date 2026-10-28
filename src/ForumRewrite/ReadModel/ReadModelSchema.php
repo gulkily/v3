@@ -37,6 +37,12 @@ final class ReadModelSchema
                 post_tags_json TEXT NOT NULL DEFAULT \'[]\',
                 post_score_total INTEGER NOT NULL DEFAULT 0,
                 approved_flag_count INTEGER NOT NULL DEFAULT 0,
+                attribution_verified INTEGER NOT NULL DEFAULT 1,
+                attribution_counted INTEGER NOT NULL DEFAULT 1,
+                claimed_post_score_total INTEGER NOT NULL DEFAULT 0,
+                verified_post_score_total INTEGER NOT NULL DEFAULT 0,
+                claimed_approved_flag_count INTEGER NOT NULL DEFAULT 0,
+                verified_approved_flag_count INTEGER NOT NULL DEFAULT 0,
                 is_hidden INTEGER NOT NULL DEFAULT 0,
                 hidden_reason TEXT NULL,
                 retracted_at TEXT NULL,
@@ -56,6 +62,8 @@ final class ReadModelSchema
                 board_tags_json TEXT NOT NULL,
                 thread_labels_json TEXT NOT NULL,
                 score_total INTEGER NOT NULL DEFAULT 0,
+                claimed_score_total INTEGER NOT NULL DEFAULT 0,
+                verified_score_total INTEGER NOT NULL DEFAULT 0,
                 vote_count INTEGER NOT NULL DEFAULT 0,
                 event_date TEXT NULL,
                 event_location TEXT NULL,
@@ -80,7 +88,11 @@ final class ReadModelSchema
                 approved_by_profile_slug TEXT NULL,
                 approved_by_label TEXT NULL,
                 post_count INTEGER NOT NULL DEFAULT 0,
-                thread_count INTEGER NOT NULL DEFAULT 0
+                thread_count INTEGER NOT NULL DEFAULT 0,
+                claimed_post_count INTEGER NOT NULL DEFAULT 0,
+                verified_post_count INTEGER NOT NULL DEFAULT 0,
+                claimed_thread_count INTEGER NOT NULL DEFAULT 0,
+                verified_thread_count INTEGER NOT NULL DEFAULT 0
             )',
             'CREATE TABLE username_routes (
                 username_token TEXT PRIMARY KEY,
@@ -112,7 +124,9 @@ final class ReadModelSchema
                 author_is_approved INTEGER NOT NULL DEFAULT 0,
                 source_path TEXT NULL,
                 source_commit_sha TEXT NULL,
-                evidence_json TEXT NULL
+                evidence_json TEXT NULL,
+                attribution_verified INTEGER NOT NULL DEFAULT 1,
+                attribution_counted INTEGER NOT NULL DEFAULT 1
             )',
             "CREATE INDEX activity_pending_evidence_idx ON activity (source_commit_sha) WHERE evidence_json IS NULL",
             "CREATE TRIGGER activity_evidence_insert AFTER INSERT ON activity WHEN COALESCE(NEW.source_path, '') = '' BEGIN

@@ -142,6 +142,7 @@
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
 <?php if ($navigationSlot === 'app'): ?>
   <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
+  <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>

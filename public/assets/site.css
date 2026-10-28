@@ -238,7 +238,7 @@ pre {
   opacity: 0.7;
 }
 
-.board-controls-nav > *:last-child {
+.board-controls-nav > *:last-child:not([data-nav-key]) {
   margin-left: auto;
 }
 
@@ -545,6 +545,12 @@ pre {
 @media (max-width: 639px) {
   [data-shell="app"] {
     --app-tabbar-height: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    /* What bottom-pinned parts clear: the bar while shown, only the safe area while hidden. */
+    --app-tabbar-offset: var(--app-tabbar-height);
+  }
+
+  [data-shell="app"][data-tabbar="hidden"] {
+    --app-tabbar-offset: env(safe-area-inset-bottom, 0px);
   }
 
   [data-shell="app"] .main {
@@ -568,6 +574,13 @@ pre {
     padding: 0.3rem 0.3rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line);
     background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
+    transition: transform 0.2s ease;
+  }
+
+  /* tab_bar_scroll.js hides the bar while scrolling down. The shown state keeps
+     `transform: none` so the menu's fixed popovers position against the screen. */
+  [data-shell="app"][data-tabbar="hidden"] .site-header--app .site-header-actions {
+    transform: translateY(100%);
   }
 
   [data-shell="app"] .site-header--app .nav {
@@ -642,9 +655,15 @@ pre {
   }
 }
 
+@media (max-width: 639px) and (prefers-reduced-motion: reduce) {
+  [data-shell="app"] .site-header--app .site-header-actions {
+    transition: none;
+  }
+}
+
 @media (max-width: 639px) and (pointer: coarse) {
   :root [data-shell="app"] [data-reply-panel][data-reply-panel].reply-panel-reading {
-    bottom: calc(var(--app-tabbar-height) + max(var(--reply-panel-bottom, 8px), 0px));
+    bottom: calc(var(--app-tabbar-offset) + max(var(--reply-panel-bottom, 8px), 0px));
   }
 }
 
