@@ -166,6 +166,47 @@ final class ActivityProjectionTest
             assertSame(true, $missing['evidence_unavailable']);
             assertSame([], $missing['relevant_files']);
             assertSame('', $missing['source_signature_status']);
+            $pdo->prepare('UPDATE activity SET evidence_json = ? WHERE id = ?')->execute(['["","verified",[{"a":"x","b":"x","c":"x","d":"x","e":"x","f":"x","g":"x"}]]', $id]);
+            assertSame(true, $freshService->fetchActivityDetail($id)['evidence_unavailable']);
+        } finally { $fixture->remove(); }
+    }
+
+    public function testLateKeyArrivalAndRemovalRefreshStoredSignatureEvidence(): void
+    {
+        $fixture = new RebuildHistoryFixture(0);
+        try {
+            $path = 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt';
+            copy(__DIR__ . '/fixtures/openpgp_signature/signed-label.txt', $fixture->repository . '/' . $path);
+            copy(__DIR__ . '/fixtures/openpgp_signature/signed-label.txt.asc', $fixture->repository . '/' . $path . '.asc');
+            $fixture->git('add', '.'); $fixture->git('commit', '-qm', 'signed label without key');
+            $db = $fixture->root . '/model.sqlite';
+            $builder = new ReadModelBuilder($fixture->repository, $db, new CanonicalRecordRepository($fixture->repository));
+            $key = $fixture->repository . '/records/public-keys/openpgp-066236E516A3B74EC51B3B423A26034600DE67FD.asc';
+            copy(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc', $key);
+            $builder->rebuild();
+            $pdo = new PDO('sqlite:' . $db, null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+            $id = (int) $pdo->query('SELECT id FROM activity WHERE source_path=' . $pdo->quote($path))->fetchColumn();
+            assertTrue($id > 0);
+            $service = new ActivityService(static fn (): PDO => $pdo, $fixture->repository, $db);
+            assertSame('verified', $service->fetchActivityDetail($id)['source_signature_status']);
+            unlink($key);
+            $pdo->beginTransaction();
+            \ForumRewrite\ReadModel\ActivityEvidenceIndex::invalidateIdentity($pdo, $fixture->repository, 'openpgp:066236e516a3b74ec51b3b423a26034600de67fd');
+            \ForumRewrite\ReadModel\ActivityEvidenceIndex::refresh($pdo, $fixture->repository, $db);
+            $pdo->commit();
+            assertSame('invalid', $service->fetchActivityDetail($id)['source_signature_status']);
+            copy(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc', $key);
+            $pdo->beginTransaction();
+            \ForumRewrite\ReadModel\ActivityEvidenceIndex::invalidateIdentity($pdo, $fixture->repository, 'openpgp:066236e516a3b74ec51b3b423a26034600de67fd');
+            \ForumRewrite\ReadModel\ActivityEvidenceIndex::refresh($pdo, $fixture->repository, $db);
+            $pdo->commit();
+            $detail = $service->fetchActivityDetail($id);
+            assertSame('verified', $detail['source_signature_status']);
+            assertTrue(in_array('ok', array_column($detail['relevant_files'], 'signature_key_status'), true));
+            unlink($key);
+            $builder->rebuild();
+            $id = (int) $pdo->query('SELECT id FROM activity WHERE source_path=' . $pdo->quote($path))->fetchColumn();
+            assertSame(0, $id); // Rebuild drops invalid label events under the existing policy.
         } finally { $fixture->remove(); }
     }
 

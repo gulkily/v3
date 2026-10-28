@@ -104,14 +104,8 @@ final class ForteActivityController
      * for the selected filter, and a detail pane with the selected item's
      * full technical metadata.
      *
-     * Calls `fetchActivity($view)` once per view (5 calls total, each
-     * already its own cheap indexed/limited query - the same call classic's
-     * own `renderActivity()` makes for whichever single view it's showing)
-     * rather than deriving view membership from one superset fetch: a
-     * view's own `LIMIT` window can reach further back in time than the
-     * unfiltered "all" view's window once enough non-matching rows crowd
-     * out its most recent items, so only a real per-view fetch reproduces
-     * classic's exact per-view item set and counts.
+     * Reads one bounded list, the selected row's indexed evidence and maintained
+     * category totals. No source/commit reconstruction occurs while browsing.
      */
     public function board(
         string $requestedView = '',

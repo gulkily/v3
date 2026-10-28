@@ -154,7 +154,7 @@ final class ActivityService
     /**
      * Returns an Activity list page without source, signature, or commit
      * manifest enrichment. Forte uses this for rows that are not selected;
-     * classic Activity continues to use fetchActivity() above.
+     * standard Activity and selected Forte details hydrate indexed evidence.
      *
      * @param array{sort_value: string, action_key: string, id: int}|null $afterCursor
      * @return array{items: array<int, array<string, mixed>>, has_more: bool}
@@ -235,7 +235,7 @@ final class ActivityService
 
     /**
      * Loads the full technical detail for one known Activity item. Unlike a
-     * list page, this is allowed to resolve its source/commit/signature data.
+     * list page, this hydrates the stored evidence for the selected row.
      *
      * @return array<string, mixed>|null
      */
@@ -308,10 +308,10 @@ final class ActivityService
     private function projectedActivityItem(array $row): array
     {
         $evidence = json_decode((string) ($row['evidence_json'] ?? ''), true);
-        $valid = is_array($evidence) && count($evidence) === 3
+        $valid = is_array($evidence) && array_is_list($evidence) && count($evidence) === 3
             && is_string($evidence[0] ?? null) && is_string($evidence[1] ?? null) && is_array($evidence[2] ?? null);
         if ($valid) foreach ($evidence[2] as $file) {
-            if (!is_array($file) || !in_array(count($file), [7,8], true) || count(array_filter(array_slice($file, 0, 7), 'is_string')) !== 7 || (isset($file[7]) && $file[7] !== false)) { $valid = false; break; }
+            if (!is_array($file) || !array_is_list($file) || !in_array(count($file), [7,8], true) || count(array_filter(array_slice($file, 0, 7), 'is_string')) !== 7 || (isset($file[7]) && $file[7] !== false)) { $valid = false; break; }
         }
         if (!$valid) $evidence = ['', '', []];
         [$signature, $status, $files] = $evidence;
@@ -380,17 +380,7 @@ final class ActivityService
         return $item;
     }
 
-    /**
-     * Counts the full number of activity rows matching a view, independent
-     * of `ACTIVITY_ITEM_LIMIT`/pagination - for the left-pane folder counts,
-     * which should show real totals rather than "however many happen to be
-     * loaded so far". Mirrors `fetchActivity()`'s exact two-stage filter
-     * (the SQL `WHERE` from `activityViewSql()`, then the same tag-based
-     * PHP re-check) but selects only the columns that check needs, and
-     * skips the per-item transform `fetchActivity()` does for rendering
-     * (signature checks, link building, etc.) - unneeded and expensive
-     * across a potentially large, unlimited row set.
-     */
+    /** Read maintained totals; feature-name visibility and security authorization remain current. */
     public function countActivityViewTotal(string $view): int
     {
         $view = $this->normalizeActivityView($view);
@@ -595,7 +585,9 @@ final class ActivityService
      */
     public function countCommitsTotal(): int
     {
-        return (int) $this->pdo()->query("SELECT total FROM activity_counts WHERE view = 'commits'")->fetchColumn();
+        $count = $this->pdo()->query("SELECT total FROM activity_counts WHERE view = 'commits'")->fetchColumn();
+        if ($count === false) throw new RuntimeException('Activity counts unavailable. Run ./v3 rebuild and retry.');
+        return (int) $count;
     }
 
     /**
@@ -883,6 +875,37 @@ final class ActivityService
             return null;
         }
 
+        return $this->sourceCommitFileManifestCache[$commitSha] = self::parseCommitFiles($output);
+    }
+
+    /** Index-time batching avoids a process per event/commit during full rebuilds. */
+    public function primeCommitEvidence(array $commits): void
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) return;
+        $commits = array_values(array_filter(array_unique($commits), SourcePathValidator::isValidCommitSha(...)));
+        if ($commits === []) return;
+        $input = tempnam(sys_get_temp_dir(), 'activity-commits-');
+        if ($input === false) throw new RuntimeException('Cannot prepare Activity commit indexing.');
+        try {
+            if (file_put_contents($input, implode("\n", $commits) . "\n") === false) throw new RuntimeException('Cannot write Activity commit indexing input.');
+            $output = []; $code = 0;
+            exec('git -C ' . escapeshellarg($this->repositoryRoot) . ' diff-tree --stdin --root --name-status -r -M < ' . escapeshellarg($input) . ' 2>/dev/null', $output, $code);
+            // Preserve per-commit missing-history/error handling if a batch fails.
+            if ($code !== 0) return;
+            $groups = array_fill_keys($commits, []);
+            $current = null;
+            foreach ($output as $line) {
+                if (isset($groups[$line])) { $current = $line; continue; }
+                if ($current !== null) $groups[$current][] = $line;
+            }
+            foreach ($groups as $sha => $lines) {
+                $this->sourceCommitFileManifestCache[$sha] = self::parseCommitFiles($lines);
+            }
+        } finally { @unlink($input); }
+    }
+
+    private static function parseCommitFiles(array $output): array
+    {
         $files = [];
         foreach ($output as $line) {
             $parts = explode("\t", $line);
@@ -912,8 +935,6 @@ final class ActivityService
                 'previous_path' => $previousPath,
             ];
         }
-
-        $this->sourceCommitFileManifestCache[$commitSha] = $files;
 
         return $files;
     }

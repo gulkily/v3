@@ -28,16 +28,21 @@ final class ActivityEvidenceIndex
         $rows = $pdo->query('SELECT * FROM activity WHERE evidence_json IS NULL ORDER BY source_commit_sha, id')->fetchAll(PDO::FETCH_ASSOC);
         $update = $pdo->prepare('UPDATE activity SET evidence_json = ? WHERE id = ?');
         if ($rows === []) return;
-        $signatures = $pdo->query('SELECT source_path, signature_status FROM reaction_signatures')->fetchAll(PDO::FETCH_KEY_PAIR);
-        $service = null;
-        $commit = null;
-        foreach ($rows as $row) {
-            // Keep one commit's paths in memory; sharing a bulk commit never repeats its Git work.
-            if ($service === null || $commit !== $row['source_commit_sha']) {
-                $service = new ActivityService(static fn (): PDO => $pdo, $root, $database);
-                $commit = $row['source_commit_sha'];
+        $signatures = [];
+        foreach (array_chunk(array_unique(array_column($rows, 'source_path')), 200) as $paths) {
+            $query = $pdo->prepare('SELECT source_path, signature_status FROM reaction_signatures WHERE source_path IN (' . implode(',', array_fill(0, count($paths), '?')) . ')');
+            $query->execute($paths);
+            $signatures += $query->fetchAll(PDO::FETCH_KEY_PAIR);
+        }
+        $groups = [];
+        foreach ($rows as $row) $groups[(string) $row['source_commit_sha']][] = $row;
+        // Bound manifest lifetime to a small commit batch, independent of total repository size.
+        foreach (array_chunk($groups, 32, true) as $batch) {
+            $service = new ActivityService(static fn (): PDO => $pdo, $root, $database);
+            $service->primeCommitEvidence(array_keys($batch));
+            foreach ($batch as $group) foreach ($group as $row) {
+                $update->execute([$service->buildIndexedEvidence($row, $signatures), $row['id']]);
             }
-            $update->execute([$service->buildIndexedEvidence($row, $signatures), $row['id']]);
         }
     }
 }

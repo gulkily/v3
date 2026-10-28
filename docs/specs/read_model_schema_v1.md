@@ -40,6 +40,8 @@ order is immaterial.
 
 ## Core read-model tables
 
+Version 36 bounds signature lookups to pending evidence sources and batches index-time commit file reads; prior-version startup rebuild is covered before serving either reader.
+
 Version 35 switches Forte initial/selected/compatibility details and category/commit counts to stored projections. RSS and full commit inspection retain their independent contracts; older schema startup rebuilds before the changed queries.
 
 Version 34 switches standard Activity to the indexed-evidence read contract; startup rebuilds prior versions before rendering it.
@@ -212,6 +214,7 @@ Feed of indexed activity entries (see `docs/specs/php_forum_rewrite_spec_v1.md`
 | `author_is_approved` | INTEGER | default 0 |
 | `source_path` | TEXT NULL | |
 | `source_commit_sha` | TEXT NULL | |
+| `evidence_json` | TEXT NULL | Internal compact tuple; NULL means unavailable/pending, explicit empty evidence for source-less events |
 
 Indexes: `activity_recent_idx (created_at DESC, post_id DESC, id DESC)`,
 `activity_post_id_idx (post_id)`, `activity_action_key_idx (action_key)`,
@@ -227,6 +230,36 @@ changed-value comparisons and the computed approval state for those profiles;
 they no longer refresh every profile's activity. Normal startup rebuilds older
 derived models before the changed query path runs. Table/index shapes are
 unchanged from schema 27.
+
+Additional indexes: `activity_pending_evidence_idx (source_commit_sha) WHERE evidence_json IS NULL`,
+`activity_page_idx (created_at DESC, COALESCE(action_key, 'local:' || id) DESC)`,
+`activity_date_key_idx (created_at, action_key, id)`, `activity_kind_key_idx (kind, action_key, id)`,
+`activity_label_key_idx (label, action_key, id)`.
+
+### `activity_counts`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `view` | TEXT PK | all/content/identity/bootstrap/approval/security/commits |
+| `total` | INTEGER NOT NULL | Including profile-name events |
+| `without_profile_names` | INTEGER NOT NULL | Excluding profile-name events |
+
+Transactional Activity insert/delete/update triggers maintain both variants.
+Target-post insert/delete/visibility changes adjust only affected content events;
+commit insert/delete triggers maintain commit totals. Security count reads still
+require live authorization. Internal tag membership preserves prior SQL/PHP semantics.
+
+### `activity_local_state`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `singleton` | INTEGER PK | One row, id 1 |
+| `events` | INTEGER NOT NULL | Number of source-less NULL-action-key events |
+| `revision` | TEXT NOT NULL | Random token replaced on local-event mutation |
+
+No local events means an empty cursor revision. Local-event changes/rebuilds expire
+old positions; canonical-only changes leave this token alone. All maintenance is
+inside the original mutation transaction.
 
 ### `commits`
 

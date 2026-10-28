@@ -70,3 +70,28 @@ Baseline data-layer p95: standard 7.457 ms, Forte 5.018 ms, detail 4.921 ms; 851
 - Notes: Stage 5 commit e6ee91a5a. HTTP/browser and signed mutation acceptance remain Stage 7; local data-layer timings do not establish production resolution.
 
 *— Codex · 2026-10-28 UTC*
+
+## Stage 7 - Acceptance and operations
+**Original estimate: 0.15**
+**Retrospective stage work: 0.20**
+
+- Changes: Added [operator recovery/capacity guidance](../../reference/activity_read_model_recovery.md), signed-key arrival/removal coverage, actual HTTP timing and phone/desktop missing-evidence/empty/rebuild-retry browser checks. Completed schema reference tables/indexes. Write-side signature lookups now touch pending sources only, and commit evidence uses batches of at most 32 commits instead of one Git process per commit. Final schema version 36; previous-version normal-startup regression retained.
+- Passed: Final projection/pagination/recovery/schema/retention regression run 54/54; import/approval/agent/handoff/signed-source/metadata checks 20/20 (overlap with other runs, not additive). Actual CLI rebuild on disposable canonical history; syntax checks for 18 changed PHP files; diff whitespace and plan-link checks.
+- Passed: Standard browser harness with JavaScript on/off, source/full-commit links, Next/Back and retry; 13 themes at 390/1280 with long values and no page overflow. Real Forte append/selection/commits preserved. Expanded harness verifies unavailable evidence, Reload after rebuild and empty-state recovery on phone/desktop. Forte parity harness passes keyboard, sort/category, retries and security boundaries. Phone screenshots visually inspected; physical devices were not tested.
+- HTTP performance: Twenty sequential local requests per route: standard warm p95 55.0 ms, Forte 31.0 ms, selected detail 13.0 ms (all ≤1 second). These include local HTTP/application work but not user network/paint latency. Final data-layer sample standard/Forte/detail 2.749/0.469/0.232 ms under concurrent test load; earlier quieter post-change sample 1.540/0.265/0.196 ms. Baseline data-layer 7.457/5.018/4.921 ms. No production load test.
+- Capacity: Same 2,222 ordinary local events rebuilt with baseline and current code into separate temporary databases: 4,132,864 → 5,955,584 bytes (+1,822,720, 820 bytes/event). Long-path/label bulk fixture +1,404/event exceeds the indicative range; ordinary data is within it. Rebuild sample baseline 1.634 s, first unbatched projection 5.951 s, after batching 4.073 s; these are single runs, not statistically controlled. Rebuild overhead is a real tradeoff; no claim that writes are free or faster. Existing family-wide reaction refresh remains unchanged except reusing its results for evidence.
+- Broader checks: LocalAppSmoke 152 run/151 passed; the archive filename reflection test fails identically at original baseline 7ef735dd. Write/registration/identity/seed checks 207 run/205 passed; both failures expect removed `Approved:</strong> yes` UI copy and reproduce identically at baseline. ReadModelBuilderTiming has one pre-existing phase assertion failure, reproduced at baseline line 31; its other three checks pass. Full repository suite was not run; do not describe these focused results as a full-suite pass.
+- Corrections: Updated two deliberately partial-schema test fixtures to the current core schema. New late-key test initially assumed invalid signed label events remain in the feed; existing policy excludes them, so the test now verifies valid→unavailable→restored evidence and rebuild exclusion, preserving policy. No policy/authorization/dependency change.
+- Notes: Stage 6 commit 1af723aca. Production rollout and the user's actual zenmemes.com cookie/account/device replay remain pending and unverified. All seven local stages are complete; production resolution is not claimed.
+
+## Closeout and study outcome
+
+Status: Locally implemented and verified; review, deployment, physical-device/production acceptance and maintainer comfortable-fit judgment pending.
+Scope: v3/C unchanged; original baseline 7ef735dd21b3329f18716bf3d5484baab2b2b71b, R1/P2, Codex single exposed rater. No new requests or dependencies; no todo.txt changes.
+Projection: Original/entry/Step 3 0.95 retained without in-cycle revision.
+Retrospective whole-cycle scope: 1.00, independently assessed; not measured labor or the stage sum. S1–S6 original/retrospective unchanged; S7 0.15 original/0.20 retrospective for broader acceptance and batching correction. No independent rating, active-work measurement, accepted-count increment or invented maintainer acceptance.
+Commits: Planning 2028f6d3a; S1 3e924f927; S2 d372c401a; S3 307cb5633; S4 bca0fa451; S5 e6ee91a5a; S6 1af723aca; S7 is the commit containing this closeout. Each stage includes its summary update. Final debug report follows in a separate log-only commit.
+Release condition: Follow normal authorized deployment/rebuild/static-refresh workflow, then replay both reported slow browsing paths. If intermittent latency persists, isolate shared startup/host contention and return to planning for any wider remediation. Visitors can retry or return to the first page after maintenance without clearing browser state.
+Dependency inventory: Zero additions/updates, package manifests/locks/vendor unchanged. Canonical formats unchanged; compact JSON is internal derived state only.
+
+*— Codex · 2026-10-28 UTC*
