@@ -104,9 +104,31 @@ try {
   await page.locator('details[data-role="account-menu"] summary').click();
   await scrollTo(page, 2000);
   assert.equal(await hidden(page), false, 'stays while the account menu is open');
+  // Bottom-pinned parts follow the visible bar: the post-send reply box sits on
+  // the bar while shown and at the screen bottom while hidden.
+  await page.evaluate(() => { document.activeElement.blur(); document.querySelector('details[data-role="account-menu"]').open = false; });
+  await page.evaluate(() => {
+    const panel = document.createElement('div');
+    panel.setAttribute('data-reply-panel', '');
+    panel.className = 'reply-panel-reading';
+    panel.style.position = 'fixed';
+    panel.textContent = 'Reply sent';
+    document.querySelector('.main').append(panel);
+  });
+  const dependents = () => page.evaluate(() => ({
+    offset: getComputedStyle(document.querySelector('[data-shell="app"]')).getPropertyValue('--app-tabbar-offset').trim(),
+    panel: getComputedStyle(document.querySelector('.reply-panel-reading')).bottom,
+  }));
+  await scrollTo(page, 1000);
+  await scrollTo(page, 1500);
+  assert.equal(await hidden(page), true);
+  assert.deepEqual(await dependents(), { offset: '0px', panel: '8px' }, 'hidden: reply box at the screen bottom');
+  await scrollTo(page, 1400);
+  assert.equal(await hidden(page), false);
+  assert.equal((await dependents()).panel, '64px', 'shown: reply box above the bar');
   assert.deepEqual(phone.errors, []);
   await phone.context.close();
-  console.log('PASS phone: hide, show, jitter, bounce, ends, focus, menu, reduced motion');
+  console.log('PASS phone: hide, show, jitter, bounce, ends, focus, menu, reduced motion, dependents');
 
   const sliding = await open();
   assert.notEqual(await sliding.page.evaluate(bar => getComputedStyle(document.querySelector(bar)).transitionDuration, bar), '0s', 'slides by default');

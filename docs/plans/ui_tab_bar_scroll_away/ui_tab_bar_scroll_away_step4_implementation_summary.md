@@ -32,3 +32,23 @@ Extended estimates: enabled
 - Estimate details: smaller than planned because the account menu needed no script changes; iOS uncertainty unchanged.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Dependents follow the visible bar
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - `public/assets/site.css`: new `--app-tabbar-offset`, equal to `--app-tabbar-height` while the bar is shown and to the safe-area inset while `data-tabbar="hidden"`. The post-send reply box (`.reply-panel-reading`) uses it.
+  - `public/assets/private_message_conversation.css`: the sticky private message composer uses it.
+  - `--app-tabbar-height` still sizes the bar, the `.main` padding and the account menu popovers (the bar never hides while that menu is open).
+- Verification:
+  - `tab_bar_scroll.mjs` extended: with the bar hidden the offset is `0px` (no inset in Chromium) and the reply box sits 8px from the screen bottom; shown, it sits at 64px (56px bar + 8px). Passes.
+  - Browser tests pass: `reply_viewport`, `reply_viewport_flow`, `private_message_chat_layout`.
+- Notes:
+  - Deviation: the plan proposed transitioning the dependents with the bar. They move instantly instead, because `reply_viewport.js` repositions the reply box from the visual viewport and its tests measure positions right after state changes; a transition would lag both. While the bar slides away the box drops ahead of it for 0.2s; when the bar returns the box rises first and the bar slides in beneath it.
+  - The private message composer was checked through the shared value only, not on a rendered conversation with the bar hidden; Stage 3 screenshots cover it.
+- Estimate details: as expected.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
