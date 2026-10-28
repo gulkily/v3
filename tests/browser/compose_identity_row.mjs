@@ -1,5 +1,6 @@
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/compose_identity_row.mjs
-// Every signed composer shows "Post as {name} · Change", correct before deferred scripts run.
+// Every signed composer shows "Post as {name} · Change", correct before deferred scripts run,
+// and Change renames in place without touching the draft.
 import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
@@ -15,9 +16,12 @@ const project = resolve(new URL('../..', import.meta.url).pathname);
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
 const keys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'reaction-browser' }], format: 'armored' });
 const fingerprint = (await globalThis.openpgp.readKey({ armoredKey: keys.publicKey })).getFingerprint().toUpperCase();
+const localKeys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'mouse' }], format: 'armored' });
+const localFingerprint = (await globalThis.openpgp.readKey({ armoredKey: localKeys.publicKey })).getFingerprint().toUpperCase();
 const root = await mkdtemp(join(tmpdir(), 'compose-identity-row-'));
 const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', SIGNED_REACTION_TEST_ROOT: root,
-  FORUM_SECRETS_PATH: join(root, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') };
+  FORUM_SECRETS_PATH: join(root, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3'),
+  FORUM_USERNAME_CHANGES_ENABLED: 'true' };
 const seeded = spawnSync('php', [join(project, 'tests/Support/signed_reaction_browser_fixture.php'), root], { input: JSON.stringify(keys), encoding: 'utf8', env });
 assert.equal(seeded.status, 0, seeded.stderr);
 const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening'); const port = socket.address().port; await new Promise(r => socket.close(r));
@@ -55,7 +59,7 @@ try {
   // Server HTML is the same for every viewer: the row is hidden and says guest.
   for (const composer of composers) {
     const html = await (await fetch(base + composer.path)).text();
-    assert.match(html, /<p class="meta compose-identity" data-compose-identity hidden>Post as <span class="compose-identity__name" data-role="compose-identity-name">guest<\/span>/, composer.name);
+    assert.match(html, /<p class="meta compose-identity" data-compose-identity hidden><span data-role="compose-identity-view">Post as <span class="compose-identity__name" data-role="compose-identity-name">guest<\/span>/, composer.name);
   }
   for (const state of states) {
     for (const width of [390, 1280]) {
@@ -92,6 +96,86 @@ try {
   await page.evaluate(() => { localStorage.setItem('forum_pki_username', 'kim'); window.dispatchEvent(new Event('forum:identity-changed')); });
   assert.equal(await page.locator('[data-compose-kind="reply"] [data-role="compose-identity-name"]').textContent(), 'kim');
   await context.close();
+  // Change from the composer.
+  const reply = '[data-compose-kind="reply"]';
+  const requests = page => { const seen = []; page.on('request', r => { const m = /\/api\/(prepare_identity|create_identity|link_identity|prepare_profile_name|finalize_profile_name|create_reply|prepare_reply)/.exec(r.url()); if (m) seen.push(m[1]); }); return seen; };
+  async function writer(storage) {
+    const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
+    await context.addInitScript(storage => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1'); for (const [k, v] of Object.entries(storage)) localStorage.setItem('forum_pki_' + k, v); }, storage);
+    const page = await context.newPage();
+    const errors = []; page.on('pageerror', e => errors.push(e.message));
+    const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); void d.dismiss(); });
+    await page.goto(base + '/threads/root-001');
+    const body = page.locator(reply + ' textarea[name="body"]');
+    await body.fill('A draft that must survive');
+    const row = page.locator(reply + ' [data-compose-identity]');
+    return { context, page, errors, dialogs, body, row, sent: requests(page) };
+  }
+  async function change(row, name) {
+    await row.getByRole('button', { name: 'Change' }).click();
+    await row.locator('[data-role="compose-identity-input"]').fill(name);
+    await row.getByRole('button', { name: 'Done' }).click();
+  }
+  const stored = (page, key) => page.evaluate(key => localStorage.getItem('forum_pki_' + key) || '', key);
+
+  // A new visitor names themselves: nothing is sent; the first reply registers under the new name.
+  const fresh = await writer({});
+  await change(fresh.row, 'Mouse');
+  await fresh.row.locator('[data-role="compose-identity-editor"]').waitFor({ state: 'hidden', timeout: 30000 });
+  assert.equal(await fresh.row.locator('[data-role="compose-identity-name"]').textContent(), 'mouse');
+  assert.equal(await stored(fresh.page, 'username'), 'mouse');
+  assert.equal(await stored(fresh.page, 'published_fingerprint'), '');
+  assert.deepEqual(fresh.sent, [], 'renaming a local key sends nothing');
+  assert.equal(await fresh.body.inputValue(), 'A draft that must survive');
+  await fresh.page.screenshot({ path: '/tmp/compose-identity-row-renamed-390.png' });
+  const created = fresh.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 30000 });
+  await fresh.page.locator(reply + ' .compose-form-actions > button[type="submit"]').click();
+  assert.match(await (await created).text(), /ok/);
+  assert.deepEqual(fresh.sent.filter(n => /identity/.test(n)), ['prepare_identity', 'create_identity'], 'the first reply registers once');
+  const freshFingerprint = (await stored(fresh.page, 'fingerprint')).toLowerCase();
+  assert.match(await (await fetch(base + '/api/get_profile?profile_slug=openpgp-' + freshFingerprint)).text(), /mouse/);
+  assert.deepEqual(fresh.dialogs, []); assert.deepEqual(fresh.errors, []);
+  await fresh.context.close();
+
+  // A registered key renames on the server, keeping its key; a failure shows in the row and keeps the draft.
+  const member = await writer({ username: 'reaction-browser', public_key: keys.publicKey, private_key: keys.privateKey, fingerprint, published_fingerprint: fingerprint });
+  await member.page.route('**/api/prepare_profile_name', route => route.abort());
+  await change(member.row, 'kim');
+  const error = member.row.locator('[data-role="compose-identity-error"]');
+  await error.waitFor({ state: 'visible', timeout: 30000 });
+  assert.equal(await error.textContent(), "Couldn't save your name. Check your connection and try again.");
+  assert.equal(await member.row.locator('[data-role="compose-identity-input"]').isVisible(), true, 'the editor stays open to retry');
+  await member.row.screenshot({ path: '/tmp/compose-identity-row-error-390.png' });
+  assert.equal(await member.body.inputValue(), 'A draft that must survive');
+  await member.page.unroute('**/api/prepare_profile_name');
+  await member.row.getByRole('button', { name: 'Done' }).click();
+  await member.row.locator('[data-role="compose-identity-editor"]').waitFor({ state: 'hidden', timeout: 30000 });
+  assert.equal(await member.row.locator('[data-role="compose-identity-name"]').textContent(), 'kim');
+  assert.equal(await stored(member.page, 'fingerprint'), fingerprint, 'a registered key is renamed, not replaced');
+  assert.ok(member.sent.includes('finalize_profile_name'));
+  assert.equal(await member.body.inputValue(), 'A draft that must survive');
+  // Where renaming is off, a registered key has no Change.
+  await member.page.evaluate(() => { window.forumBrowserIdentityOptions.usernameChangesEnabled = false; window.dispatchEvent(new Event('forum:identity-changed')); });
+  assert.equal(await member.row.getByRole('button', { name: 'Change' }).isVisible(), false);
+  assert.deepEqual(member.dialogs, []); assert.deepEqual(member.errors, []);
+  await member.context.close();
+
+  // A local key with Outbox work is registered and renamed rather than replaced, so queued items keep their signer.
+  const queued = await writer({ username: 'mouse', public_key: localKeys.publicKey, private_key: localKeys.privateKey, fingerprint: localFingerprint });
+  await queued.page.evaluate(() => new Promise((resolve, reject) => {
+    const open = indexedDB.open('forum-offline-outbox-v1', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('items', { keyPath: 'id' });
+    open.onsuccess = () => { const tx = open.result.transaction('items', 'readwrite'); tx.objectStore('items').put({ id: 'queued-1' }); tx.oncomplete = () => { open.result.close(); resolve(); }; tx.onerror = reject; };
+    open.onerror = reject;
+  }));
+  await change(queued.row, 'squeak');
+  await queued.row.locator('[data-role="compose-identity-editor"]').waitFor({ state: 'hidden', timeout: 30000 });
+  assert.equal(await stored(queued.page, 'fingerprint'), localFingerprint);
+  assert.equal(await stored(queued.page, 'username'), 'squeak');
+  assert.deepEqual(queued.sent, ['prepare_identity', 'create_identity', 'prepare_profile_name', 'finalize_profile_name']);
+  assert.deepEqual(queued.dialogs, []); assert.deepEqual(queued.errors, []);
+  await queued.context.close();
+
   // Without JavaScript the row stays hidden and the composer is unchanged.
   const noScript = await browser.newContext({ javaScriptEnabled: false });
   const plain = await noScript.newPage();
@@ -99,6 +183,6 @@ try {
   assert.equal(await plain.locator('[data-compose-identity]').isVisible(), false);
   assert.equal(await plain.locator('textarea[name="body"]').isVisible(), true);
   await noScript.close();
-  console.log('PASS compose identity row: six composers × three key states × phone/desktop at parse, static server HTML, live rename, no JavaScript');
+  console.log('PASS compose identity row: six composers × three key states × phone/desktop at parse, static server HTML, live rename, local Change then first reply, registered rename with failure/Retry, renaming off, Outbox keeps signer, no JavaScript');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

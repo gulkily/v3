@@ -249,6 +249,7 @@ final class TemplateRenderer
             'themeLegacyAliases' => ThemeRegistry::LEGACY_ALIASES,
             'approvedMembersOnlyEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'automaticGuestKeypairEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED),
+            'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),

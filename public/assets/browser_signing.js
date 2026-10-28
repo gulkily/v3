@@ -2694,6 +2694,83 @@
     await privateSiteAuth.authenticate();
   }
 
+  // Renames a registered key with a signed profile-name record; its posts move to the new name.
+  async function saveRegisteredName(chosen, root, statusNode) {
+    await ensureActionIdentity(root || null, statusNode || null);
+    const identity = currentAuthorIdentityId();
+    const postName = async (endpoint, values) => {
+      const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
+      const result = await response.json();
+      if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
+      return result;
+    };
+    const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
+    const signature = await signCanonicalRecord(prepared.canonical_record);
+    const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
+      record_path: prepared.record_path, author_identity_id: identity,
+      canonical_record: prepared.canonical_record, detached_signature: signature });
+    if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
+    localStorage.setItem(storageKeys.username, result.username);
+    window.dispatchEvent(new Event("forum:identity-changed"));
+    return result.username;
+  }
+
+  // Whether the offline Outbox holds anything. Reads the database without creating it.
+  function outboxHasItems() {
+    if (typeof indexedDB === "undefined" || !indexedDB) {
+      return Promise.resolve(false);
+    }
+    return new Promise(function (resolve) {
+      let request;
+      try {
+        request = indexedDB.open("forum-offline-outbox-v1");
+      } catch (error) {
+        resolve(false);
+        return;
+      }
+      request.onupgradeneeded = function () {
+        request.transaction.abort();
+      };
+      request.onerror = function () { resolve(false); };
+      request.onsuccess = function () {
+        const database = request.result;
+        try {
+          const count = database.transaction("items", "readonly").objectStore("items").count();
+          count.onsuccess = function () { database.close(); resolve(count.result > 0); };
+          count.onerror = function () { database.close(); resolve(false); };
+        } catch (error) {
+          database.close();
+          resolve(false);
+        }
+      };
+    });
+  }
+
+  // The composer's Change. A key kept in this browser is replaced by one under the new name, sending
+  // nothing; one with Outbox work, or a registered key, is renamed on the server instead.
+  async function changeIdentityName(chosen) {
+    const username = normalizeUsername(chosen);
+    if (hasBrowserKeypair() && username === (localStorage.getItem(storageKeys.username) || "guest")) {
+      return username;
+    }
+    const usernameChangesEnabled = (window.forumBrowserIdentityOptions || {}).usernameChangesEnabled === true;
+    if (!isRegisteredIdentity() && !(hasBrowserKeypair() && await outboxHasItems())) {
+      await generateBrowserKey(null, username);
+      window.dispatchEvent(new Event("forum:identity-changed"));
+      return username;
+    }
+    if (!usernameChangesEnabled) {
+      throw new Error("Names can't be changed on this site.");
+    }
+    try {
+      return await saveRegisteredName(username);
+    } catch (error) {
+      // A dropped connection surfaces as a bare TypeError ("Failed to fetch"); say what to do instead.
+      throw error instanceof TypeError ? new Error("Couldn't save your name. Check your connection and try again.") : error;
+    }
+  }
+
   async function ensureComposeIdentity(root, statusNode, timing) {
     await ensureActionIdentity(root, statusNode, { timing: timing });
   }
@@ -2906,26 +2983,10 @@
       if (!hasBrowserKeypair()) {
         throw new Error("Set up this browser first.");
       }
-      await ensureActionIdentity(root, statusNode);
-      const identity = currentAuthorIdentityId();
-      const postName = async (endpoint, values) => {
-        const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
-        const result = await response.json();
-        if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
-        return result;
-      };
-      const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
-      const signature = await window.ForumBrowserSigning.signCanonicalRecord(prepared.canonical_record);
-      const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
-        record_path: prepared.record_path, author_identity_id: identity,
-        canonical_record: prepared.canonical_record, detached_signature: signature });
-      if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
-      localStorage.setItem(storageKeys.username, result.username);
-      root.dataset.authenticatedUsername = result.username;
+      const username = await saveRegisteredName(chosen, root, statusNode);
+      root.dataset.authenticatedUsername = username;
       if (nameEditor) nameEditor.hidden = true;
       renderSavedState(root);
-      window.dispatchEvent(new Event("forum:identity-changed"));
       setStatus(statusNode, "Username saved. Your key and approval are unchanged.", "ok");
     }
 
@@ -3910,6 +3971,7 @@
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
+  window.ForumBrowserSigning.changeIdentityName = changeIdentityName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;

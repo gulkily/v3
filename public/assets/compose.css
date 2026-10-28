@@ -86,6 +86,31 @@
   color: inherit;
   text-decoration: underline;
 }
+.compose-identity__editor {
+  display: flex;
+  flex: 1 1 100%;
+  gap: 0.5rem;
+  align-items: center;
+}
+.compose-identity__editor[hidden],
+.compose-identity [hidden] {
+  display: none;
+}
+.compose-identity__editor input {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+.compose-identity__editor button {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  white-space: nowrap;
+}
+.compose-identity__error {
+  flex: 1 1 100%;
+  color: var(--status-error);
+}
 /* With the keyboard open the docked reply panel keeps the row to one text line,
    and drops it when a landscape keyboard leaves room for the editor and actions only. */
 .reply-viewport-active .compose-identity,

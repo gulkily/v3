@@ -19,7 +19,7 @@ Extended estimates: enabled
 | 1 - Keys stay local; no dialogs | 0.15 | done |
 | 2 - One registered check; guests shown as guests | 0.15 | done |
 | 3 - Composer name row on first paint | 0.15 | done |
-| 4 - Change the name from the composer | 0.12 | pending |
+| 4 - Change the name from the composer | 0.12 | done |
 | 5 - Creating your account, failures and Retry | 0.12 | pending |
 | 6 - Other signed paths and members-only sites | 0.10 | pending |
 | 7 - Sites, themes, copy and docs | 0.10 | pending |
@@ -103,5 +103,34 @@ Stage estimates are not summed.
 - Notes:
   - The Forte row and every theme beyond the four above are checked in Stage 7.
   - The first-paint check uses the document's parse point (DOMContentLoaded capture). That is the moment deferred scripts would otherwise change the page.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Change the name from the composer
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.14**
+
+- Changes:
+  - `compose_identity_row.php`: Change swaps the row for a name field and Done, in place. Enter applies and Escape cancels. This is not a nested form: Enter is intercepted so it never submits the post. Errors show in the row, and the editor stays open to retry. The draft is never touched. If the signing tools aren't loaded yet, Done loads them through `ForumLazyComposeSigning` first. Change is hidden for a registered key where renaming is off; `forumBrowserIdentityOptions.usernameChangesEnabled` is new in `layout.php` and `TemplateRenderer`.
+  - `browser_signing.js`: Account's rename is moved into a shared `saveRegisteredName()`, and Account keeps its own status and editor handling. New `changeIdentityName()` (on `ForumBrowserSigning`):
+    - a local or missing key is replaced by a new local key under the name, sending nothing;
+    - a registered key is renamed on the server;
+    - a local key with anything in the Outbox is registered and then renamed, so queued signed items keep their signer. `outboxHasItems()` reads the Outbox database and aborts any upgrade, so it never creates the database.
+    - A dropped connection shows "Couldn't save your name. Check your connection and try again." instead of "Failed to fetch".
+  - `compose.css`: editor and error styles (Done doesn't wrap; the error uses `--status-error`).
+- Verification:
+  - `tests/browser/compose_identity_row.mjs` (extended, username changes on) **passed**:
+    - A new visitor writes a draft, then Change → Mouse → Done: the row shows mouse, nothing is sent, the key is unregistered and the draft is intact. The first reply then sends `prepare_identity` + `create_identity` once and posts, and the server profile has mouse.
+    - A registered key: rename with `prepare_profile_name` blocked shows the error in the row, the editor stays open and the draft is kept. Done again saves kim, with the same fingerprint and the `finalize_profile_name` sent.
+    - With renaming off, the registered key has no Change.
+    - A local key with an Outbox item: Change registers and then renames (`prepare_identity`, `create_identity`, `prepare_profile_name`, `finalize_profile_name`) and keeps the fingerprint.
+    - No dialogs or page errors anywhere. Screenshots of the renamed row and the error state (390px) were reviewed.
+  - Browser tests passed: `account_states` (shared rename), `invite_zero_click`, `reply_viewport`, `first_post_identity`, `board_compose_focus`, `reply_compose_focus`, `reply_actions_layout` and `compose_disclosure`.
+  - `BrowserSigningNormalizationTest` 82/82 passed, `AccountKeyPageHooksTest` 6/6 passed, and `LocalAppSmokeTest` 153/154 passed (the same unrelated failure).
+- Notes:
+  - Retrospective 0.14 against the original 0.12, because of the Outbox read that must not create the database, and the lazy-loading path for Done.
+  - The error in the row is plain text in the theme's error color. Stage 5 adds Retry for creation failures at Post and Like; the row's own retry is Done again.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
