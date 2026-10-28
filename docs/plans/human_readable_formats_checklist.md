@@ -44,11 +44,12 @@ actual user evidence or a clarified human-facing contract changes an input.
 - [x] Record the rule in `CONTRIBUTING.md` and make it discoverable in `AGENTS.md`.
 - [x] Identify format consumers and separate human-facing conversions from machine data.
 - [x] Record the maintainer's retraction scope: ignore previous retractions; no migration or backward-compatibility work. This exception does not automatically apply to other record families.
+- [x] Record the separate 2026-10-27 maintainer decision for F02: abandon existing JSON source/label removal records; no migration or backward-compatible reader is required for their replacement. The project is young and not meaningfully in use. This exception is specific to F02 and does not extend to other record families or backups. It records the compatibility decision, not implementation or physical file deletion.
 
 ## Canonical records — convert
 
 - [x] **F01 · Priority 11/12 (C/E/F 3/2/3) — Retraction acceptance.** Replaced JSON with a signed text request, detached signature and separate text acceptance receipt. Preserved new-request signing, actor/author attribution, structure, deletion/retry, rebuild, import protection and cleanup. Evidence: [AcceptedRetraction](../../src/ForumRewrite/Canonical/AcceptedRetraction.php), [source paths](../../src/ForumRewrite/Canonical/SourcePathValidator.php), [import planner](../../src/ForumRewrite/Import/ContentImportPlanner.php), [sweep](../../src/ForumRewrite/Retraction/RetractionSweep.php). [Current assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md). Existing retractions need not be converted or supported.
-- [ ] **F02 · Priority 11/12 (C/E/F 3/2/3) — Source/label removal acceptance.** `records/post-removals/*.json` is durable evidence and visible through source routes. Convert metadata, repeated label bindings and conversation structure to readable records; retain source hashes and local acceptance authority. Evidence: [LabelRemoval](../../src/ForumRewrite/Canonical/LabelRemoval.php), [schema contract](../specs/read_model_schema_v1.md).
+- [ ] **F02 · Priority 11/12 (C/E/F 3/2/3) — Source/label removal acceptance.** `records/post-removals/*.json` is durable evidence and visible through source routes. Convert metadata, repeated label bindings and conversation structure to readable records; retain source hashes and local acceptance authority for new records. Existing JSON records may be abandoned under the 2026-10-27 maintainer decision above; no migration or backward-compatibility work is required. Evidence: [LabelRemoval](../../src/ForumRewrite/Canonical/LabelRemoval.php), [schema contract](../specs/read_model_schema_v1.md).
 - [ ] **F03 · Priority 11/12 (C/E/F 3/2/3) — Approval acceptance receipts.** `records/approval-acceptances/*.json` contains nested reviewed context and is source-readable. Use named text fields; preserve grant/context hash bindings and the distinction between a signed grant and local acceptance. Decide historical digest compatibility explicitly before changing serialization. Evidence: [ApprovalAcceptance](../../src/ForumRewrite/Security/ApprovalAcceptance.php), [receipt specification](../specs/approval_acceptance_record_v1.md).
 - [ ] **F04 · Priority 9/12 (C/E/F 3/2/1) — Legacy timestamp companions.** `records/post-timestamps/*.json` contains three scalar fields. Replace with text headers and retain the exact original-record hash binding. Evidence: [LegacyPostTimestamp](../../src/ForumRewrite/Canonical/LegacyPostTimestamp.php), [post specification](../specs/canonical_post_record_v1.md).
 - [ ] **F05 · Priority 10/12 (C/E/F 3/2/2) — Agent response metadata inside posts.** `Agent-Response: {…}` embeds JSON in canonical signed replies. Replace with individually named headers; update post parsing, response/expansion writers and offline/read-model consumers without losing attribution or version relationships. Explicitly define existing signed-record handling; do not rewrite historical signed bytes merely to rename metadata fields. Evidence: [AgentResponseMetadata](../../src/ForumRewrite/Canonical/AgentResponseMetadata.php), [LocalWriteService](../../src/ForumRewrite/Write/LocalWriteService.php), [PostRecordParser](../../src/ForumRewrite/Canonical/PostRecordParser.php).
@@ -79,6 +80,28 @@ an internal serialization, not the readable outer backup format. QDB import JSON
 is an intermediate pipeline format. Dependency manifests, third-party datasets,
 test fixtures and frozen study evidence are not canonical platform record formats.
 Do not rewrite exact protocol diagnostics or frozen evidence to satisfy this audit.
+
+## Compatibility simplification recommendations — 2026-10-27
+
+Recorded at the maintainer's request. These recommendations guide future scoped
+planning; they do not approve implementation, deletion of existing data, or blanket
+abandonment of other formats. F02's explicit compatibility exception above remains
+separate. No additional audit item is complete and priority scores are unchanged.
+
+| Items | Recommended approach | Conditions and retained requirements |
+| --- | --- | --- |
+| F06 — Import source aliases | Require manual recreation in the new readable configuration format; avoid an automatic migration or legacy reader. | Update examples and errors so operators can recreate their mappings. |
+| F07 — Fastmod rubric selections | Prefer recreation through the supported UI over migrating the old JSON selection file. | Confirm loss of the current selection is acceptable; preserve ordering and a usable recovery path. |
+| F08 — Import review reports | Emit the readable report for future runs; leave old reports as historical artifacts. | Keep private resumable import journals separate and preserve resume behavior. No retrospective report conversion is recommended. |
+| F10–F12 — CLI output | Change future human-facing output directly; no stored-record migration is needed. | Preserve existing explicit machine modes and provide explicit JSON output where needed for automation. |
+| F03 — Approval acceptance receipts | Consider abandoning old receipts only if the associated identities/grants can also be discarded or re-established. | Decide explicitly whether existing account/key approval evidence must survive; preserve signed grant/context bindings for retained records. |
+| F04 — Legacy timestamp companions | Consider abandoning old companions only if their dependent posts can be discarded or reimported with valid timestamp evidence. | Removing companions while retaining dependent legacy posts can break loading. Establish disposability or a reimport path first. |
+| F05 — Agent response metadata | Consider supporting only new headers if old agent replies and their dependent relationships can be discarded or regenerated. | Do not rewrite historical signed replies in place; preserve attribution and version relationships for retained records. |
+| F09 — Backup/archive inventories | Make old-archive support a separate decision; no abandonment recommendation yet. | Dropping old formats gives up restoration from affected archives. F01/F02 exceptions do not authorize this. |
+
+For F03–F05, decide the fate of the underlying records before treating their JSON
+metadata as disposable. R01–R03 remain boundary investigations; this recommendation
+does not turn their internal state or signed protocols into conversion targets.
 
 ## Closing each conversion
 
