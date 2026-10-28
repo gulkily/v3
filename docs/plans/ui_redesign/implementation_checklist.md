@@ -148,10 +148,12 @@ Mockups: `compose-thread.html`, `account.html`. Templates: `pages/compose_thread
 `partials/thread_compose_form.php`, `pages/account_key.php`, plus the browser
 signing scripts. Depends on cycle 4.
 
-- [ ] Name chosen inline (composer and account page); no `window.prompt` or `window.confirm`.
-- [ ] Key generation starts when the composer or account page opens, so Post only signs and sends.
-- [ ] A visible state while the key is created ("Creating your account…"), with recovery if it fails.
+- [x] Name chosen inline (composer and account page); no `window.prompt` or `window.confirm`.
+- [ ] ~~Key generation starts when the composer or account page opens, so Post only signs and sends.~~ Revised in Step 1: the key is made in the browser ahead of time, but the server learns it with the first post, reply or Like (one registration, about 0.2 s locally on a ZenMemes-sized copy). G2, the server accepting the key with the first action itself, is the follow-up.
+- [x] A visible state while the key is created ("Creating your account…"), with recovery if it fails.
 - Done when: a new visitor can write and publish a first post with no browser dialogs and no long wait after pressing Post.
+
+Built 2026-10-28 on `feat/ui-first-post-identity` for all sites (not merged); see the [Step 4 summary](../ui_first_post_identity/ui_first_post_identity_step4_implementation_summary.md). Readers no longer register keys. The real-iPhone check on ZenMemes is pending with the user.
 
 ### Cycle 6: `ui_composers`
 

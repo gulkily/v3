@@ -22,7 +22,7 @@ Extended estimates: enabled
 | 4 - Change the name from the composer | 0.12 | done |
 | 5 - Creating your account, failures and Retry | 0.12 | done |
 | 6 - Other signed paths and members-only sites | 0.10 | done |
-| 7 - Sites, themes, copy and docs | 0.10 | pending |
+| 7 - Sites, themes, copy and docs | 0.10 | done |
 | 8 - Acceptance and closeout | 0.06 | pending |
 
 Stage estimates are not summed.
@@ -178,5 +178,31 @@ Stage estimates are not summed.
   - `private_message_list_browser` times out on `main` too, so it is not caused by this change.
 - Notes:
   - Messaging with a never-registered key isn't a normal path (messages need an approved key). The code path registers first, as above.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Sites, themes, copy and docs
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.11**
+
+- Changes:
+  - `paned_toolbar.php`: a small inline script after Forte's identity link shows a local key's name, logged-out styling and the Account link before first paint. This removes the "Guest" → name swap noted in Stage 2. `toolbar_identity_status.js` still keeps it current afterwards, and server HTML is unchanged.
+  - `docs/reference/authentication_modes.md`: keys stay in the browser until the first signed action, with no background publishing and no dialogs. Covers naming through the composer row or Account, how unregistered and registered keys are renamed, and that members-only sign-in still registers first. The "not yet published" viewer-state row is updated.
+  - `ui_copy_audit_checklist.md`: new entry "First post without dialogs (all sites)" listing the removed and added strings.
+  - `ui_redesign/implementation_checklist.md`, cycle 5: the inline-name and creation-state items are ticked. The "Post only signs and sends" item is marked revised by the Step 1 decision, with G2 as the follow-up. Only the cycle 5 lines are in this commit; the cycle 3 pause note recorded as separate work in Step 1 stays uncommitted.
+  - No theme fixes were needed. No navigation destination changed, so `theme-nav-icons.css` is untouched.
+- Verification:
+  - Theme matrix (scratchpad script `theme_matrix.mjs`, not committed), 236 captures. It covered every permitted theme plus Auto on ZenMemes (15), Chouse, MIT Rap Club and QDB (16 each), 59 combinations, using board quick compose, or QDB Add, with a local key named mouse. At 1280px it captured the row; at 390px the row, the open editor, and a forced `create_identity` failure with Retry. Automatic checks (row visible, exact text "Post as mouse · Change", no page overflow, no page errors, the resolved theme matching the requested one) found **no problems**. Contact sheets for ZenMemes and QDB (failure + Retry) and Chouse (editor) were reviewed: messages are readable, the error color is clear and nothing overlaps. In themes that style every button (Chicago, Word 97, Sticker, Whitehot, Midnight), Change and Retry take that theme's button look, as Account's Change does.
+  - `first_post_identity.mjs` (extended) **passed**. With `toolbar_identity_status.js` blocked, Forte's toolbar still shows mouse and `/account/key/`, set by the inline script alone; the check fails without it. The server HTML still says Guest.
+  - **Full suite, run once:** `php tests/run.php` ran 1616 tests: 1613 passed, 3 failed. All three were already failing before this branch, and none touches identity code:
+    - `LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp` (failing since 2026-10-27)
+    - `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets` (since 2026-10-27)
+    - `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` (since 2026-10-18)
+  - The browser suites are not part of `tests/run.php`; they ran per stage above.
+- Notes:
+  - Correction to Stage 3's note: a capture-phase DOMContentLoaded listener runs after deferred scripts' top-level code but before their DOMContentLoaded handlers. The composer row check still holds, because nothing deferred touches the row at top level. The toolbar check above blocks the deferred script instead.
+  - Real phones and production were not verified. The real-iPhone check stays pending (Stage 8).
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

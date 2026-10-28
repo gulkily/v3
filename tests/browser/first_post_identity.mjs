@@ -56,6 +56,14 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-paned-identity-label]').textContent === (localStorage.getItem('forum_pki_username') || 'Guest'));
     return { label: await node.locator('[data-paned-identity-label]').textContent(), href: await node.getAttribute('href'), loggedIn: await node.getAttribute('data-identity-logged-in') }; };
   assert.deepEqual(await toolbar(), { label: 'mouse', href: '/account/key/', loggedIn: '0' });
+  // Right before first paint: with the deferred toolbar script blocked, the inline script alone shows the name.
+  await page.route(/toolbar_identity_status/, route => route.abort());
+  await page.goto(base + '/forte');
+  assert.equal(await page.locator('[data-paned-identity-label]').textContent(), 'mouse');
+  assert.equal(await page.locator('[data-paned-identity-status]').getAttribute('href'), '/account/key/');
+  await page.unroute(/toolbar_identity_status/);
+  const parsed = await page.evaluate(async () => { const response = await fetch(location.href); const doc = new DOMParser().parseFromString(await response.text(), 'text/html'); return doc.querySelector('[data-paned-identity-label]').textContent; });
+  assert.equal(parsed, 'Guest', 'server HTML stays the same for every viewer');
   assert.deepEqual(identityRequests, [], 'showing the name sends nothing');
   // The key itself was made as guest; renaming a local key is the composer's job (Stage 4).
   await page.evaluate(() => localStorage.setItem('forum_pki_username', 'guest'));
