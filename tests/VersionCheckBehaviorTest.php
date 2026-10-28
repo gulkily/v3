@@ -4,6 +4,48 @@ declare(strict_types=1);
 
 final class VersionCheckBehaviorTest
 {
+    public function testThreadNavigationHintsAreConsumedWithoutLosingAnchorOrHistoryState(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const source = require('fs').readFileSync(process.argv[1], 'utf8');
+const vm = require('vm');
+function load(path, pending, current) {
+  const store = {forum_pending_app_version: pending};
+  const replacements = [], redirects = [];
+  const state = {saved: 'history'};
+  const window = {
+    location: {href: 'https://example.test' + path, origin: 'https://example.test',
+      replace(url) {redirects.push(url);}},
+    history: {state, replaceState(value, title, url) {replacements.push({value, url});}},
+    sessionStorage: {getItem(k) {return store[k];}, removeItem(k) {delete store[k];}},
+    fetch() {return Promise.resolve({ok: true, text: () => Promise.resolve(current)});},
+    setTimeout() {}, addEventListener() {}
+  };
+  const document = {addEventListener() {}, querySelector(selector) {
+    return selector === 'meta[name="app-version"]' ? {getAttribute: () => current} : null;
+  }};
+  vm.runInNewContext(source, {window, document, URL});
+  return {replacements, redirects, pending: store.forum_pending_app_version || ''};
+}
+process.stdout.write(JSON.stringify({
+  created: load('/threads/thread-001?created_post_id=thread-001&__v=target', '', 'current'),
+  reply: load('/threads/thread-001?page=2&created_post_id=reply-002&__v=target#post-reply-002', 'target', 'newer'),
+  stale: load('/threads/thread-001?created_post_id=thread-001', 'target', 'old'),
+  clean: load('/threads/thread-001#post-reply-002', '', 'current'),
+  forte: load('/forte?selected=thread-001&created_post_id=reply-002', '', 'current')
+}));
+NODE);
+        assertSame('https://example.test/threads/thread-001', $result['created']['replacements'][0]['url']);
+        assertSame(['saved' => 'history'], $result['created']['replacements'][0]['value']);
+        assertSame('https://example.test/threads/thread-001?page=2#post-reply-002', $result['reply']['replacements'][0]['url']);
+        assertSame('', $result['reply']['pending']);
+        assertSame([], $result['reply']['redirects']);
+        assertSame([], $result['stale']['replacements']);
+        assertSame(['https://example.test/threads/thread-001?created_post_id=thread-001&__v=target'], $result['stale']['redirects']);
+        assertSame([], $result['clean']['replacements']);
+        assertSame([], $result['forte']['replacements']);
+    }
+
     public function testDocsVersionStateDoesNotConsumeOrOverwriteForumPendingUpdates(): void
     {
         $result = $this->runScript(<<<'NODE'
