@@ -1,4 +1,4 @@
-<p class="meta compose-identity" data-compose-identity hidden><span data-role="compose-identity-view">Post as <span class="compose-identity__name" data-role="compose-identity-name">guest</span> · <button type="button" class="compose-identity__change" data-action="change-compose-name">Change</button></span><span class="compose-identity__editor" data-role="compose-identity-editor" hidden><input type="text" aria-label="Name" data-role="compose-identity-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="64"><button type="button" data-action="apply-compose-name">Done</button></span><span class="compose-identity__error" data-role="compose-identity-error" role="alert" hidden></span></p>
+<p class="meta compose-identity" data-compose-identity hidden><span data-role="compose-identity-view">Post as <span class="compose-identity__name" data-role="compose-identity-name">guest</span><span data-role="compose-identity-change"> · <button type="button" class="compose-identity__change" data-action="change-compose-name">Change</button></span></span><span class="compose-identity__editor" data-role="compose-identity-editor" hidden><input type="text" aria-label="Name" data-role="compose-identity-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="64"><button type="button" data-action="apply-compose-name">Done</button></span><span class="compose-identity__error" data-role="compose-identity-error" role="alert" hidden></span></p>
 <script>
   // Set before first paint from the name saved in this browser; without JavaScript the row stays hidden.
   // Change edits the name in place; Done applies it through the signing tools, leaving the draft alone.
@@ -16,8 +16,8 @@
       var fingerprint = stored('forum_pki_fingerprint').trim().toUpperCase();
       var registered = fingerprint !== '' && stored('forum_pki_published_fingerprint').trim().toUpperCase() === fingerprint;
       row.querySelector('[data-role="compose-identity-name"]').textContent = stored('forum_pki_username') || 'guest';
-      // A registered name changes only where the site allows renaming.
-      change.hidden = registered && !(window.forumBrowserIdentityOptions || {}).usernameChangesEnabled;
+      // A registered name changes only where the site allows renaming; the divider goes with Change.
+      row.querySelector('[data-role="compose-identity-change"]').hidden = registered && !(window.forumBrowserIdentityOptions || {}).usernameChangesEnabled;
     }
     function edit(open) {
       view.hidden = open;

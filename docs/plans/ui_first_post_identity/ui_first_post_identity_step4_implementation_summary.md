@@ -254,3 +254,11 @@ Stage estimates are not summed.
 - Notes: I don't know which cause the user hit, so both are fixed. The full suite was not re-run for this fix: it touches only browser scripts, which `tests/run.php` covers through the unit tests above.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Fix - divider without Change
+
+- Request (2026-10-28): "divider is still visible even when no change button: Post as ok ·". Corrective, in scope (Stage 3/4 row).
+- Change: in `compose_identity_row.php` the " · " now shares an element with Change (`data-role="compose-identity-change"`), so both hide together where renaming is off for a registered key.
+- Verification: `first_post_identity.mjs` (the row reads exactly "Post as pip" with Change hidden) and `compose_identity_row.mjs` **passed**.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

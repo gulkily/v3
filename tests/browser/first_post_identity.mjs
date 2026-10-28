@@ -133,6 +133,7 @@ try {
     await p.waitForFunction(() => localStorage.getItem('forum_pki_published_fingerprint') === localStorage.getItem('forum_pki_fingerprint'));
     await p.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('Another reply');
     assert.equal(await row.getByRole('button', { name: 'Change' }).isVisible(), false, 'no Change for a registered key where renaming is off');
+    assert.equal((await row.innerText()).replace(/\s+/g, ' ').trim(), 'Post as pip', 'no divider without Change');
     assert.deepEqual(seen, { dialogs: [], errors: [] });
     await ctx.close();
   }
