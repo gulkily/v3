@@ -50,6 +50,17 @@ try {
   assert.equal(await page.evaluate(() => localStorage.getItem('forum_pki_published_fingerprint') || ''), '');
   assert.equal(await page.evaluate(() => localStorage.getItem('forum_pki_username')), 'guest');
 
+  // A local key named mouse is a guest under that name: the Forte toolbar shows the name without a profile link.
+  await page.evaluate(() => localStorage.setItem('forum_pki_username', 'mouse'));
+  const toolbar = async () => { await page.goto(base + '/forte'); const node = page.locator('[data-paned-identity-status]');
+    await page.waitForFunction(() => document.querySelector('[data-paned-identity-label]').textContent === (localStorage.getItem('forum_pki_username') || 'Guest'));
+    return { label: await node.locator('[data-paned-identity-label]').textContent(), href: await node.getAttribute('href'), loggedIn: await node.getAttribute('data-identity-logged-in') }; };
+  assert.deepEqual(await toolbar(), { label: 'mouse', href: '/account/key/', loggedIn: '0' });
+  assert.deepEqual(identityRequests, [], 'showing the name sends nothing');
+  // The key itself was made as guest; renaming a local key is the composer's job (Stage 4).
+  await page.evaluate(() => localStorage.setItem('forum_pki_username', 'guest'));
+  await page.goto(base + '/threads/root-001');
+
   // First Like registers once, then votes; a second Like only signs and sends.
   async function like(selector) {
     const button = page.locator(selector).first();
@@ -69,6 +80,8 @@ try {
   assert.ok(await postLike.count(), "fixture thread has a post to like");
   await like('[data-action="apply-post-tag"][data-tag="like"]');
   assert.deepEqual(identityRequests, ['/api/prepare_identity', '/api/create_identity'], 'later actions do not register again');
+  const registered = await toolbar();
+  assert.deepEqual(registered, { label: 'guest', href: '/forte/user/guest', loggedIn: '1' });
 
   assert.deepEqual(dialogs, [], 'no browser dialog may open');
   assert.deepEqual(errors, []);

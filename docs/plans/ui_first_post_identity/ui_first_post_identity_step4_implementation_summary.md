@@ -17,7 +17,7 @@ Extended estimates: enabled
 | Stage | Original stage work | Status |
 | --- | --- | --- |
 | 1 - Keys stay local; no dialogs | 0.15 | done |
-| 2 - One registered check; guests shown as guests | 0.15 | pending |
+| 2 - One registered check; guests shown as guests | 0.15 | done |
 | 3 - Composer name row on first paint | 0.15 | pending |
 | 4 - Change the name from the composer | 0.12 | pending |
 | 5 - Creating your account, failures and Retry | 0.12 | pending |
@@ -55,5 +55,30 @@ Stage estimates are not summed.
   - The `forum_pki_compose_prompt_cancelled` key no longer has a writer. It stays in backup and clear handling so older backups restore unchanged.
   - The production canary's simulated name prompt (`tests/browser/OpenPgpProductionCanaryTest.mjs`) is left as defensive coverage.
   - Retrospective 0.17 against the original 0.15, because of the extra public sign-in path and its fixture updates.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - One registered check; guests shown as guests
+
+**Original estimate: 0.15**
+
+**Retrospective: 0.14**
+
+- Changes:
+  - `browser_signing.js`: new `isRegisteredIdentity()` (a key whose stored published fingerprint matches its fingerprint), exported on `__forumBrowserIdentity`. Identity-hint syncing skips unregistered keys, so the hint cookie never names a key the server doesn't have. The profile link stays hidden for an unregistered key.
+  - Account Continue: a registered key is renamed as in cycle 4. Otherwise (no key, or a local key) the page makes a new local key under the typed name and sends nothing. On members-only sites it still registers, because sign-in needs it.
+  - `account_key.php`: the page script's `isRegistered()` is true when the stored published fingerprint matches, or when the server's viewer identity is this key. It runs before first paint like cycle 4's state. An unregistered key shows the guest card, now "You’re posting as {name}", and the profile link stays hidden.
+  - `toolbar_identity_status.js` (Forte): for a local key, the toolbar shows the name without the filled icon and links to Account instead of a profile.
+- Verification:
+  - `tests/browser/account_states.mjs` (updated) **passed**. A fresh guest naming "Alice" stays a guest, shows "You’re posting as alice", sends no identity or hint request and opens no dialog. A local key named mouse shows the guest card at parse time. Continue with kim replaces the key (new fingerprint) and sends nothing. The join hint now appears for a registered waiting key, not for a local one. The original cycle 4 checks still pass.
+  - `tests/browser/first_post_identity.mjs` (extended) **passed**. The Forte toolbar shows `mouse`, `/account/key/` and logged-out styling for a local key, and sends nothing. After the first Like registers the key, it shows the profile link.
+  - `BrowserSigningNormalizationTest` 82/82 passed. Account setup is split into a public-site test (local key, no requests, no hint) and a members-only test (registers, then sets the hint).
+  - `AccountKeyPageHooksTest` 6/6 passed. `PrivateSiteAuthTest` 11/11 passed. `LocalAppSmokeTest` 153/154 passed: the guest heading assertion was updated, and the unrelated archive-filename failure remains.
+  - Browser tests passed: `signed_reactions`, `key_backup_ui`, `invite_redemption.cjs`, `invite_zero_click`, `forte_activity_parity` and `profile_public_details`.
+- Notes:
+  - Behavior change from cycle 4: naming a new key on Account no longer registers it, so the "Approved members already use …" hint waits until the first post or Like registers the key.
+  - A key the server knows but whose published fingerprint isn't stored shows as a guest until its first action, which re-confirms it. No extra profile lookup was added.
+  - The Forte toolbar label is still set by a deferred script, as before this cycle. The server renders "Guest" for a local key, because no hint is sent, so the name appears just after first paint. Stage 7's theme pass checks whether this flash is visible; the composer row (Stage 3) is set before paint.
+  - Replacing a local key that already has queued Outbox items is handled with the composer rename in Stage 4.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

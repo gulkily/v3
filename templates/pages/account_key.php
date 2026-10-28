@@ -22,7 +22,7 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
   <div class="account-card" data-account-card="guest" data-tone="neutral">
     <span class="account-avatar" aria-hidden="true">?</span>
-    <h2>You’re posting as guest</h2>
+    <h2>You’re posting as <span data-role="guest-name">guest</span></h2>
     <p class="meta">Pick a name if you like. No email or password.</p>
     <label class="account-name-field">Name <span class="meta">(optional)</span><input type="text" data-role="account-name-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="64"></label>
     <button type="button" class="account-key-primary-button" data-action="generate-browser-key">Continue</button>
@@ -246,7 +246,15 @@ No browser private key saved yet.
       return rawMessage;
     }
 
-    // Guest: no saved key, or the automatic `guest` key that was never named.
+    // A key is registered once the server has it; until then it stays in this browser.
+    function isRegistered(root) {
+      var fingerprint = storedFingerprint();
+      return fingerprint !== '' && (readStorageValue('forum_pki_published_fingerprint').trim().toLowerCase() === fingerprint
+        || root.dataset.viewerIdentityId === 'openpgp:' + fingerprint);
+    }
+
+    // Guest: no saved key, a key not yet registered (shown under its name), or
+    // the automatic `guest` key that was never named.
     // Otherwise waiting or approved; the server's approval counts only for this
     // browser's own key, and an unknown approval is looked up after paint.
     function accountState(root) {
@@ -254,7 +262,7 @@ No browser private key saved yet.
       var username = readStorageValue('forum_pki_username') || 'guest';
       var serverKnowsThisKey = fingerprint !== '' && root.dataset.viewerIdentityId === 'openpgp:' + fingerprint;
       var approval = serverKnowsThisKey ? (root.dataset.viewerApproved === '1' ? 'approved' : 'waiting') : (root.dataset.lookedUpApproval || '');
-      if (!hasBrowserKeypair() || (username === 'guest' && approval !== 'approved')) {
+      if (!hasBrowserKeypair() || !isRegistered(root) || (username === 'guest' && approval !== 'approved')) {
         return 'guest';
       }
       return approval || 'member';
@@ -296,7 +304,7 @@ No browser private key saved yet.
       var userLink = root.querySelector('[data-role="user-link"]');
 
       root.dataset.accountState = state;
-      root.querySelectorAll('[data-role="username-field"], [data-role="name-row-value"]').forEach(function (node) {
+      root.querySelectorAll('[data-role="username-field"], [data-role="name-row-value"], [data-role="guest-name"]').forEach(function (node) {
         node.textContent = username;
       });
       root.querySelectorAll('[data-role="account-initial"]').forEach(function (node) {
@@ -407,7 +415,7 @@ No browser private key saved yet.
       });
 
       wraps.forEach(function (wrap) {
-        wrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : fingerprint === '';
+        wrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : !isRegistered(root);
       });
     }
 

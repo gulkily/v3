@@ -2309,7 +2309,7 @@ PHP;
         assertStringContains('data-role="compose-identity-status" hidden', $composeReply);
         assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
         assertStringContains('Storage and privacy', $account);
-        assertStringContains('You’re posting as guest', $account);
+        assertStringContains('You’re posting as <span data-role="guest-name">guest</span>', $account);
         assertStringContains('data-action="clear-browser-identity"', $account);
         assertStringContains('Remove this key', $account);
         assertStringNotContains('View user page', $account);

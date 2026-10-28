@@ -1637,6 +1637,9 @@
   }
 
   async function syncIdentityHint(value, timing) {
+    if (/^openpgp:/.test(value) && !isRegisteredIdentity()) {
+      return;
+    }
     const query = new URLSearchParams({ identity_hint: value }).toString();
     markActionTiming(timing, "forum_identity_hint_fetch_start");
     await fetch(`/api/set_identity_hint?${query}`, {
@@ -1979,6 +1982,11 @@
     return (localStorage.getItem(storageKeys.publishedFingerprint) || "")
       .trim()
       .toUpperCase();
+  }
+
+  // A key is registered once the server has it; until then it is a guest key kept in this browser.
+  function isRegisteredIdentity() {
+    return hasBrowserKeypair() && publishedFingerprint() !== "" && publishedFingerprint() === storedFingerprint();
   }
 
   function identityPreparationState() {
@@ -2350,7 +2358,7 @@
       }
     });
     profileLinkWraps.forEach(function (profileLinkWrap) {
-      profileLinkWrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : !fingerprint;
+      profileLinkWrap.hidden = privateSiteEnabled ? !serverAllowsProfileLink : !isRegisteredIdentity();
     });
 
     renderUndoState(root);
@@ -2707,6 +2715,7 @@
       ensureStoredIdentityReady: ensureStoredIdentityReady,
       storedVoteIdentityReadinessState: storedVoteIdentityReadinessState,
       hasBrowserKeypair: hasBrowserKeypair,
+      isRegisteredIdentity: isRegisteredIdentity,
       identityPreparationState: identityPreparationState,
       pageHasSignedActionSurfaces: pageHasSignedActionSurfaces,
       pageHasVoteSurfaces: pageHasVoteSurfaces,
@@ -2964,11 +2973,11 @@
         try {
           const username = nameInput ? normalizeUsername(nameInput.value) : "guest";
           if (nameInput && hasBrowserKeypair()) {
-            // An unnamed automatic key keeps its posts and invitations: name it rather than replace it.
             if (username === "guest") {
               throw new Error("Type a name first.");
             }
-            if (root.dataset.usernameChangesEnabled === "1") {
+            // A registered automatic key keeps its posts and invitations: name it rather than replace it.
+            if (isRegisteredIdentity() && root.dataset.usernameChangesEnabled === "1") {
               await renameTo(username, null);
               return;
             }
@@ -2978,7 +2987,12 @@
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
-          await publishNewKey(username);
+          // Members-only sites need a registered key to sign in; elsewhere the first signed action registers it.
+          if (document.documentElement && document.documentElement.dataset.approvedMembersOnly === "1") {
+            await publishNewKey(username);
+          } else {
+            setStatus(statusNode, `Browser keypair ready for ${username}.`, "ok");
+          }
         } catch (error) {
           setStatus(statusNode, error instanceof Error ? error.message : "Unable to generate browser keypair.", "error");
         } finally {
