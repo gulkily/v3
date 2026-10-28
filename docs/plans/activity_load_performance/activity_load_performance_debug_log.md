@@ -59,3 +59,24 @@ Inapplicable instructions: Documentation-only constraints do not apply; applicat
 Uncertain assessments: Required seven-stage fields plus study/recovery evidence exceed a literal printed page; retained concise stage bullets and linked writer audit rather than dropping verification obligations. Stage sizing is provisional and must be revisited if updater fan-out demands broader work.
 
 *— Codex · 2026-10-27 UTC*
+
+## 2026-10-28 — Step 4 completed-step report
+
+Necessary/useful instructions:
+- Step 4 stage-boundary commits preserved a reviewable chain: planning 2028f6d3a, S1 3e924f927, S2 d372c401a, S3 307cb5633, S4 bca0fa451, S5 e6ee91a5a, S6 1af723aca, S7 fd62cff90. Each stage includes verification and a summary update. Retain.
+- Step 4 After's explicit production/known-user boundary prevents fast local HTTP tests from becoming an unsupported production-resolution claim. Deployment and actual user replay remain pending. Retain.
+- Effort-study closeout rules preserve the 0.95 projection separately from 1.00 retrospective scope and unknown maintainer acceptance/active labor. Retain.
+
+Redundant/unnecessary instructions:
+- No supported findings.
+
+Inapplicable instructions:
+- Documentation-only execution restrictions were inapplicable to this approved application change. Dependency approval was not invoked because the actual addition/update inventory is zero.
+
+Uncertain assessments:
+- The nominal one-page/seven-stage planning constraint did not capture every mutation edge; source inspection and end-to-end regression tests found direct writers, prior provenance drift and legacy test assumptions. Keep the risk audit and allow evidence links rather than removing recovery requirements to fit page length.
+- Single-run rebuild timings showed a genuine write-side tradeoff, improved by batching. They are not measured agent labor or a general deployment forecast; continued production evidence is necessary.
+
+Final gate: Eight required planning/stage commits verified, clean working tree before this log-only report, no merge/deployment or accepted-count increment. Full suite and physical devices unverified; four reproduced baseline failures are identified in the implementation summary. No hidden diagnostics or uploads.
+
+*— Codex · 2026-10-28 UTC*
