@@ -54,8 +54,9 @@ async function open(identity, options = {}) {
   return { context, page, errors };
 }
 const parsed = page => page.evaluate(() => window.__atParse);
-// Signing in a key reloads the page once so the server can show the session (private_site_auth.js); let it settle.
-const settle = page => page.waitForEvent('load', { timeout: 4000 }).catch(() => {}).then(() => page.waitForLoadState('load'));
+// On public sites the account page signs in without reloading (data-auth-in-place), so actions are never cut off.
+const settle = page => page.waitForLoadState('load');
+const countNavigations = page => { const seen = { count: 0 }; page.on('framenavigated', frame => { if (frame === page.mainFrame()) seen.count++; }); return seen; };
 const state = page => page.locator('[data-account-key-root]').getAttribute('data-account-state');
 const shots = process.env.ACCOUNT_SCREENSHOT_DIR;
 const shot = (page, name) => shots ? page.screenshot({ path: join(shots, name + '.png'), fullPage: true }) : null;
@@ -69,8 +70,8 @@ try {
   const fresh = await open(null, phone);
   assert.deepEqual(await parsed(fresh.page), { state: 'guest', guest: true, member: false }, 'no key: guest from first paint');
   assert.equal(await fresh.page.getByRole('heading', { name: 'You’re posting as guest' }).isVisible(), true);
-  assert.equal(await fresh.page.getByText('Save a copy of this key').isVisible(), false);
-  assert.equal(await fresh.page.getByText('Use a key from another device').isVisible(), true);
+  assert.equal(await fresh.page.getByRole('link', { name: 'Save a copy of this key', exact: true }).isVisible(), false);
+  assert.equal(await fresh.page.getByRole('link', { name: 'Use a key from another device' }).isVisible(), true);
   assert.equal(await fresh.page.locator('[data-action="clear-browser-identity"]').isVisible(), false);
   assert.equal(await fresh.page.title().then(t => t.startsWith('Account')), true);
   await shot(fresh.page, 'guest');
@@ -95,9 +96,20 @@ try {
   await member.page.waitForFunction(() => document.cookie.includes('identity_hint='));
   await member.page.reload();
   assert.deepEqual(await parsed(member.page), { state: 'approved', guest: false, member: true }, 'approved from first paint once the server knows the key');
-  await member.page.getByText('Save a copy of this key').click();
+  // Approved keys are asked to save a copy until one is saved, then see the date.
+  assert.equal(await member.page.locator('[data-role="save-copy-text"]').textContent(), 'Save a copy of this key to use it on another device without new approval, and keep your messages.');
+  await member.page.getByRole('link', { name: 'Save a copy of this key', exact: true }).click();
   assert.equal(await member.page.locator('#key-backup').evaluate(d => d.open), true);
-  assert.equal(await member.page.getByRole('tab', { name: 'Backup', exact: true }).getAttribute('aria-selected'), 'true');
+  assert.equal(await member.page.getByRole('dialog', { name: 'Save a copy of this key' }).isVisible(), true);
+  assert.equal(await member.page.locator('[data-backup-password]').isVisible(), true);
+  await member.page.locator('[data-backup-password]').fill('correct horse battery staple');
+  await shot(member.page, 'sheet');
+  await member.page.keyboard.press('Escape');
+  assert.equal(await member.page.locator('#key-backup').evaluate(d => d.open), false);
+  await member.page.evaluate(fp => { localStorage.setItem('forum_pki_backup_verified_' + fp, '2026-10-28'); window.dispatchEvent(new Event('forum:key-backup-recorded')); }, approvedFingerprint.toLowerCase());
+  assert.match(await member.page.locator('[data-role="save-copy-text"]').textContent(), /^Copy of this key saved Oct 28\.$/);
+  assert.equal(await member.page.locator('[data-role="save-copy-link"]').isVisible(), false);
+  await shot(member.page, 'approved-saved');
   await shot(member.page, 'approved');
   assert.deepEqual(member.errors, []);
   await member.context.close();
@@ -107,6 +119,7 @@ try {
   assert.equal(await waiting.page.locator('[data-role="simple-status-badge"]').textContent(), 'Waiting for approval');
   assert.equal(await waiting.page.getByText('You can post now.').isVisible(), true);
   assert.equal(await waiting.page.locator('[data-role="user-link"]').isVisible(), false);
+  assert.equal(await waiting.page.locator('[data-role="save-copy"]').isVisible(), false, 'no save prompt for a key waiting for approval');
   await shot(waiting.page, 'waiting');
   await waiting.context.close();
 
@@ -127,12 +140,14 @@ try {
 
   // An unnamed automatic key is named in place, keeping its fingerprint.
   const named = await open(withKey(unknown, unknownFingerprint, 'guest'));
+  const namedNavigations = countNavigations(named.page);
   await named.page.locator('[data-role="account-name-input"]').fill('carol');
   await named.page.getByRole('button', { name: 'Continue' }).click();
   await named.page.waitForFunction(() => localStorage.getItem('forum_pki_username') === 'carol', null, { timeout: 30000 });
   await settle(named.page);
   assert.equal((await named.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'))).toLowerCase(), unknownFingerprint.toLowerCase());
   assert.equal(await state(named.page), 'waiting');
+  assert.equal(namedNavigations.count, 0, 'naming does not reload the page');
   assert.equal(await named.page.locator('[data-role="join-hint"]').isVisible(), false, 'no hint for a name nobody approved uses');
   await named.context.close();
 

@@ -90,6 +90,11 @@ final class RouteServices
         return $this->writer()->changeHighTraffic($input,$operator,$this->projectRoot,$finalize);
     }
 
+    public function testingSelfApprovalEnabled(): bool
+    {
+        return (new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest();
+    }
+
     public function testingSelfApprovalToken(): ?string
     {
         $profile = $this->defaultViewerProfile();

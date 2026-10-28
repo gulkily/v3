@@ -11,41 +11,72 @@
     const area = root.querySelector('[data-key-backup]');
     if (!area || area.dataset.bound) return;
     area.dataset.bound = '1';
-    function openLinkedBackup() {
-      if (window.location.hash === '#key-backup') area.open = true;
-    }
-    openLinkedBackup();
-    window.addEventListener('hashchange', openLinkedBackup);
     const find = selector => area.querySelector(selector);
     const status = find('[data-backup-status]');
     let busy = false;
-    const tabs = Array.from(area.querySelectorAll('[data-backup-tab]'));
-    function selectTab(name) {
+    // One dialog in two modes: save a copy of this key, or use a copy from another device.
+    function show(mode) {
       if (busy) return;
-      tabs.forEach(tab => {
-        const selected = tab.dataset.backupTab === name;
-        tab.setAttribute('aria-selected', String(selected));
-        tab.tabIndex = selected ? 0 : -1;
-      });
+      let shown = null;
       area.querySelectorAll('[data-backup-panel]').forEach(panel => {
-        panel.hidden = panel.dataset.backupPanel !== name;
+        panel.hidden = panel.dataset.backupPanel !== mode;
+        if (!panel.hidden) shown = panel;
       });
       status.textContent = '';
+      if (!area.open) {
+        if (typeof area.showModal === 'function') area.showModal();
+        else area.setAttribute('open', '');
+      }
+      const title = shown && shown.querySelector('h2[id]');
+      if (title) area.setAttribute('aria-labelledby', title.id);
+      const first = shown && shown.querySelector('input');
+      if (first) first.focus();
     }
-    tabs.forEach((tab, index) => {
-      tab.addEventListener('click', () => selectTab(tab.dataset.backupTab));
-      tab.addEventListener('keydown', event => {
-        if (busy || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-        event.preventDefault();
-        const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
-          : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-        selectTab(tabs[next].dataset.backupTab);
-        tabs[next].focus();
-      });
+    function defaultMode() {
+      try { return identity.snapshot().forum_pki_private_key ? 'backup' : 'restore'; } catch (_) { return 'restore'; }
+    }
+    function openLinkedBackup() {
+      if (window.location.hash === '#key-backup') show(defaultMode());
+    }
+    openLinkedBackup();
+    window.addEventListener('hashchange', openLinkedBackup);
+    root.querySelectorAll('[data-backup-open]').forEach(link => link.addEventListener('click', event => {
+      event.preventDefault();
+      show(link.dataset.backupOpen);
+    }));
+    area.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
+    area.addEventListener('close', () => {
+      area.querySelectorAll('input[type="password"]').forEach(input => { input.value = ''; });
+      showStrength();
+      if (window.location.hash === '#key-backup' && window.history && history.replaceState) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     });
-    let hasPrivateKey = false;
-    try { hasPrivateKey = Boolean(identity.snapshot().forum_pki_private_key); } catch (_) {}
-    selectTab(hasPrivateKey ? 'backup' : 'restore');
+
+    // A rough, local strength hint: length and variety, no word lists.
+    const meter = find('[data-role="passphrase-meter"]');
+    const meterLabel = find('[data-role="passphrase-strength-label"]');
+    function showStrength() {
+      const value = find('[data-backup-password]').value;
+      const kinds = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^a-zA-Z0-9]/].filter(pattern => pattern.test(value)).length;
+      const words = value.trim().split(/\s+/).filter(Boolean).length;
+      const score = value === '' ? 0 : Math.min(4, (value.length >= 8 ? 1 : 0) + (value.length >= 12 ? 1 : 0)
+        + (value.length >= 16 ? 1 : 0) + (kinds >= 3 || words >= 4 ? 1 : 0));
+      if (meter) meter.value = score;
+      if (meterLabel) meterLabel.textContent = value === '' ? '' : ['Too short', 'Weak', 'Fair', 'Good', 'Strong'][score];
+    }
+    find('[data-backup-password]').addEventListener('input', showStrength);
+    showStrength();
+    const formatNote = find('[data-role="format-note"]');
+    function selectedFormat() {
+      const checked = area.querySelector('[data-backup-format]:checked');
+      return checked ? checked.value : 'text';
+    }
+    area.querySelectorAll('[data-backup-format]').forEach(input => input.addEventListener('change', () => {
+      if (formatNote) formatNote.textContent = selectedFormat() === 'png'
+        ? 'A picture that holds the copy. Keep the original file; screenshots or edited images won’t work.'
+        : 'A small text file.';
+    }));
 
     root.addEventListener('submit', event => { if (busy) event.preventDefault(); }, true);
     root.addEventListener('click', event => { if (busy) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
@@ -60,11 +91,12 @@
       catch (error) { status.textContent = error.message || 'Unable to complete the backup operation.'; }
       finally {
         area.querySelectorAll('input[type="password"]').forEach(input => { input.value = ''; });
+        showStrength();
         controls.forEach((control, i) => { control.disabled = disabled[i]; });
         busy = false;
       }
     }
-    area.querySelectorAll('[data-backup-download]').forEach(button => button.addEventListener('click', () => run(async () => {
+    find('[data-backup-download]').addEventListener('click', () => run(async () => {
       const before = identity.snapshot();
       const original = before.forum_pki_private_key;
       if (!original) throw new Error('Set up this browser before making a backup.');
@@ -72,7 +104,7 @@
       if (passphrase !== find('[data-backup-confirm]').value) throw new Error('The passphrases do not match.');
       const backup = await window.ForumKeyBackup.createBackup(original, passphrase);
       if (backup.fingerprint !== String(before.forum_pki_fingerprint || '').toLowerCase()) throw new Error('The browser key and account fingerprint do not match.');
-      const isPng = button.dataset.backupDownload === 'png';
+      const isPng = selectedFormat() === 'png';
       const content = isPng ? window.ForumStarfield.encodeStarfield(new TextEncoder().encode(backup.text)) : backup.text;
       const blob = new Blob([content], { type: isPng ? 'image/png' : 'text/plain;charset=utf-8' });
       const check = await window.ForumKeyBackup.readBackup(await backupText(new Uint8Array(await blob.arrayBuffer())), passphrase);
@@ -87,11 +119,11 @@
       anchor.remove();
       const recorded = window.ForumKeyBackupStatus.record(backup.fingerprint);
       setTimeout(() => URL.revokeObjectURL(url), 30000);
-      status.textContent = (isPng ? 'PNG' : 'Text') + ' backup download started.';
+      status.textContent = (isPng ? 'Starfield image' : 'Text file') + ' download started.';
       if (!recorded) {
         status.append(document.createElement('br'), document.createTextNode('Backup reminder could not be saved.'));
       }
-    })));
+    }));
     find('[data-backup-restore]').addEventListener('click', () => run(async () => {
       const file = find('[data-backup-file]').files[0];
       if (!file) throw new Error('Choose a backup file first.');

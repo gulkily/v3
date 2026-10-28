@@ -6,15 +6,17 @@
     let show = true;
     try {
       const fingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
-      show = Boolean(fingerprint && localStorage.getItem('forum_pki_private_key')) && localStorage.getItem(prefix + fingerprint) !== '1';
+      show = Boolean(fingerprint && localStorage.getItem('forum_pki_private_key')) && !localStorage.getItem(prefix + fingerprint);
     } catch (_) { /* Keep a useful link when browser storage is unavailable. */ }
     prompts.forEach(prompt => { prompt.hidden = !show; });
   }
   function record(fingerprint) {
     try {
       if (!/^[a-f0-9]{40,64}$/.test(fingerprint)) return false;
-      localStorage.setItem(prefix + fingerprint, '1');
+      // The date of the last saved copy for this key (older records hold '1').
+      localStorage.setItem(prefix + fingerprint, new Date().toISOString().slice(0, 10));
       refresh();
+      window.dispatchEvent(new Event('forum:key-backup-recorded'));
       return true;
     } catch (_) { return false; }
   }

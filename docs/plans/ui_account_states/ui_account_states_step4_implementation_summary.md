@@ -59,3 +59,28 @@ Extended estimates: enabled
 - Estimate details: slightly over; the sign-in reload and the automatic-key naming case took extra test work.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Save a copy and use a key from another device
+
+**Original estimate: 0.20**
+
+**Retrospective: 0.26**
+
+- Changes:
+  - The tabbed backup panel became one native `<dialog>` (`#key-backup`, a bottom sheet on phones) with two modes. **Save a copy of this key**: passphrase with a local strength meter (length and variety, no library), confirmation, Format (Text file or Starfield image) and one **Download copy**. **Use a key from another device**: saved copy, passphrase, **Use this key**. Close or Escape closes it and clears passphrases; the dialog's name follows its mode. The rows, the save prompt and any `#key-backup` link open it (`data-backup-open`); `key_backup_ui.js` keeps its create, verify, download and restore code unchanged.
+  - `key_backup_status.js` stores the date of the last saved copy per key (older `'1'` records still count as saved) and announces `forum:key-backup-recorded`.
+  - Approved keys see "Save a copy of this key to use it on another device without new approval, and keep your messages. Save a copy" until a copy is saved, then "Copy of this key saved {Mon D}." Waiting and guest keys see nothing.
+  - `docs/reference/key_backups.md` rewritten for the name-and-keys model and the new labels.
+  - Retired hooks (listed in `AccountKeyPageHooksTest::RETIRED_HOOKS`): the backup tab buttons, their ids and the two per-format download buttons; old tab and panel styles removed from `identity.css`.
+  - **Sign-in without reload (found while testing):** on public sites every page that does not yet know the visitor's key carried the "public resume" marker, so `private_site_auth.js` signed in and then navigated to the same page. On the account page that reload could cut off a rename or naming in progress (the test failed intermittently). The account page now opts out of the resume marker and signs in in place (`data-auth-in-place`, `{ navigate: false }`), updating its state from the result and clearing the "Entering the site" text. Members-only sites keep their navigation. On deployments with testing self-approval enabled, the page still reloads once after sign-in so the session-bound "Approve current account" button can render.
+  - The chevron on row links no longer reads into their accessible names (`content: "›" / ""`).
+- Verification:
+  - `key_backup_ui.mjs` in three configurations: text (Chromium → Firefox), `FORMAT=png REENCODE=1 RESTORE_BUNDLE=v5`, and `BROWSER=firefox BUNDLE=v5 MEMBERS_ONLY=true`: all pass, with the existing download, rejection, rollback, wrong-key and privacy checks; the test now opens the dialog by row or `#key-backup`, picks the format by radio, checks the "Strong" hint and a dated record. `key_backup.cjs` passes.
+  - `account_states.mjs` extended (save prompt, dialog by name, Escape, dated line, no prompt while waiting, naming without any navigation): passes three runs in a row after the sign-in change.
+  - Pass after the sign-in change: `invite_zero_click`, `testing_self_approval`, `access_history`, `invite_signing_readiness`; `PrivateSiteAuthTest`, `AccountKeyPageHooksTest`, `ApiRouteCatalogTest` and the five account smoke tests (14/14).
+  - Phone screenshots of the sheet and the dated line reviewed; the inner panel border and wrapped format labels found there were fixed.
+- Notes:
+  - The in-place sign-in addresses the user's reload note for the account page only; other public pages still reload after resuming a session, and restoring a saved copy still signs in through the reloading path. Recorded as the broader follow-up.
+- Estimate details: over the plan by the sign-in race investigation and fix.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

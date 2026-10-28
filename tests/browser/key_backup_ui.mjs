@@ -35,7 +35,11 @@ try {
   const page=await context.newPage(); lastPage=page; page.setDefaultTimeout(15000); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/account/key/');
   assert.equal(await page.locator('[data-backup-password]').isVisible(),false);
-  assert.equal(await page.getByRole('tab',{name:'Restore',includeHidden:true}).getAttribute('aria-selected'),'true');
+  await page.getByRole('link',{name:'Use a key from another device'}).click();
+  assert.equal(await page.locator('[data-backup-file]').isVisible(),true);
+  assert.equal(await page.locator('[data-backup-password]').isVisible(),false);
+  await page.getByRole('button',{name:'Close'}).click();
+  assert.equal(await page.locator('#key-backup').evaluate(d=>d.open),false);
   await page.evaluate(({keys,fingerprint})=>{
     for(const [name,value] of Object.entries({username:'alice',private_key:keys.privateKey,public_key:keys.publicKey,fingerprint:fingerprint.toUpperCase(),published_fingerprint:fingerprint.toUpperCase()}))localStorage.setItem('forum_pki_'+name,value);
   },{keys,fingerprint});
@@ -44,32 +48,30 @@ try {
   await page.goto(base+'/messages');
   assert.equal(await page.locator('[data-key-backup-reminder]').count(),0);
   await page.goto(base+'/account/key/#key-backup');
-  assert.equal(await page.getByRole('tab',{name:'Backup',exact:true}).getAttribute('aria-selected'),'true');
-  assert.equal(await page.locator('[data-backup-file]').isVisible(),false);
-  await page.getByRole('tab',{name:'Backup',exact:true}).focus();
-  await page.keyboard.press('ArrowRight');
-  assert.equal(await page.locator('[data-backup-file]').isVisible(),true);
-  assert.equal(await page.locator('[data-backup-password]').isVisible(),false);
-  await page.keyboard.press('Home');
+  // A #key-backup link opens the dialog on Save a copy when this browser has a key.
+  assert.equal(await page.locator('#key-backup').evaluate(d=>d.open),true);
   assert.equal(await page.locator('[data-backup-password]').isVisible(),true);
+  assert.equal(await page.locator('[data-backup-file]').isVisible(),false);
+  await page.locator('[data-backup-format][value="'+format+'"]').check();
   const passphrase='a long unique starfield passphrase';
   const requests=[]; context.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   await page.locator('[data-backup-password]').fill(passphrase);
   await page.locator('[data-backup-confirm]').fill('does not match');
-  await page.locator('[data-backup-download="'+format+'"]').click();
+  await page.locator('[data-backup-download]').click();
   await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('do not match'));
   assert.equal(await page.evaluate(fp=>localStorage.getItem('forum_pki_backup_verified_'+fp),fingerprint),null);
   await page.locator('[data-backup-password]').fill(passphrase);
+  assert.equal(await page.locator('[data-role="passphrase-strength-label"]').textContent(),'Strong');
   await page.locator('[data-backup-confirm]').fill(passphrase);
   assert.equal(await page.locator('[data-backup-password]').inputValue(),passphrase);
-  const pending=page.waitForEvent('download'); pending.catch(()=>{}); await page.locator('[data-backup-download="'+format+'"]').click();
+  const pending=page.waitForEvent('download'); pending.catch(()=>{}); await page.locator('[data-backup-download]').click();
   await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent !== 'Working locally…');
   assert.match(await page.locator('[data-backup-status]').textContent(),/download started/,JSON.stringify(errors));
   const download=await pending, downloaded=await readFile(await download.path());
   const backup=format==='png'&&process.env.REENCODE==='1'?reencode(downloaded):downloaded;
   await page.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent.includes('download started'));
   assert(!backup.includes(Buffer.from('PRIVATE KEY')));
-  assert.equal(await page.evaluate(fp=>localStorage.getItem('forum_pki_backup_verified_'+fp),fingerprint),'1');
+  assert.match(await page.evaluate(fp=>localStorage.getItem('forum_pki_backup_verified_'+fp),fingerprint),/^\d{4}-\d{2}-\d{2}$/);
   await page.goto(base+'/messages');
   assert.equal(await page.locator('[data-key-backup-reminder]').count(),0);
   await page.goto(base+'/messages/conversation/user-01');
@@ -82,8 +84,7 @@ try {
   fresh.on('request',r=>requests.push(r.url()+' '+(r.postData()||'')));
   restored.on('pageerror',e=>errors.push(e.message));
   await restored.goto(base+'/account/key/');
-  await restored.locator('#key-backup > summary').click();
-  await restored.getByRole('tab',{name:'Restore',exact:true}).click();
+  await restored.getByRole('link',{name:'Use a key from another device'}).click();
   const upload=()=>restored.locator('[data-backup-file]').setInputFiles({name:format==='png'?'backup.png':'backup.txt',mimeType:format==='png'?'image/png':'text/plain',buffer:backup});
   if(format==='png'){
     const jpeg=await page.evaluate(async base64=>{
@@ -141,8 +142,7 @@ try {
   await restored.goto(base+'/messages/conversation/user-01');
   await restored.locator('[data-role="private-message-plaintext"]').filter({hasText:'Original private conversation'}).first().waitFor({state:'visible'});
   await restored.goto(base+'/account/key/');
-  await restored.locator('#key-backup > summary').click();
-  await restored.getByRole('tab',{name:'Restore',exact:true}).click();
+  await restored.getByRole('link',{name:'Use a key from another device'}).click();
   await restored.evaluate(()=>{
     for(const key of ['forum_pki_username','forum_pki_public_key','forum_pki_private_key','forum_pki_fingerprint'])localStorage.removeItem(key);
     window.dispatchEvent(new Event('storage'));

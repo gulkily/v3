@@ -37,23 +37,22 @@ final class AccountKeyPageHooksTest
         'data-copy-source="public"',
         'data-copy-source="private"',
         'data-key-backup',
-        'data-backup-tab="backup"',
-        'data-backup-tab="restore"',
         'data-backup-panel="backup"',
         'data-backup-panel="restore"',
+        'data-backup-download',
+        'data-backup-format',
+        'data-backup-open="backup"',
+        'data-backup-open="restore"',
+        'data-action="retry-account-action"',
+        'data-role="name-editor"',
+        'data-role="account-name-input"',
         'data-backup-password',
         'data-backup-confirm',
-        'data-backup-download="text"',
-        'data-backup-download="png"',
         'data-backup-file',
         'data-restore-password',
         'data-backup-restore',
         'data-backup-status',
         'id="key-backup"',
-        'id="key-backup-tab"',
-        'id="key-restore-tab"',
-        'id="key-backup-panel"',
-        'id="key-restore-panel"',
         'id="simple-status"',
         'id="saved-public-key-viewer"',
         'id="saved-private-key-viewer"',
@@ -129,14 +128,17 @@ final class AccountKeyPageHooksTest
         }
     }
 
-    /**
-     * Hooks intentionally retired by this feature; empty until a stage removes one.
-     * Controls are hidden, not deleted, so the signing script keeps finding them.
-     */
-    private const RETIRED_HOOKS = [];
+    /** Hooks retired by ui_account_states: the backup tabs became one dialog with two modes. */
+    private const RETIRED_HOOKS = [
+        'data-backup-tab=', 'data-backup-download="text"', 'data-backup-download="png"',
+        'id="key-backup-tab"', 'id="key-restore-tab"', 'id="key-backup-panel"', 'id="key-restore-panel"',
+    ];
 
     public function testNoHookIsRetiredWithoutBeingListed(): void
     {
-        assertSame([], self::RETIRED_HOOKS);
+        $template = (string) file_get_contents(dirname(__DIR__) . '/templates/pages/account_key.php');
+        foreach (self::RETIRED_HOOKS as $hook) {
+            assertSame(false, str_contains($template, $hook), $hook);
+        }
     }
 }

@@ -15,7 +15,7 @@ $viewerIdentityId = is_array($viewerProfile) ? strtolower(trim((string) ($viewer
 $viewerApproved = is_array($viewerProfile) && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
 $usernameChangesEnabled = $usernameChangesEnabled ?? false;
 ?>
-<section class="stack account-page" data-account-key-root data-account-state="guest" data-sky="account" data-username-changes-enabled="<?= $usernameChangesEnabled ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="<?= $viewerApproved ? '1' : '0' ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
+<section class="stack account-page" data-account-key-root data-account-state="guest" data-sky="account" data-username-changes-enabled="<?= $usernameChangesEnabled ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-auth-in-place<?= ($testingSelfApprovalEnabled ?? false) && ($testingSelfApprovalToken ?? null) === null ? ' data-testing-self-approval-pending' : '' ?> data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="<?= $viewerApproved ? '1' : '0' ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <header class="account-key-header">
     <h1>Account</h1>
   </header>
@@ -43,6 +43,10 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     <p><button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button></p>
 <?php endif; ?>
   </div>
+  <p class="account-note" data-role="save-copy" data-account-when="approved" data-tone="neutral">
+    <span data-role="save-copy-text">Save a copy of this key to use it on another device without new approval, and keep your messages.</span>
+    <a href="#key-backup" data-backup-open="backup" data-role="save-copy-link">Save a copy</a>
+  </p>
   <p class="meta account-key-simple-status" id="simple-status" role="status" hidden></p>
   <p class="account-retry"><button type="button" class="account-key-secondary-button" data-action="retry-account-action" hidden>Retry</button></p>
   <p class="meta" data-role="private-site-auth-status" hidden></p>
@@ -70,31 +74,33 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     <a class="account-row account-row--link" data-tone="neutral" href="#key-backup" data-backup-open="backup" data-account-when="member">Save a copy of this key</a>
     <a class="account-row account-row--link" data-tone="neutral" href="#key-backup" data-backup-open="restore">Use a key from another device</a>
   </div>
-  <details class="account-key-advanced" id="key-backup" data-key-backup>
-    <summary>Save or use a copy</summary>
-    <div class="stack">
-      <div class="account-key-tabs" role="tablist" aria-label="Save or use a copy of a key">
-        <button type="button" role="tab" id="key-backup-tab" aria-controls="key-backup-panel" aria-selected="false" tabindex="-1" data-backup-tab="backup">Backup</button>
-        <button type="button" role="tab" id="key-restore-tab" aria-controls="key-restore-panel" aria-selected="true" data-backup-tab="restore">Restore</button>
-      </div>
-      <div class="stack" id="key-backup-panel" role="tabpanel" aria-labelledby="key-backup-tab" data-backup-panel="backup" hidden>
-        <p class="meta">Use it on another device or after clearing this browser, with no new approval and your messages intact. Forgotten passphrases cannot be recovered.</p>
-        <label>Backup passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
+  <dialog class="account-sheet" id="key-backup" data-key-backup aria-labelledby="key-backup-title">
+    <form method="dialog" class="stack">
+      <div class="stack" data-backup-panel="backup" hidden>
+        <h2 id="key-backup-title">Save a copy of this key</h2>
+        <p class="meta">Use it on another device or after clearing this browser, with no new approval and your messages intact. The passphrase can’t be recovered if you forget it.</p>
+        <label>Passphrase <input type="password" data-backup-password autocomplete="new-password"></label>
+        <p class="account-strength meta" data-role="passphrase-strength" aria-live="polite"><meter min="0" max="4" value="0" data-role="passphrase-meter"></meter> <span data-role="passphrase-strength-label"></span></p>
         <label>Confirm passphrase <input type="password" data-backup-confirm autocomplete="new-password"></label>
-        <div class="button-row">
-          <button type="button" data-backup-download="text">Download text backup</button>
-          <button type="button" data-backup-download="png">Download Starfield PNG</button>
-        </div>
-        <p class="meta">Keep the original PNG file. Screenshots or edited images may not restore.</p>
+        <fieldset class="account-format">
+          <legend>Format</legend>
+          <label><input type="radio" name="backup-format" value="text" data-backup-format checked> Text file</label>
+          <label><input type="radio" name="backup-format" value="png" data-backup-format> Starfield image</label>
+        </fieldset>
+        <p class="meta" data-role="format-note">A small text file.</p>
+        <button type="button" data-backup-download>Download copy</button>
       </div>
-      <div class="stack" id="key-restore-panel" role="tabpanel" aria-labelledby="key-restore-tab" data-backup-panel="restore">
-        <label>Restore from backup <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
-        <label>Restore passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
-        <button type="button" data-backup-restore>Restore backup</button>
+      <div class="stack" data-backup-panel="restore" hidden>
+        <h2 id="key-restore-title">Use a key from another device</h2>
+        <p class="meta">Choose a saved copy of a key and enter its passphrase.</p>
+        <label>Saved copy <input type="file" data-backup-file accept=".txt,.png,text/plain,image/png"></label>
+        <label>Passphrase <input type="password" data-restore-password autocomplete="current-password"></label>
+        <button type="button" data-backup-restore>Use this key</button>
       </div>
       <p class="meta" data-backup-status role="status" aria-live="polite"></p>
-    </div>
-  </details>
+      <button type="submit" class="account-key-secondary-button" value="close" data-action="close-sheet">Close</button>
+    </form>
+  </dialog>
   <details class="account-key-advanced" id="key-advanced">
     <summary>Advanced <span class="meta">Keys, linking, storage</span></summary>
     <div class="stack">
@@ -334,6 +340,24 @@ No browser private key saved yet.
         lookUpApproval(root);
       }
       syncJoinHint(root, state, username);
+      syncSaveCopy(root, fingerprint);
+    }
+
+    // Approved keys are asked to save a copy until this browser has saved one.
+    function syncSaveCopy(root, fingerprint) {
+      var note = root.querySelector('[data-role="save-copy"]');
+      if (!note) {
+        return;
+      }
+      var saved = fingerprint ? readStorageValue('forum_pki_backup_verified_' + fingerprint) : '';
+      var text = note.querySelector('[data-role="save-copy-text"]');
+      var link = note.querySelector('[data-role="save-copy-link"]');
+      var date = /^\d{4}-\d{2}-\d{2}$/.test(saved) ? new Date(saved + 'T00:00:00') : null;
+      note.dataset.tone = saved ? 'ok' : 'neutral';
+      link.hidden = saved !== '';
+      text.textContent = saved === ''
+        ? 'Save a copy of this key to use it on another device without new approval, and keep your messages.'
+        : 'Copy of this key saved' + (date ? ' ' + date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '') + '.';
     }
 
     // A waiting key whose name approved members already use joins that user once approved.
@@ -457,30 +481,6 @@ No browser private key saved yet.
       });
     }
 
-    // The Save and Use rows open the existing backup panel on the matching tab.
-    function bindBackupRows() {
-      var root = accountKeyRoot();
-      if (!root) {
-        return;
-      }
-
-      root.querySelectorAll('[data-backup-open]').forEach(function (row) {
-        row.addEventListener('click', function (event) {
-          var panel = root.querySelector('#key-backup');
-          var tab = root.querySelector('[data-backup-tab="' + row.getAttribute('data-backup-open') + '"]');
-          if (!panel) {
-            return;
-          }
-          event.preventDefault();
-          panel.open = true;
-          if (tab) {
-            tab.click();
-          }
-          panel.scrollIntoView({ block: 'start' });
-        });
-      });
-    }
-
     // Change opens the name editor in place; Cancel and Escape close it.
     function bindNameEditor() {
       var root = accountKeyRoot();
@@ -521,7 +521,6 @@ No browser private key saved yet.
 
       bindViewerCopyButtons();
       bindFingerprintCopy();
-      bindBackupRows();
       bindNameEditor();
       syncSimpleUI();
       mirrorAdvancedStatus();
@@ -530,6 +529,17 @@ No browser private key saved yet.
       window.addEventListener('storage', syncSimpleUI);
       window.addEventListener('storage', mirrorAdvancedStatus);
       window.addEventListener('pageshow', syncSimpleUI);
+      window.addEventListener('forum:key-backup-recorded', syncSimpleUI);
+      window.addEventListener('forum:authenticated-in-place', function (event) {
+        // Testing deployments render "Approve current account" only for a signed-in session.
+        if (root.hasAttribute('data-testing-self-approval-pending') && !event.detail.approved) {
+          window.location.reload();
+          return;
+        }
+        root.dataset.viewerIdentityId = event.detail.identityId;
+        root.dataset.viewerApproved = event.detail.approved ? '1' : '0';
+        syncSimpleUI();
+      });
       window.addEventListener('pageshow', mirrorAdvancedStatus);
 
       if (statusNode && typeof MutationObserver === 'function') {
