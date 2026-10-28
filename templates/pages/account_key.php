@@ -178,7 +178,7 @@ No browser private key saved yet.
     <form method="dialog" class="stack">
       <h2 id="key-remove-title">Remove this key from this browser?</h2>
       <p id="key-remove-text" data-role="remove-consequence">Your posts stay under your name.</p>
-      <a class="button-link" href="#key-backup" data-backup-open="backup" data-role="remove-save-first">Save a copy first</a>
+      <button type="button" data-backup-open="backup" data-role="remove-save-first">Save a copy first</button>
       <button type="submit" class="account-danger-button" value="remove" data-action="clear-browser-identity">Remove</button>
       <button type="submit" class="account-key-secondary-button" value="cancel">Cancel</button>
     </form>

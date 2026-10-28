@@ -104,3 +104,35 @@ Extended estimates: enabled
 - Estimate details: as expected.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Sites, themes, copy and closeout
+
+**Original estimate: 0.17**
+
+**Retrospective: 0.20**
+
+- Changes:
+  - Theme fixes from review: the save and remove sheets layer the panel over the page background so they stay solid in themes with a see-through panel (Arena); "Save a copy first" and Remove are ordinary theme buttons (they were unreadable in Arena and Word97), Remove marked by red ink and border where the theme allows.
+  - `ui_copy_audit_checklist.md` entry "Account page states (all sites)" listing removed and added strings; `ui_redesign/implementation_checklist.md` Cycle 4 ticked, with the "Not backed up" warning recorded as replaced by the approved-key save prompt. No navigation destination changed, so `theme-nav-icons.css` is untouched.
+  - `WriteApiSmokeTest` account-link tests updated for "This key's profile".
+- Verification:
+  - Every permitted theme on all four sites (ZenMemes 14; Chouse, MIT Rap Club, QDB 15 each): phone approved page, save sheet and remove dialog, desktop approved page; guest and waiting in each site's default theme. Automatic checks for horizontal overflow, transparent dialogs and page errors: none after the fixes. Contact sheets per site reviewed. (A long-lived fixture server stalled after about seven themes, so captures ran in batches of seven per server.)
+  - Full suite once: 1607 run, 1601 passed, 6 failed. Three also fail on `main` (`testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest`, `ReadModelBuilderTimingTest`). Two were this cycle's wording (`WriteApiSmokeTest` account-link tests), fixed and rerun. `testSignedReactionApiVerifiesCommentLikeAndRetainsBothTimes` failed at a `gpg` signing command and passed when rerun alone, as the same `gpg` step did in the tab bar cycle.
+- Notes:
+  - The dialogs sit at the top in some themes and as a bottom sheet in others, following each theme's own dialog styling.
+- Estimate details: the theme fixes and the batched captures added a little.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- All five stages complete. Whole-cycle projection **0.95** held throughout; separate **1.00 retrospective scope assessment** (stage retrospectives 0.25 / 0.22 / 0.26 / 0.08 / 0.20, not summed). The overrun is the sign-in race found in Stage 3.
+- Follow-ups recorded:
+  - **Sign-in reload (user, 2026-10-28):** other public pages still reload after resuming a session, and restoring a saved copy signs in through the reloading path; only the account page signs in in place.
+  - **Starfield robustness (user, 2026-10-28):** the user expects Starfield images to survive screenshots and quality loss. Today's SFENC v0.2 decoding rejects JPEG conversion and single-byte damage (asserted in `key_backup_ui`), so the sheet tells people to keep the original file. Making it robust is a format change, not a copy change.
+  - `invite_zero_click` intermittent failure at its expired-invitation timing (pre-existing open item).
+  - `account_key_approval` and `compose_layout_stability` fail on `main` too.
+- Pending: real-phone checks, the user's review, merge and deployment (only when asked), maintainer comfortable-fit judgment.
+- Dependency delta: zero.
+
+*— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*

@@ -3196,7 +3196,7 @@ NODE;
         $account = $this->renderMethod($application, 'GET', '/account/key/');
         $_COOKIE = [];
 
-        assertStringContains('View profile', $account);
+        assertStringContains('This key’s profile', $account);
         assertStringContains('href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954"', $account);
         assertStringNotContains('href="/user/guest"', $account);
     }
@@ -3211,7 +3211,7 @@ NODE;
         $account = $this->renderMethod($application, 'GET', '/account/key/');
         $_COOKIE = [];
 
-        assertStringContains('View profile', $account);
+        assertStringContains('This key’s profile', $account);
         assertStringContains('href="/profiles/' . $identity['profile_slug'] . '"', $account);
         assertStringNotContains('href="/user/pending-user"', $account);
     }

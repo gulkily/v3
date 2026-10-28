@@ -240,7 +240,8 @@ button.account-row {
   padding: 1.25rem;
   border: 1px solid var(--line);
   border-radius: 0.9rem;
-  background: var(--panel);
+  /* Some themes use a see-through panel; layer it over the page so the sheet stays solid. */
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
   color: var(--ink);
 }
 
@@ -311,27 +312,10 @@ button.account-row {
   min-height: 2.75rem;
 }
 
-.account-sheet .button-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  border: 1px solid var(--line);
-  border-radius: 0.4rem;
-  background: var(--active-bg, var(--panel));
-  color: var(--active-ink, var(--ink));
-  font-family: var(--ui-font);
-  text-decoration: none;
-}
-
-.account-sheet .button-link[hidden] {
-  display: none;
-}
-
+/* The theme's own button, marked as destructive by its ink and border. */
 .account-danger-button {
   border-color: var(--status-error);
-  background: var(--status-error);
-  color: var(--panel);
+  color: var(--status-error);
 }
 
 .account-retry button + button {

@@ -185,7 +185,7 @@ try {
   assert.equal(await removeDialog.isVisible(), false);
   assert.notEqual(await removing.page.evaluate(() => localStorage.getItem('forum_pki_private_key')), null, 'Cancel keeps the key');
   await removing.page.getByRole('button', { name: 'Remove this key' }).click();
-  await removeDialog.getByRole('link', { name: 'Save a copy first' }).click();
+  await removeDialog.getByRole('button', { name: 'Save a copy first' }).click();
   assert.equal(await removeDialog.isVisible(), false);
   assert.equal(await removing.page.getByRole('dialog', { name: 'Save a copy of this key' }).isVisible(), true);
   await removing.page.keyboard.press('Escape');
