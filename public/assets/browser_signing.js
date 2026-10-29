@@ -2891,7 +2891,6 @@
     const statusNode = root.querySelector('[data-role="browser-key-status"]');
     const publicKeyField = root.querySelector('[data-role="public-key-field"]');
     const generateButton = root.querySelector('[data-action="generate-browser-key"]');
-    const loadButton = root.querySelector('[data-action="load-browser-key"]');
     const clearButton = root.querySelector('[data-action="clear-browser-key"]');
     const clearIdentityButton = root.querySelector('[data-action="clear-browser-identity"]');
     const undoClearLink = root.querySelector('[data-action="undo-clear-browser-key"]');
@@ -3012,12 +3011,8 @@
           if (publicKeyField) {
             publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
           }
-          // Members-only sites need a registered key to sign in; elsewhere the first signed action registers it.
-          if (document.documentElement && document.documentElement.dataset.approvedMembersOnly === "1") {
-            await publishNewKey(username);
-          } else {
-            setStatus(statusNode, `Browser keypair ready for ${username}.`, "ok");
-          }
+          // Continue is a deliberate setup, so register the key now and show the signed-in account.
+          await publishNewKey(username);
         } catch (error) {
           setStatus(statusNode, error instanceof Error ? error.message : "Unable to generate browser keypair.", "error");
         } finally {
@@ -3026,13 +3021,13 @@
       });
     }
 
-    if (loadButton) {
-      loadButton.addEventListener("click", function () {
-        renderSavedState(root);
-        if (publicKeyField) {
-          publicKeyField.value = localStorage.getItem(storageKeys.publicKey) || "";
+    // The name field isn't in a form, so Enter presses Continue.
+    if (nameInput && generateButton) {
+      nameInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.isComposing) {
+          event.preventDefault();
+          if (!generateButton.disabled) generateButton.click();
         }
-        setStatus(statusNode, "Loaded the saved browser public key into the form.", "ok");
       });
     }
 

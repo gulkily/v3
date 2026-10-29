@@ -129,9 +129,6 @@ No browser private key saved yet.
               </div>
             </div>
           </details>
-          <div class="button-row account-key-advanced-actions">
-            <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
-          </div>
           <div class="button-row" hidden>
             <button type="button" data-action="copy-public-key">Copy Public Key</button>
             <button type="button" data-action="copy-private-key">Copy Private Key</button>
@@ -214,10 +211,6 @@ No browser private key saved yet.
 
       if (rawMessage.indexOf('Restored browser keypair for ') === 0) {
         return '';
-      }
-
-      if (rawMessage === 'Loaded the saved browser public key into the form.') {
-        return 'Loaded your saved public key into the advanced form.';
       }
 
       if (rawMessage === 'Copied the saved public key.') {

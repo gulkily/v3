@@ -874,7 +874,7 @@ NODE;
         assertSame('Finishing browser identity setup...', $result['status']);
     }
 
-    public function testAccountSetupKeepsGeneratedKeyLocalOnPublicSites(): void
+    public function testAccountSetupPublishesGeneratedKeyOnPublicSites(): void
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -1046,11 +1046,11 @@ NODE;
 
         assertSame('forum-user', $result['generatedUsername']);
         assertSame(140000, $result['generatedKeyDate']);
-        assertSame([], $result['fetches']);
-        assertSame('', $result['publishedFingerprint']);
-        assertSame(true, in_array('forum_pki_published_fingerprint', $result['localRemoveCalls'], true));
+        // Continue is deliberate setup: the key registers at once, not on the first post.
+        assertSame(['/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', '/api/prepare_identity', '/api/link_identity', '/api/set_identity_hint?identity_hint=openpgp%3A0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'], array_column($result['fetches'], 'url'));
+        assertSame('0168FF20EB09C3EA6193BD3C92A73AA7D20A0954', $result['publishedFingerprint']);
         assertSame("-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture-key\n-----END PGP PUBLIC KEY BLOCK-----", $result['publicKeyField']);
-        assertSame('Browser keypair ready for forum-user.', $result['status']);
+        assertSame('Browser keypair ready for forum-user. Public key linked.', $result['status']);
         assertSame(false, $result['buttonDisabled']);
     }
 
