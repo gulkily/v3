@@ -41,7 +41,8 @@ final class ContentImportRunner
                     $entries = (new ContentImportPlanner())->plan($source, $this->repositoryRoot);
                     $report = $this->report($entries, $sourceLabel, $archiveExclusions, true);
                     $scores = new FastmodScoreImport($this->projectRoot ?? dirname(__DIR__, 3));
-                    $report['scores'] = $scores->process($scores->read($source, $archiveExclusions), $scores->hashes($entries, $source, $this->repositoryRoot), true);
+                    $supplement = $scores->read($source, $archiveExclusions);
+                    $report['scores'] = $scores->process($supplement, $supplement['rows'] === [] ? [] : $scores->hashes($entries, $source, $this->repositoryRoot), true);
                     if ($report['scores']['status'] === 'rejected') $report['status'] = 'partial';
                     return $report;
                 }
@@ -171,7 +172,7 @@ final class ContentImportRunner
                 // Canonical bytes are already installed and verified under the writer lock.
                 // Merge before publication so rebuild/offline consumers see the same scores.
                 $run['report']['scores'] = $scoreImport->process($supplement,
-                    $scoreImport->hashes($run['report']['entries'], $this->repositoryRoot, $this->repositoryRoot, true), false);
+                    $supplement['rows'] === [] ? [] : $scoreImport->hashes($run['report']['entries'], $this->repositoryRoot, $this->repositoryRoot, true), false);
                 if ($run['report']['scores']['status'] === 'rejected') $run['report']['status'] = 'partial';
                 $this->at('scores_merged');
                 $this->save($pending, $run);

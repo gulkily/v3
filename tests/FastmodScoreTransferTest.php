@@ -188,10 +188,64 @@ final class FastmodScoreTransferTest
         } finally { foreach ($prior as $key => $value) putenv($value === false ? $key : $key . '=' . $value); }
     }
 
+    public function testMalformedSupplementDoesNotBlockContentAndLegacySuppressionStaysLocal(): void
+    {
+        require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+        $w = new ImportTestWorkspace(); $source = $w->repository('source'); $target = $w->repository('target'); $w->git($target);
+        $w->put($source . '/records/posts/post-1.txt', $w->post('post-1'));
+        $w->put($source . '/fastmod-scores.txt', 'Format: unsupported');
+        $path = $w->root . '/scores.sqlite3'; $prior = getenv('FAST_SCORING_DATABASE_PATH'); putenv('FAST_SCORING_DATABASE_PATH=' . $path);
+        try {
+            $runner = new \ForumRewrite\Import\ContentImportRunner($target, $w->root . '/index.sqlite3');
+            $report = $runner->run($source, static function () {});
+            assertSame('partial', $report['status']); assertSame('rejected', $report['scores']['status']);
+            assertSame(true, is_file($target . '/records/posts/post-1.txt')); assertSame(false, is_file($path));
+            $row = self::compatibleRow($source); $w->put($source . '/fastmod-scores.txt', FastmodScoreTransfer::encode([$row]));
+            // The same canonical post can have a different dated path on the source.
+            mkdir($source . '/records/posts/2026/04/10', 0700, true);
+            rename($source . '/records/posts/post-1.txt', $source . '/records/posts/2026/04/10/post-1.txt');
+            $pdo = new PDO('sqlite:' . $path); new \ForumRewrite\Scoring\SqliteFastScoreStore($pdo);
+            $pdo->exec('CREATE TABLE fastmod_meta(post_id TEXT, suppressed INTEGER)'); $pdo->exec("INSERT INTO fastmod_meta VALUES('post-1', 1)");
+            $head = trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
+            $report = $runner->run($source, static function () {}); assertSame(1, $report['scores']['counts']['imported']);
+            assertSame($head, trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]));
+            assertSame([], \ForumRewrite\Scoring\FastmodDerivedTags::candidates($path, $row['rubric_revision'], \ForumRewrite\Scoring\FastmodDerivedTags::mappings([])));
+            assertSame(1, (int) $pdo->query("SELECT suppressed FROM fastmod_meta WHERE post_id='post-1'")->fetchColumn());
+        } finally { putenv($prior === false ? 'FAST_SCORING_DATABASE_PATH' : 'FAST_SCORING_DATABASE_PATH=' . $prior); }
+    }
+
+    public function testScoreChangeDuringCompressionRejectsStaleArchive(): void
+    {
+        require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+        $w = new ImportTestWorkspace(); $source = $w->repository('source');
+        $w->put($source . '/records/posts/post-1.txt', $w->post('post-1')); $w->git($source);
+        mkdir($w->root . '/state/private', 0700, true);
+        $path = $w->root . '/state/private/fast_scores.sqlite3'; $pdo = new PDO('sqlite:' . $path); $pdo->exec('PRAGMA journal_mode=WAL');
+        $row = self::compatibleRow($source);
+        (new \ForumRewrite\Scoring\SqliteFastScoreStore($pdo))->importScoredRows([$row], ['post-1' => $row['content_hash']], $row['rubric_revision'], array_keys($row['scores']));
+        $changed = array_fill_keys(array_keys($row['scores']), 0.5);
+        $update = '<?php $pdo=new PDO(' . var_export('sqlite:' . $path, true) . '); $pdo->prepare("UPDATE post_fast_scores SET scores_json=?")->execute([' . var_export(json_encode($changed), true) . ']);';
+        $w->put($w->root . '/update.php', $update);
+        $tar = trim($w->command(['which', 'tar'])[1]);
+        $w->put($w->root . '/bin/tar', "#!/bin/sh\n" . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($w->root . '/update.php') . "\nexec " . escapeshellarg($tar) . ' "$@"' . "\n");
+        chmod($w->root . '/bin/tar', 0700);
+        $prior = getenv('PATH'); putenv('PATH=' . $w->root . '/bin:' . $prior);
+        $backup = new \ForumRewrite\Images\ImageBackup($source, $w->root . '/index.sqlite3', $w->root);
+        try {
+            $backup->export('tar.gz'); throw new LogicException('Stale scores published');
+        } catch (\ForumRewrite\Images\ArchiveConflictException) {
+            assertSame([], glob($w->root . '/archive-exports/*/metadata'));
+        } finally { putenv('PATH=' . $prior); }
+        $fresh = $backup->export('tar.gz'); fclose($fresh['stream']);
+        $rows = FastmodScoreTransfer::decode((new PharData($fresh['path']))['repository/fastmod-scores.txt']->getContent());
+        assertSame(true, $changed == $rows[0]['scores']);
+        assertSame([], glob($w->root . '/archive-exports/.build-*'));
+    }
+
     public function testRejectsWholeMalformedSupplement(): void
     {
         $valid = FastmodScoreTransfer::encode([self::row()]);
-        foreach ([str_replace('v1', 'v2', $valid), $valid . "Secret: leak\n", str_replace('0.9', '1.2', $valid), str_replace('0.9', 'NaN', $valid), str_replace('2025-01-02', '2025-02-30', $valid), $valid . "Post: post-1\n", str_repeat('x', FastmodScoreTransfer::MAX_BYTES + 1)] as $text) {
+        foreach ([str_replace('v1', 'v2', $valid), $valid . "Secret: leak\n", str_replace('0.9', '1.2', $valid), str_replace('0.9', 'NaN', $valid), str_replace('2025-01-02', '2025-02-30', $valid), $valid . "Post: post-1\n", str_repeat('x', FastmodScoreTransfer::MAX_BYTES + 1), FastmodScoreTransfer::HEADER . str_repeat("\n\n", FastmodScoreTransfer::MAX_ROWS + 1) . "Post: x", $valid . str_repeat("Score-x: 0.1\n", 70)] as $text) {
             try { FastmodScoreTransfer::decode($text); throw new RuntimeException('Accepted invalid supplement'); }
             catch (InvalidArgumentException) {}
         }

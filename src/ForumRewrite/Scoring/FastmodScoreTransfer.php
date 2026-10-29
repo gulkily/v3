@@ -24,7 +24,7 @@ final class FastmodScoreTransfer
             $text .= "\nPost: {$row['post_id']}\nContent-Hash: {$row['content_hash']}\nRubric-Revision: {$row['rubric_revision']}\nCreated-At: {$row['created_at']}\nUpdated-At: {$row['updated_at']}\n";
             $scores = $row['scores'];
             ksort($scores);
-            foreach ($scores as $id => $score) $text .= 'Score-' . $id . ': ' . json_encode((float) $score, JSON_THROW_ON_ERROR) . "\n";
+            foreach ($scores as $id => $score) $text .= 'Score-' . $id . ': ' . json_encode($score == 0 ? 0 : (float) $score, JSON_THROW_ON_ERROR) . "\n";
             if (strlen($text) > self::MAX_BYTES) throw new InvalidArgumentException('Fastmod supplement exceeds 16 MiB.');
         }
         return $text;
@@ -34,13 +34,16 @@ final class FastmodScoreTransfer
     {
         if (strlen($text) > self::MAX_BYTES || !str_starts_with($text, self::HEADER)) throw new InvalidArgumentException('Invalid or unsupported Fastmod supplement.');
         if ($text === self::HEADER) return [];
-        $blocks = explode("\n\n", rtrim($text, "\n"));
+        $blocks = explode("\n\n", rtrim($text, "\n"), self::MAX_ROWS + 2);
         if (array_shift($blocks) !== rtrim(self::HEADER) || count($blocks) > self::MAX_ROWS) throw new InvalidArgumentException('Invalid Fastmod supplement.');
         $fields = ['Post' => 'post_id', 'Content-Hash' => 'content_hash', 'Rubric-Revision' => 'rubric_revision', 'Created-At' => 'created_at', 'Updated-At' => 'updated_at'];
         $rows = [];
         foreach ($blocks as $block) {
             $row = ['scores' => []]; $seen = [];
-            foreach (explode("\n", $block) as $line) {
+            $lines = explode("\n", $block, 71);
+            if (count($lines) > 69) throw new InvalidArgumentException('Too many score fields.');
+            foreach ($lines as $line) {
+                if (strlen($line) > 256) throw new InvalidArgumentException('Score field exceeds length limit.');
                 $parts = explode(': ', $line, 2);
                 if (count($parts) !== 2 || isset($seen[$parts[0]])) throw new InvalidArgumentException('Invalid or duplicate score field.');
                 [$key, $value] = $parts; $seen[$key] = true;

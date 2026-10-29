@@ -78,3 +78,14 @@ Status: Step 3 approved; implementation in progress.
 - Notes: S5 commit 4d659120. No core queries/schema changes, external components or provider calls.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 7 - Verify the normal transfer flow
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Added real HTTP → CLI → browser transfer journey and recovery/compatibility regressions; effective-tags concept. Bounded decoder splitting prevents field/block floods from allocating unbounded arrays. Normalized negative-zero serialization. Fixed identical post matching across dated/flat canonical paths and skipped hash scans for absent/malformed supplements.
+- Verification: Transfer tests 10/10 pass, including actual concurrent score change during compression (stale archive rejected, retry fresh), malformed supplement with successful content, score-only import without Git commit, preserved local suppression, and dated-path duplicates. Browser test passes public download, dry-run with no private store, import/repeat preserving results, live/Forte/text/offline/static meta tags, 390/1280 widths, JS on/off and zero provider calls. Viewed both phone/desktop screenshots; score display and actions visible without overflow. Static assertion initially used pre-release path; corrected to current/tags/meta.html.
+- Notes: S6 commit 6c4b4df4. Existing UI consumes scores unchanged; no new controls, navigation, theme assets or first-paint mutation. Chromium/local fixture verified; physical devices and exhaustive theme/browser matrix not claimed. Retrospective increase reflects acceptance fixtures/edge corrections, not measured time or a scope expansion.
+
+*— Codex · 2026-10-29 UTC*

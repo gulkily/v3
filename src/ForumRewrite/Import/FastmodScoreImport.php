@@ -38,12 +38,24 @@ final class FastmodScoreImport
     /** IDs are authorized only by accepted/identical posts in this content plan. */
     public function hashes(array $entries, string $source, string $destination, bool $applied = false): array
     {
-        $hashes = []; $factory = new FastScoreContextFactory(static fn ($id) => null);
+        $hashes = []; $destinationPaths = null; $factory = new FastScoreContextFactory(static fn ($id) => null);
         $sourceRecords = new CanonicalRecordRepository($source, requireLegacyTimestampMetadata: true, signatureKeyFallbackRoot: $destination);
         $destinationRecords = new CanonicalRecordRepository($destination);
         foreach ($entries as $path => $entry) {
             if (!str_starts_with($path, 'records/posts/') || !str_ends_with($path, '.txt') || !in_array($entry['state'], ['import', 'duplicate'], true)) continue;
             $root = $applied || $entry['state'] === 'duplicate' ? $destination : $source;
+            if ($root === $destination && !is_file($root . '/' . $path) && $entry['state'] === 'duplicate') {
+                // Identical content can already exist under a dated/flat canonical path.
+                if ($destinationPaths === null) {
+                    $destinationPaths = [];
+                    foreach (ContentImportPlanner::files($destination) as $candidate) {
+                        if (str_starts_with($candidate, 'records/posts/') && str_ends_with($candidate, '.txt')) $destinationPaths[basename($candidate)][] = $candidate;
+                    }
+                }
+                foreach ($destinationPaths[basename($path)] ?? [] as $candidate) {
+                    if (hash_file('sha256', $root . '/' . $candidate) === $entry['hash']) { $path = $candidate; break; }
+                }
+            }
             // A removal tombstone or changed duplicate never authorizes score transfer.
             if (!is_file($root . '/' . $path) || is_link($root . '/' . $path) || hash_file('sha256', $root . '/' . $path) !== $entry['hash']) continue;
             $post = ($root === $destination ? $destinationRecords : $sourceRecords)->loadPost($path);
