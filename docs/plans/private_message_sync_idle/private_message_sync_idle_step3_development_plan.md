@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/private_message_sync_idle — [ledger](../effort_estimation_trial.md#cycle-v3private_message_sync_idle), standing P2 enrollment
 Extended estimates: enabled
-Status: Step 2 approved; Step 3 proposed; implementation not authorized
+Status: Step 3 approved by user on 2026-10-29; implementation authorized
 
 **Cycle estimate: 0.75**
 

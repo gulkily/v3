@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/private_message_sync_idle — [ledger](../effort_estimation_trial.md#cycle-v3private_message_sync_idle)
 Extended estimates: enabled
-Status: Step 3 approved; implementation in progress
+Status: Six stages complete locally; production replay and maintainer acceptance pending
 
 **Cycle estimate: 0.75**
 
@@ -65,5 +65,24 @@ Step 4 entry: 2026-10-29 UTC; 0.75 reaffirmed, scope v1/A, original baseline 02d
 - Corrections: Browser drivers now wait for unread eligibility before requesting sync; earlier immediate refresh assertions raced the new gate. Theme selection originally timed out on a hidden picker; selecting the stored theme before reload tests messaging consistently without changing product navigation. Budget/fairness and legacy-status compatibility corrections stay within scope.
 - Limitations: The broader private_message_list_browser.mjs failed at its exact bob user-link lookup (/tmp/private-message-browser-ner7y1), before its unread UI checks; not established as a baseline defect and not counted as passed. Focused unread PHP checks and actual history reading/toggle flows pass. No full suite, production deployment/replay or physical-device checks claimed.
 - Notes: Prior stage commit 406979772. No prospective estimate revision; retrospective reflects fixture repair and wider integration checks, not measured labor.
+
+*— Codex · 2026-10-29 UTC*
+
+## Stage 6 - Contracts and closeout
+
+**Original estimate: 0.06**
+**Retrospective stage work: 0.06**
+
+- Changes: Document combined POST discovery, account-history eligibility, bounded continuation, old-server fallback, donor evidence and explicit legacy repair. Add four scoped concept descriptions and production network/recovery replay instructions. Update cycle/ledger state without changing prior estimates.
+- Verification: Local links in all cycle/concept documents resolve; git diff --check passes. Documentation matches service/controller/browser behavior. Zero third-party dependency or database-schema delta. Six implementation stages each have their summary commit; planning commit contains only plans/debug/index and predates the summary.
+- Baseline reproduction: private_message_list_browser.mjs fails on untouched e614fbd9b at the same line 132 exact bob user-link lookup (/tmp/private-message-browser-JZOPeY). Its later unread UI checks remain unverified; this failure predates the cycle. Temporary baseline worktree removed.
+- Notes: Prior stage commit ca13fb623. No estimate revision. No UI copy/layout changes; actual history phone/desktop flows and messaging theme toggles passed, without claiming exhaustive visual verification.
+
+## Closeout
+
+Scope: v1/A; original baseline 02dafa857, implementation base e614fbd9b. Six planned stages completed on feat/private-message-sync-idle, after planning 09a0a660a and staged commits 4a552bbeb, fc7c501f5, 2f11c3a83, 406979772, ca13fb623 and this closeout commit. No merge, push or deployment performed.
+Whole-cycle projection: 0.75 retained from entry and planning.
+Retrospective cycle scope: 0.80; R1/P2, 2026-10-29 UTC, Codex single exposed rater; integration fixtures and cross-version/budget corrections account for the difference. Original stage-work estimates remain intact; retrospective values are 0.12/0.14/0.16/0.16/0.20/0.06, non-additive and not measured labor.
+Acceptance: Local focused checks passed with one reproduced baseline failure in the broader list suite. Production ordinary-entry and recovery replay, physical devices, full suite and maintainer comfortable-fit/acceptance remain pending. No accepted-count increment or invented measurements. Roll out matching PHP/assets and use the linked production checks; retain both private databases on rollback.
 
 *— Codex · 2026-10-29 UTC*
