@@ -100,3 +100,12 @@
     font-size: 0.8rem;
   }
 }
+/* Messages for someone who isn't an approved member yet: one line for their state and its next step. */
+.private-message-access [data-access-for] { display: none; }
+.private-message-access[data-access-state="guest"] [data-access-for="guest"],
+.private-message-access[data-access-state="waiting"] [data-access-for="waiting"],
+.private-message-access[data-access-state="failed"] [data-access-for="failed"] { display: block; }
+@media (scripting: none) {
+  .private-message-access [data-access-for="guest"] { display: block; }
+}
+.private-message-access [data-access-for="guest"] button { width: auto; }

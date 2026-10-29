@@ -99,3 +99,25 @@ Extended estimates: enabled
 - Estimate details: slightly under; tests needed only accessible-name-preserving updates.
 
 *— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Not-an-approved-member page
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.17**
+
+- Changes:
+  - `PrivateMessagePageController`: `/messages` and `/messages/conversation/{name}` render one access page for anyone who isn't a signed-in approved member: 401 without a session, 403 for a signed-in key that isn't approved (before: "Authentication Required" for the first, and "Messages Unavailable" or "Conversation Unavailable" for the second).
+  - New `pages/private_message_access.php`: "Messages are for approved members" with one line for the visitor's state. Guest: "Set up an account with a name. Messages open once a member approves you." and Set up account. Waiting: "You’re waiting for approval as {name}. Messages unlock once someone approves you." The state is set before paint by an inline script; the server HTML is the same for every visitor with the same status. Without JavaScript the guest line shows.
+  - The account page's state decision (`readStorageValue`, `hasBrowserKeypair`, `storedFingerprint`, `isRegistered`, `accountState`) moved unchanged into `partials/account_state_script.php` (`window.ForumAccountState`), included by Account and the access page. An inline partial rather than an asset, because page scripts are deferred and the state must be known before paint.
+  - New `private_message_access.js`: a registered key whose approval the page can't know shows only the heading while it signs in where it is (`PrivateSiteAuth.authenticate`, forced so the answer includes approval). If approved, it reloads into Messages (once; a second refusal within 15 seconds shows the failure). If signed in but not approved, it shows the waiting line; if there is no usable key, the guest line; on failure, "Couldn’t sign you in." with Retry.
+  - Test fixture: an `unapprove` action for a named user.
+- Verification:
+  - `tests/browser/private_message_redesign.mjs`, cold loads at 390px: no key → guest on first paint (401), Set up account opens Account; an unregistered local key → guest; a signed-in waiting key → waiting on first paint (403); a registered waiting key without a session → heading only, then waiting; an approved key without a session → heading only, then Messages list at `/messages`; a failed sign-in → "Couldn’t sign you in." and Retry → Messages. Screenshots of the three states reviewed.
+  - `account_states.mjs` (after moving the code, before adding the Messages caller, and again after), `background_sign_in.mjs`, `private_message_list_browser.mjs`: pass. `php tests/run.php PrivateSiteAuthTest PrivateMessagePageControllerTest AccountKeyPageHooksTest PrivateMessageFeatureFlagTest`: 26/26.
+- Notes:
+  - Found while testing: the sign-in helper reports a signed-in unapproved key as `authenticated` on public sites (`pending` only on members-only sites), and returns a remembered session without approval unless forced; the page handles both.
+  - Members-only sites: not exercised here; the shell sends unapproved visitors to the lobby before Messages there. Stage 6 checks Chouse.
+- Estimate details: slightly over, for the sign-in result mapping found during testing (new understanding).
+
+*— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*

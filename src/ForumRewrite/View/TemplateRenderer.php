@@ -32,6 +32,7 @@ final class TemplateRenderer
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
         'users.php' => ['/assets/account.css'],
         'private_message_list.php' => ['/assets/private_message_list.css'],
+        'private_message_access.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'board_list.php' => ['/assets/thread-list.css', '/assets/compose.css'],

@@ -25,7 +25,7 @@ async function identity(name) {
   profiles.push({ name, fingerprint: publicKey.getFingerprint(), publicKey: keys.publicKey });
   return { ...keys, fingerprint: publicKey.getFingerprint(), public: publicKey, private: await openpgp.readPrivateKey({ armoredKey: keys.privateKey }) };
 }
-const alice = await identity('alice'), bob = await identity('bob'), outsider = await identity('outsider');
+const alice = await identity('alice'), bob = await identity('bob'), outsider = await identity('outsider'), waiting = await identity('mouse');
 for (let i = 1; i <= 60; i++) profiles.push({ name: 'user-' + String(i).padStart(2, '0'), fingerprint: bob.fingerprint, publicKey: bob.publicKey });
 const encrypt = (signer, text) => openpgp.createMessage({ text }).then(message => openpgp.encrypt({
   message, encryptionKeys: [alice.public, bob.public], signingKeys: signer.private, format: 'armored',
@@ -37,6 +37,7 @@ function seed(data) {
   assert.equal(result.status, 0, result.stderr);
 }
 seed({ profiles, incoming: await encrypt(bob, 'Incoming fixture preview'), outgoing: await encrypt(alice, 'Outgoing fixture preview') });
+seed({ action: 'unapprove', name: 'mouse' });
 const day = offset => new Date(Date.now() - offset * 86400000).toISOString().replace(/\.\d+Z$/, 'Z');
 seed({ action: 'chat', messages: [
   { id: 'redesign-1', time: day(3), sender: 'bob', envelope: await encrypt(bob, 'did you see my thread about the textarea') },
@@ -62,6 +63,75 @@ try {
   for (let attempt = 0; attempt < 50; attempt++) {
     try { await fetch(base + '/api/version'); break; } catch { await new Promise(resolve => setTimeout(resolve, 100)); }
   }
+  // Not an approved member: the page names the visitor's state on first paint and signs in an approved key.
+  const keysOf = who => ({ username: who === waiting ? 'mouse' : 'alice', public_key: who.publicKey, private_key: who.privateKey,
+    fingerprint: who.fingerprint.toUpperCase(), published_fingerprint: who.fingerprint.toUpperCase() });
+  async function signedIn(context, who) {
+    const challenge = (await (await context.request.get(base + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
+    const signature = await openpgp.sign({ message: await openpgp.createMessage({ text: challenge }), signingKeys: who.private, detached: true });
+    const answer = await context.request.post(base + '/api/authenticate_identity', { data: { challenge, detached_signature: signature, identity_id: 'openpgp:' + who.fingerprint } });
+    assert.equal(answer.status(), 200, await answer.text());
+  }
+  async function accessPage(storageKeys, prepare) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+    if (prepare) await prepare(context);
+    await context.addInitScript(keys => {
+      for (const [key, value] of Object.entries(keys || {})) localStorage.setItem('forum_pki_' + key, value);
+      document.addEventListener('DOMContentLoaded', () => {
+        const access = document.querySelector('[data-private-message-access]');
+        window.firstAccessState = access ? access.dataset.accessState : 'none';
+      });
+    }, storageKeys);
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    const response = await page.goto(base + '/messages');
+    return { context, page, errors, status: response.status() };
+  }
+  {
+    const guest = await accessPage(null);
+    assert.equal(guest.status, 401);
+    assert.equal(await guest.page.evaluate(() => window.firstAccessState), 'guest', 'No key: guest on first paint');
+    assert.equal(await guest.page.getByRole('heading', { name: 'Messages are for approved members' }).isVisible(), true);
+    assert.equal(await guest.page.getByRole('button', { name: 'Set up account' }).isVisible(), true);
+    assert.equal(await guest.page.getByText('Authentication Required').count(), 0);
+    if (shots) await guest.page.screenshot({ path: join(shots, 'access-guest.png') });
+    await guest.page.getByRole('button', { name: 'Set up account' }).click();
+    await guest.page.waitForURL(/\/account\/key\/?/);
+    await guest.context.close();
+
+    const local = await accessPage({ username: 'guest', public_key: outsider.publicKey, private_key: outsider.privateKey, fingerprint: outsider.fingerprint.toUpperCase() });
+    assert.equal(await local.page.evaluate(() => window.firstAccessState), 'guest', 'An unregistered key is a guest');
+    await local.context.close();
+
+    const waitingSigned = await accessPage(keysOf(waiting), context => signedIn(context, waiting));
+    assert.equal(waitingSigned.status, 403);
+    assert.equal(await waitingSigned.page.evaluate(() => window.firstAccessState), 'waiting', 'A signed-in waiting key: waiting on first paint');
+    await waitingSigned.page.getByText('You’re waiting for approval as mouse. Messages unlock once someone approves you.').waitFor();
+    if (shots) await waitingSigned.page.screenshot({ path: join(shots, 'access-waiting.png') });
+    await waitingSigned.context.close();
+
+    const waitingUnsigned = await accessPage(keysOf(waiting));
+    assert.equal(await waitingUnsigned.page.evaluate(() => window.firstAccessState), 'checking', 'Approval unknown: heading only');
+    await waitingUnsigned.page.getByText('You’re waiting for approval as mouse.', { exact: false }).waitFor();
+    await waitingUnsigned.context.close();
+
+    const approved = await accessPage(keysOf(alice));
+    assert.equal(await approved.page.evaluate(() => window.firstAccessState), 'checking');
+    await approved.page.locator('[data-conversation-list]').waitFor();
+    assert.equal(new URL(approved.page.url()).pathname, '/messages');
+    assert.deepEqual(approved.errors, []);
+    await approved.context.close();
+
+    const failing = await accessPage(keysOf(alice), context => context.route('**/api/auth_challenge', route => route.abort()));
+    await failing.page.getByText('Couldn’t sign you in.').waitFor();
+    if (shots) await failing.page.screenshot({ path: join(shots, 'access-failed.png') });
+    await failing.context.unroute('**/api/auth_challenge');
+    await failing.page.getByRole('button', { name: 'Retry' }).click();
+    await failing.page.locator('[data-conversation-list]').waitFor();
+    await failing.context.close();
+  }
+
   for (const width of [390, 1280]) for (const theme of themes) {
     const label = `${theme} ${width}px`;
     const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
