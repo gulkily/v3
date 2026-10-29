@@ -33,3 +33,14 @@ Status: Step 3 approved; implementation in progress.
 - Notes: S1 commit a3efe835. No schema/dependency changes; original stage scope/estimate unchanged.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 3 - Export through existing downloads
+
+**Original estimate: 0.18**
+**Retrospective stage-work assessment: 0.18**
+
+- Changes: Both public content formats automatically inject the bounded score snapshot; configured private score path is resolved through existing config. Content cache identity includes score bytes, including committed WAL updates; image identity does not. Reserved file content is replaced; no private database created on read.
+- Verification: Archive/export regressions plus codec/store 15/15 pass; expanded transfer tests 5/5 pass with real TAR/ZIP parity, reserved file replacement, missing/empty store, score-only WAL updates, pruning, unchanged image cache. Existing compression-race/failure cleanup tests pass. Corrected codec numeric grammar for scientific notation beginning with digits other than 1.
+- Notes: S2 commit 59fd0988. No setting/flag/dependency/schema introduced. Consistent bounded query snapshot; content hash matching reads only scored committed posts. No browser changes yet.
+
+*— Codex · 2026-10-29 UTC*

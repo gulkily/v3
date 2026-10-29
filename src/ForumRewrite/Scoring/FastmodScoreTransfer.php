@@ -45,7 +45,7 @@ final class FastmodScoreTransfer
                 if (count($parts) !== 2 || isset($seen[$parts[0]])) throw new InvalidArgumentException('Invalid or duplicate score field.');
                 [$key, $value] = $parts; $seen[$key] = true;
                 if (isset($fields[$key])) $row[$fields[$key]] = $value;
-                elseif (str_starts_with($key, 'Score-') && preg_match('/^(?:0|1)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/D', $value)) $row['scores'][substr($key, 6)] = (float) $value;
+                elseif (str_starts_with($key, 'Score-') && preg_match('/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/D', $value)) $row['scores'][substr($key, 6)] = (float) $value;
                 else throw new InvalidArgumentException('Unknown or invalid score field.');
             }
             self::validate($row);

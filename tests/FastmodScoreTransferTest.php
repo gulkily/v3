@@ -8,7 +8,7 @@ final class FastmodScoreTransferTest
 {
     public static function row(): array
     {
-        return ['post_id' => 'post-1', 'content_hash' => str_repeat('a', 64), 'rubric_revision' => str_repeat('b', 64), 'created_at' => '2025-01-01T00:00:00+00:00', 'updated_at' => '2025-01-02T00:00:00+00:00', 'scores' => ['moderation' => 0.9, 'quality' => 0.000001]];
+        return ['post_id' => 'post-1', 'content_hash' => str_repeat('a', 64), 'rubric_revision' => str_repeat('b', 64), 'created_at' => '2025-01-01T00:00:00+00:00', 'updated_at' => '2025-01-02T00:00:00+00:00', 'scores' => ['moderation' => 0.9, 'quality' => 0.000005]];
     }
 
     public function testRoundTripAndAllowlist(): void
@@ -53,6 +53,32 @@ final class FastmodScoreTransferTest
         try { $store->importScoredRows([$row, $second], ['post-1' => $row['content_hash'], 'post-2' => $row['content_hash']], $row['rubric_revision'], $ids); throw new RuntimeException('Expected interruption'); }
         catch (PDOException) {}
         assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM post_fast_scores')->fetchColumn());
+    }
+
+    public function testBothExportsRefreshForWalScoresWithoutGitChanges(): void
+    {
+        require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+        $w = new ImportTestWorkspace(); $root = $w->repository('source');
+        $w->put($root . '/records/posts/post-1.txt', $w->post('post-1'));
+        $w->put($root . '/fastmod-scores.txt', 'reserved path must be replaced'); $w->git($root);
+        $backup = new \ForumRewrite\Images\ImageBackup($root, $w->root . '/index.sqlite3', $w->root);
+        $empty = $backup->export('tar.gz'); fclose($empty['stream']);
+        mkdir($w->root . '/state/private', 0700, true);
+        $pdo = new PDO('sqlite:' . $w->root . '/state/private/fast_scores.sqlite3'); $pdo->exec('PRAGMA journal_mode=WAL'); $pdo->exec('PRAGMA wal_autocheckpoint=0');
+        $store = new \ForumRewrite\Scoring\SqliteFastScoreStore($pdo);
+        $post = (new \ForumRewrite\Canonical\CanonicalRecordRepository($root))->loadPost('records/posts/post-1.txt');
+        $row = self::row(); $row['content_hash'] = (new \ForumRewrite\Scoring\FastScoreContextFactory(static fn ($id) => null))->contentHashForPost(['post_id' => $post->postId, 'subject' => $post->subject, 'body' => $post->body]);
+        $images = $backup->export('images'); fclose($images['stream']);
+        $store->importScoredRows([$row], ['post-1' => $row['content_hash']], $row['rubric_revision'], array_keys($row['scores']));
+        $tar = $backup->export('tar.gz'); fclose($tar['stream']);
+        assertSame(false, $tar['path'] === $empty['path']);
+        $text = (new PharData($tar['path']))['repository/fastmod-scores.txt']->getContent();
+        assertSame(true, [$row] == FastmodScoreTransfer::decode($text));
+        $zip = $backup->export('zip'); fclose($zip['stream']);
+        $archive = new ZipArchive(); $archive->open($zip['path']); assertSame($text, $archive->getFromName('repository/fastmod-scores.txt')); $archive->close();
+        $again = $backup->export('images'); fclose($again['stream']); assertSame($images['path'], $again['path']);
+        $pdo->exec('DELETE FROM post_fast_scores');
+        $pruned = $backup->export('tar.gz'); fclose($pruned['stream']); assertSame($empty['path'], $pruned['path']);
     }
 
     public function testRejectsWholeMalformedSupplement(): void

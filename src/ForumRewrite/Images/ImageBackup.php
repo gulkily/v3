@@ -8,7 +8,7 @@ use RuntimeException;
 /** Bounded snapshots; never streams a partially assembled archive. */
 final class ImageBackup
 {
-    public function __construct(private readonly string $repositoryRoot, private readonly string $databasePath) {}
+    public function __construct(private readonly string $repositoryRoot, private readonly string $databasePath, private readonly ?string $projectRoot = null) {}
 
     public function revision(): string
     {
@@ -26,17 +26,17 @@ final class ImageBackup
         $cache = new ArchiveCache(dirname($this->databasePath), $this->repositoryRoot);
         $locks = new ArchiveLocks(dirname($this->databasePath));
         // Never hold the writer lock while waiting for the builder. Hits need no build lock.
-        $hit = $locks->withExclusiveLock('forum-rewrite.lock', fn () => $cache->open($this->identity($expectedRevision), $kind));
+        $hit = $locks->withExclusiveLock('forum-rewrite.lock', fn () => $cache->open($this->identity($expectedRevision, $kind), $kind));
         if ($hit !== null) return $hit;
         return $locks->withExclusiveLock('image-export.lock', function () use ($cache, $locks, $kind, $expectedRevision): array {
             $hit = $locks->withExclusiveLock('forum-rewrite.lock',
-                fn () => $cache->open($this->identity($expectedRevision), $kind),
+                fn () => $cache->open($this->identity($expectedRevision, $kind), $kind),
             );
             if ($hit !== null) return $hit;
             $built = $this->build($kind, $expectedRevision, $locks, $cache);
             try {
                 return $locks->withExclusiveLock('forum-rewrite.lock', function () use ($cache, $built, $kind, $expectedRevision): array {
-                    $identity = $this->identity($expectedRevision);
+                    $identity = $this->identity($expectedRevision, $kind);
                     if ($identity !== $built['identity']) throw new ArchiveConflictException('Repository changed during backup; refresh Backup and retry.');
                     return $cache->publish($built, $identity, $kind);
                 });
@@ -62,10 +62,11 @@ final class ImageBackup
                 }
                 $store = new ImageStore($this->repositoryRoot);
                 $inventory = $store->inventory();
-                $identity = ExportIdentity::capture($this->repositoryRoot, $revision, $inventory);
+                $scores = $this->scores($kind);
+                $identity = $this->bindScores(ExportIdentity::capture($this->repositoryRoot, $revision, $inventory), $scores);
                 $source = in_array($kind, ['images', 'images.zip'], true) ? $store->root : $this->repositoryRoot;
                 $size = in_array($kind, ['images', 'images.zip'], true) ? array_sum(array_column($inventory, 'bytes')) : self::treeBytes($source, excludeGit: true);
-                $workspace = $cache->prepareBuild($identity, $size);
+                $workspace = $cache->prepareBuild($identity, $size + strlen($scores ?? ''));
                 $work = $workspace . '/work';
                 $archive = $workspace . '/archive.' . $extension;
                 if (!mkdir($work, 0700)) throw new RuntimeException('Cannot prepare snapshot workspace.');
@@ -92,6 +93,9 @@ final class ImageBackup
                     foreach (self::references($source, $work . '/repository') as $ref) { $store->resolve($ref); }
                     RepositorySnapshot::write($work . '/repository', $revision);
                     RepositoryArchiveReadme::write($work . '/repository');
+                    $scoreFile = $work . '/repository/' . \ForumRewrite\Scoring\FastmodScoreTransfer::PATH;
+                    if (is_link($scoreFile) || is_dir($scoreFile)) throw new RuntimeException('Invalid reserved Fastmod supplement path.');
+                    if (file_put_contents($scoreFile, $scores) === false) throw new RuntimeException('Cannot write Fastmod supplement.');
                     self::treeBytes($work . '/repository');
                 }
                 if ($this->revision() !== $revision || $this->git(['status', '--porcelain', '--', 'records']) !== '') {
@@ -115,8 +119,8 @@ final class ImageBackup
                 exec($command . ' 2>&1', $output, $status);
                 if ($status !== 0 || !is_file($archive)) { throw new RuntimeException('Unable to assemble complete backup.'); }
             }
-            $locks->withExclusiveLock('forum-rewrite.lock', function () use ($identity): void {
-                if ($this->identity() !== $identity) throw new ArchiveConflictException('Repository changed during backup; refresh Backup and retry.');
+            $locks->withExclusiveLock('forum-rewrite.lock', function () use ($identity, $kind): void {
+                if ($this->identity(null, $kind) !== $identity) throw new ArchiveConflictException('Repository changed during backup; refresh Backup and retry.');
             });
             chmod($archive, 0600);
             return ['path' => $archive, 'revision' => $revision, 'extension' => $extension, 'identity' => $identity, 'workspace' => $workspace];
@@ -165,7 +169,7 @@ final class ImageBackup
     }
 
     /** Caller holds the instance writer lock. */
-    private function identity(?string $expectedRevision = null): string
+    private function identity(?string $expectedRevision = null, string $kind = 'tar.gz'): string
     {
         $revision = $this->revision();
         if ($expectedRevision !== null && !hash_equals($revision, $expectedRevision)) {
@@ -174,7 +178,20 @@ final class ImageBackup
         if ($this->git(['status', '--porcelain', '--', 'records']) !== '') {
             throw new RuntimeException('Canonical records have uncommitted changes; repair before backup.');
         }
-        return ExportIdentity::capture($this->repositoryRoot, $revision, (new ImageStore($this->repositoryRoot))->identityListing());
+        return $this->bindScores(ExportIdentity::capture($this->repositoryRoot, $revision, (new ImageStore($this->repositoryRoot))->identityListing()), $this->scores($kind));
+    }
+
+    private function scores(string $kind): ?string
+    {
+        if (in_array($kind, ['images', 'images.zip'], true)) return null;
+        $project = $this->projectRoot ?? dirname(__DIR__, 3);
+        $path = \ForumRewrite\Scoring\FastScoreDatabaseConfig::path($project, \ForumRewrite\Support\PrivateConfig::load($project));
+        return \ForumRewrite\Scoring\FastmodScoreSnapshot::capture($this->repositoryRoot, $path);
+    }
+
+    private function bindScores(string $identity, ?string $scores): string
+    {
+        return $scores === null ? $identity : hash('sha256', $identity . ':fastmod-scores-v1:' . hash('sha256', $scores));
     }
 
     private function writeImageZip(string $work, string $archive): void
