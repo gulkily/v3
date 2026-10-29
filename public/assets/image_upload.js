@@ -87,6 +87,9 @@
     const fields = form.querySelector('.image-compose-fields');
     if (!fields) return;
     const state = form.__imageState, busy = Boolean(form.__imageBusy);
+    // The area holds a preview and its status: shown only when there is one, so an eligible but
+    // empty composer keeps no gap between the text and Post. Attach image lives in the ··· menu.
+    fields.hidden = form.__imageEligible !== true || !(state || form.__imageInputNotice);
     const preview = fields.querySelector('.image-upload-preview');
     const img = preview.querySelector('img');
     preview.hidden = !state;
@@ -122,8 +125,6 @@
   }
   function displayEligibility(form, allowed) {
     form.__imageEligible = allowed;
-    const fields = form.querySelector('.image-compose-fields');
-    if (fields) fields.hidden = !allowed;
     lock(form, Boolean(form.__imageBusy));
   }
   async function refreshEligibility(form, preserveCurrent = false) {
