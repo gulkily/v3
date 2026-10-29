@@ -51,6 +51,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI tab bar scroll-away](ui_tab_bar_scroll_away/)
 - [UI account states](ui_account_states/)
 - [UI first post identity](ui_first_post_identity/)
+- [UI messages](ui_messages/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
