@@ -337,3 +337,5 @@ and repair its navigation and affected references. See the
 - [Fastmod score-derived virtual tags](fastmod_virtual_tags/fastmod_virtual_tags_step1_solution_assessment.md)
 
 - [Approval acceptance text](approval_acceptance_text/approval_acceptance_text_step3_development_plan.md) — F03; implemented locally with conversion/recovery and legacy-reader retirement readiness.
+
+- [Fastmod score transfer](./fastmod_score_transfer/fastmod_score_transfer_step3_development_plan.md) — automatic score export/import; Step 3 approved.
