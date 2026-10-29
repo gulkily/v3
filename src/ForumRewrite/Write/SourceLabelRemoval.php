@@ -20,8 +20,8 @@ final class SourceLabelRemoval
                 $journal = self::journal($root, $id);
                 if (is_file($journal)) {
                     $pending = json_decode((string) file_get_contents($journal), true, 32, JSON_THROW_ON_ERROR);
-                    if (($pending['source_id'] ?? null) !== $id) throw new RuntimeException('Invalid pending removal; inspect local journal.');
-                    self::accept($root, $pending);
+                    if (($pending['format'] ?? null) !== 'removal-recovery-v1' || !is_array($pending['record'] ?? null) || ($pending['record']['source_id'] ?? null) !== $id) throw new RuntimeException('Unsupported pending removal journal; no changes made. Only new-format recovery is supported.');
+                    self::accept($root, $pending['record']);
                 }
                 $record = LabelRemoval::prepare($root, $id, $repair && LabelOwnership::hasSource($root, $id) ? 'resolve' : 'delete', $labels);
                 if (!$repair) $record['operation'] = 'delete';
@@ -53,6 +53,10 @@ final class SourceLabelRemoval
     private static function accept(string $root, array $record): void
     {
         $id = $record['source_id'];
+        $record = LabelRemoval::decode(LabelRemoval::encode($record), $id);
+        $signed = \ForumRewrite\Canonical\AcceptedRetraction::read($root, $id);
+        if ($signed !== null) \ForumRewrite\Canonical\AcceptedRemoval::combine(
+            $signed + ['source_id'=>$id,'operation'=>'delete','labels'=>[]], $record);
         $relative = LabelRemoval::path($id);
         $paths = [$relative];
         $remove = [];
@@ -76,7 +80,7 @@ final class SourceLabelRemoval
         }
         $journal = self::journal($root, $id);
         $temporary = tempnam(dirname($journal), '.label-removal-');
-        if ($temporary === false || file_put_contents($temporary, json_encode($record, JSON_THROW_ON_ERROR)) === false || !rename($temporary, $journal)) throw new RuntimeException('Cannot persist removal recovery journal.');
+        if ($temporary === false || file_put_contents($temporary, json_encode(['format'=>'removal-recovery-v1','record'=>$record], JSON_THROW_ON_ERROR)) === false || !rename($temporary, $journal)) throw new RuntimeException('Cannot persist removal recovery journal.');
         LabelRemoval::store($root, $record);
         foreach ($paths as $path) if ($path !== $relative && is_file($root . '/' . $path) && !unlink($root . '/' . $path)) throw new RuntimeException('Cannot remove ' . $path);
         LabelRemoval::git($root, array_merge(['add', '-A', '--'], $paths));

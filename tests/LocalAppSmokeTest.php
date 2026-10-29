@@ -1549,6 +1549,32 @@ PHP;
         assertSame(false, str_contains($pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-001'")->fetchColumn(), 'pinned'));
     }
 
+    public function testNewRemovalResolutionKeepsLiveSourceAndRejectsOldJournal(): void
+    {
+        [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
+        $before = file_get_contents($root . '/records/posts/root-001.txt');
+        \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, 'root-001', true,
+            ['thread-label-20260415153000-ab12cd34'], $artifacts);
+        assertSame($before, file_get_contents($root . '/records/posts/root-001.txt'));
+        $record = \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001');
+        assertSame('resolve', $record['operation']);
+        assertStringContains('Format: removal-acceptance-v1', file_get_contents($root . '/' . \ForumRewrite\Canonical\LabelRemoval::path('root-001')));
+        assertSame(false, isset(\ForumRewrite\Canonical\RetractedPosts::effectivePostIds($root)['root-001']));
+        file_put_contents($root . '/.git/source-label-removal-root-001.json', json_encode($record));
+        $failed = false;
+        try { \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, 'root-001', false, [], $artifacts); }
+        catch (RuntimeException $e) { $failed = str_contains($e->getMessage(), 'Unsupported pending'); }
+        assertSame(true, $failed);
+        assertSame($before, file_get_contents($root . '/records/posts/root-001.txt'));
+        unlink($root . '/.git/source-label-removal-root-001.json');
+        \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, 'root-001', false, [], $artifacts);
+        $deleted = \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001');
+        assertSame('delete', $deleted['operation']);
+        assertSame($record['labels'], $deleted['labels']);
+        assertSame(false, is_file($root . '/records/posts/root-001.txt'));
+        assertSame(true, is_file($root . '/records/posts/reply-001.txt'));
+    }
+
     public function testLegacyOrphanLabelRepairNeedsExplicitResolution(): void
     {
         [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();

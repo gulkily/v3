@@ -12,7 +12,7 @@ final class LabelRemoval
     public static function path(string $sourceId): string
     {
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,200}$/D', $sourceId)) throw new RuntimeException('Invalid source post ID.');
-        return 'records/post-removals/' . $sourceId . '.json';
+        return 'records/post-removals/' . $sourceId . '.txt';
     }
 
     public static function git(string $root, array $args): string
@@ -30,45 +30,45 @@ final class LabelRemoval
     {
         $path = self::path($sourceId);
         if (!is_file($root . '/' . $path)) return null;
-        if (is_link($root . '/' . $path) || filesize($root . '/' . $path) > 1048576) throw new RuntimeException('Unsafe removal evidence: ' . $path);
+        if (is_link($root . '/' . $path) || is_link(dirname($root . '/' . $path)) || filesize($root . '/' . $path) > 1048576) throw new RuntimeException('Unsafe removal evidence: ' . $path);
         $bytes = (string) RecordLimits::read($root . '/' . $path);
-        $record = json_decode($bytes, true, 32, JSON_THROW_ON_ERROR);
-        if (!is_array($record) || ($record['source_id'] ?? null) !== $sourceId
-            || !in_array($record['operation'] ?? '', ['delete', 'resolve'], true)
-            || !preg_match('/^[a-f0-9]{64}$/D', $record['source_hash'] ?? '')
-            || !is_array($record['labels'] ?? null) || !is_array($record['post'] ?? null)) {
-            throw new RuntimeException('Invalid removal evidence: ' . $path);
-        }
-        if (($record['post']['post_id'] ?? null) !== $sourceId
-            || !is_string($record['post']['thread_id'] ?? null)
-            || !is_string($record['post']['created_at'] ?? null)) throw new RuntimeException('Invalid removal structure: ' . $path);
-        self::path($record['post']['thread_id']);
-        foreach ($record['labels'] as $labelPath => $hash) {
-            if (!is_string($labelPath) || !preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#D', $labelPath)
-                || !is_string($hash) || !preg_match('/^[a-f0-9]{64}$/D', $hash)) throw new RuntimeException('Invalid removal label binding.');
-        }
-        if (($record['acceptance_version'] ?? null) === 2) return $record;
-        // Legacy migration only: archives may not supply local acceptance.
-        $commits = preg_split('/\s+/', trim(self::git($root, ['log', '--format=%H', '--', $path])));
-        foreach ($commits as $commit) {
-            if ($commit === '') continue;
-            if (trim(self::git($root, ['show', '-s', '--format=%s', $commit])) !== 'Accept source label cleanup ' . $sourceId) continue;
-            if (self::git($root, ['show', $commit . ':' . $path]) === $bytes) return $record;
-        }
-        throw new RuntimeException('Removal evidence lacks trusted local acceptance; restore trusted Git history: ' . $path);
+        return self::decode($bytes, $sourceId);
+    }
+
+    public static function encode(array $record): string
+    {
+        if (array_diff(array_keys($record), ['acceptance_version','source_id','source_hash','operation','accepted_at','actor','labels','post'])
+            || ($record['acceptance_version'] ?? null) !== 2) throw new RuntimeException('Invalid local removal fields.');
+        $p = $record['post'];
+        if (array_diff(array_keys($p), ['post_id','thread_id','parent_id','created_at','author_identity_id','thread_type'])
+            || $p['post_id'] !== $record['source_id']) throw new RuntimeException('Invalid local removal structure.');
+        return RemovalReceipt::encode(['Format'=>'removal-acceptance-v1', 'Post-ID'=>$record['source_id'],
+            'Operation'=>$record['operation'], 'Authority'=>'local-operator', 'Accepted-At'=>$record['accepted_at'],
+            'Actor'=>$record['actor'], 'Source-SHA256'=>$record['source_hash'], 'Thread-ID'=>$p['thread_id'],
+            'Parent-ID'=>$p['parent_id'] ?? '', 'Post-Created-At'=>$p['created_at'],
+            'Author-Identity-ID'=>$p['author_identity_id'] ?? '', 'Thread-Type'=>$p['thread_type'] ?? '',
+            'Retraction-Class'=>'', 'Retraction-Attribution'=>'', 'Request-SHA256'=>'', 'Signature-SHA256'=>''], $record['labels']);
+    }
+
+    public static function decode(string $bytes, string $id): array
+    {
+        $decoded = RemovalReceipt::decode($bytes); $h = $decoded['headers'];
+        if ($h['Authority'] !== 'local-operator' || $h['Post-ID'] !== $id) throw new RuntimeException('Mismatched local removal receipt.');
+        return ['acceptance_version'=>2,'source_id'=>$id,'source_hash'=>$h['Source-SHA256'],
+            'operation'=>$h['Operation'],'accepted_at'=>$h['Accepted-At'],'actor'=>$h['Actor'],'labels'=>$decoded['labels'],
+            'post'=>['post_id'=>$id,'thread_id'=>$h['Thread-ID'],'parent_id'=>$h['Parent-ID'] ?: null,
+                'created_at'=>$h['Post-Created-At'],'author_identity_id'=>$h['Author-Identity-ID'] ?: null,'thread_type'=>$h['Thread-Type'] ?: null]];
     }
 
     public static function all(string $root): array
     {
         $records = [];
-        foreach (glob($root . '/records/post-removals/*.json') ?: [] as $path) {
+        foreach (glob($root . '/records/post-removals/*.txt') ?: [] as $path) {
             try {
-                $data = json_decode((string) RecordLimits::read($path), true, 32, JSON_THROW_ON_ERROR);
-                if (($data['acceptance_version'] ?? null) !== 2) continue;
-                $id = basename($path, '.json');
+                $id = basename($path, '.txt');
                 $records[$id] = self::read($root, $id);
             } catch (\ForumRewrite\Support\OperationLimitException|RecordReadException|RecordSizeException $error) { throw $error; }
-            catch (\RuntimeException|\JsonException) { /* Unresolved legacy evidence belongs to explicit migration. */ }
+            catch (\RuntimeException $error) { /* Invalid files never confer acceptance. */ }
         }
         return $records;
     }
@@ -130,7 +130,11 @@ final class LabelRemoval
         if ($existing !== null && $existing['operation'] === 'delete' && $explicitLabelIds === []) return $existing;
         $inspection = self::inspect($root, $id);
         $post = $inspection['post'];
-        $labels = array_merge($existing['labels'] ?? [], $inspection['proven']);
+        $labels = $existing['labels'] ?? [];
+        foreach ($inspection['proven'] as $path => $hash) {
+            if (isset($labels[$path]) && !hash_equals($labels[$path], $hash)) throw new RuntimeException('Accepted label changed; inspect before retry: ' . $path);
+            $labels[$path] = $hash;
+        }
         foreach ($explicitLabelIds as $labelId) {
             if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/D', $labelId)) throw new RuntimeException('Invalid label ID.');
             $path = CanonicalPathResolver::threadLabel($labelId);
@@ -138,7 +142,9 @@ final class LabelRemoval
             if ($label->threadId !== ($post->threadId ?? $id) || ($label->sourcePostId !== null && $label->sourcePostId !== $id)) {
                 throw new RuntimeException('Explicit resolution conflicts with label target or source.');
             }
-            $labels[$path] = hash_file('sha256', $root . '/' . $path);
+            $hash = hash_file('sha256', $root . '/' . $path);
+            if (isset($labels[$path]) && !hash_equals($labels[$path], $hash)) throw new RuntimeException('Accepted label changed; inspect before retry: ' . $path);
+            $labels[$path] = $hash;
         }
         ksort($labels);
         $effectiveOperation = ($existing['operation'] ?? null) === 'delete' ? 'delete' : $operation;
@@ -156,7 +162,7 @@ final class LabelRemoval
         if (!is_dir($directory) && !mkdir($directory, 0775, true)) throw new RuntimeException('Cannot create removal evidence directory.');
         $temporary = tempnam($directory, '.pending-');
         try {
-            if (file_put_contents($temporary, json_encode($record, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . "\n") === false
+            if (file_put_contents($temporary, self::encode($record)) === false
                 || !rename($temporary, $root . '/' . $relative)) throw new RuntimeException('Cannot persist removal evidence.');
         } finally { if (is_file($temporary)) unlink($temporary); }
         return $relative;

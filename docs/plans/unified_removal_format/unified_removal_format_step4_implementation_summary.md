@@ -35,3 +35,15 @@ Step 3 explicitly approved; planning commit `5143ab6f`, branch `feature/unified-
 - Notes: S2/v2 unchanged; no core table/index/query change, so no schema increment. Existing writers are switched in subsequent stages. Zero dependencies.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 3 - Operator deletion and repair
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes: local receipts now use the common codec and `.txt` paths; removed JSON decoding and Git-history acceptance reconstruction. Recovery journals explicitly identify the new format and validate before replay. Changed accepted label hashes and incompatible signed evidence are rejected before mutation.
+- Verification: read-model retraction suite 8/8; four actual CLI deletion/repair/failed-commit retry scenarios 4/4; new live-resolution → deletion test 1/1 verifies retained bindings, independent reply, readable receipt and rejection of an old unversioned journal without deleting the source.
+- Notes: S3/v2 unchanged. CLI source route assertions await Stage 5 registration; no release claim. Existing source-byte discovery for explicit repair remains separate from removed acceptance reconstruction. Zero dependencies.
+
+*— Codex · 2026-10-29 UTC*
