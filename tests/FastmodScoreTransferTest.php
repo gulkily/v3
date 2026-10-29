@@ -140,6 +140,54 @@ final class FastmodScoreTransferTest
         }
     }
 
+    public static function compatibleRow(string $source): array
+    {
+        $config = \ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig(\ForumRewrite\Support\PrivateConfig::load(dirname(__DIR__)));
+        $composition = (new \ForumRewrite\Scoring\FastmodSelection(dirname(__DIR__)))->composition($config);
+        $post = (new \ForumRewrite\Canonical\CanonicalRecordRepository($source))->loadPost('records/posts/post-1.txt');
+        $row = self::row();
+        $row['content_hash'] = (new \ForumRewrite\Scoring\FastScoreContextFactory(static fn ($id) => null))->contentHashForPost(['post_id' => $post->postId, 'subject' => $post->subject, 'body' => $post->body]);
+        $row['rubric_revision'] = $composition['revision']; $row['scores'] = array_fill_keys($composition['ids'], 0.99);
+        return $row;
+    }
+
+    public function testMergeAndOfflinePublicationResumeWithoutSourceOrRescoring(): void
+    {
+        require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+        $prior = [];
+        foreach (['FAST_SCORING_DATABASE_PATH', 'FAST_SCORING_ENABLED', 'FASTMOD_AUTOMATIC_TAGGING_ENABLED'] as $key) $prior[$key] = getenv($key);
+        putenv('FAST_SCORING_ENABLED=true'); putenv('FASTMOD_AUTOMATIC_TAGGING_ENABLED=true');
+        try {
+            foreach (['before_scores', 'scores_merged', 'offline_snapshot'] as $phase) {
+                $w = new ImportTestWorkspace(); $source = $w->repository('source'); $target = $w->repository('target', true); $w->git($target);
+                $w->put($source . '/records/posts/post-1.txt', $w->post('post-1'));
+                $row = self::compatibleRow($source); $w->put($source . '/fastmod-scores.txt', FastmodScoreTransfer::encode([$row]));
+                $scorePath = $w->root . '/private/scores.sqlite3'; putenv('FAST_SCORING_DATABASE_PATH=' . $scorePath);
+                $db = $w->root . '/index.sqlite3'; $static = $w->root . '/static';
+                $fail = static function ($at) use ($phase) { if ($at === $phase) throw new RuntimeException('interrupted'); };
+                $runner = new \ForumRewrite\Import\ContentImportRunner($target, $db, checkpoint: $fail);
+                $publisher = new \ForumRewrite\Import\ImportedContentPublisher(dirname(__DIR__), $target, $db, $static, checkpoint: $fail);
+                try { $runner->run($source, $publisher->publishWhileLocked(...)); throw new LogicException('Expected interruption'); }
+                catch (RuntimeException $error) { assertSame('interrupted', $error->getMessage()); }
+                assertSame(true, is_file($target . '/.git/instance-import/pending.json'));
+                $w->command(['rm', '-rf', '--', $source]);
+                $publisher = new \ForumRewrite\Import\ImportedContentPublisher(dirname(__DIR__), $target, $db, $static);
+                $result = (new \ForumRewrite\Import\ContentImportRunner($target, $db))->run(null, $publisher->publishWhileLocked(...));
+                assertSame('complete', $result['status']);
+                assertSame(1, $result['scores']['counts'][$phase === 'before_scores' ? 'imported' : 'existing']);
+                $pdo = new PDO('sqlite:' . $scorePath); $saved = $pdo->query('SELECT * FROM post_fast_scores')->fetch(PDO::FETCH_ASSOC);
+                assertSame($row['updated_at'], $saved['updated_at']); assertSame($row['created_at'], $saved['created_at']); assertSame('import', $saved['source']);
+                assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM fast_score_work')->fetchColumn());
+                $offline = new PDO('sqlite:' . $static . '/offline/snapshot.sqlite3');
+                assertStringContains('meta', $offline->query("SELECT thread_labels_json FROM threads WHERE root_post_id='post-1'")->fetchColumn());
+                $live = \ForumRewrite\Scoring\FastmodMetaRead::forApplication(new PDO('sqlite:' . $db), dirname(__DIR__), $target);
+                assertStringContains('meta', $live->query("SELECT thread_labels_json FROM threads WHERE root_post_id='post-1'")->fetchColumn());
+                assertSame(false, is_file($target . '/.git/instance-import/pending.json'));
+                assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+            }
+        } finally { foreach ($prior as $key => $value) putenv($value === false ? $key : $key . '=' . $value); }
+    }
+
     public function testRejectsWholeMalformedSupplement(): void
     {
         $valid = FastmodScoreTransfer::encode([self::row()]);

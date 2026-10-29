@@ -167,6 +167,14 @@ final class ContentImportRunner
                 $this->assertClean([]);
                 $this->verifyWrites($run['writes']);
                 $this->git(['merge-base', '--is-ancestor', $run['commit'], 'HEAD']);
+                $this->at('before_scores');
+                // Canonical bytes are already installed and verified under the writer lock.
+                // Merge before publication so rebuild/offline consumers see the same scores.
+                $run['report']['scores'] = $scoreImport->process($supplement,
+                    $scoreImport->hashes($run['report']['entries'], $this->repositoryRoot, $this->repositoryRoot, true), false);
+                if ($run['report']['scores']['status'] === 'rejected') $run['report']['status'] = 'partial';
+                $this->at('scores_merged');
+                $this->save($pending, $run);
                 // Publication is required even on duplicate-only runs and interrupted retries.
                 $this->say('Refreshing read model and applicable offline data...');
                 $publisher();

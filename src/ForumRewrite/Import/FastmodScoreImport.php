@@ -58,6 +58,14 @@ final class FastmodScoreImport
         if ($supplement['status'] !== 'valid' || $supplement['rows'] === []) return ['status' => $supplement['status'], 'reason' => $supplement['reason'] ?? '', 'counts' => $counts];
         $config = FastScoringConfig::fromPrivateConfig(PrivateConfig::load($this->projectRoot));
         $composition = (new FastmodSelection($this->projectRoot))->composition($config);
+        // Incompatible supplements must not initialize or migrate a private store.
+        $ids = $composition['ids']; sort($ids);
+        $eligible = false;
+        foreach ($supplement['rows'] as $row) {
+            $names = array_keys($row['scores']); sort($names);
+            if (($hashes[$row['post_id']] ?? null) === $row['content_hash'] && $row['rubric_revision'] === $composition['revision'] && $names === $ids) { $eligible = true; break; }
+        }
+        if (!$eligible) { $counts['incompatible'] = count($supplement['rows']); return ['status' => 'valid', 'counts' => $counts]; }
         $path = $this->databasePath();
         if ($preview) {
             $pdo = is_file($path) ? new PDO('sqlite:file:' . str_replace(['%', '?', '#'], ['%25', '%3f', '%23'], $path) . '?mode=ro') : new PDO('sqlite::memory:');

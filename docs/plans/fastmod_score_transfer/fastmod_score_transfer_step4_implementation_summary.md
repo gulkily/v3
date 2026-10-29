@@ -66,3 +66,15 @@ Status: Step 3 approved; implementation in progress.
 - Notes: S4 commit 065ee22f. No new journal format or inclusion choice. S6 owns actual merge/publication integration.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 6 - Merge before final publication
+
+**Original estimate: 0.14**
+**Retrospective stage-work assessment: 0.14**
+
+- Changes: Merge from verified saved input before publication, rechecking accepted canonical bytes under the writer lock. Keep the recovery journal until publication succeeds; report malformed supplements as partial content success. Entirely incompatible supplements do not initialize private state.
+- Verification: Transfer/recovery/publication tests 14/14 pass. Injected failures before score merge, after score commit and during offline publication resume with the original source removed; original timestamps, live/offline meta tags, zero work jobs and a single content commit verified. Existing private-destination publication behavior passes. Fixture initially lacked required instance records; fixed by using the existing full fixture.
+- Refinement: The planned after-rebuild hook is unnecessary: compatibility uses installed canonical bytes, and existing rebuild/offline publication does not overwrite private scores. Merge immediately before the existing publisher achieves the approved ordering and recovery contract with no new callback API. Scope/estimate unchanged.
+- Notes: S5 commit 4d659120. No core queries/schema changes, external components or provider calls.
+
+*— Codex · 2026-10-29 UTC*
