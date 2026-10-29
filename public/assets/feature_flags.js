@@ -177,7 +177,7 @@
   }
 
   async function startMessaging(state, link, current, savedIdentity) {
-    if (!Array.isArray(state.scripts) || state.viewer !== link.dataset.viewer) throw new Error('Invalid messaging state');
+    if (!Array.isArray(state.scripts)) throw new Error('Invalid messaging state');
     for (var path of state.scripts) {
       if (current !== navigationGeneration || identity() !== savedIdentity) throw new Error('Identity changed');
       await loadScript(path);

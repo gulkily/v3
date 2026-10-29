@@ -59,6 +59,8 @@ async function device(who) {
 }
 async function visit(ctx, contribution=null) {
  const page=await ctx.newPage();await page.goto(base+'/');
+ // Shared pages load messaging once the browser knows it is approved, then bind to the viewer from unread status.
+ await page.waitForFunction(()=>window.ForumPrivateMessageHistorySync && document.querySelector('[data-private-message-unread]')?.dataset.viewer);
  // The product bounds each visit; drive additional visible returns when testing full convergence.
  let contributed=0;
  for(let n=0;n<(contribution?12:3);n++) {

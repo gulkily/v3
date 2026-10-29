@@ -57,13 +57,24 @@ function observe() {
     if (!links().length) return;
     const value = snapshot(false); if (window.__navParsed.at(-1) !== value) window.__navParsed.push(value);
   }).observe(document, { childList: true, subtree: true });
-  const frame = () => { if (document.body && links().length) record(); if (!window.__navStop) requestAnimationFrame(frame); };
+  // Before <main> is parsed or while stylesheets are still arriving (site.css
+  // loads asynchronously for everyone), only visibility is compared.
+  const stylesReady = () => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).every(link => link.sheet && link.media !== 'print');
+  const frame = () => {
+    if (links().length) {
+      if (document.querySelector('main') && stylesReady()) record();
+      else { const value = snapshot(false); if (window.__navParsed.at(-1) !== value) window.__navParsed.push(value); }
+    }
+    if (!window.__navStop) requestAnimationFrame(frame);
+  };
   requestAnimationFrame(frame);
 }
 
 async function visit(context, path, label) {
   const page = await context.newPage();
   const errors = []; page.on('pageerror', error => errors.push(error.message));
+  page.messagingRequests = 0;
+  page.on('request', request => { if (/\/assets\/private_message_/.test(request.url())) page.messagingRequests++; });
   await page.goto(base + path, { waitUntil: 'load' });
   // Long enough for deferred scripts, background sign-in and the approval check to settle.
   await page.waitForTimeout(Number(process.env.NAV_SETTLE_MS || 1500));
@@ -123,6 +134,7 @@ try {
           assert.ok(states.length >= 1, `${label}: links rendered`);
           assert.deepEqual([...states, ...parsed].flatMap(visible), [], `${label}: member links stay hidden`);
           if (width === 390) await tabBar(page, label);
+          assert.equal(page.messagingRequests, 0, `${label}: no messaging downloads`);
           if (shots && path === '/') await page.screenshot({ path: `${shots}/anonymous-${theme}-${width}.png` });
           await page.close(); checked++;
         }
@@ -141,6 +153,13 @@ try {
           assert.deepEqual(visible(states[0]).sort(), ['/invites/', '/messages'], `${label}: Messages and Invite shown`);
           if (width === 390) await tabBar(page, label);
           await messagesIcon(page, label, theme);
+          // Unread works on a page with no server viewer, without moving or re-captioning Messages.
+          const messages = page.locator('.nav [href="/messages"]');
+          const box = JSON.stringify(states[0].find(([href]) => href === '/messages').slice(2));
+          await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready', null, { timeout: 10000 });
+          const after = await messages.evaluate(node => { const r = node.getBoundingClientRect(); return JSON.stringify([Math.round(r.x), Math.round(r.width)]); });
+          assert.equal(after, box, `${label}: unread did not move Messages`);
+          assert.equal(await messages.innerText(), 'Messages', `${label}: caption unchanged`);
           if (shots && path === '/') await page.screenshot({ path: `${shots}/member-${theme}-${width}.png` });
           await page.close(); checked++;
         }

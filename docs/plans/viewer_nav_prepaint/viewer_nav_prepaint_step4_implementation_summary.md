@@ -60,3 +60,28 @@ Step 4 entry: Step 3 projection reaffirmed.
 - Estimate details: v2 anticipated two render sites, critical CSS and tab-bar interaction; all three were needed. Retrospective matches v2.
 
 *— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Load messaging on demand and keep unread working
+
+**Original estimate: 0.08** (v1, Codex) · **Revised estimate: 0.12** (v2, Step 3 revision)
+**Retrospective stage work: 0.14**
+
+- Changes:
+  - Messaging scripts are no longer added to every page for approved viewers. Only Messages pages (`activeSection === 'messages'`, approved viewer) still get script tags; elsewhere the fingerprinted list is published for everyone in `window.__forumAssetPaths.privateMessaging`, and `member_approval.js` loads it in order only for a browser remembered as approved, skipping scripts the page already has, then starts unread and history sync. Losing approval stops both.
+  - The Messages link no longer carries `data-viewer`, and `navigationState` no longer returns `viewer`. `private_message_unread.js` binds to the viewer named by a Messages page's own content, or else to the first valid unread response, then rejects responses for any other viewer; it sets `data-viewer` on the link client-side and fires `private-message-viewer-known`. It also retries after an in-place sign-in, so a shared page that started without a session gets a real count.
+  - `private_message_history_sync.js` waits for that event when the link has no viewer yet. `feature_flags.js` drops its now-meaningless viewer comparison.
+- Verification:
+  - `PrivateMessageFeatureFlagTest::testPagesAreIdenticalForEveryViewerOutsideMessages` (new): a full About layout is byte-identical for anonymous, unapproved and approved viewers on ZenMemes (app shell) and chouse (forum header), and never contains the viewer's name. Existing tests now assert messaging assets are listed but not script-tagged outside Messages, and are script-tagged on Messages pages.
+  - `php tests/run.php` (same nine classes as Stage 2 plus messaging flag tests): 203/204, only the baseline `testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp` failure.
+  - `member_approval_contract.cjs` extended: no messaging downloads for other viewers; ordered loading for a remembered member that skips already-present scripts; start once; stop on lost approval; in-place load after sign-in. Passed. `private_site_auth_contract.cjs` passed.
+  - Existing messaging browser suites passed: `private_message_live_navigation`, `private_message_unread_ui`, `private_message_unread_api`, `nav_unread_outline`, `private_message_feature_flag`, `private_message_operator_flag`, `private_message_unavailable`.
+  - `private_message_history_sync_browser.mjs`: updated to wait for on-demand loading on `/`; all history, restore and outage phases pass. It then fails at its final operator-flag step (“Choose theme” button, moved into the app-shell account menu); the `c5783108` worktree fails at the same step.
+  - `private_message_list_browser.mjs` fails at Users → “bob” (Users redesign); the `c5783108` worktree fails identically.
+  - `viewer_nav_prepaint.mjs` extended: anonymous pages download no messaging scripts; on member pages unread reaches `ready` with no server viewer, and Messages keeps its caption and position. Full matrix: 100 page states passed (5 themes × 390/1280 × 5 routes × anonymous/member), plus in-place sign-in/sign-out and no-JS.
+  - Measurement change: visibility is compared from the moment each link is parsed; positions only on frames painted after `<main>` is parsed and every stylesheet has loaded. Two intermittent failures led here. One was a frame painted mid-parse on `/tools/`, before the account menu existed. The other was a 2–16px move on dark desktop that eight later probes (branch member, baseline anonymous) could not reproduce once styles had loaded. Moves while `site.css` is still loading asynchronously are therefore not covered by this test.
+- Notes:
+  - Finding outside this cycle: in Word97 (desktop, about one load in three) the whole app-shell header shifts right after first paint, also on `c5783108` for anonymous visitors (Board 368→436px). Late theme styling, not member links. It happens while styles are still loading, which the browser test now excludes from position checks; the header shift needs its own follow-up.
+  - Not done: the members-only unapproved nav (Lobby/Profile/Account) stays server-decided; those pages are never shared.
+- Estimate details: v2 scope included script loading and viewer binding; history sync's dependency on the viewer and the Messages-page binding were extra discovery, so retrospective 0.14 against 0.12.
+
+*— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*

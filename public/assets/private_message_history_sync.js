@@ -169,6 +169,11 @@
   }
   function start(navElement) {
     if(nav===navElement && nav)return active || Promise.resolve();
+    // History is bound to the session's viewer, which shared pages learn from unread status.
+    if(navElement && !navElement.dataset.viewer) {
+      document.addEventListener('private-message-viewer-known',()=>{if(navElement.isConnected)start(navElement);},{once:true});
+      return Promise.resolve();
+    }
     stop();
     nav=navElement;
     if(!nav)return Promise.resolve();

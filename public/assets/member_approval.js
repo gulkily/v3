@@ -27,9 +27,10 @@
   }
   function apply() {
     const approved = isApproved();
-    if ((root.getAttribute('data-member') === 'approved') === approved) return;
+    if ((root.getAttribute('data-member') === 'approved') === approved) return false;
     if (approved) root.setAttribute('data-member', 'approved'); else root.removeAttribute('data-member');
     window.dispatchEvent(new CustomEvent('forum:member-approval-changed', { detail: { approved: approved } }));
+    return true;
   }
   // Records what the server said about `identityFingerprint`. A response for an
   // identity the browser has since replaced is ignored.
@@ -60,11 +61,48 @@
     } catch (error) {}
   }
 
+  // Messaging scripts are listed for every viewer but downloaded only once this
+  // browser is remembered as approved. Messages pages already include them.
+  const scriptLoads = new Map();
+  function loadScript(path) {
+    const url = new URL(path, window.location.href);
+    if (url.origin !== window.location.origin || !url.pathname.startsWith('/assets/')) return Promise.reject(new Error('Invalid asset'));
+    if (Array.from(document.scripts).some(script => script.src === url.href)) return Promise.resolve();
+    if (!scriptLoads.has(url.href)) {
+      scriptLoads.set(url.href, new Promise(function (resolve, reject) {
+        const script = document.createElement('script');
+        script.src = url.href;
+        script.async = false;
+        script.onload = resolve;
+        script.onerror = function () { script.remove(); scriptLoads.delete(url.href); reject(new Error('Asset unavailable')); };
+        document.head.appendChild(script);
+      }));
+    }
+    return scriptLoads.get(url.href);
+  }
+  function syncMessaging() {
+    const link = document.querySelector('[data-private-message-unread]');
+    const paths = (window.__forumAssetPaths || {}).privateMessaging;
+    if (!isApproved()) {
+      if (window.ForumPrivateMessageUnread) window.ForumPrivateMessageUnread.stop();
+      if (window.ForumPrivateMessageHistorySync) window.ForumPrivateMessageHistorySync.stop();
+      return;
+    }
+    if (!link || !Array.isArray(paths)) return;
+    paths.reduce((loaded, path) => loaded.then(() => loadScript(path)), Promise.resolve()).then(function () {
+      if (!isApproved() || !link.isConnected) return;
+      if (window.ForumPrivateMessageUnread) window.ForumPrivateMessageUnread.start(link);
+      if (window.ForumPrivateMessageHistorySync) window.ForumPrivateMessageHistorySync.start(link);
+    }).catch(function () {});
+  }
+
   window.ForumMemberApproval = { fingerprint: fingerprint, record: record, isApproved: isApproved };
+  window.addEventListener('forum:member-approval-changed', syncMessaging);
   window.addEventListener('forum:identity-changed', forgetReplacedIdentity);
   window.addEventListener('storage', function (event) {
     if (event.key === null || event.key === approvedKey || /^forum_pki_/.test(event.key)) forgetReplacedIdentity();
   });
-  apply();
+  // A change fires the event, which syncs messaging itself.
+  if (!apply()) syncMessaging();
   learn();
 })();

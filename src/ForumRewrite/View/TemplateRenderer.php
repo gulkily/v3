@@ -172,8 +172,10 @@ final class TemplateRenderer
         }
 
         $navItems = $this->navigationItems($viewerProfile);
-        if (array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages')
-            && $this->isAuthenticatedApprovedViewer($viewerProfile)) {
+        $messagingNavigation = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'messages') !== [];
+        // Other pages leave messaging to member_approval.js, which loads it only
+        // for a browser remembered as approved, so their HTML is the same for everyone.
+        if ($messagingNavigation && $activeSection === 'messages' && $this->isAuthenticatedApprovedViewer($viewerProfile)) {
             $scriptPaths = array_merge($scriptPaths, $this->messagingScriptPaths());
         }
         if (array_filter($scriptPaths, static fn (string $path): bool => str_starts_with($path, '/assets/private_message'))) {
@@ -229,7 +231,7 @@ final class TemplateRenderer
                 'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
                 'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
                 'replyContinuation' => $this->assetPath('/assets/reply_continuation.js'),
-            ],
+            ] + ($messagingNavigation ? ['privateMessaging' => array_map($this->assetPath(...), $this->messagingScriptPaths())] : []),
             'browserRuntime' => $browserRuntime,
             'pageStylesheetPaths' => $pageStylesheetPaths,
             'criticalCss' => $this->criticalCss(),
@@ -325,7 +327,6 @@ final class TemplateRenderer
             'html' => $this->renderFragment('partials/nav.php', ['navItems' => $items, 'activeSection' => $activeSection]),
             'tools_html' => $this->renderFragment('partials/tools_nav.php', ['toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('feature-flags')]),
             'messaging_enabled' => $messages !== [],
-            'viewer' => $messages[0]['viewer'] ?? null,
             'scripts' => $messages === [] || !$this->isAuthenticatedApprovedViewer($viewerProfile) ? [] : array_map($this->assetPath(...), $this->messagingScriptPaths()),
         ];
     }
@@ -346,7 +347,7 @@ final class TemplateRenderer
      * `menu` (account menu). Other slots return items without placement.
      *
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool,member_only?:bool,placement?:string}>
+     * @return list<array{href:string,label:string,section:string,invite_action?:bool,member_only?:bool,placement?:string}>
      */
     public function navigationItems(?array $viewerProfile): array
     {
@@ -367,7 +368,7 @@ final class TemplateRenderer
 
     /**
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string,viewer?:string,invite_action?:bool,member_only?:bool}>
+     * @return list<array{href:string,label:string,section:string,invite_action?:bool,member_only?:bool}>
      */
     private function navItems(?array $viewerProfile): array
     {
@@ -418,7 +419,7 @@ final class TemplateRenderer
         // paint only for a browser remembered as approved (member_approval.js),
         // so shared pages stay identical. The routes still check approval.
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) {
-            $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'member_only' => true, 'viewer' => $this->isAuthenticatedApprovedViewer($viewerProfile) ? ($viewerProfile['username_token'] ?? '') : ''];
+            $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'member_only' => true];
         }
 
         // Account/Invite are deliberately left out of the qdb profile's nav

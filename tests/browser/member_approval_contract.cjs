@@ -18,18 +18,30 @@ function identity(value = fingerprint, registered = true) {
   return { forum_pki_public_key: 'public', forum_pki_private_key: 'private', forum_pki_fingerprint: value.toUpperCase(),
     ...(registered ? { forum_pki_published_fingerprint: value.toUpperCase() } : {}) };
 }
-function load({ local = {}, session = {}, status = 200, membersOnly = false, blocked = false, fetchGate = null } = {}) {
-  const attributes = {}, listeners = {}, events = [], fetches = [];
+function load({ local = {}, session = {}, status = 200, membersOnly = false, blocked = false, fetchGate = null, messaging = null, preloaded = [] } = {}) {
+  const attributes = {}, listeners = {}, events = [], fetches = [], appended = [], started = [];
   const localStorage = area(local, blocked), sessionStorage = area(session, blocked);
+  const link = { isConnected: true };
+  const scripts = preloaded.map(path => ({ src: 'https://forum.test' + path }));
   const window = {
-    localStorage, sessionStorage,
+    localStorage, sessionStorage, location: { href: 'https://forum.test/', origin: 'https://forum.test' },
+    __forumAssetPaths: messaging ? { privateMessaging: messaging } : {},
     addEventListener(type, callback) { (listeners[type] = listeners[type] || []).push(callback); },
     dispatchEvent(event) { events.push(event); (listeners[event.type] || []).forEach(callback => callback(event)); },
   };
   const context = {
     window, console,
     CustomEvent: function (type, options) { this.type = type; this.detail = options && options.detail; },
-    document: { documentElement: { dataset: { approvedMembersOnly: membersOnly ? '1' : '0' },
+    URL,
+    document: {
+      scripts, querySelector: selector => selector === '[data-private-message-unread]' && messaging ? link : null,
+      createElement: () => ({}),
+      head: { appendChild(script) {
+        appended.push(new URL(script.src).pathname); scripts.push(script);
+        if (script.src.endsWith('unread.js')) window.ForumPrivateMessageUnread = { start: node => started.push(['unread', node === link]), stop: () => started.push(['unread-stop']) };
+        setImmediate(script.onload);
+      } },
+      documentElement: { dataset: { approvedMembersOnly: membersOnly ? '1' : '0' },
       getAttribute: name => attributes[name] ?? null, setAttribute: (name, value) => { attributes[name] = String(value); },
       removeAttribute: name => { delete attributes[name]; } } },
     fetch: async url => { fetches.push(url); if (fetchGate) await fetchGate; return { ok: status === 200, status }; },
@@ -38,7 +50,7 @@ function load({ local = {}, session = {}, status = 200, membersOnly = false, blo
   vm.runInContext(source, context);
   const fire = (type, event = {}) => (listeners[type] || []).forEach(callback => callback({ type, ...event }));
   const settle = () => new Promise(resolve => setImmediate(resolve));
-  return { api: window.ForumMemberApproval, attributes, events, fetches, local, session, fire, settle };
+  return { api: window.ForumMemberApproval, attributes, events, fetches, local, session, fire, settle, appended, started };
 }
 
 (async () => {
@@ -117,6 +129,24 @@ function load({ local = {}, session = {}, status = 200, membersOnly = false, blo
     otherTab.local.forum_pki_approved_fingerprint = fingerprint;
     otherTab.fire('storage', { key: 'forum_pki_approved_fingerprint' });
     assert.equal(otherTab.attributes['data-member'], 'approved');
+  }
+  // Messaging loads in order only for a remembered member, skips scripts the page
+  // already has, starts once loaded, and stops when approval is lost.
+  {
+    const messaging = ['/assets/private_message_availability.js', '/assets/browser_signing.js', '/assets/private_message_unread.js'];
+    const guest = load({ messaging }); await guest.settle();
+    assert.deepEqual(guest.appended, [], 'no messaging downloads for other viewers');
+    const member = load({ local: { ...identity(), forum_pki_approved_fingerprint: fingerprint }, messaging, preloaded: ['/assets/browser_signing.js'] });
+    for (let i = 0; i < 5; i++) await member.settle();
+    assert.deepEqual(member.appended, ['/assets/private_message_availability.js', '/assets/private_message_unread.js']);
+    assert.deepEqual(member.started, [['unread', true]]);
+    member.api.record(fingerprint, false);
+    assert.deepEqual(member.started.at(-1), ['unread-stop']);
+    const later = load({ local: identity(), session: { forum_pki_approval_checked: fingerprint }, messaging }); await later.settle();
+    assert.deepEqual(later.appended, []);
+    later.api.record(fingerprint, true);
+    for (let i = 0; i < 5; i++) await later.settle();
+    assert.equal(later.appended.length, 3, 'sign-in loads messaging in place');
   }
   // Blocked storage stays hidden and quiet.
   {
