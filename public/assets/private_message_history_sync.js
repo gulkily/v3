@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const base='/api/private_messages/history_sync/';
-  let nextMode='account';
+  let nextMode='account', combinedSupported=true;
   let nav, account='', original='', generation=0, active=null, aborter=null, lastRun=0, listening=false;
   const stats={state:'waiting',verified:0,contributed:0,unavailable:0};
   const verifiedIds=new Set(), candidateRequests=new Map();
@@ -32,10 +32,11 @@
           if(!valid(run)) throw Error('History identity changed.');
           if(!response.ok || result.status!=='ok') {
             if(response.status===503 && attempt===0) continue;
-            throw Error('History synchronization unavailable. Retry later.');
+            const error=Error('History synchronization unavailable. Retry later.');
+            error.status=response.status;throw error;
           }
           return result;
-        } catch(error) { if(attempt!==0 || !valid(run) || lifecycle.signal.aborted) throw error; }
+        } catch(error) { if(attempt!==0 || !valid(run) || lifecycle.signal.aborted || (error.status && error.status!==503)) throw error; }
         finally {clearTimeout(timeout);lifecycle.signal.removeEventListener('abort',cancel);}
       }
       throw Error('History synchronization unavailable.');
@@ -110,13 +111,28 @@
       if(!valid(current))return;
       const finished={account:false,sender:false};
       for(let batch=0;batch<8 && Date.now()<deadline;batch++) {
-        const mode=finished[nextMode]?(nextMode==='account'?'sender':'account'):nextMode;
-        nextMode=mode==='account'?'sender':'account';
-        // Persist only scheduling preference, never recovered key material; survive short visits/reloads.
-        try {sessionStorage.setItem('forum_history_sync_next_mode:'+account,nextMode);} catch (_) {}
-        const work=await request(mode==='sender'?'work?mode=sender':'work',null,current);
-        if(!valid(current))return;
-        if(mode==='sender' && work.mode!=='sender') {finished.sender=true;if(finished.account)break;continue;} // Older server during rollout.
+        let works;
+        if(combinedSupported) {
+          let result;
+          try { result=await request('work',{complete:Object.keys(finished).filter(mode=>finished[mode])},current); }
+          catch(error) { if(error.status!==405)throw error;combinedSupported=false; }
+          if(result) {
+            if(result.mode!=='combined' || result.account!==account || result.source!==fingerprint || !Array.isArray(result.work) || !Array.isArray(result.complete) || typeof result.continuation!=='boolean') throw Error('Invalid combined history work.');
+            for(const mode of result.complete) {if(!['account','sender'].includes(mode))throw Error('Invalid completed mode.');finished[mode]=true;}
+            works=result.work;
+          }
+        }
+        if(!combinedSupported) {
+          const mode=finished[nextMode]?(nextMode==='account'?'sender':'account'):nextMode;
+          nextMode=mode==='account'?'sender':'account';
+          try {sessionStorage.setItem('forum_history_sync_next_mode:'+account,nextMode);} catch (_) {}
+          const work=await request(mode==='sender'?'work?mode=sender':'work',null,current);
+          if(mode==='sender' && work.mode!=='sender') {finished.sender=true;if(finished.account)break;continue;}
+          works=[{...work,mode}];
+        }
+        for(const work of works) {
+        const mode=work.mode;
+        if(!['account','sender'].includes(mode) || !valid(current)) throw Error('Invalid history work mode.');
         if((mode==='sender'?work.source_account:work.account)!==account || work.source!==fingerprint) throw Error('Saved key does not match authenticated identity.');
         const entries=[], receipts=[];
         let checkpoint=work.checkpoint;
@@ -139,10 +155,12 @@
           stats.contributed+=entries.length;
         }
         // Confirm our own verified access even while contributing to another target.
-        await request('acknowledge',{items:receipts,checkpoint,mode},current);
+        if(receipts.length || checkpoint) await request('acknowledge',{items:receipts,checkpoint,mode},current);
         if(!valid(current))return;
         publish('working');
         if(work.cycle_end && checkpoint) finished[mode]=true;
+        if(Date.now()>=deadline) break;
+        }
         if(finished.account && finished.sender) break;
       }
       if(!valid(current))return;

@@ -9,9 +9,12 @@ global.CustomEvent=class {constructor(type){this.type=type;}};
 global.MutationObserver=class {observe(){} disconnect(){}};
 global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),querySelectorAll:()=>[],addEventListener:(k,v)=>events[k]=v,dispatchEvent:event=>{if(events[event.type])events[event.type](event)}};
 global.window={addEventListener:()=>{},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>({readPrivateKey:async()=>({getFingerprint:()=>source})})}};
+window.ForumPrivateMessageUnread={historyEligibility:()=>true};
 window.ForumPrivateMessageHistoryCrypto={digest:()=> 'digest',extractKeys:async()=>{if(slow){clock+=10001;slow=false;}return ['secret'];},readOriginal:async()=> 'verified',wrapHistoryKeys:async()=> 'encrypted'};
 global.fetch=async(url,options)=>{
- const body=options.body?JSON.parse(options.body):null;requests.push({url,body});
+ const body=options.body?JSON.parse(options.body):null;
+ if(url.endsWith('/work') && options.method==='POST')return {ok:false,status:405,json:async()=>({status:'error'})};
+ requests.push({url,body});
  if(interrupt){interrupt=false;document.hidden=true;events.visibilitychange();}
  if(shutdown)return {status:403,clone:()=>({json:async()=>({code:'messaging_disabled'})})};
  const sender=url.endsWith('?mode=sender');

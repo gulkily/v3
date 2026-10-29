@@ -43,3 +43,14 @@ Step 4 entry: 2026-10-29 UTC; 0.75 reaffirmed, scope v1/A, original baseline 02d
 - Notes: POST is deliberate because empty discovery progress mutates scan positions. No tables/schema/dependencies added. Prior stage commit: fc7c501f5. No estimate revision.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 4 - Combined browser coordinator
+
+**Original estimate: 0.16**
+**Retrospective stage work: 0.16**
+
+- Changes: Consume combined work and completion state, stop immediately on idle, process returned bundles without redundant discovery, retain bounded follow-ups and only acknowledge actual receipts/checkpoints. A 405 from an older server selects legacy discovery; terminal HTTP errors are no longer retried as network failures. Foreground candidate/confirm remains independent of the background eligibility gate.
+- Verification: Gate test asserts exactly one idle request; scheduling suite passes shared budgets, cancellation, interrupted sender batches, disabled messaging and overlapping re-enable with legacy fallback; real OpenPGP donor tests pass account and sender modes, lost-ack retry, target-only decryption and no plaintext/private-key/cache writes; reader test passes invalid-donor fallback and verification.
+- Notes: Original scope/estimate unchanged. Prior stage commit: 2f11c3a83. Full HTTP/browser acceptance follows in Stage 5.
+
+*— Codex · 2026-10-29 UTC*
