@@ -344,3 +344,5 @@ and repair its navigation and affected references. See the
 - [Railspike feature gating](./railspike_feature_gating/railspike_feature_gating_step1_solution_assessment.md) — default-off workflow flag and polling only on visible Railspike threads; locally implemented, production acceptance pending.
 
 - [Fastmod score transfer](./fastmod_score_transfer/fastmod_score_transfer_step4_implementation_summary.md) — automatic score export/import; locally complete, review pending.
+
+- [Agent response text](agent_response_text/agent_response_text_step4_implementation_summary.md) — F05; implemented and verified, maintainer acceptance pending.
