@@ -88,6 +88,19 @@ try {
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
   await writer.context.close();
 
+  // On a phone, typing hides the bottom tab bar so it can't cover Post (reported on iPhone with the keyboard up).
+  const phone = await open(true);
+  await phone.page.goto(base + '/threads/' + threadId);
+  const replyBody = phone.page.locator('[data-compose-kind="reply"] textarea[name="body"]');
+  await replyBody.fill('Typing on a phone');
+  await phone.page.waitForFunction(() => document.querySelector('[data-shell="app"]').dataset.tabbar === 'hidden');
+  const post = phone.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]');
+  await post.scrollIntoViewIfNeeded();
+  const uncovered = await post.evaluate(button => { const r = button.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return hit === button || button.contains(hit); });
+  assert.equal(uncovered, true, 'Post is not covered while typing');
+  await phone.page.screenshot({ path: '/tmp/composers-phone-typing-390.png' });
+  await phone.context.close();
+
   // A parent that isn't in the thread.
   const missing = await open(true);
   await missing.page.goto(base + `/compose/reply?thread_id=${threadId}&parent_id=no-such-post`);
