@@ -52,13 +52,17 @@ try {
     await page.getByRole('link', { name: 'Pending approvals', exact: true }).click();
     await page.getByRole('heading', { name: 'Users Awaiting Approval', exact: true }).waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    // Users › Waiting lists the same people beside the member directory.
     await page.goto(base + '/users/pending/');
-    assert.equal(new URL(page.url()).pathname, '/tools/user-access/pending/');
+    assert.equal(new URL(page.url()).pathname, '/users/pending/');
+    assert.equal(await page.locator('nav.board-filter[aria-label="Users"] a[aria-current="page"]').textContent(), 'Waiting (' + await page.locator('[data-role="pending-approval-row"]').count() + ')');
     await page.goto(base + '/users/');
     await page.locator('main a[href="/user/browser-inviter"]').click();
     assert.equal(await page.locator('.account-key-history,[data-signed-approval-form]').count(), 0);
     if (process.env.USER_ACCESS_SCREENSHOT_DIR && width === 390) await page.screenshot({ path: join(process.env.USER_ACCESS_SCREENSHOT_DIR, 'member.png'), fullPage: true });
-    await page.locator('#account-keys a').click();
+    // The person page lists each key under Identities; operators get Manage access for the key history.
+    assert.ok(await page.locator('#account-keys a[href^="/profiles/"]').count() >= 1);
+    await page.getByRole('link', { name: 'Manage access', exact: true }).click();
     await page.getByRole('heading', { name: 'Account key history', exact: true }).waitFor();
   }
   const first = await target('browser-member');

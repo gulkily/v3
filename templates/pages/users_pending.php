@@ -1,14 +1,18 @@
-<section class="stack" data-pending-approvals-root>
-  <article class="card">
+<section class="stack users-page" data-pending-approvals-root>
 <?php if (!empty($accessManagement)): ?>
+  <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
-<?php endif; ?>
     <h1>Users Awaiting Approval</h1>
-    <p><a href="<?= !empty($accessManagement) ? '/tools/user-access/' : '/users/' ?>"><?= !empty($accessManagement) ? 'User Access' : 'Back to approved users' ?></a></p>
+    <p><a href="/tools/user-access/">User Access</a></p>
   </article>
+<?php else: ?>
+  <h1 class="users-page__title">Users</h1>
+<?= $indent($partial('partials/users_tabs.php', ['usersTab' => 'waiting', 'pendingCount' => count($profiles)]), 1) ?>
+<?php endif; ?>
   <article class="card" data-role="pending-approvals-feedback" hidden></article>
   <article class="card" data-role="pending-approvals-empty"<?= $profiles === [] ? '' : ' hidden' ?>>
-    <p>No users are awaiting approval.</p>
+    <h2>No one is waiting.</h2>
+    <p class="meta">New members appear here until someone approves them.</p>
   </article>
   <article class="card" data-role="pending-approvals-table"<?= $profiles === [] ? ' hidden' : '' ?>>
     <table data-role="pending-approvals-table-element"<?= $profiles === [] ? ' hidden' : '' ?>>

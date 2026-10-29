@@ -89,12 +89,13 @@ final class ProfilePageController
                 'approvedPosts' => AuthoredContentRepository::visiblePosts($pdo, $approvedIdentityIds),
                 'viewerProfile' => $viewerProfile,
                 'canPrivateMessage' => $canPrivateMessage,
+                // The person page: Threads or Replies, "Edit in Account" on your own page, "Manage access" for operators.
+                'personTab' => ($query['tab'] ?? '') === 'replies' ? 'replies' : 'threads',
+                'isOwnPage' => $viewerProfile !== null && (string) ($viewerProfile['username_token'] ?? '') === $usernameToken,
+                'viewerIsOperator' => $this->routeServices->securityReviewAllowed(),
             ],
-            'User ' . $usernameToken,
+            $usernameToken,
             'profiles',
-            $canPrivateMessage
-                ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
-                : [],
         );
     }
 
@@ -127,8 +128,16 @@ final class ProfilePageController
 
     public function directory(): string
     {
+        $pdo = $this->routeServices->pdo();
+        // Waiting is only for approved members (see pendingDirectory), so only they get its tab and count.
+        // Visitors without cookies are served the static copy, which has neither.
+        $viewer = ($this->resolveViewerProfile)();
+        $canViewWaiting = $viewer !== null && (int) $viewer['is_approved'] === 1;
         return $this->routeServices->renderPageTemplate('users.php', [
-            'users' => ProfileRepository::approvedDirectoryUsers($this->routeServices->pdo()),
+            'users' => ProfileRepository::approvedDirectoryUsers($pdo),
+            'pendingCount' => $canViewWaiting
+                ? count(ProfileRepository::pendingDirectoryProfiles($pdo, $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)))
+                : null,
         ], 'Users', 'profiles');
     }
 
@@ -143,7 +152,11 @@ final class ProfilePageController
             $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Forbidden', 'Forbidden', 'Only approved users can view the pending approval directory.', 'tools'), 403, $this->routeServices->noStoreHeaders());
             return;
         }
-        $this->routeServices->sendRedirect('/tools/user-access/pending/', 'Open pending approvals in User Access.', 303, $this->routeServices->noStoreHeaders(), 'tools');
+        // Users › Waiting: the same list and Approve buttons as User Access, beside the member directory.
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('users_pending.php', [
+            'profiles' => ProfileRepository::pendingDirectoryProfiles($this->routeServices->pdo(), $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)),
+            'accessManagement' => false,
+        ], 'Users', 'profiles', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/pending_approvals.js']), 200, $this->routeServices->noStoreHeaders());
     }
 
     /**
