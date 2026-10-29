@@ -44,3 +44,14 @@ Approved Step 3 received. Branch: feature/approval-acceptance-text. Planning com
 - Notes: S2 commit 1aca4c67. No replay-policy changes or schema/dependency delta; estimates unchanged.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 4 - Operator conversion and recovery
+
+**Original estimate: 0.20**
+**Retrospective stage-work assessment: 0.20**
+
+- Changes: `approval receipts inspect|convert`, preview and explicit machine output; same database-directory write lock, clean-tree preflight, scoped Git commit, private durable original/new-byte journal, resumable refresh and intervening-edit protection. CLI/runbook/spec updated.
+- Verification: Four maintenance tests pass, exercising real CLI preview/apply/repeat, failures at journal/text-write/commit/refresh boundaries, pre-commit hook rejection/retry, altered evidence preservation, dirty tree, conflict and lock contention. Actual help and PHP syntax checked.
+- Notes: S3 commit cdb2043a. First retry test exposed Git add of an already-staged deletion; fixed by staging the receipt directory after the owned-path status check. No failure is hidden; tests rerun 4/4. Journal is machine-only recovery state. No production conversion; estimate unchanged.
+
+*— Codex · 2026-10-29 UTC*

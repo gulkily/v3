@@ -62,3 +62,17 @@ Preserve all committed grants, signatures, and receipts. Rolling back applicatio
 Notifications, unfamiliar-key reporting, revocation/session invalidation, pairing, and recovery remain separate work. Neither a policy toggle nor hiding a history entry removes access already granted.
 
 Receipt format: [approval acceptance receipt v1](../specs/approval_acceptance_record_v1.md). Related guidance: [authentication modes](../reference/authentication_modes.md) and [instance content import](instance_content_import.md).
+
+## Converting approval receipt storage
+
+Use `./v3 approval receipts inspect`, then `convert --dry-run` with the instance's
+repository and database paths. Resolve reported evidence conflicts before applying
+`convert`. Only old receipts in a clean repository are replaced; grants and
+signatures stay byte-identical. Conversion retains private recovery evidence until
+its commit and read-model refresh succeed. Retry the same command after failures;
+never delete the journal or re-approve a grant to repair conversion.
+
+An unexpected HEAD or edited receipt stops recovery without overwriting the edit.
+Preserve the changes separately and reconcile them against the journal's recorded
+base commit before retrying. Inspection reports only the current repository, not
+all historical backups. See [CLI recovery](../reference/v3_cli.md#approval-receipt-conversion).

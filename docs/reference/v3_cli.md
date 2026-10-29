@@ -1162,3 +1162,22 @@ commit/refresh retry recovery: fix the reported failure and repeat the command.
 Unsupported journal versions stop before mutation; do not reinterpret them as
 new receipts. Rollback requires a matching verified repository/application backup;
 a binary-only downgrade cannot read the new format.
+
+## Approval receipt conversion
+
+`./v3 approval receipts inspect` reports validated receipt paths and blockers.
+`./v3 approval receipts convert --dry-run` previews without changing files or
+creating a database. `convert` requires a clean Git repository, takes the instance's
+write lock, commits validated text replacements, and rebuilds the read model.
+Use `--repository-root` and `--database-path` together for a non-default instance;
+the database path must be the one that instance uses, so its write lock is shared.
+All three accept `--json` for machine output; normal output uses named values.
+
+Retry the same conversion command after interruption or a failed commit/refresh.
+Original receipt bytes remain in `.git/approval-receipt-conversion.json` (or the
+worktree's Git directory) until refresh succeeds. This is private recovery state,
+not a canonical record or editable operator configuration. Do not remove it while
+recovery is pending. The command refuses intervening edits, unrelated dirty files
+or an unexpected HEAD. Preserve those changes and restore the transaction's
+expected state before retrying; do not reset the whole repository or approve again.
+A committed conversion changes receipt representation, never grant/signature bytes.

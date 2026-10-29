@@ -60,6 +60,7 @@ $testFiles = [
     __DIR__ . '/ApprovalAuditCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
     __DIR__ . '/ApprovalAcceptanceTest.php',
+    __DIR__ . '/ApprovalReceiptMaintenanceTest.php',
     __DIR__ . '/ApprovalHistoryTest.php',
     __DIR__ . '/UserAccessTest.php',
     __DIR__ . '/RootApprovalPageTest.php',

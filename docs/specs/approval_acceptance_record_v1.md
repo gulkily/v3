@@ -4,7 +4,7 @@ A receipt records server-observed facts when an account key grant is accepted. I
 
 ## Storage and binding
 
-Receipts live at `records/approval-acceptances/<grant-post-id>.json`. The writer commits a new grant, its detached signature when present, and its receipt together. Failure before commit removes incomplete files. Failure after commit must preserve the grant and report that acceptance committed even when projection or cache refresh failed.
+New receipts live at `records/approval-acceptances/<grant-post-id>.txt`; existing `.json` receipts remain readable through the isolated legacy adapter. The writer commits a new grant, its detached signature when present, and its receipt together. Failure before commit removes incomplete files. Failure after commit must preserve the grant and report that acceptance committed even when projection or cache refresh failed.
 
 Version 1 has these fields:
 
@@ -43,8 +43,8 @@ Implementation: [ApprovalAcceptance](../../src/ForumRewrite/Security/ApprovalAcc
 
 ## Readable storage v2
 
-The v2 codec represents the same logical v1 acceptance facts using text. New-write
-integration is tracked in the F03 implementation summary. Storage has no body;
+The v2 codec represents the same logical v1 acceptance facts using text. All new
+approval writes use v2; explicit conversion preserves existing evidence. Storage has no body;
 exactly one of each header below is required, LF-terminated, at most 16 KiB.
 Unknown/duplicate headers, control characters, invalid UTF-8, missing fields,
 noncanonical integers and booleans are rejected. Scalar strings are at most
@@ -79,3 +79,9 @@ bytes. New grants use the same digest algorithm. Legacy decoding is isolated in
 `LegacyApprovalReceipt`; `ApprovalReceiptText` and shared semantic validation do
 not depend on it. Unknown historical fields or values that cannot be represented
 losslessly block conversion and leave original evidence intact.
+
+Both formats present for the same grant must validate independently and encode
+the same facts in the same context order. A malformed or conflicting companion
+fails explicitly. Source/history prefer text only after this check. Trusted restore
+preflights source/destination receipts before copying; remote content imports
+continue to exclude all approval acceptance evidence.
