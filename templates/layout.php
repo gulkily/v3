@@ -13,6 +13,15 @@
       var themeLegacyAliases = <?= json_encode($themeLegacyAliases, JSON_HEX_TAG | JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR) ?>;
       var browserRuntime = <?= json_encode($browserRuntime, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
       var lcdPalettes = <?= json_encode(array_keys($lcdPalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      try {
+        // Same rule as member_approval.js: approval remembered for this identity.
+        var memberFingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
+        if (/^[a-f0-9]{40}$/.test(memberFingerprint)
+          && localStorage.getItem('forum_pki_public_key') && localStorage.getItem('forum_pki_private_key')
+          && localStorage.getItem('forum_pki_approved_fingerprint') === memberFingerprint) {
+          document.documentElement.setAttribute('data-member', 'approved');
+        }
+      } catch (error) {}
       var palette = 'green';
       try {
         var savedPalette = localStorage.getItem(browserRuntime.themeStorageKey + '-lcd-palette');
@@ -131,6 +140,7 @@
   <link rel="stylesheet" href="<?= $e($pageStylesheetPath) ?>">
 <?php endforeach; ?>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
+  <script src="<?= $e($memberApprovalScriptPath) ?>" defer></script>
 <?php if ($showThreadDensityToggle): ?>
   <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
 <?php endif; ?>

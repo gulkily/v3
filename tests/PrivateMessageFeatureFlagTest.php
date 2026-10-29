@@ -111,8 +111,37 @@ final class PrivateMessageFeatureFlagTest
                 foreach (['href="/messages"', 'data-private-message-unread', '/assets/private_message_unread.', '/assets/private_message_history_sync.'] as $marker) {
                     assertSame($enabled, str_contains($html, $marker));
                 }
+                // Listed for the client to load on demand; never a script tag outside Messages.
+                assertSame(false, (bool) preg_match('#<script src="/assets/private_message_unread\.#', $html));
+                $messages = $renderer->renderLayout('Messages', '<main></main>', 'messages', viewerProfile: [
+                    'is_approved' => 1, '_authenticated_identity' => true, 'username_token' => 'alice',
+                ]);
+                assertSame($enabled, (bool) preg_match('#<script src="/assets/private_message_unread\.#', $messages));
             }
         } finally { putenv($previous === false ? $key : $key . '=' . $previous); }
+    }
+
+    public function testPagesAreIdenticalForEveryViewerOutsideMessages(): void
+    {
+        $key = FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED;
+        $previous = [getenv($key), getenv('FORUM_SITE_ID')];
+        putenv($key);
+        try {
+            foreach (['zenmemes', 'chouse'] as $site) {
+                putenv('FORUM_SITE_ID=' . $site);
+                $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates', featureFlags: new FeatureFlagEvaluator(siteValues: [$key => true]));
+                $pages = [];
+                foreach ([null, ['is_approved' => 0, 'username_token' => 'bob'], ['is_approved' => 1, '_authenticated_identity' => true, 'username_token' => 'alice']] as $viewer) {
+                    $pages[] = $renderer->renderLayout('About', '<main></main>', 'about', viewerProfile: $viewer);
+                }
+                assertSame($pages[0], $pages[1], $site . ': unapproved viewer');
+                assertSame($pages[0], $pages[2], $site . ': approved viewer');
+                assertSame(false, str_contains($pages[2], 'alice'), $site);
+            }
+        } finally {
+            putenv($previous[0] === false ? $key : $key . '=' . $previous[0]);
+            putenv($previous[1] === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $previous[1]);
+        }
     }
 
     public function testLiveNavigationUsesCanonicalEligibilityAndDependencies(): void
@@ -132,8 +161,9 @@ final class PrivateMessageFeatureFlagTest
                         $page = $renderer->renderLayout('Flags', '', 'tools', viewerProfile: $viewer);
                         assertSame(str_contains($page, 'data-private-message-unread'), $state['messaging_enabled']);
                         assertSame($state['messaging_enabled'], str_contains($state['html'], 'data-private-message-unread'));
-                        assertSame($state['messaging_enabled'] ? 'alice' : null, $state['viewer']);
-                        assertSame($state['messaging_enabled'], $state['scripts'] !== []);
+                        $approved = (int) ($viewer['is_approved'] ?? 0) === 1 && ($viewer['_authenticated_identity'] ?? true) === true;
+                        assertSame(false, array_key_exists('viewer', $state));
+                        assertSame($state['messaging_enabled'] && $approved, $state['scripts'] !== []);
                     }
                 }
             }

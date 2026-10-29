@@ -46,7 +46,16 @@ final class PrivateMessageReleaseIsolationTest
                 assertSame(false, in_array($artifact->getBasename(), [basename($privatePath), basename($syncPath)], true));
             }
             foreach ($this->htmlFiles($artifactRoot) as $path) {
-                $html = (string) file_get_contents($path);
+                // Shared pages may carry only the hidden member-only Messages link and the
+                // script list the client loads for remembered members (viewer_nav_prepaint);
+                // with those two removed, no other messaging markup or asset may remain.
+                $html = (string) preg_replace(
+                    ['#<a [^>]*href="/messages" data-member-only data-private-message-unread aria-label="Messages" aria-describedby="private-message-unread-status">Messages<span id="private-message-unread-status" hidden>Unread status loading</span></a>#',
+                        '#,"privateMessaging":\[[^\]]*\]#'],
+                    '',
+                    (string) file_get_contents($path),
+                );
+                assertSame(false, (bool) preg_match('#<script[^>]+/assets/private_message#', $html), $path);
                 assertStringNotContains('private_message_reader', $html);
                 assertStringNotContains('private_message_list', $html);
                 assertStringNotContains('private_message_conversation', $html);

@@ -332,6 +332,8 @@ and repair its navigation and affected references. See the
 
 - [Operations page](site_operations_page/) — Tools › Operations holds high-traffic mode.
 
+- [Viewer nav pre-paint](viewer_nav_prepaint/) — Messages, Invite and Users tabs identical in shared HTML, shown before paint for remembered members.
+
 - [Background sign-in](background_sign_in/)
 
 - [Approval acceptance text](approval_acceptance_text/approval_acceptance_text_step3_development_plan.md) — F03; implemented locally with conversion/recovery and legacy-reader retirement readiness.

@@ -129,15 +129,12 @@ final class ProfilePageController
     public function directory(): string
     {
         $pdo = $this->routeServices->pdo();
-        // Waiting is only for approved members (see pendingDirectory), so only they get its tab and count.
-        // Visitors without cookies are served the static copy, which has neither.
-        $viewer = ($this->resolveViewerProfile)();
-        $canViewWaiting = $viewer !== null && (int) $viewer['is_approved'] === 1;
+        // Every viewer gets the same page, so shared copies match live ones. The
+        // Members / Waiting tabs are shown before paint only for a browser
+        // remembered as approved; Waiting itself stays approved-only (see pendingDirectory).
         return $this->routeServices->renderPageTemplate('users.php', [
             'users' => ProfileRepository::approvedDirectoryUsers($pdo),
-            'pendingCount' => $canViewWaiting
-                ? count(ProfileRepository::pendingDirectoryProfiles($pdo, $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)))
-                : null,
+            'pendingCount' => count(ProfileRepository::pendingDirectoryProfiles($pdo, $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::USERNAME_CHANGES_ENABLED))),
         ], 'Users', 'profiles');
     }
 

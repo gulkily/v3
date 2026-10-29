@@ -42,9 +42,12 @@ final class AppNavigationPlacementTest
                     foreach (['/about/', '/tools/', '/account/key/'] as $href) {
                         assertSame('menu', $placements[$href], $name . ' ' . $href);
                     }
-                    $approved = $name === 'approved';
-                    assertSame($approved && $messages ? 'main' : null, $placements['/messages'] ?? null, $name);
-                    assertSame($approved ? 'menu' : null, $placements['/invites/'] ?? null, $name);
+                    // Member-only links are rendered for every viewer and shown before paint by the client.
+                    assertSame($messages ? 'main' : null, $placements['/messages'] ?? null, $name);
+                    assertSame('menu', $placements['/invites/'] ?? null, $name);
+                    foreach ($items as $item) {
+                        assertSame(in_array($item['href'], ['/messages', '/invites/'], true), $item['member_only'] ?? false, $name . ' ' . $item['href']);
+                    }
                 }
             }
         });

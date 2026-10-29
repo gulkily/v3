@@ -220,8 +220,10 @@
     }
 
     assertCurrentIdentity(identity);
+    var approved = /^approved=1$/m.test(authenticationResult);
+    if (window.ForumMemberApproval) window.ForumMemberApproval.record(fingerprint, approved);
     return {
-      status: /^approved=1$/m.test(authenticationResult) ? "approved" : isApprovedMembersOnly() ? "pending" : "authenticated",
+      status: approved ? "approved" : isApprovedMembersOnly() ? "pending" : "authenticated",
       identityId: identityId
     };
   }

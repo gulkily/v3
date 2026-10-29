@@ -96,6 +96,43 @@ NODE);
         assertSame(['/about/'], $result['assigned']);
     }
 
+    public function testStatusCheckRemembersApprovalOnlyForAnApprovedSession(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const results = {};
+(async () => {
+  for (const ok of [true, false]) {
+    let clickListener = null;
+    const recorded = [];
+    const link = { href: 'https://forum.test/about/', target: '', hasAttribute() { return false; } };
+    const event = {
+      defaultPrevented: false, button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false,
+      target: { closest() { return link; } },
+      preventDefault() { this.defaultPrevented = true; }
+    };
+    global.window = {
+      location: { href: 'https://forum.test/', origin: 'https://forum.test', pathname: '/', search: '', assign() {} },
+      PrivateSiteAuth: { async authenticate() { return { status: 'approved' }; } },
+      ForumMemberApproval: { fingerprint: () => 'abc', record: (identity, approved) => recorded.push([identity, approved]) }
+    };
+    global.document = { addEventListener(type, listener) { if (type === 'click') clickListener = listener; } };
+    global.fetch = async function() { return { ok }; };
+    vm.runInThisContext(source);
+    clickListener(event);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    results[ok ? 'approved' : 'unauthorized'] = recorded;
+  }
+  process.stdout.write(JSON.stringify(results));
+})();
+NODE);
+
+        assertSame([['abc', true]], $result['approved']);
+        assertSame([], $result['unauthorized']);
+    }
+
     public function testInviteNavigationIsLeftToItsDedicatedHandler(): void
     {
         $result = $this->runScript(<<<'NODE'

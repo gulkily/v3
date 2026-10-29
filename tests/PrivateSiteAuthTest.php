@@ -33,6 +33,14 @@ final class PrivateSiteAuthTest
         assertSame(0, $exitCode, implode("\n", $output));
     }
 
+    public function testMemberApprovalMemoryContract(): void
+    {
+        $output = [];
+        $exitCode = 0;
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/member_approval_contract.cjs') . ' ' . escapeshellarg(__DIR__ . '/../public/assets/member_approval.js') . ' 2>&1', $output, $exitCode);
+        assertSame(0, $exitCode, implode("\n", $output));
+    }
+
     public function testApprovedIdentityCompletesChallengeAndReloadsWhenNoDestinationIsRequested(): void
     {
         $script = <<<'NODE'

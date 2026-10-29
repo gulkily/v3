@@ -81,6 +81,14 @@ final class UserAccessTest
             $_SESSION = [];
             $this->render($root, $db, '/users/pending/');
             assertSame(403, http_response_code());
+            // Users is the same page for every viewer; its tabs are member-only and shown before paint by the client.
+            $anonymous = $this->render($root, $db, '/users/');
+            $_SESSION = ['authenticated_identity_id' => $user['identity_id']];
+            $approved = $this->render($root, $db, '/users/');
+            $_SESSION = [];
+            $tabs = static fn (string $html): string => preg_match('#<nav class="board-filter" aria-label="Users" data-member-only>.*?</nav>#s', $html, $match) ? $match[0] : '';
+            assertStringContains('Waiting (', $tabs($anonymous));
+            assertSame($tabs($anonymous), $tabs($approved));
             assertStringContains('Not Approved', $this->render($root, $db, '/forte/users/'));
             assertStringContains('Approved Profiles', $this->render($root, $db, '/forte/user/' . $name));
             assertStringContains('Public key', $this->render($root, $db, '/forte/profiles/' . $user['profile_slug']));

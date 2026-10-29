@@ -19,8 +19,10 @@
     });
     document.querySelectorAll('[data-role="unread-retry"]').forEach(button => { button.hidden = false; });
   }
+  // Shared pages carry no viewer; the first valid response binds this page to
+  // the session's viewer, and later responses for another viewer are rejected.
   function valid(state, names) {
-    return state && state.status === 'ok' && state.viewer === viewer && Number.isSafeInteger(state.unread_count) && state.unread_count >= 0 &&
+    return state && state.status === 'ok' && typeof state.viewer === 'string' && state.viewer !== '' && (!viewer || state.viewer === viewer) && Number.isSafeInteger(state.unread_count) && state.unread_count >= 0 &&
       typeof state.revision === 'string' && state.revision && state.conversations &&
       names.every(name => typeof state.conversations[name] === 'boolean');
   }
@@ -51,6 +53,11 @@
         if (attempt === 1) throw new Error('Unread status changed during refresh. Retry on Messages.');
       }
       if (current !== generation) return;
+      if (!viewer) {
+        viewer = combined.viewer;
+        nav.dataset.viewer = viewer;
+        document.dispatchEvent(new CustomEvent('private-message-viewer-known'));
+      }
       const description = combined.unread_count + ' unread conversation' + (combined.unread_count === 1 ? '' : 's');
       nav.querySelector('#private-message-unread-status').textContent = description;
       nav.title = description;
@@ -84,6 +91,9 @@
     stop();
     nav = navElement;
     if (!nav) return;
+    // Messages pages name their viewer in their own content; elsewhere the first response does.
+    const page = document.querySelector('[data-viewer-username-token], [data-conversation-list][data-viewer]');
+    if (!nav.dataset.viewer && page) nav.dataset.viewer = page.dataset.viewerUsernameToken || page.dataset.viewer || '';
     viewer = nav.dataset.viewer;
     originalIdentity = identity();
     if (!listening) {
@@ -95,6 +105,8 @@
       });
       document.addEventListener('private-message-rows-changed', schedule);
       window.addEventListener('focus', schedule);
+      // A shared page can start without a session; retry once sign-in completes.
+      window.addEventListener('forum:authenticated-in-place', schedule);
       window.addEventListener('pageshow', schedule);
       window.addEventListener('pagehide', function () { generation++; clearTimeout(scheduled); });
       window.addEventListener('storage', function (event) {

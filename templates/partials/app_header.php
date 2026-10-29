@@ -23,7 +23,7 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
         <nav class="account-menu__links" aria-label="Account and more">
 <?php foreach ($menuItems as $item): ?>
 <?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
-          <a data-tab="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['invite_action']) ? ' data-invite-navigation' : '' ?>><?= $e($item['label']) ?></a>
+          <a data-tab="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= !empty($item['invite_action']) ? ' data-invite-navigation' : '' ?>><?= $e($item['label']) ?></a>
 <?php endforeach; ?>
         </nav>
         <div class="account-menu__controls">
