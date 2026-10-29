@@ -64,6 +64,30 @@ final class ApprovalAcceptanceTest
         });
     }
 
+    public function testTextPreservesSignedContextOrderAndRejectsMalformedEvidence(): void
+    {
+        $this->fixture(function (string $root, array $context): void {
+            $context['actor_username'] = 'é/"alice';
+            foreach ([$context, array_reverse($context, true)] as $ordered) {
+                $contents = $this->post('grant', 'approval', $ordered['actor_identity_id'],
+                    "Approve-Identity-ID: " . $ordered['target_identity_id'] . "\nApproval-Context-SHA256: " . hash('sha256', json_encode($ordered, JSON_THROW_ON_ERROR)) . "\n");
+                $data = json_decode(ApprovalAcceptance::encode($contents, $ordered, '2026-01-01T00:05:00Z', 'direct'), true);
+                $text = \ForumRewrite\Security\ApprovalReceiptText::encode($data);
+                $decoded = \ForumRewrite\Security\ApprovalReceiptText::decode($text);
+                assertSame($data, ApprovalAcceptance::validate($decoded, $contents));
+                assertSame($ordered, $decoded['context']);
+                foreach ([$text . "Kind: direct\n", str_replace('Context-Allowed: true', 'Context-Allowed: 1', $text), $text . "Unknown: x\n"] as $bad) {
+                    $this->rejects(fn () => \ForumRewrite\Security\ApprovalReceiptText::decode($bad));
+                }
+                $decoded['context'] = array_reverse($ordered, true);
+                $this->rejects(fn () => ApprovalAcceptance::validate($decoded, $contents));
+                $legacy = json_encode($data);
+                assertSame($data, \ForumRewrite\Security\LegacyApprovalReceipt::decode($legacy));
+                $this->rejects(fn () => \ForumRewrite\Security\LegacyApprovalReceipt::decode(str_replace('"version":1', '"version":1,"version":1', $legacy)));
+            }
+        });
+    }
+
     private function post(string $id, string $tags, string $author, string $body): string
     {
         return "Post-ID: {$id}\nCreated-At: 2026-01-01T00:00:00Z\nBoard-Tags: {$tags}\nThread-ID: bootstrap\nParent-ID: bootstrap\nAuthor-Identity-ID: {$author}\n\n{$body}";

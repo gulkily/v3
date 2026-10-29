@@ -40,3 +40,42 @@ Account history and receipt source links follow existing profile/source membersh
 Trusted `import-repository` restores recognize and validate the receipt family, preserving grant bytes and receipt facts across a rebuild. Remote `import-instance` content imports exclude approvals, invitations, seeds, and acceptance receipts as authority records. Preserve receipts and adjacent grant signatures with repository backups.
 
 Implementation: [ApprovalAcceptance](../../src/ForumRewrite/Security/ApprovalAcceptance.php), [InvitationApprovalReplay](../../src/ForumRewrite/Invitation/InvitationApprovalReplay.php), and [ApprovalHistory](../../src/ForumRewrite/ReadModel/ApprovalHistory.php). See the [operator runbook](../runbooks/account_key_approval_safety.md).
+
+## Readable storage v2
+
+The v2 codec represents the same logical v1 acceptance facts using text. New-write
+integration is tracked in the F03 implementation summary. Storage has no body;
+exactly one of each header below is required, LF-terminated, at most 16 KiB.
+Unknown/duplicate headers, control characters, invalid UTF-8, missing fields,
+noncanonical integers and booleans are rejected. Scalar strings are at most
+4096 bytes. Header names are case-sensitive. Example (hash is illustrative):
+
+```text
+Format: approval-acceptance-v2
+Post-Id: grant-example
+Record-Sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Accepted-At: 2026-01-01T00:05:00Z
+Kind: direct
+Context-Actor-Identity-Id: openpgp:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Context-Actor-Username: alice
+Context-Target-Identity-Id: openpgp:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+Context-Target-Username: bob
+Context-Target-Profile-Slug: bob-key
+Context-Target-Thread-Id: bootstrap
+Context-Target-Post-Id: bootstrap
+Context-Existing-Key-Count: 0
+Context-Classification: new_account
+Context-Actor-Is-Operator: false
+Context-Cross-Account-Allowed: false
+Context-Allowed: true
+```
+
+The order of `Context-` headers is the original context insertion order. Preserve
+it during conversion: `Approval-Context-SHA256` still hashes the existing PHP JSON
+encoding with `JSON_THROW_ON_ERROR`, including key order, scalar types and default
+Unicode/slash escaping. This private digest preimage is not the receipt storage
+format. Do not sort fields, rewrite signed grants or compute the digest from text
+bytes. New grants use the same digest algorithm. Legacy decoding is isolated in
+`LegacyApprovalReceipt`; `ApprovalReceiptText` and shared semantic validation do
+not depend on it. Unknown historical fields or values that cannot be represented
+losslessly block conversion and leave original evidence intact.

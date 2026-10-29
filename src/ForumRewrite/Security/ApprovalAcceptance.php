@@ -33,9 +33,15 @@ final class ApprovalAcceptance
         if (!is_file($file) || is_link($file) || filesize($file) > 16384) {
             throw new RuntimeException('Invalid approval acceptance file.');
         }
-        $data = json_decode((string) file_get_contents($file), true, 32, JSON_THROW_ON_ERROR);
+        $data = LegacyApprovalReceipt::decode((string) file_get_contents($file));
         $contents = file_get_contents($root . '/' . $postPath);
         if ($contents === false) throw new RuntimeException('Acceptance grant is missing.');
+        return self::validate($data, $contents);
+    }
+
+    public static function validate(array $data, string $contents): array
+    {
+        ApprovalReceiptText::assertShape($data);
         $post = (new PostRecordParser())->parse($contents);
         $context = $data['context'] ?? null;
         if (($data['version'] ?? null) !== 1 || ($data['post_id'] ?? null) !== $post->postId
