@@ -329,3 +329,5 @@ and repair its navigation and affected references. See the
 - [High-traffic toggle](high_traffic_toggle/) — switch row under the Feature Flags heading.
 
 - [Operations page](site_operations_page/) — Tools › Operations holds high-traffic mode.
+
+- [Background sign-in](background_sign_in/)

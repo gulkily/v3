@@ -15,7 +15,7 @@ $viewerIdentityId = is_array($viewerProfile) ? strtolower(trim((string) ($viewer
 $viewerApproved = is_array($viewerProfile) && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
 $usernameChangesEnabled = $usernameChangesEnabled ?? false;
 ?>
-<section class="stack account-page" data-account-key-root data-account-state="guest" data-sky="account" data-username-changes-enabled="<?= $usernameChangesEnabled ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-auth-in-place<?= ($testingSelfApprovalEnabled ?? false) && ($testingSelfApprovalToken ?? null) === null ? ' data-testing-self-approval-pending' : '' ?> data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="<?= $viewerApproved ? '1' : '0' ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
+<section class="stack account-page" data-account-key-root data-account-state="guest" data-sky="account" data-username-changes-enabled="<?= $usernameChangesEnabled ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-auth-in-place data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="<?= $viewerApproved ? '1' : '0' ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
   <header class="account-key-header">
     <h1>Account</h1>
   </header>
@@ -584,11 +584,7 @@ No browser private key saved yet.
       window.addEventListener('pageshow', syncSimpleUI);
       window.addEventListener('forum:key-backup-recorded', syncSimpleUI);
       window.addEventListener('forum:authenticated-in-place', function (event) {
-        // Testing deployments render "Approve current account" only for a signed-in session.
-        if (root.hasAttribute('data-testing-self-approval-pending') && !event.detail.approved) {
-          window.location.reload();
-          return;
-        }
+        // Session-bound testing controls become available on the next intentional visit.
         root.dataset.viewerIdentityId = event.detail.identityId;
         root.dataset.viewerApproved = event.detail.approved ? '1' : '0';
         syncSimpleUI();

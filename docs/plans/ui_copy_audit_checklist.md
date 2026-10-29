@@ -674,3 +674,10 @@ Limits: the person page is rendered for the viewer like before (Message, Edit in
 
 Change: Account's Fingerprint row (cycle 4) and the person page's Identities (cycle 7) had introduced a grouped form "4886 B67C … 1AA3". Both now use the interface's standard short form from `$shortenProfileSlug`, "openpgp-4886b67c7...", in plain text like everywhere else (pending approvals, User Access, Forte). The full slug stays in the tooltip, and Copy still copies the full `openpgp-…` slug.
 Verification: `account_states` (now asserts `openpgp-` plus 9 hex digits and "..."), `users_profile`, `AccountKeyPageHooksTest` and `LocalAppSmokeTest` (the known unrelated failure aside) pass; phone screenshots of both pages reviewed.
+
+
+## Background sign-in — 2026-10-29 UTC
+
+- [x] Public background restoration completes quietly, without routine success text or document navigation. Explicit failures retain actionable feedback; text, selections, focus, scroll, menus, name editors and pending submissions survive completion. Account's testing-only automatic reload is removed; its approval button remains available on the next intentional visit.
+- [x] Chromium: 80 delayed-auth cases across Light, Word97, Chicago and Midnight; 72 further name/Account cases across Dark, Console, LCD, Vapor, Forge, Sticker, Arena, Thermal and Whitehot; all at 390/1280 widths and approved/unapproved states. Firefox/WebKit each passed 20 Light-theme cases; strengthened open-menu/primary-action stability checks passed four cases per engine. Overflow assertions passed; representative Light, Word97, Chicago, Midnight, LCD and Arena screenshots inspected. Existing Account, compose, first-post and invitation flows passed.
+- Limits: Phone viewports are emulation, not physical devices. Site-specific Chouse/QDB/MIT Rap Club themes are not permitted on this ZenMemes fixture and are not claimed verified. No navigation destinations/icons changed. Production/deployment and version-check reload work remain pending. See [full evidence and baseline failure](background_sign_in/background_sign_in_step4_implementation_summary.md#closeout).

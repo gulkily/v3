@@ -114,6 +114,18 @@
     return;
   }
 
+  // The thread response has already consumed these one-time navigation hints.
+  // Keep them until the pending-version check above has used the bypass token.
+  if (window.history && typeof window.history.replaceState === 'function') {
+    var threadUrl = new URL(window.location.href, window.location.origin);
+    if (/^\/threads\/[^/]+\/?$/.test(threadUrl.pathname)
+        && (threadUrl.searchParams.has('created_post_id') || threadUrl.searchParams.has('__v'))) {
+      threadUrl.searchParams.delete('created_post_id');
+      threadUrl.searchParams.delete('__v');
+      window.history.replaceState(window.history.state, '', threadUrl.toString());
+    }
+  }
+
   function scheduleNextVersionCheck() {
     if (versionCheckTimer !== null) {
       return;
