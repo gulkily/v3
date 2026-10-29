@@ -66,3 +66,23 @@ Verification: Requirements checked against the approved v2/A assessment and insp
 Verification: Compared stages with approved Step 2 and reviewed queue reconciliation/requeue support plus shared rendering surfaces. Plan links to future steps remain intentionally pending. No runtime, UI or production evidence claimed; no application changes or commits. All stages include estimates and verification; scope and approval remain unchanged.
 
 *— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 UTC — Step 4 completed
+
+### Necessary/useful instructions
+
+- Source: step4_implementation_do.md, Stage Boundary Protocol. Contribution: planning ef47c56ae and distinct S1–S5 commits ba8d6e8d6/dcc17b8e9/817db341f/d9789f951/51eebe132 preserve tested boundaries and summary updates. Suggestion: retain.
+- Source: step4_implementation_after.md, normal flow and known-environment limits. Contribution: real signed flag toggles exposed an existing readiness race that isolated API checks missed; the final report keeps production replay pending despite local success. Suggestion: retain.
+- Source: Experimental Effort Estimation, retrospective distinction. Contribution: retained entry 0.60 and earlier 0.50 projections separately from retrospective 0.65, with acceptance pending and no measured-labor claim. Suggestion: retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- New dependency approval and read-model migration rules: no dependency or schema changes were required. Non-use is not evidence for removal.
+
+Verification: All five stages have scoped commits and summary updates; planning commit contains only approved plans, debug log and index organization. Plan links and final diff checks passed. Focused PHP and real-browser checks are recorded in the implementation summary, including cache policy, 13-theme phone/desktop layout, signed actions and recovery. Production/physical-device/full-suite and maintainer fit remain unverified or pending. Unrelated untracked claude_request.txt is untouched. Final diagnostic saved in this separate log-only handoff commit, without amending implementation history.
+
+*— Codex · 2026-10-29 UTC*
