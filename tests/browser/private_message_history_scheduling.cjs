@@ -1,4 +1,5 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
+const combined=process.argv.includes('--combined'),paired=process.argv.includes('--paired');
 const events={},values=new Map(),requests=[];
 const source='a'.repeat(40),target='b'.repeat(40);
 let clock=100000,slow=false,interrupt=false,shutdown=false;
@@ -13,25 +14,24 @@ window.ForumPrivateMessageUnread={historyEligibility:()=>true};
 window.ForumPrivateMessageHistoryCrypto={digest:()=> 'digest',extractKeys:async()=>{if(slow){clock+=10001;slow=false;}return ['secret'];},readOriginal:async()=> 'verified',wrapHistoryKeys:async()=> 'encrypted'};
 global.fetch=async(url,options)=>{
  const body=options.body?JSON.parse(options.body):null;
- if(url.endsWith('/work') && options.method==='POST')return {ok:false,status:405,json:async()=>({status:'error'})};
+ if(!combined && url.endsWith('/work') && options.method==='POST')return {ok:false,status:405,json:async()=>({status:'error'})};
  requests.push({url,body});
  if(interrupt){interrupt=false;document.hidden=true;events.visibilitychange();}
  if(shutdown)return {status:403,clone:()=>({json:async()=>({code:'messaging_disabled'})})};
- const sender=url.endsWith('?mode=sender');
+ const sender=combined ? values.get('forum_history_sync_next_mode:alice')==='sender' : url.endsWith('?mode=sender');
  const work={status:'ok',account:sender?'bob':'alice',source_account:'alice',mode:sender?'sender':'account',source,target,target_key:'target',
    messages:['one','two'].map(message_id=>({message_id,digest:'digest',encrypted_envelope:'original',sender_keys:['sender']})),checkpoint:{target,after_id:'two'},cycle_end:false};
- return {ok:true,json:async()=>url.includes('/work')?work:{status:'ok'}};
+ return {ok:true,json:async()=>url.includes('/work')?(combined?{status:'ok',mode:'combined',account:'alice',source,work:paired?[work,{...work,mode:sender?'account':'sender',account:sender?'alice':'bob'}]:[work],complete:[],continuation:true}:work):{status:'ok'}};
 };
 function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_message_availability.js','utf8'));vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));events.DOMContentLoaded();return window.ForumPrivateMessageHistorySync.refresh();}
 (async()=>{
  await install();
- assert.equal(requests.filter(r=>r.url.includes('/work')).length,8);
- assert.equal(requests.filter(r=>r.url.endsWith('?mode=sender')).length,4);
- assert.equal(requests.filter(r=>r.url.endsWith('/work')).length,4);
+ assert.equal(requests.filter(r=>r.url.includes('/work')).length,paired?4:8);
+ if(!combined) {assert.equal(requests.filter(r=>r.url.endsWith('?mode=sender')).length,4);assert.equal(requests.filter(r=>r.url.endsWith('/work')).length,4);}
  // Short visit: a delayed response must not upload/acknowledge after visibility cancellation.
  requests.length=0;sessionStorage.setItem('forum_history_sync_next_mode:alice','sender');interrupt=true;
- await install();assert.equal(requests.length,1);assert(requests[0].url.endsWith('?mode=sender'));
- assert.equal(values.get('forum_history_sync_next_mode:alice'),'account');
+ await install();assert.equal(requests.length,1);assert(requests[0].url.endsWith(combined?'/work':'?mode=sender'));
+ assert.equal(values.get('forum_history_sync_next_mode:alice'),combined?'sender':'account');
  document.hidden=false;requests.length=0;await install();
  assert(requests[0].url.endsWith('/work'),'Next visit must preserve the other mode’s turn');
  // A partial sender batch may upload verified entries, but cannot advance past unfinished work.
@@ -79,7 +79,7 @@ function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_me
  release();
  await Promise.all([oldRun,restarted]);
  assert.equal(window.ForumPrivateMessageAvailability.isDisabled(),false);
- assert.equal(requests.filter(r=>r.url.includes('/work')).length,8,'One bounded run resumes');
+ assert.equal(requests.filter(r=>r.url.includes('/work')).length,paired?4:8,'One bounded run resumes');
  assert.notEqual(window.ForumPrivateMessageHistorySync.state().state,'disabled');
  window.ForumPrivateMessageHistorySync.stop();
  const stopped=requests.length;

@@ -61,6 +61,7 @@ async function visit(ctx, contribution=null) {
  const page=await ctx.newPage();await page.goto(base+'/');
  // Shared pages load messaging once the browser knows it is approved, then bind to the viewer from unread status.
  await page.waitForFunction(()=>window.ForumPrivateMessageHistorySync && document.querySelector('[data-private-message-unread]')?.dataset.viewer);
+ await page.waitForFunction(()=>window.ForumPrivateMessageUnread?.historyEligibility()===true);
  // The product bounds each visit; drive additional visible returns when testing full convergence.
  let contributed=0;
  for(let n=0;n<(contribution?12:3);n++) {
@@ -95,6 +96,13 @@ try {
  fixture({action:'seed-approvals',fingerprints:[oldA,oldB,bob].map(who=>who.fingerprint)});
  const a=await device(oldA),b=await device(oldB),t=await device(target);
  assert.equal((await t.request.get(base+'/api/private_messages/history_sync/work')).status(),403);
+ const unused=await a.newPage(),unusedRequests=[];
+ unused.on('request',r=>{if(r.url().includes('/history_sync/'))unusedRequests.push(r.url());});
+ await unused.goto(base+'/');
+ await unused.waitForFunction(()=>window.ForumPrivateMessageUnread?.historyEligibility()===false);
+ await unused.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
+ assert.equal(unusedRequests.length,0,'Unused account must make no dedicated history-sync requests');
+ await unused.close();
  const messages=[];
  for(let n=1;n<=(direct?1:31);n++) {
    const donor=n<=20?oldA:oldB,sender=senderAssisted?donor:(n%2?bob:donor);
@@ -106,6 +114,9 @@ try {
  if(senderAssisted) {const approver=await device(bob);await approve(approver,bob,target);await approver.close();}
  else await approve(a,oldA,target);
  const before=messages.map(row=>({message_id:row.id,encrypted_envelope:row.envelope}));
+ assert.equal((await t.request.post(base+'/api/private_messages/history_sync/work',{data:{}})).status(),403);
+ assert.equal((await t.request.post(base+'/api/private_messages/history_sync/work',{headers:{...headers,'Sec-Fetch-Site':'cross-site'},data:{}})).status(),403);
+ assert.equal((await t.request.post(base+'/api/private_messages/history_sync/work',{headers,data:{complete:'invalid'}})).status(),400);
  assert.equal((await t.request.post(base+'/api/private_messages/history_sync/acknowledge',{data:{items:[]}})).status(),403);
  assert.equal((await t.request.post(base+'/api/private_messages/history_sync/acknowledge',{headers:{...headers,'Sec-Fetch-Site':'cross-site'},data:{items:[]}})).status(),403);
  const work=await t.request.get(base+'/api/private_messages/history_sync/work');assert.equal(work.status(),200);assert.match(work.headers()['cache-control'],/no-store/);
@@ -156,6 +167,16 @@ try {
  await page.reload();await page.waitForFunction(()=>document.querySelectorAll('[data-reader-state="verified"]').length===25);await page.close();
  assert.deepEqual(JSON.parse(fixture({action:'inspect'})).originals,before,'Synchronization must leave original ciphertext unchanged');
  console.log('Restored target approves and supplies a later device, with original donors closed');
+ const idlePage=await t.newPage();await idlePage.goto(base+'/');
+ await idlePage.waitForFunction(()=>window.ForumPrivateMessageUnread?.historyEligibility()===true);
+ let idleRequests=[];
+ idlePage.on('request',r=>{if(r.url().includes('/history_sync/'))idleRequests.push({url:r.url(),method:r.method()});});
+ for(let n=0;n<12;n++) {
+   idleRequests=[];await idlePage.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
+   if(idleRequests.length===1 && idleRequests[0].url.endsWith('/work'))break;
+ }
+ assert.deepEqual(idleRequests.map(r=>[new URL(r.url).pathname,r.method]),[['/api/private_messages/history_sync/work','POST']],'Settled history needs just one combined check');
+ await idlePage.close();
  await approve(t,target,later);await visit(t,{source:target.fingerprint,target:later.fingerprint,count:31});await t.close();
  const l=await device(later);page=await readAll(l,31);await page.close();
  const candidate=await json(await l.request.get(base+'/api/private_messages/history_sync/transfers?message_id=history-01'));
@@ -165,6 +186,7 @@ try {
  await copyFile(messagePath,messagePath+'.backup');await copyFile(syncPath,syncPath+'.backup');
  await rename(syncPath,syncPath+'.held');await mkdir(syncPath);
  const restored=await device(target);page=await restored.newPage();await page.goto(base+'/messages/conversation/bob');
+ await page.waitForFunction(()=>window.ForumPrivateMessageUnread?.historyEligibility()===true);
  await page.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
  assert.equal(await page.evaluate(()=>window.ForumPrivateMessageHistorySync.state().state),'error');
  assert.equal(await page.locator('[data-private-message-history-status]').count(),0);

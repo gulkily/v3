@@ -54,3 +54,16 @@ Step 4 entry: 2026-10-29 UTC; 0.75 reaffirmed, scope v1/A, original baseline 02d
 - Notes: Original scope/estimate unchanged. Prior stage commit: 2f11c3a83. Full HTTP/browser acceptance follows in Stage 5.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 5 - Normal browsing and recovery acceptance
+
+**Original estimate: 0.16**
+**Retrospective stage work: 0.20**
+
+- Changes: Add HTTP/browser request-count acceptance and combined/paired scheduling regressions. Preserve the shared eight-bundle budget and alternating priority when a combined response returns two bundles. Valid older unread responses without the additive field keep legacy recovery available. Eligibility now uses SELECT 1 rather than loading ciphertext. Existing theme matrix selects stored themes on reload because some themes hide the picker.
+- Verification: Focused PHP regression 41/41; final eligibility/mailbox/read-state check 14/14 after query optimization. Combined, paired and legacy scheduling tests pass. Full real Chromium history suites pass same-account (/tmp/history-sync-browser-RttLVT) and sender-assisted (/tmp/history-sync-browser-F2cexz): unused-account zero sync, settled-history one POST work, 31 originals across partial donors, newly approved/restored devices, unchanged ciphertext, drafts, mobile and desktop reading, paired backup/restore, sync outage with ordinary sending, signed messaging toggles across themes and environment overrides. Final direct sender run (/tmp/history-sync-browser-qV0Jm7) passes updated POST work origin/invalid-body checks, canonical reading and retained reload.
+- Corrections: Browser drivers now wait for unread eligibility before requesting sync; earlier immediate refresh assertions raced the new gate. Theme selection originally timed out on a hidden picker; selecting the stored theme before reload tests messaging consistently without changing product navigation. Budget/fairness and legacy-status compatibility corrections stay within scope.
+- Limitations: The broader private_message_list_browser.mjs failed at its exact bob user-link lookup (/tmp/private-message-browser-ner7y1), before its unread UI checks; not established as a baseline defect and not counted as passed. Focused unread PHP checks and actual history reading/toggle flows pass. No full suite, production deployment/replay or physical-device checks claimed.
+- Notes: Prior stage commit 406979772. No prospective estimate revision; retrospective reflects fixture repair and wider integration checks, not measured labor.
+
+*— Codex · 2026-10-29 UTC*

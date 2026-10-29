@@ -59,7 +59,7 @@
         nav.dataset.viewer = viewer;
         document.dispatchEvent(new CustomEvent('private-message-viewer-known'));
       }
-      historyEligibility = typeof combined.has_history === 'boolean' ? combined.has_history : null;
+      historyEligibility = typeof combined.has_history === 'boolean' ? combined.has_history : true;
       document.dispatchEvent(new CustomEvent('private-message-history-eligibility'));
       const description = combined.unread_count + ' unread conversation' + (combined.unread_count === 1 ? '' : 's');
       nav.querySelector('#private-message-unread-status').textContent = description;

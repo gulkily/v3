@@ -130,8 +130,10 @@ export async function checkOperatorMessagingFlag(operator, member, base, root, p
   assert.equal(await page.evaluate(() => window.navigationSentinel), 'retained', 'No full-page reload');
   const themes = await page.locator('[data-theme-option]').evaluateAll(nodes => nodes.map(node => node.dataset.themeOption));
   for (const theme of themes) {
-    await page.getByRole('button', { name: 'Choose theme', exact: true }).click();
-    await page.locator(`[data-theme-option="${theme}"]`).click();
+    // Theme-specific navigation can conceal the picker; load each theme before testing messaging.
+    await page.evaluate(theme => localStorage.setItem(window.forumBrowserRuntime.themeStorageKey, theme), theme);
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadState === 'ready');
     await toggle(false);
     assert.equal(await page.locator('[data-private-message-unread]').count(), 0);
     const stopped = syncRequests;

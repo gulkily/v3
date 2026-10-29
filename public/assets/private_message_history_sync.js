@@ -110,7 +110,8 @@
       const fingerprint=(await pgp.readPrivateKey({armoredKey:privateKey})).getFingerprint().toLowerCase();
       if(!valid(current))return;
       const finished={account:false,sender:false};
-      for(let batch=0;batch<8 && Date.now()<deadline;batch++) {
+      let processed=0;
+      for(let batch=0;batch<8 && processed<8 && Date.now()<deadline;batch++) {
         let works;
         if(combinedSupported) {
           let result;
@@ -119,7 +120,7 @@
           if(result) {
             if(result.mode!=='combined' || result.account!==account || result.source!==fingerprint || !Array.isArray(result.work) || !Array.isArray(result.complete) || typeof result.continuation!=='boolean') throw Error('Invalid combined history work.');
             for(const mode of result.complete) {if(!['account','sender'].includes(mode))throw Error('Invalid completed mode.');finished[mode]=true;}
-            works=result.work;
+            works=result.work.sort((a,b)=>(a.mode===nextMode?-1:0)-(b.mode===nextMode?-1:0));
           }
         }
         if(!combinedSupported) {
@@ -131,35 +132,38 @@
           works=[{...work,mode}];
         }
         for(const work of works) {
-        const mode=work.mode;
-        if(!['account','sender'].includes(mode) || !valid(current)) throw Error('Invalid history work mode.');
-        if((mode==='sender'?work.source_account:work.account)!==account || work.source!==fingerprint) throw Error('Saved key does not match authenticated identity.');
-        const entries=[], receipts=[];
-        let checkpoint=work.checkpoint;
-        for(const row of work.messages) {
-          if(!valid(current)) throw Error('History identity changed.');
-          try {
-            const result=await ownKeys(row,privateKey,current);
+          processed++;
+          const mode=work.mode;
+          if(!['account','sender'].includes(mode) || !valid(current)) throw Error('Invalid history work mode.');
+          nextMode=mode==='account'?'sender':'account';
+          try {sessionStorage.setItem('forum_history_sync_next_mode:'+account,nextMode);} catch (_) {}
+          if((mode==='sender'?work.source_account:work.account)!==account || work.source!==fingerprint) throw Error('Saved key does not match authenticated identity.');
+          const entries=[], receipts=[];
+          let checkpoint=work.checkpoint;
+          for(const row of work.messages) {
+            if(!valid(current)) throw Error('History identity changed.');
+            try {
+              const result=await ownKeys(row,privateKey,current);
+              if(!valid(current))return;
+              receipts.push({message_id:row.message_id,digest:row.digest,transfer_id:result.transfer_id});
+              if(result.transfer_id) document.dispatchEvent(new CustomEvent('private-message-history-restored',{detail:{messageId:row.message_id}}));
+              if(!verifiedIds.has(row.message_id+':'+row.digest)) {verifiedIds.add(row.message_id+':'+row.digest);stats.verified++;}
+              if(work.target && (mode==='sender' || work.target!==fingerprint)) entries.push({message_id:row.message_id,digest:row.digest,keys:result.keys});
+            } catch (_) { if(!valid(current))return;stats.unavailable++; }
+            if(Date.now()>=deadline) { checkpoint=mode==='sender'?null:{target:work.target,after_id:row.message_id};break; }
+          }
+          if(entries.length) {
+            const ciphertext=await crypto.wrapHistoryKeys({account:work.account,source_account:account,source:fingerprint,target:work.target,privateKey,targetKey:work.target_key,entries});
+            await request('transfers',{account:work.account,target:work.target,ciphertext,items:entries.map(({message_id,digest})=>({message_id,digest}))},current);
             if(!valid(current))return;
-            receipts.push({message_id:row.message_id,digest:row.digest,transfer_id:result.transfer_id});
-            if(result.transfer_id) document.dispatchEvent(new CustomEvent('private-message-history-restored',{detail:{messageId:row.message_id}}));
-            if(!verifiedIds.has(row.message_id+':'+row.digest)) {verifiedIds.add(row.message_id+':'+row.digest);stats.verified++;}
-            if(work.target && (mode==='sender' || work.target!==fingerprint)) entries.push({message_id:row.message_id,digest:row.digest,keys:result.keys});
-          } catch (_) { if(!valid(current))return;stats.unavailable++; }
-          if(Date.now()>=deadline) { checkpoint=mode==='sender'?null:{target:work.target,after_id:row.message_id};break; }
-        }
-        if(entries.length) {
-          const ciphertext=await crypto.wrapHistoryKeys({account:work.account,source_account:account,source:fingerprint,target:work.target,privateKey,targetKey:work.target_key,entries});
-          await request('transfers',{account:work.account,target:work.target,ciphertext,items:entries.map(({message_id,digest})=>({message_id,digest}))},current);
+            stats.contributed+=entries.length;
+          }
+          // Confirm our own verified access even while contributing to another target.
+          if(receipts.length || checkpoint) await request('acknowledge',{items:receipts,checkpoint,mode},current);
           if(!valid(current))return;
-          stats.contributed+=entries.length;
-        }
-        // Confirm our own verified access even while contributing to another target.
-        if(receipts.length || checkpoint) await request('acknowledge',{items:receipts,checkpoint,mode},current);
-        if(!valid(current))return;
-        publish('working');
-        if(work.cycle_end && checkpoint) finished[mode]=true;
-        if(Date.now()>=deadline) break;
+          publish('working');
+          if(work.cycle_end && checkpoint) finished[mode]=true;
+          if(processed>=8 || Date.now()>=deadline) break;
         }
         if(finished.account && finished.sender) break;
       }
