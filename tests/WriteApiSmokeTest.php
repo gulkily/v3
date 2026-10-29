@@ -6588,7 +6588,7 @@ NODE;
         }
         $receiptPath = \ForumRewrite\Security\ApprovalAcceptance::path($approvalPostId);
         $receiptPage = $this->renderMethod($application, 'GET', '/source/current/' . $receiptPath);
-        assertStringContains('"classification": "new_account"', $receiptPage);
+        assertStringContains('Context-Classification: new_account', $receiptPage);
         assertStringContains('Approve new member alice', $profilePage);
         assertSame(1, count($approvalPostIds));
         assertStringContains('Approved user alice', $approvalLanding);
@@ -7023,7 +7023,7 @@ NODE;
             assertSame('error', $failedCommit['status']);
             assertSame(false, is_file($repositoryRoot . '/' . $prepared['record_path']));
             assertSame(false, is_file($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
-            assertSame([], glob($repositoryRoot . '/records/approval-acceptances/*.json') ?: []);
+            assertSame([], glob($repositoryRoot . '/records/approval-acceptances/*') ?: []);
             $retryPayload = $_POST;
             $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_approval'), true, 512, JSON_THROW_ON_ERROR);
             $_POST = $retryPayload;

@@ -22,3 +22,14 @@ Approved Step 3 received. Branch: feature/approval-acceptance-text. Planning com
 - Notes: No stage estimate revision; signed digest generation unchanged. Runtime browser/restore acceptance belongs to later stages.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 2 - New writes and receipt resolution
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Text-only new writes; shared validation of all existing receipts, conflict rejection, actual source paths in history/recovery, text source allowlist. Invalid legacy companions cannot be hidden by valid text.
+- Verification: ApprovalAcceptance/History/Policy/InvitationIssuance 21/21; two actual Write API approval/source and signed-finalization checks pass, including rejected commit cleanup and successful retry. Updated source expectation to named fields and cleanup check to both extensions.
+- Notes: S1 commit cee88cbc. Archive recognition follows in S3; no schema/dependency changes. Estimates unchanged.
+
+*— Codex · 2026-10-29 UTC*

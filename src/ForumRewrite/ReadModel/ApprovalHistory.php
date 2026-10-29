@@ -77,7 +77,7 @@ final class ApprovalHistory
                     'recorded_at' => $post['created_at'], 'recorded_at_kind' => 'record',
                     'existing_key_count' => $context['existing_key_count'], 'actor_is_operator' => $context['actor_is_operator'],
                     'cross_account_allowed' => $context['cross_account_allowed'], 'source_path' => $path,
-                    'receipt_path' => ApprovalAcceptance::path($post['post_id']), 'kind' => $receipt['kind']]);
+                    'receipt_path' => ApprovalAcceptance::existingPaths($this->root, $post['post_id'])[0], 'kind' => $receipt['kind']]);
             }
             if ($row['source_path'] === null) {
                 $row['source_path'] = $path; $row['kind'] = $direct ? 'direct' : 'invitation';
