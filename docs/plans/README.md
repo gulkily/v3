@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Unified removal format](unified_removal_format/unified_removal_format_step1_solution_assessment.md)
+
 - [Activity load performance](activity_load_performance/)
 
 - [TUI operator workspace](tui_operator_workspace/)
