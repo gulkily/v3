@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](agent_response_text_step1_solution_assessment.md) · [Step 2](agent_response_text_step2_feature_description.md) · [Step 3](agent_response_text_step3_development_plan.md) · Step 4 pending
+> **Feature plan:** [Step 1](agent_response_text_step1_solution_assessment.md) · [Step 2](agent_response_text_step2_feature_description.md) · [Step 3](agent_response_text_step3_development_plan.md) · [Step 4](agent_response_text_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/agent_response_text — [ledger](../effort_estimation_trial.md)
@@ -75,3 +75,5 @@ Approved Step 2 received; scope v2/A and eventual-removal requirements unchanged
 2026-10-29 UTC: Whole-cycle **0.70 reaffirmed**, original baseline 9005e87611b82e2304c0be52505d994674dc4efa, R1/P2, Codex single exposed rater; frozen hashes verified. Prior 0.65 intake/v1 remains preserved. S1–S5/v1 stage-work originals are independent, non-additive estimates; no measured labor. Added exposure: generic parser already rejects duplicate headers; existing expansion browser tests use intercepted responses, so normal publication needs separate acceptance. No implementation or accepted outcome; await Approved Step 3.
 
 *— Codex · 2026-10-29 UTC*
+
+Implementation update: Steps 1–3 approved; all five stages are recorded in the [Step 4 summary](agent_response_text_step4_implementation_summary.md). Earlier approval/checkpoint statements remain historical.

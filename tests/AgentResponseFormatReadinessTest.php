@@ -53,7 +53,7 @@ final class AgentResponseFormatReadinessTest
         $result = (new AgentResponseFormatReadiness($root))->inspect();
         assertSame(false, $result['live_repository_ready']);
         assertSame('bad', $result['legacy_records'][0]['post_id']);
-        assertSame(false, $result['scan_complete']);
+        assertSame(true, $result['scan_complete']);
         unlink($root . '/records/posts/bad.txt');
         symlink('/absent', $root . '/records/posts/unreadable.txt');
         assertSame(false, (new AgentResponseFormatReadiness($root))->inspect()['scan_complete']);
@@ -67,6 +67,28 @@ final class AgentResponseFormatReadinessTest
         assertStringContains('Duplicate Post-ID', implode(' ', (new AgentResponseFormatReadiness($root))->inspect()['blockers']));
         [$code, $text] = $w->command([dirname(__DIR__) . '/v3', 'agent-reply', 'format-readiness', '--repository-root=' . $root]);
         assertSame(1, $code, $text);
+    }
+
+    public function testUnreadableOversizedAndMissingDependenciesRemainBlocked(): void
+    {
+        $w = new ImportTestWorkspace(); $root = $w->repository('source');
+        $path = $root . '/records/posts/source.txt';
+        $w->put($path, $w->post('source'));
+        chmod($path, 0000);
+        try {
+            if (!is_readable($path)) assertSame(false, (new AgentResponseFormatReadiness($root))->inspect()['scan_complete']);
+        } finally { chmod($path, 0600); }
+        $large = $root . '/records/posts/large.txt';
+        $handle = fopen($large, 'wb'); ftruncate($handle, \ForumRewrite\Canonical\RecordLimits::TEXT + 1); fclose($handle);
+        assertSame(false, (new AgentResponseFormatReadiness($root))->inspect()['scan_complete']);
+        unlink($large);
+        $meta = ['type' => Meta::EXPANSION, 'source_post_id' => 'source', 'source_hash' => str_repeat('a', 64),
+            'expansion_of' => 'missing', 'initial_hash' => str_repeat('b', 64)];
+        $w->put($root . '/records/posts/expansion.txt', $w->post('expansion', "Thread-ID: source\nParent-ID: missing\n" . Meta::toHeaders($meta)));
+        $result = (new AgentResponseFormatReadiness($root))->inspect();
+        assertSame(true, $result['scan_complete']);
+        assertSame(false, $result['live_repository_ready']);
+        assertStringContains('Missing dependency missing', implode(' ', $result['blockers']));
     }
 
     public function testFreshProcessesWorkWithLegacyDecoderUnavailable(): void

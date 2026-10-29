@@ -55,3 +55,40 @@ Approved Step 3 received. Branch feature/agent-response-text; planning commit 36
 - Notes: Stop writers for an atomic operational snapshot; two passes cannot detect reverted transient changes. History/archives always unknown. Adapter removal remains unauthorized. Estimates unchanged prospectively; no dependencies or schema changes.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 5 - Acceptance and closeout
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Extended existing browser fixture to inspect raw source and offline rendering at both widths; distinguished complete-but-invalid inspection from unreadable/incomplete coverage. Added unreadable/oversized/missing-dependency regressions. Updated checklist, navigation, references and study closeout.
+- Verification: 90/90 focused PHP checks across AgentResponseMetadataTest, AgentResponseFormatReadinessTest, CanonicalRecordParsersTest, AgentReplyGenerationTest, AgentReplyCommandTest, PublicOfflineSnapshotBuilderTest, OfflineSnapshotThreadPresentationTest and 13 relevant WriteApiSmokeTest methods. After scanner review, its expanded four tests pass 4/4 (overlap, not 94 distinct tests). These cover real request/fulfillment, signed initial/expansion, permissions, stored-draft recovery, retry/replay, stale/hidden sources, all four representation combinations, full/incremental projection and actual CLI import/offline export.
+- Browser: `node tests/browser/scripture_expansion.cjs` passes thread and post at 375/1280 pixels; source and offline at both widths. Checked request/progress, safe content, keyboard disclosure, stored results, overflow after expansion, no offline generation controls, schema upgrade and unavailable-source updates. The fixture is produced by actual generation/expansion; browser APIs are intercepted. Initial added source check incorrectly served raw text as HTML and applied app-layout assertions; corrected to the route's text/plain contract. Native raw-text viewer wrapping is browser-controlled.
+- Notes: No UI markup, copy, icon or theme changes. Default fixture theme only; no all-theme, physical-device, live-provider quality, full-suite or deployment claim. Zero added/updated third-party components, manifests or locks; no read-model schema/query change. Touched concept entries match implementation and source paths. No todo.txt changes. Estimates unchanged prospectively.
+
+## Study closeout and release limits
+
+**Cycle estimate: 0.70 (entry reaffirmed; no in-cycle revision)**
+**Retrospective whole-cycle scope assessment: 0.75**
+
+Scope v2/A, original baseline, R1/P2 and single exposed Codex rater retained;
+frozen reference hashes reverified. The separate retrospective reflects signed
+transfer matrix and removal-proof verification work; original intake/v1 0.65 and
+all projected/stage values remain preserved. S1–S5 original/retrospective values:
+0.15/0.15, 0.15/0.15, 0.12/0.15, 0.15/0.15, 0.15/0.15 (non-additive).
+Measured labor remains unknown; maintainer acceptance/fit pending, no accepted-count
+increment. No new enhancement or scope change during execution.
+
+F05 is technically complete locally. Planning 36abf44c; stages 1–4 af2ea2a5,
+c3a58ee2, f24b6eff, 4890dc6d; this closeout accompanies stage 5. No merge/push,
+production mutation, historical conversion or actual reader retirement. Readiness
+requires quiescent input for a reliable snapshot and does not inspect history or
+external archives. The checklist now has 5 complete / 11 open; F04 is next among
+canonical conversions and requires a separate cycle.
+
+*— Codex · 2026-10-29 UTC*
+
+Documentation check: New/changed cycle links resolve and checklist counts are
+5/11. The ledger contains one pre-existing unrelated broken link to
+`thread_unpin_web_ui_step1_solution_assessment.md` (present at baseline); left
+unchanged. Whitespace and dependency-file inventory checks pass.

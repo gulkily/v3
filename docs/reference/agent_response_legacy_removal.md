@@ -24,6 +24,10 @@ text fields; `--json` exposes the same facts for automation. Exit codes:
   missing/unreadable input, symlinks, size limits or observable changes prevent a
   reliable conclusion. Resolve the listed blockers and rerun.
 
+A complete scan can still be blocked by invalid records; `Scan-Complete` describes
+input coverage, while `Live-Repository-Ready` also requires no legacy or validation
+blockers.
+
 Stop writers for a reliable snapshot. Two content-hash passes detect observable
 changes, but do not provide an atomic snapshot or detect a change reverted between
 reads. File reads use existing canonical size bounds. The scanner validates post

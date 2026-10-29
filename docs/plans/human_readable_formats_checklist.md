@@ -9,9 +9,9 @@ Includes repository records, source routes, exports, operator configuration,
 reports, CLI output, and browser templates. This is a static source inventory,
 not runtime verification or a claim that every diagnostic path was exercised.
 Priorities below identify follow-up work. Retraction replacement (F01/R04), shared removal receipts (F02) and approval
-acceptance receipts (F03) are complete; the remaining conversions are not authorized by this checklist.
+acceptance receipts (F03) and agent-response metadata (F05) are complete; the remaining conversions are not authorized by this checklist.
 
-Latest source review: 2026-10-27, baseline
+Historical source review: 2026-10-27, baseline
 `085c47701f57334164f7fe1c562454443cd65596`. At that review, 2 of 16 audit items were complete
 and 14 remained open: 11 confirmed conversions (F02–F12) and 3 boundary checks
 (R01–R03). This review rechecked the listed format producers and boundary evidence;
@@ -25,6 +25,14 @@ F01 shared-format integration are recorded in the [implementation summary](unifi
 (9 conversions F04–F12 and 3 boundary checks R01–R03). F03 retains legacy
 compatibility with an explicit conversion and future-reader-removal path; earlier
 counts remain historical. [Verification](approval_acceptance_text/approval_acceptance_text_step4_implementation_summary.md).
+
+Latest listed-producer review: 2026-10-29, baseline
+`9005e87611b82e2304c0be52505d994674dc4efa` (`main`). F03 is merged and
+pushed in `9005e876`, with 33 post-merge checks passing. At that planning checkpoint, status was **4 complete / 12 open**.
+Current status: **5 complete / 11 open** after approved F05 implementation;
+8 conversions (F04, F06–F12) and 3 boundary checks (R01–R03) remain.
+[Verification and limits](agent_response_text/agent_response_text_step4_implementation_summary.md). This review rechecked the listed remaining producers and boundary
+evidence, not every runtime path or a fresh exhaustive inventory.
 
 ## Prioritization rubric
 
@@ -63,7 +71,7 @@ actual user evidence or a clarified human-facing contract changes an input.
 - [x] **F02 · Priority 11/12 (C/E/F 3/2/3) — Source/label removal acceptance.** Replaced JSON with `records/post-removals/*.txt`, sharing the readable receipt codec and interpretation with signed F01 retractions. Retains source/label hashes, conversation structure and distinct local/signed authority; compatible same-post bindings combine without losing signed evidence. Previous F01 text receipts and F02 JSON are unsupported, with no migration or old-state recovery. Evidence: [shared contract](../specs/removal_acceptance_record_v1.md), [LabelRemoval](../../src/ForumRewrite/Canonical/LabelRemoval.php), [verification and limitations](unified_removal_format/unified_removal_format_step4_implementation_summary.md).
 - [x] **F03 · Priority 11/12 (C/E/F 3/2/3) — Approval acceptance receipts.** New receipts use named text fields at `records/approval-acceptances/*.txt`, preserving grant bytes and historical signed context digests. Existing JSON evidence remains readable through an isolated adapter; explicit preview/conversion/retry and readiness commands preserve authority, restore and acceptance facts. The removal guide separates legacy file decoding from retained digest verification and requires an old-archive decision. Evidence: [receipt specification](../specs/approval_acceptance_record_v1.md), [implementation and verification](approval_acceptance_text/approval_acceptance_text_step4_implementation_summary.md). No production conversion or legacy-reader retirement performed.
 - [ ] **F04 · Priority 9/12 (C/E/F 3/2/1) — Legacy timestamp companions.** `records/post-timestamps/*.json` contains three scalar fields. Replace with text headers and retain the exact original-record hash binding. Evidence: [LegacyPostTimestamp](../../src/ForumRewrite/Canonical/LegacyPostTimestamp.php), [post specification](../specs/canonical_post_record_v1.md).
-- [ ] **F05 · Priority 10/12 (C/E/F 3/2/2) — Agent response metadata inside posts.** `Agent-Response: {…}` embeds JSON in canonical signed replies. Replace with individually named headers; update post parsing, response/expansion writers and offline/read-model consumers without losing attribution or version relationships. Explicitly define existing signed-record handling; do not rewrite historical signed bytes merely to rename metadata fields. Evidence: [AgentResponseMetadata](../../src/ForumRewrite/Canonical/AgentResponseMetadata.php), [LocalWriteService](../../src/ForumRewrite/Write/LocalWriteService.php), [PostRecordParser](../../src/ForumRewrite/Canonical/PostRecordParser.php).
+- [x] **F05 · Priority 10/12 (C/E/F 3/2/2) — Agent response metadata inside posts.** New signed replies use named headers. Old signed records remain byte-identical through an isolated legacy decoder; mixed-generation expansion, rebuild, transfer and offline relationships are preserved. Read-only readiness lists legacy dependencies and scan blockers, with history/archives explicitly unknown. New-format flows pass with the adapter unavailable. Machine read-model/offline JSON stays unchanged. Evidence: [format specification](../specs/agent_response_metadata_v1.md), [removal guide](../reference/agent_response_legacy_removal.md), [implementation and verification](agent_response_text/agent_response_text_step4_implementation_summary.md). No production conversion, deployment or actual reader removal.
 
 ## Human-facing configuration, exports and output — convert
 
@@ -110,8 +118,10 @@ separate. No additional audit item is complete and priority scores are unchanged
 | F05 — Agent response metadata | Consider supporting only new headers if old agent replies and their dependent relationships can be discarded or regenerated. | Do not rewrite historical signed replies in place; preserve attribution and version relationships for retained records. |
 | F09 — Backup/archive inventories | Make old-archive support a separate decision; no abandonment recommendation yet. | Dropping old formats gives up restoration from affected archives. F01/F02 exceptions do not authorize this. |
 
-For F03–F05, decide the fate of the underlying records before treating their JSON
-metadata as disposable. R01–R03 remain boundary investigations; this recommendation
+Current clarification: F03 chose preservation and explicit conversion, superseding
+its abandonment suggestion above. F05 chose preserved signed records and isolated
+legacy reading; its abandonment suggestion is also superseded. F04 still requires
+a decision about underlying records before treating their JSON metadata as disposable. R01–R03 remain boundary investigations; this recommendation
 does not turn their internal state or signed protocols into conversion targets.
 
 ## Closing each conversion
@@ -126,7 +136,8 @@ items; F01/R04 completion evidence is in their implementation summary.
 
 Initial audit verification: source references and Markdown local links checked;
 no runtime formats changed at that audit checkpoint. F01/R04 implementation and
-verification are recorded in the [implementation summary](retraction_text_format/retraction_text_format_step4_implementation_summary.md). F02 subsequently closed through the shared-format cycle; other conversions remain open.
+verification are recorded in the [implementation summary](retraction_text_format/retraction_text_format_step4_implementation_summary.md). F02 subsequently closed through the shared-format cycle and F03 through the approval
+receipt cycle. F05 later closed as recorded below; F04 and F06–F12 remain open.
 
 *— Codex · 2026-10-25 UTC*
 
@@ -177,5 +188,57 @@ separate from legacy storage decoding. Production conversion, actual reader
 removal, old-backup abandonment and deployment are not performed. Other format
 families remain outside this cycle. See the linked implementation summary for
 commands, browser evidence and limitations.
+
+*— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 post-merge review and F05 intake
+
+- F03 merge/push confirmed at `9005e876`; post-merge receipt, approval-history,
+  signed-finalization, private-source and Railspike checks passed 33/33. Existing
+  F03 verification remains linked above; no production conversion or deployment.
+- Rechecked F04–F12's listed JSON producers and R01–R03's viewer/protocol/recovery
+  evidence. They remain open with unchanged scores; boundary checks remain
+  investigations rather than approved rewrites. F01/F02/R04 completion evidence
+  is carried forward, not reverified in this planning turn.
+- F05's shared writer emits the embedded header; its parser supplies normalized
+  metadata to full/incremental read models and offline snapshots. Initial
+  scripture replies and expansions share source/version bindings. The proposed
+  new-header path preserves these machine interfaces and existing signed bytes.
+- Linked the new Step 1 assessment, clarified F03's superseded compatibility
+  suggestion, and retained historical counts/verification. Counts, priority
+  arithmetic, local file links and whitespace checked. No runtime tests were
+  rerun for this documentation-only review; no implementation, dependency,
+  `todo.txt`, commit or publication changes.
+
+*— Codex · 2026-10-29 UTC*
+
+F05 Step 1 revision: The maintainer requested eventual legacy-reader removal to
+be designed in. Compatibility remains recommended now; the assessment includes
+isolated decoding, readiness/dependency inspection and current-format verification
+without the adapter. Actual removal must resolve retained signed posts and old
+archives explicitly. F05 remains open; counts and scores are unchanged.
+
+*— Codex · 2026-10-29 UTC*
+
+F05 progress: Revised Option A received Step 1 approval; Step 2 is drafted. Legacy compatibility remains required, with retirement readiness and a separate later removal decision. F05 remains open; 4 complete / 12 open.
+
+F05 progress: Step 2 approved; five-stage development plan drafted for Step 3 review. Implementation remains unapproved. Counts remain 4 complete / 12 open.
+
+## 2026-10-29 F05 implementation closeout
+
+Approved Steps 1–3 executed in five stages on feature/agent-response-text. New
+signed records use readable headers; retained old records and signatures are not
+rewritten. Readiness and decoder-unavailable acceptance establish a bounded future
+removal path, with archive policy and actual retirement still separate decisions.
+
+Verification: 90 focused PHP checks plus four readiness checks after final review
+(all passing; overlapping coverage), and Chromium thread/post, raw source and
+offline checks at 375/1280 pixels. Actual PHP request/fulfillment/import flows use
+deterministic providers; browser API responses are intercepted. No full suite,
+live provider, physical device or deployment claim. Zero dependencies/schema delta.
+See the [implementation summary](agent_response_text/agent_response_text_step4_implementation_summary.md).
+
+Current count: 5 complete / 11 open. Next canonical conversion: F04, legacy
+timestamp companions; it needs its own planning/approval cycle.
 
 *— Codex · 2026-10-29 UTC*

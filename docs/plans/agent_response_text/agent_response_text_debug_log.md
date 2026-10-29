@@ -40,3 +40,13 @@ Uncertain assessments: Five compact stages require more than a printed page to r
 Verification: State/estimates inherited, R1 hashes reverified, local planning/checklist links and counts/whitespace checked. No code, runtime tests or commits. Debug remains enabled.
 
 *— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 UTC — Step 4 local completion
+
+Necessary/useful instructions: The stage-commit gate kept parsing/signature evidence ahead of integration and removal proof. Normal-flow acceptance exposed the content-export wrapper versus content-import layout; the existing extraction/repack procedure preserved bytes without expanding scope. CONTRIBUTING rendered-flow checks caught the browser fixture's incorrect raw-source MIME type. The explicit retirement boundary kept machine JSON and hash verification independent from canonical legacy decoding. Retain these requirements.
+Redundant/unnecessary instructions: No supported findings.
+Inapplicable instructions: No UI copy/icon changes, dependencies, schema changes or named physical device. Deployment, old-record conversion and actual retirement remain outside scope; no approval was requested for those actions.
+Uncertain assessments: Two read-only inventory passes cannot establish an atomic snapshot under active writers or clear unexamined history/archives. Documentation states those limits. Retrospective effort is a scope judgment, not measured labor; acceptance/maintainer fit is pending.
+Verification: 90 focused PHP checks plus final scanner 4/4 (overlapping), Chromium phone/desktop thread/post/source/offline acceptance, reference hashes, touched concept paths, local links, checklist counts, diff and dependency inventory. Browser APIs intercepted; actual PHP publication/import tested independently. Missing class qualification and test archive/MIME assumptions were corrected before final passes. No full suite, live provider, physical device, deployment or production mutation claimed. Debug remains enabled.
+
+*— Codex · 2026-10-29 UTC*

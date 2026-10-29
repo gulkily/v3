@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](agent_response_text_step1_solution_assessment.md) · [Step 2](agent_response_text_step2_feature_description.md) · [Step 3](agent_response_text_step3_development_plan.md) · Step 4 pending
+> **Feature plan:** [Step 1](agent_response_text_step1_solution_assessment.md) · [Step 2](agent_response_text_step2_feature_description.md) · [Step 3](agent_response_text_step3_development_plan.md) · [Step 4](agent_response_text_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/agent_response_text — [ledger](../effort_estimation_trial.md)
@@ -62,3 +62,5 @@ Study checkpoint: 2026-10-29 UTC, Step 1 revision 1; whole-cycle **0.70** revise
 *— Revised by Codex · 2026-10-29 UTC*
 
 Approval update: The maintainer approved Step 1, revised Option A. [Step 2](agent_response_text_step2_feature_description.md) records the requirements; earlier approval-state snapshots remain historical.
+
+Implementation update: Steps 1–3 approved; all five stages are recorded in the [Step 4 summary](agent_response_text_step4_implementation_summary.md). Earlier approval/checkpoint statements remain historical.

@@ -15,14 +15,17 @@ final class AgentResponseFormatReadiness
 
     public function inspect(?callable $afterScan = null): array
     {
-        $issues = [];
-        $before = $this->inventory($issues);
+        $issues = []; $scanIssues = [];
+        $before = $this->inventory($scanIssues);
         $repository = new CanonicalRecordRepository($this->root);
         $legacy = []; $posts = []; $expansions = [];
         foreach ($before as $path => $digest) {
             try {
                 $text = RecordLimits::read($this->root . '/' . $path);
-                if (hash('sha256', $text) !== $digest) throw new \RuntimeException('Record changed during scan.');
+                if (hash('sha256', $text) !== $digest) {
+                    $scanIssues[] = $path . ': Record changed during scan.';
+                    continue;
+                }
                 $headers = explode("\n\n", $text, 2)[0];
                 $isLegacy = preg_match('/^Agent-Response:/m', $headers) === 1;
                 if ($isLegacy) {
@@ -36,11 +39,13 @@ final class AgentResponseFormatReadiness
                     $expansions[] = ['post_id' => $record->postId, 'path' => $path,
                         'source_post_id' => $record->agentResponse['source_post_id'], 'expansion_of' => $record->agentResponse['expansion_of']];
                 }
+            } catch (\ForumRewrite\Canonical\RecordReadException | \ForumRewrite\Canonical\RecordSizeException $error) {
+                $scanIssues[] = $path . ': ' . $error->getMessage();
             } catch (\Throwable $error) { $issues[] = $path . ': ' . $error->getMessage(); }
         }
         if ($afterScan !== null) $afterScan();
-        $after = $this->inventory($issues);
-        if ($before !== $after) $issues[] = 'Live post tree changed during inspection; stop writers and rerun.';
+        $after = $this->inventory($scanIssues);
+        if ($before !== $after) $scanIssues[] = 'Live post tree changed during inspection; stop writers and rerun.';
         $legacyIds = array_column($legacy, 'post_id');
         $dependent = [];
         foreach ($expansions as $expansion) {
@@ -51,9 +56,9 @@ final class AgentResponseFormatReadiness
             }
             if ($dependencies !== []) $dependent[] = $expansion + ['legacy_dependencies' => $dependencies];
         }
-        $issues = array_values(array_unique($issues));
+        $issues = array_values(array_unique([...$issues, ...$scanIssues]));
         return ['status' => $issues !== [] ? 'blocked' : ($legacy !== [] ? 'legacy-remains' : 'live-tree-ready'),
-            'scan_complete' => $issues === [], 'live_repository_ready' => $issues === [] && $legacy === [],
+            'scan_complete' => $scanIssues === [], 'live_repository_ready' => $issues === [] && $legacy === [],
             'scanned_posts' => count($before), 'legacy_records' => $legacy, 'dependent_expansions' => $dependent,
             'blockers' => $issues, 'archive_coverage' => 'unknown: Git history and external archives were not inspected',
             'retirement_decision' => 'not authorized; retain compatibility until retained records and archive policy are resolved'];
