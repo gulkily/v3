@@ -21,3 +21,14 @@ Step 4 entry: 2026-10-29 UTC; 0.75 reaffirmed, scope v1/A, original baseline 02d
 - Notes: No schema/dependency/UI changes. Real browser end-to-end acceptance remains Stage 5. Original scope/uncertainty unchanged; no estimate revision. Ledger planning records included now, outside the planning commit.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 2 - Donor-owned contribution evidence
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.14**
+
+- Changes: Add contribution lookup scoped to source/target/message/digest and retained transfer. Optional sender filtering is ready for combined discovery; legacy sender discovery remains unfiltered for explicit repair/replacement.
+- Verification: 15/15 history service tests pass, including unchanged sender discovery across recipient acknowledgments, independent donors, missing-transfer rediscovery and invalid unconfirmed candidate replacement.
+- Notes: Contribution evidence means supplied, not readable. Recipient foreground candidate validation/retry and other donors remain available; explicit legacy sender discovery/upload retains same-donor repair. No recipient receipt is consulted by the new lookup. Prior stage commit: 4a552bbeb. No estimate revision.
+
+*— Codex · 2026-10-29 UTC*

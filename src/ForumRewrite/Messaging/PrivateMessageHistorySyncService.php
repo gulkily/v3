@@ -64,7 +64,7 @@ final class PrivateMessageHistorySyncService
         return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$keys[$target], 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
             'checkpoint'=>$next,'cycle_end'=>!$page['more'] && $next['target']===$targets[0], 'total'=>$this->messages->historySyncCount($account)];
     }
-    private function senderWork(array $viewer): array
+    private function senderWork(array $viewer, bool $skipContributed = false): array
     {
         [$account,$source,$keys]=$this->context($viewer);
         $position=$this->sync->checkpoint($account,$source,true);
@@ -89,7 +89,7 @@ final class PrivateMessageHistorySyncService
         $next=$nextKey!==null?['target'=>$nextKey,'after_id'=>$position['after_id']]:['target'=>'','after_id'=>$end?'':$last];
         // Never consult recipient coverage: sender work must not reveal recovery or read activity.
         return ['mode'=>'sender','source_account'=>$account,'account'=>$destination,'source'=>$source,'target'=>$target,
-            'target_key'=>$targetKeys[$target]??null,'messages'=>$target===''?[]:$messages,'checkpoint'=>$next,'cycle_end'=>$end];
+            'target_key'=>$targetKeys[$target]??null,'messages'=>$target===''?[]:array_values(array_filter($messages, fn($row)=>!$skipContributed || !$this->sync->hasContribution($destination,$source,$target,$row['message_id'],$row['digest']))),'checkpoint'=>$next,'cycle_end'=>$end];
     }
     private function items(string $account, mixed $items): array
     {

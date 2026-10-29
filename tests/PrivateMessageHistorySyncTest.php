@@ -20,6 +20,25 @@ final class PrivateMessageHistorySyncTest
         $syncDb=new PDO('sqlite::memory:');$sync=new PrivateMessageHistorySyncStore($syncDb);
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
     }
+    public function testContributionEvidenceIsDonorOwnedAndDoesNotPreventRepair(): void
+    {
+        [,,$sync,$service,,$db]=$this->fixture();
+        $input=array_replace($this->uploadInput('bad'),['account'=>'bob','target'=>str_repeat('c',40)]);
+        $bad=$service->upload($this->viewer(),$input);
+        $discover=new ReflectionMethod($service,'senderWork');
+        $before=$discover->invoke($service,$this->viewer(),true);
+        assertSame(false,in_array('m01',array_column($before['messages'],'message_id'),true));
+        assertSame(true,in_array('m01',array_column($service->work($this->viewer(),'sender')['messages'],'message_id'),true),'Legacy explicit discovery permits repair');
+        $service->acknowledge($this->viewer('c','bob'),['items'=>[$input['items'][0]+$bad]]);
+        assertSame($before,$discover->invoke($service,$this->viewer(),true));
+        assertSame(true,in_array('m01',array_column($discover->invoke($service,$this->viewer('b'),true)['messages'],'message_id'),true),'Another donor is not suppressed');
+        $db->exec('DELETE FROM history_sync_coverage');
+        $input['ciphertext']=$this->uploadInput('good')['ciphertext'];
+        $good=$service->upload($this->viewer(),$input);
+        assertSame($good['transfer_id'],$service->transfers($this->viewer('c','bob'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        $db->exec('DELETE FROM history_sync_transfers');
+        assertSame(true,in_array('m01',array_column($discover->invoke($service,$this->viewer(),true)['messages'],'message_id'),true));
+    }
     public function testUnreadEligibilityUsesAccountHistory(): void
     {
         [, $messages] = $this->fixture();
