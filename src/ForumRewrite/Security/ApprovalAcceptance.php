@@ -66,6 +66,15 @@ final class ApprovalAcceptance
         return $result;
     }
 
+    public static function grantPath(string $root, string $id): string
+    {
+        self::path($id);
+        $flat = \ForumRewrite\Canonical\CanonicalPathResolver::post($id);
+        if (is_file($root . '/' . $flat)) return $flat;
+        $post = (new \ForumRewrite\Canonical\CanonicalRecordRepository($root))->loadPost($flat);
+        return \ForumRewrite\Canonical\CanonicalPathResolver::datedPost($id, $post->createdAt);
+    }
+
     public static function validate(array $data, string $contents): array
     {
         ApprovalReceiptText::assertShape($data);

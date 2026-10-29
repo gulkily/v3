@@ -33,3 +33,14 @@ Approved Step 3 received. Branch: feature/approval-acceptance-text. Planning com
 - Notes: S1 commit cee88cbc. Archive recognition follows in S3; no schema/dependency changes. Estimates unchanged.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 3 - Replay and archive compatibility
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes: Both extensions recognized; trusted restore preflights all source/destination acceptance evidence before copying, then deduplicates only equivalent facts. Grant path lookup handles flat/dated posts. Remote import authority exclusion remains intact.
+- Verification: 25/25 focused receipt/archive/content-import/API/rebuild checks. Expanded invitation restore test covers text, mixed, legacy-only and conflicting archives through the actual import command. Signed account recovery and incremental/fresh equivalence pass.
+- Notes: S2 commit 1aca4c67. No replay-policy changes or schema/dependency delta; estimates unchanged.
+
+*— Codex · 2026-10-29 UTC*

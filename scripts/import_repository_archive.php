@@ -92,6 +92,25 @@ try {
     fwrite(STDOUT, "Indexing existing canonical records in the target repository...\n");
     $existingIndex = buildExistingRecordIndex($repositoryRoot);
     $sourceFiles = canonicalSourceFiles($sourceRoot);
+    // Receipt evidence must not be silently skipped or collapsed by byte-based identity deduplication.
+    $approvalEvidence = [];
+    foreach ([$repositoryRoot, $sourceRoot] as $receiptRoot) {
+        foreach (glob($receiptRoot . '/records/approval-acceptances/*') ?: [] as $file) {
+            $relative = 'records/approval-acceptances/' . basename($file);
+            if (!\ForumRewrite\Import\ArchiveRecordCatalog::isRecordPath($relative)) {
+                throw new RuntimeException('Unsupported approval receipt: ' . $relative);
+            }
+            $id = pathinfo($file, PATHINFO_FILENAME);
+            $data = \ForumRewrite\Security\ApprovalAcceptance::read($receiptRoot,
+                \ForumRewrite\Security\ApprovalAcceptance::grantPath($receiptRoot, $id));
+            $canonical = \ForumRewrite\Security\ApprovalReceiptText::encode($data);
+            if (isset($approvalEvidence[$id]) && $approvalEvidence[$id] !== $canonical) {
+                throw new RuntimeException('Conflicting approval receipt: ' . $id);
+            }
+            $approvalEvidence[$id] = $canonical;
+        }
+    }
+
     $reactionPlan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($sourceRoot, $repositoryRoot);
     $sourceFileCount = count($sourceFiles);
     $progressInterval = max(1, min(100, (int) ceil($sourceFileCount / 20)));
@@ -154,6 +173,12 @@ try {
             continue;
         }
 
+        if (str_starts_with($relativePath, 'records/approval-acceptances/') && isset($existingIndex[$sourceKey])) {
+            // All receipt variants were validated and compared before any file was copied.
+            $summary['duplicate_identities']++;
+            reportImportProgress($summary['seen'], $sourceFileCount, $progressInterval);
+            continue;
+        }
         $targetPath = $repositoryRoot . '/' . $relativePath;
         if (is_file($targetPath)) {
             if (hash_equals(hash_file('sha256', $targetPath), hash('sha256', $sourceContents))) {

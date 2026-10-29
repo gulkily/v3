@@ -20,6 +20,8 @@ final class ApprovalAcceptanceTest
             $bytes = ApprovalAcceptance::encode($contents, $context, '2026-01-01T00:05:00Z', 'direct');
             file_put_contents($receiptPath, $bytes);
             assertSame('2026-01-01T00:05:00Z', ApprovalAcceptance::read($root, $path)['accepted_at']);
+            assertSame(true, ArchiveRecordCatalog::isRecordPath(ApprovalAcceptance::path('grant')));
+            assertSame('approval-acceptance:grant', ArchiveRecordCatalog::identityKey($root, ApprovalAcceptance::path('grant')));
             $data = \ForumRewrite\Security\ApprovalReceiptText::decode($bytes);
             $data['context']['existing_key_count'] = 7;
             file_put_contents($receiptPath, \ForumRewrite\Security\ApprovalReceiptText::encode($data));
