@@ -12,7 +12,7 @@ if (($input['operation'] ?? '')==='worker') {
         if ($row['history']===[]) return ['kind'=>'questions','questions'=>['Which navigation should improve?'],'assessment'=>''];
         return ['kind'=>'assessment','questions'=>[],'assessment'=>"## Problem Statement\nPhone navigation\n## Option A\nToolbar\n## Option B\nMenu\n## Recommendation\nToolbar. Literal <script>window.pwned=true</script>"];
     };
-    $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker(new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo),static function () {},null,null,null,new \ForumRewrite\Railspike\AssessmentTask($store,$runner));
+    $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker(new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo),static function () {},null,null,null,new \ForumRewrite\Railspike\AssessmentTask($store,$runner, static fn (): bool => true));
     echo json_encode($worker->run()); exit;
 }
 if (($input['operation'] ?? '')==='rebuild') {

@@ -54,13 +54,41 @@ final class RailspikeWorkflowTest
         assertSame(false,WorkflowService::eligible(['author_label'=>'reply-agent','board_tags_json'=>'["railspike"]'],[]));
         assertSame(false,WorkflowService::eligible(['retracted_at'=>'now','board_tags_json'=>'["railspike"]'],[]));
     }
+    public function testDisabledWorkerPreservesQueueAndAdmissionRace(): void
+    {
+        [$store,$service,$actor,$root,$pdo]=$this->fixture();
+        $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
+        $queue=new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo);
+        $enabled=false; $calls=0;
+        $runner=function ($row) use (&$enabled,&$calls) {
+            $calls++; $enabled=false; // Already-admitted work is allowed to finish.
+            return ['kind'=>'questions','questions'=>['Which phone?'],'assessment'=>''];
+        };
+        $task=new \ForumRewrite\Railspike\AssessmentTask($store,$runner,function () use (&$enabled): bool {return $enabled;});
+        $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker($queue,static function () {},null,null,null,$task);
+        for ($i=0;$i<3;$i++) assertSame(0,$worker->run()['claimed']);
+        assertSame('queued',$store->find($row['id'])['state']);
+        assertSame(0,(int)$pdo->query('SELECT attempts FROM internal_tasks')->fetchColumn());
+        // A claim made just before disablement is deferred at the admission boundary.
+        $claimed=$queue->claimNext()[0];
+        assertSame('queued',$worker->runClaimed($claimed)['status']);
+        assertSame(0,(int)$pdo->query('SELECT attempts FROM internal_tasks')->fetchColumn());
+        $queue->enqueue(\ForumRewrite\TaskQueue\SqliteTaskQueueStore::REBUILD_READ_MODEL,'other',1);
+        assertSame(1,$worker->run()['completed']);
+        assertSame(0,$calls);
+        $enabled=true;
+        assertSame(1,$worker->run()['completed']);
+        assertSame('questions',$store->find($row['id'])['state']);
+        $enabled=true; $worker->run(); assertSame(1,$calls);
+    }
+
     public function testQueueWorkerPersistsValidatedAssessment(): void
     {
         [$store,$service,$actor,$root,$pdo]=$this->fixture();
         $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
         $queue=new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo);
         $runner=static fn ($row) => ['kind'=>'assessment','questions'=>[],'assessment'=>"## Problem Statement\nPhone navigation\n## Option A\nToolbar\n## Option B\nMenu\n## Recommendation\nToolbar"];
-        $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker($queue,static function () {},null,null,null,new \ForumRewrite\Railspike\AssessmentTask($store,$runner));
+        $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker($queue,static function () {},null,null,null,new \ForumRewrite\Railspike\AssessmentTask($store,$runner, static fn (): bool => true));
         assertSame(1,$worker->run()['completed']);
         $current=$store->find($row['id']);
         assertSame('review',$current['state']);
@@ -74,7 +102,7 @@ final class RailspikeWorkflowTest
     {
         [$store,$service,$actor,$root,$pdo]=$this->fixture();
         $row=$service->apply($service->prepare(['action'=>'start','post_id'=>'reply'],$actor),'valid',$actor);
-        $task=new \ForumRewrite\Railspike\AssessmentTask($store,static fn ($r) => ['kind'=>'questions','questions'=>['Which navigation?'],'assessment'=>'']);
+        $task=new \ForumRewrite\Railspike\AssessmentTask($store,static fn ($r) => ['kind'=>'questions','questions'=>['Which navigation?'],'assessment'=>''], static fn (): bool => true);
         $task(['deduplication_key'=>$row['id'].'@1']);
         $row=$store->find($row['id']); assertSame('questions',$row['state']);
         $stale=$service->prepare(['action'=>'answer','workflow_id'=>$row['id'],'version'=>$row['version'],'payload'=>['revision'=>2,'answers'=>['Main']]],$actor);
@@ -82,7 +110,7 @@ final class RailspikeWorkflowTest
         $text=$service->prepare(['action'=>'answer','workflow_id'=>$row['id'],'version'=>$row['version'],'payload'=>['revision'=>1,'answers'=>['Main']]],$actor);
         $next=$service->apply($text,'valid',$actor);
         assertSame('queued',$next['state']); assertSame(['Main'],$next['history'][0]['answers']);
-        $task=new \ForumRewrite\Railspike\AssessmentTask($store,static fn ($r) => ['kind'=>'assessment','questions'=>[],'assessment'=>"## Problem Statement\nMain\n## Option A\nMenu\n## Option B\nToolbar\n## Recommendation\nMenu"]);
+        $task=new \ForumRewrite\Railspike\AssessmentTask($store,static fn ($r) => ['kind'=>'assessment','questions'=>[],'assessment'=>"## Problem Statement\nMain\n## Option A\nMenu\n## Option B\nToolbar\n## Recommendation\nMenu"], static fn (): bool => true);
         $task(['deduplication_key'=>$row['id'].'@'.$next['version']]);
         $row=$store->find($row['id']);
         $next=$service->apply($service->prepare(['action'=>'changes','workflow_id'=>$row['id'],'version'=>$row['version'],'payload'=>['revision'=>2,'text'=>'Prefer toolbar']],$actor),'valid',$actor);
@@ -118,7 +146,7 @@ final class RailspikeWorkflowTest
         $pdo->exec("UPDATE internal_tasks SET claimed_at='2000-01-01T00:00:00+00:00'");
         $row['state']='running'; $row['run_token']='dead'; $store->save($row);
         $runner=static fn ($r) => ['kind'=>'questions','questions'=>['Which phone?'],'assessment'=>''];
-        $task=new \ForumRewrite\Railspike\AssessmentTask($store,$runner);
+        $task=new \ForumRewrite\Railspike\AssessmentTask($store,$runner, static fn (): bool => true);
         $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker($queue,static function () {},null,null,null,$task);
         $worker->run();
         $failed=$store->find($row['id']); assertSame('failed',$failed['state']);
@@ -139,7 +167,7 @@ final class RailspikeWorkflowTest
         $late=new \ForumRewrite\Railspike\AssessmentTask($store,function ($r) use ($store) {
             $r['version']++; $r['state']='failed'; $store->save($r);
             return ['kind'=>'questions','questions'=>['Stale?'],'assessment'=>''];
-        });
+        }, static fn (): bool => true);
         $late(['deduplication_key'=>$row['id'].'@1']);
         assertSame('failed',$store->find($row['id'])['state']);
         assertSame([],$store->find($row['id'])['revisions']);

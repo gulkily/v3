@@ -129,3 +129,8 @@ All `/api/railspike_workflow` reads and actions require the flag. Disabled calls
 return no-store HTTP 403 with `code: railspike_disabled` and reload guidance.
 Existing workflows are retained. Operator authentication and signed actions are
 still required when enabled.
+
+While disabled, the queue skips Railspike jobs without consuming attempts or
+blocking other task types. A job claimed just before disablement is deferred at
+assessment admission. Assessments already admitted may finish and save results.
+Re-enable the flag to resume queued work; reload the thread to view its status.

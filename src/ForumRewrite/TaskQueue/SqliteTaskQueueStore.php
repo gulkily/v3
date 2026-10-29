@@ -310,20 +310,22 @@ final class SqliteTaskQueueStore
     /**
      * @return list<array<string, mixed>>
      */
-    public function claimNext(int $limit = 1, ?int $taskId = null): array
+    public function claimNext(int $limit = 1, ?int $taskId = null, ?string $excludedType = null): array
     {
         $limit = max(1, $limit);
 
-        return $this->withImmediateTransaction(function () use ($limit, $taskId): array {
+        return $this->withImmediateTransaction(function () use ($limit, $taskId, $excludedType): array {
             $select = $this->pdo->prepare(
                 'SELECT id
                  FROM internal_tasks
                  WHERE status = :status AND attempts < max_attempts AND (:task_id IS NULL OR id = :task_id)
+                   AND (:excluded_type IS NULL OR type <> :excluded_type)
                  ORDER BY requested_at ASC, id ASC
                  LIMIT :limit'
             );
             $select->bindValue('status', 'queued');
             $select->bindValue('task_id', $taskId, $taskId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $select->bindValue('excluded_type', $excludedType, $excludedType === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
             $select->bindValue('limit', $limit, PDO::PARAM_INT);
             $select->execute();
 

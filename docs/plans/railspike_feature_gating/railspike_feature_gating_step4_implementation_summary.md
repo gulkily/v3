@@ -21,3 +21,14 @@ Entry: 2026-10-29 UTC; v2/A, R1/P2, original baseline cdb7a4e75a8b0e9065140656ec
 - Notes: Browser rendering and worker suspension belong to subsequent stages. Zero dependency/schema delta; original scope unchanged. R1/P2, Codex exposed rater, 2026-10-29 UTC; no measured labor.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 2 - Worker suspension and recovery
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.14**
+
+- Changes: Worker skips disabled Railspike claims, rechecks fresh application flag state at assessment admission, and requeues admission races without consuming retries. Disabled reconciliation preserves work; admitted results still finish. Existing task table and deferral contract reused.
+- Verification: `php tests/run.php RailspikeWorkflowTest TaskQueueWorkerTest TaskQueueCommandTest`: 32/32 passed. Includes repeated disabled runs, claimed-before-disable race, unrelated task progress, in-flight finish and re-enable without duplicate execution. Syntax and diff checks passed.
+- Notes: Stage 1 commit ba8d6e8d6. No schema/dependency change. Original scope unchanged; R1/P2, Codex exposed rater, 2026-10-29 UTC; no measured labor.
+
+*— Codex · 2026-10-29 UTC*
