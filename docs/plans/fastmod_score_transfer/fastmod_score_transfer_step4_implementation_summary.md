@@ -1,10 +1,10 @@
-> **Feature plan:** [Step 1](./fastmod_score_transfer_step1_solution_assessment.md) · [Step 2](./fastmod_score_transfer_step2_feature_description.md) · [Step 3](./fastmod_score_transfer_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./fastmod_score_transfer_step1_solution_assessment.md) · [Step 2](./fastmod_score_transfer_step2_feature_description.md) · [Step 3](./fastmod_score_transfer_step3_development_plan.md) · [Step 4](./fastmod_score_transfer_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/fastmod_score_transfer; [ledger](../effort_estimation_trial.md)
 Extended estimates: enabled
 **Cycle estimate: 0.75**
-Status: Step 3 approved; implementation in progress.
+Status: Eight stages complete locally; maintainer review pending.
 
 ## Entry checkpoint
 
@@ -87,5 +87,25 @@ Status: Step 3 approved; implementation in progress.
 - Changes: Added real HTTP → CLI → browser transfer journey and recovery/compatibility regressions; effective-tags concept. Bounded decoder splitting prevents field/block floods from allocating unbounded arrays. Normalized negative-zero serialization. Fixed identical post matching across dated/flat canonical paths and skipped hash scans for absent/malformed supplements.
 - Verification: Transfer tests 10/10 pass, including actual concurrent score change during compression (stale archive rejected, retry fresh), malformed supplement with successful content, score-only import without Git commit, preserved local suppression, and dated-path duplicates. Browser test passes public download, dry-run with no private store, import/repeat preserving results, live/Forte/text/offline/static meta tags, 390/1280 widths, JS on/off and zero provider calls. Viewed both phone/desktop screenshots; score display and actions visible without overflow. Static assertion initially used pre-release path; corrected to current/tags/meta.html.
 - Notes: S6 commit 6c4b4df4. Existing UI consumes scores unchanged; no new controls, navigation, theme assets or first-paint mutation. Chromium/local fixture verified; physical devices and exhaustive theme/browser matrix not claimed. Retrospective increase reflects acceptance fixtures/edge corrections, not measured time or a scope expansion.
+
+*— Codex · 2026-10-29 UTC*
+
+
+## Stage 8 - Operations and closeout
+
+**Original estimate: 0.06**
+**Retrospective stage-work assessment: 0.06**
+
+- Changes: Updated archive recipient README, CLI/scoring references, import/image runbooks, format specification and portability assessment. Documented automatic score visibility, advisory origin, destination-wins matching, unchanged retention ages, excluded private workflow/suppressions, supported remote/saved-archive path and pending-journal recovery. Repaired plan navigation and indexed completion.
+- Verification: Combined archive/import/recovery/store/derived-tag/flag/legacy-date suite 77/77 pass; normal browser flow including static build passes (S7). PHP syntax, local Markdown path checks, diff whitespace and dependency inventory checks pass. No dependency or core/private schema delta; todo.txt unchanged.
+- Notes: S7 commit bbdb8d9e. Existing import-repository remains records-only and ZIP import remains unsupported, as scoped. Full repository suite, physical devices, exhaustive themes/browser matrix, production migration, model accuracy, deployment and merge/push are not claimed.
+
+*— Codex · 2026-10-29 UTC*
+
+## Study closeout and release limits
+
+Entry projection 0.75 retained; separate retrospective cycle scope assessment 0.75. Scope v2/A, original baseline/R1/P2 and single exposed Codex rater retained; no independent rating or measured labor. Stage original/retrospective S1–S8: 0.10/0.10, 0.10/0.10, 0.18/0.18, 0.10/0.10, 0.12/0.12, 0.14/0.14, 0.12/0.15, 0.06/0.06; non-additive. Earlier 0.70 projections and missing pristine intake preserved. Maintainer comfortable-fit/acceptance pending; no accepted-count increment.
+
+Planning 157df3f3; S1 a3efe835; S2 59fd0988; S3 cca64f04; S4 065ee22f; S5 4d659120; S6 6c4b4df4; S7 bbdb8d9e; S8 contains this closeout. All stage commits include their summary update. Work is local on feature/fastmod-score-transfer; no deployment, merge or push performed.
 
 *— Codex · 2026-10-29 UTC*

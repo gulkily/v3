@@ -580,7 +580,8 @@ controlled operator workflow.
 ```
 
 Downloads the source's public repository archive, merges supported public forum
-content while preserving destination settings/approval authority, refreshes the
+content and compatible Fastmod scores automatically while preserving destination
+settings/approval authority, refreshes the
 read model and public offline data, and withdraws stale static HTML. Import and
 `--resume` never render pages or fingerprint/copy presentation assets. PHP serves
 imported content; run `./v3 build-static` separately when static output is needed.
@@ -593,7 +594,8 @@ and retained as hash-bound metadata without changing signed post bytes. See the
 - `--dry-run` — download and validate the archive, then report proposed imports,
   duplicates, conflicts, and exclusions without changing destination records,
   commits, the read model, or published views. Temporary downloads and lock files
-  may be created. Cannot be combined with `--resume`.
+  may be created. Score eligibility is reported without creating private score
+  state. Cannot be combined with `--resume`.
 - `--time-limit=SECONDS` — positive finite whole-invocation budget (default 300),
   including lock waits/publication, with up to five seconds process cleanup.
   Linux/WSL PCNTL/POSIX supervision is required; file limits remain unchanged.

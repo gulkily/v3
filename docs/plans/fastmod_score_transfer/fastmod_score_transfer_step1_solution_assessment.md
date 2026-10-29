@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./fastmod_score_transfer_step1_solution_assessment.md) · [Step 2](./fastmod_score_transfer_step2_feature_description.md) · Step 3 · Step 4
+> **Feature plan:** [Step 1](./fastmod_score_transfer_step1_solution_assessment.md) · [Step 2](./fastmod_score_transfer_step2_feature_description.md) · [Step 3](./fastmod_score_transfer_step3_development_plan.md) · [Step 4](./fastmod_score_transfer_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/fastmod_score_transfer; [standing P2 ledger](../effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2)

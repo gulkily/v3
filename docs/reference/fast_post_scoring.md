@@ -157,7 +157,12 @@ score is labeled independently on its public
 while rendering, with legacy/earlier-revision markers where applicable. Scores are not added to thread cards, APIs, canonical records,
 or the read model, and do not make an automated moderation decision. Optional meta
 tagging publishes only the resulting root label using existing presentation;
-probabilities and evidence remain in private storage and are excluded from public backups.
+the private database remains separate. Completed named probabilities and their
+post/content/rubric identifiers and original timestamps are included automatically
+in content TAR/ZIP exports. Normal `import-instance` transfers compatible missing
+scores without provider calls; existing local results win. Jobs, failures,
+exchanges, secrets, policy and suppressions remain excluded. See the
+[score transfer runbook](../runbooks/instance_content_import.md#fastmod-scores).
 
 
 ## Deployment, recovery, and rollback

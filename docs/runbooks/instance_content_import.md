@@ -60,6 +60,47 @@ locations. It does not initialize an absent destination. Target the live
 instance's database so imports and ordinary writes share the same lock.
 Publication covers the selected site profile/static root.
 
+## Fastmod scores
+
+Normal TAR/ZIP exports include `fastmod-scores.txt` automatically. Ordinary
+`import-instance` reads this supplement from the supported TAR.GZ download; no
+inclusion flag or setting is needed. ZIP import is not added. To import a saved
+TAR.GZ export, serve it at `/downloads/repository.tar.gz` on a temporary local
+HTTP server and pass that server's base URL. The older `import-repository`
+command remains records-only.
+
+The supplement exposes successful named probabilities, post/content/rubric
+identifiers and original timestamps to archive recipients. It does not transfer
+jobs, failures, provider prompts/responses, secrets, policy or legacy suppression
+and classification records. Imported results are advisory source assessments,
+not evidence of authorship, approval or independent local model evaluation.
+
+Preview reports `scores_eligible`; import reports `scores_imported`,
+`scores_existing`, `scores_duplicate` and `scores_incompatible`. Only posts
+accepted by this import, or identical existing posts, qualify. Destination
+content hashes, current rubric revision and named rubric set must match. Any
+existing destination result wins, including failures. Original timestamps remain
+unchanged, so retention/pruning can remove old imported scores normally. No
+provider request or scoring job is created.
+
+Malformed/unknown-version supplements import no scores and report partial/review
+status while valid content still imports. Old archives without scores work as
+before. The supplement is bounded to 16 MiB and 50,000 rows; oversize input is
+reported without expanding the content-import allowlist. Exports beyond these
+score bounds fail with operator guidance rather than silently dropping results.
+Score-only updates/pruning refresh archive identity without a content commit.
+
+Use the running instance's existing `FAST_SCORING_DATABASE_PATH` configuration.
+Validated score bytes are saved privately with the import journal before content
+writes. If merge/publication fails, correct the cause and use `--resume` with the
+same destination configuration, including the score path. Resume needs no remote
+source and checks saved payload integrity. Do not delete or edit pending payloads.
+Local tagging policy and legacy suppressions still apply; source suppressions do
+not travel, so destination tags may differ. Matching tags appear immediately in
+live and refreshed offline reads; run `./v3 build-static` for static HTML.
+
+Format: [Fastmod score supplement v1](../specs/fastmod_score_transfer_v1.md).
+
 ## Coverage and results
 
 The merge includes public threads, replies, quotes, labels/tags, subject

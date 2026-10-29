@@ -338,4 +338,4 @@ and repair its navigation and affected references. See the
 
 - [Approval acceptance text](approval_acceptance_text/approval_acceptance_text_step3_development_plan.md) — F03; implemented locally with conversion/recovery and legacy-reader retirement readiness.
 
-- [Fastmod score transfer](./fastmod_score_transfer/fastmod_score_transfer_step3_development_plan.md) — automatic score export/import; Step 3 approved.
+- [Fastmod score transfer](./fastmod_score_transfer/fastmod_score_transfer_step4_implementation_summary.md) — automatic score export/import; locally complete, review pending.

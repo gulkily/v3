@@ -3,7 +3,7 @@
 Path: fastmod-scores.txt at the content archive repository root
 Format: Key: value plain text, UTF-8, LF lines
 Header: Format: fastmod-scores-v1
-Limits: 16 MiB, 50000 rows, 64 named scores per row
+Limits: 16 MiB, 50000 rows, 64 named scores per row, 256 bytes per field line
 
 After the header, each row is separated by one blank line. Fields are Post,
 Content-Hash, Rubric-Revision, Created-At, Updated-At and Score-<rubric-id>.
@@ -19,3 +19,14 @@ of valid content. Duplicate row keys are retained by decoding for import reporti
 destination rows win, and the first eligible source row wins among duplicates.
 Existing archives without this file stay supported. Canonical signed bytes are
 unchanged; this generated advisory supplement is not an authority record.
+
+Exports include only completed nonlegacy named score sets for committed posts
+whose current content hash matches. Source rows are sorted by post/hash/revision;
+named probabilities are sorted by rubric ID. Empty exports contain only the
+header. Source SQLite reads use a consistent statement snapshot including WAL;
+its encoded digest participates in content archive freshness.
+
+Imports require exactly the destination selected rubric IDs and composition
+revision. Rows are insert-only, with source marked import and original ages
+preserved. Unknown fields and duplicate fields reject the whole supplement;
+duplicate row keys count separately. No canonical record or signature changes.
