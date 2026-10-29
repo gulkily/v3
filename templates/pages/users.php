@@ -1,9 +1,7 @@
 <?php $memberCount = count($users); ?>
 <section class="stack users-page" data-users-directory>
   <h1 class="users-page__title">Users</h1>
-<?php if (($pendingCount ?? null) !== null): ?>
-<?= $indent($partial('partials/users_tabs.php', ['usersTab' => 'members', 'pendingCount' => $pendingCount]), 1) ?>
-<?php endif; ?>
+<?= $indent($partial('partials/users_tabs.php', ['usersTab' => 'members', 'pendingCount' => $pendingCount, 'memberOnly' => true]), 1) ?>
 <?php if ($users === []): ?>
   <article class="card">
     <p>No members yet.</p>

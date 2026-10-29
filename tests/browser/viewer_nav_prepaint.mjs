@@ -48,8 +48,9 @@ function observe() {
   // markup not parsed yet. Painted frames also compare positions.
   const snapshot = withBoxes => JSON.stringify(links().map(link => {
     const box = link.getBoundingClientRect();
-    return withBoxes ? [link.getAttribute('href'), getComputedStyle(link).display !== 'none', Math.round(box.x), Math.round(box.width)]
-      : [link.getAttribute('href'), getComputedStyle(link).display !== 'none'];
+    const name = link.getAttribute('href') || link.getAttribute('aria-label');
+    return withBoxes ? [name, getComputedStyle(link).display !== 'none', Math.round(box.x), Math.round(box.width)]
+      : [name, getComputedStyle(link).display !== 'none'];
   }));
   window.__navStates = []; window.__navParsed = [];
   const record = () => { const value = snapshot(true); if (window.__navStates.at(-1) !== value) window.__navStates.push(value); };
@@ -150,7 +151,9 @@ try {
           const { page, states, parsed } = await visit(context, path, label);
           assert.equal(states.length, 1, `${label}: no change after first paint (${JSON.stringify(states)})`);
           assert.ok(parsed.every(state => visible(state).length === state.length), `${label}: shown while parsing (${JSON.stringify(parsed)})`);
-          assert.deepEqual(visible(states[0]).sort(), ['/invites/', '/messages'], `${label}: Messages and Invite shown`);
+          const expected = path === '/users/' ? ['/invites/', '/messages', 'Users'] : ['/invites/', '/messages'];
+          assert.deepEqual(visible(states[0]).sort(), expected, `${label}: member-only links shown`);
+          if (path === '/users/') assert.match(await page.locator('nav.board-filter[aria-label="Users"]').innerText(), /Members\s+Waiting \(\d+\)/, `${label}: Users tabs with count`);
           if (width === 390) await tabBar(page, label);
           await messagesIcon(page, label, theme);
           // Unread works on a page with no server viewer, without moving or re-captioning Messages.
@@ -160,7 +163,7 @@ try {
           const after = await messages.evaluate(node => { const r = node.getBoundingClientRect(); return JSON.stringify([Math.round(r.x), Math.round(r.width)]); });
           assert.equal(after, box, `${label}: unread did not move Messages`);
           assert.equal(await messages.innerText(), 'Messages', `${label}: caption unchanged`);
-          if (shots && path === '/') await page.screenshot({ path: `${shots}/member-${theme}-${width}.png` });
+          if (shots && (path === '/' || path === '/users/')) await page.screenshot({ path: `${shots}/member-${theme}-${width}${path === '/' ? '' : '-users'}.png` });
           await page.close(); checked++;
         }
         await context.close();
@@ -194,6 +197,10 @@ try {
     const next = await visit(again, '/about/', 'after sign-in');
     assert.equal(next.states.length, 1, 'after sign-in: no change after first paint');
     assert.deepEqual(visible(next.states[0]).sort(), ['/invites/', '/messages']);
+    const users = await visit(again, '/users/', 'users after sign-in');
+    assert.equal(users.states.length, 1, 'users after sign-in: no change after first paint');
+    assert.deepEqual(visible(users.states[0]).sort(), ['/invites/', '/messages', 'Users']);
+    await users.page.close();
     await next.page.close();
     await again.close();
   }

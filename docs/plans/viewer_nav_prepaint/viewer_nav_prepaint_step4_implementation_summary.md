@@ -85,3 +85,22 @@ Step 4 entry: Step 3 projection reaffirmed.
 - Estimate details: v2 scope included script loading and viewer binding; history sync's dependency on the viewer and the Messages-page binding were extra discovery, so retrospective 0.14 against 0.12.
 
 *— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Users tabs follow the same rule
+
+**Original estimate: 0.05** (v2, Step 3 revision; new in v3)
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - `ProfilePageController::directory` always computes the Waiting count, and `users.php` always renders `users_tabs.php` with `memberOnly`, so the tabs nav carries `data-member-only` and is hidden by the Stage 2 rule unless the browser is remembered as approved. Option A: the count is in every viewer's `/users/` HTML.
+  - The Waiting page (`/users/pending`) keeps its tabs unmarked; it is approved-only (403 otherwise) and never shared.
+- Verification:
+  - `UserAccessTest::testStandardSeparationLegacyLinksAndFortePreservation` extended: the `/users/` tabs block (with “Waiting (”) is byte-identical for an anonymous and an approved session. `php tests/run.php UserAccessTest LocalAppSmokeTest ProfilePublicDetailsTest`: 165/166, only the baseline archive-filename failure.
+  - Whole `/users/` page compared once by hand for those two viewers: the only difference is the existing public sign-in-resume scripts and body attributes for a visitor without a session (not visible UI; predates this cycle).
+  - `tests/browser/users_profile.mjs` (visitor assertion updated from “no tabs in HTML” to “tabs not visible”): search, sort, own page, Replies, approve from Waiting, Message, approved-only Waiting, no-JS. Passed.
+  - `viewer_nav_prepaint.mjs` on `/users/` and `/`, five themes, 390/1280: members see Members / Waiting (N) from first paint with no change after, anonymous visitors never see them, and the first visit after sign-in is final from first paint. 40 page states passed. Inspected the Midnight phone screenshot.
+- Notes:
+  - Refresh finding (for the `todo.txt` item, which I left unchanged): the shared `/users/` copy, and so its Waiting count, is regenerated only by a static release build or the shared-page refresh (`./v3` → `scripts/refresh_static_shared_artifacts.php`). A registration or approval does not trigger it, so cached copies can show an old count until then. Live pages are always current.
+- Estimate details: as planned; the template change reused the Stage 2 mechanism unchanged.
+
+*— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*

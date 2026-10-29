@@ -98,11 +98,11 @@ try {
   assert.deepEqual(errors, []);
   await context.close();
 
-  // A visitor who isn't signed in sees the directory without the Waiting tab, which is for approved members only.
+  // A visitor who isn't signed in gets the same page with the tabs hidden; Waiting is for approved members only.
   const anonymous = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const visitor = await anonymous.newPage();
   await visitor.goto(base + '/users/');
-  assert.equal(await visitor.locator('nav.board-filter[aria-label="Users"]').count(), 0, 'no Waiting tab for visitors who cannot open it');
+  assert.equal(await visitor.locator('nav.board-filter[aria-label="Users"]').isVisible(), false, 'no Waiting tab for visitors who cannot open it');
   const forbidden = await visitor.goto(base + '/users/pending');
   assert.equal(forbidden.status(), 403);
   await anonymous.close();
