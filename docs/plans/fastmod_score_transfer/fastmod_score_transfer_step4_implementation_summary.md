@@ -22,3 +22,14 @@ Status: Step 3 approved; implementation in progress.
 - Notes: No dependencies/schema changes; runtime integration belongs to later stages. Estimates unchanged, same scope/rater/date as entry.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 2 - Preserve destination scores
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes: Transactional insert-only import with exact content/revision/named-rubric matching, preview, duplicate/existing/incompatible counts and imported origin. Added scoring concept.
+- Verification: Transfer/store tests 14/14 pass; preview writes nothing, failure/local rows win, original ages persist, repeated import preserves rows, injected SQLite failure rolls back all inserts and creates no jobs.
+- Notes: S1 commit a3efe835. No schema/dependency changes; original stage scope/estimate unchanged.
+
+*— Codex · 2026-10-29 UTC*
