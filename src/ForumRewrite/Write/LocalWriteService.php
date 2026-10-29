@@ -561,7 +561,7 @@ class LocalWriteService
             . "Thread-ID: {$threadId}\n"
             . "Parent-ID: {$parentId}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
-            . ($agentResponse !== null ? 'Agent-Response: ' . json_encode($agentResponse, JSON_THROW_ON_ERROR) . "\n" : '')
+            . ($agentResponse !== null ? \ForumRewrite\Canonical\AgentResponseMetadata::toHeaders($agentResponse) : '')
             . "\n{$body}";
     }
 

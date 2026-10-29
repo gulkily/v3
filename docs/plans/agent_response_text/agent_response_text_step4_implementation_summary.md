@@ -22,3 +22,14 @@ Approved Step 3 received. Branch feature/agent-response-text; planning commit 36
 - Notes: No stage estimate revision or dependency/schema delta. Actual signed publication verification follows in S2.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 2 - Signed generation and expansion
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Shared reply writer emits named headers before signing. Added actual request/fulfillment coverage for new signed generation and expansion of a signed historical initial.
+- Verification: Five focused WriteApiSmokeTest methods (readable signed legacy expansion, request/publication/rebuild, provenance/replay, changed/hidden source rejection, failure/retry/source race): 5/5 passed. Verified both detached signatures; legacy record and signature remain byte-identical after expansion and replay. Existing soft-reset test covers interrupted commit recovery.
+- Notes: Initial test run caught a missing qualified class name in the writer; corrected before passing. No estimate revision, dependencies, schema or publication policy changes.
+
+*— Codex · 2026-10-29 UTC*

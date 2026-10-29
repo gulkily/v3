@@ -2690,6 +2690,45 @@ NODE;
         } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
     }
 
+    public function testReadableSignedExpansionOfLegacyInitialPreservesHistoricalBytes(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts): void {
+            $repository = new CanonicalRecordRepository($root);
+            $record = $repository->loadPost('records/posts/' . $initial . '.txt');
+            $path = \ForumRewrite\Canonical\CanonicalPathResolver::datedPost($initial, $record->createdAt);
+            $text = file_get_contents($root . '/' . $path);
+            assertStringContains('Agent-Response-Type: scripture_oriented_analysis', $text);
+            assertStringNotContains('Agent-Response: {', $text);
+            assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $text, $record->authorIdentityId));
+            // Construct a historical signed fixture; production never converts signed input.
+            $legacy = preg_replace('/^Agent-Response-[^\n]*\n/m', '', $text);
+            $legacy = str_replace("\n\n", "\nAgent-Response: " . json_encode($record->agentResponse) . "\n\n", $legacy);
+            $identity = new \ForumRewrite\Agent\AgentIdentityService($root, $db, $artifacts,
+                dirname(__DIR__) . '/state/private/agent-reply', $repository);
+            $signature = $identity->signAsReplyAgent($record->authorIdentityId, $legacy);
+            file_put_contents($root . '/' . $path, $legacy);
+            file_put_contents($root . '/' . $path . '.asc', $signature);
+            $this->runCommand($root, 'git add .');
+            $this->runCommand($root, 'git commit -m "Historical signed initial fixture"');
+            (new ReadModelBuilder($root, $db, $repository))->rebuild();
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertSame('requested', json_decode($this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial), true)['generation_status']);
+            $claim = $store->claimRequestedForPost($initial);
+            $done = $app->fulfillAgentReplyRequest($claim);
+            assertSame('generated', $done['generation_status']);
+            $expansionPath = 'records/posts/' . $done['agent_post_id'] . '.txt';
+            $expanded = file_get_contents($root . '/' . $expansionPath);
+            assertStringContains('Agent-Response-Expansion-Of: ' . $initial, $expanded);
+            assertStringNotContains('Agent-Response: {', $expanded);
+            assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $expansionPath, $expanded, $record->authorIdentityId));
+            assertSame($done['agent_post_id'], $app->fulfillAgentReplyRequest($claim)['agent_post_id']);
+            assertSame($legacy, file_get_contents($root . '/' . $path));
+            assertSame($signature, file_get_contents($root . '/' . $path . '.asc'));
+            assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $legacy, $record->authorIdentityId));
+        });
+    }
+
     public function testScriptureInitialStatusReadsStoredResultsAndHonorsVisibility(): void
     {
         $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
