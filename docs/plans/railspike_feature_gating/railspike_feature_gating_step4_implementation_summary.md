@@ -80,3 +80,13 @@ Status: Five stages locally complete; branch feat/railspike-feature-gating. Plan
 Release limits: Not merged or deployed. Production replay, physical devices and full suite unverified; local emulation is not production evidence. Session drafts do not survive closing the tab. Existing legacy localhost handoff is intentionally independent of this flag. Unrelated untracked claude_request.txt appeared during acceptance and is untouched.
 
 *— Codex · 2026-10-29 UTC*
+
+## Rebase onto origin/main — 2026-10-29
+
+User requested pulling origin/main and placing this implementation on top. Fetched and rebased onto 9005e8761. Resolved only appended documentation conflicts in the planning index, effort ledger and UI audit, retaining both histories. Application patches replayed unchanged; upstream authentication, approval/removal formats and UI changes remain intact.
+
+Rebased commits: planning b5045504f; S1 30c6daa9d; S2 ae0999db2; S3 d04cf9d91; S4 fccaebba6; S5 63050b1a6; diagnostic log 9b93fbf7d. Original commit references above are historical provenance, not current branch hashes. Scope, scores and study outcome are unchanged; this is integration verification, not a new cycle.
+
+Verification: `git range-diff` confirmed application patches unchanged; origin/main is an ancestor; diff checks passed. Focused PHP batch 63/63 passed. Railspike polling/draft and authentication browser checks passed; full signed workflow/flag replay passed, including network silence, queued-work recovery, first-paint stability and 13-theme phone/desktop matrix. No push or deployment; full suite and production verification remain pending. Dependency delta from this integration: zero new additions beyond upstream main.
+
+*— Codex · 2026-10-29 UTC*
