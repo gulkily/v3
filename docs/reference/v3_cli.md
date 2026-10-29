@@ -549,6 +549,7 @@ being installed via cron.
 ## Audit or backfill Fastmod
 
 ```
+./v3 fast-score meta-status [--repository-root=PATH] [--json]
 ./v3 fast-score status [--limit=10] [--verbose]
 ./v3 fast-score audit --include-existing [--database-path=/path/read-model.sqlite3]
 ./v3 fast-score backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]
@@ -557,6 +558,10 @@ being installed via cron.
 ./v3 fast-score smoke --post-id=... [--database-path=/path/read-model.sqlite3]
 ./v3 fast-score prune [--before=ISO-8601]
 ```
+
+`meta-status` reads derived-tag policy and score candidates without creating state.
+The retired meta-remove/rollback/retry commands return guidance to use the shared
+tagging switch, ordinary score recovery and generated-output refresh instead.
 
 `audit --include-existing` is a read-only historical count and configured-model
 cost estimate. `backfill` requires separate historical scope, confirmation,

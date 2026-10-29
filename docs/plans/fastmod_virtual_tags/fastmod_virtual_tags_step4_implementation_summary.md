@@ -63,3 +63,12 @@ Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80
 - Notes: Public snapshots retain only effective labels. No scope/estimate revision.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 7 — Retire CLI lifecycle and dead code
+**Original estimate: 0.08**
+**Retrospective stage work: 0.08**
+- Changes: Read-only `meta-status` uses readable Key: value output by default and explicit `--json`. Retired mutation/recovery commands return nonzero actionable guidance. Deleted four unused classification/runtime/artifact/publication classes and obsolete model identity helper. Updated reference/runbooks/top-level help; removed misleading flag-description sentence.
+- Verification: CLI/flag/evaluator/derived/offline tests — 27/27 passed. CLI fixture verifies absent state is not initialized and all retired operations leave legacy suppression database bytes unchanged. Source/test scan finds no retired class references; syntax, help and diff checks passed.
+- Notes: Old sidecar paths in docs compatibility copying remain harmless historical artifact allowances; no generation checks/writes remain. Flag copy gets rendered acceptance in Stage 8. No dependencies or scope/estimate revision.
+
+*— Codex · 2026-10-29 UTC*

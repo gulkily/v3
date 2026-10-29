@@ -22,26 +22,11 @@ final class FastmodTaggingFlagTest
             $write(true);
             assertSame(true,\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($root,$repo));
             assertSame(false,\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($root));
-            $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$private,$root.'/static',$repo);
-            $config=\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig($private);
-            $read=new PDO('sqlite::memory:');$read->exec("CREATE TABLE posts(post_id TEXT,thread_id TEXT,parent_id TEXT,subject TEXT,body TEXT,is_hidden INTEGER,retracted_at TEXT); INSERT INTO posts VALUES('root','root',NULL,'Help','Support',0,NULL)");
-            $post=$read->query('SELECT * FROM posts')->fetch(PDO::FETCH_ASSOC);
-            $hash=(new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null))->contentHashForPost($post);
-            $runtime->store->recordEligibleRoot('root',$hash,'r',\ForumRewrite\Scoring\FastmodMetaConfig::identity($config),0.9);
-            $runtime->retain(['post_id'=>'root','content_hash'=>$hash,'rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]]);
-            $write(false);assertSame(0,$runtime->recover($read,'r'));
-            $write(true);$runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$private,$root.'/static',$repo);
-            assertSame(1,$runtime->recover($read,'r'));
-            $write(false);assertSame(1,(int)$runtime->store->find('root')['active']);
-            $runtime->store->removeAndSuppress('root');$runtime->flush();assertSame(1,(int)$runtime->store->find('root')['suppressed']);
-            // Worker started off must honor a later site-on for newly eligible publication.
-            $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($root,$private,$root.'/static',$repo);
-            $write(true);$read->exec("INSERT INTO posts VALUES('later','later',NULL,'Help','Later support',0,NULL)");
-            $post['post_id']=$post['thread_id']='later';$post['body']='Later support';
-            $hash=(new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null))->contentHashForPost($post);
-            $runtime->store->recordEligibleRoot('later',$hash,'r',\ForumRewrite\Scoring\FastmodMetaConfig::identity($config),0.9);
-            $runtime->retain(['post_id'=>'later','content_hash'=>$hash,'rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>1]]);
-            assertSame(1,$runtime->recover($read,'r'));
+            $write(false);
+            assertSame(false,\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($root,$repo));
+            $write(true);
+            assertSame(true,\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($root,$repo));
+            assertSame(false,file_exists($root.'/scores.sqlite3'));
 
         } finally {
             foreach($old as $n=>$v)putenv($v===false?$n:$n.'='.$v);
