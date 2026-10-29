@@ -9,6 +9,31 @@ use ForumRewrite\Import\ContentImportPlanner;
 
 final class ContentImportPlannerTest
 {
+    public function testReadableLocalReceiptExportRequiresMatchingLocalAcceptance(): void
+    {
+        $w = new ImportTestWorkspace(); $root=$w->repository('source',true); $w->git($root);
+        $record=\ForumRewrite\Canonical\LabelRemoval::prepare($root,'root-001','resolve');
+        $path=\ForumRewrite\Canonical\LabelRemoval::store($root,$record);
+        $w->command(['git','-C',$root,'add',$path]); $w->command(['git','-C',$root,'commit','-qm','Accept resolution']);
+        $backup=new \ForumRewrite\Images\ImageBackup($root,$w->root.'/index.sqlite3');
+        $archive=$backup->export('zip',$backup->revision());
+        try {
+            $destination=$w->root.'/unpacked';mkdir($destination);
+            assertSame(0,$w->command(['unzip','-q',$archive['path'],'-d',$destination])[0]);
+            $incoming=$destination.'/repository';
+            assertSame(file_get_contents($root.'/'.$path),file_get_contents($incoming.'/'.$path));
+            $plan=(new ContentImportPlanner())->plan($incoming,$root);
+            assertSame('duplicate',$plan[$path]['state']);
+            $fresh=$w->repository('fresh');
+            $plan=(new ContentImportPlanner())->plan($incoming,$fresh);
+            assertSame('invalid',$plan[$path]['state']);
+            file_put_contents($incoming.'/'.$path,str_replace('Operation: resolve','Operation: delete',file_get_contents($incoming.'/'.$path)));
+            $plan=(new ContentImportPlanner())->plan($incoming,$root);
+            assertSame('invalid',$plan[$path]['state']);
+            assertSame(false,\ForumRewrite\Import\ArchiveRecordCatalog::isRecordPath('records/post-removals/root-001.json'));
+        } finally { unlink($archive['path']); }
+    }
+
     public function testAdversarialChainsAndCyclesHaveBoundedDependencyWork(): void
     {
         $w = new ImportTestWorkspace();

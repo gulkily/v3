@@ -59,3 +59,15 @@ Step 3 explicitly approved; planning commit `5143ab6f`, branch `feature/unified-
 - Notes: S4/v2 unchanged. Logs `/tmp/unified-signed-tests.log`; no new dependency or UI. Archive registration for local receipts remains Stage 5.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 5 - Source and archives
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes: text local receipts registered in source/catalog/import and labeled in Activity; previous JSON paths are not canonical imports. Exact local acceptance remains required for imported duplicates.
+- Verification: archive/export/import planner/recovery run 27/27 unaffected checks passed; source test initially used the wrong historical route and failed, corrected to `/source/blob/<commit>/...` then passed with exact current/historical bytes and normal deletion retry. New actual ZIP export/unpack test passes readable receipt equality, local duplicate, empty-destination rejection and tamper rejection.
+- Notes: S5/v2 unchanged. `/tmp/unified-source-tests.log` retains initial 27/28 run; corrected source and added archive tests pass separately. No dependency delta.
+
+*— Codex · 2026-10-29 UTC*

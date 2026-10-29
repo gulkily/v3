@@ -239,10 +239,10 @@ final class ContentImportPlanner
         }
         if (str_starts_with($path, 'records/post-removals/')) {
             try {
-                $id = basename($path, '.json');
+                $id = basename($path, '.txt');
                 $accepted = $keyFallbackRoot === null ? null : \ForumRewrite\Canonical\LabelRemoval::read($keyFallbackRoot, $id);
                 if ($accepted === null || RecordLimits::read($root . '/' . $path) !== RecordLimits::read($keyFallbackRoot . '/' . $path)) {
-                    throw new RuntimeException('Removal evidence requires existing trusted local acceptance; restore trusted repository history.');
+                    throw new RuntimeException('Removal evidence requires matching existing local acceptance; imported receipts grant no authority.');
                 }
                 return [...$entry, 'state' => 'duplicate', 'reason' => 'Already accepted local removal evidence'];
             } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) { return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)]; }

@@ -19,7 +19,7 @@ final class ArchiveRecordCatalog
             || $relativePath === 'records/instance/feature-flags.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/approval-acceptances/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
-            || preg_match('#^records/post-removals/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
+            || preg_match('#^records/post-removals/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-timestamps/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
             || preg_match('#^records/thread-subjects/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/thread-labels/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
@@ -86,7 +86,7 @@ final class ArchiveRecordCatalog
 
         try {
             if (str_starts_with($relativePath, 'records/post-removals/')) {
-                $id = basename($relativePath, '.json');
+                $id = basename($relativePath, '.txt');
                 return \ForumRewrite\Canonical\LabelRemoval::read($repositoryRoot, $id) === null ? null : 'post-removal:' . $id;
             }
             if (str_starts_with($relativePath, 'records/approval-acceptances/')) {
