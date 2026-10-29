@@ -860,7 +860,7 @@ Authorization: Background direction selected; Step 1 requested, awaiting Approve
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/viewer_nav_prepaint` | Step 4 in progress | v3 / R1 / P2 | 0.50 | [Intake and Step 2](./viewer_nav_prepaint/viewer_nav_prepaint_step2_feature_description.md#study-snapshots-and-approval) | Related to `high_traffic_mode` and `nav_links_load_stability`; acceptance pending |
+| `v3/viewer_nav_prepaint` | Locally complete; maintainer acceptance pending | v3 / R1 / P2 | 0.50 | [Intake and Step 2](./viewer_nav_prepaint/viewer_nav_prepaint_step2_feature_description.md#study-snapshots-and-approval) | Related to `high_traffic_mode` and `nav_links_load_stability`; acceptance pending |
 
 2026-10-27 UTC: standing P2 enrollment, start `2bfab452`. Intake and Step 2 handoff **0.45** for pre-paint Messages/Invite menu consistency across shared and live pages; Step 1 skipped (user chose the approach). Prior inspection disclosed. Claude Code single exposed rater. No implementation or accepted outcome; planning uncommitted.
 
@@ -879,3 +879,5 @@ Authorization: Background direction selected; Step 1 requested, awaiting Approve
 2026-10-29 UTC: Stage 3 complete; retrospective stage work 0.14 (original 0.08 v1, 0.12 v2; history-sync viewer binding was extra discovery). Cycle 0.50 unchanged; no accepted-count increment.
 
 2026-10-29 UTC: Stage 4 complete; retrospective stage work 0.05 (original 0.05 v2). Cycle 0.50 unchanged; no accepted-count increment.
+
+2026-10-29 UTC: Stage 5 and [closeout](./viewer_nav_prepaint/viewer_nav_prepaint_step4_implementation_summary.md#closeout): five of five stages on `feat/viewer-nav-prepaint` (planning `c8beee50`, S1 `d50d10ac`, S2 `32fce977`, S3 `d9a0b0a1`, S4 `e6185887`, S5 closeout commit). Stage retrospectives S1–S5 0.08 / 0.15 / 0.14 / 0.05 / 0.13, not summed. Entry projection **0.50** retained; cycle retrospective scope assessment **0.55**, not measured effort. Same v3/start `c5783108`/R1/P2; Claude Code single exposed rater. Full PHP suite 1626/1630 (three long-standing, one fixed after the user narrowed the static-release guard); browser matrices pass. Maintainer judgment and acceptance pending; no accepted-count increment.

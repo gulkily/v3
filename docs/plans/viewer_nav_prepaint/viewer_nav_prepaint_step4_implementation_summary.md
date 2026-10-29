@@ -104,3 +104,38 @@ Step 4 entry: Step 3 projection reaffirmed.
 - Estimate details: as planned; the template change reused the Stage 2 mechanism unchanged.
 
 *— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Verify the full browsing and recovery flow
+
+**Original estimate: 0.10** (v1 verification stage, Codex; unchanged in v2)
+**Retrospective stage work: 0.13**
+
+- Changes:
+  - `viewer_nav_prepaint.mjs` gains configurations (`NAV_SITE`, `NAV_MESSAGING`), a theme-applied check, keyboard order and open-account-menu checks, and in-place revocation; theme storage now uses each site's own key (`forum-<site>-theme`).
+  - New `tests/browser/viewer_nav_high_traffic.mjs`: isolated root, `scripts/high_traffic.php prepare/enable/disable`, removes its cache afterwards.
+  - Enhancement request (user decision, 2026-10-29): the earlier static/offline release guard banned all messaging markup, which conflicts with Step 2's hidden link on every page. The user chose “Allow hidden link”. `PrivateMessageReleaseIsolationTest` now removes exactly the hidden member-only Messages link and the `privateMessaging` script list, then applies every existing ban unchanged, and also bans any `private_message` script tag. Mailbox pages, mailbox scripts, private databases and message data stay excluded.
+  - `ui_copy_audit_checklist.md` entry added.
+- Verification:
+  - Full PHP suite `php tests/run.php`: 1626/1630. The four failures: `LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets` and `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` are long-standing (runner history: failing since 2026-10-24; the latter two also fail on a `c5783108` worktree). `PrivateMessageReleaseIsolationTest` was new; fixed as above and now passes. The full suite was not rerun after that fix.
+  - `viewer_nav_prepaint.mjs` ZenMemes full matrix: 100 page states (Board, thread, About, Users, Tools; light/dark/Word97/Chicago/Midnight; 390/1280; anonymous and member) plus keyboard, sign-in, sign-out, revocation and no-JS. Passed.
+  - Same test with chouse (forum header), qdb (no Invite) and messaging disabled, at light/Midnight on Board and About: 16 page states each. Passed.
+  - `viewer_nav_high_traffic.mjs`: high-traffic mode on and off, `/`, `/about/`, a thread, 390/1280. Member and anonymous get the same header (and the same cached page when on); member links are final from first paint; unread reaches ready on cached pages. 24 page states passed.
+  - Earlier-stage suites (Stages 1–4): contracts, messaging browser suites, `users_profile`. Known baseline failures in `private_message_history_sync_browser` (final theme-button step) and `private_message_list_browser` (Users → “bob”) reproduce on `c5783108`.
+  - Not run: physical devices, screen readers, deployment.
+- Notes: Contract outcomes, normal entry, recovery and release checks are covered above, except deployment and physical-device evidence (out of scope). Background sign-in on cached pages does not run (an existing design choice), so a returning member first remembered on such a page is recognized by the once-per-session check.
+- Estimate details: verification grew with the configuration matrix, the high-traffic fixture and the release-guard conflict; retrospective 0.13 against 0.10.
+
+*— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+**Cycle retrospective scope assessment: 0.55** (Step 4 entry projection 0.50 retained; not measured effort)
+
+- Delivered scope v3, Waiting option A: identical header HTML for every viewer (outside Messages pages and members-only sites' unapproved nav), pre-paint visibility from per-identity approval memory, in-place updates on sign-in/sign-out/revocation, on-demand messaging, unread and history without a server viewer, Users tabs.
+- Starting revision `c5783108`; branch `feat/viewer-nav-prepaint`. Planning `c8beee50`; stages `d50d10ac`, `32fce977`, `d9a0b0a1`, `e6185887`, then the Stage 5 commit. Five of five stages complete. Zero dependency delta; no schema, API, cookie, authorization, Apache or deployment change.
+- Corrective work beyond plan: history-sync viewer binding, Messages-page viewer binding, unread retry after in-place sign-in, the release-guard narrowing (user-approved).
+- Stage-work estimates: S1 0.10 v1 / 0.08 v2 → 0.08 retro; S2 0.12 / 0.15 → 0.15; S3 0.08 / 0.12 → 0.14; S4 — / 0.05 → 0.05; S5 0.10 / 0.10 → 0.13. Never summed.
+- Follow-ups: Word97 whole-header shift while styles load (pre-existing); `todo.txt` Waiting-count item (exposure and staleness; refresh path recorded in Stage 4); the three long-standing PHP failures and two browser baseline failures above.
+- Maintainer comfortable-fit judgment and study acceptance: **pending**. No accepted-count increment. Not merged or pushed.
+
+*— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*

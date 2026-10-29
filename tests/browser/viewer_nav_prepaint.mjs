@@ -19,7 +19,10 @@ const fingerprint = (await globalThis.openpgp.readKey({ armoredKey: keys.publicK
 const root = await mkdtemp(join(tmpdir(), 'viewer-nav-prepaint-'));
 const env = { ...process.env, FORUM_SITE_ID: process.env.NAV_SITE || 'zenmemes', SIGNED_REACTION_TEST_ROOT: root,
   FORUM_SECRETS_PATH: join(root, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3'),
-  FORUM_PRIVATE_MESSAGES_ENABLED: 'true' };
+  FORUM_PRIVATE_MESSAGES_ENABLED: process.env.NAV_MESSAGING === 'false' ? 'false' : 'true' };
+const site = env.FORUM_SITE_ID, messagingEnabled = env.FORUM_PRIVATE_MESSAGES_ENABLED === 'true';
+// What a returning member should see on a route: Messages unless disabled, Invite except on qdb, Users tabs on /users/.
+const memberLinks = path => [...(path === '/users/' ? ['Users'] : []), ...(site !== 'qdb' ? ['/invites/'] : []), ...(messagingEnabled ? ['/messages'] : [])].sort();
 const seeded = spawnSync('php', [join(project, 'tests/Support/signed_reaction_browser_fixture.php'), root], { input: JSON.stringify(keys), encoding: 'utf8', env });
 assert.equal(seeded.status, 0, seeded.stderr);
 const promote = spawnSync('php', ['-r', `require $argv[1] . '/autoload.php';
@@ -110,8 +113,8 @@ async function messagesIcon(page, label, theme) {
   assert.ok(image && image !== 'none', `${label}: Messages icon in ${theme}`);
 }
 
-function seedScript({ keys, fingerprint, theme, remembered }) {
-  localStorage.setItem('zenmemes-theme', theme);
+function seedScript({ keys, fingerprint, theme, remembered, site }) {
+  localStorage.setItem(`forum-${site}-theme`, theme);
   if (keys && !sessionStorage.getItem('seeded')) {
     for (const [key, value] of Object.entries({ username: 'reaction-browser', public_key: keys.publicKey, private_key: keys.privateKey, fingerprint, published_fingerprint: fingerprint })) localStorage.setItem('forum_pki_' + key, value);
     if (remembered) localStorage.setItem('forum_pki_approved_fingerprint', fingerprint.toLowerCase());
@@ -127,7 +130,7 @@ try {
       // Anonymous: links are in the HTML but never shown, and leave no gap.
       {
         const context = await browser.newContext({ serviceWorkers: 'block', viewport });
-        await context.addInitScript(seedScript, { theme });
+        await context.addInitScript(seedScript, { theme, site });
         await context.addInitScript(observe);
         for (const path of routes) {
           const label = `anonymous ${theme} ${width} ${path}`;
@@ -144,17 +147,18 @@ try {
       // Returning approved member: visible from first paint, nothing moves after.
       {
         const context = await browser.newContext({ serviceWorkers: 'block', viewport });
-        await context.addInitScript(seedScript, { keys, fingerprint, theme, remembered: true });
+        await context.addInitScript(seedScript, { keys, fingerprint, theme, remembered: true, site });
         await context.addInitScript(observe);
         for (const path of routes) {
           const label = `member ${theme} ${width} ${path}`;
           const { page, states, parsed } = await visit(context, path, label);
           assert.equal(states.length, 1, `${label}: no change after first paint (${JSON.stringify(states)})`);
           assert.ok(parsed.every(state => visible(state).length === state.length), `${label}: shown while parsing (${JSON.stringify(parsed)})`);
-          const expected = path === '/users/' ? ['/invites/', '/messages', 'Users'] : ['/invites/', '/messages'];
-          assert.deepEqual(visible(states[0]).sort(), expected, `${label}: member-only links shown`);
+          assert.equal(await page.locator('html').getAttribute('data-theme'), theme, `${label}: theme applied`);
+          assert.deepEqual(visible(states[0]).sort(), memberLinks(path), `${label}: member-only links shown`);
           if (path === '/users/') assert.match(await page.locator('nav.board-filter[aria-label="Users"]').innerText(), /Members\s+Waiting \(\d+\)/, `${label}: Users tabs with count`);
           if (width === 390) await tabBar(page, label);
+          if (!messagingEnabled) { await page.close(); checked++; continue; }
           await messagesIcon(page, label, theme);
           // Unread works on a page with no server viewer, without moving or re-captioning Messages.
           const messages = page.locator('.nav [href="/messages"]');
@@ -170,38 +174,70 @@ try {
       }
     }
   }
+  // Keyboard: member links are reachable in order; the account menu shows Invite when open.
+  {
+    const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 844 } });
+    await context.addInitScript(seedScript, { keys, fingerprint, theme: 'light', remembered: true, site });
+    await context.addInitScript(observe);
+    const { page } = await visit(context, '/', 'keyboard');
+    const reached = [];
+    for (let i = 0; i < 25; i++) {
+      await page.keyboard.press('Tab');
+      const href = await page.evaluate(() => document.activeElement && document.activeElement.closest('.site-header') ? (document.activeElement.getAttribute('href') || document.activeElement.tagName) : null);
+      if (href) reached.push(href);
+    }
+    if (messagingEnabled) assert.ok(reached.includes('/messages'), `keyboard reaches Messages (${reached})`);
+    const invite = page.locator('[data-member-only][href="/invites/"]');
+    if (site !== 'qdb' && await page.locator('.account-menu').count()) {
+      assert.equal(await invite.isVisible(), false, 'Invite stays inside the closed account menu');
+      await page.locator('.account-menu__trigger').click();
+      assert.equal(await invite.isVisible(), true, 'open account menu shows Invite');
+      await invite.focus();
+      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), '/invites/');
+    }
+    await page.close(); await context.close();
+  }
   // Real status changes update in place: first sign-in, then sign-out.
   {
     const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
-    await context.addInitScript(seedScript, { keys, fingerprint, theme: 'light', remembered: false });
+    await context.addInitScript(seedScript, { keys, fingerprint, theme: 'light', remembered: false, site });
     await context.addInitScript(observe);
     const first = await visit(context, '/threads/root-001', 'first sign-in');
     await first.page.waitForFunction(() => document.documentElement.getAttribute('data-member') === 'approved');
     assert.deepEqual(visible(first.states[0]), [], 'not shown before the client knows');
-    assert.equal(await first.page.locator('.nav [href="/messages"]').isVisible(), true, 'shown in place after sign-in');
+    const shownLink = messagingEnabled ? '.nav [href="/messages"]' : '[data-member-only]';
+    if (messagingEnabled || site !== 'qdb') await first.page.waitForFunction(() => document.documentElement.getAttribute('data-member') === 'approved');
+    if (messagingEnabled) assert.equal(await first.page.locator(shownLink).isVisible(), true, 'shown in place after sign-in');
     await first.page.evaluate(() => {
       ['forum_pki_public_key', 'forum_pki_private_key', 'forum_pki_fingerprint'].forEach(key => localStorage.removeItem(key));
       window.dispatchEvent(new Event('forum:identity-changed'));
     });
-    assert.equal(await first.page.locator('.nav [href="/messages"]').isVisible(), false, 'hidden in place after sign-out');
+    assert.equal(await first.page.locator('[data-member-only]:visible').count(), 0, 'hidden in place after sign-out');
     assert.equal(await first.page.evaluate(() => localStorage.getItem('forum_pki_approved_fingerprint')), null);
     await first.page.close();
     await context.close();
     // The next visit after sign-in is final from first paint.
     const again = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
-    await again.addInitScript(seedScript, { keys, fingerprint, theme: 'light', remembered: false });
+    await again.addInitScript(seedScript, { keys, fingerprint, theme: 'light', remembered: false, site });
     await again.addInitScript(observe);
     const learned = await visit(again, '/threads/root-001', 'learn');
     await learned.page.waitForFunction(() => document.documentElement.getAttribute('data-member') === 'approved');
     await learned.page.close();
     const next = await visit(again, '/about/', 'after sign-in');
     assert.equal(next.states.length, 1, 'after sign-in: no change after first paint');
-    assert.deepEqual(visible(next.states[0]).sort(), ['/invites/', '/messages']);
-    const users = await visit(again, '/users/', 'users after sign-in');
-    assert.equal(users.states.length, 1, 'users after sign-in: no change after first paint');
-    assert.deepEqual(visible(users.states[0]).sort(), ['/invites/', '/messages', 'Users']);
-    await users.page.close();
+    assert.deepEqual(visible(next.states[0]).sort(), memberLinks('/about/'));
     await next.page.close();
+    if (routes.includes('/users/')) {
+      const users = await visit(again, '/users/', 'users after sign-in');
+      assert.equal(users.states.length, 1, 'users after sign-in: no change after first paint');
+      assert.deepEqual(visible(users.states[0]).sort(), memberLinks('/users/'));
+      await users.page.close();
+    }
+    // Revocation: a sign-in that answers approved=0 hides everything in place and forgets it.
+    const revoked = await visit(again, '/about/', 'revocation');
+    await revoked.page.evaluate(() => window.ForumMemberApproval.record(window.ForumMemberApproval.fingerprint(), false));
+    assert.equal(await revoked.page.locator('[data-member-only]:visible').count(), 0, 'revocation hides in place');
+    await revoked.page.close();
     await again.close();
   }
   // Without JavaScript nobody sees member links; the routes still work by URL.
@@ -213,6 +249,6 @@ try {
     assert.equal(await page.locator('[data-member-only]:visible').count(), 0, 'no-JS: hidden');
     await context.close();
   }
-  console.log(`PASS viewer nav pre-paint: ${checked} page states across themes=${themes.join('/')}, widths=390/1280, routes=${routes.length}; sign-in/sign-out in place, no-JS hidden`);
+  console.log(`PASS viewer nav pre-paint (${site}, messaging ${messagingEnabled ? 'on' : 'off'}): ${checked} page states across themes=${themes.join('/')}, widths=390/1280, routes=${routes.length}; keyboard, sign-in/sign-out/revocation in place, no-JS hidden`);
 } catch (error) { console.error(serverLog.slice(-2500)); throw error; }
 finally { await browser.close(); server.kill(); }
