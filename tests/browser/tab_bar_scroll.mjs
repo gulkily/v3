@@ -104,6 +104,27 @@ try {
   await page.locator('details[data-role="account-menu"] summary').click();
   await scrollTo(page, 2000);
   assert.equal(await hidden(page), false, 'stays while the account menu is open');
+  // Typing: with the keyboard up the bar would cover a composer's Post button, so it stays away
+  // while a field outside the bar has focus, and comes back after.
+  await page.evaluate(() => { document.activeElement.blur(); document.querySelector('details[data-role="account-menu"]').open = false; });
+  await scrollTo(page, 0);
+  await page.evaluate(() => {
+    const field = document.createElement('textarea');
+    field.id = 'typing-probe';
+    const button = document.createElement('button');
+    button.id = 'button-probe';
+    button.textContent = 'Probe';
+    document.querySelector('.main').prepend(field, button);
+  });
+  assert.equal(await hidden(page), false, 'shown at the top before typing');
+  await page.locator('#typing-probe').focus();
+  await page.waitForFunction(() => document.querySelector('[data-shell="app"]').dataset.tabbar === 'hidden');
+  await page.locator('#typing-probe').fill('hello');
+  assert.equal(await hidden(page), true, 'stays away while typing, even at the top of the page');
+  await page.locator('#button-probe').focus();
+  await page.waitForFunction(() => document.querySelector('[data-shell="app"]').dataset.tabbar !== 'hidden');
+  assert.equal(await hidden(page), false, 'back once focus leaves the field');
+  await page.evaluate(() => { document.getElementById('typing-probe').remove(); document.getElementById('button-probe').remove(); });
   // Bottom-pinned parts follow the visible bar: the post-send reply box sits on
   // the bar while shown and at the screen bottom while hidden.
   await page.evaluate(() => { document.activeElement.blur(); document.querySelector('details[data-role="account-menu"]').open = false; });
@@ -128,7 +149,7 @@ try {
   assert.equal((await dependents()).panel, '64px', 'shown: reply box above the bar');
   assert.deepEqual(phone.errors, []);
   await phone.context.close();
-  console.log('PASS phone: hide, show, jitter, bounce, ends, focus, menu, reduced motion, dependents');
+  console.log('PASS phone: hide, show, jitter, bounce, ends, focus, menu, typing, reduced motion, dependents');
 
   const sliding = await open();
   assert.notEqual(await sliding.page.evaluate(bar => getComputedStyle(document.querySelector(bar)).transitionDuration, bar), '0s', 'slides by default');
