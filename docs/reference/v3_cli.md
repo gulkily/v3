@@ -1188,3 +1188,11 @@ Exit 0 means the live repository is ready; exit 2 means legacy files remain;
 exit 1 means blockers. Archive coverage remains unknown in all cases. Follow the
 [reader retirement procedure](../runbooks/account_key_approval_safety.md#later-removal-of-the-legacy-reader)
 before a later removal change.
+
+## Agent-response format readiness
+
+`./v3 agent-reply format-readiness [--repository-root=/path/repository] [--json]`
+reads existing canonical posts without initializing or rebuilding storage. Exit 0
+means the live tree has no legacy dependencies, 2 means legacy headers remain,
+and 1 means scan blockers. History and external archives remain undecided. See the
+[legacy-reader removal guide](agent_response_legacy_removal.md) before planning retirement.

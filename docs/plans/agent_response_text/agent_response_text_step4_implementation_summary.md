@@ -44,3 +44,14 @@ Approved Step 3 received. Branch feature/agent-response-text; planning commit 36
 - Notes: Content-download archive wrapper is `repository/`; existing content-import interface accepts `records/` or `local_repository/records/`. Test uses the established extraction/repack procedure, preserving record bytes. Direct download-wrapper import is outside this format change. Retrospective reflects the transfer fixture work; original estimate retained, no prospective revision. No dependencies or schema change.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 4 - Retirement inspection and removal proof
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Read-only format-readiness scanner/CLI, default named text and explicit JSON, top-level/subcommand help, dependency listing and future removal guide. Existing bounded canonical reads; two content-hash inventories conservatively detect observable change. No initialization/rebuild/conversion.
+- Verification: `php tests/run.php AgentResponseFormatReadinessTest`: 3/3. Actual CLI exit 0/1/2, output parity, no file-content writes, dated/flat paths, mixed headers, missing directory, symlink, duplicate ID and injected concurrent addition checked. Fresh PHP process blocks the legacy adapter while normal new generation/expansion, signing, rebuild, export/import child process and offline export pass; old input explicitly fails. PHP lint/help and diff checks pass.
+- Notes: Stop writers for an atomic operational snapshot; two passes cannot detect reverted transient changes. History/archives always unknown. Adapter removal remains unauthorized. Estimates unchanged prospectively; no dependencies or schema changes.
+
+*— Codex · 2026-10-29 UTC*

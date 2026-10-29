@@ -35,3 +35,6 @@ shared validation do not depend on the legacy canonical adapter. `postHash` rema
 SHA-256 of the existing JSON-encoded post ID, subject and body tuple; changing
 metadata representation does not change source/initial version hashes. Expansion
 identity and author/source/thread checks are unchanged.
+
+The [read-only readiness command and removal guide](../reference/agent_response_legacy_removal.md)
+define the eventual decoder-removal boundary and archive limitations.
