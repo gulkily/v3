@@ -153,6 +153,7 @@
   function refresh(force=false) {
     if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || document.hidden) return Promise.resolve();
     if(original!==identity()) { invalidate();return Promise.resolve(); }
+    if(window.ForumPrivateMessageUnread?.historyEligibility() !== true) return Promise.resolve();
     if(active) return active;
     if(!force && Date.now()-lastRun<5000) return Promise.resolve();
     lastRun=Date.now();
@@ -187,6 +188,7 @@
     if(!listening) {
       listening=true;
       document.addEventListener('private-messaging-disabled',stop);
+      document.addEventListener('private-message-history-eligibility',()=>refresh());
       window.addEventListener('pagehide',()=>{generation++;if(aborter)aborter.abort();});
       window.addEventListener('pageshow',()=>refresh());
       window.addEventListener('focus',()=>refresh());

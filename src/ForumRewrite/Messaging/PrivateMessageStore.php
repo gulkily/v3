@@ -23,7 +23,7 @@ final class PrivateMessageStore
 
     public function unreadStateFor(string $viewer, array $counterparts = []): array
     {
-        return $this->readState->state($viewer, $counterparts);
+        return $this->readState->state($viewer, $counterparts) + ['has_history' => $this->historySyncPage(strtolower(trim($viewer)), '', 1)['messages'] !== []];
     }
 
     public function markSeenThrough(string $viewer, string $counterpart, string $messageId): void

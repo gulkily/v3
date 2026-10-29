@@ -20,6 +20,16 @@ final class PrivateMessageHistorySyncTest
         $syncDb=new PDO('sqlite::memory:');$sync=new PrivateMessageHistorySyncStore($syncDb);
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
     }
+    public function testUnreadEligibilityUsesAccountHistory(): void
+    {
+        [, $messages] = $this->fixture();
+        assertSame(false, $messages->unreadStateFor('unused')['has_history']);
+        assertSame(true, $messages->unreadStateFor('alice')['has_history']);
+        assertSame(true, $messages->unreadStateFor('mallory')['has_history']);
+        $messages->storeEnvelope('first', '2026-10-29', 'unused', 'newrecipient', 'source', 'cipher');
+        assertSame(true, $messages->unreadStateFor('unused')['has_history']);
+        assertSame(true, $messages->unreadStateFor('newrecipient')['has_history']);
+    }
     private function viewer(string $key='a',string $account='alice'): array { return ['identity_id'=>'openpgp:'.str_repeat($key,40),'username_token'=>$account,'is_approved'=>1]; }
     public function testEligibilityUsesOriginalDirectionAndCurrentMembership(): void
     {

@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  let historyEligibility = null;
   let nav, viewer, originalIdentity, generation = 0, scheduled, listening = false;
   function identity() {
     try { return JSON.stringify([localStorage.getItem('forum_pki_public_key'), localStorage.getItem('forum_pki_username')]); }
@@ -58,6 +59,8 @@
         nav.dataset.viewer = viewer;
         document.dispatchEvent(new CustomEvent('private-message-viewer-known'));
       }
+      historyEligibility = typeof combined.has_history === 'boolean' ? combined.has_history : null;
+      document.dispatchEvent(new CustomEvent('private-message-history-eligibility'));
       const description = combined.unread_count + ' unread conversation' + (combined.unread_count === 1 ? '' : 's');
       nav.querySelector('#private-message-unread-status').textContent = description;
       nav.title = description;
@@ -85,6 +88,7 @@
     generation++;
     clearTimeout(scheduled);
     nav = null;
+    historyEligibility = null;
   }
   function start(navElement) {
     if (nav === navElement && nav && nav.isConnected) return;
@@ -120,6 +124,6 @@
     }
     schedule();
   }
-  window.ForumPrivateMessageUnread = { refresh, sameIdentity, acceptsState: valid, start, stop };
+  window.ForumPrivateMessageUnread = { historyEligibility: () => nav && sameIdentity() ? historyEligibility : null, refresh, sameIdentity, acceptsState: valid, start, stop };
   document.addEventListener('DOMContentLoaded', () => start(document.querySelector('[data-private-message-unread]')));
 })();
