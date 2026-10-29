@@ -115,3 +115,17 @@ Check `./v3 task-queue status` for task IDs and workflow ID/state/version. The o
 The existing abandoned-claim threshold is **900 seconds**. After a killed worker, let the normal locked worker recover the expired claim and reconcile workflow state; then retry from the thread. Never manually approve by editing SQLite. A saved result is reconciled without publishing it again, and late results cannot replace newer versions. Queue-history pruning does not prune workflow evidence; plan private backup/retention separately.
 
 To roll back deployment of this feature, stop/drain its queued work before reverting application code through the existing production procedure. Keep the private database and Codex home; do not restore an old public read model over them or delete the durable approval records. An older queue worker does not support `railspike_assessment` jobs, so pause its cron until outstanding new-type jobs are accounted for. Re-enabling the reviewed release can resume retained workflow state. This operational rollback procedure does **not** provide the future user-facing rollback button or automatic mutable-data restoration.
+
+## Feature availability
+
+Railspike development is disabled by default. Enable **Railspike development**
+in Feature Flags (Agent replies group), or set `FORUM_RAILSPIKE_ENABLED=true`
+as an environment override. The environment override locks the site control;
+remove it to return control to the site setting. This site-mutable flag is
+registered in the private configuration schema but deliberately omitted from
+generated template defaults.
+
+All `/api/railspike_workflow` reads and actions require the flag. Disabled calls
+return no-store HTTP 403 with `code: railspike_disabled` and reload guidance.
+Existing workflows are retained. Operator authentication and signed actions are
+still required when enabled.
