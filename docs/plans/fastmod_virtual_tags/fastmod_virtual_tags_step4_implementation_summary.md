@@ -54,3 +54,12 @@ Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80
 - Notes: Stage 4 archive-filename failure reproduced unchanged in isolated preimplementation c5783108 worktree; worktree removed afterward. No scope/estimate revision.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 6 — Refresh offline labels
+**Original estimate: 0.08**
+**Retrospective stage work: 0.08**
+- Changes: Offline builder captures the shared effective labels and publishes normally without classification generation/manifest sidecars.
+- Verification: PublicOfflineSnapshotBuilderTest, OfflineSnapshotPublisherTest and OfflineSnapshotBootstrapTest — 8/8 passed. New fixture checks enable/disable/prune refresh, unchanged downloaded snapshots/source labels, no private exported tables or generation sidecar. Existing publication failure test preserves prior snapshot.
+- Notes: Public snapshots retain only effective labels. No scope/estimate revision.
+
+*— Codex · 2026-10-29 UTC*
