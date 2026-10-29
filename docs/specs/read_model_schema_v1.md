@@ -474,7 +474,8 @@ feeds and the pending-users latest-activity column show them only while the
 Unsigned/malformed updates are ignored. Existing duplicate-name route policy remains.
 ### Agent response provenance (schema version 22)
 
-Optional `Agent-Response` JSON on canonical reply records identifies
+Optional [named agent-response headers](agent_response_metadata_v1.md) on canonical
+reply records (or the retained legacy `Agent-Response` JSON header) identify
 `scripture_oriented_analysis` or `scripture_expansion`, its source post/version,
 and (for expansion) the initial reply/version. `posts.agent_response_json`
 replays this metadata on rebuild. Expansion records use a deterministic ID

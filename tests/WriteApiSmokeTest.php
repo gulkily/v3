@@ -2729,6 +2729,78 @@ NODE;
         });
     }
 
+    public function testReadableResponseTransferRoundTrip(): void
+    {
+        $this->checkResponseTransfer(false, false);
+    }
+
+    public function testLegacyResponseTransferMatrix(): void
+    {
+        foreach ([[true, false], [false, true], [true, true]] as [$oldInitial, $oldExpansion]) {
+            $this->checkResponseTransfer($oldInitial, $oldExpansion);
+        }
+    }
+
+    private function checkResponseTransfer(bool $oldInitial, bool $oldExpansion): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory) use ($oldInitial, $oldExpansion): void {
+            $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+            $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial));
+            assertSame('generated', $done['generation_status']);
+            $repository = new CanonicalRecordRepository($root);
+            $identity = new \ForumRewrite\Agent\AgentIdentityService($root, $db, $artifacts,
+                dirname(__DIR__) . '/state/private/agent-reply', $repository);
+            $bytes = [];
+            foreach ([$initial => $oldInitial, $done['agent_post_id'] => $oldExpansion] as $id => $old) {
+                $record = $repository->loadPost('records/posts/' . $id . '.txt');
+                $path = $id === $initial ? \ForumRewrite\Canonical\CanonicalPathResolver::datedPost($id, $record->createdAt) : 'records/posts/' . $id . '.txt';
+                $text = file_get_contents($root . '/' . $path);
+                if ($old) {
+                    $text = preg_replace('/^Agent-Response-[^\n]*\n/m', '', $text);
+                    $text = str_replace("\n\n", "\nAgent-Response: " . json_encode($record->agentResponse) . "\n\n", $text);
+                    file_put_contents($root . '/' . $path, $text);
+                    file_put_contents($root . '/' . $path . '.asc', $identity->signAsReplyAgent($record->authorIdentityId, $text));
+                }
+                $bytes[$path] = $text;
+                $bytes[$path . '.asc'] = file_get_contents($root . '/' . $path . '.asc');
+                assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $text, $record->authorIdentityId));
+                $sourceView = $this->renderMethod($app, 'GET', '/source/current/' . $path);
+                assertStringContains($old ? 'Agent-Response:' : 'Agent-Response-Type:', $sourceView);
+            }
+            if ($oldInitial || $oldExpansion) {
+                $this->runCommand($root, 'git add .');
+                $this->runCommand($root, 'git commit -m "Signed historical representation fixture"');
+            }
+            $query = 'SELECT post_id, agent_response_json FROM posts WHERE agent_response_json IS NOT NULL ORDER BY post_id';
+            $incremental = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+            (new ReadModelBuilder($root, $db, $repository))->rebuild();
+            assertSame($incremental, $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC));
+            $export = (new \ForumRewrite\Images\ImageBackup($root, $db))->export('tar.gz');
+            try {
+                $target = $directory . '/import-target';
+                mkdir($target . '/records', 0700, true);
+                foreach (['init -q', 'config user.email test@example.invalid', 'config user.name Test', 'commit --allow-empty -qm Seed'] as $args) {
+                    $this->runCommand($target, 'git ' . $args);
+                }
+                $targetDb = $directory . '/import.sqlite3';
+                $extracted = (new \ForumRewrite\Import\RepositoryArchive())->extract($export['path'], $directory . '/extracted');
+                $prepared = $directory . '/records.tar.gz';
+                $this->runCommand($extracted['root'], 'tar -czf ' . escapeshellarg($prepared) . ' records');
+                $this->runCommand(dirname(__DIR__), './v3 import-repository ' . escapeshellarg($prepared)
+                    . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($targetDb));
+                foreach ($bytes as $path => $expected) { assertSame($expected, file_get_contents($target . '/' . $path)); }
+                $imported = new PDO('sqlite:' . $targetDb);
+                assertSame($incremental, $imported->query($query)->fetchAll(PDO::FETCH_ASSOC));
+                $offline = $directory . '/transfer-offline.sqlite3';
+                (new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder())->build($targetDb, $offline);
+                $copy = new PDO('sqlite:' . $offline);
+                assertSame($incremental, $copy->query($query)->fetchAll(PDO::FETCH_ASSOC));
+                $importedApp = new Application(dirname(__DIR__), $target, $targetDb, $directory . '/import-artifacts');
+                assertStringContains('Further scripture reflection', $this->renderMethod($importedApp, 'GET', '/posts/' . $initial));
+            } finally { unlink($export['path']); }
+        });
+    }
+
     public function testScriptureInitialStatusReadsStoredResultsAndHonorsVisibility(): void
     {
         $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {

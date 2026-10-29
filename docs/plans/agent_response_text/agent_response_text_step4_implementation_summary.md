@@ -33,3 +33,14 @@ Approved Step 3 received. Branch feature/agent-response-text; planning commit 36
 - Notes: Initial test run caught a missing qualified class name in the writer; corrected before passing. No estimate revision, dependencies, schema or publication policy changes.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 3 - Rebuild, transfer and offline compatibility
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Added four signed old/new initial-expansion combinations through full rebuild, source view, content export, real CLI import, imported presentation and offline snapshot; clarified canonical and read-model specs. Existing consumers need no production changes.
+- Verification: Three focused WriteApiSmokeTest methods (readable transfer, legacy transfer matrix, cache/offline visibility): 3/3 passed. Incremental metadata equals rebuilt/imported/offline metadata; exported/imported record and signature bytes match. Existing offline visibility check rejects changed versions.
+- Notes: Content-download archive wrapper is `repository/`; existing content-import interface accepts `records/` or `local_repository/records/`. Test uses the established extraction/repack procedure, preserving record bytes. Direct download-wrapper import is outside this format change. Retrospective reflects the transfer fixture work; original estimate retained, no prospective revision. No dependencies or schema change.
+
+*— Codex · 2026-10-29 UTC*
