@@ -60,6 +60,12 @@ try {
   await page.locator('#recovery').evaluate(el=>{el.hidden=true;el.style.height='';});await settle(page);await check();
   await page.evaluate(()=>{testViewport.height=170;testViewport.dispatchEvent(new Event('resize'));});await settle(page);
   assert.equal(await page.locator('.reply-viewport-active').count(),0,'tiny viewport uses ordinary flow');
+  // No on-screen keyboard (hardware keyboard, tablet, desktop phone emulation): the visible area is the whole
+  // window, so the reply stays in the page and the page keeps scrolling.
+  await page.evaluate(()=>{testViewport.height=innerHeight;testViewport.dispatchEvent(new Event('resize'));});await settle(page);
+  assert.equal(await page.locator('.reply-viewport-active').count(),0,'no keyboard: not docked');
+  assert.equal(await actions.evaluate(el=>getComputedStyle(el).position),'static');
+  assert.equal(await body.evaluate(el=>document.activeElement===el),true,'focus stays in the editor');
   await page.evaluate(()=>{testViewport.height=420;testViewport.dispatchEvent(new Event('resize'));});await settle(page);await check();
   // Repositioning the document must not make the action row cover the editor.
   await page.evaluate(()=>{document.querySelector('main > div').style.height='500px';window.dispatchEvent(new Event('scroll'));});await settle(page);await check();
@@ -108,7 +114,7 @@ try {
   await body.focus();await settle(page);
   assert.equal(await page.locator('.reply-viewport-active').count(),0);
   assert.deepEqual(errors,[]);
-  console.log(`PASS ${theme}: viewport changes, scroll, rotation, draft/selection, menu, native submitters, zoom fallback, Forte`);
+  console.log(`PASS ${theme}: viewport changes, no keyboard stays in the page, scroll, rotation, draft/selection, menu, native submitters, zoom fallback, Forte`);
   await context.close();
  }
  const page=await browser.newPage({viewport:{width:1280,height:900}});
