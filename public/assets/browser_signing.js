@@ -2691,7 +2691,14 @@
     const privateSiteEnabled = document.documentElement
       && document.documentElement.dataset.approvedMembersOnly === "1";
     const privateSiteAuth = window.PrivateSiteAuth;
-    if (!privateSiteEnabled || !privateSiteAuth || typeof privateSiteAuth.authenticate !== "function") {
+    if (!privateSiteAuth || typeof privateSiteAuth.authenticate !== "function") {
+      return;
+    }
+    if (!privateSiteEnabled) {
+      // Public sites stay on the page; a failed sign-in is retried by the next action that needs it.
+      if (typeof privateSiteAuth.authenticateInPlace === "function") {
+        await privateSiteAuth.authenticateInPlace().catch(function () {});
+      }
       return;
     }
 
@@ -3052,6 +3059,9 @@
     async function clearBrowserIdentity() {
       try {
         await clearAuthenticatedIdentity();
+        // The session is signed out now, so a restored or new key signs in again.
+        root.dataset.authenticatedIdentityId = "";
+        root.dataset.authenticatedUsername = "";
         saveClearedKeypairBackup();
         localStorage.removeItem(storageKeys.username);
         localStorage.removeItem(storageKeys.publicKey);

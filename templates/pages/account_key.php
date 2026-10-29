@@ -40,7 +40,7 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     <p class="meta" data-role="join-hint" hidden>Approved members already use <span data-role="join-hint-name"></span>. Posts from this key join <span data-role="join-hint-name"></span> once a member approves it.</p>
     <p class="account-user-link" data-account-when="approved"><a data-role="user-link" href="/users/">All of <span data-role="user-link-name">your</span> posts</a></p>
 <?php if (($testingSelfApprovalToken ?? null) !== null): ?>
-    <p><button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button></p>
+    <p data-account-when="waiting"><button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button></p>
 <?php endif; ?>
   </div>
   <p class="meta account-key-simple-status" id="simple-status" role="status" hidden></p>
@@ -547,7 +547,6 @@ No browser private key saved yet.
       window.addEventListener('pageshow', syncSimpleUI);
       window.addEventListener('forum:key-backup-recorded', syncSimpleUI);
       window.addEventListener('forum:authenticated-in-place', function (event) {
-        // Session-bound testing controls become available on the next intentional visit.
         root.dataset.viewerIdentityId = event.detail.identityId;
         root.dataset.viewerApproved = event.detail.approved ? '1' : '0';
         syncSimpleUI();

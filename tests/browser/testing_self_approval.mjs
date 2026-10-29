@@ -54,9 +54,10 @@ try {
   const anonymous = await browser.newContext();
   assert.equal((await anonymous.request.post(base+'/api/test_self_approval',{form:{token},headers:{Origin:base}})).status(),403);
   // A lobby hint is deliberately weaker than proof of the account key.
-  const weakSession = spawnSync('php', ['-r', `session_save_path($argv[1]); session_id('weak-self-approval'); session_start(); $_SESSION['lobby_identity_id']=$argv[2]; $_SESSION['testing_self_approval_token']=$argv[3]; session_write_close();`, join(root,'sessions'), 'openpgp:'+fingerprint, token], {encoding:'utf8'});
+  const weakSession = spawnSync('php', ['-r', `session_save_path($argv[1]); session_id('weak-self-approval'); session_start(); $_SESSION['lobby_identity_id']=$argv[2]; session_write_close();`, join(root,'sessions'), 'openpgp:'+fingerprint], {encoding:'utf8'});
   assert.equal(weakSession.status,0,weakSession.stderr);
-  await anonymous.addCookies([{name:'PHPSESSID',value:'weak-self-approval',url:base}]);
+  // The double-submit cookie is valid here, so only the weak session stops it.
+  await anonymous.addCookies([{name:'PHPSESSID',value:'weak-self-approval',url:base},{name:'testing_self_approval',value:token,url:base}]);
   assert.equal((await anonymous.request.post(base+'/api/test_self_approval',{form:{token},headers:{Origin:base}})).status(),403);
   await anonymous.close();
   await rm(join(root,'.test-self-approval'));
@@ -82,7 +83,8 @@ try {
   });
   assert.equal(repair.status,0,repair.stderr);
   await button.click();
-  await page.waitForFunction(()=>!document.querySelector('[data-test-self-approval]'));
+  await page.waitForFunction(()=>document.querySelector('[data-account-key-root]').dataset.accountState === 'approved');
+  assert.equal(await button.isVisible(), false, 'an approved key has nothing to approve');
   assert.equal((await context.request.get(base+'/api/auth_status')).status(),200);
   const profile = await context.request.get(base+'/api/get_profile?profile_slug=openpgp-'+fingerprint);
   assert.match(await profile.text(), /Approved: yes/);
@@ -91,7 +93,40 @@ try {
   assert.equal((await submit({token:activeToken})).status(),200);
   const seed = await readFile(join(root,'repository/records/approval-seeds/openpgp-'+fingerprint+'.txt'),'utf8');
   assert.match(seed,/Seed-Reason: initial approved user/);
-  console.log('PASS testing self-approval: authenticated browser, marker removal/re-enable, request protection, one click, immediate access, persisted-failure/CLI repair/retry, repeat, mobile/desktop');
+  // Remove this key, Continue with a new name, Approve: the new key is signed in and approved without a refresh.
+  await page.getByRole('button', {name:'Remove this key'}).click();
+  await page.locator('[data-action="clear-browser-identity"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'guest');
+  assert.equal(await button.isVisible(), false);
+  await page.locator('[data-role="account-name-input"]').fill('mouse');
+  await page.locator('[data-role="account-name-input"]').press('Enter');
+  await page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'waiting', null, {timeout:30000});
+  await button.waitFor();
+  const mouse = await page.evaluate(() => localStorage.getItem('forum_pki_fingerprint').toLowerCase());
+  assert.notEqual(mouse, fingerprint.toLowerCase());
+  // Continue signs the session in with the new key (auth_status reports approved members only).
+  await page.waitForFunction(id => document.querySelector('[data-account-key-root]').dataset.authenticatedIdentityId === 'openpgp:' + id, mouse);
+  let approvals = 0; const countApproval = route => { approvals++; return route.continue(); };
+  await page.route('**/api/authenticate_identity', countApproval);
+  await button.click();
+  await page.waitForFunction(()=>document.querySelector('[data-account-key-root]').dataset.accountState === 'approved');
+  assert.match(await (await context.request.get(base+'/api/get_profile?profile_slug=openpgp-'+mouse)).text(), /Approved: yes/);
+  assert.equal(approvals, 0, 'Approve reused the session Continue signed in');
+  await page.unroute('**/api/authenticate_identity', countApproval);
+  // A session signed out behind the page's back still approves: Approve signs in first.
+  await page.getByRole('button', {name:'Remove this key'}).click();
+  await page.locator('[data-action="clear-browser-identity"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'guest');
+  await page.locator('[data-role="account-name-input"]').fill('owl');
+  await page.locator('[data-role="account-name-input"]').press('Enter');
+  await page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'waiting', null, {timeout:30000});
+  const owl = await page.evaluate(() => localStorage.getItem('forum_pki_fingerprint').toLowerCase());
+  await page.waitForFunction(id => document.querySelector('[data-account-key-root]').dataset.authenticatedIdentityId === 'openpgp:' + id, owl);
+  // The page still believes it is signed in, as after a replaced session.
+  assert.equal((await context.request.post(base+'/api/clear_identity', {headers:{Origin:base}})).status(), 200);
+  await button.click();
+  await page.waitForFunction(()=>document.querySelector('[data-account-key-root]').dataset.accountState === 'approved');
+  console.log('PASS testing self-approval: authenticated browser, marker removal/re-enable, request protection, one click, immediate access, persisted-failure/CLI repair/retry, repeat, mobile/desktop, Remove → Continue → Approve without refresh, Approve signs in first');
 } catch(error) { console.error(logs.slice(-3000)); throw error; }
 finally {
   if(browser) await browser.close();

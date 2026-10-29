@@ -299,17 +299,20 @@
     });
   }
 
-  function authenticateInPlace(state) {
-    authenticate({ navigate: false, quiet: true }).then(function (result) {
-      if (!result || !result.identityId || result.existingSession) return;
-      state.dataset.authenticatedIdentityId = result.identityId;
+  // Signs this session in with the browser's current key without leaving the page.
+  function authenticateInPlace(options) {
+    var state = document.querySelector("[data-private-site-auth-state]");
+    return authenticate({ navigate: false, quiet: true, force: Boolean(options && options.force) }).then(function (result) {
+      if (!result || !result.identityId || result.existingSession) return result;
+      if (state) state.dataset.authenticatedIdentityId = result.identityId;
       window.dispatchEvent(new CustomEvent("forum:authenticated-in-place", {
         detail: { identityId: result.identityId, approved: result.status === "approved" }
       }));
-    }).catch(function () {});
+      return result;
+    });
   }
 
-  window.PrivateSiteAuth = { authenticate: authenticate };
+  window.PrivateSiteAuth = { authenticate: authenticate, authenticateInPlace: authenticateInPlace };
   document.addEventListener("DOMContentLoaded", function () {
     // Invite authenticates when an action starts, without redirecting away from its form.
     if (document.querySelector("[data-invitation-page]")) return;
@@ -328,12 +331,12 @@
         delete state.dataset.publicAuthResume;
         return;
       }
-      authenticateInPlace(state);
+      authenticateInPlace().catch(function () {});
       return;
     }
 
     if (state.hasAttribute("data-auth-in-place") && !isApprovedMembersOnly()) {
-      authenticateInPlace(state);
+      authenticateInPlace().catch(function () {});
       return;
     }
 
