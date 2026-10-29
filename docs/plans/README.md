@@ -333,3 +333,5 @@ and repair its navigation and affected references. See the
 - [Operations page](site_operations_page/) — Tools › Operations holds high-traffic mode.
 
 - [Background sign-in](background_sign_in/)
+
+- [Approval acceptance text](approval_acceptance_text/approval_acceptance_text_step3_development_plan.md) — F03; approved planning, implementation next.
