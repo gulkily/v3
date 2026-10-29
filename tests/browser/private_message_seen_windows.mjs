@@ -61,7 +61,7 @@ export async function checkSeenWindows(page, context, base, seed, incoming, inva
   await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.readState === 'acknowledged');
   assert.equal(await count(), 1, 'Displayed failed verification may be seen, never verified');
-  await page.locator('[data-private-message-id="seen-invalid"]').getByText('The sender signature could not be verified.').waitFor();
+  await page.locator('[data-private-message-id="seen-invalid"]').getByText('Couldn’t verify this message', { exact: true }).waitFor();
 
   seed({ action: 'chat', messages: [{ id: 'seen-after-window', time: '2020-01-01T00:00:00Z', sender: 'bob', envelope: incoming }] });
   await page.locator('textarea').fill('Draft survives seen windows');

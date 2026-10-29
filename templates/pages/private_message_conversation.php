@@ -11,8 +11,11 @@ $personHue = hexdec(substr(hash('crc32b', $counterpartUsernameToken), 0, 4)) % 3
   </header>
   <div class="private-message-history-controls" data-role="history-controls">
     <button type="button" data-role="history-load"<?= empty($historyPage['next_cursor']) ? ' hidden' : '' ?>>Load older</button>
-    <button type="button" data-role="history-restart" hidden>Restart history</button>
-    <p class="meta" data-role="history-status" role="status" aria-live="polite"><?= empty($historyPage['next_cursor']) ? 'All history loaded.' : '' ?></p>
+    <details class="history-more" data-role="history-more">
+      <summary aria-label="More history actions"><span aria-hidden="true">···</span></summary>
+      <button type="button" data-role="history-restart">Restart history</button>
+    </details>
+    <p class="meta visually-hidden" data-role="history-status" role="status" aria-live="polite"><?= empty($historyPage['next_cursor']) ? 'All history loaded.' : '' ?></p>
   </div>
   <div data-role="private-message-transcript" aria-label="Conversation messages">
   <div class="private-message-empty" data-role="private-message-empty"<?= $messages !== [] ? ' hidden' : '' ?>>

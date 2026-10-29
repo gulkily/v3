@@ -5,11 +5,11 @@
     <time datetime="<?= $e($item['created_at'] ?? '') ?>"><?= $e($item['created_at'] ?? '') ?></time>
     <span data-role="private-message-verification" title="Signature verified" aria-label="Signature verified" hidden>✓</span>
   </header>
-  <p class="meta" data-role="private-message-reader-error">Decrypting and verifying message...</p>
+  <p class="meta private-message-placeholder" data-role="private-message-reader-error">Decrypting…</p>
   <pre data-role="private-message-plaintext" hidden></pre>
   <details data-role="private-message-unavailable-details" hidden>
-    <summary>Message unavailable · Details</summary>
+    <summary>Details</summary>
     <p class="meta" data-role="private-message-unavailable-explanation"></p>
   </details>
-  <button type="button" data-role="private-message-read-retry" hidden>Retry reading message</button>
+  <button type="button" data-role="private-message-read-retry" aria-label="Retry reading message" hidden>Retry</button>
 </article>

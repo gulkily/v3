@@ -33,7 +33,7 @@
 <?php if ($compact ?? false): ?>
   <div data-role="read-feedback" hidden>
     <p class="meta" data-role="read-status" role="status" aria-live="polite"></p>
-    <button type="button" data-role="read-retry">Retry seen status</button>
+    <button type="button" data-role="read-retry" aria-label="Retry seen status">Retry</button>
     <a data-role="read-reopen" href="<?= $e($successUrl ?? '/messages') ?>" hidden>Reopen conversation</a>
   </div>
 <?php endif; ?>

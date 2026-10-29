@@ -59,3 +59,24 @@ Extended estimates: enabled
 - Estimate details: as planned.
 
 *— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Unreadable messages and conversation recovery
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - `private_message_reader.js`: a message that can't be read shows one line on the bubble ("Couldn’t verify this message", "Couldn’t decrypt this message" or "Couldn’t load this message"), the reader's full explanation under Details, and Retry beside it (accessible name "Retry reading message"). Before, undecryptable messages used "Message unavailable · Details" with Retry inside the disclosure and other failures showed the raw error. While decrypting, a quiet placeholder replaces "Decrypting and verifying message..." (the text stays for screen readers; the pulse stops under reduced motion).
+  - Grouped runs read "Couldn’t decrypt N messages · {sender} · {times}" (was "N messages unavailable").
+  - History: "Restart history" lives under a ··· menu, which opens itself when a restart is required so the recovery stays in view. Progress and success ("All history loaded.", "N older messages loaded.") are announced but not shown; failures stay visible.
+  - Seen status: "Couldn’t mark this conversation as seen." with Retry (accessible name "Retry seen status"), or "…Copy your draft, then reopen it." with Reopen conversation; it stays beside the composer.
+- Verification:
+  - `private_message_list_browser.mjs` (all modules, including unavailable groups, history recovery with Restart history, seen recovery and seen windows): passes. Wording assertions updated; checks that read the explanation now read it under Details.
+  - `tests/browser/private_message_redesign.mjs` extended: the unverifiable message shows its line, Details opens the reason, Retry is visible, no visible history notice, Restart history not shown until needed. Four themes, two widths: passes; contact sheet reviewed.
+  - `php tests/run.php PrivateMessageReaderTest PrivateMessageComposerTest PrivateMessagePageControllerTest`: 11/11 after updating the reader's expected label and the history-controls markup check.
+- Notes:
+  - In Word97, Chicago and Midnight, Retry keeps those themes' button frame; it reads as their button style.
+- Estimate details: as planned.
+
+*— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*

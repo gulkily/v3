@@ -44,7 +44,7 @@
       const first = items[0], last = items[items.length - 1];
       const sender = first.dataset.sender === root.dataset.viewerUsernameToken ? 'You' : first.dataset.sender;
       group.node.className = 'private-message unavailable-group' + (sender === 'You' ? ' is-outgoing' : '');
-      group.button.textContent = items.length + ' messages unavailable · ' + sender + ' · ' +
+      group.button.textContent = 'Couldn’t decrypt ' + items.length + ' messages · ' + sender + ' · ' +
         new Date(first.dataset.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) + '–' +
         new Date(last.dataset.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
       group.button.title = new Date(first.dataset.createdAt).toLocaleString() + ' – ' + new Date(last.dataset.createdAt).toLocaleString();
@@ -131,6 +131,7 @@
   function bindHistory(root) {
     const load = root.querySelector('[data-role="history-load"]');
     const restart = root.querySelector('[data-role="history-restart"]');
+    const more = root.querySelector('[data-role="history-more"]');
     const status = root.querySelector('[data-role="history-status"]');
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     if (!load || !status) return;
@@ -158,7 +159,8 @@
       root.dataset.historyLoading = '1';
       load.disabled = true;
       restart.disabled = true;
-      status.className = 'meta';
+      // Progress and success are announced but not shown; only failures are visible.
+      status.className = 'meta visually-hidden';
       status.textContent = fresh ? 'Restarting history...' : 'Loading older messages...';
       readingPosition.correct();
       try {
@@ -220,7 +222,7 @@
         status.textContent = cursor ? (fresh ? 'History restarted. Recent messages loaded.' : added.length + ' older messages loaded.') : 'All history loaded.';
         load.hidden = !cursor;
         load.textContent = 'Load older';
-        restart.hidden = true;
+        if (more) more.open = false;
         if (fresh) {
           root.querySelector('[data-role="private-message-read-token"]').value = page.read_token || '';
           root.dispatchEvent(new CustomEvent('private-message-window-settled', { detail: {
@@ -235,7 +237,8 @@
           : error.authorization
             ? 'History access is unavailable. Check your sign-in and messaging eligibility, then retry. Your loaded conversation and draft are unchanged.'
             : (error.detail || 'Unable to ' + (fresh ? 'restart history' : 'load older messages') + '.') + ' Your conversation and draft are unchanged.';
-        restart.hidden = !(fresh || error.restart);
+        // A required restart opens the ··· menu so the action is in view.
+        if (more && (fresh || error.restart)) more.open = true;
         load.hidden = fresh || error.restart || !cursor;
         load.textContent = 'Retry loading older';
       } finally {

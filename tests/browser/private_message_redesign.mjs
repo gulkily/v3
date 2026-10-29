@@ -95,6 +95,13 @@ try {
     assert.equal(await page.locator('.is-outgoing[data-private-message-id]').count(), 1);
     assert.match(await root.getAttribute('style'), /--person: \d+/);
     assert.equal(await page.getByRole('button', { name: 'Send', exact: true }).isVisible(), true);
+    const unreadable = page.locator('[data-private-message-id="redesign-3"]');
+    assert.equal(await unreadable.locator('[data-role="private-message-reader-error"]').innerText(), 'Couldn’t verify this message');
+    assert.equal(await unreadable.getByRole('button', { name: 'Retry reading message' }).isVisible(), true);
+    await unreadable.locator('summary').click();
+    assert.match(await unreadable.locator('[data-role="private-message-unavailable-explanation"]').innerText(), /signature/);
+    assert.equal(await page.getByText('All history loaded.').isVisible().then(visible => visible && page.getByText('All history loaded.').evaluate(node => node.getBoundingClientRect().width > 2)), false, `${label}: no routine history notice`);
+    assert.equal(await page.getByRole('button', { name: 'Restart history' }).isVisible(), false, `${label}: Restart history waits under ···`);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: no page overflow`);
     if (shots) await page.screenshot({ path: join(shots, `conversation-${theme}-${width}.png`), fullPage: true });
     assert.deepEqual(errors, [], `${label}: no page errors`);

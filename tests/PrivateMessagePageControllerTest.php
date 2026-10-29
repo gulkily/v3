@@ -126,7 +126,9 @@ final class PrivateMessagePageControllerTest
             assertStringContains('href="/user/bob"', $conversation);
             assertStringContains('Back to Messages', $conversation);
             assertStringContains('data-role="private-message-template"', $conversation);
-            assertStringContains('data-role="history-restart" hidden', $conversation);
+            // Restart history lives under the ··· menu, which opens itself when a restart is required.
+            assertStringContains('data-role="history-more"', $conversation);
+            assertStringContains('data-role="history-restart"', $conversation);
             preg_match('/data-history-page-cursor="([^"]+)"/', $conversation, $cursorMatch);
             assertSame(true, isset($cursorMatch[1]));
             $snapshot = $store->conversationPageFor('alice', 'bob', html_entity_decode($cursorMatch[1]));

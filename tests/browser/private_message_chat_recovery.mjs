@@ -100,8 +100,13 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
     await page.locator(`[data-private-message-id="${id}"]`).getByRole('button', { name: 'Retry reading message' }).click();
   }
   await page.locator('[data-private-message-id="chat-long"] [data-role="private-message-plaintext"]').waitFor();
-  await page.locator('[data-private-message-id="chat-invalid"]').getByText('The sender signature could not be verified.').waitFor();
-  await page.locator('[data-private-message-id="chat-unsigned"]').getByText('This message has no verifiable sender signature.').waitFor();
+  // A message that can't be read says so in one line; the reason is under Details.
+  for (const [id, reason] of [['chat-invalid', 'The sender signature could not be verified.'], ['chat-unsigned', 'This message has no verifiable sender signature.']]) {
+    const card = page.locator(`[data-private-message-id="${id}"]`);
+    await card.getByText('Couldn’t verify this message', { exact: true }).waitFor();
+    assert.match(await card.locator('[data-role="private-message-unavailable-explanation"]').textContent(), new RegExp(reason.replace('.', '\\.')));
+    assert.equal(await card.getByRole('button', { name: 'Retry reading message' }).isVisible(), true);
+  }
   assert.equal(await page.getByText('Unverified chat secret', { exact: true }).count(), 0);
   assert.ok(await page.locator('[data-role="message-date"]').count() >= 2);
   assert.ok(await valid.locator('time').getAttribute('title'));

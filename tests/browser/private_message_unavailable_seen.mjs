@@ -16,7 +16,7 @@ export async function checkUnavailableSeen(context, base, seed, unavailable) {
   await page.goto(base + '/messages/conversation/user-53');
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
   const group = page.locator('[data-role="unavailable-group"]');
-  assert.match(await group.innerText(), /25 messages unavailable/);
+  assert.match(await group.innerText(), /Couldn’t decrypt 25 messages/);
   await page.waitForTimeout(100);
   assert.equal(await unread(), true, 'Hidden summary cannot acknowledge');
   await page.evaluate(() => { window.groupHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
