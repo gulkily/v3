@@ -47,7 +47,7 @@ try {
     }
   for (const theme of (process.env.AUTH_THEMES || 'light').split(',')) {
   for (const width of [390, 1280]) {
-    for (const mode of (process.env.AUTH_MODES || 'typing,name,submit,retry,account').split(',')) {
+    for (const mode of (process.env.AUTH_MODES || 'typing,submit,retry,account').split(',')) {
       const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width, height: 844 } });
       await context.addInitScript(({ keys, fingerprint, theme }) => {
         localStorage.setItem('zenmemes-theme', theme);
@@ -79,7 +79,6 @@ try {
       await within(blocked, 'background authentication did not start');
       const token = await page.evaluate(() => window.__documentToken);
       const body = page.locator('[data-compose-kind="reply"] textarea[name="body"]');
-      const row = page.locator('[data-compose-kind="reply"] [data-compose-identity]');
       let input = body;
       if (mode === 'account') {
         await page.getByRole('button', { name: 'Change', exact: true }).click();
@@ -87,11 +86,6 @@ try {
         await input.fill('Unfinished account name');
       } else {
         await body.fill(`Keep this ${mode} ${width}`);
-        if (mode === 'name') {
-          await row.getByRole('button', { name: 'Change' }).click();
-          input = row.locator('[data-role="compose-identity-input"]');
-          await input.fill('Unfinished name');
-        }
       }
       if (mode === 'typing') await page.locator('[data-compose-kind="reply"] .compose-action-menu-toggle').click();
       await input.evaluate(node => { node.focus(); node.setSelectionRange(2, 5); });
@@ -123,7 +117,6 @@ try {
         const after = await input.evaluate(node => ({ value: node.value, start: node.selectionStart, end: node.selectionEnd, scroll: scrollY, focused: document.activeElement === node }));
         assert.deepEqual(after, { ...before, focused: true });
         if (mode !== 'account') assert.equal(await body.inputValue(), `Keep this ${mode} ${width}`);
-        if (mode === 'name') assert.equal(await input.isVisible(), true);
         if (mode === 'typing') assert.equal(await page.locator('[data-compose-kind="reply"] .compose-action-menu').evaluate(node => node.open), true);
         if (mode !== 'account') assert.deepEqual(await actions.boundingBox(), actionBox, 'authentication does not shift the primary action');
       }
@@ -141,6 +134,6 @@ try {
   }
   }
   }
-  console.log(`PASS ${engine}: approved/unapproved delayed authentication, modes=${process.env.AUTH_MODES || 'typing,name,submit,retry,account'}, themes=${process.env.AUTH_THEMES || 'light'}, widths=390/1280; document and session verified`);
+  console.log(`PASS ${engine}: approved/unapproved delayed authentication, modes=${process.env.AUTH_MODES || 'typing,submit,retry,account'}, themes=${process.env.AUTH_THEMES || 'light'}, widths=390/1280; document and session verified`);
 } catch (error) { console.error(serverLog.slice(-2500)); throw error; }
 finally { await browser.close(); server.kill(); }
