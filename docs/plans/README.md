@@ -335,3 +335,5 @@ and repair its navigation and affected references. See the
 - [Background sign-in](background_sign_in/)
 
 - [Approval acceptance text](approval_acceptance_text/approval_acceptance_text_step3_development_plan.md) — F03; implemented locally with conversion/recovery and legacy-reader retirement readiness.
+
+- [Railspike feature gating](./railspike_feature_gating/railspike_feature_gating_step1_solution_assessment.md) — default-off workflow flag and polling only on visible Railspike threads; locally implemented, production acceptance pending.

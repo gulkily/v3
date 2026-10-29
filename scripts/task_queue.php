@@ -316,7 +316,7 @@ try {
                     ))
                         ->fulfillAgentReplyRequest($request);
                 },
-                new \ForumRewrite\Railspike\AssessmentTask(new \ForumRewrite\Railspike\WorkflowStore($pdo), new \ForumRewrite\Railspike\CodexAssessmentRunner($projectRoot)),
+                new \ForumRewrite\Railspike\AssessmentTask(new \ForumRewrite\Railspike\WorkflowStore($pdo), new \ForumRewrite\Railspike\CodexAssessmentRunner($projectRoot), static fn (): bool => \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::RAILSPIKE_ENABLED)),
                 static function (int $failedTaskId, Throwable $throwable) use ($errorLog): void {
                     $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
                 },

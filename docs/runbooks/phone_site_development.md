@@ -115,3 +115,54 @@ Check `./v3 task-queue status` for task IDs and workflow ID/state/version. The o
 The existing abandoned-claim threshold is **900 seconds**. After a killed worker, let the normal locked worker recover the expired claim and reconcile workflow state; then retry from the thread. Never manually approve by editing SQLite. A saved result is reconciled without publishing it again, and late results cannot replace newer versions. Queue-history pruning does not prune workflow evidence; plan private backup/retention separately.
 
 To roll back deployment of this feature, stop/drain its queued work before reverting application code through the existing production procedure. Keep the private database and Codex home; do not restore an old public read model over them or delete the durable approval records. An older queue worker does not support `railspike_assessment` jobs, so pause its cron until outstanding new-type jobs are accounted for. Re-enabling the reviewed release can resume retained workflow state. This operational rollback procedure does **not** provide the future user-facing rollback button or automatic mutable-data restoration.
+
+## Feature availability
+
+Railspike development is disabled by default. Enable **Railspike development**
+in Feature Flags (Agent replies group), or set `FORUM_RAILSPIKE_ENABLED=true`
+as an environment override. The environment override locks the site control;
+remove it to return control to the site setting. This site-mutable flag is
+registered in the private configuration schema but deliberately omitted from
+generated template defaults.
+
+All `/api/railspike_workflow` reads and actions require the flag. Disabled calls
+return no-store HTTP 403 with `code: railspike_disabled` and reload guidance.
+Existing workflows are retained. Operator authentication and signed actions are
+still required when enabled.
+
+While disabled, the queue skips Railspike jobs without consuming attempts or
+blocking other task types. A job claimed just before disablement is deferred at
+assessment admission. Assessments already admitted may finish and save results.
+Re-enable the flag to resume queued work; reload the thread to view its status.
+
+### Browser behavior and acceptance
+
+Only an eligible `#railspike` thread or a direct post in that context loads
+workflow controls for a locally recognized operator key. **Development** stays
+collapsed until opened. Polling runs every five seconds after the previous
+request completes, including when the workflow awaits input or is approved.
+It pauses in hidden tabs and stops on navigation, loss of eligibility, identity
+change, or a disabled/authorization response. Three consecutive transient
+failures stop automatic updates; use **Refresh status** to retry. Re-enable or
+sign in and reload after a disabled/authorization response.
+
+Typed answers and change requests are retained in this tab's session storage,
+separately for each identity, post and revision. If a revision changes, expand
+**Saved draft** to copy the earlier text, or discard it deliberately. If browser
+storage is unavailable, keep the page open or copy the text before reloading.
+Closing the tab can discard session drafts; they are not server records.
+
+After an authorized deployment, verify in the production browser:
+
+1. With the flag off, open a fresh ordinary thread and a Railspike thread. The
+   Network panel should show no `/api/railspike_workflow` requests.
+2. Enable the flag through Feature Flags. Reload an ordinary thread: still no
+   workflow requests. Reload a Railspike thread using the operator identity:
+   requests occur about five seconds apart while visible, even without active work.
+3. Start an assessment and confirm its result. Hide the tab and return; requests
+   pause and resume. Keep an unsent answer, disable the feature from another tab,
+   and confirm the old tab stops after receiving the disabled response.
+4. Re-enable and reload. Confirm the workflow and draft remain available and
+   queued work resumes. Check both phone and desktop entry and expanded controls.
+
+Local browser checks do not establish deployment parity or production success.

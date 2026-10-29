@@ -105,7 +105,7 @@ final class ApiRouteCatalog
             ['POST', '/api/finalize_high_traffic', 'operator', 'json', 'Publish a signed high-traffic mode change.'],
             ['POST', '/api/prepare_fastmod_rubrics', 'operator', 'json', 'Prepare a signed Fastmod rubric change.'],
             ['POST', '/api/finalize_fastmod_rubrics', 'operator', 'json', 'Publish a signed Fastmod rubric change.'],
-            ['GET', '/api/railspike_workflow?thread_id=<id>', 'operator', 'json', 'Railspike workflow state for a thread.'],
+            ['GET', '/api/railspike_workflow?thread_id=<id>', 'operator', 'json', 'Railspike workflow state for a thread; requires FORUM_RAILSPIKE_ENABLED (default false).'],
             ['GET', '/api/railspike_workflow?activity=1', 'operator', 'json', 'Private Railspike workflow summaries.'],
             ['POST', '/api/railspike_workflow', 'operator', 'json', 'Prepare a signed workflow action, then submit signed_text and signature (same-origin JSON, X-Requested-With: ForumRailspike).'],
             ['POST', '/api/test_self_approval', 'testing', 'json', 'Self-approval on test instances.'],

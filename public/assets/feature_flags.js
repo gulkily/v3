@@ -278,7 +278,8 @@
         if (!window.ForumBrowserSigning || !window.ForumBrowserSigning.ensureActionIdentity || !window.ForumBrowserSigning.signCanonicalRecord) {
           throw new Error("Browser signing is unavailable. Reload the page and try again.");
         }
-        return window.ForumBrowserSigning.ensureActionIdentity(null, null);
+        // Wait for the identity hint before the public-site preparation request.
+        return window.ForumBrowserSigning.ensureActionIdentity(null, null, { verifyPublishedIdentity: true });
       }).then(function () {
         return requestJson("/api/prepare_feature_flag_change", fields);
       }).then(function (prepared) {

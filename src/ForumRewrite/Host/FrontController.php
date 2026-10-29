@@ -163,7 +163,8 @@ final class FrontController
 
             $imagesEnabled = $featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
             if (str_contains($contents, 'data-image-content-state="1"') === $imagesEnabled
-                && \ForumRewrite\Support\FeatureFlags\BackupAvailability::matchesHtml($contents, $featureFlags)) {
+                && \ForumRewrite\Support\FeatureFlags\BackupAvailability::matchesHtml($contents, $featureFlags)
+                && \ForumRewrite\Support\FeatureFlags\RailspikeAvailability::matchesHtml($contents, $featureFlags)) {
                 $this->sendHtml($contents, 200, true);
                 return;
             }

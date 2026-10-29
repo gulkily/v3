@@ -5,12 +5,16 @@ namespace ForumRewrite\Railspike;
 
 final class AssessmentTask
 {
-    public function __construct(private readonly WorkflowStore $store, private readonly mixed $runner) {}
+    public function __construct(private readonly WorkflowStore $store, private readonly mixed $runner, private readonly \Closure $enabled) {}
 
-    public function reconcile(): void { $this->store->reconcileTasks(); }
+    public function isEnabled(): bool { return ($this->enabled)(); }
 
-    public function __invoke(array $task): void
+    public function reconcile(): void { if (($this->enabled)()) $this->store->reconcileTasks(); }
+
+    public function __invoke(array $task): bool
     {
+        // Admission is the boundary: already-admitted work may finish after disablement.
+        if (!(($this->enabled)())) return false;
         [$id,$version]=array_pad(explode('@',$task['deduplication_key'],2),2,'');
         $row=$this->store->transaction(function () use ($id,$version): ?array {
             $row=$this->store->find($id);
@@ -18,7 +22,7 @@ final class AssessmentTask
             $row['state']='running'; $row['run_token']=bin2hex(random_bytes(16));
             return $this->store->save($row);
         });
-        if ($row===null) return;
+        if ($row===null) return true;
         try { $result=CodexAssessmentRunner::validate(($this->runner)($row)); }
         catch (\Throwable $e) {
             $this->finish($row,['state'=>'failed','failure'=>'Assessment failed. Check worker configuration or retry.','failure_detail'=>substr($e->getMessage(),0,500)]);
@@ -33,6 +37,7 @@ final class AssessmentTask
         $revisions=$row['revisions'];
         $revisions[]=['number'=>$revision,'kind'=>$result['kind'],'questions'=>$result['questions'],'artifact'=>$artifact,'digest'=>hash('sha256',$artifact),'created_at'=>gmdate('c')];
         $this->finish($row,['state'=>$result['kind']==='questions' ? 'questions' : 'review','revisions'=>$revisions]);
+        return true;
     }
 
     private function finish(array $row, array $changes): void

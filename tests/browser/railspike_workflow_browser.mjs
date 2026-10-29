@@ -8,6 +8,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { runInThisContext } from 'node:vm';
 import { chromium } from 'playwright-core';
+import { enableRailspike, checkRailspikeGating } from './railspike_feature_gating.mjs';
 const project=resolve(new URL('../..',import.meta.url).pathname);
 runInThisContext(readFileSync(join(project,'public/assets/openpgp.min.js'),'utf8'));
 const keys=await globalThis.openpgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'operator'}],format:'armored'});
@@ -37,8 +38,10 @@ try {
   for(const [k,v] of Object.entries({username:'operator',public_key:keys.publicKey,private_key:keys.privateKey,fingerprint:fingerprint.toUpperCase(),published_fingerprint:fingerprint.toUpperCase()}))localStorage.setItem('forum_pki_'+k,v);
  },{keys,fingerprint});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await enableRailspike(page,base);
  await page.goto(base+'/threads/'+data.thread);
  const reply=page.locator(`[data-railspike-post="${data.reply}"]`);
+ await reply.locator('..').locator(':scope > summary').click();
  await reply.locator('summary').first().waitFor();
  await reply.locator('summary').first().click();await reply.getByRole('button',{name:'Start development',exact:true}).click();
  await reply.getByText('Railspike Step 1: queued',{exact:true}).waitFor();
@@ -56,12 +59,13 @@ try {
  const preApproval=await (await context.request.get(base+'/api/railspike_workflow?thread_id='+data.thread)).json();
  const workflow=preApproval.workflows.find(w=>w.post_id===data.reply);
  await reply.getByRole('button',{name:'Approve Step 1',exact:true}).click();await reply.getByText('Railspike Step 1: approved',{exact:true}).waitFor();
- fixture({operation:'rebuild'});await page.reload();await reply.getByText('Railspike Step 1: approved',{exact:true}).waitFor();
+ fixture({operation:'rebuild'});await page.reload();await reply.locator('..').locator(':scope > summary').click();await reply.getByText('Railspike Step 1: approved',{exact:true}).waitFor();
  // An old action, even with a valid browser signature, cannot approve a newer state.
  const stale=await page.evaluate(async w=>{try{await ForumRailspike.act('approve',w.post_id,w,{revision:w.revisions.at(-1).number,digest:w.revisions.at(-1).digest});return 'accepted';}catch(e){return e.message;}},workflow);
  assert.match(stale,/changed/);
  const unsigned=await context.request.post(base+'/api/railspike_workflow',{data:{operation:'prepare',action:'start',post_id:data.direct}});assert.equal(unsigned.status(),400);
- await page.goto(base+'/posts/'+data.direct);const direct=page.locator(`[data-railspike-post="${data.direct}"]`);await direct.locator('summary').first().waitFor();await direct.locator('summary').first().click();await direct.getByRole('button',{name:'Start development',exact:true}).click();await direct.getByText('Railspike Step 1: queued',{exact:true}).waitFor();
+ await page.goto(base+'/posts/'+data.direct);const direct=page.locator(`[data-railspike-post="${data.direct}"]`);await direct.locator('..').locator(':scope > summary').click();await direct.locator('summary').first().waitFor();await direct.locator('summary').first().click();await direct.getByRole('button',{name:'Start development',exact:true}).click();await direct.getByText('Railspike Step 1: queued',{exact:true}).waitFor();
+ await checkRailspikeGating({page,context,browser,base,data,fixture});
  const activityWorkflowRequests=[];
  const recordWorkflow=request=>{if(new URL(request.url()).pathname==='/api/railspike_workflow')activityWorkflowRequests.push(request.url());};
  page.on('request',recordWorkflow);
@@ -91,7 +95,7 @@ try {
  }
  const saved=await context.storageState(); saved.cookies=[];
  const resumed=await browser.newContext({storageState:saved,viewport:{width:390,height:844},serviceWorkers:'block'});
- const resumePage=await resumed.newPage();await resumePage.goto(base+'/posts/'+data.direct);await resumePage.locator(`[data-railspike-post="${data.direct}"]`).getByText('Railspike Step 1: queued',{exact:true}).waitFor();await resumed.close();
+ const resumePage=await resumed.newPage();await resumePage.goto(base+'/posts/'+data.direct);await resumePage.locator(`[data-railspike-post="${data.direct}"]`).getByText('Railspike Step 1: queued',{exact:true}).waitFor({state:'attached'});await resumePage.locator(`[data-railspike-post="${data.direct}"]`).locator('..').evaluate(el=>el.open=true);await resumePage.locator(`[data-railspike-post="${data.direct}"]`).getByText('Railspike Step 1: queued',{exact:true}).waitFor();await resumed.close();
  const anonymous=await browser.newContext({serviceWorkers:'block'});const response=await anonymous.request.get(base+'/threads/'+data.thread);assert.equal((await response.text()).includes('Literal <script>'),false);assert.equal((await anonymous.request.get(base+'/api/railspike_workflow?activity=1')).status(),403);await anonymous.close();
  assert.deepEqual(errors,[]);
  console.log(JSON.stringify({status:'passed',viewport:390,checks:['reply-added hashtag','signed start/answer/revise/approve','failure and retry','read-model rebuild','stale approval','inert output','direct-tag standalone post','Activity without workflow UI or polling','operator/anonymous JS/no-JS phone/desktop matrix','anonymous privacy','no overflow']}));

@@ -59,7 +59,9 @@ final class TaskQueueWorker
             $report('recovered', ['count' => $summary['recovered']]);
         }
 
-        foreach ($this->store->claimNext($limit, $taskId) as $task) {
+        $excludedType = $this->assessRailspike instanceof \ForumRewrite\Railspike\AssessmentTask
+            && !$this->assessRailspike->isEnabled() ? SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT : null;
+        foreach ($this->store->claimNext($limit, $taskId, $excludedType) as $task) {
             $summary['claimed']++;
             if ($report !== null) {
                 $report('started', $task);
@@ -181,7 +183,11 @@ final class TaskQueueWorker
     {
         try {
             if ($this->assessRailspike === null) throw new \RuntimeException('Railspike worker is not configured.');
-            ($this->assessRailspike)($task);
+            if (($this->assessRailspike)($task) === false) {
+                $deferred = $this->store->requeueClaimed($id);
+                $deferred['continued'] = true;
+                return $deferred;
+            }
             return $this->store->markCompleted($id);
         } catch (\Throwable $e) {
             $this->reportThrowable($id, $e);

@@ -14,6 +14,9 @@ final class RailspikeWorkflowController
     public function handle(string $method, array $query): void
     {
         $headers=$this->routes->noStoreHeaders();
+        if (!$this->routes->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::RAILSPIKE_ENABLED)) {
+            $this->routes->sendJson(['status'=>'error','code'=>'railspike_disabled','error'=>'Railspike development is disabled. Re-enable it in Feature Flags and reload to resume. Stored workflows are retained.'],403,$headers); return;
+        }
         $actor=($this->viewer)();
         if ($actor===null || (int)($actor['is_approved'] ?? 0)!==1 || !ApprovalPolicy::isOperator($this->repositoryRoot,(string)$actor['identity_id'])) {
             $this->routes->sendJson(['status'=>'error','error'=>'Approved operator authentication required.'],403,$headers); return;

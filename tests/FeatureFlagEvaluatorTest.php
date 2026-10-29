@@ -160,6 +160,7 @@ final class FeatureFlagEvaluatorTest
         );
 
         assertSame([
+            FeatureFlagRegistry::RAILSPIKE_ENABLED,
             FeatureFlagRegistry::IMAGE_BACKUP_ENABLED,
             FeatureFlagRegistry::TEXT_BACKUP_ENABLED,
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,

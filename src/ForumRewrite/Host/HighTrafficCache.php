@@ -31,9 +31,10 @@ final class HighTrafficCache
         $path = $this->path($route);
         if (!is_file($path)) return null;
         $html = file_get_contents($path);
+        $flags = \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot);
         return is_string($html) && \ForumRewrite\Support\FeatureFlags\BackupAvailability::matchesHtml(
-            $html, \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
-        ) ? $html : null;
+            $html, $flags
+        ) && \ForumRewrite\Support\FeatureFlags\RailspikeAvailability::matchesHtml($html, $flags) ? $html : null;
     }
 
     public function initialize(): void
