@@ -21,6 +21,7 @@ $testFiles = [
     __DIR__ . '/ArchiveExportTest.php',
     __DIR__ . '/RetractionMaintenanceTest.php',
     __DIR__ . '/AcceptedRetractionTest.php',
+    __DIR__ . '/RemovalReceiptTest.php',
     __DIR__ . '/RetractionReceiptTest.php',
     __DIR__ . '/RetractionTransactionTest.php',
     __DIR__ . '/DocsPublicationTest.php',
