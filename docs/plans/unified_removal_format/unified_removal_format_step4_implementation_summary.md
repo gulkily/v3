@@ -47,3 +47,15 @@ Step 3 explicitly approved; planning commit `5143ab6f`, branch `feature/unified-
 - Notes: S3/v2 unchanged. CLI source route assertions await Stage 5 registration; no release claim. Existing source-byte discovery for explicit repair remains separate from removed acceptance reconstruction. Zero dependencies.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 4 - Signed retraction
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes: signed receipt wrapper uses the shared codec exclusively, preserving exact detached request/signature and result paths; incompatible local evidence blocks signed mutation. No previous text format fallback remains.
+- Verification: receipt/acceptance/transaction suites 10/10, including actual GPG round trip and process-exit fault injection. Extended receipt suite 4/4 tests real signed/local files, unioned bindings, conflicting source hash and old-text rejection. Five actual signed API scenarios pass: account attribution, operator privilege recheck, author authorization/bad signature, canonical deletion/replay and refresh failure/retry.
+- Notes: S4/v2 unchanged. Logs `/tmp/unified-signed-tests.log`; no new dependency or UI. Archive registration for local receipts remains Stage 5.
+
+*— Codex · 2026-10-29 UTC*

@@ -14,6 +14,9 @@ final class RetractionDeletion
         $files = AcceptedRetraction::files($record);
         $existing = AcceptedRetraction::read($root, $record['post_id']);
         if ($existing !== null && $existing !== $record) throw new RuntimeException('Retraction already accepted with different evidence.');
+        $local = LabelRemoval::read($root, $record['post_id']);
+        if ($local !== null) \ForumRewrite\Canonical\AcceptedRemoval::combine(
+            $record + ['source_id'=>$record['post_id'],'operation'=>'delete','labels'=>[]], $local);
         $remove = [];
         foreach (CanonicalPathResolver::postCandidates($record['post_id']) as $candidate) {
             foreach ([$candidate, $candidate . '.asc'] as $path) {

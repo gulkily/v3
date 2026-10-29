@@ -15,7 +15,7 @@ final class RetractionReceiptTest
     public function testReadableReceiptBindsExactEvidence(): void
     {
         $r = $this->record(); $text = RetractionReceipt::encode($r);
-        assertSame(true, str_starts_with($text, "Version: 1\nRecord-ID: post-retraction-root\n"));
+        assertSame(true, str_starts_with($text, "Format: removal-acceptance-v1\nPost-ID: root\n"));
         assertSame(false, str_contains($text, 'secret prose'));
         assertSame(false, str_contains($text, 'signature\\n'));
         assertSame($r, RetractionReceipt::decode($text, 'root', $r['signed_request'], $r['signature']));
@@ -26,8 +26,8 @@ final class RetractionReceiptTest
         $r = $this->record(); $text = RetractionReceipt::encode($r);
         foreach ([
             [$text . "body\n", 'root', $r['signed_request'], $r['signature']],
-            [str_replace('Version: 1', "Version: 1\nVersion: 1", $text), 'root', $r['signed_request'], $r['signature']],
-            [str_replace('Version: 1', "Version: 1\nExtra: value", $text), 'root', $r['signed_request'], $r['signature']],
+            [str_replace('Format: removal-acceptance-v1', "Format: removal-acceptance-v1\nFormat: removal-acceptance-v1", $text), 'root', $r['signed_request'], $r['signature']],
+            [str_replace('Format: removal-acceptance-v1', "Format: removal-acceptance-v1\nExtra: value", $text), 'root', $r['signed_request'], $r['signature']],
             [str_replace('2026-10-25T12', '2026-02-31T12', $text), 'root', $r['signed_request'], $r['signature']],
             [$text, 'other', $r['signed_request'], $r['signature']],
             [$text, 'root', $r['signed_request'] . "\n", $r['signature']],
@@ -41,6 +41,29 @@ final class RetractionReceiptTest
         $r['post']['body'] = 'secret prose';
         try { RetractionReceipt::encode($r); throw new LogicException('Accepted prose'); }
         catch (RuntimeException $e) { assertSame('Unexpected retraction metadata.', $e->getMessage()); }
+    }
+
+    public function testNewSignedAndLocalReceiptsCombineAndOldTextIsRejected(): void
+    {
+        $root = sys_get_temp_dir() . '/shared-receipts-' . bin2hex(random_bytes(6));
+        $r = $this->record(); $r['source_hash'] = str_repeat('a', 64);
+        foreach (AcceptedRetraction::files($r) as $path=>$bytes) {
+            if (!is_dir(dirname($root.'/'.$path))) mkdir(dirname($root.'/'.$path),0775,true);
+            file_put_contents($root.'/'.$path,$bytes);
+        }
+        $local = ['acceptance_version'=>2,'source_id'=>'root','source_hash'=>$r['source_hash'],
+            'operation'=>'resolve','accepted_at'=>$r['accepted_at'],'actor'=>'local-operator',
+            'labels'=>['records/thread-labels/owned.txt'=>str_repeat('b',64)],'post'=>$r['post']];
+        \ForumRewrite\Canonical\LabelRemoval::store($root,$local);
+        $merged = \ForumRewrite\Canonical\AcceptedRemoval::read($root,'root');
+        assertSame('delete',$merged['operation']); assertSame($local['labels'],$merged['labels']);
+        assertSame($r['signed_request'],$merged['signed_request']);
+        $local['source_hash']=str_repeat('c',64); \ForumRewrite\Canonical\LabelRemoval::store($root,$local);
+        $failed=false;try { \ForumRewrite\Canonical\AcceptedRemoval::all($root); } catch(RuntimeException){$failed=true;}
+        assertSame(true,$failed);
+        $old = str_replace('Format: removal-acceptance-v1', 'Version: 1', RetractionReceipt::encode($r));
+        $failed=false;try { RetractionReceipt::decode($old,'root',$r['signed_request'],$r['signature']); } catch(RuntimeException){$failed=true;}
+        assertSame(true,$failed);
     }
 
     public function testRealDetachedSignatureSurvivesReceiptRoundTrip(): void
