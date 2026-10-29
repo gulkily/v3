@@ -73,7 +73,7 @@ try {
 
   // Waiting: approve in place from Users.
   await page.goto(base + '/users/');
-  await page.getByRole('link', { name: 'Waiting' }).click();
+  await page.getByRole('link', { name: /^Waiting \(\d+\)$/ }).click();
   await page.waitForURL(/\/users\/pending/);
   assert.match(await page.locator('.users-tabs a[aria-current="page"]').textContent(), /^Waiting \(\d+\)$/);
   const row = page.locator(`[data-role="pending-approval-row"][data-profile-slug="${memberSlug}"]`);
@@ -98,11 +98,11 @@ try {
   assert.deepEqual(errors, []);
   await context.close();
 
-  // A visitor who isn't signed in sees the directory; Waiting is for approved members.
+  // A visitor who isn't signed in sees the directory without the Waiting tab, which is for approved members only.
   const anonymous = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const visitor = await anonymous.newPage();
   await visitor.goto(base + '/users/');
-  assert.equal(await visitor.locator('.users-tabs a').nth(1).textContent(), 'Waiting', 'no count on the shared Members page');
+  assert.equal(await visitor.locator('.users-tabs').count(), 0, 'no Waiting tab for visitors who cannot open it');
   const forbidden = await visitor.goto(base + '/users/pending');
   assert.equal(forbidden.status(), 403);
   await anonymous.close();
