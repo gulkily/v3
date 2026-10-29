@@ -166,7 +166,7 @@ try {
  await page.evaluate(()=>window.ForumPrivateMessageHistorySync.refresh());
  assert.equal(await page.evaluate(()=>window.ForumPrivateMessageHistorySync.state().state),'error');
  assert.equal(await page.locator('[data-private-message-history-status]').count(),0);
- await page.locator('textarea').fill('Ordinary send during sync outage');await page.getByRole('button',{name:'Send private message',exact:true}).click();
+ await page.locator('textarea').fill('Ordinary send during sync outage');await page.getByRole('button',{name:'Send',exact:true}).click();
  await page.getByText('Ordinary send during sync outage',{exact:true}).waitFor();
  await restored.close();await rmdir(syncPath);await rename(syncPath+'.held',syncPath);
  // Quiescent isolated stores: restore the coordinated pair, removing the test outage send.

@@ -142,7 +142,7 @@ NODE;
         assertStringContains('data-private-message-composer', $html);
         assertStringContains('data-recipient-username-token="ilyag"', $html);
         assertStringContains('data-sender-username-token="alice"', $html);
-        assertStringContains('Encrypted to every approved key associated with this username.', $html);
+        assertStringContains('Only you and ilyag can read these, on your approved devices.', $html);
         assertStringContains('/assets/private_message_compose.', $html);
         assertStringNotContains('data-private-message-success-url', $html);
 

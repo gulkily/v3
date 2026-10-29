@@ -36,3 +36,26 @@ Extended estimates: enabled
 - Estimate details: original scope as planned; retrospective higher for the test-harness repairs and the "Checking…" state found during verification (new understanding, not scope).
 
 *— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Conversation reads like a chat
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `pages/private_message_conversation.php`: a header card with a back chevron (accessible name "Back to Messages"), the person's name as the title (linking to `/user/<name>`) and "Only you and {name} can read these, on your approved devices." always visible under it. Removed "Conversation with". Empty state "No messages with {name} yet." with an empty starfield slot. The browser tab title is the name.
+  - `partials/private_message_composer.php`: in a conversation, an arrow Send button (accessible name "Send") after "Latest message"; on the profile page, a "Send" text button and the same privacy line in place of "Encrypted to all approved keys." Removed "Send private message".
+  - `partials/private_message_item.php`: sender and time are visually hidden (still read out, time keeps its full title); the ✓ stays in the markup for the reader but is never shown in a conversation.
+  - Day separators read "Today", "Yesterday" or a short date (`ForumMessageTime.day`, full date as the title), replacing the full weekday dates.
+  - Hooks (inert): `data-person` and `--person` (a hue from the name) on the conversation, `data-incoming` on received messages, `data-starfield-slot` in the empty state.
+- Verification:
+  - New `tests/browser/private_message_redesign.mjs`: Light, Word97, Chicago and Midnight at 390px and 1280px. Checks the title, back link, privacy line, no "Conversation with", no visible ✓, separators Oct 26 / Yesterday / Today, `data-incoming` and outgoing classes, `--person`, the Send button, header position unchanged while messages decrypt, no overflow with a long unbroken word, no page errors. Passes; contact sheets reviewed.
+  - `private_message_list_browser.mjs` (all its modules, "Send private message" → "Send"): passes. One run failed in `checkSeenWindows` (Messages tab unread count read before the page loaded); the rerun passed with no change, so it is recorded as flaky. `private_message_live_navigation.mjs` passes.
+  - `php tests/run.php PrivateMessageComposerTest PrivateMessagePageControllerTest PrivateMessageListTest LocalAppSmokeTest`: 162/163, the one failure is the long-standing archive filename test.
+- Notes:
+  - "All history loaded." still shows at the top of a short conversation; it is a routine success notice and goes in Stage 3 with the other history controls.
+  - Outgoing bubbles keep the existing `--button-alt-bg` colour; the accent colour from the mockup is the theme's job (Phase 3).
+- Estimate details: as planned.
+
+*— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*

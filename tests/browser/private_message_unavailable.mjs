@@ -154,7 +154,7 @@ export async function checkUnavailableRecovery(page, base, recoveryKey) {
   const sendRoute = async route => { const response = await route.fetch(); assert.equal(response.status(), 201); accepted(); await heldSend; return route.fulfill({ response }); };
   await page.route('**/api/private_messages', sendRoute);
   await page.locator('textarea').fill('Reply while unavailable groups are open');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await acceptedSend;
   await page.locator('textarea').fill('Newer group recovery draft');
   release();

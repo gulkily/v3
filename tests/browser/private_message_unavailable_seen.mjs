@@ -62,7 +62,7 @@ export async function checkUnavailableSeen(context, base, seed, unavailable) {
   await group.getByRole('button').click();
   await group.getByRole('button').click();
   await page.locator('textarea').fill('Grouped seen own reply');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await page.locator('[data-private-message-id]').getByText('Grouped seen own reply', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Load older', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');

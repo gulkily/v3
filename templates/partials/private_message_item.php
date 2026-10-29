@@ -1,6 +1,6 @@
 <?php $item = $message ?? []; ?>
 <article class="private-message" data-private-message-id="<?= $e($item['message_id'] ?? '') ?>" data-sender="<?= $e($item['sender_username_token'] ?? '') ?>" data-created-at="<?= $e($item['created_at'] ?? '') ?>">
-  <header class="private-message-meta">
+  <header class="private-message-meta visually-hidden">
     <span data-role="message-sender"><?= $e($item['sender_username_token'] ?? '') ?></span>
     <time datetime="<?= $e($item['created_at'] ?? '') ?>"><?= $e($item['created_at'] ?? '') ?></time>
     <span data-role="private-message-verification" title="Signature verified" aria-label="Signature verified" hidden>✓</span>

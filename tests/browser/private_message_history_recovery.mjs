@@ -63,7 +63,7 @@ export async function checkHistoryRecovery(page) {
   };
   await page.route('**/api/private_messages', sendRoute);
   await field.fill('Confirmed while history restarts');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await accepted;
   await field.fill('Newer draft must survive restart and send');
   releaseSend();

@@ -74,7 +74,7 @@ final class PrivateMessagePageController
             $this->messageError('Conversation Unavailable', $exception->getMessage(), 404);
             return;
         }
-        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_conversation.php', ['counterpartUsernameToken' => strtolower($counterpartUsernameToken), 'messages' => $page['messages'], 'historyPage' => $page, 'viewerProfile' => $viewer], 'Conversation with ' . strtolower($counterpartUsernameToken), 'messages', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/key_backup_status.js', '/assets/private_message_compose.js', '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_conversation.js', '/assets/private_message_seen.js']), 200, $this->routeServices->noStoreHeaders());
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_conversation.php', ['counterpartUsernameToken' => strtolower($counterpartUsernameToken), 'messages' => $page['messages'], 'historyPage' => $page, 'viewerProfile' => $viewer], strtolower($counterpartUsernameToken), 'messages', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/key_backup_status.js', '/assets/private_message_compose.js', '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_conversation.js', '/assets/private_message_seen.js']), 200, $this->routeServices->noStoreHeaders());
     }
 
     private function redirectMailbox(string $method): void

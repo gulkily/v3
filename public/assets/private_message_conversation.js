@@ -293,6 +293,7 @@
       const outgoing = sender === root.dataset.viewerUsernameToken;
       const label = outgoing ? "You" : sender;
       card.classList.toggle('is-outgoing', outgoing);
+      card.toggleAttribute('data-incoming', !outgoing);
       card.setAttribute('aria-label', 'Message from ' + label);
       card.querySelector('[data-role="message-sender"]').textContent = label;
       const date = new Date(card.dataset.createdAt);
@@ -301,7 +302,8 @@
         const divider = document.createElement('p');
         divider.dataset.role = 'message-date';
         divider.className = 'private-message-date meta';
-        divider.textContent = date.toLocaleDateString(undefined, { dateStyle: 'full' });
+        divider.textContent = window.ForumMessageTime.day(card.dataset.createdAt);
+        divider.title = date.toLocaleDateString(undefined, { dateStyle: 'full' });
         transcript.insertBefore(divider, card);
       }
       card.classList.toggle('is-grouped', sender === lastSender && day === lastDate);

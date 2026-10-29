@@ -18,7 +18,7 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
   };
   await page.route('**/api/private_messages', intercept);
   await field.fill('Accepted but acknowledgment lost');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await acceptedPromise;
   await field.fill('Browser follow-up');
   release();
@@ -44,7 +44,7 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
     ? route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ status: 'error', error: 'Messaging is busy. Try again.' }) })
     : route.continue();
   await page.route('**/api/private_messages', refuse);
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   const unsent = page.locator('[data-pending-message-id]').filter({ hasText: 'Browser follow-up' });
   await unsent.locator('[data-role="send-status"]').filter({ hasText: 'Not sent' }).waitFor();
   await unsent.getByText('Messaging is busy. Try again.').waitFor();

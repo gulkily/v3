@@ -7,7 +7,7 @@ export async function checkMessagingFeatureFlag(page, context, base, seed) {
   await page.goto(base + '/messages/conversation/bob');
   await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.privateMessageReaderSettled === '1');
   const field = page.locator('[data-private-message-composer] textarea');
-  const send = page.getByRole('button', { name: 'Send private message', exact: true });
+  const send = page.getByRole('button', { name: 'Send', exact: true });
   await field.fill('Draft retained while messaging disabled');
   flag(false);
   // Background refresh may notice shutdown before a user can click Send.
