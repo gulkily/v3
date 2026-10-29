@@ -121,3 +121,36 @@ Extended estimates: enabled
 - Estimate details: slightly over, for the sign-in result mapping found during testing (new understanding).
 
 *— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Sites, themes, copy record and closeout
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.15**
+
+- Changes (fixes found by the checks):
+  - The pinned composer is opaque in every theme: Arena's `--panel` is transparent, so message text showed through it (existing, on the redesigned screen). It now layers the panel over the page background, as the board's sort menu does.
+  - A "Not sent" or "Not confirmed" message is kept in view above the composer when its status makes it taller, through the conversation's existing follow-the-latest events.
+  - A failed list load no longer leaves rows on placeholders with raw ISO times: server rows show readable times at once, rows that never loaded say "Encrypted message", and Load more is hidden while Retry is shown.
+  - `tests/browser/private_message_redesign.mjs` runs any site (`FORUM_SITE_ID`) in all its permitted themes and adds sending, Not sent (kept above the composer), an empty conversation, a failed list load and the access page per theme.
+  - Records: copy record in `docs/plans/ui_copy_audit_checklist.md`, cycle 8 status in the implementation checklist (only this cycle's lines committed; the user's own uncommitted edits to that file are left as they were), ledger closeout.
+- Verification:
+  - `private_message_redesign.mjs` on ZenMemes (14 themes), Chouse, QDB and MIT Rap Club (15 each) at 390px and 1280px: all pass after the fixes. Contact sheets per state for ZenMemes and the branded theme of each other site reviewed.
+  - Members-only: with `FORUM_APPROVED_MEMBERS_ONLY=true`, a guest opening `/messages` is sent to `/lobby/?return_to=/messages` (existing behaviour). The rest of the access page on members-only sites is unchecked.
+  - `private_message_list_browser.mjs` and `PrivateMessageListTest` pass after the list fix.
+  - Full suite once: 1627 run, 1623 passed. Three failures predate this cycle (`LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets`, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, failing since 2026-10-27 or earlier). `CheckoutsCommandTest::testRealGitOperatorAcceptance` failed once while a scratch worktree was being removed during the run, and passed when rerun alone.
+  - Reduced motion: the faded bubble's transition and the placeholder pulse stop under `prefers-reduced-motion`.
+- Notes: no navigation destination changed, so `theme-nav-icons.css` is unchanged. No dependency, schema or API change.
+- Estimate details: slightly over, for the three fixes found by the theme matrix.
+
+*— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Stages: six of six complete, one commit each after the planning commit `b129c36fa`: `140f388b1`, `4d7155dcc`, `a77e59898`, `a35726339`, `c81291c2b`, and this stage's commit.
+- Completion Contract: list, conversation, sending and recovery, and the access page work through the normal Messages tab, conversation links and the person page's Message button, on phone and desktop, in every permitted theme of the four sites. Recovery for previews, list loads, unreadable messages, refused and unconfirmed sends (including after a reload), seen status and sign-in is checked in the browser.
+- Not checked: real phones, members-only sites beyond the guest redirect, deployment. Known existing problems recorded, not fixed: history scroll anchoring shifts 8.8px when the last older page is short and the page is at the top; `private_message_history_sync_browser.mjs` fails at `private_message_operator_flag.mjs:133` on clean code; one flaky Messages-tab unread wait in `checkSeenWindows`.
+- Follow-up proposed: `ui_messages_panes` (two panes on desktop, member picker, scroll loading; its own cycle and ID). Decisions left to the user: "Seen" under your last message (read receipts), Outbox queueing of messages.
+- Effort study: entry 0.85 reaffirmed, no in-cycle revision. **Retrospective cycle scope: 0.95** — the test-harness repairs needed to verify (stale Users and person-page steps from cycle 7, scroll-away tab bar, module files that only export checks), the sign-in result mapping, and three theme-matrix fixes. Stage originals/retrospectives 0.18/0.22, 0.15/0.15, 0.12/0.12, 0.15/0.13, 0.15/0.17, 0.12/0.15 (not summed). Claude, single exposed rater; no measured labour. Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*

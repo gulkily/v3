@@ -1,6 +1,7 @@
-// Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/private_message_redesign.mjs [screenshot-dir] [theme,theme,...]
-// The redesigned conversation (ui_messages): name and privacy line, bubbles by day, no per-message check mark,
-// the Send button, theme hooks, in each theme at phone and desktop width.
+// Run with: CHROMIUM_PATH=/usr/bin/google-chrome [FORUM_SITE_ID=chouse] node tests/browser/private_message_redesign.mjs [screenshot-dir] [all|theme,theme,...]
+// The redesigned Messages (ui_messages): the access page for visitors who aren't approved members, then in each
+// theme at phone and desktop width the conversation (name, privacy line, bubbles by day, no check marks, Send,
+// unreadable message, theme hooks), sending and Not sent, an empty conversation, the list and a failed list load.
 import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
@@ -14,7 +15,9 @@ import { chromium } from 'playwright-core';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
-const themes = (process.argv[3] || 'light,word97,chicago,midnight').split(',');
+const site = process.env.FORUM_SITE_ID || 'zenmemes';
+const permitted = JSON.parse(spawnSync('php', ['-r', `require '${project}/autoload.php'; echo json_encode(ForumRewrite\\SiteProfileRegistry::all()['${site}']['permittedThemes']);`], { encoding: 'utf8' }).stdout);
+const themes = !process.argv[3] || process.argv[3] === 'all' ? permitted : process.argv[3].split(',');
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
 const openpgp = globalThis.openpgp;
 const root = await mkdtemp(join(tmpdir(), 'private-message-redesign-'));
@@ -138,10 +141,10 @@ try {
     const challenge = (await (await context.request.get(base + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
     const signature = await openpgp.sign({ message: await openpgp.createMessage({ text: challenge }), signingKeys: alice.private, detached: true });
     assert.equal((await context.request.post(base + '/api/authenticate_identity', { data: { challenge, detached_signature: signature, identity_id: 'openpgp:' + alice.fingerprint } })).status(), 200);
-    await context.addInitScript(({ keys, theme }) => {
+    await context.addInitScript(({ keys, theme, site }) => {
       for (const [key, value] of Object.entries(keys)) localStorage.setItem('forum_pki_' + key, value);
-      for (const key of ['zenmemes-theme', ...Object.keys(localStorage).filter(name => name.endsWith('-theme'))]) localStorage.setItem(key, theme);
-    }, { theme, keys: { username: 'alice', public_key: alice.publicKey, private_key: alice.privateKey,
+      for (const key of [site + '-theme', ...Object.keys(localStorage).filter(name => name.endsWith('-theme'))]) localStorage.setItem(key, theme);
+    }, { theme, site, keys: { username: 'alice', public_key: alice.publicKey, private_key: alice.privateKey,
       fingerprint: alice.fingerprint.toUpperCase(), published_fingerprint: alice.fingerprint.toUpperCase() } });
     const page = await context.newPage();
     const errors = [];
@@ -175,6 +178,32 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: no page overflow`);
     if (shots) await page.screenshot({ path: join(shots, `conversation-${theme}-${width}.png`), fullPage: true });
 
+    // Sending, then refused: the bubble is faded while sending and keeps its text with Not sent · Retry.
+    let releaseSend;
+    const held = new Promise(resolve => { releaseSend = resolve; });
+    const refuse = async route => { await held; return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ status: 'error', error: 'Messaging is busy. Try again.' }) }); };
+    await page.route('**/api/private_messages', refuse);
+    await page.locator('[data-private-message-composer] textarea').fill('Ship it tonight?');
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    const sending = page.locator('[data-pending-message-id]');
+    await sending.and(page.locator('.is-pending')).waitFor();
+    if (shots) await page.screenshot({ path: join(shots, `sending-${theme}-${width}.png`) });
+    releaseSend();
+    await sending.locator('[data-role="send-status"]').filter({ hasText: 'Not sent' }).waitFor();
+    assert.equal(await sending.getByRole('button', { name: 'Retry', exact: true }).isVisible(), true);
+    // Not hidden behind the pinned composer.
+    const [unsentBox, composerBox] = await Promise.all([sending.locator('[data-role="send-status"]').last().boundingBox(), page.locator('[data-private-message-composer]').boundingBox()]);
+    assert.ok(unsentBox.y + unsentBox.height <= composerBox.y + 1, `${label}: Not sent stays above the composer`);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: no overflow with Not sent`);
+    if (shots) await page.screenshot({ path: join(shots, `unsent-${theme}-${width}.png`) });
+    await page.unroute('**/api/private_messages', refuse);
+
+    // An empty conversation.
+    await page.goto(base + '/messages/conversation/outsider');
+    await page.getByText('No messages with outsider yet.').waitFor();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: empty conversation has no overflow`);
+    if (shots) await page.screenshot({ path: join(shots, `empty-${theme}-${width}.png`) });
+
     // The list: name, time, two lines of preview, "You:" on your own last message, an unread dot.
     await page.goto(base + '/messages');
     await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
@@ -190,6 +219,30 @@ try {
     if (await unreadRow.count()) assert.equal(await unreadRow.locator('.message-list-name').evaluate(node => getComputedStyle(node, '::before').content), '""');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: list has no page overflow`);
     if (shots) await page.screenshot({ path: join(shots, `list-${theme}-${width}.png`) });
+
+    // A failed list load: one line with Retry.
+    const failList = route => route.abort();
+    await page.route('**/api/private_messages/conversations?*', failList);
+    await page.reload();
+    await page.getByText('Couldn’t load messages.').waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Retry loading' }).isVisible(), true);
+    await page.unroute('**/api/private_messages/conversations?*', failList);
+    if (shots) {
+      await page.getByText('Couldn’t load messages.').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: join(shots, `listfail-${theme}-${width}.png`) });
+    }
+    await page.getByRole('button', { name: 'Retry loading' }).click();
+    await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
+
+    // The access page in this theme.
+    const visitor = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+    await visitor.addInitScript(({ theme, site }) => { localStorage.setItem(site + '-theme', theme); }, { theme, site });
+    const visitorPage = await visitor.newPage();
+    await visitorPage.goto(base + '/messages');
+    await visitorPage.getByRole('button', { name: 'Set up account' }).waitFor();
+    assert.ok(await visitorPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: access page has no overflow`);
+    if (shots) await visitorPage.screenshot({ path: join(shots, `access-${theme}-${width}.png`) });
+    await visitor.close();
     assert.deepEqual(errors, [], `${label}: no page errors`);
     await context.close();
   }

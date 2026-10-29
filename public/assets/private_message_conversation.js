@@ -454,6 +454,8 @@
     }
     function failed(detail) {
       const card = delivered(detail.messageId) || bubble(detail.messageId, detail.plaintext || '');
+      // The status makes the message taller; keep it in view above the composer if the reader was following.
+      root.dispatchEvent(new CustomEvent('private-message-before-append'));
       const reason = [detail.reason, detail.saved === false ? 'This browser can’t save the draft; keep this page open.' : ''].filter(Boolean).join(' ');
       const focused = card.contains(document.activeElement);
       const button = detail.unconfirmed
@@ -467,6 +469,7 @@
           controls.resend();
         }, reason);
       if (focused && button) button.focus({ preventScroll: true });
+      root.dispatchEvent(new CustomEvent('private-message-appended', { detail: { card: card } }));
     }
     root.addEventListener('private-message-sending', function (event) {
       const detail = event.detail;

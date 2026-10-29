@@ -14,6 +14,11 @@
     const rendered = new Map(Array.from(rows.querySelectorAll('[data-conversation-row]')).map(function (row) {
       return [row.dataset.counterpart, row];
     }));
+    // Rows from the server show readable times at once, whether or not their previews load.
+    rendered.forEach(function (row) {
+      const time = row.querySelector('[data-role="time"]');
+      if (time) window.ForumMessageTime.render(time, time.getAttribute('datetime'));
+    });
     let cursor = root.dataset.pageCursor;
     let loading = false;
     const senderKeys = new Map();
@@ -132,6 +137,9 @@
         status.title = error instanceof Error ? error.message : '';
         status.className = 'message-list-alert';
         retry.hidden = !restart.hidden;
+        // Retry replaces Load more while the failure stands; rows that never loaded say what they hold.
+        more.hidden = true;
+        rows.querySelectorAll('.message-preview.is-loading').forEach(function (text) { text.className = 'message-preview'; });
       } finally {
         loading = false;
         more.disabled = false;

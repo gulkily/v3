@@ -54,7 +54,8 @@
   z-index: 2;
   margin-top: .5rem;
   padding: .65rem;
-  background: var(--panel);
+  /* Opaque even where --panel is transparent (Arena), as the board's sort menu does. */
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
   box-shadow: 0 -3px 8px var(--page-bg);
 }
 .private-conversation.composer-inline [data-private-message-composer] { position: static; }
