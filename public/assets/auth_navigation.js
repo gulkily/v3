@@ -39,7 +39,12 @@
   }
 
   async function sessionIsActive() {
+    var approval = window.ForumMemberApproval;
+    var identity = approval ? approval.fingerprint() : "";
     var response = await fetch("/api/auth_status", { credentials: "same-origin" });
+    // 200 means an approved session; a 401 may only be an expired one, and the
+    // sign-in that follows records the definitive answer.
+    if (response.ok && approval) approval.record(identity, true);
     return response.ok;
   }
 

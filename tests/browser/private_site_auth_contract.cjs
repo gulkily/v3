@@ -94,5 +94,30 @@ function fixture({ approved = false, matching = false, keyless = false, shared =
     release(); await rejected;
     assert.equal(f.fetches.length, 0, 'a queued request cannot silently adopt a different key');
   }
+  // Each completed sign-in tells the approval memory about the identity it signed with.
+  for (const approved of [true, false]) {
+    const f = fixture({ approved });
+    const recorded = [];
+    f.window.ForumMemberApproval = { record: (identity, value) => recorded.push([identity, value]) };
+    await f.window.PrivateSiteAuth.authenticate({ navigate: false });
+    assert.deepEqual(recorded, [[fingerprint, approved]]);
+  }
+  {
+    const f = fixture({ approved: true });
+    const recorded = [];
+    f.window.ForumMemberApproval = { record: (identity, value) => recorded.push([identity, value]) };
+    let release;
+    const fetch = f.context.fetch;
+    f.context.fetch = async url => {
+      const response = await fetch(url);
+      if (url.includes('authenticate_identity')) await new Promise(r => { release = r; });
+      return response;
+    };
+    const pending = assert.rejects(f.window.PrivateSiteAuth.authenticate({ navigate: false }), /Browser identity changed/);
+    while (!release) await new Promise(r => setImmediate(r));
+    f.storage.forum_pki_private_key = 'a different key';
+    release(); await pending;
+    assert.deepEqual(recorded, [], 'a response for a replaced identity is not recorded');
+  }
   console.log('PASS in-place authentication contract');
 })().catch(error => { console.error(error); process.exitCode = 1; });

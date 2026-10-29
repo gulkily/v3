@@ -233,6 +233,7 @@ final class TemplateRenderer
             'pageStylesheetPaths' => $pageStylesheetPaths,
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
+            'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'replyViewportScriptPath' => $this->assetPath('/assets/reply_viewport.js'),
