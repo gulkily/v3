@@ -7,7 +7,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 ## Provenance
 
-- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.4.0` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
+- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.5.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
 - The full upstream tree and license are retained. The historical local effort-estimation patch described below is now included upstream; only the host installation record differs from the release.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
@@ -44,7 +44,7 @@ Before a future subtree update, inspect and preserve this patch in branch histor
 ## Update commands
 
 ```bash
-./v3 railspike sync                      # pinned v0.4.0: no-op when installed
+./v3 railspike sync                      # pinned v0.5.0-beta.1: no-op when installed
 ./v3 railspike sync --ref=<newer-tag>    # deliberate upgrade
 ./v3 railspike sync --repository-root=/path/to/another/migrated/repository
 ```
@@ -221,3 +221,38 @@ study and UI verification records; resolved current pins/product to v0.4.0.
 All 18 product files still match upstream. Focused Railspike checks passed 20/20
 again; startup dependency regressions, shell syntax and staged whitespace checks
 passed. Full application suite was not rerun. No new dependency changes.
+
+## Upgrade — 2026-10-29
+
+Authorization: “please update to latest railspike beta.” Latest upstream beta tag
+is v0.5.0-beta.1, commit 583e69da722e37d6993dfc017b140473d143c554, verified to
+descend from installed v0.4.0 (ea1ad5b524c2b447d3e61b15ccd3cd412ce6ecef).
+Routine direct maintenance on maintenance/railspike-v0.5.0-beta.1; no new
+Railspike cycle or changes to previous cycle approvals/study history.
+
+Inventory: existing MIT-licensed instruction dependency from
+https://github.com/rlspk/railspike.git via the existing docs/railspike Git subtree.
+Nine instruction files change (43 added lines), including one new concepts guide;
+19 upstream files total, 167,503 bytes. Zero added packages, transitive dependencies,
+manifest/lock changes or external runtime components. The reduced-scope alternative
+was keeping v0.4.0. Maintenance remains reviewed tag updates and provenance checks.
+
+The release adds a host-project concept inventory under docs/concepts and Concepts
+touched references in staged and one-shot plans. Populate entries only through
+relevant authorized cycles; do not survey the project or backfill old plans. This
+installation update does not start a concept-inventory project. R1/P2 enrollment,
+approval gates and existing cycle state remain unchanged.
+
+Updated the default pin, CLI help, reference and sync-test expectation. No merge,
+push or deployment is included. Previous installation remains recoverable from
+the subtree update merge's first parent.
+
+*— Codex · 2026-10-29 UTC*
+
+Verification — 2026-10-29: all 19 upstream files match the reviewed tag byte-for-byte;
+59 local link targets in changed instruction files resolve (anchors/remote links
+not checked). RailspikeSyncCommandTest and RailspikeWorkflowTest passed 20/20;
+shell syntax, actual sync help and whitespace checks passed. Actual dependency
+delta matches the inventory above; no added packages or runtime components.
+Full application/UI/deployment checks are inapplicable to this instruction update.
+Log: /tmp/railspike-beta-upgrade-tests.log.
