@@ -36,3 +36,12 @@ Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80
 - Notes: Legacy operator CLI remains until Stage 7; stored legacy data is untouched. No scope/estimate revision.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 4 — Simplify static builds/releases
+**Original estimate: 0.12**
+**Retrospective stage work: 0.12**
+- Changes: Static build, activation and serving no longer create/validate Fastmod generation sidecars. Temporary-file replacement, candidate-release cleanup and existing unrelated publication behavior remain.
+- Verification: Static-release activation with obsolete sidecars and failed-build recovery tests — 2/2 passed. Broader LocalAppSmokeTest/WebServerRoutingTest — 157 run, 156 passed; one archive-filename test calls an absent InstancePageController method (outside changed code; baseline confirmation pending). PHP syntax/diff checks passed.
+- Notes: Ordinary rebuild, not instant invalidation, updates generated tags. Offline serving checks were removed with the shared FrontController helper; snapshot building is Stage 6. No scope/estimate revision.
+
+*— Codex · 2026-10-29 UTC*
