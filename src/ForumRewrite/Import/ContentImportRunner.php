@@ -19,6 +19,7 @@ final class ContentImportRunner
         private readonly ?Closure $checkpoint = null,
         private readonly ?Closure $progress = null,
         private readonly array $publicationContext = [],
+        private readonly ?string $projectRoot = null,
     ) {
         if (!is_dir($repositoryRoot . '/.git') || is_link($repositoryRoot . '/.git')) {
             throw new RuntimeException('Destination must be a Git checkout with a local .git directory.');
@@ -36,7 +37,12 @@ final class ContentImportRunner
                     if ($source === null) {
                         throw new RuntimeException('Preview requires a source.');
                     }
-                    return $this->report((new ContentImportPlanner())->plan($source, $this->repositoryRoot), $sourceLabel, $archiveExclusions, true);
+                    $entries = (new ContentImportPlanner())->plan($source, $this->repositoryRoot);
+                    $report = $this->report($entries, $sourceLabel, $archiveExclusions, true);
+                    $scores = new FastmodScoreImport($this->projectRoot ?? dirname(__DIR__, 3));
+                    $report['scores'] = $scores->process($scores->read($source, $archiveExclusions), $scores->hashes($entries, $source, $this->repositoryRoot), true);
+                    if ($report['scores']['status'] === 'rejected') $report['status'] = 'partial';
+                    return $report;
                 }
                 \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, "records/post-retractions/import.txt");
                 if (is_file($pending)) {

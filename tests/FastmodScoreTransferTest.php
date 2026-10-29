@@ -81,6 +81,34 @@ final class FastmodScoreTransferTest
         $pruned = $backup->export('tar.gz'); fclose($pruned['stream']); assertSame($empty['path'], $pruned['path']);
     }
 
+    public function testArchivePreviewAcceptsOnlyPlannedPostsAndDoesNotCreatePrivateState(): void
+    {
+        require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+        $w = new ImportTestWorkspace(); $root = $w->repository('source'); $destination = $w->repository('destination');
+        $w->put($root . '/records/posts/post-1.txt', $w->post('post-1')); $w->git($root); $w->git($destination);
+        $row = self::row();
+        $config = \ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig(\ForumRewrite\Support\PrivateConfig::load(dirname(__DIR__)));
+        $composition = (new \ForumRewrite\Scoring\FastmodSelection(dirname(__DIR__)))->composition($config);
+        $post = (new \ForumRewrite\Canonical\CanonicalRecordRepository($root))->loadPost('records/posts/post-1.txt');
+        $row['content_hash'] = (new \ForumRewrite\Scoring\FastScoreContextFactory(static fn ($id) => null))->contentHashForPost(['post_id' => $post->postId, 'subject' => $post->subject, 'body' => $post->body]);
+        $row['rubric_revision'] = $composition['revision']; $row['scores'] = array_fill_keys($composition['ids'], 0.8);
+        $w->put($root . '/fastmod-scores.txt', FastmodScoreTransfer::encode([$row]));
+        $prior = getenv('FAST_SCORING_DATABASE_PATH'); putenv('FAST_SCORING_DATABASE_PATH=' . $w->root . '/private/scores.sqlite3');
+        try {
+            $runner = new \ForumRewrite\Import\ContentImportRunner($destination, $w->root . '/index.sqlite3');
+            $report = $runner->run($root, static function () { throw new RuntimeException('Preview published'); }, true);
+            assertSame(1, $report['scores']['counts']['imported']); assertSame(false, is_dir($w->root . '/private'));
+            $w->put($destination . '/records/posts/post-1.txt', $w->post('post-1', body: 'local conflict')); $w->git($destination);
+            $report = $runner->run($root, static function () {}, true); assertSame(1, $report['scores']['counts']['incompatible']);
+            $w->put($root . '/fastmod-scores.txt', 'Format: future-version');
+            $archive = $w->root . '/source.tar.gz';
+            assertSame(0, $w->command(['tar', '-czf', $archive, '-C', $w->root, 'source'])[0]);
+            $extracted = (new \ForumRewrite\Import\RepositoryArchive())->extract($archive, $w->root . '/extracted');
+            $report = $runner->run($extracted['root'], static function () {}, true);
+            assertSame('rejected', $report['scores']['status']); assertSame('partial', $report['status']);
+        } finally { $prior === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $prior); }
+    }
+
     public function testRejectsWholeMalformedSupplement(): void
     {
         $valid = FastmodScoreTransfer::encode([self::row()]);

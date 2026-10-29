@@ -44,3 +44,14 @@ Status: Step 3 approved; implementation in progress.
 - Notes: S2 commit 59fd0988. No setting/flag/dependency/schema introduced. Consistent bounded query snapshot; content hash matching reads only scored committed posts. No browser changes yet.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 4 - Accept and preview supplements
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes: TAR extractor allows only the bounded supplement at the repository root; oversized supplements remain excluded. Shared score import service validates complete input and matches only accepted/identical plan posts. Ordinary dry-run reports score eligibility and malformed supplements without private database creation. CLI help/output has no inclusion flag.
+- Verification: Archive validation/planner/import-command regressions 19/19 pass. Transfer tests 6/6 pass including eligible preview, local conflict exclusion, malformed extracted supplement and no private directory creation. Fixed a test fixture call to use the existing command helper.
+- Notes: S3 commit cca64f04. Actual merge and saved score recovery follow in S5–S6; no ZIP import added.
+
+*— Codex · 2026-10-29 UTC*
