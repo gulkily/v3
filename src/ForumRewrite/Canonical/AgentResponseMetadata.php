@@ -9,11 +9,17 @@ final class AgentResponseMetadata
     public const SCRIPTURE = 'scripture_oriented_analysis';
     public const EXPANSION = 'scripture_expansion';
 
+    /** Machine JSON decoder; independent of legacy canonical storage. */
     public static function decode(?string $json, ?string $parentId): ?array
     {
         if ($json === null || $json === '') { return null; }
         try { $data = json_decode($json, true, 32, JSON_THROW_ON_ERROR); }
         catch (\Throwable) { throw new CanonicalRecordParseException('Invalid Agent-Response JSON.'); }
+        return self::validate($data, $parentId);
+    }
+
+    public static function validate(mixed $data, ?string $parentId): array
+    {
         if (!is_array($data) || !in_array($data['type'] ?? '', [self::SCRIPTURE, self::EXPANSION], true)) {
             throw new CanonicalRecordParseException('Unsupported Agent-Response type.');
         }
@@ -37,6 +43,56 @@ final class AgentResponseMetadata
             throw new CanonicalRecordParseException('Scripture response must identify its source parent.');
         }
         return $data;
+    }
+
+    private const HEADERS = [
+        'Agent-Response-Type' => 'type',
+        'Agent-Response-Source-Post-ID' => 'source_post_id',
+        'Agent-Response-Source-SHA256' => 'source_hash',
+        'Agent-Response-Expansion-Of' => 'expansion_of',
+        'Agent-Response-Initial-SHA256' => 'initial_hash',
+    ];
+
+    public static function fromHeaders(array $headers, ?string $parentId): ?array
+    {
+        $named = [];
+        foreach ($headers as $name => $value) {
+            if (!str_starts_with($name, 'Agent-Response-')) continue;
+            if (!isset(self::HEADERS[$name])) throw new CanonicalRecordParseException('Unknown agent response header: ' . $name);
+            $named[$name] = $value;
+        }
+        if (array_key_exists('Agent-Response', $headers)) {
+            if ($named !== []) throw new CanonicalRecordParseException('Mixed legacy and named agent response metadata.');
+            if (!class_exists(LegacyAgentResponseMetadata::class)) throw new CanonicalRecordParseException('Legacy agent response reader unavailable; retain a compatible reader for this signed record.');
+            return LegacyAgentResponseMetadata::decode($headers['Agent-Response'], $parentId);
+        }
+        if ($named === []) return null;
+        $data = [];
+        foreach (self::HEADERS as $header => $key) if (array_key_exists($header, $named)) $data[$key] = $named[$header];
+        self::assertNamedFields($data);
+        return self::validate($data, $parentId);
+    }
+
+    public static function toHeaders(array $data): string
+    {
+        self::assertNamedFields($data);
+        self::validate($data, $data['type'] === self::EXPANSION ? $data['expansion_of'] : $data['source_post_id']);
+        $text = '';
+        foreach (self::HEADERS as $header => $key) {
+            if (array_key_exists($key, $data)) {
+                if (!is_string($data[$key]) || preg_match('/[\r\n\x00]/', $data[$key])) throw new CanonicalRecordParseException('Invalid agent response header value.');
+                $text .= $header . ': ' . $data[$key] . "\n";
+            }
+        }
+        return $text;
+    }
+
+    private static function assertNamedFields(array $data): void
+    {
+        $expected = ['type', 'source_post_id', 'source_hash'];
+        if (($data['type'] ?? '') === self::EXPANSION) $expected = [...$expected, 'expansion_of', 'initial_hash'];
+        $keys = array_keys($data); sort($keys); sort($expected);
+        if ($keys !== $expected) throw new CanonicalRecordParseException('Incomplete or unexpected named agent response metadata.');
     }
 
     public static function postHash(array $post): string
