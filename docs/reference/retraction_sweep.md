@@ -21,7 +21,7 @@ The existing cron worker discovers eligible work every five minutes using its or
 - Saved LLM request/response/error/provider metadata is scrubbed for affected dependencies. With accepted retractions present, unknown legacy dependency payloads are conservatively scrubbed too; unrelated historical diagnostic payloads may therefore be lost. Known unrelated exchanges are preserved. Late provider results are readable until a later successful sweep.
 - SQLite payload scrubbing uses secure deletion and WAL checkpointing. An active reader can prevent checkpoint completion: let it finish, then retry. An interrupted transaction can safely rerun. This is logical local cleanup, not a forensic-erasure guarantee.
 
-Canonical content deletion belongs to acceptance/migration. Git history purge, backups, remote/provider copies, other logs, attachments and independently published replies/quotes are outside this sweep.
+Canonical content deletion belongs to acceptance. Git history purge, backups, remote/provider copies, other logs, attachments and independently published replies/quotes are outside this sweep.
 
 ## Recovery on the deployed host
 

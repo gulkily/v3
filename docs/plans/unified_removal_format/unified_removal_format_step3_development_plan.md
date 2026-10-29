@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](unified_removal_format_step1_solution_assessment.md) · [Step 2](unified_removal_format_step2_feature_description.md) · Step 3 · Step 4 (pending)
+> **Feature plan:** [Step 1](unified_removal_format_step1_solution_assessment.md) · [Step 2](unified_removal_format_step2_feature_description.md) · Step 3 · [Step 4](unified_removal_format_step4_implementation_summary.md)
 
 Debug mode: enabled.
 Effort study: `railspike-effort` / `v3/unified_removal_format`; [ledger](../effort_estimation_trial.md#cycle-v3unified_removal_format), standing P2 enrollment.
@@ -107,3 +107,7 @@ Step 2 approved by “Approved Step 2”; scope v1/A clarified, original baselin
 Stage history (stage work, non-additive): S1 0.15→0.10; S2 0.20→0.15; S3 0.20→0.15; S4 0.15→0.10; S5 0.15 reaffirmed; S6 0.10 reaffirmed; S7 0.20→0.15. Earlier S1–S7/v1 included old-text adaptation/coexistence/replay and old-state recovery; v2 scopes above remove those obligations. Original cycle intake/Step 1/Step 2 0.75 and initial Step 3 0.85 are preserved. Stage count remains seven; estimates are not measured labor.
 
 *— Revised by Codex · 2026-10-29 UTC*
+
+Implementation update — 2026-10-29 UTC: user explicitly approved Step 3. Planning commit `5143ab6f` precedes all implementation; the [Step 4 summary](unified_removal_format_step4_implementation_summary.md) records delivered stages and verification. Historical approval/estimate checkpoints above are retained.
+
+*— Codex · 2026-10-29 UTC*

@@ -329,7 +329,7 @@ final class ReadModelBuilder
      */
     private function loadPostRetractions(): array
     {
-        // Legacy suppression is retired. Explicit migration converts accepted requests to deletion.
+        // Only accepted shared-format receipts grant deletion; old suppression records are unsupported.
         return [];
     }
 

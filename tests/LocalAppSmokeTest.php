@@ -1572,6 +1572,13 @@ PHP;
         assertSame(true, $failed);
         assertSame($before, file_get_contents($root . '/records/posts/root-001.txt'));
         unlink($root . '/.git/source-label-removal-root-001.json');
+        file_put_contents($root . '/records/posts/root-001.txt', $before . "changed\n");
+        $failed = false;
+        try { \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, 'root-001', false, [], $artifacts); }
+        catch (RuntimeException $e) { $failed = str_contains($e->getMessage(), 'Accepted source changed'); }
+        assertSame(true, $failed);
+        assertSame($record, \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'));
+        file_put_contents($root . '/records/posts/root-001.txt', $before);
         \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, 'root-001', false, [], $artifacts);
         $deleted = \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001');
         assertSame('delete', $deleted['operation']);
@@ -1604,6 +1611,8 @@ PHP;
     {
         [, $root, $database, $artifacts] = $this->createGitBackedEnvironmentWithArtifacts();
         (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        file_put_contents($root . '/unrelated.txt', 'keep staged');
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['add', 'unrelated.txt']);
         file_put_contents($root . '/.git/hooks/pre-commit', "#!/bin/sh\nexit 1\n");
         chmod($root . '/.git/hooks/pre-commit', 0755);
         $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', 'root-001', $root, $database, $artifacts, '--json']));
@@ -1612,8 +1621,10 @@ PHP;
         assertTrue(is_file($root . '/.git/source-label-removal-root-001.json'));
         unlink($root . '/.git/hooks/pre-commit');
         exec($command . ' 2>&1', $retryOutput, $retryStatus);
-        assertSame(0, $retryStatus);
+        if ($retryStatus !== 0) throw new RuntimeException(implode("\n", $retryOutput));
         assertSame(false, is_file($root . '/.git/source-label-removal-root-001.json'));
+        $staged = trim(\ForumRewrite\Canonical\LabelRemoval::git($root, ['diff','--cached','--name-only']));
+        if ($staged !== 'unrelated.txt') throw new RuntimeException('Unexpected staged paths: ' . $staged);
         $builder = new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $database, $artifacts);
         assertStringContains('</head>', $builder->renderHighTrafficRoute('/'));
 

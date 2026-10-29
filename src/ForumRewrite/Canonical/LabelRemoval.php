@@ -129,6 +129,9 @@ final class LabelRemoval
         $existing = self::read($root, $id);
         if ($existing !== null && $existing['operation'] === 'delete' && $explicitLabelIds === []) return $existing;
         $inspection = self::inspect($root, $id);
+        if ($existing !== null && !hash_equals($existing['source_hash'], $inspection['source_hash'])) {
+            throw new RuntimeException('Accepted source changed; inspect before retry.');
+        }
         $post = $inspection['post'];
         $labels = $existing['labels'] ?? [];
         foreach ($inspection['proven'] as $path => $hash) {

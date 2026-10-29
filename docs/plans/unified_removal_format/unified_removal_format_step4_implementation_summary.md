@@ -83,3 +83,29 @@ Step 3 explicitly approved; planning commit `5143ab6f`, branch `feature/unified-
 - Notes: S6/v2 unchanged. Internal recovery journals remain JSON machine state. No old files migrated/deleted; no dependencies. `/tmp/unified-maintenance-tests.log`.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 7 - Acceptance and closeout
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.20**
+
+- Changes: final browser fixture expects the shared header; strengthened actual live resolution → signed retraction → retry/export/rebuild flow, source-change rejection and operator commit-retry staging checks. F02 closed in the format audit; links/navigation and approval history reconciled.
+- Corrections: a source-change test initially omitted the final newline and hit canonical text validation; corrected the fixture, then verified the intended hash-conflict rejection. Stronger unrelated-staging assertion exposed an operator retry bug: a rejected commit leaves deleted paths absent from disk/index but present in HEAD. Retry now includes HEAD paths in its scoped commit, avoids re-adding already staged absent paths, and deletes both supported signature suffixes. The initial failing assertion remains in /tmp/unified-final-corrections.log; final recovery tests 4/4 and final normal-flow run 21/21 pass. This is required recovery correction, not added scope.
+- Verification: focused regression batch **122/122** (codecs, transactions with signed-path actual process-exit injection, canonical parsers, read models, import/export/recovery, high-traffic/absent snapshots and maintenance). Final **21/21** API/CLI checks after recovery correction cover author/operator/account authorization, deletion/repair, source exact bytes, actual ZIP and original-archive imports, same-post transitions, independent replies, failed commit/refresh/artifact/queue retries and actual v3 rebuild. Changed PHP lint **25/25**, shell syntax, whitespace, local links and 16-item/13-open checklist counts pass. No full-suite claim.
+- Browser: actual Chromium author/operator/account/partial-retry flows and signature verification pass; raw source request/signature/receipt equality, independent conversation preservation, all 13 themes at phone/desktop widths and overflow pass. Separate keyboard activation, Escape/focus and touch checks pass. Inspected the raw receipt desktop screenshot and Word97 phone post screenshot. No UI copy/navigation changes.
+- Notes: S7/v2 preserved; retrospective increase reflects integration/recovery corrections and evidence. Zero dependency/manifest/lock/vendor delta. No core read-model schema/query changes. No production data deletion, migration, history purge, deployment, full-suite or physical-device verification.
+
+*— Codex · 2026-10-29 UTC*
+
+## Study closeout and release limits
+
+Seven planned/seven completed stages on feature/unified-removal-format; original scope v2/A/baseline/R1/P2 retained. Planning 5143ab6f; S1–S6 b62bea4e, a3e284d7, 477fe668, 2a3e9f56, a6f6fc50, 50cc5ed2; Stage 7 is this summary's commit. Debug handoff follows as its own log-only commit.
+
+**Original cycle projection: 0.70. Retrospective scope assessment: 0.75.**
+
+Single exposed Codex rater; no measured labor or independent rating. Original S1–S7/v2 0.10/0.15/0.15/0.10/0.15/0.10/0.15 retained; separate retrospectives 0.10/0.15/0.15/0.10/0.15/0.10/0.20. Earlier scope v1 scores/stages remain in approved plan history. Maintainer comfortable-fit and acceptance are pending; accepted-count unchanged. Merge, push and deployment not performed. Previous receipts and pending state are unsupported; new-format recovery is verified. This changes receipt representation and effective interpretation, not the separate signing/CLI entry points or later history-purge scope.
+
+Temporary evidence: /tmp/unified-{regressions,final-flows,final-recovery,browser,menu,source-tests,maintenance-tests,signed-tests}.log and /tmp/retraction-browser-evidence/. Durable results and failure corrections are recorded above.
+
+*— Codex · 2026-10-29 UTC*

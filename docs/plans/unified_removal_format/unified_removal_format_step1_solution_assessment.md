@@ -1,4 +1,4 @@
-> **Feature plan:** Step 1 · [Step 2](unified_removal_format_step2_feature_description.md) · [Step 3](unified_removal_format_step3_development_plan.md) · Step 4 (pending)
+> **Feature plan:** Step 1 · [Step 2](unified_removal_format_step2_feature_description.md) · [Step 3](unified_removal_format_step3_development_plan.md) · [Step 4](unified_removal_format_step4_implementation_summary.md)
 
 Debug mode: enabled (project marker).
 Effort study: `railspike-effort` / `v3/unified_removal_format`; [ledger](../effort_estimation_trial.md#cycle-v3unified_removal_format), standing P2 enrollment.

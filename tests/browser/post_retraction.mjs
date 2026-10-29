@@ -140,7 +140,7 @@ try {
     const signature = await readFile(join(root, 'repository', result.signature_path), 'utf8');
     const receipt = await readFile(join(root, 'repository', result.acceptance_path), 'utf8');
     assert.equal(record, fields.get('canonical_record'));
-    assert.match(receipt, /^Version: 1\nRecord-ID: post-retraction-/);
+    assert.match(receipt, /^Format: removal-acceptance-v1\nPost-ID: /);
     assert.match(signature, /BEGIN PGP SIGNATURE/);
     const verification = await openpgp.verify({ message: await openpgp.createMessage({ text: record }),
       signature: await openpgp.readSignature({ armoredSignature: signature }), verificationKeys: await openpgp.readKey({ armoredKey: keys[role].publicKey }) });

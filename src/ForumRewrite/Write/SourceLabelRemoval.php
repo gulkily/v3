@@ -71,11 +71,13 @@ final class SourceLabelRemoval
                 $remove[] = $path;
             }
             foreach ($remove as $path) {
-                // Include absent tracked files too: interruption may have unlinked them already.
-                try { LabelRemoval::git($root, ['ls-files', '--error-unmatch', '--', $path]); $paths[] = $path; }
-                catch (RuntimeException) { if (is_file($root . '/' . $path)) $paths[] = $path; }
-                try { LabelRemoval::git($root, ['ls-files', '--error-unmatch', '--', $path . '.asc']); $paths[] = $path . '.asc'; }
-                catch (RuntimeException) { if (is_file($root . '/' . $path . '.asc')) $paths[] = $path . '.asc'; }
+                // A rejected commit may already have staged deletion. The path is then
+                // absent from both disk and index, but still belongs to this HEAD commit.
+                foreach ([$path, $path . '.asc', $path . '.sig'] as $candidate) {
+                    if (is_file($root . '/' . $candidate)
+                        || trim(LabelRemoval::git($root, ['ls-files', '--', $candidate])) !== ''
+                        || trim(LabelRemoval::git($root, ['ls-tree', '--name-only', 'HEAD', '--', $candidate])) !== '') $paths[] = $candidate;
+                }
             }
         }
         $journal = self::journal($root, $id);
@@ -83,7 +85,9 @@ final class SourceLabelRemoval
         if ($temporary === false || file_put_contents($temporary, json_encode(['format'=>'removal-recovery-v1','record'=>$record], JSON_THROW_ON_ERROR)) === false || !rename($temporary, $journal)) throw new RuntimeException('Cannot persist removal recovery journal.');
         LabelRemoval::store($root, $record);
         foreach ($paths as $path) if ($path !== $relative && is_file($root . '/' . $path) && !unlink($root . '/' . $path)) throw new RuntimeException('Cannot remove ' . $path);
-        LabelRemoval::git($root, array_merge(['add', '-A', '--'], $paths));
+        $stagePaths = array_values(array_filter($paths, static fn (string $path): bool => is_file($root . '/' . $path)
+            || trim(LabelRemoval::git($root, ['ls-files', '--', $path])) !== ''));
+        LabelRemoval::git($root, array_merge(['add', '-A', '--'], $stagePaths));
         if (trim(LabelRemoval::git($root, array_merge(['diff', '--cached', '--name-only', '--'], $paths))) !== '') {
             LabelRemoval::git($root, array_merge(['commit', '-m', 'Accept source label cleanup ' . $id, '--'], $paths));
         }

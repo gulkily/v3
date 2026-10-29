@@ -3773,7 +3773,12 @@ NODE;
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
         $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
-        $author = $this->createAuthoredThread($app, 'delete-now', 'Delete this prose');
+        $author = $this->createAuthoredThread($app, 'delete-now', "Delete this prose\n#pinned");
+        \ForumRewrite\Write\SourceLabelRemoval::run($root, $db, $author['thread_id'], true, [], $artifacts);
+        $local = \ForumRewrite\Canonical\LabelRemoval::read($root, $author['thread_id']);
+        assertSame('resolve', $local['operation']);
+        assertTrue(count($local['labels']) > 0);
+        assertSame(true, is_file($root . '/' . $author['record_path']));
         $prepared = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
         $fields = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'],
             'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
@@ -3790,6 +3795,9 @@ NODE;
         assertSame(false, is_file($root . '/' . $author['record_path'] . '.asc'));
         $record = \ForumRewrite\Canonical\AcceptedRetraction::read($root, $author['thread_id']);
         assertSame($prepared['canonical_record'], $record['signed_request']);
+        $combined = \ForumRewrite\Canonical\AcceptedRemoval::read($root, $author['thread_id']);
+        assertSame('delete', $combined['operation']);
+        assertSame($local['labels'], $combined['labels']);
         assertSame($prepared['record_path'], $result['record_path']);
         assertSame($result['record_path'] . '.asc', $result['signature_path']);
         assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $result['record_path']));
