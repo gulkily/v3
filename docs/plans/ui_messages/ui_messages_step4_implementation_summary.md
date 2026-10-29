@@ -80,3 +80,22 @@ Extended estimates: enabled
 - Estimate details: as planned.
 
 *— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Conversation list rows
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.13**
+
+- Changes:
+  - `partials/private_message_conversation_row.php`, `private_message_list.js`, `private_message_list.css`: each row shows the name, the time, and a two-line preview ("You:" before your own last message). Until a preview is decrypted, a placeholder of the same height shows instead of "Decrypting preview…" (the word stays for screen readers; without JavaScript "Encrypted message" shows as before). A preview that can't be read says "Couldn’t decrypt preview", "Couldn’t verify preview" or "Couldn’t load preview" on that row, with the reader's reason as its title, and Retry (accessible name "Retry preview") under that row only. No ✓ on rows.
+  - Unread: a dot before the name of an unread conversation; the "Unread" text stays for screen readers. A failed unread check reads "Couldn’t check for new messages. Retry" (accessible name "Retry unread status").
+  - Loading: progress and "N conversations loaded." / "All conversations loaded." are announced but not shown. A failed load shows one line, "Couldn’t load messages.", with Retry (accessible name "Retry loading"), or a Retry link that reloads Messages when the server says the list is out of date (accessible name "Reload Messages"). Load more and the no-JavaScript line are unchanged.
+- Verification:
+  - `private_message_list_browser.mjs` (all modules, including unread indicators and the retry-preview recovery, which now waits for the verified state instead of a visible ✓): passes. `php tests/run.php PrivateMessageListTest PrivateMessagePageControllerTest` (runs `private_message_list.cjs`): 4/4.
+  - `tests/browser/private_message_redesign.mjs` extended to the list: preview text, at most two lines, a "You:" row, no "Decrypting" text, no visible routine notice, the unread dot, no overflow. Four themes, two widths: passes; contact sheets reviewed.
+- Notes:
+  - Every preview reserves two lines, so one-line previews leave a blank second line; rows keep the same height when text replaces the placeholder.
+- Estimate details: slightly under; tests needed only accessible-name-preserving updates.
+
+*— Claude · 2026-10-29 UTC · Model: claude-opus-5-5*

@@ -104,6 +104,22 @@ try {
     assert.equal(await page.getByRole('button', { name: 'Restart history' }).isVisible(), false, `${label}: Restart history waits under ···`);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: no page overflow`);
     if (shots) await page.screenshot({ path: join(shots, `conversation-${theme}-${width}.png`), fullPage: true });
+
+    // The list: name, time, two lines of preview, "You:" on your own last message, an unread dot.
+    await page.goto(base + '/messages');
+    await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
+    await page.waitForFunction(() => !document.querySelector('[data-conversation-row] .is-loading'));
+    const bobRow = page.locator('[data-conversation-row][data-counterpart="bob"]');
+    assert.match(await bobRow.locator('[data-role="preview"]').innerText(), /^ok the new reply box/);
+    const preview = await bobRow.locator('[data-role="preview"]').evaluate(node => ({ height: node.getBoundingClientRect().height, line: parseFloat(getComputedStyle(node).lineHeight) }));
+    assert.ok(preview.height <= preview.line * 2 + 2, `${label}: preview is at most two lines`);
+    assert.equal(await page.locator('[data-conversation-row] [data-role="preview"]').filter({ hasText: /^You: / }).count() > 0, true);
+    assert.equal(await page.getByText(/Decrypting/).count(), 0);
+    assert.equal(await page.locator('[data-role="list-status"]').evaluate(node => node.getBoundingClientRect().width <= 2), true, `${label}: no routine list notice`);
+    const unreadRow = page.locator('[data-conversation-row].is-unread').first();
+    if (await unreadRow.count()) assert.equal(await unreadRow.locator('.message-list-name').evaluate(node => getComputedStyle(node, '::before').content), '""');
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: list has no page overflow`);
+    if (shots) await page.screenshot({ path: join(shots, `list-${theme}-${width}.png`) });
     assert.deepEqual(errors, [], `${label}: no page errors`);
     await context.close();
   }

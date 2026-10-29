@@ -222,12 +222,15 @@ try {
   await retryRow.getByRole('button', { name: 'Retry preview' }).waitFor();
   failKey = false;
   await retryRow.getByRole('button', { name: 'Retry preview' }).click();
-  await retryRow.locator('[data-role="verification"]').waitFor({ state: 'visible' });
+  // Verified rows show no check mark; the reader's state and the preview text show the recovery.
+  await retryRow.locator('[data-role="verification"]:not([hidden])').waitFor({ state: 'attached' });
+  assert.doesNotMatch(await retryRow.locator('[data-role="preview"]').innerText(), /Couldn’t/);
   seed({ action: 'bad-signature', envelope: await encrypt(outsider, 'Unverified secret') });
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
   const bad = page.locator('[data-role="rows"] [data-counterpart="user-59"]');
-  assert.match(await bad.innerText(), /signature.*not.*verified/i);
+  assert.match(await bad.innerText(), /Couldn’t verify preview/);
+  assert.match(await bad.locator('[data-role="preview"]').getAttribute('title'), /signature.*not.*verified/i);
   assert.doesNotMatch(await bad.innerText(), /Unverified secret/);
   for (const legacy of ['inbox', 'sent']) {
     const response = await context.request.get(base + '/messages/' + legacy, { maxRedirects: 0 });
