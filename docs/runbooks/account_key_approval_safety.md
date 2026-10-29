@@ -62,3 +62,44 @@ Preserve all committed grants, signatures, and receipts. Rolling back applicatio
 Notifications, unfamiliar-key reporting, revocation/session invalidation, pairing, and recovery remain separate work. Neither a policy toggle nor hiding a history entry removes access already granted.
 
 Receipt format: [approval acceptance receipt v1](../specs/approval_acceptance_record_v1.md). Related guidance: [authentication modes](../reference/authentication_modes.md) and [instance content import](instance_content_import.md).
+
+## Converting approval receipt storage
+
+Use `./v3 approval receipts inspect`, then `convert --dry-run` with the instance's
+repository and database paths. Resolve reported evidence conflicts before applying
+`convert`. Only old receipts in a clean repository are replaced; grants and
+signatures stay byte-identical. Conversion retains private recovery evidence until
+its commit and read-model refresh succeed. Retry the same command after failures;
+never delete the journal or re-approve a grant to repair conversion.
+
+An unexpected HEAD or edited receipt stops recovery without overwriting the edit.
+Preserve the changes separately and reconcile them against the journal's recorded
+base commit before retrying. Inspection reports only the current repository, not
+all historical backups. See [CLI recovery](../reference/v3_cli.md#approval-receipt-conversion).
+
+### Later removal of the legacy reader
+
+1. Convert each supported live repository, finish pending recovery, then run
+   `./v3 approval receipts readiness` with its repository/database paths. Exit 0
+   means that live tree has no legacy files or blockers; 2 means legacy files
+   remain; 1 means evidence/recovery errors. Inspection itself writes nothing.
+2. Decide explicitly which old archives must remain restorable. A live-tree pass
+   does not inspect external archives. Keep a compatible converter available for
+   retained archives, or convert/verify restored copies and retain replacements
+   before retiring old archive support. This cycle authorizes no retirement.
+3. In a later change remove `Security/LegacyApprovalReceipt.php` and the `.json`
+   branch/path candidate in `ApprovalAcceptance::read`/`existingPaths`. Remove
+   `.json` acceptance recognition from `SourcePathValidator` and
+   `ArchiveRecordCatalog`; retire legacy conversion writes/journal handling only
+   after pending operations are complete. Keep inspection that reports unsupported
+   old files explicitly. Update this spec/runbook and legacy-only fixtures.
+4. Keep `ApprovalReceiptText`, shared acceptance validation, and the existing
+   JSON-based review digest algorithm. Converted text and newly signed grants
+   still need that algorithm; it is unrelated to legacy file decoding.
+5. Run receipt/maintenance/history/API/invitation/import regressions. The
+   `testReadinessAndTextOnlyOperationWithoutLegacyDecoder` test already blocks
+   adapter autoloading in fresh processes and verifies encode/read/rebuild and
+   actual archive restore; retain those checks when the adapter file is removed.
+
+No sunset flag or automatic deletion is introduced. The removal surface is local
+and documented, while backup support remains an explicit compatibility decision.

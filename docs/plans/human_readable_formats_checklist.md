@@ -8,8 +8,8 @@ Source audit: 2026-10-25, baseline `2a07313a738af9e0a0f15796e8155d301d949ed5`.
 Includes repository records, source routes, exports, operator configuration,
 reports, CLI output, and browser templates. This is a static source inventory,
 not runtime verification or a claim that every diagnostic path was exercised.
-Priorities below identify follow-up work. Retraction replacement (F01/R04) and shared removal receipts (F02) are
-complete; the remaining conversions are not authorized by this checklist.
+Priorities below identify follow-up work. Retraction replacement (F01/R04), shared removal receipts (F02) and approval
+acceptance receipts (F03) are complete; the remaining conversions are not authorized by this checklist.
 
 Latest source review: 2026-10-27, baseline
 `085c47701f57334164f7fe1c562454443cd65596`. At that review, 2 of 16 audit items were complete
@@ -20,6 +20,11 @@ it is not a fresh exhaustive inventory or runtime verification.
 2026-10-29 conversion checkpoint: 3 complete (F01/F02/R04), 13 open
 (10 conversions F03–F12 and 3 boundary checks R01–R03). F02 verification and
 F01 shared-format integration are recorded in the [implementation summary](unified_removal_format/unified_removal_format_step4_implementation_summary.md).
+
+2026-10-29 F03 closeout: 4 complete (F01/F02/F03/R04), 12 open
+(9 conversions F04–F12 and 3 boundary checks R01–R03). F03 retains legacy
+compatibility with an explicit conversion and future-reader-removal path; earlier
+counts remain historical. [Verification](approval_acceptance_text/approval_acceptance_text_step4_implementation_summary.md).
 
 ## Prioritization rubric
 
@@ -37,7 +42,7 @@ Each item shows its score and **C/E/F** inputs so the ranking is reviewable.
 Within each section, work highest score first; ties use the existing item ID.
 IDs stay stable and are not ranks. Scores prioritize value, not implementation
 sequence: F01 and its companion R04 were completed together. Among the remaining
-canonical conversions, F03 is now highest priority; this
+canonical conversions, F05 is now highest priority; this
 ranking does not select or approve a new implementation cycle.
 Boundary-check scores prioritize **investigation only**, not an unconfirmed
 conversion; do not combine their queue with confirmed rewrites. Re-score when
@@ -56,7 +61,7 @@ actual user evidence or a clarified human-facing contract changes an input.
 
 - [x] **F01 · Priority 11/12 (C/E/F 3/2/3) — Retraction acceptance.** Replaced JSON with a signed text request, detached signature and separate text acceptance receipt. Preserved new-request signing, actor/author attribution, structure, deletion/retry, rebuild, import protection and cleanup. Evidence: [AcceptedRetraction](../../src/ForumRewrite/Canonical/AcceptedRetraction.php), [source paths](../../src/ForumRewrite/Canonical/SourcePathValidator.php), [import planner](../../src/ForumRewrite/Import/ContentImportPlanner.php), [sweep](../../src/ForumRewrite/Retraction/RetractionSweep.php). [Current assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md). Existing retractions need not be converted or supported. The subsequent [shared-format cycle](unified_removal_format/unified_removal_format_step4_implementation_summary.md) replaces the original F01 receipt codec for new records.
 - [x] **F02 · Priority 11/12 (C/E/F 3/2/3) — Source/label removal acceptance.** Replaced JSON with `records/post-removals/*.txt`, sharing the readable receipt codec and interpretation with signed F01 retractions. Retains source/label hashes, conversation structure and distinct local/signed authority; compatible same-post bindings combine without losing signed evidence. Previous F01 text receipts and F02 JSON are unsupported, with no migration or old-state recovery. Evidence: [shared contract](../specs/removal_acceptance_record_v1.md), [LabelRemoval](../../src/ForumRewrite/Canonical/LabelRemoval.php), [verification and limitations](unified_removal_format/unified_removal_format_step4_implementation_summary.md).
-- [ ] **F03 · Priority 11/12 (C/E/F 3/2/3) — Approval acceptance receipts.** `records/approval-acceptances/*.json` contains nested reviewed context and is source-readable. Use named text fields; preserve grant/context hash bindings and the distinction between a signed grant and local acceptance. Decide historical digest compatibility explicitly before changing serialization. Evidence: [ApprovalAcceptance](../../src/ForumRewrite/Security/ApprovalAcceptance.php), [receipt specification](../specs/approval_acceptance_record_v1.md).
+- [x] **F03 · Priority 11/12 (C/E/F 3/2/3) — Approval acceptance receipts.** New receipts use named text fields at `records/approval-acceptances/*.txt`, preserving grant bytes and historical signed context digests. Existing JSON evidence remains readable through an isolated adapter; explicit preview/conversion/retry and readiness commands preserve authority, restore and acceptance facts. The removal guide separates legacy file decoding from retained digest verification and requires an old-archive decision. Evidence: [receipt specification](../specs/approval_acceptance_record_v1.md), [implementation and verification](approval_acceptance_text/approval_acceptance_text_step4_implementation_summary.md). No production conversion or legacy-reader retirement performed.
 - [ ] **F04 · Priority 9/12 (C/E/F 3/2/1) — Legacy timestamp companions.** `records/post-timestamps/*.json` contains three scalar fields. Replace with text headers and retain the exact original-record hash binding. Evidence: [LegacyPostTimestamp](../../src/ForumRewrite/Canonical/LegacyPostTimestamp.php), [post specification](../specs/canonical_post_record_v1.md).
 - [ ] **F05 · Priority 10/12 (C/E/F 3/2/2) — Agent response metadata inside posts.** `Agent-Response: {…}` embeds JSON in canonical signed replies. Replace with individually named headers; update post parsing, response/expansion writers and offline/read-model consumers without losing attribution or version relationships. Explicitly define existing signed-record handling; do not rewrite historical signed bytes merely to rename metadata fields. Evidence: [AgentResponseMetadata](../../src/ForumRewrite/Canonical/AgentResponseMetadata.php), [LocalWriteService](../../src/ForumRewrite/Write/LocalWriteService.php), [PostRecordParser](../../src/ForumRewrite/Canonical/PostRecordParser.php).
 
@@ -160,5 +165,17 @@ CLI/API/browser, source/archive, rebuild/import, label-only resolution and new-a
 recovery checks are recorded in the linked implementation summary. No production
 data deletion, deployment or history purge; zero dependency delta. Other item
 scores and the earlier static-review checkpoint remain historical and unchanged.
+
+*— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 approval receipt closeout
+
+F03 is complete locally. Text-only writes, validated legacy conversion/retry,
+source/history, full/incremental rebuild, trusted archive restore and independent
+reader-retirement checks passed. Signed context hashing remains unchanged and
+separate from legacy storage decoding. Production conversion, actual reader
+removal, old-backup abandonment and deployment are not performed. Other format
+families remain outside this cycle. See the linked implementation summary for
+commands, browser evidence and limitations.
 
 *— Codex · 2026-10-29 UTC*

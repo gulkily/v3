@@ -36,12 +36,12 @@ and the bootstrap flow.
 ## Synchronize Railspike workflow documentation
 
 ```bash
-./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.4.0]
+./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.5.0-beta.1]
 ./v3 fdp sync ... # deprecated alias; updates Railspike, never FDP
 ```
 
 Updates the vendored `docs/railspike/` subtree to an explicit release tag
-(`--ref`, default the pinned `v0.4.0`), creating Git update commits. Branch
+(`--ref`, default the pinned `v0.5.0-beta.1`), creating Git update commits. Branch
 names such as `main` are refused, so a plain sync never moves the installed
 version. The tag must descend from the commit in `docs/railspike/RAILSPIKE_SOURCE.md`,
 which the command updates and commits after a successful merge. The target defaults to this checkout; `--repository-root`
@@ -1162,3 +1162,29 @@ commit/refresh retry recovery: fix the reported failure and repeat the command.
 Unsupported journal versions stop before mutation; do not reinterpret them as
 new receipts. Rollback requires a matching verified repository/application backup;
 a binary-only downgrade cannot read the new format.
+
+## Approval receipt conversion
+
+`./v3 approval receipts inspect` reports validated receipt paths and blockers.
+`./v3 approval receipts convert --dry-run` previews without changing files or
+creating a database. `convert` requires a clean Git repository, takes the instance's
+write lock, commits validated text replacements, and rebuilds the read model.
+Use `--repository-root` and `--database-path` together for a non-default instance;
+the database path must be the one that instance uses, so its write lock is shared.
+All three accept `--json` for machine output; normal output uses named values.
+
+Retry the same conversion command after interruption or a failed commit/refresh.
+Original receipt bytes remain in `.git/approval-receipt-conversion.json` (or the
+worktree's Git directory) until refresh succeeds. This is private recovery state,
+not a canonical record or editable operator configuration. Do not remove it while
+recovery is pending. The command refuses intervening edits, unrelated dirty files
+or an unexpected HEAD. Preserve those changes and restore the transaction's
+expected state before retrying; do not reset the whole repository or approve again.
+A committed conversion changes receipt representation, never grant/signature bytes.
+
+`./v3 approval receipts readiness` is read-only. It reports remaining legacy
+files, malformed/orphan/conflicting receipts and pending conversion recovery.
+Exit 0 means the live repository is ready; exit 2 means legacy files remain;
+exit 1 means blockers. Archive coverage remains unknown in all cases. Follow the
+[reader retirement procedure](../runbooks/account_key_approval_safety.md#later-removal-of-the-legacy-reader)
+before a later removal change.
