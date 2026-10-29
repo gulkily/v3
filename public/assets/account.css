@@ -106,11 +106,6 @@
   font-size: 0.85rem;
 }
 
-.chip--approved {
-  border-color: var(--status-ok, var(--line));
-  color: var(--status-ok, var(--ink));
-}
-
 .account-group {
   display: flex;
   flex-direction: column;

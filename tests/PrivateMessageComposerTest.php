@@ -165,17 +165,17 @@ NODE;
             $this->addProfile($pdo, 'openpgp:pending', 'openpgp-pending', 'pending', 0);
 
             $eligible = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:alice', 'username_token' => 'alice', 'is_approved' => 1], 'ilyag');
-            assertStringContains('data-private-message-composer', $eligible);
-            assertStringContains('data-recipient-username-token="ilyag"', $eligible);
-            assertStringContains('data-sender-username-token="alice"', $eligible);
-            assertStringContains('/assets/private_message_compose.', $eligible);
+            // The person page offers Message, which opens the conversation, instead of an embedded composer.
+            assertStringContains('action="/messages/conversation/ilyag"', $eligible);
+            assertStringNotContains('data-private-message-composer', $eligible);
 
             $self = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:ilyag-one', 'username_token' => 'ilyag', 'is_approved' => 1], 'ilyag');
             $unapproved = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:mallory', 'username_token' => 'mallory', 'is_approved' => 0], 'ilyag');
             $pendingOnly = $this->renderUsername($databasePath, ['identity_id' => 'openpgp:alice', 'username_token' => 'alice', 'is_approved' => 1], 'pending');
+            assertStringContains('Edit in Account', $self);
             foreach ([$self, $unapproved, $pendingOnly] as $html) {
+                assertStringNotContains('action="/messages/conversation/', $html);
                 assertStringNotContains('data-private-message-composer', $html);
-                assertStringNotContains('/assets/private_message_compose.', $html);
             }
         } finally {
             @unlink($databasePath);
