@@ -2199,7 +2199,7 @@ PHP;
         assertStringContains('BEGIN PGP PUBLIC KEY BLOCK', $profile);
         assertStringContains('Approved by:</strong>', $profile);
         assertStringContains('root', $profile);
-        assertStringContains('<h1>guest</h1>', $username);
+        assertStringContains('<h1 class="account-name">guest</h1>', $username);
         assertStringNotContains('Approved Profiles', $username);
         assertStringContains('<span class="chip chip--approved">Approved</span>', $username);
         assertStringContains('<h2 class="person-identities__title">Identities</h2>', $username);

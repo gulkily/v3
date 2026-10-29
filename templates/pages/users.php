@@ -16,17 +16,12 @@
       <option value="name">Name</option>
     </select>
   </div>
-  <ul class="user-rows" data-users-list>
+  <div class="account-group" data-users-list>
 <?php foreach ($users as $index => $user): ?>
 <?php $threads = (int) $user['thread_count']; $posts = (int) $user['post_count']; ?>
-    <li data-user-name="<?= $e(strtolower((string) $user['username'])) ?>" data-user-rank="<?= $e($index) ?>">
-      <a class="user-row" href="/user/<?= $e($user['username_token']) ?>">
-        <span class="user-row__name"><?= $e($user['username']) ?><?php if ((string) ($user['username'] ?? '') === 'reply-agent'): ?> <span class="chip agent-label">Agent</span><?php endif; ?></span>
-        <span class="user-row__counts meta"><?= $e($threads) ?> <?= $threads === 1 ? 'thread' : 'threads' ?> · <?= $e($posts) ?> <?= $posts === 1 ? 'post' : 'posts' ?></span>
-      </a>
-    </li>
+    <a class="account-row account-row--link" data-tone="neutral" href="/user/<?= $e($user['username_token']) ?>" data-user-name="<?= $e(strtolower((string) $user['username'])) ?>" data-user-rank="<?= $e($index) ?>"><span class="account-row__title"><?= $e($user['username']) ?><?php if ((string) ($user['username'] ?? '') === 'reply-agent'): ?> <span class="chip agent-label">Agent</span><?php endif; ?></span><span class="account-row__value"><?= $e($threads) ?> <?= $threads === 1 ? 'thread' : 'threads' ?> · <?= $e($posts) ?> <?= $posts === 1 ? 'post' : 'posts' ?></span></a>
 <?php endforeach; ?>
-  </ul>
+  </div>
   <p class="meta" data-users-none hidden>No members match.</p>
   <script>
     // Search and sort the list already on the page; without JavaScript the full list shows in activity order.

@@ -3086,7 +3086,7 @@ NODE;
         assertTrue(is_file($repositoryRoot . '/records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
         assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
         assertStringContains('<h1>forum-user</h1>', $profile);
-        assertStringContains('<h1>forum-user</h1>', $usernameRoute);
+        assertStringContains('<h1 class="account-name">forum-user</h1>', $usernameRoute);
         assertStringNotContains('Approved Profiles', $usernameRoute);
         // Manage access is shown to operators only.
         assertStringNotContains('/tools/user-access/accounts/forum-user', $usernameRoute);
@@ -6495,7 +6495,7 @@ NODE;
         assertStringContains('status=ok', $firstResponse);
         assertStringContains('status=ok', $secondResponse);
         assertStringContains('status=ready', $status);
-        assertStringContains('<h1>forum-user</h1>', $usernameRoute);
+        assertStringContains('<h1 class="account-name">forum-user</h1>', $usernameRoute);
         assertStringContains('No approved member uses this name.', $usernameRoute);
         assertStringNotContains('Unapproved Profiles', $usernameRoute);
     }
@@ -6515,7 +6515,7 @@ NODE;
 
         $usernameRoute = $this->renderMethod($application, 'GET', '/user/forum-user');
 
-        assertStringContains('<h1>forum-user</h1>', $usernameRoute);
+        assertStringContains('<h1 class="account-name">forum-user</h1>', $usernameRoute);
         assertStringContains('No approved member uses this name.', $usernameRoute);
         assertStringNotContains('Unapproved Profiles', $usernameRoute);
         // Manage access is shown to operators only.

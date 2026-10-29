@@ -45,8 +45,8 @@ try {
 
   // Members: compact rows, search and sort.
   await page.goto(base + '/users/');
-  assert.equal(await page.locator('.users-tabs a[aria-current="page"]').textContent(), 'Members');
-  const rows = page.locator('[data-users-list] > li:not([hidden])');
+  assert.equal(await page.locator('nav.board-filter[aria-label="Users"] a[aria-current="page"]').textContent(), 'Members');
+  const rows = page.locator('[data-users-list] > a:not([hidden])');
   const before = await rows.count();
   assert.ok(before >= 1);
   await page.getByRole('searchbox', { name: 'Search members' }).fill('browser-in');
@@ -61,7 +61,7 @@ try {
 
   // Your own page: Edit in Account, no Message.
   await page.getByRole('searchbox', { name: 'Search members' }).fill('browser-in');
-  await rows.first().locator('a').click();
+  await rows.first().click();
   await page.getByRole('heading', { name: 'browser-inviter', exact: true }).waitFor();
   assert.equal(await page.locator('.person-head .chip--approved').textContent(), 'Approved');
   assert.equal(await page.getByRole('button', { name: 'Edit in Account' }).isVisible(), true);
@@ -75,7 +75,7 @@ try {
   await page.goto(base + '/users/');
   await page.getByRole('link', { name: /^Waiting \(\d+\)$/ }).click();
   await page.waitForURL(/\/users\/pending/);
-  assert.match(await page.locator('.users-tabs a[aria-current="page"]').textContent(), /^Waiting \(\d+\)$/);
+  assert.match(await page.locator('nav.board-filter[aria-label="Users"] a[aria-current="page"]').textContent(), /^Waiting \(\d+\)$/);
   const row = page.locator(`[data-role="pending-approval-row"][data-profile-slug="${memberSlug}"]`);
   await row.waitFor();
   page.on('dialog', dialog => void dialog.accept());
@@ -83,14 +83,14 @@ try {
   // Approved in place: the row goes, the count follows, and the confirmation shows beside the list.
   await page.getByText('Approved user browser-member.').waitFor();
   assert.equal(await row.count(), 0);
-  assert.match(await page.locator('.users-tabs a[aria-current="page"]').textContent(), /^Waiting \(\d+\)$/);
-  assert.equal(await page.locator('.users-tabs a[aria-current="page"]').textContent(), 'Waiting (' + await page.locator('[data-role="pending-approval-row"]').count() + ')');
+  assert.match(await page.locator('nav.board-filter[aria-label="Users"] a[aria-current="page"]').textContent(), /^Waiting \(\d+\)$/);
+  assert.equal(await page.locator('nav.board-filter[aria-label="Users"] a[aria-current="page"]').textContent(), 'Waiting (' + await page.locator('[data-role="pending-approval-row"]').count() + ')');
   await page.screenshot({ path: '/tmp/users-approved-390.png', fullPage: true });
 
   // The new member is now in the directory; their page offers Message, which opens the conversation.
   await page.goto(base + '/users/');
   await page.getByRole('searchbox', { name: 'Search members' }).fill('browser-member');
-  await rows.first().locator('a').click();
+  await rows.first().click();
   await page.getByRole('heading', { name: 'browser-member', exact: true }).waitFor();
   await page.screenshot({ path: '/tmp/users-person-390.png', fullPage: true });
   await page.getByRole('button', { name: 'Message' }).click();
@@ -102,7 +102,7 @@ try {
   const anonymous = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const visitor = await anonymous.newPage();
   await visitor.goto(base + '/users/');
-  assert.equal(await visitor.locator('.users-tabs').count(), 0, 'no Waiting tab for visitors who cannot open it');
+  assert.equal(await visitor.locator('nav.board-filter[aria-label="Users"]').count(), 0, 'no Waiting tab for visitors who cannot open it');
   const forbidden = await visitor.goto(base + '/users/pending');
   assert.equal(forbidden.status(), 403);
   await anonymous.close();
@@ -112,7 +112,7 @@ try {
   const plainPage = await plain.newPage();
   await plainPage.goto(base + '/users/');
   assert.equal(await plainPage.getByRole('searchbox', { name: 'Search members' }).isVisible(), false);
-  assert.ok(await plainPage.locator('[data-users-list] > li').count() >= 2);
+  assert.ok(await plainPage.locator('[data-users-list] > a').count() >= 2);
   await plain.close();
   console.log('PASS users and profiles: search, sort, own page, Replies, approve from Waiting, Message opens the conversation, Waiting for approved members only, no JavaScript');
 } catch (error) { console.error(logs.slice(-3000)); throw error; }

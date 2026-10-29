@@ -55,7 +55,7 @@ try {
     // Users › Waiting lists the same people beside the member directory.
     await page.goto(base + '/users/pending/');
     assert.equal(new URL(page.url()).pathname, '/users/pending/');
-    assert.equal(await page.locator('.users-tabs a[aria-current="page"]').textContent(), 'Waiting (' + await page.locator('[data-role="pending-approval-row"]').count() + ')');
+    assert.equal(await page.locator('nav.board-filter[aria-label="Users"] a[aria-current="page"]').textContent(), 'Waiting (' + await page.locator('[data-role="pending-approval-row"]').count() + ')');
     await page.goto(base + '/users/');
     await page.locator('main a[href="/user/browser-inviter"]').click();
     assert.equal(await page.locator('.account-key-history,[data-signed-approval-form]').count(), 0);

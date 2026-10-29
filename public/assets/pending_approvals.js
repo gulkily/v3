@@ -56,7 +56,7 @@
           row.remove();
         }
         // Users › Waiting (N) counts the rows still waiting.
-        const waitingTab = document.querySelector('.users-tabs a[aria-current="page"][href="/users/pending"]');
+        const waitingTab = document.querySelector('nav.board-filter[aria-label="Users"] a[aria-current="page"][href="/users/pending"]');
         if (waitingTab && body) {
           waitingTab.textContent = `Waiting (${body.children.length})`;
         }

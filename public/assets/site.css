@@ -827,27 +827,10 @@ pre {
   color: var(--status-ok, var(--ink));
 }
 
-/* Users: Members | Waiting, compact person rows, and the person page head. */
+/* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
+   only page-specific layout lives here. */
 .users-page__title {
   margin: 0;
-}
-.users-tabs {
-  display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-}
-.users-tabs a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  text-decoration: none;
-}
-.users-tabs a[aria-current="page"] {
-  border-color: currentColor;
-  font-weight: 600;
 }
 .users-tools {
   display: flex;
@@ -868,64 +851,14 @@ pre {
     display: none;
   }
 }
-.user-rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-.user-rows > li + li {
-  border-top: 1px solid var(--line);
-}
-.user-rows > li[hidden] {
-  display: none;
-}
-.user-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.25rem 0.75rem;
-  min-height: 56px;
-  box-sizing: border-box;
-  padding: 0.65rem 0.9rem;
-  text-decoration: none;
-}
-.user-row__name {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.user-row__counts {
-  white-space: nowrap;
-}
-.person-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
+.account-group > .account-row[hidden],
 .person-head > .starfield.banner:empty {
   display: none;
 }
-.person-head__main {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-.person-head__main h1 {
+.person-head .account-name {
   margin: 0;
-  overflow-wrap: anywhere;
-}
-.person-head__stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  margin: 0.25rem 0 0;
 }
 .person-head__action {
-  flex: 0 0 auto;
   margin: 0;
 }
 .person-head__action button {
@@ -933,13 +866,14 @@ pre {
   min-height: 44px;
   margin: 0;
 }
+.person-page .account-key-fingerprint-value {
+  flex: 0 0 auto;
+  font-family: var(--mono-font, ui-monospace, monospace);
+  white-space: nowrap;
+}
 .person-identities__title {
   margin: 0.5rem 0 0;
   font-size: 1rem;
-}
-.person-identity__key {
-  font-family: var(--mono-font, ui-monospace, monospace);
-  font-weight: 400;
 }
 
 .board-empty {
