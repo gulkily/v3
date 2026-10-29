@@ -100,7 +100,7 @@ try {
   assert.equal(await member.page.locator('[data-role="simple-status-badge"]').textContent(), 'Approved');
   assert.equal(await member.page.locator('[data-role="user-link"]').getAttribute('href'), '/user/alice');
   assert.equal(await member.page.locator('[data-role="user-link"]').textContent(), 'All of alice’s posts');
-  assert.match(await member.page.locator('[data-role="fingerprint-field"]').textContent(), /^[0-9A-F]{4} [0-9A-F]{4} … [0-9A-F]{4}$/);
+  assert.match(await member.page.locator('[data-role="fingerprint-field"]').textContent(), /^openpgp-[0-9a-f]{9}\.\.\.$/);
   assert.equal(await member.page.locator('[data-action="remove-key"]').isVisible(), true);
   // Later visits: the identity hint lets the server state approval before paint.
   await member.page.waitForFunction(() => document.cookie.includes('identity_hint='));
