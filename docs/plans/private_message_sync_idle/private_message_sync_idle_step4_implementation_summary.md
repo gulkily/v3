@@ -32,3 +32,14 @@ Step 4 entry: 2026-10-29 UTC; 0.75 reaffirmed, scope v1/A, original baseline 02d
 - Notes: Contribution evidence means supplied, not readable. Recipient foreground candidate validation/retry and other donors remain available; explicit legacy sender discovery/upload retains same-donor repair. No recipient receipt is consulted by the new lookup. Prior stage commit: 4a552bbeb. No estimate revision.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 3 - Bounded combined discovery
+
+**Original estimate: 0.16**
+**Retrospective stage work: 0.16**
+
+- Changes: Add same-origin POST work for combined account/sender discovery, up to eight pages per mode, with completed-mode and continuation fields. Return pending bundles directly. Advance only empty/covered discovery pages server-side, never client work or access receipts. Preserve legacy GET modes. Reuse own contribution evidence for other own-account targets too.
+- Verification: 17/17 history/API routing tests pass; coverage includes genuine idle, 151-message covered history requiring bounded continuation, new target keys and unchanged unprocessed cursors. Initial fixture incorrectly requested an unbounded existing helper; corrected fixture to enumerate its seeded records directly. Syntax/whitespace checked.
+- Notes: POST is deliberate because empty discovery progress mutates scan positions. No tables/schema/dependencies added. Prior stage commit: fc7c501f5. No estimate revision.
+
+*— Codex · 2026-10-29 UTC*
