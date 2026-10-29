@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](approval_acceptance_text_step1_solution_assessment.md) · [Step 2](approval_acceptance_text_step2_feature_description.md) · [Step 3](approval_acceptance_text_step3_development_plan.md) · Step 4 pending
+> **Feature plan:** [Step 1](approval_acceptance_text_step1_solution_assessment.md) · [Step 2](approval_acceptance_text_step2_feature_description.md) · [Step 3](approval_acceptance_text_step3_development_plan.md) · [Step 4](approval_acceptance_text_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/approval_acceptance_text — [ledger](../effort_estimation_trial.md)

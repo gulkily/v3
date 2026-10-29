@@ -67,7 +67,7 @@ final class ApprovalAcceptanceTest
     public function testTextPreservesSignedContextOrderAndRejectsMalformedEvidence(): void
     {
         $this->fixture(function (string $root, array $context): void {
-            $context['actor_username'] = 'é/"alice';
+            $context['actor_username'] = 'é/"actor_username":"alice';
             foreach ([$context, array_reverse($context, true)] as $ordered) {
                 $contents = $this->post('grant', 'approval', $ordered['actor_identity_id'],
                     "Approve-Identity-ID: " . $ordered['target_identity_id'] . "\nApproval-Context-SHA256: " . hash('sha256', json_encode($ordered, JSON_THROW_ON_ERROR)) . "\n");

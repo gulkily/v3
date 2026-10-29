@@ -45,3 +45,13 @@ Uncertain assessments: The one-page target conflicts with six stages' required f
 Verification: Planning links and whitespace checked; frozen R1 hashes verified; state inherited enabled. Source inspection identified path assumptions in recoverAcceptedApproval and receipt identities in ArchiveRecordCatalog. No tests, application changes or commits performed.
 
 *— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 UTC — Step 4 closeout
+
+Necessary/useful instructions: Stage-boundary commits exposed the conversion retry failure before dependent readiness work. Completion-contract verification required actual archive restores and signed browser actions, and uncovered obsolete browser-test assumptions. The concept inventory now documents only touched acceptance/review/replay behavior. Retain.
+Redundant/unnecessary instructions: No supported findings.
+Inapplicable instructions: No new dependency approval or schema-change protocol was needed; no product UI copy or navigation destinations changed. Production migration/deployment remains outside authorization.
+Uncertain assessments: The older account-key browser suite's confirmation expectation is obsolete against current UI; it remains a disclosed failing check, replaced for F03 acceptance by a focused current-flow test. Full-suite and physical-device evidence is unavailable, not inferred from focused passes.
+Verification: Six stage boundaries, scoped commits, 59 focused PHP passes plus one edge check, signed actual browser conversion/history/source/rebuild, invitation browser recovery, private-source restriction and legacy-reader-unavailable restore. Final dependency delta zero. Remaining release/study limits are in the implementation summary. Mode remains enabled; no diagnostic upload.
+
+*— Codex · 2026-10-29 UTC*

@@ -927,7 +927,7 @@ PHP;
             assertStringContains('data-auth-return-to="/threads/root-001"', $threadResume);
             $boardResume = $this->render($application, '/?view=recent');
             assertStringContains('data-auth-return-to="/?view=recent"', $boardResume);
-            foreach (['/user/guest', '/forte/user/guest', '/source/current/records/approval-acceptances/example.json'] as $route) {
+            foreach (['/user/guest', '/forte/user/guest', '/source/current/records/approval-acceptances/example.json', '/source/current/records/approval-acceptances/example.txt'] as $route) {
                 $restricted = $this->render($application, $route);
                 assertStringNotContains('Account key history', $restricted);
                 assertStringNotContains('actor_identity_id', $restricted);

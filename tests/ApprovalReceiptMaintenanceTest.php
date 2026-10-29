@@ -68,6 +68,8 @@ final class ApprovalReceiptMaintenanceTest
         $service = new ApprovalReceiptMaintenance($root, $db);
         $this->rejects(fn () => $service->convert(false), 'Git operation failed');
         unlink($hook);
+        [$code, $staged] = $w->command(['git', '-C', $root, 'diff', '--cached', '--name-only']);
+        assertSame('', trim($staged));
         $new = $root . '/' . ApprovalAcceptance::path('grant'); $bytes = file_get_contents($new);
         file_put_contents($new, 'Intervening edit');
         $this->rejects(fn () => $service->convert(false), 'Receipt changed');
@@ -130,6 +132,24 @@ final class ApprovalReceiptMaintenanceTest
         unlink($root . '/.git/approval-receipt-conversion.json');
         file_put_contents($root . '/records/approval-acceptances/orphan.txt', $text);
         assertSame(false, $service->readiness()['live_repository_ready']);
+    }
+
+    public function testSymlinkDirectoryIsRejectedAndExistingEquivalentTextIsPreserved(): void
+    {
+        [$w, $root, $db, $grant, $text] = $this->fixture();
+        $dir = $root . '/records/approval-acceptances'; $outside = $w->root . '/outside';
+        rename($dir, $outside); symlink($outside, $dir);
+        $service = new ApprovalReceiptMaintenance($root, $db);
+        $this->rejects(fn () => $service->inspect(), 'symlink');
+        assertSame(true, is_file($outside . '/grant.json'));
+        unlink($dir); rename($outside, $dir);
+        $lines = explode("\n", rtrim($text, "\n"));
+        [$lines[1], $lines[2]] = [$lines[2], $lines[1]];
+        $equivalent = implode("\n", $lines) . "\n";
+        file_put_contents($root . '/' . ApprovalAcceptance::path('grant'), $equivalent);
+        $w->command(['git', '-C', $root, 'add', '.']); $w->command(['git', '-C', $root, 'commit', '-qm', 'Equivalent text fixture']);
+        assertSame('converted', $service->convert(false)['status']);
+        assertSame($equivalent, file_get_contents($root . '/' . ApprovalAcceptance::path('grant')));
     }
 
     private function rejects(callable $call, string $message): void

@@ -66,3 +66,24 @@ Approved Step 3 received. Branch: feature/approval-acceptance-text. Planning com
 - Notes: S4 commit 83b4dba9. Actual reader retirement and archive policy remain future decisions; estimates unchanged.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 6 - Acceptance and closeout
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.20**
+
+- Changes: Added actual-browser F03 acceptance, private text-source restriction check and edge regressions. Corrected legacy string tokenization for quoted key-like values, preserved equivalent existing text bytes, rejected symlink receipt directories, and moved temporary writes into private Git staging. Intent-to-add plus scoped commit prevents failed hooks leaving receipt contents staged for unrelated writes.
+- Verification: Final focused PHP run 59/59 across receipt, maintenance, history, policy/audit, archive/import, invitation, signed API, full/incremental rebuild, refresh failure, private source restrictions and source allowlist. Additional directory-symlink/equivalent-text test 1/1. Maintenance failure tests prove pre-commit hook retry, no staged contents on failure, intervening-edit preservation, lock contention and journal/text-write/committed/refresh interruptions. Syntax, shell help, whitespace and local document links checked.
+- Browser: `node tests/browser/approval_receipt_text.mjs` passes actual signed new/own/cross-account approvals, failed-commit retry, source navigation, signed-evidence conversion with identical Git trees for posts/signatures/keys, rebuild and readiness. Tools account/key history rendered at 390/1280px across all 13 themes supported by the fixture; standalone Forte account/key history also checked. Expanded evidence has no page overflow; phone Light/Word97 screenshots visually inspected. `node tests/browser/invite_zero_click.mjs` passes public and members-only invitation acceptance/recovery and disabled-rename cases.
+- Test limitations/corrections: Existing `account_key_approval.mjs` stops at an obsolete confirmation-dialog cancellation expectation; product now intentionally submits without that dialog. It was not rewritten or counted as a pass. Dedicated F03 browser test uses the actual interface. Its initial fixture checks were corrected for collapsed links, unthemed standalone Forte and site-specific themes unavailable to this fixture; final run passes. Full PHP suite, physical devices, other branded-site themes and other browser engines were not run.
+- Notes: S5 commit 4dd7969b. No product UI copy/layout changes; existing first-paint behavior retained. Zero dependency or read-model schema delta. F03 closed in audit; other conversions untouched. S6 retrospective increase reflects acceptance fixture work, not expanded product scope.
+
+## Study closeout and release limits
+
+Planning aa9a7f7b; S1 cee88cbc; S2 1aca4c67; S3 cdb2043a; S4 83b4dba9; S5 4dd7969b; S6 is the commit containing this closeout. Six of six stages complete locally. Scope v2/A, original baseline, R1/P2, single exposed Codex rater retained. Entry projection **0.75** unchanged; separate **retrospective scope assessment: 0.80**. Stage originals 0.15/0.15/0.10/0.20/0.10/0.15; retrospectives 0.15/0.15/0.10/0.20/0.10/0.20, non-additive. No measured labor or independent rating; pristine intake remains missing. Maintainer comfortable-fit/acceptance pending; no accepted-count increment.
+
+No production data was converted or deleted. Legacy reader remains installed; readiness is not permission to abandon old archives. No merge, push, deployment, dependency change or history purge. All conversions and failure injection used disposable fixtures. Runtime logs/screenshots were captured under `/tmp/f03-*`; commands and outcomes above are the durable record. Ledger and debug log updated; no `todo.txt` edits.
+
+*— Codex · 2026-10-29 UTC*
+
+Document verification note: The first whole-ledger link scan encountered pre-existing historical missing targets. Rechecked changed documents against baseline: newly introduced links resolve; historical broken targets are left untouched. Local anchors/remote websites were not audited.

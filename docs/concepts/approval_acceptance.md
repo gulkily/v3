@@ -3,7 +3,11 @@
 Purpose: Preserve local acceptance facts without confusing them with member signatures.
 Scenario: A member signs an approval; the server records the exact grant hash and
 reviewed context, then history/replay validate both before attributing acceptance.
-Sources: `src/ForumRewrite/Security/ApprovalAcceptance.php`,
+An operator can explicitly convert legacy receipts while retaining exact signed
+evidence, then check readiness for a later reader-removal decision; old archives
+are a separate compatibility obligation.
+Sources: `src/ForumRewrite/Support/ApprovalReceiptMaintenance.php`,
+`src/ForumRewrite/Security/ApprovalAcceptance.php`,
 `src/ForumRewrite/Security/ApprovalReceiptText.php`,
 `docs/specs/approval_acceptance_record_v1.md`.
 

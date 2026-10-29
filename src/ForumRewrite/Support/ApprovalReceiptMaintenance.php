@@ -17,6 +17,9 @@ final class ApprovalReceiptMaintenance
     public function inspect(): array
     {
         $rows = []; $blockers = []; $legacy = 0; $ids = [];
+        foreach (['records', 'records/approval-acceptances'] as $dir) {
+            if (is_link($this->root . '/' . $dir)) throw new RuntimeException('Receipt directory must not be a symlink: ' . $dir);
+        }
         foreach (glob($this->root . '/records/approval-acceptances/*') ?: [] as $file) {
             $name = basename($file);
             if (!preg_match('/^([A-Za-z0-9][A-Za-z0-9._-]*)\.(txt|json)$/D', $name, $match)) {
@@ -72,11 +75,14 @@ final class ApprovalReceiptMaintenance
                     $grant = ApprovalAcceptance::grantPath($this->root, $id);
                     $data = ApprovalAcceptance::read($this->root, $grant);
                     $journal['entries'][] = ['id' => $id, 'old' => base64_encode($this->readFile($old)),
-                        'new' => base64_encode(ApprovalReceiptText::encode($data)),
+                        'new' => base64_encode(is_file($this->root . '/' . $new) ? $this->readFile($new) : ApprovalReceiptText::encode($data)),
                         'had_text' => is_file($this->root . '/' . $new), 'grant' => $grant,
                         'grant_hash' => hash('sha256', $this->readFile($grant))];
                 }
                 $this->atomicWrite($journalPath, json_encode($journal, JSON_THROW_ON_ERROR));
+            }
+            foreach (['records', 'records/approval-acceptances'] as $dir) {
+                if (is_link($this->root . '/' . $dir)) throw new RuntimeException('Receipt directory changed to a symlink; preserve recovery journal.');
             }
             // Private recovery state is validated before it can name any working-tree path.
             if (($journal['version'] ?? null) !== 1 || !preg_match('/^[a-f0-9]{40}$/D', $journal['base'] ?? '')
@@ -131,17 +137,19 @@ final class ApprovalReceiptMaintenance
             $this->point('journal');
             if (!$committed) {
                 foreach ($entries as [$old, $new, $oldBytes, $newBytes]) {
-                    $this->atomicWrite($this->root . '/' . $new, $newBytes);
+                    $this->atomicWrite($this->root . '/' . $new, $newBytes, dirname($journalPath));
                     $this->point('text-written');
                     if (is_file($this->root . '/' . $old) && !unlink($this->root . '/' . $old)) throw new RuntimeException('Cannot remove converted legacy file; retry conversion.');
                 }
-                $this->git(['add', '-A', '--', 'records/approval-acceptances']);
+                // Intent-to-add lets commit --only include new paths without staging receipt changes
+                // for an unrelated writer if a hook fails or this process is interrupted.
+                $this->git(['add', '--intent-to-add', '--', ...array_column($entries, 1)]);
                 $this->git(['-c', 'user.name=Forum Rewrite', '-c', 'user.email=forum-rewrite@example.invalid', 'commit', '--only', '-m', $message, '--', ...$paths]);
                 $head = trim($this->git(['rev-parse', 'HEAD']));
             }
             // Restore expected working files after a committed interruption, but never overwrite edits.
             foreach ($entries as [$old, $new, $oldBytes, $newBytes]) {
-                if (!is_file($this->root . '/' . $new)) $this->atomicWrite($this->root . '/' . $new, $newBytes);
+                if (!is_file($this->root . '/' . $new)) $this->atomicWrite($this->root . '/' . $new, $newBytes, dirname($journalPath));
                 if (is_file($this->root . '/' . $old) && !unlink($this->root . '/' . $old)) throw new RuntimeException('Unable to finish converted receipt cleanup.');
             }
             $marker = new ReadModelStaleMarker($this->databasePath);
@@ -168,9 +176,12 @@ final class ApprovalReceiptMaintenance
         if ($bytes === false) throw new RuntimeException('Unable to read ' . $path);
         return $bytes;
     }
-    private function atomicWrite(string $path, string $bytes): void
+    private function atomicWrite(string $path, string $bytes, ?string $stagingDirectory = null): void
     {
-        $temp = $path . '.tmp-' . bin2hex(random_bytes(6));
+        $stagingDirectory ??= dirname($path);
+        if (stat($stagingDirectory)['dev'] !== stat(dirname($path))['dev']) throw new RuntimeException('Conversion requires staging on the repository filesystem.');
+        // A hard interruption leaves only private Git staging debris, never a canonical temp record.
+        $temp = $stagingDirectory . '/approval-conversion-tmp-' . bin2hex(random_bytes(6));
         try {
             $handle = fopen($temp, 'xb');
             if ($handle === false) throw new RuntimeException('Cannot create conversion file.');
