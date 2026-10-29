@@ -74,6 +74,46 @@ final class SqliteFastScoreStore implements FastScoreStore
         return $this->find($postId, $contentHash, $rubricRevision) ?? throw new \RuntimeException('Fastmod score was not saved.');
     }
 
+    /** Insert only compatible missing results; caller holds the content writer lock.
+     * @param array<string,string> $contentHashes accepted post IDs and current hashes
+     */
+    public function importScoredRows(array $rows, array $contentHashes, string $revision, array $rubricIds, bool $preview = false): array
+    {
+        foreach ($rows as $row) FastmodScoreTransfer::validate($row);
+        $counts = ['imported' => 0, 'existing' => 0, 'duplicate' => 0, 'incompatible' => 0];
+        $seen = [];
+        sort($rubricIds);
+        if (!$preview) $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            foreach ($rows as $row) {
+                $ids = array_keys($row['scores']); sort($ids);
+                if (($contentHashes[$row['post_id']] ?? null) !== $row['content_hash'] || $row['rubric_revision'] !== $revision || $ids !== $rubricIds) {
+                    $counts['incompatible']++; continue;
+                }
+                $key = $row['post_id'] . ':' . $row['content_hash'] . ':' . $row['rubric_revision'];
+                if (isset($seen[$key])) { $counts['duplicate']++; continue; }
+                $seen[$key] = true;
+                if ($this->find($row['post_id'], $row['content_hash'], $row['rubric_revision']) !== null) {
+                    $counts['existing']++; continue;
+                }
+                if (!$preview) {
+                    $statement = $this->pdo->prepare("INSERT INTO post_fast_scores
+                        (post_id, content_hash, rubric_revision, status, probability, source, signals_json, scores_json, created_at, updated_at)
+                        VALUES (:post_id, :content_hash, :rubric_revision, 'scored', :probability, 'import', '[]', :scores, :created_at, :updated_at)");
+                    $statement->execute(['post_id' => $row['post_id'], 'content_hash' => $row['content_hash'], 'rubric_revision' => $row['rubric_revision'],
+                        'probability' => $row['scores']['moderation'] ?? null, 'scores' => json_encode($row['scores'], JSON_THROW_ON_ERROR),
+                        'created_at' => $row['created_at'], 'updated_at' => $row['updated_at']]);
+                }
+                $counts['imported']++;
+            }
+            if (!$preview) $this->pdo->exec('COMMIT');
+            return $counts;
+        } catch (\Throwable $error) {
+            if (!$preview) $this->pdo->exec('ROLLBACK');
+            throw $error;
+        }
+    }
+
     /** @return array<string, mixed> */
     public function enqueueWork(string $postId, string $contentHash, string $rubricRevision): array
     {
@@ -164,20 +204,8 @@ final class SqliteFastScoreStore implements FastScoreStore
     }
 
     /** @param array<string, mixed> $work @param array<string, mixed> $result */
-    public function completeWork(array $work, array $result, ?callable $retainEvidence = null): array
+    public function completeWork(array $work, array $result): array
     {
-        if ($retainEvidence !== null) {
-            $this->pdo->exec('BEGIN IMMEDIATE');
-            try {
-                $saved=$this->completeWork($work,$result);
-                $retainEvidence($this->pdo);
-                $this->pdo->exec('COMMIT');
-                return $saved;
-            } catch (\Throwable $error) {
-                $this->pdo->exec('ROLLBACK');
-                throw $error;
-            }
-        }
         $postId = (string) $work['post_id'];
         $contentHash = (string) $work['content_hash'];
         $rubricRevision = (string) $work['rubric_revision'];

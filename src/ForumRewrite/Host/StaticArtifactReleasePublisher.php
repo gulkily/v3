@@ -21,7 +21,6 @@ final class StaticArtifactReleasePublisher
             throw new RuntimeException('Unable to create static artifact root: ' . $this->staticHtmlRoot);
         }
 
-        $metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
         $candidatePath = $this->staticHtmlRoot . '/.candidate-' . bin2hex(random_bytes(8));
         try {
             (new StaticArtifactBuilder(
@@ -39,11 +38,7 @@ final class StaticArtifactReleasePublisher
             }
 
             $releasePath = $releaseDirectory . '/release-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4));
-            (static function () use ($candidatePath, $releasePath, $metaToken): void {
-                \ForumRewrite\Scoring\FastmodMetaPublication::publish($metaToken,$releasePath,static function () use ($candidatePath,$releasePath): void {
-                if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
-                });
-            })();
+            if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
             return $releasePath;
         } catch (\Throwable $throwable) {
             $this->removeDirectory($candidatePath);
@@ -66,13 +61,7 @@ final class StaticArtifactReleasePublisher
         }
 
         try {
-            $metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-            \ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact($metaToken,$releasePath);
-            (function () use ($pendingLink,$metaToken): void {
-                \ForumRewrite\Scoring\FastmodMetaPublication::publish($metaToken,$this->staticHtmlRoot.'/current',function () use ($pendingLink): void {
-                    if (!rename($pendingLink, $this->staticHtmlRoot . '/current')) throw new RuntimeException('Unable to activate static release.');
-                });
-            })();
+            if (!rename($pendingLink, $this->staticHtmlRoot . '/current')) throw new RuntimeException('Unable to activate static release.');
         } finally { if (is_link($pendingLink)) @unlink($pendingLink); }
     }
 
@@ -88,8 +77,6 @@ final class StaticArtifactReleasePublisher
             throw new RuntimeException('Shared static refresh requires an active complete static release. Run ./v3 build-static first.');
         }
 
-        $metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
-        \ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact($metaToken,$activeReleasePath);
 
         $candidatePath = $this->staticHtmlRoot . '/.candidate-' . bin2hex(random_bytes(8));
         try {
@@ -111,11 +98,7 @@ final class StaticArtifactReleasePublisher
             }
 
             $releasePath = $releaseDirectory . '/release-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(4));
-            (static function () use ($candidatePath, $releasePath, $metaToken): void {
-                \ForumRewrite\Scoring\FastmodMetaPublication::publish($metaToken,$releasePath,static function () use ($candidatePath,$releasePath): void {
-                if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
-                });
-            })();
+            if (!rename($candidatePath, $releasePath)) throw new RuntimeException('Unable to finalize static artifact release.');
             return $releasePath;
         } catch (\Throwable $throwable) {
             $this->removeDirectory($candidatePath);

@@ -47,26 +47,37 @@ final class PublicOfflineSnapshotBuilderTest
     public function testIncludesEffectiveRootMetaWithoutPrivateScoresOrChangingSource(): void
     {
         $root=sys_get_temp_dir().'/meta-snapshot-'.bin2hex(random_bytes(5));mkdir($root);
-        $previous=getenv('FORUM_SECRETS_PATH');
+        $names=['FORUM_SECRETS_PATH','FASTMOD_AUTOMATIC_TAGGING_ENABLED','FAST_SCORING_ENABLED'];
+        $old=[];foreach($names as $name){$old[$name]=getenv($name);putenv($name);}
         try {
+            symlink(dirname(__DIR__).'/prompts',$root.'/prompts');
             $this->createSource($root.'/source.sqlite3');
-            $path=$root.'/private.sqlite3';$m=new \ForumRewrite\Scoring\FastmodMetaStore(new PDO('sqlite:'.$path));
-            $m->recordEligibleRoot('thread-055','h','r','model',0.9);
-            $m->apply(['post_id'=>'thread-055','content_hash'=>'h','rubric_revision'=>'r'],['status'=>'scored','scores'=>['meta'=>0.95]],'model');
-            file_put_contents($root.'/secrets.php','<?php return '.var_export(['FAST_SCORING_DATABASE_PATH'=>$path],true).';');
-            putenv('FORUM_SECRETS_PATH='.$root.'/secrets.php');
+            $source=new PDO('sqlite:'.$root.'/source.sqlite3');
+            $source->exec('ALTER TABLE posts ADD COLUMN retracted_at TEXT');
+            $path=$root.'/private.sqlite3';
+            $store=new \ForumRewrite\Scoring\SqliteFastScoreStore(new PDO('sqlite:'.$path));
+            $private=['FAST_SCORING_ENABLED'=>true,'FAST_SCORING_DATABASE_PATH'=>$path,'FAST_SCORING_RUBRICS'=>['meta']];
+            file_put_contents($root.'/secrets.php','<?php return '.var_export($private,true).';');
+            putenv('FORUM_SECRETS_PATH='.$root.'/secrets.php');putenv('FASTMOD_AUTOMATIC_TAGGING_ENABLED=true');
+            $revision=\ForumRewrite\Scoring\FastScoringRubricRevision::fromConfig(\ForumRewrite\Scoring\FastScoringConfig::fromPrivateConfig($private),$root);
+            $post=$source->query("SELECT * FROM posts WHERE post_id='thread-055'")->fetch(PDO::FETCH_ASSOC);
+            $hash=(new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null))->contentHashForPost($post);
+            $store->save('thread-055',$hash,$revision,['status'=>'scored','source'=>'llm','scores'=>['meta'=>0.95]]);
             (new PublicOfflineSnapshotBuilder($root))->build($root.'/source.sqlite3',$root.'/snapshot.sqlite3');
             $snapshot=new PDO('sqlite:'.$root.'/snapshot.sqlite3');
-            assertSame(['meta'],json_decode($snapshot->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn(),true));
+            assertSame('["meta"]',$snapshot->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
             assertSame(false,$snapshot->query("SELECT name FROM sqlite_master WHERE name LIKE 'fastmod%' OR name='post_fast_scores'")->fetchColumn());
-            $source=new PDO('sqlite:'.$root.'/source.sqlite3');
             assertSame('[]',$source->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
-            $m->removeAndSuppress('thread-055');
-            (new PublicOfflineSnapshotBuilder($root))->build($root.'/source.sqlite3',$root.'/corrected.sqlite3');
-            $corrected=new PDO('sqlite:'.$root.'/corrected.sqlite3');
-            assertSame('[]',$corrected->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
+            assertSame(false,is_file($root.'/snapshot.sqlite3.fastmod-generation'));
+            putenv('FASTMOD_AUTOMATIC_TAGGING_ENABLED=false');
+            (new PublicOfflineSnapshotBuilder($root))->build($root.'/source.sqlite3',$root.'/disabled.sqlite3');
+            assertSame('[]',(new PDO('sqlite:'.$root.'/disabled.sqlite3'))->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
+            putenv('FASTMOD_AUTOMATIC_TAGGING_ENABLED=true');$store->pruneBefore('2100-01-01');
+            (new PublicOfflineSnapshotBuilder($root))->build($root.'/source.sqlite3',$root.'/pruned.sqlite3');
+            assertSame('[]',(new PDO('sqlite:'.$root.'/pruned.sqlite3'))->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
+            assertSame('["meta"]',$snapshot->query("SELECT thread_labels_json FROM threads WHERE root_post_id='thread-055'")->fetchColumn());
         } finally {
-            putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH='.$previous);
+            foreach($old as $name=>$value)putenv($value===false?$name:$name.'='.$value);
             foreach(glob($root.'/*') as $file)unlink($file);rmdir($root);
         }
     }

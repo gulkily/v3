@@ -319,7 +319,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::FASTMOD_AUTOMATIC_TAGGING_ENABLED,
                 'Automatic Fastmod tagging',
-                'Apply tags from eligible Fastmod results. Disabling preserves existing tags.',
+                'Apply tags from eligible Fastmod results.',
                 false,
                 self::FASTMOD_AUTOMATIC_TAGGING_ENABLED,
                 siteMutable: true,

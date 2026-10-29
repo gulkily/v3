@@ -705,6 +705,13 @@ Change: no wording change. Reported from Firefox's phone simulation: the reply b
 Verification: `reply_viewport` (new: with the visible area equal to the window, the reply is not docked and focus stays; docking returns once the keyboard shrinks the area; four themes, rotation, zoom), `reply_viewport_flow`, `reply_compose_focus`, `composers`, `first_post_identity`, `background_sign_in`, `inline_reply_link` and `reply_actions_layout` pass. In Chromium phone emulation on the local 50-reply thread, typing leaves the reply in the page at its normal height and the page scrolls (3839px → 2339px).
 Limits: real iPhone and Android keyboards still need a check; the 75% threshold assumes a keyboard takes at least a quarter of the screen.
 
+
+## 2026-10-29 — Score-derived Fastmod tagging
+
+Removed the misleading “Disabling preserves existing tags” sentence from the shared tagging flag; disabling now hides derived labels while preserving human labels. No new controls or navigation. Signed Fastmod browser verification covers enabled/disabled, failed-save recovery and loaded/empty tag discovery at 390/1280 across light, dark, console, Word97, Chicago and Midnight with no horizontal overflow. Inspected phone Midnight flag and desktop Word97 tag screenshots. No-JavaScript tag/Forte reads verify labels/discovery in server-rendered output without post-paint injection; no viewer-specific rendering added. See [implementation evidence](./fastmod_virtual_tags/fastmod_virtual_tags_step4_implementation_summary.md#stage-8--normal-flow-acceptance-and-closeout). Production verification not performed.
+
+*— Codex · 2026-10-29 UTC*
+
 ## 2026-10-29 — Tags page uses the board toolbar
 
 Change: /tags/ replaces its old controls card (Tags · All · Liked · Newest · Oldest · Top · New Post) with the board's toolbar: All / Liked, the Newest ▾ sort menu, and Tags at the right, marked current. Removed: the page's own "New Post" link (the header's New post button remains, as on the board). Reuse: the toolbar markup moved from `pages/board_list.php` into `partials/board_toolbar.php`, now used by both pages; its styles were already global in `site.css` (`.board-toolbar`, `.board-filter`, `.board-sort`, `.board-tags-link`). On /tags/ no filter or sort option is current.

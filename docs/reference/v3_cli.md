@@ -549,6 +549,7 @@ being installed via cron.
 ## Audit or backfill Fastmod
 
 ```
+./v3 fast-score meta-status [--repository-root=PATH] [--json]
 ./v3 fast-score status [--limit=10] [--verbose]
 ./v3 fast-score audit --include-existing [--database-path=/path/read-model.sqlite3]
 ./v3 fast-score backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]
@@ -557,6 +558,10 @@ being installed via cron.
 ./v3 fast-score smoke --post-id=... [--database-path=/path/read-model.sqlite3]
 ./v3 fast-score prune [--before=ISO-8601]
 ```
+
+`meta-status` reads derived-tag policy and score candidates without creating state.
+The retired meta-remove/rollback/retry commands return guidance to use the shared
+tagging switch, ordinary score recovery and generated-output refresh instead.
 
 `audit --include-existing` is a read-only historical count and configured-model
 cost estimate. `backfill` requires separate historical scope, confirmation,
@@ -575,7 +580,8 @@ controlled operator workflow.
 ```
 
 Downloads the source's public repository archive, merges supported public forum
-content while preserving destination settings/approval authority, refreshes the
+content and compatible Fastmod scores automatically while preserving destination
+settings/approval authority, refreshes the
 read model and public offline data, and withdraws stale static HTML. Import and
 `--resume` never render pages or fingerprint/copy presentation assets. PHP serves
 imported content; run `./v3 build-static` separately when static output is needed.
@@ -588,7 +594,8 @@ and retained as hash-bound metadata without changing signed post bytes. See the
 - `--dry-run` — download and validate the archive, then report proposed imports,
   duplicates, conflicts, and exclusions without changing destination records,
   commits, the read model, or published views. Temporary downloads and lock files
-  may be created. Cannot be combined with `--resume`.
+  may be created. Score eligibility is reported without creating private score
+  state. Cannot be combined with `--resume`.
 - `--time-limit=SECONDS` — positive finite whole-invocation budget (default 300),
   including lock waits/publication, with up to five seconds process cleanup.
   Linux/WSL PCNTL/POSIX supervision is required; file limits remain unchanged.

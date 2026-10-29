@@ -300,13 +300,6 @@ final class RouteServices
         if (!is_dir($scoreDirectory) && !mkdir($scoreDirectory, 0777, true) && !is_dir($scoreDirectory)) {
             throw new RuntimeException('Fastmod database directory is not writable.');
         }
-        if ($newLocalPost && $post['post_id'] === $post['thread_id']
-            && \ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($this->projectRoot,$this->repositoryRoot)
-            && in_array('meta', (new \ForumRewrite\Scoring\FastmodSelection($this->projectRoot))->enabled($config), true)) {
-            (new \ForumRewrite\Scoring\FastmodMetaStore(new PDO('sqlite:' . $scorePath)))->recordEligibleRoot(
-                $postId, (string)$context['content_hash'], FastScoringRubricRevision::fromConfig($config,$this->projectRoot),
-                \ForumRewrite\Scoring\FastmodMetaConfig::identity($config), \ForumRewrite\Scoring\FastmodMetaConfig::threshold($privateConfig));
-        }
         (new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath)))->enqueueWork(
             $postId,
             (string) $context['content_hash'],

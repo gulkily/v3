@@ -19,6 +19,7 @@ final class ContentImportRunner
         private readonly ?Closure $checkpoint = null,
         private readonly ?Closure $progress = null,
         private readonly array $publicationContext = [],
+        private readonly ?string $projectRoot = null,
     ) {
         if (!is_dir($repositoryRoot . '/.git') || is_link($repositoryRoot . '/.git')) {
             throw new RuntimeException('Destination must be a Git checkout with a local .git directory.');
@@ -32,11 +33,18 @@ final class ContentImportRunner
             // A repository lock also serializes invocations with different database overrides.
             return (new ExecutionLock($this->repositoryRoot . '/.git/instance-import.lock'))->withExclusiveLock(function () use ($source, $publisher, $dryRun, $sourceLabel, $archiveExclusions): array {
                 $pending = $this->stateRoot . '/pending.json';
+                $scoreImport = new FastmodScoreImport($this->projectRoot ?? dirname(__DIR__, 3));
                 if ($dryRun) {
                     if ($source === null) {
                         throw new RuntimeException('Preview requires a source.');
                     }
-                    return $this->report((new ContentImportPlanner())->plan($source, $this->repositoryRoot), $sourceLabel, $archiveExclusions, true);
+                    $entries = (new ContentImportPlanner())->plan($source, $this->repositoryRoot);
+                    $report = $this->report($entries, $sourceLabel, $archiveExclusions, true);
+                    $scores = new FastmodScoreImport($this->projectRoot ?? dirname(__DIR__, 3));
+                    $supplement = $scores->read($source, $archiveExclusions);
+                    $report['scores'] = $scores->process($supplement, $supplement['rows'] === [] ? [] : $scores->hashes($entries, $source, $this->repositoryRoot), true);
+                    if ($report['scores']['status'] === 'rejected') $report['status'] = 'partial';
+                    return $report;
                 }
                 \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, "records/post-retractions/import.txt");
                 if (is_file($pending)) {
@@ -77,11 +85,30 @@ final class ContentImportRunner
                         'publication_context' => $this->publicationContext,
                         'writes' => $writes, 'report' => $this->report($entries, $sourceLabel, $archiveExclusions),
                     ];
+                    $supplement = $scoreImport->read($source, $archiveExclusions);
+                    $run['score_input'] = ['status' => $supplement['status'], 'reason' => $supplement['reason'] ?? ''];
+                    if ($supplement['status'] === 'valid') {
+                        $bytes = \ForumRewrite\Scoring\FastmodScoreTransfer::encode($supplement['rows']);
+                        $saved = $directory . '/' . \ForumRewrite\Scoring\FastmodScoreTransfer::PATH;
+                        if (file_put_contents($saved, $bytes) !== strlen($bytes)) throw new RuntimeException('Cannot save score recovery input.');
+                        chmod($saved, 0600);
+                        $run['score_input'] += ['hash' => hash('sha256', $bytes), 'database' => $scoreImport->databasePath()];
+                    }
                     $run['report']['review_path'] = $directory;
                     $this->save($pending, $run);
                     $this->at('prepared');
                 }
                 $directory = $this->stateRoot . '/' . $run['id'];
+                // Validate saved score bytes and destination before any content or score writes.
+                $scoreInput = $run['score_input'] ?? ['status' => 'absent'];
+                $supplement = ['status' => $scoreInput['status'], 'reason' => $scoreInput['reason'] ?? '', 'rows' => []];
+                if ($scoreInput['status'] === 'valid') {
+                    $saved = $directory . '/' . \ForumRewrite\Scoring\FastmodScoreTransfer::PATH;
+                    if (($scoreInput['database'] ?? null) !== $scoreImport->databasePath()) throw new RuntimeException('Recovery score destination does not match the saved import.');
+                    if (!is_file($saved) || is_link($saved) || hash_file('sha256', $saved) !== ($scoreInput['hash'] ?? null)) throw new RuntimeException('Saved score recovery payload is missing or changed.');
+                    $supplement = $scoreImport->read($directory);
+                    if ($supplement['status'] !== 'valid') throw new RuntimeException('Saved score recovery payload is invalid.');
+                }
                 $message = 'Import instance content (' . $run['id'] . ')';
                 if ($run['phase'] === 'prepared') {
                     $head = trim($this->git(['rev-parse', 'HEAD']));
@@ -141,6 +168,14 @@ final class ContentImportRunner
                 $this->assertClean([]);
                 $this->verifyWrites($run['writes']);
                 $this->git(['merge-base', '--is-ancestor', $run['commit'], 'HEAD']);
+                $this->at('before_scores');
+                // Canonical bytes are already installed and verified under the writer lock.
+                // Merge before publication so rebuild/offline consumers see the same scores.
+                $run['report']['scores'] = $scoreImport->process($supplement,
+                    $supplement['rows'] === [] ? [] : $scoreImport->hashes($run['report']['entries'], $this->repositoryRoot, $this->repositoryRoot, true), false);
+                if ($run['report']['scores']['status'] === 'rejected') $run['report']['status'] = 'partial';
+                $this->at('scores_merged');
+                $this->save($pending, $run);
                 // Publication is required even on duplicate-only runs and interrupted retries.
                 $this->say('Refreshing read model and applicable offline data...');
                 $publisher();

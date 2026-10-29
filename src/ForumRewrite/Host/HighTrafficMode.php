@@ -28,8 +28,7 @@ final class HighTrafficMode
     public function change(bool $enable, string $reason): array
     {
         return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason): array {
-            $meta=\ForumRewrite\Scoring\FastmodMetaPublication::token($this->cache->projectRoot);
-            return (new \ForumRewrite\Support\ExecutionLock($meta['path'] . '.publication.lock'))->withExclusiveLock(fn () => $this->cache->locked(function () use ($enable,$reason): array {
+            return $this->cache->locked(function () use ($enable,$reason): array {
             $path=$this->cache->publicRoot . '/.htaccess';
             if (is_link($path) || !is_file($path)) throw new RuntimeException('A regular managed .htaccess file is required.');
             $savedState=$this->cache->state();
@@ -59,7 +58,7 @@ final class HighTrafficMode
             try { $this->cache->atomic($this->cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR)); }
             catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot); throw $error; }
             return $this->status();
-        }));
+        });
         });
     }
     public function restore(): array

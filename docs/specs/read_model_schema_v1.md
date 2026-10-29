@@ -40,6 +40,8 @@ order is immaterial.
 
 ## Core read-model tables
 
+Version 38 adds bulk root/content matching for score-derived effective tags. It changes the core-dependent read query, not persistent table shape; startup rebuilds prior identities before that query. Private scores remain on a separate read-only connection and only public labels enter temporary request-local state.
+
 Version 37 combines stored activity evidence and projections with verified-attribution columns. Startup rebuilds prior schemas before either activity reader queries the combined shape.
 
 Version 36 bounds signature lookups to pending evidence sources and batches index-time commit file reads; prior-version startup rebuild is covered before serving either reader.

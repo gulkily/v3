@@ -16,7 +16,6 @@ final class PublicOfflineSnapshotBuilder
 {
     public const SNAPSHOT_VERSION = '5';
     private ?array $sourcePostColumns = null;
-    private array $metaToken = [];
     private array $excluded = [];
     public function __construct(private readonly ?string $projectRoot = null) {}
 
@@ -33,7 +32,6 @@ final class PublicOfflineSnapshotBuilder
         int $maxBytes = self::DEFAULT_MAX_BYTES,
     ): array {
         if (!is_file($sourcePath)) throw new RuntimeException('Offline snapshot source database does not exist.');
-        $this->metaToken = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot ?? dirname(__DIR__,3));
         $source = new PDO('sqlite:file:' . $sourcePath . '?mode=ro');
         $columns = array_column($source->query('PRAGMA table_info(posts)')->fetchAll(PDO::FETCH_ASSOC), 'name');
         $this->excluded = in_array('retracted_at', $columns, true)
@@ -137,15 +135,8 @@ final class PublicOfflineSnapshotBuilder
             if ($size === false || $size > $maxBytes) {
                 throw new RuntimeException('Offline snapshot exceeded its configured size limit.');
             }
-            (function () use ($temporaryPath, $targetPath, $generatedAt, $size): void {
-                \ForumRewrite\Scoring\FastmodMetaPublication::publish($this->metaToken,$targetPath,function () use ($temporaryPath,$targetPath,$generatedAt,$size): void {
-                if (!rename($temporaryPath, $targetPath)) throw new RuntimeException('Unable to publish offline snapshot.');
-                $this->writeManifest($targetPath, $generatedAt, $size);
-                $metaManifest=dirname($targetPath).'/'.(basename($targetPath)==='snapshot.sqlite3' ? 'manifest.json' : basename($targetPath).'.manifest.json');
-                if (file_put_contents($metaManifest.'.fastmod-generation',$this->metaToken['generation']) === false) throw new RuntimeException('Cannot record Fastmod manifest generation.');
-
-                });
-            })();
+            if (!rename($temporaryPath, $targetPath)) throw new RuntimeException('Unable to publish offline snapshot.');
+            $this->writeManifest($targetPath, $generatedAt, $size);
 
             return [
                 'generated_at' => $generatedAt,

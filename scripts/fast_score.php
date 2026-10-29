@@ -38,22 +38,24 @@ try {
     $privateConfig = PrivateConfig::load($projectRoot);
     $scorePath = FastScoreDatabaseConfig::path($projectRoot, $privateConfig);
     if (str_starts_with($command, 'meta-')) {
-        $repositoryRoot=(string)($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $projectRoot.'/state/local_repository'));
-        $runtime=\ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig,null,$repositoryRoot);
-        if ($command === 'meta-remove') {
-            $id=trim((string)($options['post-id'] ?? ''));
-            if ($id === '') throw new InvalidArgumentException('--post-id is required.');
-            $runtime->store->removeAndSuppress($id);
-        } elseif ($command === 'meta-rollback') {
-            $runtime->store->rollback();
-        } elseif ($command === 'meta-retry') {
-            $path=(string)($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: $projectRoot.'/state/cache/post_index.sqlite3'));
-            if (!is_file($path)) throw new InvalidArgumentException('Read-model database not found.');
-            $config=FastScoringConfig::fromPrivateConfig($privateConfig);
-            $runtime->recover(new PDO('sqlite:'.$path), FastScoringRubricRevision::fromConfig($config,$projectRoot));
+        if ($command !== 'meta-status') {
+            throw new InvalidArgumentException($command . ' is retired: tags now follow retained scores. Disable Automatic Fastmod tagging to hide derived tags; use ordinary score retry for failed evaluations, then rebuild static/offline output. Individual tag removal is no longer supported; existing suppressions remain honored.');
         }
-        if ($command !== 'meta-status') $runtime->flush();
-        fwrite(STDOUT,json_encode($runtime->store->status(),JSON_THROW_ON_ERROR)."\n");
+        $repositoryRoot=(string)($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $projectRoot.'/state/local_repository'));
+        $config=FastScoringConfig::fromPrivateConfig($privateConfig);
+        $status=[
+            'enabled'=>\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($projectRoot,$repositoryRoot),
+            'threshold'=>\ForumRewrite\Scoring\FastmodMetaConfig::threshold($privateConfig),
+            'score_database'=>$scorePath,
+            'score_state'=>is_file($scorePath) ? 'available' : 'missing',
+            'matching_score_candidates'=>count(\ForumRewrite\Scoring\FastmodDerivedTags::candidates($scorePath,
+                FastScoringRubricRevision::fromConfig($config,$projectRoot),\ForumRewrite\Scoring\FastmodDerivedTags::mappings($privateConfig))),
+        ];
+        if ($options['json'] ?? false) fwrite(STDOUT,json_encode($status,JSON_THROW_ON_ERROR)."\n");
+        else {
+            foreach ($status as $key=>$value) fwrite(STDOUT,ucfirst(str_replace('_',' ',$key)).': '.(is_bool($value) ? ($value?'true':'false') : $value)."\n");
+            fwrite(STDOUT,"Candidate scores still require matching visible root content. Refresh static/offline output after policy or score changes.\n");
+        }
         exit(0);
     }
     if ($command === 'audit') {
@@ -243,7 +245,7 @@ try {
                         $store->retryWork($postId, $contentHash, $rubricRevision);
                     }
                     $workflow = FastScoreWorkflowFactory::fromPrivateConfig($privateConfig, $projectRoot, $fetch, fastScoreRecorder($projectRoot, $repositoryRoot, $privateConfig));
-                    return (new \ForumRewrite\Scoring\FastScoreSweepService($readPdo, $factory, $workflow, $store, $rubricRevision, \ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig,null,$repositoryRoot)))->run(1, 1, null,
+                    return (new \ForumRewrite\Scoring\FastScoreSweepService($readPdo, $factory, $workflow, $store, $rubricRevision))->run(1, 1, null,
                         ['post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
                 }
             );
@@ -327,7 +329,7 @@ try {
 function fastScoreOptions(string $command, array $arguments): array
 {
     $definitions = [
-        'meta-status' => ['repository-root'=>true],
+        'meta-status' => ['repository-root'=>true,'json'=>false],
         'meta-remove' => ['post-id'=>true,'repository-root'=>true],
         'meta-rollback' => ['repository-root'=>true],
         'meta-retry' => ['database-path'=>true,'repository-root'=>true],
@@ -432,7 +434,7 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 
 function fastScoreUsage($stream): void
 {
-    fwrite($stream, "Root meta tags: ./v3 fast-score meta-status|meta-remove --post-id=ID|meta-rollback|meta-retry [--database-path=PATH] [--repository-root=PATH]\n");
+    fwrite($stream, "Derived tags: ./v3 fast-score meta-status [--repository-root=PATH] [--json] (read-only)\n");
     fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--verbose] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=... [--run]\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
 }
 

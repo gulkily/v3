@@ -90,7 +90,7 @@ final class InstancePageController
         if ($method !== 'GET') { $this->routeServices->sendText("Only GET is supported.\n", 405); return; }
         if (!$this->allowBackup($kind === 'images' ? FeatureFlagRegistry::IMAGE_BACKUP_ENABLED : FeatureFlagRegistry::TEXT_BACKUP_ENABLED)) { return; }
         try {
-            $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath))->export($kind, $revision, $imageFormat);
+            $download = (new \ForumRewrite\Images\ImageBackup($this->repositoryRoot, $this->databasePath, $this->projectRoot))->export($kind, $revision, $imageFormat);
         } catch (\ForumRewrite\Images\ArchiveBusyException $error) {
             $this->routeServices->sendText($error->getMessage() . "\n", 503, ['Cache-Control: private, no-store', 'Retry-After: 5']);
             return;
