@@ -43,3 +43,14 @@ Entry: 2026-10-29 UTC; v2/A, R1/P2, original baseline cdb7a4e75a8b0e9065140656ec
 - Notes: Stage 2 commit dcc17b8e9. Detailed network timing/theme matrix follows in S5. Zero dependency/schema delta. R1/P2, Codex exposed rater, 2026-10-29 UTC; scope unchanged, no measured labor.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 4 - Polling lifecycle and draft preservation
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.18**
+
+- Changes: Replaced fixed interval with one non-overlapping five-second scheduler, including hidden-page pause, page navigation suspension, identity-change stop, terminal authorization/disabled stop and three-failure transient cutoff. Eligible threads poll regardless of workflow state. Session-scoped per-identity/post/revision drafts survive reload and state changes; older drafts remain copyable/discardable. Successful submission clears only the exact submitted draft.
+- Verification: `node tests/browser/railspike_polling.mjs` passed real-browser controlled-clock checks for idle/completed polling, coalescing, visibility, revision changes, retained drafts/reload, terminal denial, bounded failures/manual recovery and removed eligibility. Auth-navigation regression and real signed full workflow browser journey passed. `node --check` and diff checks passed.
+- Notes: Stage 3 commit 817db341f. Draft recovery required more work than the original stage estimate; whole-cycle projection remains 0.60. No new dependencies/schema. R1/P2, Codex exposed rater, 2026-10-29 UTC; retrospective is scope judgment, not measured labor.
+
+*— Codex · 2026-10-29 UTC*
