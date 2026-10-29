@@ -335,3 +335,5 @@ and repair its navigation and affected references. See the
 - [Background sign-in](background_sign_in/)
 
 - [Approval acceptance text](approval_acceptance_text/approval_acceptance_text_step3_development_plan.md) — F03; implemented locally with conversion/recovery and legacy-reader retirement readiness.
+
+- [Agent response text](agent_response_text/agent_response_text_step3_development_plan.md) — F05; approved implementation plan.
