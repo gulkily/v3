@@ -7,7 +7,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator as Evaluator;
 
 final class FastmodTaggingFlagTest
 {
-    public function testRuntimeUsesExplicitRepositoryAndFreshSiteDecision(): void
+    public function testPolicyUsesExplicitRepositoryAndFreshSiteDecision(): void
     {
         $root=sys_get_temp_dir().'/tagging-policy-'.bin2hex(random_bytes(5));
         $repo=$root.'/selected-instance';mkdir($repo.'/records/instance',0700,true);

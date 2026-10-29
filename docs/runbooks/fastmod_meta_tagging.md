@@ -65,8 +65,10 @@ For a code downgrade, stop writers and restore a matching pre-upgrade private
 backup before running old workers; rebuild generated output. Do not reinterpret
 current derived labels as old durable decisions. No automatic downgrade is provided.
 
-Public exports contain effective labels only, never private scores or evidence.
+Public offline exports contain effective labels only, never private scores or evidence.
 Private scores stay on a separate read-only connection from user-entered SQL.
+The raw read-model download and its SQLite viewer remain canonical-derived;
+request-local derived tags are not persisted into that download.
 
 ## Verification
 

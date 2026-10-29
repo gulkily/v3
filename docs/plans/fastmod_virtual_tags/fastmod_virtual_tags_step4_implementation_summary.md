@@ -4,7 +4,7 @@ Debug mode: enabled
 Effort study: railspike-effort / v3/fastmod_virtual_tags; [ledger](../effort_estimation_trial.md)
 Extended estimates: enabled
 **Cycle estimate: 0.70**
-Status: Step 3 approved; implementation underway on feature/fastmod-virtual-tags.
+Status: All eight stages completed locally on feature/fastmod-virtual-tags; deployment and maintainer acceptance pending.
 
 Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80b34c93587d73a04d999b3b462b8. Planning commit 3300df0a confirmed before this summary or implementation. Step 3 projection 0.70 reaffirmed. Codex single exposed rater; frozen references verified at planning, missing pristine intake preserved. Original stage-work estimates S1–S8: 0.12/0.15/0.08/0.12/0.08/0.08/0.08/0.12, scopes and uncertainties in approved Step 3; these are copied, non-additive judgments, not hours. No new dependencies or deployment authorized. Maintainer acceptance and measured labor unavailable.
 
@@ -70,5 +70,25 @@ Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80
 - Changes: Read-only `meta-status` uses readable Key: value output by default and explicit `--json`. Retired mutation/recovery commands return nonzero actionable guidance. Deleted four unused classification/runtime/artifact/publication classes and obsolete model identity helper. Updated reference/runbooks/top-level help; removed misleading flag-description sentence.
 - Verification: CLI/flag/evaluator/derived/offline tests — 27/27 passed. CLI fixture verifies absent state is not initialized and all retired operations leave legacy suppression database bytes unchanged. Source/test scan finds no retired class references; syntax, help and diff checks passed.
 - Notes: Old sidecar paths in docs compatibility copying remain harmless historical artifact allowances; no generation checks/writes remain. Flag copy gets rendered acceptance in Stage 8. No dependencies or scope/estimate revision.
+
+*— Codex · 2026-10-29 UTC*
+
+## Stage 8 — Normal-flow acceptance and closeout
+**Original estimate: 0.12**
+**Retrospective stage work: 0.15**
+- Changes: Browser journey now verifies dynamic enable/disable, retained pre-enable scores, legacy suppressions, no classification tables, and pruning across live/static/offline views. Added 1,001-root batching fixture and invalid rubric configuration fallback to human labels. Updated operator/UI/study records.
+- Verification: Final focused PHP selection — 54/54 passed; final derived/flag additions — 8/8 passed, including retracted-root exclusion. Signed Fastmod browser journey passed with local provider, failed-save recovery, no-JavaScript initial labels, text API/Forte parity, old suppression, snapshot refresh and no extra provider/Git writes. Phone/desktop 390/1280 checks passed in light/dark/console/Word97/Chicago/Midnight; phone Midnight flag and desktop Word97 tag screenshots inspected. The bulk fixture uses three root queries for 1,001 candidates and exercises a second test-only mapping through the same overlay.
+- Corrections: Initial browser check assumed the old background-auth reload/attribute behavior; it now explicitly awaits authentication then reloads the operator page. Forte uses its existing tag attributes/filtering rather than literal Labels text; corrected that acceptance assertion. No product authentication or Forte changes. Invalid rubric configuration now falls back to human reads with an operator log instead of breaking reading.
+- Notes: Stage-work retrospective reflects fixture correction and acceptance coverage; original preserved. No new navigation, dependencies, provider requests outside the local fake, live activation or deployment. Full suite not rerun; broader smoke selection's sole archive-filename failure reproduced on c5783108. No production-scale latency or real-model accuracy claim. The raw read-model download/SQLite viewer still exposes canonical-derived labels, as before; it does not use the live request overlay. Public offline snapshots and live tag/API consumers use effective labels.
+
+## Closeout and recovery
+
+**Retrospective cycle scope: 0.70**
+
+2026-10-29 UTC; v1/A, R1/P2, original baseline and single exposed Codex rater retained. Whole-cycle projection 0.70 remains distinct from this retrospective; prior 0.60 projections and missing pristine intake remain intact. Eight stages completed with stage-scoped commits and summary entries, following planning commit 3300df0a. Original S1–S8 estimates retained; retrospectives 0.12/0.15/0.08/0.12/0.08/0.08/0.08/0.15 are non-additive. Maintainer comfortable-fit judgment/acceptance pending; no measured labor or accepted-study count increment.
+
+Use the existing Automatic Fastmod tagging switch. Labels now follow retained current-content/current-rubric scores, including historical ones; disabling/pruning removes derived labels on live reads and subsequent ordinary refreshes. Old suppressions remain read-only; old active decisions are ignored. Retained private data and pre-upgrade backups support a deliberate stopped-worker downgrade, not automatic rollback. No live settings changed. See the [runbook](../../runbooks/fastmod_meta_tagging.md).
+
+Verification limits: local fixtures/browser only, no deployed-host or external-model validation, no full-suite green claim. PHP/JavaScript/shell syntax, document links, diff checks and unchanged todo.txt checked; dependency delta zero. Temporary verification logs/screenshots live under /tmp and are not shipped.
 
 *— Codex · 2026-10-29 UTC*

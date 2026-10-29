@@ -4,6 +4,22 @@ declare(strict_types=1);
 require dirname(__DIR__, 2) . '/autoload.php';
 if (PHP_SAPI !== 'cli') exit(1);
 $root = $argv[1];
+if (str_starts_with($argv[2] ?? '', 'legacy-suppress:')) {
+    $id=substr($argv[2],strlen('legacy-suppress:'));
+    $private=new PDO('sqlite:'.$root.'/scores.sqlite3');
+    // An upgrade fixture, never a production correction interface.
+    $private->exec('CREATE TABLE IF NOT EXISTS fastmod_meta(post_id TEXT PRIMARY KEY,suppressed INTEGER)');
+    $private->prepare('INSERT INTO fastmod_meta VALUES(?,1)')->execute([$id]);
+    echo json_encode(['suppressed'=>$id]);exit;
+}
+if (($argv[2] ?? '') === 'state') {
+    $private=new PDO('sqlite:'.$root.'/scores.sqlite3');
+    echo json_encode(['classification_tables'=>$private->query("SELECT name FROM sqlite_master WHERE name IN ('fastmod_meta','fastmod_meta_generation')")->fetchAll(PDO::FETCH_COLUMN)]);exit;
+}
+if (($argv[2] ?? '') === 'prune') {
+    $store=new \ForumRewrite\Scoring\SqliteFastScoreStore(new PDO('sqlite:'.$root.'/scores.sqlite3'));
+    echo json_encode(['pruned'=>$store->pruneBefore('2100-01-01')]);exit;
+}
 if (($argv[2] ?? '') === 'rebuild') {
     (new \ForumRewrite\ReadModel\ReadModelBuilder($root.'/repository',$root.'/read.sqlite3',new \ForumRewrite\Canonical\CanonicalRecordRepository($root.'/repository')))->rebuild();
     echo json_encode(['rebuilt'=>true]);exit;

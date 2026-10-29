@@ -16,7 +16,7 @@ final class FastmodMetaRead
             $config = FastScoringConfig::fromPrivateConfig($private);
             return self::decorate($read, FastScoreDatabaseConfig::path($root, $private),
                 FastScoringRubricRevision::fromConfig($config, $root), FastmodDerivedTags::mappings($private));
-        } catch (\PDOException | \InvalidArgumentException $error) {
+        } catch (\RuntimeException | \InvalidArgumentException $error) {
             error_log('Fastmod derived tags unavailable; check private scores/configuration: ' . $error->getMessage());
             return $read;
         }

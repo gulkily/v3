@@ -54,18 +54,20 @@ final class FastmodDerivedTagsTest
             $read->exec('CREATE TABLE posts(post_id TEXT,thread_id TEXT,subject TEXT,body TEXT,is_hidden INTEGER,retracted_at TEXT)');
             $read->exec('CREATE TABLE threads(root_post_id TEXT,thread_labels_json TEXT,score_total INTEGER)');
             $hash = new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null);
-            foreach (['root','human','edited','reply','hidden'] as $id) {
+            foreach (['root','human','edited','reply','hidden','retracted'] as $id) {
                 $post = ['post_id'=>$id,'subject'=>'Subject','body'=>'Body'];
                 $read->prepare('INSERT INTO posts VALUES(?,?,?,?,?,NULL)')->execute([$id,$id==='reply'?'root':$id,'Subject','Body',(int)($id==='hidden')]);
                 if ($id !== 'reply') $read->prepare('INSERT INTO threads VALUES(?,?,7)')->execute([$id,$id==='human'?'["meta","human"]':'["human"]']);
                 $store->save($id,$hash->contentHashForPost($post),'r',['status'=>'scored','source'=>'llm','scores'=>['meta'=>0.9]]);
             }
             $read->exec("UPDATE posts SET body='Changed' WHERE post_id='edited'");
+            $read->exec("UPDATE posts SET retracted_at='2026-10-29' WHERE post_id='retracted'");
             \ForumRewrite\Scoring\FastmodMetaRead::decorate($read,$path,'r',FastmodDerivedTags::mappings([]));
             assertSame('["human","meta"]',$read->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root'")->fetchColumn());
             assertSame('["meta","human"]',$read->query("SELECT thread_labels_json FROM threads WHERE root_post_id='human'")->fetchColumn());
             assertSame('["human"]',$read->query("SELECT thread_labels_json FROM threads WHERE root_post_id='edited'")->fetchColumn());
             assertSame('["human"]',$read->query("SELECT thread_labels_json FROM threads WHERE root_post_id='hidden'")->fetchColumn());
+            assertSame('["human"]',$read->query("SELECT thread_labels_json FROM threads WHERE root_post_id='retracted'")->fetchColumn());
             assertSame(2,(int)$read->query("SELECT count(*) FROM threads WHERE EXISTS(SELECT 1 FROM json_each(thread_labels_json) WHERE value='meta')")->fetchColumn());
             assertSame('["human"]',$read->query("SELECT thread_labels_json FROM main.threads WHERE root_post_id='root'")->fetchColumn());
             assertSame(2,count($read->query('PRAGMA database_list')->fetchAll()));
@@ -93,5 +95,56 @@ final class FastmodDerivedTagsTest
             assertSame(0,$exit,implode("\n",$output));
             assertSame(\ForumRewrite\ReadModel\ReadModelMetadata::SCHEMA_VERSION,(new PDO('sqlite:'.$path))->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
         } finally {$fixture->remove();}
+    }
+    public function testRootMatchingUsesBatchesAndMappingsShareOneOverlay(): void
+    {
+        $path=tempnam(sys_get_temp_dir(),'derived-bulk-');
+        try {
+            $private=new PDO('sqlite:'.$path);$store=new SqliteFastScoreStore($private);
+            $read=new class('sqlite::memory:') extends PDO {
+                public int $rootQueries=0;
+                public function prepare(string $query, array $options=[]): PDOStatement|false {
+                    if (str_contains($query,'FROM main.posts')) $this->rootQueries++;
+                    return parent::prepare($query,$options);
+                }
+            };
+            $read->exec('CREATE TABLE posts(post_id TEXT PRIMARY KEY,thread_id TEXT,subject TEXT,body TEXT,is_hidden INTEGER,retracted_at TEXT)');
+            $read->exec('CREATE TABLE threads(root_post_id TEXT PRIMARY KEY,thread_labels_json TEXT)');
+            $post=$read->prepare('INSERT INTO posts VALUES(?,?,?,?,0,NULL)');
+            $thread=$read->prepare('INSERT INTO threads VALUES(?,?)');
+            $hash=new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null);
+            $private->beginTransaction();
+            for($i=0;$i<1001;$i++) {
+                $id='root-'.$i;$post->execute([$id,$id,'Subject','Body']);$thread->execute([$id,'["human"]']);
+                $store->save($id,$hash->contentHashForPost(['post_id'=>$id,'subject'=>'Subject','body'=>'Body']),'r',['status'=>'scored','source'=>'llm','scores'=>['meta'=>0.95,'moderation'=>0.8]]);
+            }
+            $private->commit();
+            $mappings=FastmodDerivedTags::mappings([])+['test-only'=>['rubric'=>'moderation','threshold'=>0.8]];
+            \ForumRewrite\Scoring\FastmodMetaRead::decorate($read,$path,'r',$mappings);
+            assertSame(3,$read->rootQueries);
+            assertSame(1001,(int)$read->query("SELECT count(*) FROM threads WHERE EXISTS(SELECT 1 FROM json_each(thread_labels_json) WHERE value='meta')")->fetchColumn());
+            assertSame('["human","meta","test-only"]',$read->query("SELECT thread_labels_json FROM threads WHERE root_post_id='root-0'")->fetchColumn());
+            assertSame(false,$private->query("SELECT name FROM sqlite_master WHERE name='fastmod_meta'")->fetchColumn());
+        } finally {unlink($path);}
+    }
+
+    public function testInvalidRubricConfigurationKeepsHumanReadsAvailable(): void
+    {
+        $root=sys_get_temp_dir().'/derived-invalid-'.bin2hex(random_bytes(5));
+        mkdir($root.'/state/private',0700,true);
+        $previous=getenv('FASTMOD_AUTOMATIC_TAGGING_ENABLED');$scoring=getenv('FAST_SCORING_ENABLED');
+        try {
+            file_put_contents($root.'/state/private/fastmod_rubrics.json','invalid');
+            putenv('FASTMOD_AUTOMATIC_TAGGING_ENABLED=true');putenv('FAST_SCORING_ENABLED=true');
+            $read=new PDO('sqlite::memory:');
+            $read->exec('CREATE TABLE threads(thread_labels_json TEXT)');
+            $read->prepare('INSERT INTO threads VALUES(?)')->execute(['["human"]']);
+            assertSame($read,\ForumRewrite\Scoring\FastmodMetaRead::forApplication($read,$root,$root.'/repository'));
+            assertSame('["human"]',$read->query('SELECT thread_labels_json FROM threads')->fetchColumn());
+        } finally {
+            putenv($previous===false?'FASTMOD_AUTOMATIC_TAGGING_ENABLED':'FASTMOD_AUTOMATIC_TAGGING_ENABLED='.$previous);
+            putenv($scoring===false?'FAST_SCORING_ENABLED':'FAST_SCORING_ENABLED='.$scoring);
+            unlink($root.'/state/private/fastmod_rubrics.json');rmdir($root.'/state/private');rmdir($root.'/state');rmdir($root);
+        }
     }
 }

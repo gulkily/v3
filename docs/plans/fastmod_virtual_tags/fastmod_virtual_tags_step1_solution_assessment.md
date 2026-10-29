@@ -3,8 +3,8 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/fastmod_virtual_tags; [standing P2 ledger](../effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2)
 Extended estimates: enabled
-Cycle estimate: 0.60
-Status: Steps 1–2 approved; Step 3 proposed; implementation not authorized.
+**Cycle estimate: 0.60**
+Status: Steps 1–3 approved; implementation completed locally; see Step 4.
 
 ## Original Query
 
@@ -39,7 +39,7 @@ Preserve new-publication-only eligibility, labels surviving score pruning, manua
 
 Recommendation: A is a coherent moderate simplification if dynamic labels and ordinary-refresh staleness are acceptable. A badge-only prototype would be smaller, but would not emulate tags in discovery/counts/offline output. Avoid adding another layer alongside the existing overlay.
 
-Evidence: [read overlay](../../../src/ForumRewrite/Scoring/FastmodMetaRead.php), [classification store](../../../src/ForumRewrite/Scoring/FastmodMetaStore.php), [score pruning](../../../src/ForumRewrite/Scoring/SqliteFastScoreStore.php), [current contract](../../runbooks/fastmod_meta_tagging.md). Source review only; no performance measurement, live-state check or tests run. No new dependencies proposed.
+Evidence: [read overlay](../../../src/ForumRewrite/Scoring/FastmodMetaRead.php), `FastmodMetaStore.php` at c5783108 (retired in Stage 7), [score pruning](../../../src/ForumRewrite/Scoring/SqliteFastScoreStore.php), [current contract](../../runbooks/fastmod_meta_tagging.md). Source review only; no performance measurement, live-state check or tests run. No new dependencies proposed.
 
 Checkpoint: Step 1 handoff, 2026-10-29T02:16:33Z; scope v1/A; starting revision 60518d9e7ce80b34c93587d73a04d999b3b462b8; R1/P2. Codex single exposed rater, aware of predecessor E07 estimates. First projection 0.60; alternative B 0.90, independently judged complete-cycle estimates, not additive or hours. All three frozen R1 hashes verified. Pristine intake missing because source inspection preceded rating; no reconstructed earlier score. Includes inspection, planning, implementation, verification, documentation and ordinary correction. No measured labor or accepted outcome. Follow-up to E07 and its shared-flag cycle; same ID across worktrees.
 
