@@ -60,66 +60,6 @@
   padding: 0.35rem 0.55rem;
   white-space: nowrap;
 }
-/* "Post as {name} · Change": shown before first paint by its inline script. */
-.compose-identity {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 0.35em;
-  min-height: 2.75rem;
-  margin: 0;
-}
-.compose-identity[hidden] {
-  display: none;
-}
-.compose-identity__name {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.compose-identity .compose-identity__change {
-  width: auto;
-  min-height: 2.75rem;
-  margin: 0;
-  padding: 0 0.4rem;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-decoration: underline;
-}
-.compose-identity__editor {
-  display: flex;
-  flex: 1 1 100%;
-  gap: 0.5rem;
-  align-items: center;
-}
-.compose-identity__editor[hidden],
-.compose-identity [hidden] {
-  display: none;
-}
-.compose-identity__editor input {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
-}
-.compose-identity__editor button {
-  flex: 0 0 auto;
-  width: auto;
-  margin: 0;
-  white-space: nowrap;
-}
-.compose-identity__error {
-  flex: 1 1 100%;
-  color: var(--status-error);
-}
-/* With the keyboard open the docked reply panel keeps the row to one text line,
-   and drops it when a landscape keyboard leaves room for the editor and actions only. */
-.reply-viewport-active .compose-identity,
-.reply-viewport-active .compose-identity .compose-identity__change {
-  min-height: 0;
-}
-.reply-viewport-short .compose-identity {
-  display: none;
-}
 .compose-form-actions {
   display: flex;
   align-items: stretch;
@@ -181,7 +121,8 @@
 }
 .compact-thread-compose-actions {
   display: grid;
-  grid-template-columns: 1fr;
+  /* Post, then the ··· menu beside it, on phones too. */
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
 }

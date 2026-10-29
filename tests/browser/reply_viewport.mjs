@@ -50,10 +50,6 @@ try {
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   };
   await check();
-  // The "Post as" row stays in the docked panel, between the editor and the actions.
-  const identityRow=page.locator('[data-compose-identity]');
-  assert.equal(await identityRow.isVisible(),true,`${theme}: name row docked`);
-  assert.ok((await identityRow.boundingBox()).y>=(await body.boundingBox()).y+(await body.boundingBox()).height,`${theme}: name row below the editor`);
   await page.locator('#recovery').evaluate(el=>{el.hidden=false;});await settle(page);await check();
   await page.locator('#recovery').evaluate(el=>{el.hidden=true;});await settle(page);
   // Oversized recovery content and tiny viewports must return to normal flow.
@@ -98,7 +94,6 @@ try {
   await page.setViewportSize({width:844,height:390});
   await page.evaluate(()=>{Object.assign(testViewport,{width:844,height:240,offsetTop:0});testViewport.dispatchEvent(new Event('resize'));});
   await settle(page);await check();
-  assert.equal(await identityRow.isVisible(),false,`${theme}: a landscape keyboard leaves room for the editor and actions only`);
   // The original submit button remains the native submitter; retry uses the same form.
   await page.evaluate(()=>{window.submits=[];document.querySelector('form').addEventListener('submit',e=>{e.preventDefault();submits.push(e.submitter.textContent);});});
   await page.locator('.compose-form-actions > button').click();

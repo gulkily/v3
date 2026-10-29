@@ -2720,31 +2720,6 @@
     return result.username;
   }
 
-  // The composer's Change. A key kept in this browser is replaced by one under the new name, sending
-  // nothing; a registered key is renamed on the server instead. (Offline Likes signed by a replaced key
-  // carry its public key, so the Outbox can still send them.)
-  async function changeIdentityName(chosen) {
-    const username = normalizeUsername(chosen);
-    if (hasBrowserKeypair() && username === (localStorage.getItem(storageKeys.username) || "guest")) {
-      return username;
-    }
-    const usernameChangesEnabled = (window.forumBrowserIdentityOptions || {}).usernameChangesEnabled === true;
-    if (!isRegisteredIdentity()) {
-      await generateBrowserKey(null, username);
-      window.dispatchEvent(new Event("forum:identity-changed"));
-      return username;
-    }
-    if (!usernameChangesEnabled) {
-      throw new Error("Names can't be changed on this site.");
-    }
-    try {
-      return await saveRegisteredName(username);
-    } catch (error) {
-      // A dropped connection surfaces as a bare TypeError ("Failed to fetch"); say what to do instead.
-      throw error instanceof TypeError ? new Error("Couldn't save your name. Check your connection and try again.") : error;
-    }
-  }
-
   // A failed key creation or registration, reported beside the action with Retry; the cause stays in the details.
   function accountCreationFailure(error) {
     const failure = new Error("Couldn't create your account.");
@@ -3653,7 +3628,7 @@
     }
 
     refreshComposeIdentityFromStorage();
-    // A name changed in this window (the composer's Change) signs the draft with the new key.
+    // A key changed in this window (Account) signs the draft with the new key.
     // A key switched in another tab still trips the signing-identity check.
     window.addEventListener("forum:identity-changed", function () {
       ensureComposeAuthorIdentity(form);
@@ -3982,7 +3957,6 @@
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
-  window.ForumBrowserSigning.changeIdentityName = changeIdentityName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;

@@ -1,6 +1,6 @@
 <?php
 /**
- * The one composer: Title (full new post only), body, tools, the "Post as" row, then Post and the ··· menu.
+ * The one composer: Title (full new post only), body, tools, then Post and the ··· menu.
  * Attach image stays in the menu: it appears only once the browser knows the viewer may attach images,
  * and in the menu that never shifts the page.
  * thread_compose_form.php and reply_form.php set its options and include it (sharing their variables);
@@ -69,7 +69,6 @@ HTML;
 <?php endif; ?>
   </div>
 <?php endif; ?>
-<?= $partial('partials/compose_identity_row.php') ?>
   <div class="compose-form-actions<?= $composerIsThread && $composerCompact ? ' compact-thread-compose-actions' : '' ?>">
     <button type="submit"><?= $e($composerSubmitLabel) ?></button>
 <?php ob_start(); ?>

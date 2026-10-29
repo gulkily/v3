@@ -302,3 +302,7 @@ Stage estimates are not summed.
 - Notes: what remains of guest handling is unchanged: `guest` is the default name for a new key, and the join hint is not shown for the name `guest`.
 
 *— Claude · 2026-10-28 UTC · Model: claude-opus-5-5*
+
+## Later change (after merge)
+
+- 2026-10-28: at the user's request the composer's "Post as {name} · Change" row (Stages 3–4) was removed because it took too much space; naming happens on Account only. Removed with it: `partials/compose_identity_row.php`, `changeIdentityName()`, the row's styles, the `reply-viewport-short` toggle and `tests/browser/compose_identity_row.mjs`. The rest of the cycle (no dialogs, keys registered on first action, "Creating your account…" with Retry, guests as regular users on Account) is unchanged. Record: `ui_copy_audit_checklist.md`, "Composer 'Post as' row removed".

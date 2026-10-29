@@ -48,9 +48,9 @@ try {
   await writer.page.goto(base + '/compose/thread');
   assert.equal(await writer.page.getByRole('heading', { name: 'New post' }).isVisible(), true);
   const form = writer.page.locator('[data-compose-kind="thread"]');
-  const order = await form.evaluate(f => ['.compose-title', 'textarea[name="body"]', '.compose-tools', '[data-compose-identity]', '.compose-form-actions']
+  const order = await form.evaluate(f => ['.compose-title', 'textarea[name="body"]', '.compose-tools', '.compose-form-actions']
     .map(q => f.querySelector(q).getBoundingClientRect().top));
-  assert.deepEqual([...order].sort((a, b) => a - b), order, 'Title, body, tools, Post as, then Post');
+  assert.deepEqual([...order].sort((a, b) => a - b), order, 'Title, body, tools, then Post');
   await form.getByRole('textbox', { name: 'Title' }).fill('Composer with a title');
   await form.getByRole('textbox', { name: 'Body' }).fill('Body of the titled post');
   await form.locator('[data-compose-disclosure="tags"] > summary').click();
@@ -101,6 +101,17 @@ try {
   await phone.page.screenshot({ path: '/tmp/composers-phone-typing-390.png' });
   await phone.context.close();
 
+  // On a phone the ··· menu sits beside Post in every composer: board quick compose, New post, thread reply.
+  const narrow = await open(true);
+  for (const path of ['/', '/compose/thread', '/threads/' + threadId]) {
+    await narrow.page.goto(base + path);
+    const actions = narrow.page.locator('form[data-compose-form] .compose-form-actions').first();
+    await actions.locator('xpath=ancestor::form[1]').locator('textarea[name="body"]').fill('x');
+    const [postBox, menuBox] = await Promise.all([actions.locator(':scope > button[type="submit"]').boundingBox(), actions.locator('.compose-action-menu').boundingBox()]);
+    assert.ok(Math.abs(postBox.y - menuBox.y) < postBox.height / 2 && menuBox.x > postBox.x + postBox.width - 1, `${path}: ··· beside Post`);
+  }
+  await narrow.context.close();
+
   // A parent that isn't in the thread.
   const missing = await open(true);
   await missing.page.goto(base + `/compose/reply?thread_id=${threadId}&parent_id=no-such-post`);
@@ -111,7 +122,6 @@ try {
   // Without JavaScript: both pages post (anonymously, as there is no browser key), with Title and tags still usable.
   const plain = await open(false);
   await plain.page.goto(base + '/compose/thread');
-  assert.equal(await plain.page.locator('[data-compose-identity]').isVisible(), false);
   await plain.page.getByRole('textbox', { name: 'Title' }).fill('Posted without JavaScript');
   await plain.page.getByRole('textbox', { name: 'Body' }).fill('No scripts here');
   await plain.page.locator('[data-compose-disclosure="tags"] > summary').click();
