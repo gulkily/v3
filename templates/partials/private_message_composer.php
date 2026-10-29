@@ -17,19 +17,23 @@
       <textarea name="plaintext" rows="3" maxlength="65536" aria-label="Message to <?= $e($recipientLabel) ?>" placeholder="Write a message…" required></textarea>
     </label>
     <div class="private-message-actions">
-      <button type="submit">Send private message</button>
 <?php if ($compact ?? false): ?>
       <button type="button" data-role="private-message-latest">Latest message</button>
+      <button type="submit" class="private-message-send" aria-label="Send"><span aria-hidden="true">↑</span></button>
+<?php else: ?>
+      <button type="submit">Send</button>
 <?php endif; ?>
     </div>
   </form>
-  <p class="meta" data-role="private-message-encryption-note" title="Encrypted to every approved key associated with this username.">Encrypted to all approved keys.</p>
+<?php if (!($compact ?? false)): ?>
+  <p class="meta" data-role="private-message-encryption-note">Only you and <?= $e($recipientLabel) ?> can read these, on your approved devices.</p>
+<?php endif; ?>
   <p class="meta" data-role="private-message-feedback" role="status" aria-live="polite" hidden></p>
   <button type="button" data-role="private-message-send-retry" hidden>Check previous send</button>
 <?php if ($compact ?? false): ?>
   <div data-role="read-feedback" hidden>
     <p class="meta" data-role="read-status" role="status" aria-live="polite"></p>
-    <button type="button" data-role="read-retry">Retry seen status</button>
+    <button type="button" data-role="read-retry" aria-label="Retry seen status">Retry</button>
     <a data-role="read-reopen" href="<?= $e($successUrl ?? '/messages') ?>" hidden>Reopen conversation</a>
   </div>
 <?php endif; ?>

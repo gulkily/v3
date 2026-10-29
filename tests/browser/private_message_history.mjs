@@ -5,7 +5,8 @@ export async function checkHistory(page, context, base, artifacts, seed, incomin
   const messages = Array.from({ length: 63 }, (_, i) => ({ id: 'older-' + String(i + 1).padStart(2, '0'),
     time: '2026-10-07T12:00:00Z', sender: 'bob', envelope: i > 1 && i % 11 === 0 ? mixed.invalid : (i > 1 && i % 7 === 0 ? mixed.long : incoming) }));
   seed({ action: 'chat', messages });
-  await page.getByRole('link', { name: 'Messages', exact: true }).click();
+  // The tab bar scrolls away with the page (ui_tab_bar_scroll_away), so open Messages by address.
+  await page.goto(base + '/messages');
   await page.locator('[data-conversation-row][data-counterpart="bob"] a').click();
   await page.waitForURL('**/messages/conversation/bob');
   await page.locator('[data-mailbox="conversation"]').waitFor();
@@ -121,7 +122,7 @@ async function checkHistoryPosition(page, artifacts) {
       chosen = await visibleAnchor(page);
     } else if (mode === 'reply') {
       await page.evaluate(() => document.querySelector('[data-private-message-form]').requestSubmit());
-      await page.getByText('Reply during older history', { exact: true }).waitFor();
+      await page.locator('[data-private-message-id]').getByText('Reply during older history', { exact: true }).waitFor();
     }
     await page.evaluate(() => window.releaseHistoryReads());
     await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.historyLoading === '0');

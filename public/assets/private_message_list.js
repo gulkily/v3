@@ -14,6 +14,11 @@
     const rendered = new Map(Array.from(rows.querySelectorAll('[data-conversation-row]')).map(function (row) {
       return [row.dataset.counterpart, row];
     }));
+    // Rows from the server show readable times at once, whether or not their previews load.
+    rendered.forEach(function (row) {
+      const time = row.querySelector('[data-role="time"]');
+      if (time) window.ForumMessageTime.render(time, time.getAttribute('datetime'));
+    });
     let cursor = root.dataset.pageCursor;
     let loading = false;
     const senderKeys = new Map();
@@ -41,8 +46,8 @@
       const text = row.querySelector('[data-role="preview"]');
       const verified = row.querySelector('[data-role="verification"]');
       const retryPreview = row.querySelector('[data-action="retry-preview"]');
-      text.textContent = 'Decrypting preview…';
-      text.className = 'message-preview meta';
+      text.textContent = 'Decrypting…';
+      text.className = 'message-preview is-loading';
       verified.hidden = true;
       retryPreview.hidden = true;
       let result;
@@ -62,13 +67,18 @@
       }
       if (row.dataset.messageId !== message.message_id) return;
       row.dataset.previewState = result.kind;
+      text.title = '';
       if (result.kind === 'verified') {
         const prefix = message.sender_username_token === root.dataset.viewer ? 'You: ' : '';
         text.textContent = prefix + result.plaintext.replace(/\s+/gu, ' ').trim().slice(0, 200);
+        text.className = 'message-preview';
         verified.hidden = false;
       } else {
-        text.textContent = result.message || 'This message could not be verified.';
-        text.className = 'message-preview feedback feedback-error';
+        // One short line on the row; the reader's full reason stays in the title.
+        text.textContent = result.kind === 'bad-signature' ? 'Couldn’t verify preview'
+          : result.kind === 'load-failed' ? 'Couldn’t load preview' : 'Couldn’t decrypt preview';
+        text.title = result.message || '';
+        text.className = 'message-preview is-failed';
         retryPreview.hidden = false;
       }
       retryPreview.onclick = function () {
@@ -102,6 +112,8 @@
       retry.hidden = true;
       restart.hidden = true;
       rows.setAttribute('aria-busy', 'true');
+      // Progress and success are announced but not shown; a failure is one visible line with Retry.
+      status.className = 'meta visually-hidden';
       status.textContent = 'Loading conversations…';
       try {
         const response = await window.ForumPrivateMessageAvailability.request('/api/private_messages/conversations?cursor=' + encodeURIComponent(cursor), {
@@ -121,8 +133,13 @@
           ? (rendered.size ? 'All conversations loaded.' : '')
           : rendered.size + ' conversations loaded.';
       } catch (error) {
-        status.textContent = error instanceof Error ? error.message : 'Unable to load conversations. Try again.';
+        status.textContent = 'Couldn’t load messages.';
+        status.title = error instanceof Error ? error.message : '';
+        status.className = 'message-list-alert';
         retry.hidden = !restart.hidden;
+        // Retry replaces Load more while the failure stands; rows that never loaded say what they hold.
+        more.hidden = true;
+        rows.querySelectorAll('.message-preview.is-loading').forEach(function (text) { text.className = 'message-preview'; });
       } finally {
         loading = false;
         more.disabled = false;

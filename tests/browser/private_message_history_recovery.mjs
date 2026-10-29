@@ -63,11 +63,11 @@ export async function checkHistoryRecovery(page) {
   };
   await page.route('**/api/private_messages', sendRoute);
   await field.fill('Confirmed while history restarts');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await accepted;
   await field.fill('Newer draft must survive restart and send');
   releaseSend();
-  await page.getByText('Confirmed while history restarts', { exact: true }).waitFor();
+  await page.locator('[data-private-message-id]').getByText('Confirmed while history restarts', { exact: true }).waitFor();
   const reply = await page.locator('[data-private-message-id]').filter({ hasText: 'Confirmed while history restarts' }).getAttribute('data-private-message-id');
   release();
   await settled();

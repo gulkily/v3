@@ -16,7 +16,6 @@ final class AccountKeyPageHooksTest
         'data-profile-link-authorized=',
         'data-action="generate-browser-key"',
         'data-action="clear-browser-identity"',
-        'data-action="load-browser-key"',
         'data-action="restore-private-key"',
         'data-action="copy-public-key"',
         'data-action="copy-private-key"',

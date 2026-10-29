@@ -16,7 +16,7 @@ export async function checkUnavailableSeen(context, base, seed, unavailable) {
   await page.goto(base + '/messages/conversation/user-53');
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
   const group = page.locator('[data-role="unavailable-group"]');
-  assert.match(await group.innerText(), /25 messages unavailable/);
+  assert.match(await group.innerText(), /Couldn’t decrypt 25 messages/);
   await page.waitForTimeout(100);
   assert.equal(await unread(), true, 'Hidden summary cannot acknowledge');
   await page.evaluate(() => { window.groupHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
@@ -62,8 +62,8 @@ export async function checkUnavailableSeen(context, base, seed, unavailable) {
   await group.getByRole('button').click();
   await group.getByRole('button').click();
   await page.locator('textarea').fill('Grouped seen own reply');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
-  await page.getByText('Grouped seen own reply', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await page.locator('[data-private-message-id]').getByText('Grouped seen own reply', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Load older', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
   await page.getByRole('button', { name: 'Latest message', exact: true }).click();

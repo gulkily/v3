@@ -18,24 +18,53 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
   };
   await page.route('**/api/private_messages', intercept);
   await field.fill('Accepted but acknowledgment lost');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await acceptedPromise;
   await field.fill('Browser follow-up');
   release();
-  await page.locator('[data-role="private-message-feedback"]').filter({ hasText: 'Delivery is unconfirmed' }).waitFor();
+  // The lost acknowledgment is shown on the message itself, not as a separate notice.
+  await page.locator('[data-pending-message-id] [data-role="send-status"]').filter({ hasText: 'Not confirmed' }).waitFor();
+  assert.equal(await page.locator('[data-role="private-message-feedback"]:not([hidden])').count(), 0);
   await page.reload();
   assert.equal(await field.inputValue(), 'Browser follow-up');
   await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Accepted but acknowledgment lost' }).waitFor();
   const count = await page.locator('[data-private-message-id]').count();
-  await page.getByRole('button', { name: 'Check previous send', exact: true }).click();
-  await page.getByText('Private message sent.', { exact: true }).waitFor();
+  // After a reload the delivered copy carries the check.
+  const unconfirmed = page.locator(`[data-private-message-id="${attempt.message_id}"]`);
+  await unconfirmed.locator('[data-role="send-status"]').filter({ hasText: 'Not confirmed' }).waitFor();
+  await unconfirmed.getByRole('button', { name: 'Check', exact: true }).click();
+  await unconfirmed.locator('[data-role="send-status"]').waitFor({ state: 'detached' });
+  assert.equal(await page.locator('[data-role="private-message-feedback"]:not([hidden])').count(), 0);
   assert.equal(await field.inputValue(), 'Browser follow-up');
   assert.equal(await page.locator('[data-private-message-id]').count(), count);
   const rows = (await (await context.request.get(base + '/api/private_messages/conversation?username_token=bob')).json()).messages;
   assert.equal(rows.filter(row => row.message_id === attempt.message_id).length, 1);
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  // The follow-up is refused by the server: it stays, marked Not sent; Retry sends it once, faded until delivered.
+  const refuse = route => route.request().method() === 'POST'
+    ? route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ status: 'error', error: 'Messaging is busy. Try again.' }) })
+    : route.continue();
+  await page.route('**/api/private_messages', refuse);
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  const unsent = page.locator('[data-pending-message-id]').filter({ hasText: 'Browser follow-up' });
+  await unsent.locator('[data-role="send-status"]').filter({ hasText: 'Not sent' }).waitFor();
+  await unsent.getByText('Messaging is busy. Try again.').waitFor();
+  await page.unroute('**/api/private_messages', refuse);
+  const unsentId = await unsent.getAttribute('data-pending-message-id');
+  let releaseSend;
+  const held = new Promise(resolve => { releaseSend = resolve; });
+  const hold = async route => { await held; return route.continue(); };
+  await page.route('**/api/private_messages', hold);
+  await unsent.getByRole('button', { name: 'Retry', exact: true }).click();
+  await page.locator('[data-pending-message-id].is-pending').filter({ hasText: 'Browser follow-up' }).waitFor();
+  releaseSend();
   await page.waitForFunction(expected => document.querySelectorAll('[data-private-message-id]').length === expected, count + 1);
+  // The faded copy is replaced once the delivered message has been read, in the same place.
+  await page.waitForFunction(() => !document.querySelector('[data-pending-message-id]'));
+  assert.equal(await page.locator(`[data-private-message-id="${unsentId}"]:not(.is-arriving)`).count(), 1);
+  await page.unroute('**/api/private_messages', hold);
   await page.unroute('**/api/private_messages', intercept);
+  const sentRows = (await (await context.request.get(base + '/api/private_messages/conversation?username_token=bob')).json()).messages;
+  assert.equal(sentRows.filter(row => row.message_id === unsentId).length, 1);
 
   seed({ action: 'chat', messages: [
     { id: 'chat-valid', time: '2026-10-08T23:50:00Z', sender: 'bob', envelope: envelopes.valid },
@@ -71,8 +100,13 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
     await page.locator(`[data-private-message-id="${id}"]`).getByRole('button', { name: 'Retry reading message' }).click();
   }
   await page.locator('[data-private-message-id="chat-long"] [data-role="private-message-plaintext"]').waitFor();
-  await page.locator('[data-private-message-id="chat-invalid"]').getByText('The sender signature could not be verified.').waitFor();
-  await page.locator('[data-private-message-id="chat-unsigned"]').getByText('This message has no verifiable sender signature.').waitFor();
+  // A message that can't be read says so in one line; the reason is under Details.
+  for (const [id, reason] of [['chat-invalid', 'The sender signature could not be verified.'], ['chat-unsigned', 'This message has no verifiable sender signature.']]) {
+    const card = page.locator(`[data-private-message-id="${id}"]`);
+    await card.getByText('Couldn’t verify this message', { exact: true }).waitFor();
+    assert.match(await card.locator('[data-role="private-message-unavailable-explanation"]').textContent(), new RegExp(reason.replace('.', '\\.')));
+    assert.equal(await card.getByRole('button', { name: 'Retry reading message' }).isVisible(), true);
+  }
   assert.equal(await page.getByText('Unverified chat secret', { exact: true }).count(), 0);
   assert.ok(await page.locator('[data-role="message-date"]').count() >= 2);
   assert.ok(await valid.locator('time').getAttribute('title'));

@@ -78,7 +78,8 @@ const reply = (conversations, next_cursor) => ({ ok: true, json: async () => ({ 
   await window.ForumPrivateMessageList.bind(mixed).ready;
   assert.equal(mixed.nodes.rows.children[0].nodes.verification.hidden, false);
   assert.equal(mixed.nodes.rows.children[1].nodes.verification.hidden, true);
-  assert.equal(mixed.nodes.rows.children[1].nodes.preview.textContent, 'Signature could not be verified.');
+  assert.equal(mixed.nodes.rows.children[1].nodes.preview.textContent, 'Couldn’t verify preview');
+  assert.equal(mixed.nodes.rows.children[1].nodes.preview.title, 'Signature could not be verified.');
   const unavailable = root();
   keysFail = true;
   global.fetch = async () => reply([message('retry')], null);

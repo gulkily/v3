@@ -54,7 +54,8 @@
   z-index: 2;
   margin-top: .5rem;
   padding: .65rem;
-  background: var(--panel);
+  /* Opaque even where --panel is transparent (Arena), as the board's sort menu does. */
+  background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
   box-shadow: 0 -3px 8px var(--page-bg);
 }
 .private-conversation.composer-inline [data-private-message-composer] { position: static; }
@@ -70,3 +71,34 @@
 @media (max-width: 480px) {
   .private-conversation .private-message { max-width: 94%; }
 }
+/* Sending, shown on the message: faded while sending, then solid; a failed or unconfirmed send keeps its text with one action. */
+.private-conversation .private-message.is-pending { opacity: .55; transition: opacity .2s ease; }
+.private-conversation .private-message.is-arriving { display: none; }
+.private-message-send-status { margin: .2rem 0 0; font: .8rem/1.3 var(--ui-font); color: var(--ink-soft); text-align: end; }
+.private-conversation .private-message .private-message-send-action { min-height: 44px; margin: 0; padding: 0 .35rem; border: 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; }
+.private-message-send-reason { margin: .1rem 0 0; font-size: .8rem; text-align: end; }
+@media (prefers-reduced-motion: reduce) { .private-conversation .private-message.is-pending { transition: none; } }
+/* Chat presentation: the name as title with a back link, the privacy promise under it, bubbles by day. */
+.private-conversation .conversation-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 .5rem; }
+.private-conversation .conversation-head h1 { margin: 0; overflow-wrap: anywhere; }
+.private-conversation .conversation-head h1 a { color: inherit; text-decoration: none; }
+.conversation-head__back { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; font-size: 1.6rem; line-height: 1; text-decoration: none; }
+.conversation-head__privacy { grid-column: 1 / -1; margin: .25rem 0 0; }
+.private-conversation .private-message { position: relative; }
+.private-conversation [data-role="private-message-verification"] { display: none; }
+.private-message-empty { text-align: center; }
+.private-message-empty__starfield:empty { display: none; }
+.private-conversation [data-private-message-composer] .private-message-send { min-width: 44px; padding: 0 .9rem; font-size: 1.2rem; }
+/* Messages that can't be read: one line, Details and Retry; a quiet placeholder while decrypting. */
+.private-message .private-message-problem { margin: .2rem 0; font-style: italic; color: var(--ink-soft); }
+.private-message [data-role="private-message-unavailable-details"] { display: inline-block; margin: 0 .5rem 0 0; }
+.private-message [data-role="private-message-unavailable-details"][hidden] { display: none; }
+.private-message [data-role="private-message-unavailable-details"][open] { display: block; }
+.private-conversation .private-message [data-role="private-message-read-retry"] { min-height: 44px; margin: 0; padding: 0 .35rem; border: 0; background: transparent; color: inherit; text-decoration: underline; }
+.private-message .private-message-placeholder { min-width: 10rem; margin: .3rem 0; border-radius: .3rem; color: transparent; background: var(--line); opacity: .5; animation: private-message-pulse 1.2s ease-in-out infinite alternate; }
+@keyframes private-message-pulse { from { opacity: .25; } to { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .private-message .private-message-placeholder { animation: none; } }
+.history-more { display: inline-block; position: relative; }
+.history-more > summary { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; cursor: pointer; list-style: none; }
+.history-more > summary::-webkit-details-marker { display: none; }
+.history-more[open] > button { margin-top: .25rem; }

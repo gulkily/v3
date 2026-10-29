@@ -58,8 +58,8 @@
         if (!root.isConnected || current !== generation || !window.ForumPrivateMessageUnread.sameIdentity()) return;
         failed = candidate;
         feedback.hidden = false;
-        text.textContent = error.reopen ? 'Seen status could not be confirmed. Reopen for a fresh read position. Copy your draft first as a precaution.'
-          : 'Seen status could not be confirmed. Retry to check it; your messages and draft are unchanged.';
+        text.textContent = error.reopen ? 'Couldn’t mark this conversation as seen. Copy your draft, then reopen it.'
+          : 'Couldn’t mark this conversation as seen.';
         reopen.hidden = !error.reopen;
         retry.hidden = !!error.reopen;
         root.dataset.readState = 'failed';

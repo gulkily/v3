@@ -238,7 +238,7 @@ NODE;
         assertSame(true, $result['third']['verification']['hidden']);
         assertSame(true, $result['third']['plaintext']['hidden']);
         assertSame(false, $result['third']['error']['hidden']);
-        assertSame('The sender signature could not be verified.', $result['third']['error']['textContent']);
+        assertSame('Couldn’t verify this message', $result['third']['error']['textContent']);
         assertSame('plain three', $result['recovered']['plaintext']['textContent']);
         assertSame(true, $result['recovered']['retry']['hidden']);
         assertSame(true, $result['sameRequest']);

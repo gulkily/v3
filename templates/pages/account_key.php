@@ -40,7 +40,7 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     <p class="meta" data-role="join-hint" hidden>Approved members already use <span data-role="join-hint-name"></span>. Posts from this key join <span data-role="join-hint-name"></span> once a member approves it.</p>
     <p class="account-user-link" data-account-when="approved"><a data-role="user-link" href="/users/">All of <span data-role="user-link-name">your</span> posts</a></p>
 <?php if (($testingSelfApprovalToken ?? null) !== null): ?>
-    <p><button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button></p>
+    <p data-account-when="waiting"><button type="button" class="account-key-secondary-button" data-test-self-approval="<?= $e($testingSelfApprovalToken) ?>">Approve current account</button></p>
 <?php endif; ?>
   </div>
   <p class="meta account-key-simple-status" id="simple-status" role="status" hidden></p>
@@ -129,9 +129,6 @@ No browser private key saved yet.
               </div>
             </div>
           </details>
-          <div class="button-row account-key-advanced-actions">
-            <button type="button" data-action="load-browser-key">Load Saved Public Key</button>
-          </div>
           <div class="button-row" hidden>
             <button type="button" data-action="copy-public-key">Copy Public Key</button>
             <button type="button" data-action="copy-private-key">Copy Private Key</button>
@@ -178,26 +175,18 @@ No browser private key saved yet.
     </form>
   </dialog>
 </section>
+<?= $partial('partials/account_state_script.php') ?>
 <script>
   (function () {
+    var accountStateHelpers = window.ForumAccountState;
+    var readStorageValue = accountStateHelpers.readStorageValue;
+    var hasBrowserKeypair = accountStateHelpers.hasBrowserKeypair;
+    var storedFingerprint = accountStateHelpers.storedFingerprint;
+    var isRegistered = accountStateHelpers.isRegistered;
+    var accountState = accountStateHelpers.accountState;
+
     function accountKeyRoot() {
       return document.querySelector('[data-account-key-root]');
-    }
-
-    function readStorageValue(key) {
-      try {
-        return window.localStorage.getItem(key) || '';
-      } catch (error) {
-        return '';
-      }
-    }
-
-    function hasBrowserKeypair() {
-      return readStorageValue('forum_pki_public_key') !== '' && readStorageValue('forum_pki_private_key') !== '';
-    }
-
-    function storedFingerprint() {
-      return readStorageValue('forum_pki_fingerprint').trim().toLowerCase();
     }
 
     // The interface's standard short key form, as `$shortenProfileSlug` renders it: openpgp-0168ff20e...
@@ -224,10 +213,6 @@ No browser private key saved yet.
         return '';
       }
 
-      if (rawMessage === 'Loaded the saved browser public key into the form.') {
-        return 'Loaded your saved public key into the advanced form.';
-      }
-
       if (rawMessage === 'Copied the saved public key.') {
         return 'Public key copied.';
       }
@@ -245,28 +230,6 @@ No browser private key saved yet.
       }
 
       return rawMessage;
-    }
-
-    // A key is registered once the server has it; until then it stays in this browser.
-    function isRegistered(root) {
-      var fingerprint = storedFingerprint();
-      return fingerprint !== '' && (readStorageValue('forum_pki_published_fingerprint').trim().toLowerCase() === fingerprint
-        || root.dataset.viewerIdentityId === 'openpgp:' + fingerprint);
-    }
-
-    // Guest: no saved key, or a key not yet registered (shown under its name).
-    // A registered key is a member whatever its name, `guest` included, so its
-    // name, Remove and Save a copy are always reachable.
-    // Otherwise waiting or approved; the server's approval counts only for this
-    // browser's own key, and an unknown approval is looked up after paint.
-    function accountState(root) {
-      var fingerprint = storedFingerprint();
-      var serverKnowsThisKey = fingerprint !== '' && root.dataset.viewerIdentityId === 'openpgp:' + fingerprint;
-      var approval = serverKnowsThisKey ? (root.dataset.viewerApproved === '1' ? 'approved' : 'waiting') : (root.dataset.lookedUpApproval || '');
-      if (!hasBrowserKeypair() || !isRegistered(root)) {
-        return 'guest';
-      }
-      return approval || 'member';
     }
 
     function lookUpApproval(root) {
@@ -584,7 +547,6 @@ No browser private key saved yet.
       window.addEventListener('pageshow', syncSimpleUI);
       window.addEventListener('forum:key-backup-recorded', syncSimpleUI);
       window.addEventListener('forum:authenticated-in-place', function (event) {
-        // Session-bound testing controls become available on the next intentional visit.
         root.dataset.viewerIdentityId = event.detail.identityId;
         root.dataset.viewerApproved = event.detail.approved ? '1' : '0';
         syncSimpleUI();

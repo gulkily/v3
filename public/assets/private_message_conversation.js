@@ -44,7 +44,7 @@
       const first = items[0], last = items[items.length - 1];
       const sender = first.dataset.sender === root.dataset.viewerUsernameToken ? 'You' : first.dataset.sender;
       group.node.className = 'private-message unavailable-group' + (sender === 'You' ? ' is-outgoing' : '');
-      group.button.textContent = items.length + ' messages unavailable · ' + sender + ' · ' +
+      group.button.textContent = 'Couldn’t decrypt ' + items.length + ' messages · ' + sender + ' · ' +
         new Date(first.dataset.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) + '–' +
         new Date(last.dataset.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
       group.button.title = new Date(first.dataset.createdAt).toLocaleString() + ' – ' + new Date(last.dataset.createdAt).toLocaleString();
@@ -131,6 +131,7 @@
   function bindHistory(root) {
     const load = root.querySelector('[data-role="history-load"]');
     const restart = root.querySelector('[data-role="history-restart"]');
+    const more = root.querySelector('[data-role="history-more"]');
     const status = root.querySelector('[data-role="history-status"]');
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     if (!load || !status) return;
@@ -158,7 +159,8 @@
       root.dataset.historyLoading = '1';
       load.disabled = true;
       restart.disabled = true;
-      status.className = 'meta';
+      // Progress and success are announced but not shown; only failures are visible.
+      status.className = 'meta visually-hidden';
       status.textContent = fresh ? 'Restarting history...' : 'Loading older messages...';
       readingPosition.correct();
       try {
@@ -220,7 +222,7 @@
         status.textContent = cursor ? (fresh ? 'History restarted. Recent messages loaded.' : added.length + ' older messages loaded.') : 'All history loaded.';
         load.hidden = !cursor;
         load.textContent = 'Load older';
-        restart.hidden = true;
+        if (more) more.open = false;
         if (fresh) {
           root.querySelector('[data-role="private-message-read-token"]').value = page.read_token || '';
           root.dispatchEvent(new CustomEvent('private-message-window-settled', { detail: {
@@ -235,7 +237,8 @@
           : error.authorization
             ? 'History access is unavailable. Check your sign-in and messaging eligibility, then retry. Your loaded conversation and draft are unchanged.'
             : (error.detail || 'Unable to ' + (fresh ? 'restart history' : 'load older messages') + '.') + ' Your conversation and draft are unchanged.';
-        restart.hidden = !(fresh || error.restart);
+        // A required restart opens the ··· menu so the action is in view.
+        if (more && (fresh || error.restart)) more.open = true;
         load.hidden = fresh || error.restart || !cursor;
         load.textContent = 'Retry loading older';
       } finally {
@@ -293,6 +296,7 @@
       const outgoing = sender === root.dataset.viewerUsernameToken;
       const label = outgoing ? "You" : sender;
       card.classList.toggle('is-outgoing', outgoing);
+      card.toggleAttribute('data-incoming', !outgoing);
       card.setAttribute('aria-label', 'Message from ' + label);
       card.querySelector('[data-role="message-sender"]').textContent = label;
       const date = new Date(card.dataset.createdAt);
@@ -301,7 +305,8 @@
         const divider = document.createElement('p');
         divider.dataset.role = 'message-date';
         divider.className = 'private-message-date meta';
-        divider.textContent = date.toLocaleDateString(undefined, { dateStyle: 'full' });
+        divider.textContent = window.ForumMessageTime.day(card.dataset.createdAt);
+        divider.title = date.toLocaleDateString(undefined, { dateStyle: 'full' });
         transcript.insertBefore(divider, card);
       }
       card.classList.toggle('is-grouped', sender === lastSender && day === lastDate);
@@ -339,7 +344,7 @@
     }
     function revealLatest() {
       root.dispatchEvent(new CustomEvent('private-message-reveal-latest'));
-      const last = presentationFor(root, Array.from(transcript.querySelectorAll('[data-private-message-id]')).at(-1)) || transcript;
+      const last = presentationFor(root, Array.from(transcript.querySelectorAll('[data-private-message-id], [data-pending-message-id]')).at(-1)) || transcript;
       const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
       window.scrollBy({ top: last.getBoundingClientRect().bottom - viewportHeight() + obstruction + 24, behavior: 'instant' });
     }
@@ -356,24 +361,134 @@
     if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
     if (window.ResizeObserver) new ResizeObserver(layout).observe(composer);
     layout();
+    bindSendStates(root, composer);
     root.addEventListener('private-message-sent', function (event) {
       event.preventDefault();
       const detail = event.detail;
       const message = detail.message;
       const transcript = root.querySelector('[data-role="private-message-transcript"]');
-      if (Array.from(transcript.querySelectorAll('[data-private-message-id]')).some(card => card.dataset.privateMessageId === message.message_id)) return;
+      const pendingBubble = sendingBubble(root, message.message_id);
+      const existing = Array.from(transcript.querySelectorAll('[data-private-message-id]')).find(card => card.dataset.privateMessageId === message.message_id);
+      if (existing) {
+        clearSendStatus(existing);
+        if (pendingBubble) pendingBubble.remove();
+        return;
+      }
       root.dispatchEvent(new CustomEvent('private-message-before-append'));
       const card = messageCard(root, message);
       card.dataset.inlineReply = '1';
+      // Stays out of view until read, so the faded bubble turns solid instead of showing "Decrypting".
+      if (pendingBubble) card.classList.add('is-arriving');
       const later = Array.from(transcript.querySelectorAll('[data-private-message-id]')).find(item => item.dataset.createdAt > message.created_at);
-      transcript.insertBefore(card, later || null);
+      transcript.insertBefore(card, later || pendingBubble || null);
       root.querySelector('[data-role="private-message-empty"]').hidden = true;
       format(root);
       window.ForumPrivateMessageReader.readCard('conversation', card, root.dataset.counterpartUsernameToken,
-        Object.assign({}, message, { encrypted_envelope: detail.encryptedEnvelope })).then(function () {
+        Object.assign({}, message, { encrypted_envelope: detail.encryptedEnvelope })).finally(function () {
+        if (pendingBubble) pendingBubble.remove();
+        card.classList.remove('is-arriving');
         root.dispatchEvent(new CustomEvent('private-message-appended', { detail: { card: card } }));
       });
     });
+  }
+  // Sending and its recovery, shown on the message: a faded bubble while sending,
+  // then "Not sent · Retry" or "Not confirmed · Check" (private_message_compose.js keeps the attempt).
+  function sendingBubble(root, messageId) {
+    return Array.from(root.querySelectorAll('[data-pending-message-id]')).find(node => node.dataset.pendingMessageId === messageId) || null;
+  }
+  function clearSendStatus(card) {
+    card.classList.remove('is-pending', 'is-unsent');
+    card.querySelectorAll('[data-role="send-status"]').forEach(node => node.remove());
+  }
+  function bindSendStates(root, composer) {
+    const transcript = root.querySelector('[data-role="private-message-transcript"]');
+    const composerControls = () => window.ForumPrivateMessageComposer && window.ForumPrivateMessageComposer.controls(composer);
+    function delivered(messageId) {
+      return Array.from(transcript.querySelectorAll('[data-private-message-id]')).find(card => card.dataset.privateMessageId === messageId) || null;
+    }
+    function bubble(messageId, plaintext) {
+      let node = sendingBubble(root, messageId);
+      if (node) return node;
+      root.dispatchEvent(new CustomEvent('private-message-before-append'));
+      node = root.querySelector('[data-role="private-message-template"]').content.firstElementChild.cloneNode(true);
+      node.removeAttribute('data-private-message-id');
+      node.dataset.pendingMessageId = messageId;
+      node.classList.add('is-outgoing');
+      node.setAttribute('aria-label', 'Message from You');
+      node.querySelector('[data-role="message-sender"]').textContent = 'You';
+      node.querySelector('time').hidden = true;
+      node.querySelector('[data-role="private-message-reader-error"]').hidden = true;
+      const text = node.querySelector('[data-role="private-message-plaintext"]');
+      text.textContent = plaintext;
+      text.hidden = plaintext === '';
+      transcript.appendChild(node);
+      root.querySelector('[data-role="private-message-empty"]').hidden = true;
+      root.dispatchEvent(new CustomEvent('private-message-appended', { detail: { card: node } }));
+      return node;
+    }
+    function showStatus(card, label, actionLabel, action, reason) {
+      clearSendStatus(card);
+      card.classList.add('is-unsent');
+      const status = document.createElement('p');
+      status.dataset.role = 'send-status';
+      status.className = 'private-message-send-status';
+      const text = document.createElement('span');
+      text.textContent = label;
+      status.appendChild(text);
+      card.appendChild(status);
+      if (!actionLabel) return null;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'private-message-send-action';
+      button.textContent = actionLabel;
+      button.addEventListener('click', action);
+      status.append(' · ', button);
+      if (reason) {
+        const detail = document.createElement('p');
+        detail.dataset.role = 'send-status';
+        detail.className = 'meta private-message-send-reason';
+        detail.textContent = reason;
+        card.appendChild(detail);
+      }
+      return button;
+    }
+    function failed(detail) {
+      const card = delivered(detail.messageId) || bubble(detail.messageId, detail.plaintext || '');
+      // The status makes the message taller; keep it in view above the composer if the reader was following.
+      root.dispatchEvent(new CustomEvent('private-message-before-append'));
+      const reason = [detail.reason, detail.saved === false ? 'This browser can’t save the draft; keep this page open.' : ''].filter(Boolean).join(' ');
+      const focused = card.contains(document.activeElement);
+      const button = detail.unconfirmed
+        ? showStatus(card, 'Not confirmed', 'Check', function () { const controls = composerControls(); if (controls) controls.check(); }, reason)
+        : showStatus(card, 'Not sent', 'Retry', function () {
+          const controls = composerControls();
+          if (!controls) return;
+          // A prepared attempt is resent as itself (same message ID, so never twice); otherwise the draft is sent again.
+          if (controls.pending()) { controls.check(); return; }
+          card.remove();
+          controls.resend();
+        }, reason);
+      if (focused && button) button.focus({ preventScroll: true });
+      root.dispatchEvent(new CustomEvent('private-message-appended', { detail: { card: card } }));
+    }
+    root.addEventListener('private-message-sending', function (event) {
+      const detail = event.detail;
+      const card = delivered(detail.messageId);
+      if (card) {
+        const focused = card.contains(document.activeElement);
+        showStatus(card, 'Checking…');
+        card.classList.remove('is-unsent');
+        if (focused) { card.tabIndex = -1; card.focus({ preventScroll: true }); }
+        return;
+      }
+      const node = bubble(detail.messageId, detail.plaintext);
+      clearSendStatus(node);
+      node.classList.add('is-pending');
+    });
+    root.addEventListener('private-message-send-failed', function (event) { failed(event.detail); });
+    const controls = composerControls();
+    const restored = controls && controls.pending();
+    if (restored) failed({ messageId: restored.messageId, plaintext: restored.plaintext, unconfirmed: true });
   }
   window.ForumPrivateMessageConversation = { bind: bind, format: format, regroup: regroup, presentationFor: presentationFor };
   document.addEventListener('DOMContentLoaded', function () {

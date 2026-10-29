@@ -129,10 +129,13 @@ try {
   await page.locator('[data-conversation-list]').waitFor();
   await assertNoNewMessage(page);
   await page.getByRole('link', { name: 'Users', exact: true }).click();
-  await page.getByRole('link', { name: 'bob', exact: true }).click();
+  // Users rows and the person page's Message button (cycle 7) lead to the conversation.
+  await page.locator('a.account-row[href="/user/bob"]').click();
+  await page.getByRole('button', { name: 'Message', exact: true }).click();
+  await page.waitForURL(/\/messages\/conversation\/bob\??$/);
   await page.locator('[data-private-message-composer] textarea').fill('Started from user page');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
-  await page.getByText('Private message sent.', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await page.locator('[data-private-message-id] [data-role="private-message-plaintext"]').filter({ hasText: 'Started from user page' }).waitFor();
   await page.getByRole('link', { name: 'Messages', exact: true }).click();
   await list.filter({ has: page.locator('[data-role="counterpart"]', { hasText: 'bob' }) }).locator('a').click();
   await page.waitForURL('**/messages/conversation/bob');
@@ -144,15 +147,15 @@ try {
   await page.locator('textarea[name="plaintext"]').fill('Browser first message');
   let failSend = true;
   await page.route('**/api/private_messages', route => failSend ? route.fulfill({ status: 503, json: { status: 'error', error: 'Test delivery failure' } }) : route.continue());
-  await page.getByRole('button', { name: 'Send private message' }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await page.getByText(/Test delivery failure/).waitFor();
   assert.equal(await page.locator('textarea').inputValue(), 'Browser first message');
   failSend = false;
-  await page.getByRole('button', { name: 'Send private message' }).click();
-  await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Browser first message' }).waitFor();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await page.locator('[data-private-message-id] [data-role="private-message-plaintext"]').filter({ hasText: 'Browser first message' }).waitFor();
   await page.locator('textarea').fill('Browser follow-up');
-  await page.getByRole('button', { name: 'Send private message' }).click();
-  await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Browser follow-up' }).waitFor();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await page.locator('[data-private-message-id] [data-role="private-message-plaintext"]').filter({ hasText: 'Browser follow-up' }).waitFor();
   assert.equal(await page.evaluate(() => window.chatDocumentMarker), 'same-document', 'Successful sends must not reload');
   await page.evaluate(() => document.querySelector('[data-private-message-composer]').dispatchEvent(new CustomEvent('private-message-sent', { bubbles: true, cancelable: true, detail: window.lastChatConfirmation })));
   assert.equal(await page.locator('[data-private-message-id]').count(), 3, 'Repeated confirmation must not append twice');
@@ -219,12 +222,15 @@ try {
   await retryRow.getByRole('button', { name: 'Retry preview' }).waitFor();
   failKey = false;
   await retryRow.getByRole('button', { name: 'Retry preview' }).click();
-  await retryRow.locator('[data-role="verification"]').waitFor({ state: 'visible' });
+  // Verified rows show no check mark; the reader's state and the preview text show the recovery.
+  await retryRow.locator('[data-role="verification"]:not([hidden])').waitFor({ state: 'attached' });
+  assert.doesNotMatch(await retryRow.locator('[data-role="preview"]').innerText(), /Couldn’t/);
   seed({ action: 'bad-signature', envelope: await encrypt(outsider, 'Unverified secret') });
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
   const bad = page.locator('[data-role="rows"] [data-counterpart="user-59"]');
-  assert.match(await bad.innerText(), /signature.*not.*verified/i);
+  assert.match(await bad.innerText(), /Couldn’t verify preview/);
+  assert.match(await bad.locator('[data-role="preview"]').getAttribute('title'), /signature.*not.*verified/i);
   assert.doesNotMatch(await bad.innerText(), /Unverified secret/);
   for (const legacy of ['inbox', 'sent']) {
     const response = await context.request.get(base + '/messages/' + legacy, { maxRedirects: 0 });
@@ -257,10 +263,11 @@ try {
   });
   console.log('Checking checkHistoryRecovery');
   await checkHistoryRecovery(page);
-  for (const path of ['/user/bob', '/profiles/openpgp-' + bob.fingerprint]) {
+  // /user/bob offers a Message button (cycle 7); the key profile page keeps its own composer.
+  for (const path of ['/profiles/openpgp-' + bob.fingerprint]) {
     await page.goto(base + path);
     await page.locator('[data-private-message-composer] textarea').fill('Shared composer compatibility');
-    await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
     await page.getByText('Private message sent.', { exact: true }).waitFor();
     assert.equal(new URL(page.url()).pathname, path);
     assert.equal(await page.locator('[data-private-message-composer] textarea').inputValue(), '');

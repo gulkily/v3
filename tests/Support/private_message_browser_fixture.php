@@ -33,6 +33,10 @@ if (($input['action'] ?? '') === 'arrive') {
     $store->storeEnvelope('arrival', gmdate('Y-m-d\TH:i:s\Z'), 'user-01', 'alice', 'fixture-sender', $input['envelope']);
     exit;
 }
+if (($input['action'] ?? '') === 'unapprove') {
+    (new PDO('sqlite:' . $root . '/read.sqlite3'))->prepare('UPDATE profiles SET is_approved = 0 WHERE username_token = ?')->execute([$input['name']]);
+    exit;
+}
 if (($input['action'] ?? '') === 'revoke') {
     (new PDO('sqlite:' . $root . '/read.sqlite3'))->exec("UPDATE profiles SET is_approved = 0 WHERE username_token = 'user-60'");
     exit;

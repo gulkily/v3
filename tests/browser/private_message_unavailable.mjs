@@ -13,7 +13,7 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   const groups = page.locator('[data-role="unavailable-group"]');
   assert.equal(await groups.count(), 1);
   const button = groups.getByRole('button');
-  assert.match(await button.innerText(), /20 messages unavailable · user-56/);
+  assert.match(await button.innerText(), /Couldn’t decrypt 20 messages · user-56/);
   assert.equal(await button.getAttribute('aria-expanded'), 'false');
   assert.equal(await page.locator('[data-reader-state="decryption-failed"][hidden]').count(), 20);
   const comparison = await page.evaluate(() => {
@@ -78,7 +78,8 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   assert.equal(await groups.count(), 3, 'Warnings and dates break runs');
   const warning = page.locator('[data-private-message-id="mixed-unavailable-2"]');
   assert.equal(await warning.getAttribute('hidden'), null);
-  assert.match(await warning.innerText(), /signature.*not.*verified/i);
+  assert.match(await warning.innerText(), /Couldn’t verify this message/);
+  assert.match(await warning.locator('[data-role="private-message-unavailable-explanation"]').textContent(), /signature.*not.*verified/i);
   assert.equal(await warning.locator('[data-role="private-message-plaintext"]').innerText(), '');
 
   // More than two windows form one run, retaining its open choice and scroll anchor.
@@ -88,7 +89,7 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   })) });
   await page.goto(base + '/messages/conversation/user-54');
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageReaderSettled === '1');
-  assert.match(await groups.innerText(), /25 messages unavailable/);
+  assert.match(await groups.innerText(), /Couldn’t decrypt 25 messages/);
   await groups.getByRole('button').click();
   await page.locator('textarea').fill('Draft while expanding history');
   const load = page.getByRole('button', { name: 'Load older', exact: true });
@@ -97,13 +98,13 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   await load.evaluate(node => node.click());
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
   assert.equal(await groups.count(), 1);
-  assert.match(await groups.innerText(), /50 messages unavailable/);
+  assert.match(await groups.innerText(), /Couldn’t decrypt 50 messages/);
   assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'true');
   assert.ok(Math.abs(await groups.evaluate(node => node.getBoundingClientRect().top) - anchor) <= 5, 'Merged summary must retain reading position');
   await groups.getByRole('button').click();
   await load.click();
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
-  assert.match(await groups.innerText(), /60 messages unavailable/);
+  assert.match(await groups.innerText(), /Couldn’t decrypt 60 messages/);
   assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'false');
   const ids = await page.locator('[data-reader-state="decryption-failed"]').evaluateAll(cards => cards.map(card => card.dataset.privateMessageId));
   assert.deepEqual(ids, Array.from({ length: 60 }, (_, i) => 'unavailable-history-' + String(i).padStart(2, '0')));
@@ -115,13 +116,13 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   await page.route('**/api/private_messages/conversation?*', stale);
   await load.click();
   await page.getByRole('button', { name: 'Restart history', exact: true }).waitFor();
-  assert.match(await groups.innerText(), /25 messages unavailable/);
+  assert.match(await groups.innerText(), /Couldn’t decrypt 25 messages/);
   await page.unroute('**/api/private_messages/conversation?*', stale);
   await page.getByRole('button', { name: 'Restart history', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
   assert.equal(await groups.count(), 1);
   assert.equal(await page.locator('[data-private-message-id]').count(), 25);
-  assert.match(await groups.innerText(), /25 messages unavailable/);
+  assert.match(await groups.innerText(), /Couldn’t decrypt 25 messages/);
   assert.equal(await page.locator('textarea').inputValue(), 'Draft while expanding history');
   await page.locator('textarea').fill('');
   return comparison;
@@ -154,11 +155,11 @@ export async function checkUnavailableRecovery(page, base, recoveryKey) {
   const sendRoute = async route => { const response = await route.fetch(); assert.equal(response.status(), 201); accepted(); await heldSend; return route.fulfill({ response }); };
   await page.route('**/api/private_messages', sendRoute);
   await page.locator('textarea').fill('Reply while unavailable groups are open');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await acceptedSend;
   await page.locator('textarea').fill('Newer group recovery draft');
   release();
-  await page.getByText('Reply while unavailable groups are open', { exact: true }).waitFor();
+  await page.locator('[data-private-message-id]').getByText('Reply while unavailable groups are open', { exact: true }).waitFor();
   assert.equal(await page.locator('textarea').inputValue(), 'Newer group recovery draft');
   assert.deepEqual(await groups.getByRole('button').evaluateAll(nodes => nodes.map(node => node.getAttribute('aria-expanded'))), ['true', 'true']);
   await page.unroute('**/api/private_messages', sendRoute);
@@ -181,7 +182,7 @@ export async function checkUnavailableRecovery(page, base, recoveryKey) {
   unblock();
   await page.waitForFunction(() => document.querySelector('[data-private-message-id="unavailable-history-45"]').dataset.readerState === 'decryption-failed');
   assert.equal(await groups.count(), 1);
-  assert.match(await groups.innerText(), /50 messages unavailable/);
+  assert.match(await groups.innerText(), /Couldn’t decrypt 50 messages/);
   assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('[data-private-message-id]').count(), 50);
   await page.unroute('**/api/private_messages/recipient_keys?username_token=user-54', delayed);
@@ -197,7 +198,7 @@ export async function checkUnavailableBoundaries(page, base, seed, unavailable, 
   await settled();
   const groups = page.locator('[data-role="unavailable-group"]');
   assert.equal(await groups.count(), 3, 'Sender changes and readable messages break groups');
-  assert.match(await groups.nth(1).innerText(), /2 messages unavailable · You/);
+  assert.match(await groups.nth(1).innerText(), /Couldn’t decrypt 2 messages · You/);
   const readable = page.locator('[data-private-message-id="group-boundary-4"]');
   assert.equal(await readable.getAttribute('hidden'), null);
   assert.match(await readable.innerText(), /Incoming fixture preview/);

@@ -126,7 +126,7 @@ try {
       const account = await context.request.get(base + '/account/key/');
       const accountHtml = await account.text();
       assert.ok(accountHtml.includes(`data-authenticated-identity-id="openpgp:${fingerprint.toLowerCase()}"`));
-      if (mode === 'account' && !approved) assert.ok(accountHtml.includes('data-test-self-approval='), 'testing control available on next intentional visit');
+      if (mode === 'account' && !approved) assert.ok(accountHtml.includes('data-test-self-approval='), 'testing control available');
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       await page.screenshot({ path: `/tmp/background-sign-in-${engine}-${theme}-${approved}-${mode}-${width}.png` });
       await context.close();

@@ -140,6 +140,13 @@
     return message;
   }
 
+  // The short line shown on a message that can't be read; the reader's full message goes under Details.
+  function problemLabel(kind) {
+    if (kind === "bad-signature") return "Couldn’t verify this message";
+    if (kind === "unavailable" || kind === "decryption-failed") return "Couldn’t decrypt this message";
+    return "Couldn’t load this message";
+  }
+
   function setReaderResult(verificationNode, errorNode, plaintextNode, result) {
     verificationNode.hidden = true;
     errorNode.textContent = "";
@@ -148,8 +155,8 @@
     plaintextNode.hidden = true;
 
     if (result.kind !== "verified") {
-      errorNode.textContent = result.message || "This encrypted message could not be loaded or decrypted.";
-      errorNode.className = "feedback feedback-" + result.kind;
+      errorNode.textContent = problemLabel(result.kind);
+      errorNode.className = "private-message-problem feedback-" + result.kind;
       errorNode.hidden = false;
       return;
     }
@@ -166,15 +173,16 @@
     const explanation = card.querySelector('[data-role="private-message-unavailable-explanation"]');
     const retry = card.querySelector('[data-role="private-message-read-retry"]');
     const compact = state === 'unavailable' || state === 'decryption-failed';
+    const failed = state !== 'loading' && state !== 'verified';
     if (details && details.appendChild) {
-      details.hidden = !compact;
-      if (compact) {
-        card.querySelector('[data-role="private-message-reader-error"]').hidden = true;
-        explanation.textContent = message + (state === 'decryption-failed'
-          ? ' This can happen if you started using this device or browser after the message was sent.' : '') +
-          ' Visit this site on a device that can still read the message, then retry history here. If no device has access, a saved copy of the original private key may help.';
+      details.hidden = !failed;
+      if (!failed) details.open = false;
+      if (failed) {
+        explanation.textContent = (message || 'This encrypted message could not be loaded or decrypted.') + (state === 'decryption-failed'
+          ? ' This can happen if you started using this device or browser after the message was sent.' : '') + (compact
+          ? ' Visit this site on a device that can still read the message, then retry history here. If no device has access, a saved copy of the original private key may help.' : '');
       }
-      (compact ? details : card).appendChild(retry);
+      card.appendChild(retry);
     }
     if (card.dispatchEvent) card.dispatchEvent(new CustomEvent('private-message-read-state-changed', { bubbles: true }));
   }
@@ -200,8 +208,8 @@
     plaintext.hidden = true;
     plaintext.textContent = "";
     error.hidden = false;
-    error.textContent = "Decrypting and verifying message...";
-    error.className = "meta";
+    error.textContent = "Decrypting…";
+    error.className = "meta private-message-placeholder";
     const retry = card.querySelector('[data-role="private-message-read-retry"]');
     if (retry && retry.addEventListener) {
       retry.hidden = true;

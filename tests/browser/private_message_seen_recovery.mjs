@@ -34,7 +34,7 @@ export async function checkSeenRecovery(page, context, device, base, seed, incom
   };
   await page.route('**/api/private_messages', holdSend);
   await page.locator('textarea').fill('Send pending during seen recovery');
-  await page.getByRole('button', { name: 'Send private message', exact: true }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await sent;
   await page.locator('textarea').fill('Newer draft during seen recovery');
   add('seen-after-lost-ack');
@@ -44,7 +44,7 @@ export async function checkSeenRecovery(page, context, device, base, seed, incom
   await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]')?.dataset.readState === 'acknowledged');
   assert.equal((await unread()).conversations.bob, true, 'Retry cannot clear a later arrival');
   releaseSend();
-  await page.getByText('Send pending during seen recovery', { exact: true }).waitFor();
+  await page.locator('[data-private-message-id]').getByText('Send pending during seen recovery', { exact: true }).waitFor();
   assert.equal(await page.locator('textarea').inputValue(), 'Newer draft during seen recovery');
   await page.unroute('**/api/private_messages', holdSend);
   await page.unroute('**/api/private_messages/read', lost);

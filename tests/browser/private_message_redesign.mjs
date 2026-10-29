@@ -1,0 +1,254 @@
+// Run with: CHROMIUM_PATH=/usr/bin/google-chrome [FORUM_SITE_ID=chouse] node tests/browser/private_message_redesign.mjs [screenshot-dir] [all|theme,theme,...]
+// The redesigned Messages (ui_messages): the access page for visitors who aren't approved members, then in each
+// theme at phone and desktop width the conversation (name, privacy line, bubbles by day, no check marks, Send,
+// unreadable message, theme hooks), sending and Not sent, an empty conversation, the list and a failed list load.
+import assert from 'node:assert/strict';
+import { mkdtemp } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { runInThisContext } from 'node:vm';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
+import { once } from 'node:events';
+import { chromium } from 'playwright-core';
+
+const project = resolve(new URL('../..', import.meta.url).pathname);
+const shots = process.argv[2] || null;
+const site = process.env.FORUM_SITE_ID || 'zenmemes';
+const permitted = JSON.parse(spawnSync('php', ['-r', `require '${project}/autoload.php'; echo json_encode(ForumRewrite\\SiteProfileRegistry::all()['${site}']['permittedThemes']);`], { encoding: 'utf8' }).stdout);
+const themes = !process.argv[3] || process.argv[3] === 'all' ? permitted : process.argv[3].split(',');
+runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
+const openpgp = globalThis.openpgp;
+const root = await mkdtemp(join(tmpdir(), 'private-message-redesign-'));
+const profiles = [];
+async function identity(name) {
+  const keys = await openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name }], format: 'armored' });
+  const publicKey = await openpgp.readKey({ armoredKey: keys.publicKey });
+  profiles.push({ name, fingerprint: publicKey.getFingerprint(), publicKey: keys.publicKey });
+  return { ...keys, fingerprint: publicKey.getFingerprint(), public: publicKey, private: await openpgp.readPrivateKey({ armoredKey: keys.privateKey }) };
+}
+const alice = await identity('alice'), bob = await identity('bob'), outsider = await identity('outsider'), waiting = await identity('mouse');
+for (let i = 1; i <= 60; i++) profiles.push({ name: 'user-' + String(i).padStart(2, '0'), fingerprint: bob.fingerprint, publicKey: bob.publicKey });
+const encrypt = (signer, text) => openpgp.createMessage({ text }).then(message => openpgp.encrypt({
+  message, encryptionKeys: [alice.public, bob.public], signingKeys: signer.private, format: 'armored',
+}));
+function seed(data) {
+  const result = spawnSync('php', [join(project, 'tests/Support/private_message_browser_fixture.php'), root], {
+    input: JSON.stringify(data), encoding: 'utf8', env: { ...process.env, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php') },
+  });
+  assert.equal(result.status, 0, result.stderr);
+}
+seed({ profiles, incoming: await encrypt(bob, 'Incoming fixture preview'), outgoing: await encrypt(alice, 'Outgoing fixture preview') });
+seed({ action: 'unapprove', name: 'mouse' });
+const day = offset => new Date(Date.now() - offset * 86400000).toISOString().replace(/\.\d+Z$/, 'Z');
+seed({ action: 'chat', messages: [
+  { id: 'redesign-1', time: day(3), sender: 'bob', envelope: await encrypt(bob, 'did you see my thread about the textarea') },
+  { id: 'redesign-2', time: day(3), sender: 'alice', recipient: 'bob', envelope: await encrypt(alice, 'Yes, it’s the next thing I’m fixing.') },
+  { id: 'redesign-3', time: day(1), sender: 'bob', envelope: await encrypt(outsider, 'Unverifiable fixture') },
+  { id: 'redesign-4', time: day(0), sender: 'bob', envelope: await encrypt(bob, 'ok the new reply box is way better on my phone ' + 'averylongwordwithoutspaces'.repeat(6)) },
+] });
+
+const socket = createServer().listen(0, '127.0.0.1');
+await once(socket, 'listening');
+const port = socket.address().port;
+await new Promise(resolve => socket.close(resolve));
+const base = `http://127.0.0.1:${port}`;
+const server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/private_message_browser_router.php')], {
+  env: { ...process.env, PRIVATE_MESSAGE_TEST_ROOT: root, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php'),
+    PRIVATE_MESSAGE_DATABASE_PATH: join(root, 'state/private/messages.sqlite3'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') },
+  stdio: ['ignore', 'ignore', 'pipe'],
+});
+let serverLog = '';
+server.stderr.on('data', data => { serverLog += data; });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
+try {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    try { await fetch(base + '/api/version'); break; } catch { await new Promise(resolve => setTimeout(resolve, 100)); }
+  }
+  // Not an approved member: the page names the visitor's state on first paint and signs in an approved key.
+  const keysOf = who => ({ username: who === waiting ? 'mouse' : 'alice', public_key: who.publicKey, private_key: who.privateKey,
+    fingerprint: who.fingerprint.toUpperCase(), published_fingerprint: who.fingerprint.toUpperCase() });
+  async function signedIn(context, who) {
+    const challenge = (await (await context.request.get(base + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
+    const signature = await openpgp.sign({ message: await openpgp.createMessage({ text: challenge }), signingKeys: who.private, detached: true });
+    const answer = await context.request.post(base + '/api/authenticate_identity', { data: { challenge, detached_signature: signature, identity_id: 'openpgp:' + who.fingerprint } });
+    assert.equal(answer.status(), 200, await answer.text());
+  }
+  async function accessPage(storageKeys, prepare) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+    if (prepare) await prepare(context);
+    await context.addInitScript(keys => {
+      for (const [key, value] of Object.entries(keys || {})) localStorage.setItem('forum_pki_' + key, value);
+      document.addEventListener('DOMContentLoaded', () => {
+        const access = document.querySelector('[data-private-message-access]');
+        window.firstAccessState = access ? access.dataset.accessState : 'none';
+      });
+    }, storageKeys);
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    const response = await page.goto(base + '/messages');
+    return { context, page, errors, status: response.status() };
+  }
+  {
+    const guest = await accessPage(null);
+    assert.equal(guest.status, 401);
+    assert.equal(await guest.page.evaluate(() => window.firstAccessState), 'guest', 'No key: guest on first paint');
+    assert.equal(await guest.page.getByRole('heading', { name: 'Messages are for approved members' }).isVisible(), true);
+    assert.equal(await guest.page.getByRole('button', { name: 'Set up account' }).isVisible(), true);
+    assert.equal(await guest.page.getByText('Authentication Required').count(), 0);
+    if (shots) await guest.page.screenshot({ path: join(shots, 'access-guest.png') });
+    await guest.page.getByRole('button', { name: 'Set up account' }).click();
+    await guest.page.waitForURL(/\/account\/key\/?/);
+    await guest.context.close();
+
+    const local = await accessPage({ username: 'guest', public_key: outsider.publicKey, private_key: outsider.privateKey, fingerprint: outsider.fingerprint.toUpperCase() });
+    assert.equal(await local.page.evaluate(() => window.firstAccessState), 'guest', 'An unregistered key is a guest');
+    await local.context.close();
+
+    const waitingSigned = await accessPage(keysOf(waiting), context => signedIn(context, waiting));
+    assert.equal(waitingSigned.status, 403);
+    assert.equal(await waitingSigned.page.evaluate(() => window.firstAccessState), 'waiting', 'A signed-in waiting key: waiting on first paint');
+    await waitingSigned.page.getByText('You’re waiting for approval as mouse. Messages unlock once someone approves you.').waitFor();
+    if (shots) await waitingSigned.page.screenshot({ path: join(shots, 'access-waiting.png') });
+    await waitingSigned.context.close();
+
+    const waitingUnsigned = await accessPage(keysOf(waiting));
+    assert.equal(await waitingUnsigned.page.evaluate(() => window.firstAccessState), 'checking', 'Approval unknown: heading only');
+    await waitingUnsigned.page.getByText('You’re waiting for approval as mouse.', { exact: false }).waitFor();
+    await waitingUnsigned.context.close();
+
+    const approved = await accessPage(keysOf(alice));
+    assert.equal(await approved.page.evaluate(() => window.firstAccessState), 'checking');
+    await approved.page.locator('[data-conversation-list]').waitFor();
+    assert.equal(new URL(approved.page.url()).pathname, '/messages');
+    assert.deepEqual(approved.errors, []);
+    await approved.context.close();
+
+    const failing = await accessPage(keysOf(alice), context => context.route('**/api/auth_challenge', route => route.abort()));
+    await failing.page.getByText('Couldn’t sign you in.').waitFor();
+    if (shots) await failing.page.screenshot({ path: join(shots, 'access-failed.png') });
+    await failing.context.unroute('**/api/auth_challenge');
+    await failing.page.getByRole('button', { name: 'Retry' }).click();
+    await failing.page.locator('[data-conversation-list]').waitFor();
+    await failing.context.close();
+  }
+
+  for (const width of [390, 1280]) for (const theme of themes) {
+    const label = `${theme} ${width}px`;
+    const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+    const challenge = (await (await context.request.get(base + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
+    const signature = await openpgp.sign({ message: await openpgp.createMessage({ text: challenge }), signingKeys: alice.private, detached: true });
+    assert.equal((await context.request.post(base + '/api/authenticate_identity', { data: { challenge, detached_signature: signature, identity_id: 'openpgp:' + alice.fingerprint } })).status(), 200);
+    await context.addInitScript(({ keys, theme, site }) => {
+      for (const [key, value] of Object.entries(keys)) localStorage.setItem('forum_pki_' + key, value);
+      for (const key of [site + '-theme', ...Object.keys(localStorage).filter(name => name.endsWith('-theme'))]) localStorage.setItem(key, theme);
+    }, { theme, site, keys: { username: 'alice', public_key: alice.publicKey, private_key: alice.privateKey,
+      fingerprint: alice.fingerprint.toUpperCase(), published_fingerprint: alice.fingerprint.toUpperCase() } });
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(base + '/messages/conversation/bob');
+    const root = page.locator('[data-mailbox="conversation"]');
+    const headTop = () => page.locator('.conversation-head').evaluate(node => node.getBoundingClientRect().top + scrollY);
+    const headBefore = await headTop();
+    await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.privateMessageReaderSettled === '1');
+    assert.equal(Math.round(await headTop()), Math.round(headBefore), `${label}: header stays put while messages decrypt`);
+
+    assert.equal(await page.title().then(title => title.startsWith('bob')), true, `${label}: the tab is titled by the person`);
+    assert.equal(await page.locator('.conversation-head h1').innerText(), 'bob');
+    assert.equal(await page.getByRole('link', { name: 'Back to Messages' }).isVisible(), true);
+    assert.equal(await page.getByText('Only you and bob can read these, on your approved devices.').isVisible(), true);
+    assert.equal(await page.getByText('Conversation with', { exact: false }).count(), 0);
+    assert.equal(await page.locator('[data-role="private-message-verification"]:visible').count(), 0, `${label}: no check marks`);
+    assert.deepEqual(await page.locator('[data-role="message-date"]').allInnerTexts(), [
+      await page.evaluate(value => window.ForumMessageTime.day(value), day(3)), 'Yesterday', 'Today'].map(text => text.trim()));
+    assert.equal(await page.locator('[data-private-message-id][data-incoming]').count(), 3);
+    assert.equal(await page.locator('.is-outgoing[data-private-message-id]').count(), 1);
+    assert.match(await root.getAttribute('style'), /--person: \d+/);
+    assert.equal(await page.getByRole('button', { name: 'Send', exact: true }).isVisible(), true);
+    const unreadable = page.locator('[data-private-message-id="redesign-3"]');
+    assert.equal(await unreadable.locator('[data-role="private-message-reader-error"]').innerText(), 'Couldn’t verify this message');
+    assert.equal(await unreadable.getByRole('button', { name: 'Retry reading message' }).isVisible(), true);
+    await unreadable.locator('summary').click();
+    assert.match(await unreadable.locator('[data-role="private-message-unavailable-explanation"]').innerText(), /signature/);
+    assert.equal(await page.getByText('All history loaded.').isVisible().then(visible => visible && page.getByText('All history loaded.').evaluate(node => node.getBoundingClientRect().width > 2)), false, `${label}: no routine history notice`);
+    assert.equal(await page.getByRole('button', { name: 'Restart history' }).isVisible(), false, `${label}: Restart history waits under ···`);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: no page overflow`);
+    if (shots) await page.screenshot({ path: join(shots, `conversation-${theme}-${width}.png`), fullPage: true });
+
+    // Sending, then refused: the bubble is faded while sending and keeps its text with Not sent · Retry.
+    let releaseSend;
+    const held = new Promise(resolve => { releaseSend = resolve; });
+    const refuse = async route => { await held; return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ status: 'error', error: 'Messaging is busy. Try again.' }) }); };
+    await page.route('**/api/private_messages', refuse);
+    await page.locator('[data-private-message-composer] textarea').fill('Ship it tonight?');
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    const sending = page.locator('[data-pending-message-id]');
+    await sending.and(page.locator('.is-pending')).waitFor();
+    if (shots) await page.screenshot({ path: join(shots, `sending-${theme}-${width}.png`) });
+    releaseSend();
+    await sending.locator('[data-role="send-status"]').filter({ hasText: 'Not sent' }).waitFor();
+    assert.equal(await sending.getByRole('button', { name: 'Retry', exact: true }).isVisible(), true);
+    // Not hidden behind the pinned composer.
+    const [unsentBox, composerBox] = await Promise.all([sending.locator('[data-role="send-status"]').last().boundingBox(), page.locator('[data-private-message-composer]').boundingBox()]);
+    assert.ok(unsentBox.y + unsentBox.height <= composerBox.y + 1, `${label}: Not sent stays above the composer`);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: no overflow with Not sent`);
+    if (shots) await page.screenshot({ path: join(shots, `unsent-${theme}-${width}.png`) });
+    await page.unroute('**/api/private_messages', refuse);
+
+    // An empty conversation.
+    await page.goto(base + '/messages/conversation/outsider');
+    await page.getByText('No messages with outsider yet.').waitFor();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: empty conversation has no overflow`);
+    if (shots) await page.screenshot({ path: join(shots, `empty-${theme}-${width}.png`) });
+
+    // The list: name, time, two lines of preview, "You:" on your own last message, an unread dot.
+    await page.goto(base + '/messages');
+    await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
+    await page.waitForFunction(() => !document.querySelector('[data-conversation-row] .is-loading'));
+    const bobRow = page.locator('[data-conversation-row][data-counterpart="bob"]');
+    assert.match(await bobRow.locator('[data-role="preview"]').innerText(), /^ok the new reply box/);
+    const preview = await bobRow.locator('[data-role="preview"]').evaluate(node => ({ height: node.getBoundingClientRect().height, line: parseFloat(getComputedStyle(node).lineHeight) }));
+    assert.ok(preview.height <= preview.line * 2 + 2, `${label}: preview is at most two lines`);
+    assert.equal(await page.locator('[data-conversation-row] [data-role="preview"]').filter({ hasText: /^You: / }).count() > 0, true);
+    assert.equal(await page.getByText(/Decrypting/).count(), 0);
+    assert.equal(await page.locator('[data-role="list-status"]').evaluate(node => node.getBoundingClientRect().width <= 2), true, `${label}: no routine list notice`);
+    const unreadRow = page.locator('[data-conversation-row].is-unread').first();
+    if (await unreadRow.count()) assert.equal(await unreadRow.locator('.message-list-name').evaluate(node => getComputedStyle(node, '::before').content), '""');
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: list has no page overflow`);
+    if (shots) await page.screenshot({ path: join(shots, `list-${theme}-${width}.png`) });
+
+    // A failed list load: one line with Retry.
+    const failList = route => route.abort();
+    await page.route('**/api/private_messages/conversations?*', failList);
+    await page.reload();
+    await page.getByText('Couldn’t load messages.').waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Retry loading' }).isVisible(), true);
+    await page.unroute('**/api/private_messages/conversations?*', failList);
+    if (shots) {
+      await page.getByText('Couldn’t load messages.').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: join(shots, `listfail-${theme}-${width}.png`) });
+    }
+    await page.getByRole('button', { name: 'Retry loading' }).click();
+    await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent === '25 conversations loaded.');
+
+    // The access page in this theme.
+    const visitor = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+    await visitor.addInitScript(({ theme, site }) => { localStorage.setItem(site + '-theme', theme); }, { theme, site });
+    const visitorPage = await visitor.newPage();
+    await visitorPage.goto(base + '/messages');
+    await visitorPage.getByRole('button', { name: 'Set up account' }).waitFor();
+    assert.ok(await visitorPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: access page has no overflow`);
+    if (shots) await visitorPage.screenshot({ path: join(shots, `access-${theme}-${width}.png`) });
+    await visitor.close();
+    assert.deepEqual(errors, [], `${label}: no page errors`);
+    await context.close();
+  }
+  console.log('private_message_redesign: ok');
+} finally {
+  await browser.close();
+  server.kill();
+  if (process.exitCode) console.error(serverLog);
+}

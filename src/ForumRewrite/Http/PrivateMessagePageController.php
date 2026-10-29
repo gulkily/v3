@@ -35,8 +35,8 @@ final class PrivateMessagePageController
             return;
         }
         $viewer = ($this->authenticatedViewerProfile)();
-        if ($viewer === null) {
-            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Authentication Required', 'Authentication Required', 'Authenticate an approved browser identity to view private messages.', 'messages'), 401, $this->routeServices->noStoreHeaders());
+        if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
+            $this->accessPage($viewer);
             return;
         }
         try {
@@ -64,8 +64,8 @@ final class PrivateMessagePageController
             return;
         }
         $viewer = ($this->authenticatedViewerProfile)();
-        if ($viewer === null) {
-            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Authentication Required', 'Authentication Required', 'Authenticate an approved browser identity to view private messages.', 'messages'), 401, $this->routeServices->noStoreHeaders());
+        if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
+            $this->accessPage($viewer);
             return;
         }
         try {
@@ -74,7 +74,23 @@ final class PrivateMessagePageController
             $this->messageError('Conversation Unavailable', $exception->getMessage(), 404);
             return;
         }
-        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_conversation.php', ['counterpartUsernameToken' => strtolower($counterpartUsernameToken), 'messages' => $page['messages'], 'historyPage' => $page, 'viewerProfile' => $viewer], 'Conversation with ' . strtolower($counterpartUsernameToken), 'messages', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/key_backup_status.js', '/assets/private_message_compose.js', '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_conversation.js', '/assets/private_message_seen.js']), 200, $this->routeServices->noStoreHeaders());
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_conversation.php', ['counterpartUsernameToken' => strtolower($counterpartUsernameToken), 'messages' => $page['messages'], 'historyPage' => $page, 'viewerProfile' => $viewer], strtolower($counterpartUsernameToken), 'messages', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/key_backup_status.js', '/assets/private_message_compose.js', '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_conversation.js', '/assets/private_message_seen.js']), 200, $this->routeServices->noStoreHeaders());
+    }
+
+    /**
+     * Messages for someone who isn't a signed-in approved member: the same page for
+     * every visitor, which names their state and next step from browser storage
+     * before paint, and signs in an approved key where it is.
+     *
+     * @param array<string, mixed>|null $viewer
+     */
+    private function accessPage(?array $viewer): void
+    {
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_access.php', [
+            'viewerIdentityId' => (string) ($viewer['identity_id'] ?? ''),
+        ], 'Messages', 'messages', [
+            '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/private_message_access.js',
+        ]), $viewer === null ? 401 : 403, $this->routeServices->noStoreHeaders());
     }
 
     private function redirectMailbox(string $method): void

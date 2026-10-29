@@ -173,8 +173,9 @@ try {
  }
  await setFlags({site:'zenmemes'});
  await page.goto(base+'/account/key/');
- await page.locator('[data-action="load-browser-key"]').evaluate(button=>button.click());
- await page.waitForFunction(() => document.querySelector('[data-role="browser-key-status-message"]').textContent.includes('Loaded the saved browser public key'));
+ await context.grantPermissions(['clipboard-read','clipboard-write'],{origin:base});
+ await page.locator('[data-action="copy-public-key"]').evaluate(button=>button.click());
+ await page.waitForFunction(() => document.querySelector('[data-role="browser-key-status-message"]').textContent.includes('Copied the saved public key'));
  assert.equal(await page.locator('#simple-status').isVisible(),true,'Explicit Account result stays visible');
  await page.goto(base+threadPath);
  if(await page.locator('[data-inline-reply-trigger]').isVisible()) await page.locator('[data-inline-reply-trigger]').click();

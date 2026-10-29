@@ -95,15 +95,31 @@ final class RouteServices
         return (new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest();
     }
 
+    public const TESTING_SELF_APPROVAL_COOKIE = 'testing_self_approval';
+
+    // Account renders the testing Approve button whenever testing approval is on, and shows it while
+    // this browser's key waits. The token is a double-submit cookie rather than session data, so it
+    // survives the session changes of signing in and out; the endpoint still requires the signed-in key.
     public function testingSelfApprovalToken(): ?string
     {
-        $profile = $this->defaultViewerProfile();
-        if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()
-            || $profile === null || (int) ($profile['is_approved'] ?? 0) === 1
-            || session_status() !== PHP_SESSION_ACTIVE) {
+        if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()) {
             return null;
         }
-        return $_SESSION['testing_self_approval_token'] ??= bin2hex(random_bytes(32));
+        $token = (string) ($_COOKIE[self::TESTING_SELF_APPROVAL_COOKIE] ?? '');
+        if (preg_match('/^[a-f0-9]{64}$/D', $token) === 1) {
+            return $token;
+        }
+        if (headers_sent()) {
+            return null;
+        }
+        $token = bin2hex(random_bytes(32));
+        setcookie(self::TESTING_SELF_APPROVAL_COOKIE, $token, [
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Strict',
+            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        ]);
+        return $_COOKIE[self::TESTING_SELF_APPROVAL_COOKIE] = $token;
     }
 
     public function pdo(): PDO

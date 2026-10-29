@@ -25,19 +25,53 @@
 .message-list-link time {
   grid-column: 3;
 }
+/* A row: name, time, then two lines of preview; while decrypting, a placeholder of the same height. */
 .message-list-link [data-role="preview"] {
   grid-column: 1 / -1;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: 2.6em;
+  line-height: 1.3;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.message-list-link .feedback-error {
-  white-space: normal;
   overflow-wrap: anywhere;
 }
-[data-action="retry-preview"] {
-  margin: 0 0.9rem 0.9rem;
-  width: calc(100% - 1.8rem);
+.message-list-link .message-preview.is-loading {
+  color: transparent;
+  background: linear-gradient(var(--line), var(--line)) 0 .2em / 70% .9em no-repeat, linear-gradient(var(--line), var(--line)) 0 1.5em / 45% .9em no-repeat;
+  opacity: .5;
+}
+@media (scripting: none) {
+  .message-list-link .message-preview.is-loading { color: inherit; background: none; opacity: 1; }
+}
+.message-list-link .message-preview.is-failed { font-style: italic; color: var(--ink-soft); }
+[data-conversation-list] [data-role="verification"] { display: none; }
+.message-list-row.is-unread .message-list-name::before {
+  content: "";
+  display: inline-block;
+  width: .55em;
+  height: .55em;
+  margin-right: .4em;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: .1em;
+}
+.message-list-retry[data-action="retry-preview"] {
+  margin: -0.6rem 0.9rem 0.6rem;
+}
+.message-list-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.message-list-alert {
+  margin: 0;
+}
+.message-list-alert button,
+.message-list-retry {
+  width: auto;
+  min-height: 44px;
 }
 [data-conversation-list] summary {
   cursor: pointer;
@@ -66,3 +100,12 @@
     font-size: 0.8rem;
   }
 }
+/* Messages for someone who isn't an approved member yet: one line for their state and its next step. */
+.private-message-access [data-access-for] { display: none; }
+.private-message-access[data-access-state="guest"] [data-access-for="guest"],
+.private-message-access[data-access-state="waiting"] [data-access-for="waiting"],
+.private-message-access[data-access-state="failed"] [data-access-for="failed"] { display: block; }
+@media (scripting: none) {
+  .private-message-access [data-access-for="guest"] { display: block; }
+}
+.private-message-access [data-access-for="guest"] button { width: auto; }
