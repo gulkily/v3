@@ -158,7 +158,7 @@ export async function checkUnavailableRecovery(page, base, recoveryKey) {
   await acceptedSend;
   await page.locator('textarea').fill('Newer group recovery draft');
   release();
-  await page.getByText('Reply while unavailable groups are open', { exact: true }).waitFor();
+  await page.locator('[data-private-message-id]').getByText('Reply while unavailable groups are open', { exact: true }).waitFor();
   assert.equal(await page.locator('textarea').inputValue(), 'Newer group recovery draft');
   assert.deepEqual(await groups.getByRole('button').evaluateAll(nodes => nodes.map(node => node.getAttribute('aria-expanded'))), ['true', 'true']);
   await page.unroute('**/api/private_messages', sendRoute);

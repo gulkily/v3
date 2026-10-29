@@ -70,7 +70,7 @@ export async function checkSeenWindows(page, context, base, seed, incoming, inva
   await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   assert.equal(await count(), 2, 'Older history cannot broaden the opened receipt');
   await page.getByRole('button', { name: 'Send private message', exact: true }).click();
-  await page.getByText('Draft survives seen windows', { exact: true }).waitFor();
+  await page.locator('[data-private-message-id]').getByText('Draft survives seen windows', { exact: true }).waitFor();
   assert.equal(await count(), 2, 'An inline send must not acknowledge the later arrival');
 
   const stale = route => route.fulfill({ status: 400, json: { status: 'error', restart: true } });

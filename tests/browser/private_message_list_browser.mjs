@@ -129,10 +129,13 @@ try {
   await page.locator('[data-conversation-list]').waitFor();
   await assertNoNewMessage(page);
   await page.getByRole('link', { name: 'Users', exact: true }).click();
-  await page.getByRole('link', { name: 'bob', exact: true }).click();
+  // Users rows and the person page's Message button (cycle 7) lead to the conversation.
+  await page.locator('a.account-row[href="/user/bob"]').click();
+  await page.getByRole('button', { name: 'Message', exact: true }).click();
+  await page.waitForURL(/\/messages\/conversation\/bob\??$/);
   await page.locator('[data-private-message-composer] textarea').fill('Started from user page');
   await page.getByRole('button', { name: 'Send private message', exact: true }).click();
-  await page.getByText('Private message sent.', { exact: true }).waitFor();
+  await page.locator('[data-private-message-id] [data-role="private-message-plaintext"]').filter({ hasText: 'Started from user page' }).waitFor();
   await page.getByRole('link', { name: 'Messages', exact: true }).click();
   await list.filter({ has: page.locator('[data-role="counterpart"]', { hasText: 'bob' }) }).locator('a').click();
   await page.waitForURL('**/messages/conversation/bob');
@@ -149,10 +152,10 @@ try {
   assert.equal(await page.locator('textarea').inputValue(), 'Browser first message');
   failSend = false;
   await page.getByRole('button', { name: 'Send private message' }).click();
-  await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Browser first message' }).waitFor();
+  await page.locator('[data-private-message-id] [data-role="private-message-plaintext"]').filter({ hasText: 'Browser first message' }).waitFor();
   await page.locator('textarea').fill('Browser follow-up');
   await page.getByRole('button', { name: 'Send private message' }).click();
-  await page.locator('[data-role="private-message-plaintext"]').filter({ hasText: 'Browser follow-up' }).waitFor();
+  await page.locator('[data-private-message-id] [data-role="private-message-plaintext"]').filter({ hasText: 'Browser follow-up' }).waitFor();
   assert.equal(await page.evaluate(() => window.chatDocumentMarker), 'same-document', 'Successful sends must not reload');
   await page.evaluate(() => document.querySelector('[data-private-message-composer]').dispatchEvent(new CustomEvent('private-message-sent', { bubbles: true, cancelable: true, detail: window.lastChatConfirmation })));
   assert.equal(await page.locator('[data-private-message-id]').count(), 3, 'Repeated confirmation must not append twice');
@@ -257,7 +260,8 @@ try {
   });
   console.log('Checking checkHistoryRecovery');
   await checkHistoryRecovery(page);
-  for (const path of ['/user/bob', '/profiles/openpgp-' + bob.fingerprint]) {
+  // /user/bob offers a Message button (cycle 7); the key profile page keeps its own composer.
+  for (const path of ['/profiles/openpgp-' + bob.fingerprint]) {
     await page.goto(base + path);
     await page.locator('[data-private-message-composer] textarea').fill('Shared composer compatibility');
     await page.getByRole('button', { name: 'Send private message', exact: true }).click();

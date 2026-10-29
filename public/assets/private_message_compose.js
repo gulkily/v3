@@ -2,6 +2,7 @@
   "use strict";
   const draftPrefix = "forum_private_message_draft:";
   const attempts = new WeakMap();
+  const controls = new WeakMap();
 
   function storage() {
     try { return window.localStorage; } catch (error) { return null; }
@@ -58,7 +59,7 @@
       const prepared = await messaging.prepareEnvelope({ plaintext: plaintext,
         senderUsernameToken: token(root, "senderUsernameToken"), recipientUsernameToken: token(root, "recipientUsernameToken") });
       if (initialKey !== senderKey()) throw new Error("Your identity changed. Restore it before sending.");
-      attempt = { messageId: messageId, encryptedEnvelope: prepared.encryptedEnvelope, senderKey: senderKey() };
+      attempt = { messageId: messageId, encryptedEnvelope: prepared.encryptedEnvelope, senderKey: senderKey(), plaintext: plaintext };
       attempts.set(root, attempt);
       if (onPrepared) onPrepared(attempt);
     }
@@ -67,8 +68,13 @@
       method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ message_id: attempt.messageId, recipient_username_token: token(root, "recipientUsernameToken"), encrypted_envelope: attempt.encryptedEnvelope }),
     });
-    const payload = await response.json();
-    if (!response.ok || !payload || payload.status !== "ok") throw new Error(String(payload && payload.error || "Unable to confirm the private message."));
+    const payload = await response.json().catch(function () { return null; });
+    if (!response.ok || !payload || payload.status !== "ok") {
+      const error = new Error(String(payload && payload.error || "Unable to confirm the private message."));
+      // The server answered and refused: the message is not stored, so this is "Not sent", not "Not confirmed".
+      error.refused = !response.ok && Boolean(payload && payload.error);
+      throw error;
+    }
     const message = payload.message;
     if (!message || message.message_id !== attempt.messageId || message.sender_username_token !== token(root, "senderUsernameToken") || message.recipient_username_token !== token(root, "recipientUsernameToken") || !message.created_at || Number.isNaN(new Date(message.created_at).getTime())) {
       throw new Error("The delivery confirmation did not match this attempt.");
@@ -84,6 +90,12 @@
     const retry = root.querySelector('[data-role="private-message-send-retry"]');
     if (!form || !field) return false;
     root.dataset.privateMessageComposerBound = "1";
+    // In a conversation, sending and its recovery are shown on the message itself
+    // (see private_message_conversation.js); the composer only reports them.
+    const inline = Boolean(root.closest && root.closest('[data-mailbox="conversation"]'));
+    function report(type, detail) {
+      if (root.dispatchEvent) root.dispatchEvent(new CustomEvent(type, { bubbles: true, detail: detail }));
+    }
     const state = loadDraft(root);
     const originalKey = senderKey();
     if (field.value === "") field.value = state.plaintext;
@@ -97,14 +109,16 @@
         const local = storage();
         if (!local) throw new Error("Storage unavailable");
         if (field.value === "" && !pending) local.removeItem(draftKey(root));
-        else local.setItem(draftKey(root), JSON.stringify({ plaintext: field.value, version: version, senderKey: originalKey, attempt: pending }));
+        // The saved attempt keeps only its ciphertext: the text of a sent message is never stored.
+        else local.setItem(draftKey(root), JSON.stringify({ plaintext: field.value, version: version, senderKey: originalKey,
+          attempt: pending && Object.assign({}, pending, { plaintext: undefined }) }));
         if (state.legacy) local.removeItem(draftPrefix + token(root, "recipientUsernameToken"));
         saved = true;
       } catch (error) { saved = false; }
       if (!saved) setFeedback(feedback, "Draft recovery is unavailable in this browser. Keep this page open until delivery is confirmed.", "error");
     }
     function recovery() {
-      if (retry) { retry.hidden = !pending; retry.disabled = submitting; }
+      if (retry) { retry.hidden = inline || !pending; retry.disabled = submitting; }
     }
     function grow() {
       if (!field.style) return;
@@ -128,7 +142,7 @@
     if (window.addEventListener) window.addEventListener('resize', grow);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', grow);
     if (state.legacy) setFeedback(feedback, "An older draft was restored. Check the conversation before sending: its previous delivery cannot be confirmed automatically.", "error");
-    if (pending) setFeedback(feedback, "A previous send is unconfirmed. Check it before sending again.", "error");
+    if (pending && !inline) setFeedback(feedback, "A previous send is unconfirmed. Check it before sending again.", "error");
     recovery();
     async function send(event, retryOnly) {
       event.preventDefault();
@@ -146,7 +160,9 @@
       if (button) button.disabled = true;
       recovery();
       persist();
-      setFeedback(feedback, pending ? "Checking previous delivery..." : "Encrypting and sending private message...", "ok");
+      report("private-message-sending", { messageId: messageId, plaintext: pending ? String(pending.plaintext || "") : plaintext, check: Boolean(pending) });
+      if (inline) { if (feedback) feedback.hidden = true; }
+      else setFeedback(feedback, pending ? "Checking previous delivery..." : "Encrypting and sending private message...", "ok");
       try {
         const message = await submit(root, messageId, plaintext, function (attempt) {
           pending = Object.assign(attempt, { snapshotVersion: snapshotVersion });
@@ -159,7 +175,8 @@
         if (version === snapshotVersion) { field.value = ""; version = newMessageId(); }
         grow();
         persist();
-        setFeedback(feedback, saved ? "Private message sent." : "Private message sent. Your newer draft cannot be saved; keep this page open.", saved ? "ok" : "error");
+        if (!inline) setFeedback(feedback, saved ? "Private message sent." : "Private message sent. Your newer draft cannot be saved; keep this page open.", saved ? "ok" : "error");
+        else if (!saved) setFeedback(feedback, "Your draft cannot be saved in this browser; keep this page open.", "error");
         const successUrl = String(root.dataset.privateMessageSuccessUrl || "");
         const handled = root.dispatchEvent && !root.dispatchEvent(new CustomEvent('private-message-sent', {
           bubbles: true, cancelable: true, detail: { message: message, encryptedEnvelope: encryptedEnvelope },
@@ -177,7 +194,10 @@
           if (!reason) details.push("Message not sent.");
           if (!saved) details.push("Draft cannot be saved; keep this page open.");
         }
-        setFeedback(feedback, details.join(" "), "error");
+        if (inline) {
+          report("private-message-send-failed", { messageId: messageId, plaintext: pending ? String(pending.plaintext || plaintext) : plaintext, unconfirmed: Boolean(pending) && !(error && error.refused),
+            reason: reason && reason !== "Unable to confirm the private message." ? reason : "", saved: saved });
+        } else setFeedback(feedback, details.join(" "), "error");
       } finally {
         submitting = false;
         if (button) button.disabled = false;
@@ -190,8 +210,13 @@
     }
     form.addEventListener("submit", function (event) { return send(event, false); });
     if (retry) retry.addEventListener("click", function (event) { return send(event, true); });
+    controls.set(root, {
+      pending: function () { return pending ? { messageId: pending.messageId, plaintext: String(pending.plaintext || "") } : null; },
+      check: function () { if (pending) return send({ preventDefault() {} }, true); },
+      resend: function () { if (!submitting) form.requestSubmit(); },
+    });
     return true;
   }
-  window.ForumPrivateMessageComposer = { bind: bind, submit: submit };
+  window.ForumPrivateMessageComposer = { bind: bind, submit: submit, controls: function (root) { return controls.get(root) || null; } };
   document.addEventListener("DOMContentLoaded", function () { Array.from(document.querySelectorAll("[data-private-message-composer]")).forEach(bind); });
 })();

@@ -67,7 +67,7 @@ export async function checkHistoryRecovery(page) {
   await accepted;
   await field.fill('Newer draft must survive restart and send');
   releaseSend();
-  await page.getByText('Confirmed while history restarts', { exact: true }).waitFor();
+  await page.locator('[data-private-message-id]').getByText('Confirmed while history restarts', { exact: true }).waitFor();
   const reply = await page.locator('[data-private-message-id]').filter({ hasText: 'Confirmed while history restarts' }).getAttribute('data-private-message-id');
   release();
   await settled();
