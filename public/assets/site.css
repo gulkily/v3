@@ -889,6 +889,12 @@ pre {
   color: var(--ink-soft);
 }
 
+/* Member-only links (Messages, Invite) are in every viewer's HTML; the head
+   script marks a browser remembered as approved before paint. */
+:root:not([data-member="approved"]) [data-member-only] {
+  display: none !important;
+}
+
 /* critical-css-end */
 
 .post-card {

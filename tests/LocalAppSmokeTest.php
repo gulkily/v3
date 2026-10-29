@@ -595,7 +595,7 @@ try {
     $application->handle('POST', '/api/prepare_invitation');
     $invitationPreparation = (string) ob_get_clean();
 
-    if (!str_contains($board, 'href="/invites/" data-invite-navigation>Invite</a>')
+    if (!str_contains($board, 'href="/invites/" data-member-only data-invite-navigation>Invite</a>')
         || !str_contains($invites, '<h1>Generate invite</h1>')
         || $authStatus !== "status=authenticated\n"
         || str_contains($invitationPreparation, 'Only authenticated approved users can issue invitations.')) {
@@ -684,7 +684,8 @@ PHP;
             $board = $this->render($application, '/');
 
             assertSame(PHP_SESSION_NONE, session_status());
-            assertStringNotContains('href="/invites/" data-invite-navigation>Invite</a>', $board);
+            // Invite is in every viewer's HTML and hidden until the client remembers an approved identity.
+            assertStringContains('href="/invites/" data-member-only data-invite-navigation>Invite</a>', $board);
             assertStringContains('data-public-auth-resume="true"', $board);
             assertFingerprintedAsset($board, 'private_site_auth.js');
             $themeToggleScript = strrpos($board, '/assets/theme_toggle.');
@@ -779,7 +780,7 @@ PHP;
         );
 
         assertStringContains('class="nav-link" href="/account/key/">Account</a>', $html);
-        assertStringContains('class="nav-link is-active" href="/invites/" data-invite-navigation>Invite</a>', $html);
+        assertStringContains('class="nav-link is-active" href="/invites/" data-member-only data-invite-navigation>Invite</a>', $html);
     }
 
     public function testClearingIdentityRevokesApprovedPrivateSession(): void

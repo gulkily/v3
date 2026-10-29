@@ -36,3 +36,27 @@ Step 4 entry: Step 3 projection reaffirmed.
 - Estimate details: original v1 scope included the same three scripts; v2 lowered it for the existing identity check and events. Retrospective matches v2: the added learning check was offset by reusing the existing events.
 
 *— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Render a static header with pre-paint visibility
+
+**Original estimate: 0.12** (v1, Codex) · **Revised estimate: 0.15** (v2, Step 3 revision)
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `TemplateRenderer::navItems` emits Messages (when private messages are enabled) and Invite (except qdb) for every viewer, marked `member_only`; `nav.php` and the app-shell account menu in `app_header.php` render them with `data-member-only`. The forum header uses the same `nav.php`, so both headers are covered.
+  - Inline critical CSS (top of `site.css`): `:root:not([data-member="approved"]) [data-member-only] { display: none !important; }`, which beats the tab bar's `display: flex` and applies before paint, with no-JS and blocked storage falling back to hidden.
+  - `layout.php` head script sets `data-member="approved"` before body parse using the same rule as `member_approval.js` (remembered fingerprint equals the current one, both keys present).
+  - Members-only sites keep their separate Lobby/Profile/Account nav for unapproved viewers; those pages are never served as shared static copies (`FrontController` skips static artifacts when approved-members-only is on).
+  - `navigationState` (feature-flag nav refresh) is unchanged apart from script selection: Invite no longer depends on the viewer, so the account menu needs no refresh.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest AppNavigationPlacementTest HighTrafficTest HighTrafficPublicationTest PrivateMessageFeatureFlagTest UserAccessTest FeatureFlagsBehaviorTest PrivateSiteAuthTest AuthNavigationTest`: 202/203; the only failure is the baseline `testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp` (see Stage 1). Updated assertions: placements for every viewer, `data-member-only` Invite markup, anonymous board now containing a hidden Invite, and live-navigation scripts/viewer only for approved viewers.
+  - New `tests/browser/viewer_nav_prepaint.mjs` (real PHP server, Chromium): anonymous and returning-approved visitors on `/`, thread, `/about/`, `/users/`, `/tools/` in light/dark/Word97/Chicago/Midnight at 390 and 1280px — 100 page states. Visibility is recorded from the moment each link is parsed and positions on every painted frame through load: anonymous never shows the links; members show both while parsing and nothing moves after first paint. Phone tab bar shares its width evenly with no empty slot; Messages icon present in Word97/Chicago/Midnight; no horizontal overflow; no page errors. Sign-in shows the links in place, sign-out hides them in place and clears memory, the next visit is final from first paint, and no-JS pages keep them hidden. Passed.
+  - Inspected screenshots: Midnight and Word97 phone (member and anonymous) and Chicago desktop (member).
+  - A first test run reported a 10px "shift" on desktop; a probe against `c5783108` and this branch showed it was the test measuring positions mid-parse, before the rest of the header existed. The test now compares positions only across painted frames.
+  - Standalone layout: no navigation; not applicable.
+- Notes:
+  - Moved to Stage 3: removing the per-viewer `data-viewer` token from Messages, and loading messaging scripts on the client. Doing either here would break unread between commits. Until Stage 3, approved live pages still differ from shared ones in those two places; Stage 3 verifies byte-identical headers.
+  - During verification I briefly ran `git stash` by mistake, which set aside the uncommitted Stage 2 work and the user's `todo.txt` edit; it was popped back immediately with nothing lost.
+- Estimate details: v2 anticipated two render sites, critical CSS and tab-bar interaction; all three were needed. Retrospective matches v2.
+
+*— Claude Code · 2026-10-29 UTC · Model: claude-opus-5-5*

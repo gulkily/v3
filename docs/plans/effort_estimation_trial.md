@@ -873,3 +873,5 @@ Authorization: Background direction selected; Step 1 requested, awaiting Approve
 2026-10-29 UTC: user chose Waiting-tab option A (count in shared HTML; exposure/staleness follow-ups in `todo.txt`). **0.50 reaffirmed**; same v3/start/R1/P2/rater. Scope choice only; Step 2 v3 approval still pending.
 
 2026-10-29 UTC: Step 2 v3 and Step 3 approved; [Step 4 entry](./viewer_nav_prepaint/viewer_nav_prepaint_step4_implementation_summary.md#step-4-entry-checkpoint) **0.50 reaffirmed** on `feat/viewer-nav-prepaint` (planning `c8beee50`). Same v3/start `c5783108`/R1/P2/rater. Stage 1 complete; retrospective stage work 0.08 (original 0.10 v1, 0.08 v2). No accepted-count increment.
+
+2026-10-29 UTC: Stage 2 complete; retrospective stage work 0.15 (original 0.12 v1, 0.15 v2). Cycle 0.50 unchanged; no accepted-count increment.

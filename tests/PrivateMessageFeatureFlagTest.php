@@ -132,8 +132,9 @@ final class PrivateMessageFeatureFlagTest
                         $page = $renderer->renderLayout('Flags', '', 'tools', viewerProfile: $viewer);
                         assertSame(str_contains($page, 'data-private-message-unread'), $state['messaging_enabled']);
                         assertSame($state['messaging_enabled'], str_contains($state['html'], 'data-private-message-unread'));
-                        assertSame($state['messaging_enabled'] ? 'alice' : null, $state['viewer']);
-                        assertSame($state['messaging_enabled'], $state['scripts'] !== []);
+                        $approved = (int) ($viewer['is_approved'] ?? 0) === 1 && ($viewer['_authenticated_identity'] ?? true) === true;
+                        assertSame($state['messaging_enabled'] ? ($approved ? 'alice' : '') : null, $state['viewer']);
+                        assertSame($state['messaging_enabled'] && $approved, $state['scripts'] !== []);
                     }
                 }
             }
