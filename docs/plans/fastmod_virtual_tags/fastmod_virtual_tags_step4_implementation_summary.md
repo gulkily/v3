@@ -18,3 +18,12 @@ Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80
 - Notes: No scope/estimate revision; content/root matching belongs to Stage 2. No dependencies added.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 2 — Use effective tags in live reads
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+- Changes: Existing request-local overlay now bulk-matches score candidates to visible current roots, merges public labels and respects the shared enablement decision. Core-dependent query identity advanced to 38 with schema reference update; no persistent tables added.
+- Verification: `php tests/run.php FastmodDerivedTagsTest` — 4/4 passed, including real normal thread startup from schema 37 and isolated `./v3 rebuild`. Tests confirm content changes/replies/hidden posts excluded, human labels preserved, discovery counts correct and no private database attachment.
+- Notes: Candidate root reads are chunked at 500, not per-post queries. Existing old lifecycle tests remain to be replaced at their corresponding retirement stages. No scope/estimate revision.
+
+*— Codex · 2026-10-29 UTC*
