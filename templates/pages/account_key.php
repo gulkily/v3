@@ -62,7 +62,7 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
     </form>
     <div class="account-row" data-tone="neutral">
       <span class="account-row__title">Fingerprint</span>
-      <code class="account-row__value account-key-fingerprint-value" data-role="fingerprint-field">No key yet</code>
+      <span class="account-row__value account-key-fingerprint-value" data-role="fingerprint-field">No key yet</span>
       <button type="button" class="account-row__action account-key-viewer-copy" data-action="copy-fingerprint" hidden>Copy</button>
     </div>
   </div>
@@ -200,9 +200,10 @@ No browser private key saved yet.
       return readStorageValue('forum_pki_fingerprint').trim().toLowerCase();
     }
 
+    // The interface's standard short key form, as `$shortenProfileSlug` renders it: openpgp-0168ff20e...
     function shortFingerprint(fingerprint) {
-      var groups = fingerprint.toUpperCase().match(/.{1,4}/g) || [];
-      return groups.length <= 4 ? groups.join(' ') : groups.slice(0, 2).join(' ') + ' … ' + groups.slice(-1).join(' ');
+      var slug = 'openpgp-' + fingerprint.toLowerCase();
+      return slug.length > 17 ? slug.slice(0, 17) + '...' : slug;
     }
 
     // Matches the read model's `username_token` (saved usernames are already normalized).

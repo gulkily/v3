@@ -7,10 +7,6 @@ $viewerIsOperator = (bool) ($viewerIsOperator ?? false);
 $personName = $approvedProfiles !== [] ? (string) ($approvedProfiles[0]['username'] ?? $usernameToken) : $usernameToken;
 $isAgent = $usernameToken === 'reply-agent';
 $approvedReplies = array_values(array_filter($approvedPosts, static fn (array $post): bool => trim((string) ($post['parent_id'] ?? '')) !== ''));
-$shortFingerprint = static function (string $slug): string {
-    $groups = str_split(strtoupper((string) preg_replace('/^openpgp-/', '', $slug)), 4);
-    return count($groups) <= 4 ? implode(' ', $groups) : $groups[0] . ' ' . $groups[1] . ' … ' . $groups[count($groups) - 1];
-};
 $firstLine = static function (string $body): string {
     foreach (preg_split('/\R/', $body) ?: [] as $line) {
         if (trim($line) !== '') {
@@ -77,7 +73,7 @@ $firstLine = static function (string $body): string {
   <div class="account-group" id="account-keys">
 <?php foreach ($approvedProfiles as $profile): ?>
 <?php $approvedBy = trim((string) ($profile['approved_by_label'] ?? '')); ?>
-    <a class="account-row account-row--link" data-tone="neutral" href="/profiles/<?= $e($profile['profile_slug']) ?>"><span class="account-row__title account-key-fingerprint-value" title="<?= $e($profile['profile_slug']) ?>"><?= $e($shortFingerprint((string) $profile['profile_slug'])) ?></span><span class="account-row__value"><?= $approvedBy !== '' ? 'Approved by ' . $e($approvedBy) : 'Approved' ?></span></a>
+    <a class="account-row account-row--link" data-tone="neutral" href="/profiles/<?= $e($profile['profile_slug']) ?>"><span class="account-row__title account-key-fingerprint-value" title="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug((string) $profile['profile_slug'])) ?></span><span class="account-row__value"><?= $approvedBy !== '' ? 'Approved by ' . $e($approvedBy) : 'Approved' ?></span></a>
 <?php endforeach; ?>
   </div>
 <?php endif; ?>
