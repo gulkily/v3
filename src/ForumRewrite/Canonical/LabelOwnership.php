@@ -34,7 +34,7 @@ final class LabelOwnership
     public static function inactive(string $root): array
     {
         $removed = RetractedPosts::effectivePostIds($root);
-        $evidence = AcceptedRetraction::removals($root) + LabelRemoval::all($root);
+        $evidence = AcceptedRemoval::all($root);
         foreach ($evidence as $id => $entry) if ($entry['operation'] === 'delete') $removed[$id] = 'operator';
         $inactive = [];
         foreach (glob($root . '/records/thread-labels/*.txt') ?: [] as $path) {

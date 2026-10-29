@@ -50,12 +50,10 @@ final class RetractedPosts
     private static function effectiveValues(string $repositoryRoot, bool $attribution): array
     {
         $ids = [];
-        foreach (AcceptedRetraction::all($repositoryRoot) as $id => $record) {
-            $ids[$id] = $attribution ? $record['attribution'] : $record['classification'];
-        }
-
-        foreach (LabelRemoval::all($repositoryRoot) as $id => $removal) {
-            if ($removal['operation'] === 'delete') $ids[$id] = 'operator';
+        foreach (AcceptedRemoval::all($repositoryRoot) as $id => $record) {
+            if ($record['operation'] !== 'delete') continue;
+            $ids[$id] = isset($record['signed_request'])
+                ? ($attribution ? $record['attribution'] : $record['classification']) : 'operator';
         }
         return $ids;
     }

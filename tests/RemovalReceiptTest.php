@@ -28,4 +28,21 @@ final class RemovalReceiptTest
         $bad[]=$text.$block.$block;
         foreach($bad as $bytes) { $failed=false;try{RemovalReceipt::decode($bytes);}catch(RuntimeException){$failed=true;}assertSame(true,$failed); }
     }
+    public function testSamePostEvidencePreservesBindingsAndRejectsConflicts(): void
+    {
+        $signed=['source_id'=>'root','post'=>['post_id'=>'root'],'source_hash'=>str_repeat('a',64),
+            'operation'=>'delete','labels'=>[],'signed_request'=>'exact signed bytes','attribution'=>'author'];
+        $local=['source_id'=>'root','post'=>['post_id'=>'root'],'source_hash'=>str_repeat('a',64),
+            'operation'=>'resolve','labels'=>['records/thread-labels/a.txt'=>str_repeat('b',64)]];
+        $merged=\ForumRewrite\Canonical\AcceptedRemoval::combine($signed,$local);
+        assertSame('delete',$merged['operation']);assertSame($local['labels'],$merged['labels']);
+        assertSame('exact signed bytes',$merged['signed_request']);assertSame('author',$merged['attribution']);
+        foreach (['source_hash'=>str_repeat('c',64),'post'=>['post_id'=>'other']] as $key=>$value) {
+            $failed=false;try { \ForumRewrite\Canonical\AcceptedRemoval::combine($signed,array_replace($local,[$key=>$value])); }
+            catch(RuntimeException){$failed=true;}assertSame(true,$failed);
+        }
+        $signed['labels']=['records/thread-labels/a.txt'=>str_repeat('c',64)];
+        $failed=false;try { \ForumRewrite\Canonical\AcceptedRemoval::combine($signed,$local); }
+        catch(RuntimeException){$failed=true;}assertSame(true,$failed);
+    }
 }

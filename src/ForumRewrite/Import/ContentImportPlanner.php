@@ -48,7 +48,7 @@ final class ContentImportPlanner
                 RecordLimits::assertFile($destination . '/' . $localPath);
             }
         }
-        $removals = \ForumRewrite\Canonical\AcceptedRetraction::removals($destination) + \ForumRewrite\Canonical\LabelRemoval::all($destination);
+        $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($destination);
         $target = [];
         foreach (self::files($destination) as $path) {
             $key = ArchiveRecordCatalog::identityKey($destination, $path);

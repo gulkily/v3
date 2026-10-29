@@ -23,3 +23,15 @@ Step 3 explicitly approved; planning commit `5143ab6f`, branch `feature/unified-
 - Notes: S1/v2 unchanged; no writer switched yet. No dependencies. Initial runner did not discover the new suite until explicitly registered; final run passed.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 2 - Common interpretation
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes: common accepted-removal resolver replaces array-union precedence in label aggregation, import and rebuild; preserves signed attribution/evidence while combining compatible label bindings. Conflicting structure/source/label hashes throw explicit errors; local resolution cannot undo signed deletion.
+- Verification: `php tests/run.php RemovalReceiptTest ReadModelPostRetractionsTest ReadModelThreadLabelsTest` 13/13, including actual rebuild/content suppression and retained independent replies. Combination/conflict tests pass. Full new-format transition/retry matrix follows writer integration and Stage 7.
+- Notes: S2/v2 unchanged; no core table/index/query change, so no schema increment. Existing writers are switched in subsequent stages. Zero dependencies.
+
+*— Codex · 2026-10-29 UTC*

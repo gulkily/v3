@@ -186,7 +186,7 @@ final class ReadModelBuilder
              VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at, :retraction_class, :retraction_attribution)'
         );
 
-        $removals = \ForumRewrite\Canonical\AcceptedRetraction::removals($this->repositoryRoot) + \ForumRewrite\Canonical\LabelRemoval::all($this->repositoryRoot);
+        $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($this->repositoryRoot);
         $retractions = $this->loadPostRetractions();
         $paths = $this->findRelativePaths('records/posts');
         $parsedPosts = [];
