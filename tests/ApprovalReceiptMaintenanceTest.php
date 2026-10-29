@@ -95,6 +95,43 @@ final class ApprovalReceiptMaintenanceTest
         assertSame(false, is_file($root . '/.git/approval-receipt-conversion.json'));
     }
 
+    public function testReadinessAndTextOnlyOperationWithoutLegacyDecoder(): void
+    {
+        [$w, $root, $db, $grant, $text] = $this->fixture();
+        $service = new ApprovalReceiptMaintenance($root, $db);
+        assertSame(false, $service->readiness()['live_repository_ready']);
+        assertSame(false, is_file($db));
+        $service->convert(false);
+        assertSame(true, $service->readiness()['live_repository_ready']);
+        $blocker = $w->root . '/no-legacy.php';
+        file_put_contents($blocker, '<?php spl_autoload_register(function ($class) { if ($class === "ForumRewrite\\Security\\LegacyApprovalReceipt") throw new RuntimeException("Legacy decoder unavailable"); }, true, true);');
+        [$code, $out] = $w->command(['php', '-d', 'auto_prepend_file=' . $blocker, __DIR__ . '/../scripts/approval_receipts.php', 'readiness', '--repository-root=' . $root, '--database-path=' . $db]);
+        assertSame(0, $code, $out); assertStringContains('Live-Repository-Ready: yes', $out);
+        // New-format encode/read and normal rebuild run in a fresh process without the adapter.
+        $probe = $w->root . '/probe.php';
+        file_put_contents($probe, '<?php require ' . var_export(realpath(__DIR__ . '/../autoload.php'), true) . ';'
+            . '$root = $argv[1]; $data = \ForumRewrite\Security\ApprovalAcceptance::read($root, "records/posts/grant.txt");'
+            . '$text = \ForumRewrite\Security\ApprovalAcceptance::encode(file_get_contents($root . "/records/posts/grant.txt"), $data["context"], $data["accepted_at"], $data["kind"]);'
+            . 'if ($text !== file_get_contents($root . "/records/approval-acceptances/grant.txt")) throw new RuntimeException("Mismatch");'
+            . '(new \ForumRewrite\ReadModel\ReadModelBuilder($root, $argv[2], new \ForumRewrite\Canonical\CanonicalRecordRepository($root)))->rebuild();');
+        [$code, $out] = $w->command(['php', '-d', 'auto_prepend_file=' . $blocker, $probe, $root, $db]); assertSame(0, $code, $out);
+        $archive = $w->root . '/text.tar.gz';
+        [$code, $out] = $w->command(['tar', '-czf', $archive, '-C', $root, 'records']); assertSame(0, $code, $out);
+        $restore = $w->repository('restore', true); $w->git($restore);
+        [$code, $out] = $w->command(['php', '-d', 'auto_prepend_file=' . $blocker, __DIR__ . '/../scripts/import_repository_archive.php', $archive, $restore, $w->root . '/restore.sqlite3']);
+        assertSame(0, $code, $out);
+        assertSame($text, file_get_contents($restore . '/' . ApprovalAcceptance::path('grant')));
+        file_put_contents($root . '/records/approval-acceptances/grant.json', json_encode(ApprovalReceiptText::decode($text)));
+        [$code, $out] = $w->command(['php', '-d', 'auto_prepend_file=' . $blocker, __DIR__ . '/../scripts/approval_receipts.php', 'readiness', '--repository-root=' . $root, '--database-path=' . $db]);
+        assertSame(1, $code, $out); assertStringContains('Legacy decoder unavailable', $out);
+        unlink($root . '/records/approval-acceptances/grant.json');
+        file_put_contents($root . '/.git/approval-receipt-conversion.json', '{}');
+        assertSame(false, $service->readiness()['live_repository_ready']);
+        unlink($root . '/.git/approval-receipt-conversion.json');
+        file_put_contents($root . '/records/approval-acceptances/orphan.txt', $text);
+        assertSame(false, $service->readiness()['live_repository_ready']);
+    }
+
     private function rejects(callable $call, string $message): void
     {
         try { $call(); } catch (Throwable $e) { assertStringContains($message, $e->getMessage()); return; }

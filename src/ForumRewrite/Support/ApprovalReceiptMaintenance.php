@@ -37,6 +37,19 @@ final class ApprovalReceiptMaintenance
             'archive_coverage' => 'unknown; only this live repository was inspected'];
     }
 
+    public function readiness(): array
+    {
+        $report = $this->inspect();
+        $pending = false;
+        try {
+            $journal = trim($this->git(['rev-parse', '--absolute-git-dir'])) . '/approval-receipt-conversion.json';
+            $pending = file_exists($journal) || is_link($journal);
+        } catch (RuntimeException $e) { $report['blockers'][] = 'Cannot inspect conversion recovery state: ' . $e->getMessage(); }
+        if ($pending) $report['blockers'][] = 'Conversion recovery pending; retry convert before retiring the reader.';
+        return $report + ['status' => 'readiness', 'live_repository_ready' => $report['legacy_files'] === 0 && $report['blockers'] === [],
+            'retirement_decision' => 'pending; decide support for old archives separately'];
+    }
+
     public function convert(bool $dryRun): array
     {
         if ($dryRun) return $this->inspect() + ['status' => 'preview'];

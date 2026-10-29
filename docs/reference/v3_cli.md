@@ -1181,3 +1181,10 @@ recovery is pending. The command refuses intervening edits, unrelated dirty file
 or an unexpected HEAD. Preserve those changes and restore the transaction's
 expected state before retrying; do not reset the whole repository or approve again.
 A committed conversion changes receipt representation, never grant/signature bytes.
+
+`./v3 approval receipts readiness` is read-only. It reports remaining legacy
+files, malformed/orphan/conflicting receipts and pending conversion recovery.
+Exit 0 means the live repository is ready; exit 2 means legacy files remain;
+exit 1 means blockers. Archive coverage remains unknown in all cases. Follow the
+[reader retirement procedure](../runbooks/account_key_approval_safety.md#later-removal-of-the-legacy-reader)
+before a later removal change.

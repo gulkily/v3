@@ -55,3 +55,14 @@ Approved Step 3 received. Branch: feature/approval-acceptance-text. Planning com
 - Notes: S3 commit cdb2043a. First retry test exposed Git add of an already-staged deletion; fixed by staging the receipt directory after the owned-path status check. No failure is hidden; tests rerun 4/4. Journal is machine-only recovery state. No production conversion; estimate unchanged.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 5 - Reader retirement readiness
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes: Read-only readiness command, live-tree readiness and explicit archive uncertainty, pending-journal blockers; bounded removal procedure keeps digest validation separate and avoids a new runtime setting.
+- Verification: Maintenance suite 5/5. Fresh PHP processes with legacy decoder autoload deliberately blocked pass new text encode, converted text read/rebuild and actual archive restore. Legacy input fails explicitly; orphan evidence and pending journal block readiness. Inspection creates no database.
+- Notes: S4 commit 83b4dba9. Actual reader retirement and archive policy remain future decisions; estimates unchanged.
+
+*— Codex · 2026-10-29 UTC*
