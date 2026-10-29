@@ -9,7 +9,6 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Host\AssetFingerprint;
 use ForumRewrite\ReadModel\ReadModelMetadata;
-use ForumRewrite\Scoring\FastmodMetaPublication;
 use ForumRewrite\View\FaviconRegistry;
 use RuntimeException;
 
@@ -74,7 +73,6 @@ final class DocsPublication
             'files' => $files,
             'profile' => SiteProfileRegistry::active(),
             'flags' => $flags,
-            'meta' => $this->independent ? null : FastmodMetaPublication::token($this->projectRoot)['generation'],
         ], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE));
     }
 

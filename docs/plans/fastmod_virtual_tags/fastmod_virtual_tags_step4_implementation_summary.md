@@ -45,3 +45,12 @@ Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80
 - Notes: Ordinary rebuild, not instant invalidation, updates generated tags. Offline serving checks were removed with the shared FrontController helper; snapshot building is Stage 6. No scope/estimate revision.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 5 — Simplify high-traffic/docs integration
+**Original estimate: 0.08**
+**Retrospective stage work: 0.08**
+- Changes: Removed private classification lock/generation dependencies from cache generation, mode switching and docs reuse identity. Existing mode/publication locks, access-policy validation and ordinary freshness are retained.
+- Verification: HighTrafficTest, HighTrafficPublicationTest, DocsPublicationTest, DocsPublicationFlowTest and IndependentDocsPublicationTest — 29/29 passed, including refresh/restriction and publication failure/concurrency paths. Syntax/diff checks passed.
+- Notes: Stage 4 archive-filename failure reproduced unchanged in isolated preimplementation c5783108 worktree; worktree removed afterward. No scope/estimate revision.
+
+*— Codex · 2026-10-29 UTC*
