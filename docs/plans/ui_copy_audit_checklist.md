@@ -1,5 +1,33 @@
 # UI copy audit checklist
 
+## Current audit status — October 29, 2026
+
+Two copy-review candidates remain in the [current queue](#next-phase--new-candidates):
+SQLite Viewer loading feedback and System State repository hashes. Both were
+rechecked in current source; neither has a rendered review or a removal decision.
+
+All five recorded audit passes, including the original seven candidates, have
+completion records below. Some reviews deliberately retained useful information.
+Historical “Current phase,” “Next audit,” and dated status notes describe their
+own checkpoints; they are not additional current queues. The Backup restoration
+record supersedes the earlier removal of useful instance and snapshot data.
+
+Deployment, physical-device acceptance and feedback replies are separate from
+copy-review completion. Their historical unchecked notes remain evidence of what
+was not verified then; this reconciliation does not establish their current live
+status or authorize deployment or messages. Broader layout/interaction work stays
+in the [UI redesign checklist](ui_redesign/implementation_checklist.md).
+
+Process: [How to continue this audit](#how-to-continue-this-audit). Add completed
+reviews and follow-ups above the final queue, keeping that queue at the bottom.
+Reusable verification bullets are requirements for each review, not backlog items.
+
+Reconciliation: inspected completion/supersession records and the two candidate
+source locations on main e614fbd9. Documentation only; no product change, new
+rendered checks or deployment verification. Preserved prior evidence and limits.
+
+*— Codex · 2026-10-29 UTC*
+
 ## Backup section grouping — October 25, 2026
 
 - [x] Split the page into three existing-style cards: Backup details, Downloads, and Recent included items. Added only the Downloads heading; preserved all fields, links, notes and empty states.
@@ -88,6 +116,8 @@
 
 ## Next audit — candidates to verify
 
+Historical intake: all seven candidates below were closed by the October 23 audit pass.
+
 These source-review candidates are not confirmed removal decisions. Review the
 rendered states before choosing changes; keep necessary consequences and recovery
 visible. An unchecked item remains open until changes and verification are recorded,
@@ -126,15 +156,15 @@ or the review establishes that the existing copy should remain.
   approved-without-visible-content cases, including affected alternate views.
   Source: `templates/pages/users.php`.
 
-For each item:
+Reusable verification requirements for each item:
 
-- [ ] Inspect phone and desktop rendering after real content loads, including
+- Inspect phone and desktop rendering after real content loads, including
   relevant expanded, empty, pending, success, partial, and failure states.
-- [ ] Review shared templates and browser/server feedback together; remove
+- Review shared templates and browser/server feedback together; remove
   repeated explanations and hide empty status elements.
-- [ ] Verify the main action, necessary consequences, keyboard/touch access,
+- Verify the main action, necessary consequences, keyboard/touch access,
   recovery, page overflow, and primary-action stability in affected states.
-- [ ] Update affected assertions, run relevant existing checks, and record the
+- Update affected assertions, run relevant existing checks, and record the
   decision, changes, verification, and unresolved follow-ups before closing it.
 
 Reduce reading required to complete ordinary forum tasks. Favor removing text over rewriting or relocating it, relying on an intuitive, explorable interface. For every finding below, first consider deleting the explanation; suggestions to shorten text or move it into help are fallbacks only when users need information the interface cannot communicate. Keep material consequences and recovery actions beside the affected control.
@@ -537,14 +567,6 @@ Reviewed candidates; decisions and verification are recorded above.
 - Verification: `QdbExperienceRoutingTest` passed (3/3). Chromium against isolated Apache with real templates/assets checked both pages at 375px/1150px in QDB, Light, Word97, Chicago and Midnight (20 page/theme/size cases). Verified exact rendered copy, Search line breaks, editable quote body, visible Post action, search submission and zero-result recovery, and no horizontal overflow. Inspected QDB phone Add and desktop Search screenshots. Temporary evidence: `/tmp/qdb-haiku-tests.log`, `/tmp/qdb-haiku-visual.log`, `/tmp/qdb-copy-{add,search}-{theme}-{width}.png`.
 - Limitations: signed quote submission, populated/paginated search results, server failures and expanded compose options were not retested for these static paragraphs. No new dependencies; no `todo.txt` changes. Local changes only; deployment remains outstanding.
 
-## Next phase — new candidates
-
-These observations need rendered review before deciding what to remove. Keep this section at the end of the file.
-
-- [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
-
-- [ ] **System State repository head duplication** — Review “Short head” alongside the full Repository head and the abbreviated hash in Latest commit. Check long hashes, missing Git/history and stale read-model comparisons; preserve useful provenance and mismatch diagnosis. Source: `templates/pages/codebase_state.php`.
-
 ## 2026-10-24 — Current-content repository export wording
 
 - Replaced full-history download descriptions with “Current content; Git history excluded.” Updated the backup scope notice to list Git history among separately backed-up data. Preserved image-pair revision guidance and private-data limitations; no extra confirmation or navigation change.
@@ -725,3 +747,16 @@ Limits: in Auto with a dark preference, the current Tags link shows as an empty 
 - [x] Kept disabled/authentication and transient-failure recovery visible inside the workflow, and preserved typed drafts across polling, revisions and reloads. Older drafts are copyable under **Saved draft**.
 - [x] Controlled-clock browser tests cover retained drafts, revision changes, terminal refusal, bounded retries and recovery. Signed workflow and shared Feature Flags toggle regressions pass; final theme/network evidence is recorded in the [implementation summary](./railspike_feature_gating/railspike_feature_gating_step4_implementation_summary.md).
 - Limitations: session drafts are tab-local; physical devices and production deployment/replay remain pending. No new navigation destinations or icon mappings.
+
+## Next phase — new candidates
+
+Current queue, reconciled October 29, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.
+
+- [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
+
+- [ ] **System State repository head duplication** — Review “Short head” alongside the full Repository head and the abbreviated hash in Latest commit. Check long hashes, missing Git/history and stale read-model comparisons; preserve useful provenance and mismatch diagnosis. Source: `templates/pages/codebase_state.php`.
+
+Source recheck: both loading messages remain in `public/assets/sqlite_viewer.js`;
+`templates/pages/codebase_state.php` still lists Repository head, Short head and
+Latest commit. Their presence confirms candidates, not redundancy. Start with
+SQLite Viewer, checking standalone and embedded loading/failure/retry states.
