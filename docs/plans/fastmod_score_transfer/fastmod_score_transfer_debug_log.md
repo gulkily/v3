@@ -35,3 +35,17 @@ Inapplicable instructions: Runtime tests and implementation commits do not apply
 Uncertain assessments: Option removal reduces plumbing but leaves snapshot/recovery complexity; current estimates remain projections.
 
 *— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 — Step 4 closeout
+
+Necessary/useful instructions: Railspike Step 4 Before planning-commit gate separated approved requirements from implementation (157df3f3). Step 4 Do stage boundaries produced eight sequential stage commits, each with verification and summary. The completion contract required an actual HTTP/CLI/browser journey and interruption recovery, catching dated-path matching and fixture assumptions beyond codec/store tests. Retain these requirements.
+
+Redundant/unnecessary instructions: No supported findings.
+
+Inapplicable instructions: Dependency approval and core read-model migration requirements had no changes to govern; dependency/schema delta is zero. Deployment and live migration are outside the approved local completion boundary. No sub-agents were requested or used.
+
+Uncertain assessments: The stage estimates are exposed single-rater scope judgments, not measured labor. The 0.75 cycle projection and separate 0.75 retrospective are retained; maintainer fit/acceptance remains pending. Full repository suite, physical devices and exhaustive theme/browser testing were not run; focused 77/77 and local Chromium/HTTP/CLI/static flow passed.
+
+Final audit: S8 e2b29b38 completes nine required commits from planning through eight stages. Each stage contains its summary update. No merge, push or deployment. This log-only commit records the completed-step handoff without amending history.
+
+*— Codex · 2026-10-29 UTC*
