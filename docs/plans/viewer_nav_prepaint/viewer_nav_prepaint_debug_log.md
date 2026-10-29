@@ -44,3 +44,20 @@
 
 **Uncertain assessments**
 - Whether a baseline move after an approved Step 2 counts as a scope change: treated as v3 because the starting revision and the render sites changed, even where user-facing behavior did not.
+
+## 2026-10-29 UTC — Step 4
+
+**Necessary/useful instructions**
+- Stage boundary protocol (verify, summarize, commit per stage): caught that removing the server viewer token in Stage 2 would break unread between commits; moving it to Stage 3 kept every commit working. Retain.
+- Identify reproduced baseline failures: a `c5783108` worktree separated five pre-existing failures (three PHP, two browser) from the one this cycle caused. Retain.
+- Enhancement requests and approval boundaries: the static-release guard conflict was put to the user rather than resolved by relaxing a test silently. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Deployment, migration and schema requirements: none in scope.
+
+**Uncertain assessments**
+- First-paint measurement: browser frames painted mid-parse, or before asynchronously loaded stylesheets arrive, produced false movement reports, and one 2–16px move could not be reproduced. The final test compares visibility from parse and positions only after styles load, so movement during that window is not covered. The guidance could say how to measure "final on first paint" when stylesheets load asynchronously.
+- Process slip: one accidental `git stash` during Stage 2 verification set aside uncommitted work and the user's `todo.txt` edit; restored immediately with no loss.
