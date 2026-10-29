@@ -2,15 +2,17 @@
   'use strict';
   const endpoint = '/api/railspike_workflow';
   let busy = false, pending = null, timer = null, controller = null, failures = 0, stopped = false, locked = false, suspended = false;
-  let initialIdentity = '';
+  let initialIdentity = '', draftStorageFailed = false;
+  const memoryDrafts = new Map();
   function identity() {
     try { return ['fingerprint', 'public_key', 'private_key'].map(k => localStorage.getItem('forum_pki_' + k) || '').join('|'); }
     catch (_) { return ''; }
   }
-  function notice(message) {
+  function notice(message, draftWarning = false) {
     mounts().forEach(m => {
-      let alert = m.querySelector('[data-workflow-notice]');
-      if (!alert) { alert = node('p'); alert.dataset.workflowNotice = ''; alert.setAttribute('role', 'alert'); m.append(alert); }
+      const attribute = draftWarning ? 'data-workflow-draft-warning' : 'data-workflow-notice';
+      let alert = m.querySelector('[' + attribute + ']');
+      if (!alert) { alert = node('p'); alert.setAttribute(attribute, ''); alert.setAttribute('role', 'alert'); m.append(alert); }
       alert.textContent = message;
     });
   }
@@ -22,11 +24,15 @@
   }
   function drafts(mount) {
     const key = 'forum_railspike_draft:' + initialIdentity.split('|')[0] + ':' + mount.dataset.railspikePost;
-    let saved = {};
-    try { const value = JSON.parse(sessionStorage.getItem(key) || '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) saved = value; } catch (_) {}
+    let saved = memoryDrafts.get(key);
+    if (!saved) {
+      saved = {};
+      try { const value = JSON.parse(sessionStorage.getItem(key) || '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) saved = value; } catch (_) {}
+      memoryDrafts.set(key, saved);
+    }
     const write = () => {
       try { sessionStorage.setItem(key, JSON.stringify(saved)); }
-      catch (_) { notice('Draft cannot be saved on this device. Keep this page open or copy your text before reloading.'); }
+      catch (_) { draftStorageFailed = true; notice('Draft cannot be saved on this device. Keep this page open or copy your text before reloading.', true); }
     };
     return { saved, write };
   }
@@ -133,6 +139,7 @@
     }
     savedDrafts(mount, panel);
     mount.append(panel);
+    if (draftStorageFailed) notice('Draft cannot be saved on this device. Keep this page open or copy your text before reloading.', true);
     mount.querySelectorAll('details').forEach(d => { if (expanded.includes(d.querySelector('summary')?.textContent)) d.open = true; });
   }
   function schedule() {

@@ -134,3 +134,35 @@ While disabled, the queue skips Railspike jobs without consuming attempts or
 blocking other task types. A job claimed just before disablement is deferred at
 assessment admission. Assessments already admitted may finish and save results.
 Re-enable the flag to resume queued work; reload the thread to view its status.
+
+### Browser behavior and acceptance
+
+Only an eligible `#railspike` thread or a direct post in that context loads
+workflow controls for a locally recognized operator key. **Development** stays
+collapsed until opened. Polling runs every five seconds after the previous
+request completes, including when the workflow awaits input or is approved.
+It pauses in hidden tabs and stops on navigation, loss of eligibility, identity
+change, or a disabled/authorization response. Three consecutive transient
+failures stop automatic updates; use **Refresh status** to retry. Re-enable or
+sign in and reload after a disabled/authorization response.
+
+Typed answers and change requests are retained in this tab's session storage,
+separately for each identity, post and revision. If a revision changes, expand
+**Saved draft** to copy the earlier text, or discard it deliberately. If browser
+storage is unavailable, keep the page open or copy the text before reloading.
+Closing the tab can discard session drafts; they are not server records.
+
+After an authorized deployment, verify in the production browser:
+
+1. With the flag off, open a fresh ordinary thread and a Railspike thread. The
+   Network panel should show no `/api/railspike_workflow` requests.
+2. Enable the flag through Feature Flags. Reload an ordinary thread: still no
+   workflow requests. Reload a Railspike thread using the operator identity:
+   requests occur about five seconds apart while visible, even without active work.
+3. Start an assessment and confirm its result. Hide the tab and return; requests
+   pause and resume. Keep an unsent answer, disable the feature from another tab,
+   and confirm the old tab stops after receiving the disabled response.
+4. Re-enable and reload. Confirm the workflow and draft remain available and
+   queued work resumes. Check both phone and desktop entry and expanded controls.
+
+Local browser checks do not establish deployment parity or production success.

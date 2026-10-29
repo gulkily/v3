@@ -47,6 +47,28 @@ final class RailspikeFeatureFlagTest
         } finally {putenv($old===false?$key:$key.'='.$old);}
     }
 
+    public function testBakedAndBusyCacheRejectOldWorkflowPolicy(): void
+    {
+        $w=new ImportTestWorkspace();$root=$w->repository('source',true);$w->git($root);
+        $static=$w->root.'/static';
+        $html='<html data-railspike-enabled="1"><body data-backup-state="11">CACHED RAILSPIKE</body></html>';
+        $w->put($static.'/current/threads/root-001/index.html',$html);
+        $code='require $argv[1]."/autoload.php"; (new ForumRewrite\\Host\\FrontController($argv[1],$argv[2],$argv[3],$argv[4]))->handle("GET","/threads/root-001");';
+        foreach ([true,false,true] as $enabled) {
+            [$status,$body]=$w->command(['env','FORUM_APPROVED_MEMBERS_ONLY=false','FORUM_IMAGE_CONTENT_ENABLED=false',
+                'FORUM_RAILSPIKE_ENABLED='.($enabled?'true':'false'),PHP_BINARY,'-r',$code,dirname(__DIR__),$root,$w->root.'/index.sqlite3',$static]);
+            assertSame(0,$status,$body);assertSame($enabled,str_contains($body,'CACHED RAILSPIKE'));
+        }
+        $cache=new \ForumRewrite\Host\HighTrafficCache($w->root,$root,$w->root.'/index.sqlite3',$w->root.'/public');
+        $cache->initialize();$cache->limits['wait_ms']=1;$cache->atomic($cache->path('/'),$html);
+        $lock=fopen($cache->root.'/locks/'.substr(hash('sha256','/'),0,3).'.lock','c');flock($lock,LOCK_EX);
+        $key=FeatureFlagRegistry::RAILSPIKE_ENABLED;$old=getenv($key);
+        try {
+            putenv($key.'=true');assertStringContains('CACHED RAILSPIKE',$cache->generate('/'));
+            putenv($key.'=false');assertSame(null,$cache->generate('/'));
+        } finally {fclose($lock);putenv($old===false?$key:$key.'='.$old);}
+    }
+
     public function testDisabledRoutesRefuseBeforeWorkflowStorageAndEnabledRequiresOperator(): void
     {
         $w=new ImportTestWorkspace();$root=$w->repository('source',true);$w->git($root);

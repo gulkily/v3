@@ -12,8 +12,9 @@ if (($input['operation'] ?? '')==='worker') {
         if ($row['history']===[]) return ['kind'=>'questions','questions'=>['Which navigation should improve?'],'assessment'=>''];
         return ['kind'=>'assessment','questions'=>[],'assessment'=>"## Problem Statement\nPhone navigation\n## Option A\nToolbar\n## Option B\nMenu\n## Recommendation\nToolbar. Literal <script>window.pwned=true</script>"];
     };
-    $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker(new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo),static function () {},null,null,null,new \ForumRewrite\Railspike\AssessmentTask($store,$runner, static fn (): bool => true));
-    echo json_encode($worker->run()); exit;
+    $worker=new \ForumRewrite\TaskQueue\TaskQueueWorker(new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo),static function () {},null,null,null,new \ForumRewrite\Railspike\AssessmentTask($store,$runner, static fn (): bool => \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($root.'/repository',$root)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::RAILSPIKE_ENABLED)));
+    $taskId=(int)$pdo->query("SELECT id FROM internal_tasks WHERE type='railspike_assessment' AND status='queued' ORDER BY id LIMIT 1")->fetchColumn();
+    echo json_encode($worker->run(1,null,$taskId)); exit;
 }
 if (($input['operation'] ?? '')==='rebuild') {
     (new \ForumRewrite\ReadModel\ReadModelBuilder($root.'/repository',$root.'/read.sqlite3',new \ForumRewrite\Canonical\CanonicalRecordRepository($root.'/repository'),'railspike-browser'))->rebuild(); exit;
@@ -33,7 +34,8 @@ if ($exit!==0) throw new RuntimeException('Fixture staging failed');
 exec('git -C '.escapeshellarg($root.'/repository').' commit -qm "Approve fixture operator"',$out,$exit);
 if ($exit!==0) throw new RuntimeException('Fixture commit failed');
 $direct=$writer->createThread(['board_tags'=>'railspike','subject'=>'Direct request','body'=>'Improve navigation on phones']);
+$ordinary=$writer->createThread(['board_tags'=>'general','subject'=>'Ordinary thread','body'=>'No development request']);
 $thread=$writer->createThread(['board_tags'=>'general','subject'=>'Thread request','body'=>'Improve the site']);
 $reply=$writer->createReply(['thread_id'=>$thread['thread_id'],'parent_id'=>$thread['post_id'],'body'=>'Improve phone menus #railspike']);
 (new \ForumRewrite\ReadModel\ReadModelBuilder($root.'/repository',$root.'/read.sqlite3',$repository,'railspike-browser'))->rebuild();
-echo json_encode(['identity'=>$id,'direct'=>$direct['post_id'],'thread'=>$thread['thread_id'],'reply'=>$reply['post_id']]);
+echo json_encode(['ordinary'=>$ordinary['post_id'],'identity'=>$id,'direct'=>$direct['post_id'],'thread'=>$thread['thread_id'],'reply'=>$reply['post_id']]);

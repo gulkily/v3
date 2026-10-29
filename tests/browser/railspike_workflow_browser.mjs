@@ -8,6 +8,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { runInThisContext } from 'node:vm';
 import { chromium } from 'playwright-core';
+import { enableRailspike, checkRailspikeGating } from './railspike_feature_gating.mjs';
 const project=resolve(new URL('../..',import.meta.url).pathname);
 runInThisContext(readFileSync(join(project,'public/assets/openpgp.min.js'),'utf8'));
 const keys=await globalThis.openpgp.generateKey({type:'ecc',curve:'ed25519',userIDs:[{name:'operator'}],format:'armored'});
@@ -20,7 +21,7 @@ function fixture(data) {
 const data=fixture({publicKey:keys.publicKey});
 const socket=createServer().listen(0,'127.0.0.1'); await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
 const base=`http://127.0.0.1:${port}`;
-const server=spawn('php',['-d',`session.save_path=${root}/sessions`,'-S',`127.0.0.1:${port}`,join(project,'tests/Support/railspike_browser_router.php')],{env:{...process.env,FORUM_RAILSPIKE_ENABLED:'true',RAILSPIKE_TEST_ROOT:root,FORUM_TASK_QUEUE_DATABASE_PATH:join(root,'state/private/tasks.sqlite3'),FORUM_SECRETS_PATH:join(root,'unused-secrets.php')},stdio:['ignore','ignore','pipe']});
+const server=spawn('php',['-d',`session.save_path=${root}/sessions`,'-S',`127.0.0.1:${port}`,join(project,'tests/Support/railspike_browser_router.php')],{env:{...process.env,RAILSPIKE_TEST_ROOT:root,FORUM_TASK_QUEUE_DATABASE_PATH:join(root,'state/private/tasks.sqlite3'),FORUM_SECRETS_PATH:join(root,'unused-secrets.php')},stdio:['ignore','ignore','pipe']});
 let log=''; server.stderr.on('data',s=>log+=s);
 let browser;
 try {
@@ -37,6 +38,7 @@ try {
   for(const [k,v] of Object.entries({username:'operator',public_key:keys.publicKey,private_key:keys.privateKey,fingerprint:fingerprint.toUpperCase(),published_fingerprint:fingerprint.toUpperCase()}))localStorage.setItem('forum_pki_'+k,v);
  },{keys,fingerprint});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await enableRailspike(page,base);
  await page.goto(base+'/threads/'+data.thread);
  const reply=page.locator(`[data-railspike-post="${data.reply}"]`);
  await reply.locator('..').locator(':scope > summary').click();
@@ -63,6 +65,7 @@ try {
  assert.match(stale,/changed/);
  const unsigned=await context.request.post(base+'/api/railspike_workflow',{data:{operation:'prepare',action:'start',post_id:data.direct}});assert.equal(unsigned.status(),400);
  await page.goto(base+'/posts/'+data.direct);const direct=page.locator(`[data-railspike-post="${data.direct}"]`);await direct.locator('..').locator(':scope > summary').click();await direct.locator('summary').first().waitFor();await direct.locator('summary').first().click();await direct.getByRole('button',{name:'Start development',exact:true}).click();await direct.getByText('Railspike Step 1: queued',{exact:true}).waitFor();
+ await checkRailspikeGating({page,context,browser,base,data,fixture});
  const activityWorkflowRequests=[];
  const recordWorkflow=request=>{if(new URL(request.url()).pathname==='/api/railspike_workflow')activityWorkflowRequests.push(request.url());};
  page.on('request',recordWorkflow);

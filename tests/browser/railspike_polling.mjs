@@ -37,7 +37,20 @@ try {
  await page.evaluate(()=>ForumRailspike.refresh());
  await page.getByText('Saved draft: Which phone?',{exact:true}).click();
  assert.equal(await page.locator('textarea[readonly]').inputValue(),'Keep my answer','changed revision retains old draft');
+ // Storage failure still retains the working draft in memory across a revision.
+ await page.evaluate(()=>{window.originalStorageSet=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw Error('quota');};});
+ await page.getByLabel('Requested changes',{exact:true}).fill('Unsaved locally');
+ result.workflows[0]={...result.workflows[0],version:4,revisions:[{number:3,kind:'assessment',questions:[],artifact:'New assessment'}]};
+ await page.evaluate(()=>ForumRailspike.refresh());
+ assert.ok((await page.locator('textarea[readonly]').evaluateAll(rows=>rows.map(r=>r.value))).includes('Unsaved locally'));
+ assert.match(await page.locator('[data-workflow-draft-warning]').textContent(),/copy your text/);
+ await page.evaluate(()=>{Storage.prototype.setItem=window.originalStorageSet;});
+ await page.getByText('Saved draft: Requested changes',{exact:true}).click();
+ await page.getByRole('button',{name:'Discard saved draft',exact:true}).last().click();await settled();
  const approvedCount=count;await page.clock.fastForward(5001);await settled();assert.equal(count,approvedCount+1,'completed workflow still polls');
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));const navigated=count;
+ await page.clock.fastForward(15000);assert.equal(count,navigated,'navigation suspends polling');
+ await page.evaluate(()=>window.dispatchEvent(new Event('pageshow')));await settled();assert.equal(count,navigated+1,'back/forward restoration resumes');
  status=403;await page.evaluate(()=>ForumRailspike.refresh());const denied=count;
  await page.clock.fastForward(20000);await page.evaluate(()=>ForumRailspike.refresh());assert.equal(count,denied,'authorization refusal stops every retry');
  assert.match(await page.locator('[data-workflow-notice]').textContent(),/reload/);
