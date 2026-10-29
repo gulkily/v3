@@ -27,3 +27,12 @@ Entry checkpoint: 2026-10-29, R1/P2, scope v1/A, original baseline 60518d9e7ce80
 - Notes: Candidate root reads are chunked at 500, not per-post queries. Existing old lifecycle tests remain to be replaced at their corresponding retirement stages. No scope/estimate revision.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 3 — Stop classification writes
+**Original estimate: 0.08**
+**Retrospective stage work: 0.08**
+- Changes: Removed new-publication eligibility writes, worker classification/recovery calls and the classification-only result callback; ordinary work/results and retries remain. Both CLI/task workers and browser fixture use the simplified sweep.
+- Verification: Focused sweep/store/backfill/audit/derived selection — 29/29 passed, including provider limits, individual failure/retry, stale content/rubric and backfill isolation.
+- Notes: Legacy operator CLI remains until Stage 7; stored legacy data is untouched. No scope/estimate revision.
+
+*— Codex · 2026-10-29 UTC*

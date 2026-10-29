@@ -243,7 +243,7 @@ try {
                         $store->retryWork($postId, $contentHash, $rubricRevision);
                     }
                     $workflow = FastScoreWorkflowFactory::fromPrivateConfig($privateConfig, $projectRoot, $fetch, fastScoreRecorder($projectRoot, $repositoryRoot, $privateConfig));
-                    return (new \ForumRewrite\Scoring\FastScoreSweepService($readPdo, $factory, $workflow, $store, $rubricRevision, \ForumRewrite\Scoring\FastmodMetaRuntime::open($projectRoot,$privateConfig,null,$repositoryRoot)))->run(1, 1, null,
+                    return (new \ForumRewrite\Scoring\FastScoreSweepService($readPdo, $factory, $workflow, $store, $rubricRevision))->run(1, 1, null,
                         ['post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
                 }
             );
