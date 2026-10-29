@@ -252,7 +252,7 @@ final class CanonicalRecordParsersTest
         }
     }
 
-    public function testLegacyRemovalEvidenceRequiresExactLocalAcceptance(): void
+    public function testPreviousRemovalJsonIsUnsupportedAndNewReceiptRejectsMalformedData(): void
     {
         $root = sys_get_temp_dir() . '/label-removal-' . bin2hex(random_bytes(6));
         mkdir($root . '/records/posts', 0777, true);
@@ -263,20 +263,17 @@ final class CanonicalRecordParsersTest
             file_put_contents($root . '/records/posts/root-001.txt', $post);
             $git(['add', 'records']); $git(['commit', '-qm', 'Create source']);
             $record = \ForumRewrite\Canonical\LabelRemoval::prepare($root, 'root-001', 'delete');
-            unset($record['acceptance_version']); // Pre-migration records still require historical acceptance.
+            mkdir($root . '/records/post-removals', 0775, true);
+            $old = $root . '/records/post-removals/root-001.json';
+            file_put_contents($old, json_encode($record));
+            assertSame(null, \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'));
+            assertSame([], \ForumRewrite\Canonical\LabelRemoval::all($root));
             $path = \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
-            $git(['add', $path]); $git(['commit', '-qm', 'Import repository']);
-            assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Removal evidence lacks trusted local acceptance; restore trusted Git history: ' . $path);
-            $record['actor'] = 'local-operator'; $record['accepted_at'] = '2026-04-11T00:00:00Z';
-            \ForumRewrite\Canonical\LabelRemoval::store($root, $record);
-            $git(['add', $path]); $git(['commit', '-qm', 'Accept source label cleanup root-001']);
             assertSame('delete', \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001')['operation']);
-            $migration = \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock');
-            assertSame(['root-001'], $migration['migrated']);
-            assertSame(2, \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001')['acceptance_version']);
-            assertSame([], \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock')['migrated']);
-            file_put_contents($root . '/' . $path, '{}');
-            assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Invalid removal evidence: ' . $path);
+            assertSame(json_encode($record), file_get_contents($old));
+            file_put_contents($root . '/' . $path, "Format: unsupported\n\n");
+            assertThrowsRuntime(static fn () => \ForumRewrite\Canonical\LabelRemoval::read($root, 'root-001'), 'Unsupported removal receipt format.');
+
         } finally {
             $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
             foreach ($files as $file) { if ($file->isDir()) rmdir($file->getPathname()); else unlink($file->getPathname()); }

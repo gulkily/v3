@@ -7,8 +7,7 @@ $root = dirname(__DIR__);
 try {
     $command = $argv[1] ?? 'preview';
     if (in_array($command, ['--help', '-h', 'help'], true)) {
-        echo "Usage: ./v3 retraction-sweep preview|run|status|migrate [--json] [--limit=250] [--repository-root=PATH] [--static-html-root=PATH] [--exchange-database-path=PATH] [--state-path=PATH]\n";
-        echo "migrate converts legacy source-removal receipts only; previous retractions are not supported.\n";
+        echo "Usage: ./v3 retraction-sweep preview|run|status [--json] [--limit=250] [--repository-root=PATH] [--static-html-root=PATH] [--exchange-database-path=PATH] [--state-path=PATH]\n";
         exit(0);
     }
     $options = [];
@@ -17,19 +16,8 @@ try {
         if (!preg_match('/^--(repository-root|exchange-database-path|state-path|static-html-root|limit)=(.+)$/D', $arg, $m)) throw new InvalidArgumentException('Unknown option.');
         $options[$m[1]] = $m[2];
     }
-    if (!in_array($command, ['preview', 'status', 'run', 'migrate'], true)) throw new InvalidArgumentException('Use preview, status, run or migrate.');
-    if ($command === 'migrate') {
-        $repository = $options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository');
-        $database = getenv('FORUM_DATABASE_PATH') ?: $root . '/state/cache/post_index.sqlite3';
-        $result = \ForumRewrite\Retraction\RetractionMigration::run($repository, dirname($database) . '/forum-rewrite.lock');
-        if ($options['json'] ?? false) echo json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";
-        else {
-            echo 'Source-removal migration: ' . $result['status'] . '; converted ' . count($result['migrated']) . " records.\n";
-            foreach ($result['unresolved'] as $path => $reason) echo $path . ': ' . $reason . "\n";
-            echo "Run ./v3 rebuild, then ./v3 retraction-sweep run. Restore missing trusted evidence and rerun migrate for unresolved records.\n";
-        }
-        exit($result['unresolved'] === [] ? 0 : 1);
-    }
+    if ($command === 'migrate') throw new InvalidArgumentException('Previous removal/retraction formats are unsupported; no migration is available. Use preview, status or run for new-format cleanup.');
+    if (!in_array($command, ['preview', 'status', 'run'], true)) throw new InvalidArgumentException('Use preview, status or run.');
     $sweep = \ForumRewrite\Retraction\RetractionSweepFactory::create(
         $root,
         $options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository'),

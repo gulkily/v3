@@ -44,9 +44,14 @@ final class RetractionSweep
         if ($ids === []) return $result;
         // Existing artifacts retire immediately; late stale publishers age out on a later scan.
         $cutoff = time() - 300;
-        foreach (array_merge(glob($this->repositoryRoot . '/records/post-retraction-acceptances/*.txt') ?: [], glob($this->repositoryRoot . '/records/post-removals/*.json') ?: []) as $path) {
-            $cutoff = max($cutoff, (int) filemtime($path));
+        $receiptPaths = [];
+        foreach (\ForumRewrite\Canonical\AcceptedRetraction::all($this->repositoryRoot) as $id => $record) {
+            $receiptPaths[] = \ForumRewrite\Canonical\AcceptedRetraction::path($id);
         }
+        foreach (\ForumRewrite\Canonical\LabelRemoval::all($this->repositoryRoot) as $id => $record) {
+            if ($record['operation'] === 'delete') $receiptPaths[] = \ForumRewrite\Canonical\LabelRemoval::path($id);
+        }
+        foreach ($receiptPaths as $path) $cutoff = max($cutoff, (int) filemtime($this->repositoryRoot . '/' . $path));
         $result['artifacts'] = ArtifactSweep::run($this->artifactRoots, $cutoff, $preview);
         if (file_exists($this->exchangePath) && !is_file($this->exchangePath)) throw new RuntimeException('Exchange store is not a regular database.');
         if (!is_file($this->exchangePath)) return $result;

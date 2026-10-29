@@ -501,11 +501,10 @@ score, vote and activity aggregation; surviving independent labels remain active
 The `source_removal_generation` metadata key binds rebuilt aggregation to the
 accepted source-removal/resolution records. Static/offline publication rejects a
 source model with a missing or different generation while such evidence exists.
-Evidence lives in `records/post-removals/<source-id>.json`: operation, content hash,
+Evidence lives in `records/post-removals/<source-id>.txt`: operation, content hash,
 structural post identity, exact label-file hashes, acceptance time and local actor.
-It contains no source prose and is effective only with an exact trusted local
-`Accept source label cleanup <source-id>` commit. Importing an archive receipt
-alone grants no authority. Preserve trusted repository history for restoration.
+It uses the [shared removal receipt](removal_acceptance_record_v1.md), contains no source prose, and records acceptance by the local authorized writer. Signed and local evidence is combined only when structure and hashes agree. Importing an archive receipt
+alone grants no authority. Previous receipt formats are unsupported and are not migrated.
 
 ### Per-contribution like Activity (schema version 24)
 

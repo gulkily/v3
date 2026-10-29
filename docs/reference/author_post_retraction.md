@@ -31,12 +31,10 @@ If the response says **Site update incomplete**, retry retraction or rebuild the
 
 Previous retractions are not migrated or supported. Use this format for new
 retractions; do not restore deleted prose. Rollback requires code that reads
-all three retained files; older JSON-only readers are incompatible.
+the shared receipt and all three retained files; previous text and JSON readers are incompatible. No previous receipt format is migrated or accommodated.
 
 Run `./v3 rebuild`, then `./v3 retraction-sweep preview` and `run` as needed.
-`retraction-sweep migrate` remains only for legacy **source-removal** receipts;
-it does not convert or reinterpret old or new retraction requests. This format
-change does not rewrite Git history.
+`retraction-sweep migrate` is no longer supported. This format change does not rewrite Git history. Local operator removal and label-resolution receipts use the same [readable format](../specs/removal_acceptance_record_v1.md).
 
 ## Release verification
 

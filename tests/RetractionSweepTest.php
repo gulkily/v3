@@ -61,6 +61,23 @@ final class RetractionSweepTest
         assertSame(false,is_file($root . '/cli-state.json'));
     }
 
+    public function testLocalResolutionDoesNotSweepButNewDeletionDoes(): void
+    {
+        [$root,$pdo] = $this->fixture();
+        $signed=\ForumRewrite\Canonical\AcceptedRetraction::read($root,'target');
+        unlink($root.'/'.\ForumRewrite\Canonical\AcceptedRetraction::path('target'));
+        mkdir($root.'/static/threads',0775,true);
+        $artifact=$root.'/static/threads/target.html';file_put_contents($artifact,'old copy');touch($artifact,time()-10);
+        $local=['acceptance_version'=>2,'source_id'=>'target','source_hash'=>str_repeat('a',64),
+            'operation'=>'resolve','accepted_at'=>$signed['accepted_at'],'actor'=>'local-operator','labels'=>[],'post'=>$signed['post']];
+        \ForumRewrite\Canonical\LabelRemoval::store($root,$local);
+        $sweep=new RetractionSweep($root,$root.'/exchanges.sqlite3',$root.'/state.json',[$root.'/static']);
+        assertSame(0,$sweep->run()['retractions']);assertSame(true,is_file($artifact));
+        $local['operation']='delete';\ForumRewrite\Canonical\LabelRemoval::store($root,$local);
+        assertSame(1,$sweep->preview()['retractions']);$sweep->run();
+        assertSame(false,is_file($artifact));assertSame(0,$sweep->run()['cleaned']);
+    }
+
     public function testFullScanUsesBatchSizeWithoutLedgerAndPreservesKnownUnaffectedRows(): void
     {
         [$root, $pdo, $sweep] = $this->fixture();

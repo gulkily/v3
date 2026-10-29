@@ -93,8 +93,7 @@ final class AcceptedRetractionTest
         $json = $root . '/records/post-retractions/post-retraction-old.json';
         file_put_contents($json, '{"previous":"acceptance"}');
         assertSame(null, AcceptedRetraction::read($root, 'old'));
-        $result = \ForumRewrite\Retraction\RetractionMigration::run($root, $root . '/write.lock');
-        assertSame([], $result['migrated']); assertSame([], $result['unresolved']);
+        assertSame([], AcceptedRetraction::all($root));
         assertSame('previous request', file_get_contents($path));
         assertSame('{"previous":"acceptance"}', file_get_contents($json));
     }

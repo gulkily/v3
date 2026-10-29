@@ -25,7 +25,7 @@ Canonical content deletion belongs to acceptance/migration. Git history purge, b
 
 ## Recovery on the deployed host
 
-Previous retractions are not migrated. New retractions require their complete text evidence set; see [compatibility and maintenance](author_post_retraction.md#compatibility-and-maintenance). The `migrate` subcommand handles only legacy source-removal receipts.
+Previous retractions are not migrated. New retractions require their complete text evidence set; see [compatibility and maintenance](author_post_retraction.md#compatibility-and-maintenance). Previous source-removal JSON and retraction text receipts are unsupported; no migration subcommand is available.
 
 For the previously reported qdb.us missing-target/cold-page problem, use the host's normal repository/database/public-root settings, run `high-traffic prepare`, then `high-traffic refresh /`, and request the cold page. Rendering uses the ordinary prepared live read model; it does not rebuild or scan the canonical corpus. Missing/malformed legacy retraction evidence alone must not refuse publication. If a renderer times out, its error identifies the limit and last stage; fix that operational condition and retry. Local fixture success does not verify the live host.
 

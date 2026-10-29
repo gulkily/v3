@@ -71,3 +71,15 @@ Step 3 explicitly approved; planning commit `5143ab6f`, branch `feature/unified-
 - Notes: S5/v2 unchanged. `/tmp/unified-source-tests.log` retains initial 27/28 run; corrected source and added archive tests pass separately. No dependency delta.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 6 - Maintenance and recovery guidance
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes: maintenance cutoff uses validated deleting receipts, excluding resolution-only entries. Removed legacy migration implementation; removed migrate from help and return an explicit unsupported-format error for the old command. Updated retraction/shared receipt/schema/operator/CLI references and replaced obsolete migration assertions with old-format rejection checks.
+- Verification: parser/maintenance/sweep/acceptance suites 62/62; added resolution-only versus local-deletion artifact/exchange cleanup scenario 1/1. Actual CLI help lists preview/run/status; migrate exits 1 with clear no-migration guidance. New-action repeat cleanup remains idempotent.
+- Notes: S6/v2 unchanged. Internal recovery journals remain JSON machine state. No old files migrated/deleted; no dependencies. `/tmp/unified-maintenance-tests.log`.
+
+*— Codex · 2026-10-29 UTC*

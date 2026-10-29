@@ -483,12 +483,12 @@ It refuses recovery while the lock or an open file holder is detected.
 ## Sweep retracted local content
 
 ```
-./v3 retraction-sweep preview|run|status|migrate [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
+./v3 retraction-sweep preview|run|status [--json] [--limit=250] [--repository-root=/path/repository] [--static-html-root=/path/static] [--exchange-database-path=/private/exchanges.sqlite3] [--state-path=/private/sweep.json]
 ```
 
 Preview is non-mutating. Run executes one bounded batch immediately; repeat while
 `remaining` is true. The normal queue worker also discovers and continues sweeps.
-See [coverage, exclusions, progress and recovery](retraction_sweep.md). `migrate` handles legacy source-removal receipts only; previous retractions are not migrated.
+See [coverage, exclusions, progress and recovery](retraction_sweep.md). Previous removal/retraction receipt formats are unsupported; no migration is available.
 
 ## Manage the background task queue
 
@@ -699,7 +699,7 @@ Repeat the same command after an interrupted commit or failed refresh. The priva
 Git-directory journal resumes accepted work, and already accepted deletions do
 not need another acceptance commit. Changed source/label bytes require inspection
 rather than blind retry. Preserve `records/post-removals/` and trusted Git history
-in backups: copied JSON alone does not establish removal authority. Imports reject
+in backups: copied receipt text alone does not establish removal authority. Imports reject
 foreign removal claims and do not restore locally removed sources or labels.
 
 ## Backfill Unicode-risk analysis for posts
@@ -1150,3 +1150,15 @@ CLI output is readable by default; use `--json` for automation.
 and crontab line; `run` executes one refresh. Existing schedules using `cron`
 as the worker must change to `run`. Enable/status also report the cron line;
 they do not install or verify a schedule. Use the web app's environment and user.
+
+### Shared removal receipt compatibility
+
+Signed retraction and operator deletion/label repair now use the shared
+[removal acceptance format](../specs/removal_acceptance_record_v1.md). Local
+receipts live at `records/post-removals/<id>.txt`. Previous JSON and retraction
+text receipts and old pending journals are unsupported, with no migration or
+replay. No automatic deletion of old files is performed. New operations retain
+commit/refresh retry recovery: fix the reported failure and repeat the command.
+Unsupported journal versions stop before mutation; do not reinterpret them as
+new receipts. Rollback requires a matching verified repository/application backup;
+a binary-only downgrade cannot read the new format.
