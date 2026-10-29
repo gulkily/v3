@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html data-railspike-enabled="<?= $railspikeEnabled ? '1' : '0' ?>" lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">

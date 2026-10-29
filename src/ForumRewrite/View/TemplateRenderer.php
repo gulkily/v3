@@ -91,6 +91,9 @@ final class TemplateRenderer
         string $routeSource = 'php-fallback',
         bool $publicAuthenticationResume = false,
     ): string {
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::RAILSPIKE_ENABLED)) {
+            $scriptPaths = array_values(array_diff($scriptPaths, ['/assets/railspike_workflow.js']));
+        }
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
         $hasQueryDialog = $pageTemplate === 'codebase_state.php' || !empty($pageData['listingQuery']);
         if ($hasQueryDialog) {
@@ -519,6 +522,7 @@ final class TemplateRenderer
             throw new RuntimeException('Missing template: ' . $relativePath);
         }
         $data = array_merge([
+            'railspikeEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::RAILSPIKE_ENABLED),
             'unicodeAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
             'emojiAuthoredTextEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EMOJI_AUTHORED_TEXT),
             'imageBackupEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_BACKUP_ENABLED),

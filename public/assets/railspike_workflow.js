@@ -2,7 +2,7 @@
   'use strict';
   const endpoint = '/api/railspike_workflow';
   let busy = false;
-  const mounts = () => Array.from(document.querySelectorAll('[data-railspike-post]'));
+  const mounts = () => Array.from(document.querySelectorAll('[data-railspike-post]')).filter(m => !m.closest('[data-railspike-shell]').hidden);
   function node(tag, text) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; return el; }
   async function request(data) {
     const response = await fetch(endpoint, { method: 'POST', credentials: 'same-origin', headers: {

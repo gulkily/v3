@@ -55,6 +55,17 @@ final class ThreadAndPostPageController
     ) {
     }
 
+    /** Public operator fingerprints are presentation hints only; the API authorizes every request. */
+    private function railspikeOperators(): array
+    {
+        if (!$this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::RAILSPIKE_ENABLED)) return [];
+        $operators=[];
+        foreach ($this->routeServices->pdo()->query('SELECT identity_id FROM profiles WHERE is_approved = 1')->fetchAll(\PDO::FETCH_COLUMN) as $id) {
+            if (\ForumRewrite\Security\ApprovalPolicy::isOperator($this->repositoryRoot,$id)) $operators[]=substr($id,8);
+        }
+        return $operators;
+    }
+
     private function postWorkflowService(): \ForumRewrite\Agent\PostWorkflowService
     {
         return $this->routeServices->postWorkflowService(
@@ -131,6 +142,8 @@ final class ThreadAndPostPageController
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
                 ),
                 'thread' => $threadRow,
+                'railspikeThread' => $threadRow,
+                'railspikeOperators' => $this->railspikeOperators(),
                 'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
@@ -242,6 +255,8 @@ final class ThreadAndPostPageController
             'post.php',
             [
                 'post' => $post,
+                'railspikeThread' => ($this->fetchThread)((string)$post['thread_id']) ?? [],
+                'railspikeOperators' => $this->railspikeOperators(),
                 'viewerProfile' => $viewerProfile,
                 'viewerCanRetractOthers' => $viewerProfile !== null
                     && (int) ($viewerProfile['is_approved'] ?? 0) === 1

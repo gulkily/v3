@@ -25,6 +25,28 @@ final class RailspikeFeatureFlagTest
         } finally {putenv($old===false?$key:$key.'='.$old);}
     }
 
+    public function testStaticPolicyAndEligibleMounts(): void
+    {
+        $key=FeatureFlagRegistry::RAILSPIKE_ENABLED; $old=getenv($key); putenv($key);
+        try {
+            foreach ([false,true] as $enabled) {
+                $flags=new FeatureFlagEvaluator(siteValues:[$key=>$enabled]);
+                $renderer=new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__).'/templates',featureFlags:$flags);
+                foreach ([[],['board_tags_json'=>'["railspike"]']] as $tags) {
+                    $html=$renderer->renderFragment('partials/railspike_workflow.php',[
+                        'post'=>array_merge(['post_id'=>'one','thread_id'=>'one'],$tags),
+                        'railspikeOperators'=>[str_repeat('a',40)], 'railspikeThread'=>[],
+                    ]);
+                    assertSame($enabled && $tags!==[],str_contains($html,'data-railspike-post'));
+                }
+                $availability=\ForumRewrite\Support\FeatureFlags\RailspikeAvailability::class;
+                assertSame(false,$availability::matchesHtml('<script src="/assets/railspike_workflow.js"></script>',$flags));
+                assertTrue($availability::matchesHtml('<html data-railspike-enabled="'.($enabled?'1':'0').'">',$flags));
+                assertSame(false,$availability::matchesHtml('<html data-railspike-enabled="'.($enabled?'0':'1').'">',$flags));
+            }
+        } finally {putenv($old===false?$key:$key.'='.$old);}
+    }
+
     public function testDisabledRoutesRefuseBeforeWorkflowStorageAndEnabledRequiresOperator(): void
     {
         $w=new ImportTestWorkspace();$root=$w->repository('source',true);$w->git($root);

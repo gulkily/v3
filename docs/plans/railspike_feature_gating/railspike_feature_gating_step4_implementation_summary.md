@@ -32,3 +32,14 @@ Entry: 2026-10-29 UTC; v2/A, R1/P2, original baseline cdb7a4e75a8b0e9065140656ec
 - Notes: Stage 1 commit ba8d6e8d6. No schema/dependency change. Original scope unchanged; R1/P2, Codex exposed rater, 2026-10-29 UTC; no measured labor.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 3 - Eligible-page and first-paint gating
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes: Only eligible thread/post mounts render when enabled. Public operator fingerprints provide local presentation hints; API authorization remains authoritative. An inline pre-paint check reveals a static collapsed Development control only for a matching saved key; asynchronous private status stays inside it. Disabled pages omit the client script. Static/high-traffic HTML checks reject obsolete flag state and legacy workflow markup.
+- Verification: Railspike flag tests 3/3; prior cache/backup regression run 8/8; PHP syntax/diff checks; Node auth-navigation test; real signed Railspike browser journey passed (start/answer/revise/approve, failure/retry, rebuild, direct post, Activity role/JS/viewport matrix and session recovery). Initial browser failure was a test opening the collapsed shell before a session-resumption navigation; corrected the test to await restored status before opening.
+- Notes: Stage 2 commit dcc17b8e9. Detailed network timing/theme matrix follows in S5. Zero dependency/schema delta. R1/P2, Codex exposed rater, 2026-10-29 UTC; scope unchanged, no measured labor.
+
+*— Codex · 2026-10-29 UTC*

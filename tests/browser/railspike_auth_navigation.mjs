@@ -12,6 +12,7 @@ for (const status of ['pending', 'approved']) {
   const mount = {
     dataset: { railspikeThread: 'thread-test' },
     replaceChildren() {},
+    closest() { return { hidden: false }; },
   };
   const context = {
     window: {
