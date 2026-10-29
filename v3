@@ -15,7 +15,7 @@ Usage:
   ./v3 status [--summary] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
   ./v3 tui
   ./v3 checkouts [overview|refresh|preview|apply|add|list|remove] [...options]
-  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.4.0]
+  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.5.0-beta.1]
   ./v3 fdp sync ... (deprecated alias)
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
@@ -56,6 +56,7 @@ Usage:
   ./v3 approve <identity_id> [seed_reason] [repository_root] [database_path]
   ./v3 approval seed <identity_id> [seed_reason] [repository_root] [database_path]
     Seed commands apply immediately on a current read model, without a full rebuild.
+  ./v3 approval receipts inspect|convert|readiness [--dry-run] [--repository-root=/path/repository] [--database-path=/path/cache.sqlite3] [--json]
   ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 
@@ -388,7 +389,10 @@ EOF
     ;;
   approval)
     shift
-    if [[ "${1:-}" == "audit" ]]; then
+    if [[ "${1:-}" == "receipts" ]]; then
+      shift
+      php "${ROOT}/scripts/approval_receipts.php" "$@"
+    elif [[ "${1:-}" == "audit" ]]; then
       shift
       php "${ROOT}/scripts/audit_approvals.php" "$@"
     else

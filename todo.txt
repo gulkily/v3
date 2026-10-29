@@ -203,3 +203,8 @@ Add a v3 command to generate the same repository archive as the web download
 	support an explicit output path and the deployment's repository/database settings
 	provide progress and useful errors, with consistent locking and revision checks
 	verify CLI/web archive equivalence for the same repository snapshot
+
+Auto theme with a dark preference: current navigation links render as empty boxes
+	seen 2026-10-29 on ZenMemes: the header's current Board link and the board toolbar's
+		current Tags link (/tags/) show a box with no visible label
+	other themes are fine; check the Auto dark active-link colors in every themed stylesheet order

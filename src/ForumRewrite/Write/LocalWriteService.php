@@ -3044,7 +3044,7 @@ class LocalWriteService
             || file_get_contents($this->repositoryRoot . '/' . $path . '.asc') !== $input['detached_signature']) return null;
         $receipt = ApprovalAcceptance::read($this->repositoryRoot, $path);
         if ($receipt === null || $receipt['kind'] !== 'direct') return null;
-        foreach ([$path, $path . '.asc', ApprovalAcceptance::path($post->postId)] as $relative) {
+        foreach ([$path, $path . '.asc', ...ApprovalAcceptance::existingPaths($this->repositoryRoot, $post->postId)] as $relative) {
             $bytes = (string) file_get_contents($this->repositoryRoot . '/' . $relative);
             if ($this->runGitCommand(['show', 'HEAD:' . $relative], 'Unable to verify accepted approval') !== rtrim($bytes, "\n")) return null;
         }
@@ -3071,6 +3071,7 @@ class LocalWriteService
     {
         $post = (new PostRecordParser())->parse($contents);
         $receiptPath = ApprovalAcceptance::path($post->postId);
+        if (ApprovalAcceptance::existingPaths($this->repositoryRoot, $post->postId) !== []) throw new RuntimeException('Approval acceptance target already exists.');
         $acceptedAt = $this->canonicalTimestampNow();
         if ($expiresAt !== null && strtotime($expiresAt) <= strtotime($acceptedAt)) throw new RuntimeException('Invitation has expired.');
         $files = [$path => $contents, $receiptPath => ApprovalAcceptance::encode($contents, $context, $acceptedAt, $kind)];

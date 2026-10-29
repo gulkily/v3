@@ -302,47 +302,60 @@
       }
       return right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id);
     },
+    // Mirrors partials/board_toolbar.php: filter, sort menu, then Tags (current on /tags/).
     appendBoardControls: function (content, state, options) {
-      var controls = document.createElement("article");
-      controls.className = "card";
-      var nav = document.createElement("div");
-      nav.className = "nav board-controls-nav";
+      var toolbar = document.createElement("div");
+      toolbar.className = "board-toolbar";
+      var filter = document.createElement("nav");
+      filter.className = "board-filter";
+      filter.setAttribute("aria-label", "Show");
+      var sort = document.createElement("details");
+      sort.className = "board-sort";
+      sort.dataset.role = "board-sort";
+      var summary = document.createElement("summary");
+      summary.className = "nav-link";
+      var summaryHint = document.createElement("span");
+      summaryHint.className = "visually-hidden";
+      summaryHint.textContent = "Sort by ";
+      summary.appendChild(summaryHint);
+      var menu = document.createElement("div");
+      menu.className = "board-sort__menu";
       var boardPath = options.boardPath || "/";
-      [{ key: "tags", label: "Tags", href: "/tags/", active: Boolean(options.tagsActive) }].concat([
-        { key: "all", label: "All", group: "view" },
-        { key: "liked", label: "Liked", group: "view" },
-        { key: "newest", label: "Newest", group: "sort" },
-        { key: "oldest", label: "Oldest", group: "sort" },
-        { key: "top", label: "Top", group: "sort" }
-      ]).forEach(function (option) {
-        if (option.key === "tags") {
-          var tagsLink = document.createElement("a");
-          tagsLink.className = "nav-link" + (option.active ? " is-active" : "");
-          tagsLink.href = option.href;
-          tagsLink.textContent = option.label;
-          nav.appendChild(tagsLink);
-          return;
-        }
+      [
+        { key: "all", label: "All", group: "view", parent: filter, current: "page" },
+        { key: "liked", label: "Liked", group: "view", parent: filter, current: "page" },
+        { key: "newest", label: "Newest", group: "sort", parent: menu, current: "true" },
+        { key: "oldest", label: "Oldest", group: "sort", parent: menu, current: "true" },
+        { key: "top", label: "Top", group: "sort", parent: menu, current: "true" }
+      ].forEach(function (option) {
         var nextState = { view: state.view, sort: state.sort };
         nextState[option.group] = option.key;
+        var isCurrent = !options.tagsActive && state[option.group] === option.key;
         var link = document.createElement("a");
-        link.className = "nav-link" + (state[option.group] === option.key ? " is-active" : "");
+        link.className = "nav-link" + (isCurrent ? " is-active" : "");
         link.href = snapshotPresentation.normalBoardUrl(boardPath, nextState);
+        link.dataset.navKey = option.key;
+        if (isCurrent) link.setAttribute("aria-current", option.current);
         link.textContent = option.label;
         if (options.onBoardChange) link.addEventListener("click", function (event) {
           event.preventDefault();
+          sort.open = false;
           options.onBoardChange(nextState);
         });
-        nav.appendChild(link);
+        option.parent.appendChild(link);
+        if (option.group === "sort" && state.sort === option.key) summary.appendChild(document.createTextNode(option.label));
       });
-      var newPost = document.createElement("button");
-      newPost.className = "nav-link";
-      newPost.type = "button";
-      newPost.disabled = true;
-      newPost.textContent = "New Post";
-      nav.appendChild(newPost);
-      controls.appendChild(nav);
-      content.appendChild(controls);
+      sort.appendChild(summary);
+      sort.appendChild(menu);
+      var tagsLink = document.createElement("a");
+      tagsLink.className = "nav-link board-tags-link" + (options.tagsActive ? " is-active" : "");
+      tagsLink.href = "/tags/";
+      if (options.tagsActive) tagsLink.setAttribute("aria-current", "page");
+      tagsLink.textContent = "Tags";
+      toolbar.appendChild(filter);
+      toolbar.appendChild(sort);
+      toolbar.appendChild(tagsLink);
+      content.appendChild(toolbar);
     },
     appendThreadCards: function (content, threads, onSelect) {
       threads.forEach(function (thread) {

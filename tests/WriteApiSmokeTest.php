@@ -6588,7 +6588,7 @@ NODE;
         }
         $receiptPath = \ForumRewrite\Security\ApprovalAcceptance::path($approvalPostId);
         $receiptPage = $this->renderMethod($application, 'GET', '/source/current/' . $receiptPath);
-        assertStringContains('"classification": "new_account"', $receiptPage);
+        assertStringContains('Context-Classification: new_account', $receiptPage);
         assertStringContains('Approve new member alice', $profilePage);
         assertSame(1, count($approvalPostIds));
         assertStringContains('Approved user alice', $approvalLanding);
@@ -7023,7 +7023,7 @@ NODE;
             assertSame('error', $failedCommit['status']);
             assertSame(false, is_file($repositoryRoot . '/' . $prepared['record_path']));
             assertSame(false, is_file($repositoryRoot . '/' . $prepared['record_path'] . '.asc'));
-            assertSame([], glob($repositoryRoot . '/records/approval-acceptances/*.json') ?: []);
+            assertSame([], glob($repositoryRoot . '/records/approval-acceptances/*') ?: []);
             $retryPayload = $_POST;
             $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_approval'), true, 512, JSON_THROW_ON_ERROR);
             $_POST = $retryPayload;
@@ -7187,6 +7187,28 @@ NODE;
             assertSame(1, (int) $restoredProfile['is_approved']);
             (new ReadModelBuilder($restored, $restoreDb, new CanonicalRecordRepository($restored)))->rebuild();
             assertSame($receipt, \ForumRewrite\Security\ApprovalAcceptance::read($restored, $redeem['record_path']));
+            // Mixed archives retain the same facts; a contradictory companion aborts before copying.
+            $legacyPath = $root . '/records/approval-acceptances/' . $redeem['post_id'] . '.json';
+            file_put_contents($legacyPath, json_encode($receipt));
+            [$code, $output] = $workspace->command(['tar', '-czf', $archive, '-C', $root, 'records']);
+            assertSame(0, $code, $output);
+            [$code, $output] = $workspace->command(['php', __DIR__ . '/../scripts/import_repository_archive.php', $archive, $restored, $restoreDb]);
+            assertSame(0, $code, $output);
+            assertSame($receipt, \ForumRewrite\Security\ApprovalAcceptance::read($restored, $redeem['record_path']));
+            $legacyOnly = $workspace->repository('legacy-only', true); $workspace->git($legacyOnly);
+            unlink($root . '/' . \ForumRewrite\Security\ApprovalAcceptance::path($redeem['post_id']));
+            [$code, $output] = $workspace->command(['tar', '-czf', $archive, '-C', $root, 'records']);
+            assertSame(0, $code, $output);
+            [$code, $output] = $workspace->command(['php', __DIR__ . '/../scripts/import_repository_archive.php', $archive, $legacyOnly, $workspace->root . '/legacy.sqlite3']);
+            assertSame(0, $code, $output);
+            assertSame($receipt, \ForumRewrite\Security\ApprovalAcceptance::read($legacyOnly, $redeem['record_path']));
+            file_put_contents($root . '/' . \ForumRewrite\Security\ApprovalAcceptance::path($redeem['post_id']), \ForumRewrite\Security\ApprovalReceiptText::encode($receipt));
+            $bad = $receipt; $bad['accepted_at'] = '2099-01-01T00:00:00Z'; file_put_contents($legacyPath, json_encode($bad));
+            [$code, $output] = $workspace->command(['tar', '-czf', $archive, '-C', $root, 'records']);
+            assertSame(0, $code, $output);
+            [$code, $output] = $workspace->command(['php', __DIR__ . '/../scripts/import_repository_archive.php', $archive, $restored, $restoreDb]);
+            assertSame(1, $code, $output);
+            assertStringContains('Conflicting approval', $output);
 
         } finally {
             $_POST = [];

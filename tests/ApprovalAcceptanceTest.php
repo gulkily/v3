@@ -22,17 +22,17 @@ final class ApprovalAcceptanceTest
             assertSame('2026-01-01T00:05:00Z', ApprovalAcceptance::read($root, $path)['accepted_at']);
             assertSame(true, ArchiveRecordCatalog::isRecordPath(ApprovalAcceptance::path('grant')));
             assertSame('approval-acceptance:grant', ArchiveRecordCatalog::identityKey($root, ApprovalAcceptance::path('grant')));
-            $data = json_decode($bytes, true, 512, JSON_THROW_ON_ERROR);
+            $data = \ForumRewrite\Security\ApprovalReceiptText::decode($bytes);
             $data['context']['existing_key_count'] = 7;
-            file_put_contents($receiptPath, json_encode($data));
+            file_put_contents($receiptPath, \ForumRewrite\Security\ApprovalReceiptText::encode($data));
             $this->rejects(fn () => ApprovalAcceptance::read($root, $path));
             file_put_contents($receiptPath, $bytes);
             file_put_contents($root . '/' . $path, $contents . "Changed.\n");
             $this->rejects(fn () => ApprovalAcceptance::read($root, $path));
             file_put_contents($root . '/' . $path, $contents);
-            $data = json_decode($bytes, true, 512, JSON_THROW_ON_ERROR);
+            $data = \ForumRewrite\Security\ApprovalReceiptText::decode($bytes);
             $data['accepted_at'] = '2025-01-01T00:00:00Z';
-            file_put_contents($receiptPath, json_encode($data));
+            file_put_contents($receiptPath, \ForumRewrite\Security\ApprovalReceiptText::encode($data));
             $this->rejects(fn () => ApprovalAcceptance::read($root, $path));
         });
     }
@@ -61,6 +61,50 @@ final class ApprovalAcceptanceTest
             unlink($receiptPath);
             assertSame(null, ApprovalAcceptance::read($root, $path));
             assertSame(1, count(InvitationApprovalReplay::candidates($root, $rows)));
+        });
+    }
+
+    public function testTextPreservesSignedContextOrderAndRejectsMalformedEvidence(): void
+    {
+        $this->fixture(function (string $root, array $context): void {
+            $context['actor_username'] = 'é/"actor_username":"alice';
+            foreach ([$context, array_reverse($context, true)] as $ordered) {
+                $contents = $this->post('grant', 'approval', $ordered['actor_identity_id'],
+                    "Approve-Identity-ID: " . $ordered['target_identity_id'] . "\nApproval-Context-SHA256: " . hash('sha256', json_encode($ordered, JSON_THROW_ON_ERROR)) . "\n");
+                $data = \ForumRewrite\Security\ApprovalReceiptText::decode(ApprovalAcceptance::encode($contents, $ordered, '2026-01-01T00:05:00Z', 'direct'));
+                $text = \ForumRewrite\Security\ApprovalReceiptText::encode($data);
+                $decoded = \ForumRewrite\Security\ApprovalReceiptText::decode($text);
+                assertSame($data, ApprovalAcceptance::validate($decoded, $contents));
+                assertSame($ordered, $decoded['context']);
+                foreach ([$text . "Kind: direct\n", str_replace('Context-Allowed: true', 'Context-Allowed: 1', $text), $text . "Unknown: x\n"] as $bad) {
+                    $this->rejects(fn () => \ForumRewrite\Security\ApprovalReceiptText::decode($bad));
+                }
+                $decoded['context'] = array_reverse($ordered, true);
+                $this->rejects(fn () => ApprovalAcceptance::validate($decoded, $contents));
+                $legacy = json_encode($data);
+                assertSame($data, \ForumRewrite\Security\LegacyApprovalReceipt::decode($legacy));
+                $this->rejects(fn () => \ForumRewrite\Security\LegacyApprovalReceipt::decode(str_replace('"version":1', '"version":1,"version":1', $legacy)));
+            }
+        });
+    }
+
+    public function testLegacyAndTextResolutionRejectsConflictingOrInvalidCompanions(): void
+    {
+        $this->fixture(function (string $root, array $context): void {
+            $grant = $this->post('grant', 'approval', $context['actor_identity_id'], "Approve-Identity-ID: " . $context['target_identity_id'] . "\n");
+            $path = 'records/posts/grant.txt'; file_put_contents($root . '/' . $path, $grant);
+            $text = ApprovalAcceptance::encode($grant, $context, '2026-01-01T00:05:00Z', 'direct');
+            $data = \ForumRewrite\Security\ApprovalReceiptText::decode($text);
+            $old = $root . '/records/approval-acceptances/grant.json';
+            $new = $root . '/' . ApprovalAcceptance::path('grant');
+            file_put_contents($old, json_encode($data));
+            assertSame($data, ApprovalAcceptance::read($root, $path));
+            file_put_contents($new, $text);
+            assertSame($data, ApprovalAcceptance::read($root, $path));
+            $data['accepted_at'] = '2026-01-01T00:06:00Z'; file_put_contents($old, json_encode($data));
+            $this->rejects(fn () => ApprovalAcceptance::read($root, $path));
+            file_put_contents($old, '{}');
+            $this->rejects(fn () => ApprovalAcceptance::read($root, $path));
         });
     }
 
