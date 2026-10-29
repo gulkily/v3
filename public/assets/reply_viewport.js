@@ -2,6 +2,20 @@
   const viewport = window.visualViewport;
   if (!viewport) return;
   const phone = window.matchMedia('(max-width: 1024px) and (pointer: coarse)');
+  // Dock only while an on-screen keyboard has shrunk the visible area. Without one (a hardware
+  // keyboard, a tablet, desktop phone emulation) a docked box would fill the screen and block
+  // scrolling. The baseline is the tallest visible area seen at this width, or the window
+  // height if larger; rotating starts a new baseline.
+  let fullHeight = 0;
+  let fullHeightWidth = 0;
+  function keyboardUp() {
+    if (viewport.width !== fullHeightWidth) {
+      fullHeightWidth = viewport.width;
+      fullHeight = 0;
+    }
+    fullHeight = Math.max(fullHeight, viewport.height, window.innerHeight);
+    return viewport.height < fullHeight * 0.75;
+  }
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-phone-reply]').forEach(function (form) {
       const panel = form.closest('[data-reply-panel]');
@@ -46,7 +60,7 @@
         const editing = interacting || panel.contains(active) || form.__imagePickerOpen ||
           (menu && menu.open && active === document.body && panel.classList.contains('reply-panel-active'));
         if (!phone.matches || !userEditing || !editing || viewport.scale !== 1 ||
-            viewport.height < 200 || !form.getClientRects().length) {
+            viewport.height < 200 || !keyboardUp() || !form.getClientRects().length) {
           restore();
           return;
         }
