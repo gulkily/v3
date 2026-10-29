@@ -55,3 +55,14 @@ Status: Step 3 approved; implementation in progress.
 - Notes: S3 commit cca64f04. Actual merge and saved score recovery follow in S5–S6; no ZIP import added.
 
 *— Codex · 2026-10-29 UTC*
+
+## Stage 5 - Retain recoverable score input
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes: Save normalized validated supplement privately before content writes, bind its SHA-256 and destination score path into the existing journal, and verify both before resume. Old journals default to absent scores. Added instance-import concept.
+- Verification: Transfer/recovery tests 10/10 pass, including removal of original source after preparation, missing/changed payload, changed score destination, original write/publication interruption cases, clean duplicate-only repeats and local edit preservation.
+- Notes: S4 commit 065ee22f. No new journal format or inclusion choice. S6 owns actual merge/publication integration.
+
+*— Codex · 2026-10-29 UTC*

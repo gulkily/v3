@@ -33,6 +33,7 @@ final class ContentImportRunner
             // A repository lock also serializes invocations with different database overrides.
             return (new ExecutionLock($this->repositoryRoot . '/.git/instance-import.lock'))->withExclusiveLock(function () use ($source, $publisher, $dryRun, $sourceLabel, $archiveExclusions): array {
                 $pending = $this->stateRoot . '/pending.json';
+                $scoreImport = new FastmodScoreImport($this->projectRoot ?? dirname(__DIR__, 3));
                 if ($dryRun) {
                     if ($source === null) {
                         throw new RuntimeException('Preview requires a source.');
@@ -83,11 +84,30 @@ final class ContentImportRunner
                         'publication_context' => $this->publicationContext,
                         'writes' => $writes, 'report' => $this->report($entries, $sourceLabel, $archiveExclusions),
                     ];
+                    $supplement = $scoreImport->read($source, $archiveExclusions);
+                    $run['score_input'] = ['status' => $supplement['status'], 'reason' => $supplement['reason'] ?? ''];
+                    if ($supplement['status'] === 'valid') {
+                        $bytes = \ForumRewrite\Scoring\FastmodScoreTransfer::encode($supplement['rows']);
+                        $saved = $directory . '/' . \ForumRewrite\Scoring\FastmodScoreTransfer::PATH;
+                        if (file_put_contents($saved, $bytes) !== strlen($bytes)) throw new RuntimeException('Cannot save score recovery input.');
+                        chmod($saved, 0600);
+                        $run['score_input'] += ['hash' => hash('sha256', $bytes), 'database' => $scoreImport->databasePath()];
+                    }
                     $run['report']['review_path'] = $directory;
                     $this->save($pending, $run);
                     $this->at('prepared');
                 }
                 $directory = $this->stateRoot . '/' . $run['id'];
+                // Validate saved score bytes and destination before any content or score writes.
+                $scoreInput = $run['score_input'] ?? ['status' => 'absent'];
+                $supplement = ['status' => $scoreInput['status'], 'reason' => $scoreInput['reason'] ?? '', 'rows' => []];
+                if ($scoreInput['status'] === 'valid') {
+                    $saved = $directory . '/' . \ForumRewrite\Scoring\FastmodScoreTransfer::PATH;
+                    if (($scoreInput['database'] ?? null) !== $scoreImport->databasePath()) throw new RuntimeException('Recovery score destination does not match the saved import.');
+                    if (!is_file($saved) || is_link($saved) || hash_file('sha256', $saved) !== ($scoreInput['hash'] ?? null)) throw new RuntimeException('Saved score recovery payload is missing or changed.');
+                    $supplement = $scoreImport->read($directory);
+                    if ($supplement['status'] !== 'valid') throw new RuntimeException('Saved score recovery payload is invalid.');
+                }
                 $message = 'Import instance content (' . $run['id'] . ')';
                 if ($run['phase'] === 'prepared') {
                     $head = trim($this->git(['rev-parse', 'HEAD']));

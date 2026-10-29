@@ -109,6 +109,37 @@ final class FastmodScoreTransferTest
         } finally { $prior === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $prior); }
     }
 
+    public function testRecoveryRetainsPayloadAndRejectsChangedInputOrDestination(): void
+    {
+        require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+        foreach (['resume', 'changed', 'missing', 'destination'] as $case) {
+            $w = new ImportTestWorkspace(); $source = $w->repository('source'); $target = $w->repository('target'); $w->git($target);
+            $w->put($source . '/records/posts/post-1.txt', $w->post('post-1'));
+            $w->put($source . '/fastmod-scores.txt', FastmodScoreTransfer::encode([self::row()]));
+            $db = $w->root . '/index.sqlite3';
+            try {
+                (new \ForumRewrite\Import\ContentImportRunner($target, $db, static function ($phase) { if ($phase === 'prepared') throw new RuntimeException('stop'); }))->run($source, static function () {});
+                throw new LogicException('Expected stop');
+            } catch (RuntimeException $error) { assertSame('stop', $error->getMessage()); }
+            $pending = json_decode(file_get_contents($target . '/.git/instance-import/pending.json'), true);
+            $saved = $target . '/.git/instance-import/' . $pending['id'] . '/fastmod-scores.txt';
+            assertSame(true, is_file($saved));
+            $w->command(['rm', '-rf', '--', $source]);
+            if ($case === 'changed') file_put_contents($saved, 'changed');
+            if ($case === 'missing') unlink($saved);
+            $prior = getenv('FAST_SCORING_DATABASE_PATH');
+            if ($case === 'destination') putenv('FAST_SCORING_DATABASE_PATH=' . $w->root . '/other.sqlite3');
+            try {
+                $report = (new \ForumRewrite\Import\ContentImportRunner($target, $db))->run(null, static function () {});
+                assertSame('resume', $case); assertSame('complete', $report['status']);
+            } catch (RuntimeException $error) {
+                if ($case === 'resume') throw $error;
+                assertSame(false, is_file($target . '/records/posts/post-1.txt'));
+                assertSame(true, is_file($target . '/.git/instance-import/pending.json'));
+            } finally { $prior === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $prior); }
+        }
+    }
+
     public function testRejectsWholeMalformedSupplement(): void
     {
         $valid = FastmodScoreTransfer::encode([self::row()]);
