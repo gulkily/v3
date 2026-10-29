@@ -66,3 +66,26 @@ No supported findings.
 - No additional approval of the narrowing is needed: the user directly instructed it. Step 3 implementation approval remains pending. The revision removes legacy recovery obligations rather than adding another compatibility layer.
 
 *— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 UTC — Step 4 completed handoff
+
+### Necessary/useful instructions
+
+- Step 4 Do, stage-boundary verification and scoped commits: separated codec, interpretation, two writer paths, archive wiring and maintenance before final acceptance. The stronger normal-flow recovery test exposed a staged-deletion retry bug that component format checks did not catch. Retain the ordinary-flow completion contract.
+- Experimental Effort Estimation, original versus retrospective assessments: preserved the user-approved compatibility reduction and recorded final recovery correction separately from the 0.70 projection. Retain.
+- Step 4 Before, planning commit gate: commit 5143ab6f contains only organized approved plans/debug history/index; the summary begins in S1. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Deployment and external-user recovery: excluded by the approved completion contract. No production deployment, old-data migration or physical-device acceptance was inferred.
+
+### Uncertain assessments
+
+- Seven stages completed with required normal-flow evidence; whether 0.75 retrospective scope comfortably fit remains the maintainer's judgment, not an automatically accepted study outcome.
+- Earlier stage-sizing/page-length concerns remain recorded; no instruction changes were made during this cycle.
+
+*— Codex · 2026-10-29 UTC*
