@@ -106,16 +106,14 @@ try {
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); void d.dismiss(); });
     await page.goto(base + '/threads/root-001');
-    // A registered key signs in on load and the page may reload once (an existing behavior); wait for it before typing.
-    if (storage.published_fingerprint) {
-      for (let i = 0; i < 50; i++) {
-        try { if (await page.evaluate(() => document.readyState === 'complete' && document.querySelector('[data-private-site-auth-state]')?.dataset.authenticatedIdentityId)) break; } catch { /* reloading */ }
-        await page.waitForTimeout(200);
-      }
-      await page.waitForLoadState('load');
-    }
+    await page.evaluate(() => { window.__writerDocument = true; });
     const body = page.locator(reply + ' textarea[name="body"]');
     await body.fill('A draft that must survive');
+    if (storage.published_fingerprint) {
+      await page.waitForFunction(() => document.querySelector('[data-private-site-auth-state]')?.dataset.authenticatedIdentityId);
+      assert.equal(await page.evaluate(() => window.__writerDocument), true, 'authentication preserves the writing document');
+      assert.equal(await body.inputValue(), 'A draft that must survive');
+    }
     const row = page.locator(reply + ' [data-compose-identity]');
     return { context, page, errors, dialogs, body, row, sent: requests(page) };
   }

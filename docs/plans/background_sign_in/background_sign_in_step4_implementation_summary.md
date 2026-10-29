@@ -31,3 +31,14 @@ Entry: 2026-10-28 UTC; scope v1 / Option A, baseline 49a9024412c7e7f6d9230fb7ed1
 - Notes: Stage 1 commit bb4355e2. Slight retrospective increase reflects serializing forced callers without sharing navigation side effects; prospective cycle 0.35 unchanged. No dependency changes.
 
 *— Codex · 2026-10-28 UTC*
+
+## Stage 3 - Prove uninterrupted writing and recovery
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.12**
+
+- Changes: New real-browser delayed-authentication replay; compose test now writes immediately and asserts document continuity instead of waiting out a reload.
+- Verification: Chromium background_sign_in.mjs passed 16 cases (approved/unapproved × 390/1280 widths × typing/name editor/submission/failure-retry). Real challenge signatures and session cookies verified through Account; approved access 200 versus unapproved access 401 preserved. Input/selection/focus/scroll/editor/document survived, and each submission sent once. compose_identity_row.mjs passed its six-composer/state/viewport matrix, naming/retry, first reply, offline Like and no-JavaScript checks. Phone name-editor screenshot inspected; no overflow.
+- Notes: Stage 2 commit 121796eb. Initial approved fixture used an invalid seed filename; corrected it to the canonical identity filename and reran all 16 cases successfully. Browser retry invokes the existing helper; user-facing Account recovery is part of Stage 4. No physical-device claim. Prospective scope/estimate unchanged; retrospective reflects deterministic fixture setup.
+
+*— Codex · 2026-10-28 UTC*
