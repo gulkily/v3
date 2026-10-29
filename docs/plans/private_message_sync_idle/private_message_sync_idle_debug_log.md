@@ -57,3 +57,23 @@ Verification: Restored approved Option A and debug/study state, inspected the ac
 Verification: User-requested origin/main fast-forward to e614fbd9b completed; append-only ledger conflict resolved retaining upstream and cycle entries. Inspected existing work/cursor, sender contribution and browser scheduling contracts; planning document whitespace and conflict-marker checks performed. No runtime tests or application edits. Debug and extended estimates remain enabled. Approval required before implementation.
 
 *— Codex · 2026-10-29 UTC*
+
+## 2026-10-29 UTC — Step 4 completed
+
+### Necessary/useful instructions
+
+- Source: step4_implementation_do.md, Stage Boundary Protocol. Contribution: preserved separate eligibility, donor evidence, combined discovery, browser, acceptance and documentation commits with contemporaneous evidence. Suggestion: retain.
+- Source: step4_implementation_after.md, evidence boundaries. Contribution: the broader conversation-list failure was reproduced against untouched main instead of being labeled a new defect or silently counted as passing; production replay stays pending. Suggestion: retain.
+- Source: docs/concepts.md, Implementation and verification. Contribution: records history eligibility as derived scheduling state and distinguishes supplied donor access from verified recipient readability. Suggestion: retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Source: step3_development_plan_do.md, roughly 50 lines per stage. Integration tests and recovery evidence exceed the line heuristic while each stage retains a bounded coherent outcome. Suggestion: treat changed-line count as a warning rather than an acceptance criterion.
+
+Verification: Seven required commits present, including planning before summary and one per six stages; closeout commit 5ef9a1b35. Focused and browser results/omissions recorded in summary. Scoped documentation links and whitespace verified; no dependency/schema delta, merge, push or deployment. Debug mode remains enabled. This report is the separate log-only handoff commit required after the final stage.
+
+*— Codex · 2026-10-29 UTC*
