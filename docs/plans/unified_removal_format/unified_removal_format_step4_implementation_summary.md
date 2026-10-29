@@ -109,3 +109,21 @@ Single exposed Codex rater; no measured labor or independent rating. Original S1
 Temporary evidence: /tmp/unified-{regressions,final-flows,final-recovery,browser,menu,source-tests,maintenance-tests,signed-tests}.log and /tmp/retraction-browser-evidence/. Durable results and failure corrections are recorded above.
 
 *— Codex · 2026-10-29 UTC*
+
+## Merge verification — 2026-10-29 UTC
+
+User requested help merging. On entry, local main already contained the feature
+through 182ed3e1 and a pull of origin/main at 1e99e2dc was paused on one ledger
+conflict. Resolved the appended sections by preserving both complete cycle
+histories verbatim; application/test changes merged automatically. No additional
+application fixes or dependencies were required.
+
+Combined-tree verification: 122/122 focused PHP regressions, 21/21 API/CLI flows,
+actual author/operator/account/partial-retry browser flows and all 13 themes at
+phone/desktop widths passed. All 25 incoming added/modified PHP files linted;
+staged whitespace checks passed. Logs: /tmp/unified-merge-regressions.log,
+/tmp/unified-merge-flows.log and /tmp/unified-merge-browser.log. No full-suite,
+physical-device or deployment claim. This commit completes the merge locally;
+no push was requested or performed. Study estimates/acceptance remain unchanged.
+
+*— Codex · 2026-10-29 UTC*

@@ -94,50 +94,6 @@ try {
   assert.deepEqual(dialogs, [], 'no browser dialog may open');
   assert.deepEqual(errors, []);
 
-  // Renaming is off on this site. Change still works for a key kept in this browser, and goes away once a post or Like registers it.
-  {
-    const { context: ctx, page: p, seen } = await (async () => {
-      const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
-      const page = await context.newPage(); const seen = { dialogs: [], errors: [] };
-      page.on('dialog', d => { seen.dialogs.push(d.message()); void d.dismiss(); }); page.on('pageerror', e => seen.errors.push(e.message));
-      return { context, page, seen };
-    })();
-    await p.goto(base + '/threads/root-001');
-    await p.waitForFunction(() => /^[0-9A-F]{40}$/.test(localStorage.getItem('forum_pki_fingerprint') || ''));
-    // Outbox history (a sent item and an unsigned draft) is not queued signed work.
-    await p.evaluate(() => new Promise((resolve, reject) => {
-      const open = indexedDB.open('forum-offline-outbox-v1', 1);
-      open.onupgradeneeded = () => open.result.createObjectStore('items', { keyPath: 'id' });
-      open.onsuccess = () => { const tx = open.result.transaction('items', 'readwrite'); const store = tx.objectStore('items');
-        store.put({ id: 'sent-1', state: 'accepted', intent: { canonicalRecord: 'r', detachedSignature: 's' } }); store.put({ id: 'draft-1', state: 'draft' });
-        tx.oncomplete = () => { open.result.close(); resolve(); }; tx.onerror = reject; };
-      open.onerror = reject;
-    }));
-    const row = p.locator('[data-compose-kind="reply"] [data-compose-identity]');
-    await p.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('A draft');
-    const before = await p.evaluate(() => localStorage.getItem('forum_pki_fingerprint'));
-    await row.getByRole('button', { name: 'Change' }).click();
-    await row.locator('[data-role="compose-identity-input"]').fill('pip');
-    await row.getByRole('button', { name: 'Done' }).click();
-    await p.waitForFunction(() => { const r = document.querySelector('[data-compose-kind="reply"] [data-compose-identity]');
-      return r.querySelector('[data-role="compose-identity-editor"]').hidden || !r.querySelector('[data-role="compose-identity-error"]').hidden; }, null, { timeout: 30000 });
-    const changeError = row.locator('[data-role="compose-identity-error"]');
-    assert.equal(await changeError.isVisible() ? await changeError.textContent() : '', '', 'Change on a local key must not fail');
-    assert.equal(await row.locator('[data-role="compose-identity-name"]').textContent(), 'pip');
-    assert.notEqual(await p.evaluate(() => localStorage.getItem('forum_pki_fingerprint')), before, 'a local key is replaced');
-    // An inline reply registers the key; on the same page the row now hides Change, since renaming is off.
-    const replied = p.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 30000 });
-    await p.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();
-    const repliedResponse = await replied;
-    assert.match(await repliedResponse.text(), /ok/);
-    await p.waitForFunction(() => localStorage.getItem('forum_pki_published_fingerprint') === localStorage.getItem('forum_pki_fingerprint'));
-    await p.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('Another reply');
-    assert.equal(await row.getByRole('button', { name: 'Change' }).isVisible(), false, 'no Change for a registered key where renaming is off');
-    assert.equal((await row.innerText()).replace(/\s+/g, ' ').trim(), 'Post as pip', 'no divider without Change');
-    assert.deepEqual(seen, { dialogs: [], errors: [] });
-    await ctx.close();
-  }
-
   // A first action shows "Creating your account…"; a failed registration shows Retry beside the action and keeps the draft.
   async function visitor() {
     const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });

@@ -8,8 +8,8 @@
 
   function summaryText(form, kind) {
     var parts = [];
-    if (kind === 'tags-subject') {
-      parts = [value(form, 'subject'), value(form, 'board_tags')];
+    if (kind === 'tags') {
+      parts = [value(form, 'board_tags')];
     } else if (kind === 'event') {
       parts = [value(form, 'event_date'), value(form, 'event_time'), value(form, 'event_location')];
     }

@@ -25,6 +25,14 @@ final class PrivateSiteAuthTest
         return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
     }
 
+    public function testInPlaceAndConcurrentAuthenticationContract(): void
+    {
+        $output = [];
+        $exitCode = 0;
+        exec('node ' . escapeshellarg(__DIR__ . '/browser/private_site_auth_contract.cjs') . ' ' . escapeshellarg(__DIR__ . '/../public/assets/private_site_auth.js') . ' 2>&1', $output, $exitCode);
+        assertSame(0, $exitCode, implode("\n", $output));
+    }
+
     public function testApprovedIdentityCompletesChallengeAndReloadsWhenNoDestinationIsRequested(): void
     {
         $script = <<<'NODE'
@@ -202,7 +210,7 @@ NODE;
         assertStringContains('identity_id=openpgp%3A0123456789abcdef0123456789abcdef01234567', $result['fetches'][1]['body']);
         assertSame('', $result['assignedUrl']);
         assertSame(0, $result['reloadCount']);
-        assertSame('Identity verified. Entering the site...', $result['status']['textContent']);
+        assertSame('', $result['status']['textContent']);
     }
 
     public function testMatchingAuthenticatedSessionSkipsRepeatedAuthentication(): void

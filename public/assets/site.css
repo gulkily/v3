@@ -822,6 +822,59 @@ pre {
   color: var(--status-warning, var(--ink-soft));
 }
 
+.chip--approved {
+  border-color: var(--status-ok, var(--line));
+  color: var(--status-ok, var(--ink));
+}
+
+/* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
+   only page-specific layout lives here. */
+.users-page__title {
+  margin: 0;
+}
+.users-tools {
+  display: flex;
+  gap: 0.5rem;
+}
+.users-tools input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+.users-tools select {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+}
+@media (scripting: none) {
+  .users-tools {
+    display: none;
+  }
+}
+.account-group > .account-row[hidden],
+.person-head > .starfield.banner:empty {
+  display: none;
+}
+.person-head .account-name {
+  margin: 0;
+}
+.person-head__action {
+  margin: 0;
+}
+.person-head__action button {
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+}
+.person-page .account-key-fingerprint-value {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.person-identities__title {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+}
+
 .board-empty {
   padding: 2rem 1rem;
   text-align: center;

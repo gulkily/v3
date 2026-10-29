@@ -162,9 +162,19 @@ Built 2026-10-28 on `feat/ui-first-post-identity` for all sites (not merged); se
 Mockups: `compose-thread.html`, `compose-reply.html`. Templates:
 `pages/compose_thread.php`, `pages/compose_reply.php`. Depends on cycle 5.
 
-- [ ] One shared composer component: title, body, tools.
-- [ ] Reply composer as the no-JavaScript fallback with parent context.
+- [x] One shared composer component: title, body, tools.
+- [x] Reply composer as the no-JavaScript fallback with parent context.
 - Done when: new threads and replies post from both pages, with and without JavaScript.
+
+Built 2026-10-28 on `feat/ui-composers`:
+- `partials/composer.php` is the one composer. `thread_compose_form.php` and `reply_form.php` set its options and include it, so every composer on every site renders there: New post, reply page, board quick compose, thread inline reply, QDB add, and Forte's new post dialog and reply panel.
+- Order: Title ("Title — or we’ll use your first line", full New post only), body, a tools row (`# tags` and Event disclosures, which work without JavaScript), the "Post as" row, then Post and the ··· menu.
+- Wording from the mockups: New post / Post / Post reply; ··· menu: Post anonymously or Reply anonymously, Save to Outbox, Remove timestamps (QDB), Discard draft.
+- Reply page: "Reply to {name}" with the parent as a quote, "author · date · in {thread title}". Long parents are clamped to four lines, with Show more linking to the post. A missing parent says "That post was removed or isn’t in this thread. Reply to the thread instead."
+- Scope notes, deviations from the mockups, deferred:
+  - Attach image stays in the ··· menu, not the tools row. It appears only once the browser knows the viewer may attach images, so in a toolbar it would shift the page after first paint; `compose_layout_stability` caught this.
+  - The ··· menu stays beside Post, not in the tools row, so the phone keyboard panel keeps its layout.
+  - Deferred: the phone header bar with Cancel/Post, the event card and tag chips (the existing fields are kept inside the tool disclosures), the offline "Save" mode, and "Keep draft / Discard" on Cancel.
 
 ### Cycle 7: `ui_profile_users`
 
@@ -173,10 +183,18 @@ Mockups: `compose-thread.html`, `compose-reply.html`. Templates:
 Mockups: `profile.html`, `users.html`. Templates: `pages/profile.php`,
 `pages/username.php`, `pages/users.php`.
 
-- [ ] One person page with a Message button; keys listed as identities.
-- [ ] Searchable compact member list with pending approvals beside it.
-- [ ] Hooks: a banner slot (`.starfield.banner`) with `data-seed`, `--person` on the profile head.
+- [x] One person page with a Message button; keys listed as identities.
+- [x] Searchable compact member list with pending approvals beside it.
+- [ ] Hooks: the banner slot (`.starfield.banner` with `data-seed`) is in; `--person` waits for cycle D4, as in cycle 2, since no person color exists yet.
 - Done when: finding a member, opening their profile and messaging or approving them works in all themes.
+
+Built 2026-10-28 on `feat/ui-profile-users`:
+- **Users:** "Members | Waiting" tabs. Members is a compact list with one row per person ("N threads · M posts", an Agent chip), a search field and an Activity/Name sort; both work on the list already on the page and are hidden without JavaScript.
+- **Waiting (`/users/pending`):** it used to redirect approved members to User Access. It now shows the waiting list itself, with the same Approve buttons, beside Members, and the count updates in place after an approval. It stays approved-members-only (403 otherwise), so the Waiting tab, with its count, is rendered only for approved members; visitors without cookies get the static copy, which has no tabs, and other viewers see just "Users" (user request, 2026-10-28: don't show a tab people can't open). The empty state reads "No one is waiting."
+- **Person page (`/user/{name}`):** the heading shows the name, "N threads · M posts" and an Approved (or Automated reply agent) chip. Message opens `/messages/conversation/{name}`, which replaces the embedded send-only form; your own page shows "Edit in Account" instead. Threads | Replies is a tab pair, and each key is listed under Identities ("Approved by …"), linking to its key page. "Manage access" shows for operators only; it replaces the "User Access" link and the "Approved by: …" line.
+- **Built from existing components** (fixed after review; see the [debug log](ui_profile_users_debug_log.md)): the tabs are the board's All | Liked filter (`.board-filter`); member rows and Identities are Account's grouped rows (`.account-group` / `.account-row`); the person heading is Account's card (`.account-card`, `.account-id`); threads use `partials/thread_row.php`, and replies use the same row markup. These pages load `account.css` and `thread-list.css`; the only CSS of their own is page layout in `site.css`.
+- **Kept as is:** the key page (`/profiles/{slug}`) keeps the presentation accepted on 2026-10-27 in `profile_public_details`: no name link, and Approval details beside Approved/Not approved. That decision is newer than the mockup.
+- **Deferred:** approving with a 5-second Undo before publishing (a proposal in the mockup that changes approval behavior), showing each waiting person's first post in their row, avatars, and the agent page's empty-state wording.
 
 ### Cycle 8: `ui_messages`
 

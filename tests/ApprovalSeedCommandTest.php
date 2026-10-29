@@ -307,7 +307,7 @@ final class ApprovalSeedCommandTest
             $after = $this->request($root, $db, $public, $static, '/', true);
             assertSame(200, $after['status']);
             assertStringContains('href="/invites/"', $after['body']);
-            assertSame(303, $this->request($root, $db, $public, $static, '/users/pending/', true)['status']);
+            assertSame(200, $this->request($root, $db, $public, $static, '/users/pending/', true)['status']);
             assertSame(200, $this->request($root, $db, $public, $static, '/tools/user-access/pending/', true)['status']);
             $profile = $this->request($root, $db, $public, $static, '/profiles/' . str_replace(':', '-', self::ID), true);
             // The profile shows the member's approval state after the seed.

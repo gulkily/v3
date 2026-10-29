@@ -45,7 +45,7 @@ final class ProfileRegressionContract
             },
             'navigationMarker' => $navigation === 'qdb' ? '>Welcome</a>' : '>Board</a>',
             'composePath' => $isQdbExperience ? '/add' : '/compose/thread',
-            'composeMarker' => $compose === 'qdb' ? 'class="stack qdb-add-page"' : '<h1>New thread</h1>',
+            'composeMarker' => $compose === 'qdb' ? 'class="stack qdb-add-page"' : '<h1>New post</h1>',
             'aboutHackable' => $about === 'chouse',
             'brandedTheme' => $stylesheet === 'site' ? null : $stylesheet,
         ];

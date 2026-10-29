@@ -2133,7 +2133,7 @@ PHP);
             assertStringContains('Automated reply agent', $agentProfile);
             assertStringContains('Automated reply agent', $agentProfile);
             assertStringContains('reply-agent', $users);
-            assertStringContains('Automated reply agent', $users);
+            assertStringContains('<span class="chip agent-label">Agent</span>', $users);
             assertStringContains('Author: reply-agent', $activity);
             assertStringContains('automated reply agent', $activity);
         } finally {
@@ -3086,9 +3086,10 @@ NODE;
         assertTrue(is_file($repositoryRoot . '/records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt'));
         assertTrue(is_file($repositoryRoot . '/records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc'));
         assertStringContains('<h1>forum-user</h1>', $profile);
-        assertStringContains('User forum-user', $usernameRoute);
+        assertStringContains('<h1 class="account-name">forum-user</h1>', $usernameRoute);
         assertStringNotContains('Approved Profiles', $usernameRoute);
-        assertStringContains('/tools/user-access/accounts/forum-user', $usernameRoute);
+        // Manage access is shown to operators only.
+        assertStringNotContains('/tools/user-access/accounts/forum-user', $usernameRoute);
         assertFalse(is_file($artifactRoot . '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.html'));
         assertFalse(is_file($artifactRoot . '/threads/root-001.html'));
         assertFalse(is_file($artifactRoot . '/posts/root-001.html'));
@@ -6502,8 +6503,8 @@ NODE;
         assertStringContains('status=ok', $firstResponse);
         assertStringContains('status=ok', $secondResponse);
         assertStringContains('status=ready', $status);
-        assertStringContains('User forum-user', $usernameRoute);
-        assertStringContains('No approved profiles currently use this username.', $usernameRoute);
+        assertStringContains('<h1 class="account-name">forum-user</h1>', $usernameRoute);
+        assertStringContains('No approved member uses this name.', $usernameRoute);
         assertStringNotContains('Unapproved Profiles', $usernameRoute);
     }
 
@@ -6522,10 +6523,11 @@ NODE;
 
         $usernameRoute = $this->renderMethod($application, 'GET', '/user/forum-user');
 
-        assertStringContains('User forum-user', $usernameRoute);
-        assertStringContains('No approved profiles currently use this username.', $usernameRoute);
+        assertStringContains('<h1 class="account-name">forum-user</h1>', $usernameRoute);
+        assertStringContains('No approved member uses this name.', $usernameRoute);
         assertStringNotContains('Unapproved Profiles', $usernameRoute);
-        assertStringContains('/tools/user-access/accounts/forum-user', $usernameRoute);
+        // Manage access is shown to operators only.
+        assertStringNotContains('/tools/user-access/accounts/forum-user', $usernameRoute);
     }
 
     public function testApprovedUserCanApproveAnotherUserAndApprovalStaysOutOfFeeds(): void

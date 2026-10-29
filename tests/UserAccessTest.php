@@ -75,8 +75,9 @@ final class UserAccessTest
             }
             $name = $user['username_token'];
             assertStringContains('/tools/user-access/accounts/' . $name . '?key_offset=50#account-keys', $this->render($root, $db, '/user/' . $name . '?key_offset=50'));
-            assertStringContains('/tools/user-access/pending/', $this->render($root, $db, '/users/pending/'));
-            assertSame(303, http_response_code());
+            // Users › Waiting lists the people waiting beside the member directory.
+            assertStringContains('Waiting (', $this->render($root, $db, '/users/pending/'));
+            assertSame(200, http_response_code());
             $_SESSION = [];
             $this->render($root, $db, '/users/pending/');
             assertSame(403, http_response_code());

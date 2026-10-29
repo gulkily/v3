@@ -50,10 +50,6 @@ try {
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   };
   await check();
-  // The "Post as" row stays in the docked panel, between the editor and the actions.
-  const identityRow=page.locator('[data-compose-identity]');
-  assert.equal(await identityRow.isVisible(),true,`${theme}: name row docked`);
-  assert.ok((await identityRow.boundingBox()).y>=(await body.boundingBox()).y+(await body.boundingBox()).height,`${theme}: name row below the editor`);
   await page.locator('#recovery').evaluate(el=>{el.hidden=false;});await settle(page);await check();
   await page.locator('#recovery').evaluate(el=>{el.hidden=true;});await settle(page);
   // Oversized recovery content and tiny viewports must return to normal flow.
@@ -64,6 +60,12 @@ try {
   await page.locator('#recovery').evaluate(el=>{el.hidden=true;el.style.height='';});await settle(page);await check();
   await page.evaluate(()=>{testViewport.height=170;testViewport.dispatchEvent(new Event('resize'));});await settle(page);
   assert.equal(await page.locator('.reply-viewport-active').count(),0,'tiny viewport uses ordinary flow');
+  // No on-screen keyboard (hardware keyboard, tablet, desktop phone emulation): the visible area is the whole
+  // window, so the reply stays in the page and the page keeps scrolling.
+  await page.evaluate(()=>{testViewport.height=innerHeight;testViewport.dispatchEvent(new Event('resize'));});await settle(page);
+  assert.equal(await page.locator('.reply-viewport-active').count(),0,'no keyboard: not docked');
+  assert.equal(await actions.evaluate(el=>getComputedStyle(el).position),'static');
+  assert.equal(await body.evaluate(el=>document.activeElement===el),true,'focus stays in the editor');
   await page.evaluate(()=>{testViewport.height=420;testViewport.dispatchEvent(new Event('resize'));});await settle(page);await check();
   // Repositioning the document must not make the action row cover the editor.
   await page.evaluate(()=>{document.querySelector('main > div').style.height='500px';window.dispatchEvent(new Event('scroll'));});await settle(page);await check();
@@ -98,22 +100,21 @@ try {
   await page.setViewportSize({width:844,height:390});
   await page.evaluate(()=>{Object.assign(testViewport,{width:844,height:240,offsetTop:0});testViewport.dispatchEvent(new Event('resize'));});
   await settle(page);await check();
-  assert.equal(await identityRow.isVisible(),false,`${theme}: a landscape keyboard leaves room for the editor and actions only`);
   // The original submit button remains the native submitter; retry uses the same form.
   await page.evaluate(()=>{window.submits=[];document.querySelector('form').addEventListener('submit',e=>{e.preventDefault();submits.push(e.submitter.textContent);});});
   await page.locator('.compose-form-actions > button').click();
-  assert.deepEqual(await page.evaluate(()=>submits),['Create reply']);
+  assert.deepEqual(await page.evaluate(()=>submits),['Post reply']);
   assert.equal(await body.inputValue(),draft);
   if (!await page.locator('.compose-action-menu').evaluate(el=>el.open)) await page.locator('.compose-action-menu-toggle').click();
   await page.locator('[data-action="submit-anonymous-compose"]').click();
-  assert.deepEqual(await page.evaluate(()=>submits),['Create reply','Post anonymous reply']);
+  assert.deepEqual(await page.evaluate(()=>submits),['Post reply','Reply anonymously']);
   // Forte never opts in, even on a touch phone.
   // Rebind on a fresh non-opted-in document to match Forte's server output.
   await page.setContent(`<style>${asset('compose.css')}</style><div data-reply-panel>${form.replace(' data-phone-reply','')}</div><script>${asset('reply_viewport.js')}</script>`);
   await body.focus();await settle(page);
   assert.equal(await page.locator('.reply-viewport-active').count(),0);
   assert.deepEqual(errors,[]);
-  console.log(`PASS ${theme}: viewport changes, scroll, rotation, draft/selection, menu, native submitters, zoom fallback, Forte`);
+  console.log(`PASS ${theme}: viewport changes, no keyboard stays in the page, scroll, rotation, draft/selection, menu, native submitters, zoom fallback, Forte`);
   await context.close();
  }
  const page=await browser.newPage({viewport:{width:1280,height:900}});

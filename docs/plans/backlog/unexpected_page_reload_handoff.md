@@ -1,5 +1,8 @@
 # Unexpected page reload: handoff
 
+Update: 2026-10-29 UTC — Public background sign-in now completes in place on `feat/background-sign-in`; see the [implementation and verification record](../background_sign_in/background_sign_in_step4_implementation_summary.md). The compose test now asserts continuity instead of waiting out a reload. Account's testing-only sign-in reload was removed too; its session-bound testing approval control appears on the next intentional visit. Version-check navigation and production session-retention investigation remain open. Merge, deployment and physical-phone verification are pending. The original diagnosis below is retained as historical evidence.
+
+
 Status: handoff, not planned work. Written 2026-10-28 at the close of [ui_first_post_identity](../ui_first_post_identity/ui_first_post_identity_step4_implementation_summary.md). The maintainer has seen the page reload "from under the user" occasionally over time; the cause had not been identified.
 
 Principle at stake: `CONTRIBUTING.md`: "Pages must look final on first paint … An in-place update after paint is acceptable only when the client learns of a real state change". A full reload while someone is reading, typing or tapping also risks losing what they were doing.

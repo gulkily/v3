@@ -70,6 +70,12 @@ final class PrivateMessageFeatureFlagTest
                 foreach (['/profiles/test-messaging-recipient', '/user/messaging-recipient'] as $path) {
                     [$status, $html] = $this->request($root, 'GET', $path);
                     assertSame(200, $status);
+                    if (str_starts_with($path, '/user/')) {
+                        // The person page offers Message, which opens the conversation; it embeds no composer.
+                        assertSame($enabled, str_contains($html, 'action="/messages/conversation/messaging-recipient"'));
+                        assertSame(false, str_contains($html, 'data-private-message-composer'));
+                        continue;
+                    }
                     assertSame($enabled, str_contains($html, 'data-private-message-composer'));
                     assertSame($enabled, str_contains($html, '/assets/private_messages.'));
                 }

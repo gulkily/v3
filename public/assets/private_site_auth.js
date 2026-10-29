@@ -52,9 +52,9 @@
     return fallback;
   }
 
-  function reportFailure(error) {
+  function reportFailure(error, options) {
     var message = error instanceof Error ? error.message : "Unable to authenticate this browser identity.";
-    setStatus(message, "error");
+    if (!(options && options.quiet)) setStatus(message, "error");
     if (typeof console !== "undefined" && typeof console.error === "function") {
       console.error("[private site authentication]", error);
     }
@@ -128,7 +128,8 @@
       && error.message === "Authentication challenge is missing or expired.";
   }
 
-  async function authenticateOnce(options) {
+  async function authenticateOnce(options, identity) {
+    assertCurrentIdentity(identity);
     var publicKey = stored("forum_pki_public_key");
     var privateKey = stored("forum_pki_private_key");
     var fingerprint = storedFingerprint();
@@ -136,13 +137,6 @@
     var browserIdentity = window.__forumBrowserIdentity;
 
     if (!publicKey || !privateKey || !/^[a-f0-9]{40}$/.test(fingerprint)) {
-      var returnTo = requestedReturnDestination(options);
-      // Public pages opportunistically resume a saved identity, but browsing
-      // does not require one. Redirecting a keyless visitor to the Lobby
-      // would make the Lobby try to resume again and redirect to itself.
-      if (returnTo !== "" && !isPublicAuthenticationResume()) {
-        window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
-      }
       return { status: "not-configured" };
     }
 
@@ -153,18 +147,14 @@
 
     var identityId = "openpgp:" + fingerprint;
     if (!(options && options.force === true) && authenticatedIdentityId() === identityId) {
-      setStatus("", "ok");
-      if (requestedReturnDestination(options) !== "") {
-        navigateAfterApproval(options);
-      }
-      return { status: "authenticated", identityId: identityId };
+      return { status: "authenticated", identityId: identityId, existingSession: true };
     }
 
     if (!loader) {
       throw new Error("OpenPGP support did not load. Reload the page and try again.");
     }
 
-    setStatus("Verifying this browser identity...", "info");
+    if (!(options && options.quiet)) setStatus("Verifying this browser identity...", "info");
     if (typeof loader.load === "function") {
       await loader.load();
     } else {
@@ -180,6 +170,7 @@
       privateKey = stored("forum_pki_private_key");
       fingerprint = storedFingerprint();
     }
+    assertCurrentIdentity(identity);
     var openpgp = window.openpgp;
     var challengeResponse = await fetch("/api/auth_challenge", { credentials: "same-origin" });
     var challengeText = await challengeResponse.text();
@@ -215,6 +206,7 @@
     body.set("identity_id", identityId);
     body.set("challenge", challenge);
     body.set("detached_signature", signature);
+    assertCurrentIdentity(identity);
     var authenticationResponse = await fetch("/api/authenticate_identity", {
       method: "POST",
       credentials: "same-origin",
@@ -227,58 +219,94 @@
       throw new Error(responseError(authenticationResult, "Unable to authenticate this browser identity."));
     }
 
-    if (/^approved=1$/m.test(authenticationResult)) {
-      setStatus("Identity verified. Entering the site...", "ok");
-      if (!(options && options.navigate === false)) navigateAfterApproval(options);
-      return { status: "approved", identityId: identityId };
-    }
+    assertCurrentIdentity(identity);
+    return {
+      status: /^approved=1$/m.test(authenticationResult) ? "approved" : isApprovedMembersOnly() ? "pending" : "authenticated",
+      identityId: identityId
+    };
+  }
 
-    var returnTo = requestedReturnDestination(options);
-    if (options && options.navigate === false) return { status: "pending", identityId: identityId };
-    if (!isApprovedMembersOnly()) {
-      setStatus("Identity verified.", "ok");
-      if (returnTo !== "") {
-        navigateAfterApproval(options);
-        return { status: "authenticated", identityId: identityId };
+  function identitySnapshot() {
+    return JSON.stringify([stored("forum_pki_public_key"), stored("forum_pki_private_key"), storedFingerprint()]);
+  }
+
+  function assertCurrentIdentity(identity) {
+    if (identitySnapshot() !== identity) {
+      throw new Error("Browser identity changed. Try signing in again with the current key.");
+    }
+  }
+
+  function finishAuthentication(result, options, flight) {
+    if (result.status === "not-configured") {
+      var destination = requestedReturnDestination(options);
+      if (options.navigate !== false && !isPublicAuthenticationResume() && destination
+        && (!stored("forum_pki_public_key") || !stored("forum_pki_private_key") || !/^[a-f0-9]{40}$/.test(storedFingerprint()))) {
+        if (!flight.navigated) window.location.replace("/lobby/?return_to=" + encodeURIComponent(destination));
+        flight.navigated = true;
       }
-      window.location.reload();
-      return { status: "authenticated", identityId: identityId };
+      return result;
     }
-
-    setStatus("Identity verified. Approval is still pending.", "ok");
-    if (returnTo !== "") {
-      window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
-      return { status: "pending", identityId: identityId };
+    if (!options.quiet) setStatus("", "ok");
+    if (options.navigate === false || flight.navigated) return result;
+    if (result.existingSession && requestedReturnDestination(options) === "") return result;
+    flight.navigated = true;
+    if (result.status === "pending") {
+      setStatus("Identity verified. Approval is still pending.", "ok");
+      var returnTo = requestedReturnDestination(options);
+      if (returnTo) window.location.replace("/lobby/?return_to=" + encodeURIComponent(returnTo));
+      else window.location.reload();
+    } else {
+      setStatus(result.status === "approved" ? "Identity verified. Entering the site..." : "Identity verified.", "ok");
+      navigateAfterApproval(options);
     }
-    // Re-render once so the server can expose the session-bound pending
-    // identity. The rendered identity marker prevents a reload loop.
-    window.location.reload();
-    return { status: "pending", identityId: identityId };
+    return result;
   }
 
   function authenticate(options) {
-    if (authenticationInFlight) {
-      return authenticationInFlight;
-    }
-
-    authenticationInFlight = authenticateOnce(options)
-      .catch(function (error) {
-        if (!isExpiredChallengeError(error)) {
+    options = Object.assign({}, options || {});
+    var identity = identitySnapshot();
+    var flight = authenticationInFlight;
+    // PHP sessions hold one challenge. Queue fresh/identity-restricted work;
+    // compatible callers share signing, but each retains its own continuation.
+    if (flight && (options.force === true || flight.identity !== identity
+      || Boolean(options.existingIdentityOnly) !== flight.existingIdentityOnly)) {
+      return flight.promise.catch(function () {}).then(function () {
+        try { assertCurrentIdentity(identity); } catch (error) {
+          reportFailure(error, options);
           throw error;
         }
-
-        setStatus("Authentication challenge expired. Retrying...", "info");
-        return authenticateOnce(options);
-      })
-      .catch(function (error) {
-        reportFailure(error);
-        throw error;
-      })
-      .finally(function () {
-        authenticationInFlight = null;
+        return authenticate(options);
       });
+    }
+    if (!flight) {
+      flight = { identity: identity, existingIdentityOnly: Boolean(options.existingIdentityOnly), navigated: false };
+      authenticationInFlight = flight;
+      flight.promise = authenticateOnce(options, identity).catch(function (error) {
+        if (!isExpiredChallengeError(error)) throw error;
+        assertCurrentIdentity(identity);
+        if (!options.quiet) setStatus("Authentication challenge expired. Retrying...", "info");
+        return authenticateOnce(options, identity);
+      }).finally(function () {
+        if (authenticationInFlight === flight) authenticationInFlight = null;
+      });
+    }
+    return flight.promise.then(function (result) {
+      assertCurrentIdentity(identity);
+      return finishAuthentication(result, options, flight);
+    }).catch(function (error) {
+      reportFailure(error, options);
+      throw error;
+    });
+  }
 
-    return authenticationInFlight;
+  function authenticateInPlace(state) {
+    authenticate({ navigate: false, quiet: true }).then(function (result) {
+      if (!result || !result.identityId || result.existingSession) return;
+      state.dataset.authenticatedIdentityId = result.identityId;
+      window.dispatchEvent(new CustomEvent("forum:authenticated-in-place", {
+        detail: { identityId: result.identityId, approved: result.status === "approved" }
+      }));
+    }).catch(function () {});
   }
 
   window.PrivateSiteAuth = { authenticate: authenticate };
@@ -300,25 +328,12 @@
         delete state.dataset.publicAuthResume;
         return;
       }
-      authenticate({
-        returnTo: window.location.pathname + window.location.search,
-        replaceHistory: true
-      }).catch(function () {});
+      authenticateInPlace(state);
       return;
     }
 
-    // The account page shows the signed-in state itself, so on public sites it
-    // signs in without the reload that could interrupt a name being saved.
     if (state.hasAttribute("data-auth-in-place") && !isApprovedMembersOnly()) {
-      authenticate({ navigate: false }).then(function (result) {
-        if (!result || !result.identityId) return;
-        // Nothing navigates here, so drop the "Entering the site" progress text.
-        setStatus("", "ok");
-        state.dataset.authenticatedIdentityId = result.identityId;
-        window.dispatchEvent(new CustomEvent("forum:authenticated-in-place", {
-          detail: { identityId: result.identityId, approved: result.status === "approved" }
-        }));
-      }).catch(function () {});
+      authenticateInPlace(state);
       return;
     }
 
