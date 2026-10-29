@@ -333,3 +333,5 @@ and repair its navigation and affected references. See the
 - [Operations page](site_operations_page/) — Tools › Operations holds high-traffic mode.
 
 - [Background sign-in](background_sign_in/)
+
+- [Fastmod score-derived virtual tags](fastmod_virtual_tags/fastmod_virtual_tags_step1_solution_assessment.md)
