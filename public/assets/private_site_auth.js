@@ -270,7 +270,13 @@
     // compatible callers share signing, but each retains its own continuation.
     if (flight && (options.force === true || flight.identity !== identity
       || Boolean(options.existingIdentityOnly) !== flight.existingIdentityOnly)) {
-      return flight.promise.catch(function () {}).then(function () { return authenticate(options); });
+      return flight.promise.catch(function () {}).then(function () {
+        try { assertCurrentIdentity(identity); } catch (error) {
+          reportFailure(error, options);
+          throw error;
+        }
+        return authenticate(options);
+      });
     }
     if (!flight) {
       flight = { identity: identity, existingIdentityOnly: Boolean(options.existingIdentityOnly), navigated: false };

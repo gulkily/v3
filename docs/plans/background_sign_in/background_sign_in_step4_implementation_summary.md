@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/background_sign_in; [ledger](../effort_estimation_trial.md#cycle-v3background_sign_in), standing enrollment P2
 Extended estimates: enabled
-Status: Step 4 active; Approved Step 3 received
+Status: Four stages complete locally; merge/deployment and maintainer fit pending
 **Cycle estimate: 0.35**
 
 Entry: 2026-10-28 UTC; scope v1 / Option A, baseline 49a9024412c7e7f6d9230fb7ed1e7b72acf4627e, R1 / P2, Codex single exposed rater. Step 3 projection reaffirmed; pristine intake remains missing. Planning commit a9372972 on feat/background-sign-in. Original stage-work estimates: S1 0.12, S2 0.10, S3 0.10, S4 0.08; scopes/drivers/uncertainties retained in Step 3; not additive. No new dependencies authorized or proposed.
@@ -42,3 +42,28 @@ Entry: 2026-10-28 UTC; scope v1 / Option A, baseline 49a9024412c7e7f6d9230fb7ed1
 - Notes: Stage 2 commit 121796eb. Initial approved fixture used an invalid seed filename; corrected it to the canonical identity filename and reran all 16 cases successfully. Browser retry invokes the existing helper; user-facing Account recovery is part of Stage 4. No physical-device claim. Prospective scope/estimate unchanged; retrospective reflects deterministic fixture setup.
 
 *— Codex · 2026-10-28 UTC*
+
+
+## Stage 4 - Compatibility and closeout
+
+**Original estimate: 0.08**
+**Retrospective stage work: 0.15**
+
+- Changes: Removed Account's testing-only sign-in reload; its session-bound testing approval button is available on the next intentional visit. A queued request now rejects an identity changed while it waits, rather than adopting the replacement key. These are in-scope corrections. Expanded deterministic/browser tests and recorded handoff/UI/study evidence.
+- Verification: Final focused PHP run 21/21 (PrivateSiteAuthTest, AuthNavigationTest, AccountKeyPageHooksTest). Combined run with LocalAppSmokeTest: 175 run, 174 passed; the one archive-download failure reproduces on planning baseline a9372972 in a temporary detached worktree, which was removed afterward. Missing method: InstancePageController::repositoryArchiveDownloadFilename; unrelated to these changes.
+- Browser checks: compose_identity_row, first_post_identity, account_states, railspike_auth_navigation, invite_redemption, invite_signing_readiness and invite_zero_click passed. Invitation checks exercised public/members-only sites, delayed verification, stale fingerprints, wrong-key/revocation, missing/unapproved keys, restore/retry, lost responses and redemption.
+- Matrix: Chromium 80 delayed-auth cases (Light/Word97/Chicago/Midnight × two widths × two approval states × typing/name/submission/retry/Account); 72 name/Account cases for the other nine permitted explicit ZenMemes themes. Firefox and WebKit each passed all 20 Light-theme cases. Additional strengthened typing checks passed four cases per engine with menu-open and primary-action geometry assertions. Screenshots inspected for six representative themes; overflow checks passed throughout.
+- Corrections during verification: Invalid test approval-seed filename corrected in Stage 3; a later theme run incorrectly requested site-specific Chouse/QDB/MIT themes on ZenMemes, then reran the supported nine-theme matrix successfully. These were fixture assumptions, not application regressions.
+- Notes: Stage 3 commit 71df7611 (2026-10-29 UTC; its earlier footer used the local calendar date). Stage 4 retrospectively larger because of Account's testing path and cross-engine/theme evidence; original stage and whole-cycle projections retained. Dependency delta: zero. No schema/record-format changes, new UI controls or navigation destinations.
+
+## Closeout
+
+Outcome: Public background sign-in preserves the current document and interaction while restoring a real session; explicit access navigation retains its intended destination. Authentication/approval remain distinct. All four planned stages complete locally; planning a9372972, S1 bb4355e2, S2 121796eb, S3 71df7611, S4 is the commit containing this closeout. Baseline 49a9024412c7e7f6d9230fb7ed1e7b72acf4627e; final diff is that baseline through this stage commit on feat/background-sign-in.
+
+Evidence: Tests above plus JavaScript/PHP syntax and whitespace checks. Browser fixture proves real session availability on Account for both membership states, approved access 200 versus unapproved 401, document identity, input/selection/focus/scroll/editor preservation and one accepted request per submission. Existing static/keyless/unregistered exemptions are covered by deterministic contracts and first-post/compose regressions. Failure recovery preserves work; explicit helper retry and existing Account recovery flows were exercised separately.
+
+Limits: Full application suite not run. Physical iPhone/Android and production session settings not checked; desktop engine/device emulation is not physical-device evidence. Site-specific branded themes outside the ZenMemes fixture not checked. No merge, push or deployment. Version-check navigation remains a separate follow-up. The archive test failure predates this branch and remains unresolved.
+
+Study checkpoint: 2026-10-29 UTC, railspike-effort / v3/background_sign_in, scope v1 / Option A / R1 / P2, Codex single exposed rater. Original projected total 0.35 retained through implementation; separate retrospective scope assessment 0.45 reflects concurrency and browser verification. Stage original/retrospective values: 0.12/0.12, 0.10/0.12, 0.10/0.12, 0.08/0.15; not summed. Four planned/four completed; no split, new request, independent rating or measured labor. Pristine intake remains missing. Maintainer comfortable-fit judgment and study acceptance pending; accepted-count unchanged.
+
+*— Codex · 2026-10-29 UTC*

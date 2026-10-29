@@ -57,3 +57,23 @@ Debug mode: enabled (inherited)
 Outcome: Approved Step 2 recorded; four stages, 0.35 whole-cycle projection reaffirmed. Stage-work originals 0.12/0.10/0.10/0.08, not summed. No implementation or commits. Step 4 navigation target remains intentionally absent.
 
 *— Codex · 2026-10-28 UTC*
+
+
+# Step 4 — 2026-10-29 UTC
+
+Artifact: [Implementation summary](./background_sign_in_step4_implementation_summary.md)
+Debug mode: enabled (inherited)
+
+## Necessary/useful instructions
+
+- Stage Boundary Protocol kept normal completion, shared-call races and real-browser verification in separate verified commits; retain this sequencing.
+- Completion Contract exposed Account's testing-only reload as another in-scope interruption and required usable-session checks beyond preserving text. Retain end-to-end requirements.
+- Honest verification/effort records distinguish the baseline archive test failure, fixture corrections, physical-device omissions and retrospective scope from the projected score. Retain these distinctions.
+
+## Redundant/unnecessary instructions
+
+No new supported findings beyond Step 3's recorded page-length tension.
+
+Outcome: Four stages locally complete. Whole-cycle projection 0.35 retained; separate retrospective 0.45. No dependency delta or scope expansion. Full suite/physical devices/deployment and maintainer acceptance remain explicitly unclaimed.
+
+*— Codex · 2026-10-29 UTC*

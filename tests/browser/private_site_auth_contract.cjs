@@ -84,5 +84,15 @@ function fixture({ approved = false, matching = false, keyless = false, shared =
     assert.deepEqual(f.navigations, []);
     if (phase !== 'response') assert.ok(!f.fetches.includes('/api/authenticate_identity'), 'do not submit the obsolete key');
   }
+  {
+    const f = fixture();
+    let release; f.window.__forumOpenPgpLoader.ready = new Promise(r => { release = r; });
+    const first = f.window.PrivateSiteAuth.authenticate({ navigate: false });
+    const queued = f.window.PrivateSiteAuth.authenticate({ force: true, navigate: false });
+    const rejected = Promise.all([assert.rejects(first, /Browser identity changed/), assert.rejects(queued, /Browser identity changed/)]);
+    f.storage.forum_pki_private_key = 'new identity while queued';
+    release(); await rejected;
+    assert.equal(f.fetches.length, 0, 'a queued request cannot silently adopt a different key');
+  }
   console.log('PASS in-place authentication contract');
 })().catch(error => { console.error(error); process.exitCode = 1; });
