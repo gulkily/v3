@@ -15,7 +15,6 @@ final class FastScoreSweepService
         private readonly FastScoreWorkflowService $workflow,
         private readonly SqliteFastScoreStore $scoreStore,
         private readonly string $rubricRevision,
-        private readonly ?FastmodMetaRuntime $meta = null,
     ) {
         $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     }
@@ -45,7 +44,6 @@ final class FastScoreSweepService
             'remaining' => false,
         ];
 
-        $this->meta?->recover($this->pdo, $this->rubricRevision);
         $backfillBatchId = null;
         $backfillProcessed = 0;
         $backfillExcluded = 0;
@@ -111,11 +109,7 @@ final class FastScoreSweepService
                 ];
             }
 
-            $this->scoreStore->completeWork($work, $result, $this->meta === null ? null
-                : fn(PDO $connection) => $this->meta->retainOn($connection,$work,$result));
-            if (!isset($work['backfill_batch_id'])) {
-                $this->meta?->recover($this->pdo, $this->rubricRevision);
-            }
+            $this->scoreStore->completeWork($work, $result);
             $summary['processed']++;
             if (isset($work['backfill_batch_id'])) {
                 $backfillProcessed++;

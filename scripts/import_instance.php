@@ -117,6 +117,11 @@ try {
     $progress($result['media_notice'] ?? 'Image files are not transferred by repository imports.');
     $progress('');
     $progress(($result['preview'] ? 'Preview' : 'Import') . ' result: ' . $result['status']);
+    if (isset($result['scores'])) {
+        $progress('Fastmod scores: ' . $result['scores']['status']);
+        if (!empty($result['scores']['reason'])) $progress('Score review: ' . $result['scores']['reason']);
+        foreach ($result['scores']['counts'] as $category => $count) $progress('scores_' . ($result['preview'] && $category === 'imported' ? 'eligible' : $category) . ': ' . $count);
+    }
     foreach ($result['counts'] as $category => $count) {
         $progress($category . ': ' . $count);
     }
@@ -180,6 +185,7 @@ Usage:
            --static-html-root=/path/static_html
 
 Download and merge public forum content, preserving local settings and authority.
+Includes compatible Fastmod scores automatically; no scoring/provider calls.
 Refreshes data and invalidates stale HTML; does not render static pages.
 Run ./v3 build-static separately when static output is needed.
 --dry-run: download and validate, then report proposed imports, duplicates,

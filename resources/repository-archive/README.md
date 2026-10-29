@@ -3,6 +3,10 @@
 This archive contains the site's exported content at the revision named in
 `repository-snapshot.json`. The TAR.GZ and ZIP downloads contain the same files.
 Git history, application code and private instance configuration are not included.
+The generated `fastmod-scores.txt` supplement contains completed named Fastmod
+probabilities, post/content/rubric identifiers and original timestamps. It is
+available to everyone who can download this archive. Jobs, failures, provider
+exchanges, secrets, policies and suppression decisions are excluded.
 
 ## Read the content
 
@@ -21,7 +25,21 @@ or restore this snapshot's image backup.
 ## Use the content in another instance
 
 Install the [application](https://github.com/gulkily/v3) separately and follow its
-setup instructions. To import this download, extract it first. The local importer
+setup instructions. Normal instance import transfers compatible scores automatically:
+
+```sh
+./v3 import-instance https://source.example --dry-run
+./v3 import-instance https://source.example
+```
+
+Existing destination scores win; content and rubric revisions must match.
+Imported assessments are advisory, not signatures or independent verification.
+Older archives without the supplement still work. For a saved TAR.GZ snapshot,
+serve it at `/downloads/repository.tar.gz` on a temporary local HTTP server and
+use that server's base URL with `import-instance`; this keeps the supplement.
+
+The older local `import-repository` workflow below transfers records only, not
+scores. To use it with this download, extract it first. The local importer
 expects `records/` at the archive root, so create a separate import archive from
 the extracted `repository/` directory, leaving the original snapshot unchanged:
 

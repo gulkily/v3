@@ -48,11 +48,17 @@ try {
     for (const [key, value] of Object.entries({ private_key: keys.privateKey, public_key: keys.publicKey, fingerprint, published_fingerprint: fingerprint, username: 'fastmod-browser' })) localStorage.setItem('forum_pki_' + key, value);
   }, { keys, fingerprint });
   const page = await context.newPage();
+  async function settleAuth() {
+    if (await page.locator('[data-public-auth-resume="true"]').count()) {
+      await page.evaluate(() => window.PrivateSiteAuth.authenticate({ navigate: false }));
+      await page.reload();
+    }
+  }
   const flagKey='FASTMOD_AUTOMATIC_TAGGING_ENABLED';
   const flagRow=()=>page.locator('#flag-'+flagKey);
   async function setTagging(on) {
     await page.goto(base+'/tools/feature-flags/');
-    await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
+    await settleAuth();
     const control=flagRow().getByRole('switch',{name:'Automatic Fastmod tagging',exact:true});
     if ((await control.getAttribute('aria-checked')) !== String(on)) {
       await control.focus();await page.keyboard.press('Space');
@@ -61,7 +67,7 @@ try {
     }
   }
   await page.goto(base+'/tools/feature-flags/');
-  await page.waitForFunction(()=>!document.querySelector('[data-public-auth-resume="true"]'));
+  await settleAuth();
   assert.equal(await flagRow().getByRole('switch').getAttribute('aria-checked'),'false');
   const anonymous=await browser.newContext();
   const denied=await anonymous.request.post(base+'/api/prepare_feature_flag_change',{form:{key:flagKey,value:'true'}});
@@ -84,7 +90,7 @@ try {
     }
   }
   await page.goto(base + '/tools/fastmod/');
-  await page.waitForFunction(() => !document.querySelector('[data-public-auth-resume="true"]'));
+  await settleAuth();
   assert.equal(await page.locator('dialog').count(), 0);
   for (const id of ['meta', 'moderation']) {
     assert.equal(await page.locator('#fastmod-prompt-' + id).textContent(), readFileSync(join(project, 'prompts/fastmod/' + id + '.txt'), 'utf8').trim());
@@ -111,6 +117,7 @@ try {
   const first = await worker();
   assert.equal(first.summary.scored, 1); assert.equal(calls.length, 1);
   assert.deepEqual(first.work[0].scores, { meta: 0.95 });
+  assert.deepEqual((await worker('state')).classification_tables, [], 'Scoring creates no classification tables');
   assert.ok(calls[0].messages[0].content.includes('- Meta:'));
   assert.ok(!calls[0].messages[0].content.includes('- Moderation:'));
   assert.equal(calls[0].response_format, undefined);
@@ -118,6 +125,18 @@ try {
   assert.match(await page.locator('body').textContent(), /Meta: 0.95/);
   await page.goto(base + '/tags/meta');
   assert.ok(await page.getByRole('link', { name: 'Support', exact: true }).count(), 'Scored root appears under meta');
+  const plain = await context.request.get(base+'/api/get_thread?thread_id='+postId);
+  assert.match(await plain.text(), /^Labels: meta$/m);
+  const noScript = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block' });
+  const initial = await noScript.newPage();
+  await initial.goto(base+'/tags/meta');
+  assert.equal(await initial.getByRole('link',{name:'Support',exact:true}).isVisible(),true,'Derived discovery is present without client mutation');
+  await initial.goto(base+'/forte/?tag=meta&selected='+postId);
+  const forteRow = initial.locator(`[data-paned-thread-id="${postId}"]`);
+  assert.equal(await forteRow.isVisible(),true);
+  assert.ok((await forteRow.getAttribute('data-paned-thread-tags')).split(',').includes('meta'));
+  await noScript.close();
+
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const theme of ['light','dark','console','word97','chicago','midnight']) {
@@ -136,16 +155,24 @@ try {
   assert.deepEqual(artifacts.private_tables, []);
   assert.match(await readFile(join(root,'static/tags/meta.html'),'utf8'), /Support/);
   function cli(...args) {
-    const result = spawnSync('php',[join(project,'scripts/fast_score.php'),...args],{env,encoding:'utf8'});
+    const result = spawnSync('php',[join(project,'scripts/fast_score.php'),...args,'--json'],{env,encoding:'utf8'});
     assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout);
   }
-  const removed = cli('meta-remove',`--post-id=${postId}`);
-  assert.equal(removed.items.find(row=>row.post_id===postId).suppressed,1);
+  await setTagging(false);
   await page.goto(base + '/threads/' + postId);
   assert.ok(!(await page.locator('body').textContent()).includes('Labels: meta'));
-  assert.equal(calls.length,1,'Correction must not score');
+  const disabledArtifacts = await worker('artifacts');
+  assert.equal(disabledArtifacts.labels.find(row => row.root_post_id === postId).thread_labels_json, '[]');
+  await setTagging(true);
+  await page.goto(base + '/tags/meta');
+  assert.equal(await page.getByRole('link', { name: 'Support', exact: true }).isVisible(), true);
+  await worker('legacy-suppress:' + postId);
+  await page.goto(base + '/threads/' + postId);
+  assert.ok(!(await page.locator('body').textContent()).includes('Labels: meta'));
+  assert.equal(calls.length,1,'Policy, rebuild and legacy fixture reads must not score');
   await worker();
-  assert.equal(cli('meta-status').items.find(row=>row.post_id===postId).active,0,'Worker cannot restore suppression');
+  await page.goto(base + '/tags/meta');
+  assert.equal(await page.getByRole('link', { name: 'Support', exact: true }).count(),0,'Worker cannot restore legacy suppression');
   await page.goto(base + '/tools/fastmod/');
   await page.getByLabel('Moderation', { exact: true }).check();
   await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Save', exact: true }).click()]);
@@ -176,24 +203,41 @@ try {
   assert.equal((await signedResponse.json()).status,'ok');
   const headBefore=spawnSync('git',['-C',join(root,'repository'),'rev-parse','HEAD'],{encoding:'utf8'}).stdout;
   await worker();
-  assert.equal(cli('meta-status').items.find(row=>row.post_id===prepared.post_id).active,1);
+  await page.goto(base+'/tags/meta');
+  assert.equal(await page.getByRole('link',{name:'Signed support',exact:true}).isVisible(),true);
   assert.equal(spawnSync('git',['-C',join(root,'repository'),'rev-parse','HEAD'],{encoding:'utf8'}).stdout,headBefore,'Scoring/tagging creates no Git commit');
   const replyResponse=await context.request.post(base+'/api/create_reply',{form:{thread_id:postId,parent_id:postId,body:'Another application support question.'}});
   const replyId=/^post_id=(.+)$/m.exec(await replyResponse.text())?.[1];assert.ok(replyId);
-  await worker();assert.ok(!cli('meta-status').items.some(row=>row.post_id===replyId),'Replies never receive machine meta tags');
+  await worker();
+  await page.goto(base+'/tags/meta');
+  assert.equal(await page.locator(`a[href="/posts/${replyId}"]`).count(),0,'Replies never appear as tagged roots');
   settings.FASTMOD_META_TAGGING_ENABLED=true;
   await writeFile(env.FORUM_SECRETS_PATH,'<?php return ['+Object.entries(settings).map(([k,v])=>JSON.stringify(k)+' => '+JSON.stringify(v)).join(',')+'];');
   await setTagging(false);
-  assert.equal(cli('meta-status').items.find(row=>row.post_id===prepared.post_id).active,1,'Disabling keeps existing tags');
+  assert.equal(cli('meta-status').enabled,false);
+  await page.goto(base+'/tags/meta');
+  assert.equal(await page.getByRole('link',{name:'Signed support',exact:true}).count(),0,'Disabling removes derived tags');
   const callsBeforeOff=calls.length;
   const offResponse=await context.request.post(base+'/api/create_thread',{form:{board_tags:'general',subject:'Support while tagging off',body:'Help with the interface.'}});
   const offId=/^post_id=(.+)$/m.exec(await offResponse.text())?.[1];assert.ok(offId);
   await worker();assert.equal(calls.length,callsBeforeOff+1,'Scoring continues independently');
-  assert.ok(!cli('meta-status').items.some(row=>row.post_id===offId),'Site off blocks new tagging');
-  cli('meta-rollback');
-  assert.ok(cli('meta-status').items.every(row=>row.active===0));
+  await page.goto(base+'/tags/meta');
+  assert.equal(await page.getByRole('link',{name:'Support while tagging off',exact:true}).count(),0);
+  const callsBeforeEnable=calls.length;
+  await setTagging(true);
+  await page.goto(base+'/tags/meta');
+  assert.equal(await page.getByRole('link',{name:'Support while tagging off',exact:true}).isVisible(),true,'Existing scores become eligible without rescoring');
+  assert.equal(calls.length,callsBeforeEnable);
+  const refreshed = await worker('artifacts');
+  assert.ok(refreshed.labels.find(row=>row.root_post_id===offId).thread_labels_json.includes('meta'));
+  await worker('prune');
+  await page.goto(base+'/tags/meta');
+  assert.equal(await page.getByRole('link',{name:'Support while tagging off',exact:true}).count(),0,'Pruning removes derived tags');
+  const pruned = await worker('artifacts');
+  assert.ok(pruned.labels.every(row=>!row.thread_labels_json.includes('meta')));
+  assert.equal(calls.length,callsBeforeEnable,'Refresh/pruning never calls provider');
 
-  console.log(JSON.stringify({ status: 'passed', checks: ['inline controls and rubric prompts', 'empty selection rejected', 'signed meta-only save', 'save does not score', 'publication queues work', 'one text provider call', 'disabled rubric omitted', 'named score recorded and displayed', 'two scores still one call', 'malformed output recorded without partial scores', 'explicit retry recovers','root meta discovery across phone/desktop/themes','static/offline labels without private scores','CLI suppression and rollback','signed root tags without Git writes','replies excluded','shared signed tagging flag with failed-save recovery','flag phone/desktop/themes','site off preserves tags and independent scoring'] }));
+  console.log(JSON.stringify({ status: 'passed', checks: ['inline controls and rubric prompts', 'empty selection rejected', 'signed meta-only save', 'save does not score', 'publication queues work', 'one text provider call', 'disabled rubric omitted', 'named score recorded and displayed', 'two scores still one call', 'malformed output recorded without partial scores', 'explicit retry recovers','root meta discovery across phone/desktop/themes','static/offline labels without private scores','legacy suppression retained','signed root tags without Git writes','replies excluded','shared signed tagging flag with failed-save recovery','flag phone/desktop/themes','site off hides tags and preserves scoring','existing scores qualify after enable','pruning removes live and refreshed tags','no classification tables created','no-script first render and text/Forte parity'] }));
 } finally {
   if (browser) await browser.close();
   if (server) { server.kill(); await once(server, 'exit'); }

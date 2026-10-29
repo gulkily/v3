@@ -154,7 +154,7 @@ final class FrontController
         }
 
         $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
-        if ($staticArtifact !== null && is_file($staticArtifact) && $this->metaArtifactCurrent($staticArtifact)) {
+        if ($staticArtifact !== null && is_file($staticArtifact)) {
             (new VisitorStatisticsObserver($this->projectRoot))->record($method, parse_url($requestUri, PHP_URL_PATH) ?: '/');
             $contents = file_get_contents($staticArtifact);
             if ($contents === false) {
@@ -543,14 +543,14 @@ final class FrontController
 
         $locator = new OfflineSnapshotLocator();
         $snapshotPath = $locator->servedSnapshotPath($this->staticHtmlRoot);
-        if ($snapshotPath !== null && $this->metaArtifactCurrent($snapshotPath)) {
+        if ($snapshotPath !== null) {
             return $snapshotPath;
         }
 
         return (new ExecutionLock($this->staticHtmlRoot . '/offline/snapshot-bootstrap.lock'))->withExclusiveLock(
             function () use ($locator): ?string {
                 $currentSnapshot = $locator->servedSnapshotPath($this->staticHtmlRoot);
-                if ($currentSnapshot !== null && $this->metaArtifactCurrent($currentSnapshot)) {
+                if ($currentSnapshot !== null) {
                     return $currentSnapshot;
                 }
 
@@ -579,7 +579,7 @@ final class FrontController
         }
 
         $path=(new OfflineSnapshotLocator())->servedUpdatePath($this->staticHtmlRoot);
-        return $path !== null && $this->metaArtifactCurrent($path) ? $path : null;
+        return $path;
     }
 
     /**
@@ -606,12 +606,6 @@ final class FrontController
         }
 
         return null;
-    }
-
-    private function metaArtifactCurrent(string $path): bool
-    {
-        try { \ForumRewrite\Scoring\FastmodMetaPublication::assertArtifact(\ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot),$path); return true; }
-        catch (\Throwable $error) { error_log($error->getMessage()); return false; }
     }
 
     private function activeStaticReleaseRoot(): ?string

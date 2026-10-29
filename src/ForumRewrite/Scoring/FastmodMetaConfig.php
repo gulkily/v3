@@ -14,8 +14,4 @@ final class FastmodMetaConfig
         return (float) $value;
     }
 
-    public static function identity(FastScoringConfig $config): string
-    {
-        return hash('sha256', json_encode([$config->provider->provider, $config->provider->baseUrl, $config->provider->model], JSON_THROW_ON_ERROR));
-    }
 }

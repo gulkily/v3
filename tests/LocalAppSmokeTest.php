@@ -4749,6 +4749,9 @@ PHP;
             ))->rebuild();
             $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $staticHtmlRoot);
             $releasePath = $publisher->build($this->databasePath);
+            assertFalse(is_file($releasePath . '.fastmod-generation'));
+            file_put_contents($releasePath . '.fastmod-generation', 'obsolete-generation');
+            file_put_contents($releasePath . '/index.html.fastmod-generation', 'obsolete-generation');
             $publisher->activate($releasePath);
 
             $controller = new FrontController(

@@ -31,7 +31,7 @@ final class ExportIdentity
         ksort($images);
         $generators = [];
         foreach ([__FILE__, __DIR__ . '/ImageBackup.php', __DIR__ . '/RepositorySnapshot.php',
-            __DIR__ . '/RepositoryArchiveReadme.php', __DIR__ . '/ImageReference.php',
+            __DIR__ . '/RepositoryArchiveReadme.php', __DIR__ . '/../Scoring/FastmodScoreSnapshot.php', __DIR__ . '/../Scoring/FastmodScoreTransfer.php', __DIR__ . '/ImageReference.php',
             __DIR__ . '/../Canonical/CanonicalRecordRepository.php', __DIR__ . '/../Canonical/LegacyPostTimestamp.php',
             dirname(__DIR__, 3) . '/resources/repository-archive/README.md'] as $source) {
             $generators[] = self::digest($source);

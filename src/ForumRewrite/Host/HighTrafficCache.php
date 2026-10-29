@@ -111,16 +111,14 @@ final class HighTrafficCache
             $this->progress('Checking publication inputs (no full-record scan)');
             $context = HighTrafficPublication::captureForRender($this->repositoryRoot);
             $this->progress('Using live read model');
-            $meta = \ForumRewrite\Scoring\FastmodMetaPublication::token($this->projectRoot);
             $renderWorkspace=$this->root . '/.render-' . bin2hex(random_bytes(8));
             $renderAssets=$renderWorkspace . '/assets';
             $html = $this->render($route,$renderAssets,$context);
             $html = str_replace('</head>', '<meta name="v3-refresh-after" content="' . $this->limits['fresh_seconds'] . '"><meta name="v3-cache-generation" content="' . htmlspecialchars((string)$token['generation'], ENT_QUOTES) . '"></head>', $html);
             if (strlen($html) > $this->limits['page_bytes']) throw new RuntimeException('Generated HTML exceeds page size limit.');
             $this->progress('Validating candidate for publication (' . strlen($html) . ' HTML bytes)');
-            \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, function () use ($route,$html,$token,$context,$meta,$renderAssets,$renderWorkspace): void {
+            \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, function () use ($route,$html,$token,$context,$renderAssets,$renderWorkspace): void {
             HighTrafficPublication::validate($context);
-            \ForumRewrite\Scoring\FastmodMetaPublication::publish($meta,$this->path($route),function () use ($route,$html,$token,$renderAssets): void {
             $this->locked(function () use ($route,$html,$token,$renderAssets): void {
                 if (!$this->enabled() || $this->state() !== $token) throw new RuntimeException('Mode changed during generation.');
                 $count=0; $bytes=0;
@@ -140,7 +138,6 @@ final class HighTrafficCache
                 foreach ($pendingAssets as $destination=>$source) $this->atomic($destination,(string)file_get_contents($source));
                 $this->progress('Publishing HTML to ' . $target);
                 $this->atomic($target,$html);
-            });
             });
             });
             $this->progress('Published ' . $route . ' (' . strlen($html) . ' bytes)');

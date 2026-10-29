@@ -189,3 +189,11 @@ live history and Git maintenance settings are unchanged. The content-only
 512 MiB/100,000-file export bounds still apply, including generated legacy-date
 metadata. Failed or interrupted downloads can be retried. Keep a separate full
 repository backup if historical revisions or trusted acceptance evidence matter.
+
+
+Content TAR.GZ/ZIP downloads also include the bounded readable Fastmod score
+supplement automatically. These selected scores are visible to archive recipients;
+private score databases and workflow state are not exported. Image archives and
+revision pairing are unchanged. Score-only updates change content cache identity
+without changing the Git revision in download filenames. See
+[score transfer](instance_content_import.md#fastmod-scores) for import/recovery.

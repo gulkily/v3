@@ -145,7 +145,7 @@ final class RepositoryArchive
         $totalBytes = 0;
         foreach ($entries as $path => $entry) {
             if (!$entry['directory'] && str_starts_with($path, $prefix)
-                && (str_starts_with($path, $prefix . 'records/') || LegacyArchiveTimestamps::isHistoryPath(substr($path, strlen($prefix))))) {
+                && (str_starts_with($path, $prefix . 'records/') || ($path === $prefix . \ForumRewrite\Scoring\FastmodScoreTransfer::PATH && $entry['size'] <= \ForumRewrite\Scoring\FastmodScoreTransfer::MAX_BYTES) || LegacyArchiveTimestamps::isHistoryPath(substr($path, strlen($prefix))))) {
                 $totalFiles++;
                 $totalBytes += $entry['size'];
             }
@@ -159,7 +159,8 @@ final class RepositoryArchive
                 if ($entry['directory']) {
                     continue;
                 }
-                if (!str_starts_with($path, $prefix . 'records/')) {
+                if (!str_starts_with($path, $prefix . 'records/')
+                    && !($path === $prefix . \ForumRewrite\Scoring\FastmodScoreTransfer::PATH && $entry['size'] <= \ForumRewrite\Scoring\FastmodScoreTransfer::MAX_BYTES)) {
                     $category = str_starts_with($path, $prefix) ? explode('/', substr($path, strlen($prefix)))[0] : 'outside-repository';
                     $excluded[$category] = ($excluded[$category] ?? 0) + 1;
                     if (!str_starts_with($path, $prefix) || !LegacyArchiveTimestamps::isHistoryPath(substr($path, strlen($prefix)))) {
