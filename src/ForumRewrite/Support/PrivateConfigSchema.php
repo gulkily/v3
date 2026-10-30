@@ -13,6 +13,7 @@ final class PrivateConfigSchema
     {
         return [
             // Site-mutable flags use canonical site values or environment overrides, not template defaults.
+            'FORUM_STATIC_PROFILE_PAGES_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_RAILSPIKE_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_IMAGE_BACKUP_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_TEXT_BACKUP_ENABLED' => self::definition(null, 'boolean'),

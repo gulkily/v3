@@ -24,6 +24,19 @@ final class FeatureFlagEvaluatorTest
         });
     }
 
+    public function testStaticProfilesDefaultOnWithIndependentSiteAndEnvironmentOverrides(): void
+    {
+        $key = FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED;
+        $this->withEnvironment([], function () use ($key): void {
+            assertTrue((new FeatureFlagEvaluator())->isEnabled($key));
+            assertFalse((new FeatureFlagEvaluator(siteValues: [$key => false]))->isEnabled($key));
+            assertFalse((new FeatureFlagEvaluator())->isEnabled(FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED));
+        });
+        $this->withEnvironment([$key => 'false'], function () use ($key): void {
+            assertFalse((new FeatureFlagEvaluator(siteValues: [$key => true]))->isEnabled($key));
+        });
+    }
+
     public function testMessagingFlagDefaultsAndOverrides(): void
     {
         $key = FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED;
@@ -178,6 +191,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+            FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
@@ -469,6 +483,7 @@ PHP);
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+            FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,

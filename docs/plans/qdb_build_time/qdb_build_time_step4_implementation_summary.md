@@ -17,3 +17,14 @@ Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, 
 - Notes: Originals for subsequent stages: S2 0.16, S3 0.15, S4 0.20, S5 0.23, S6 0.16, S7 0.15, S8 0.10. Scope unchanged from approved Step 3; no revisions.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 2 — Explicit profile delivery control
+
+**Original stage-work estimate: 0.16**
+**Retrospective stage-work assessment: 0.13**
+
+- Changes: Added site-mutable FORUM_STATIC_PROFILE_PAGES_ENABLED, default true, adjacent to static detail control. Only full-build profile enumeration is conditional. Registered nullable private schema metadata, excluded from template defaults like other site flags so templates cannot override canonical settings.
+- Verification: Default/on profile HTML byte equality; off produces zero profile artifacts while thread flag remains independent; all profile rows and offline snapshot retained. Configuration creation/refresh and schema tests passed. Updated registry inventory after expected first-run failure; evaluator/presentation suite 23/23 passes. Earlier configuration/control run: other 32 checks passed.
+- Notes: Runtime/stale-artifact transitions and browser flow belong to Stage 3. Dependencies added: zero. Scope/estimate unchanged; labor unmeasured.
+
+*— Codex · 2026-10-30 UTC*

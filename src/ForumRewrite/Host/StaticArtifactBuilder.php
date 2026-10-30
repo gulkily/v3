@@ -77,9 +77,13 @@ final class StaticArtifactBuilder
         } else {
             $this->reportProgress('Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).');
         }
-        $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
-            $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
-        });
+        if ($this->prebuildProfilePages()) {
+            $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
+                $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
+            });
+        } else {
+            $this->reportProgress('Skipping profile pages (FORUM_STATIC_PROFILE_PAGES_ENABLED is disabled).');
+        }
         $this->reportProgress('Building public offline reading snapshot...');
         (new PublicOfflineSnapshotBuilder($this->projectRoot))->build(
             $this->databasePath,
@@ -203,6 +207,12 @@ final class StaticArtifactBuilder
                 $this->artifactRoot . '/' . $name . '/index.html',
             ]);
         }
+    }
+
+    private function prebuildProfilePages(): bool
+    {
+        return FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+            ->isEnabled(FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED);
     }
 
     private function prebuildDetailPages(): bool

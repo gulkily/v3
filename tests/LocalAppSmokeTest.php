@@ -4838,6 +4838,34 @@ PHP;
         }
     }
 
+    public function testStaticProfileControlIsIndependentAndPreservesReadModel(): void
+    {
+        $root = sys_get_temp_dir() . '/profile-control-' . bin2hex(random_bytes(6));
+        $oldProfile = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
+        $oldDetail = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $this->databasePath);
+            $before = $pdo->query('SELECT * FROM profiles')->fetchAll(PDO::FETCH_ASSOC);
+            foreach (['default' => null, 'on' => 'true', 'off' => 'false'] as $mode => $value) {
+                putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED' . ($value === null ? '' : '=' . $value));
+                putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=' . ($mode === 'off' ? 'true' : 'false'));
+                $target = $root . '/' . $mode;
+                (new StaticArtifactBuilder(dirname(__DIR__), $this->repositoryRoot, $this->databasePath, $target))->buildFromReadModel();
+                assertSame($mode === 'off' ? 0 : count($before), count(glob($target . '/profiles/*.html') ?: []));
+                assertSame($mode === 'off', is_file($target . '/threads/root-001.html'));
+                assertSame($before, $pdo->query('SELECT * FROM profiles')->fetchAll(PDO::FETCH_ASSOC));
+                assertTrue(is_file($target . '/offline/snapshot.sqlite3'));
+            }
+            $slug = $before[0]['profile_slug'];
+            assertSame(file_get_contents($root . '/default/profiles/' . $slug . '.html'), file_get_contents($root . '/on/profiles/' . $slug . '.html'));
+        } finally {
+            putenv($oldProfile === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $oldProfile);
+            putenv($oldDetail === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED' : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $oldDetail);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testStaticArtifactHealthCheckDetectsMissingFingerprint(): void
     {
         $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-assets-' . bin2hex(random_bytes(6));
