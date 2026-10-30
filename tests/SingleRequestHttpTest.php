@@ -48,6 +48,26 @@ final class SingleRequestHttpTest
             assertStringNotContains($db,$error['error']);
         } finally { $server->close(); }
     }
+    public function testExecutableExampleAndExactRetry(): void
+    {
+        [$server,$repo,$db,$root]=self::server();
+        try {
+            file_put_contents($root.'/body.txt',"Hello from one request.\n");
+            $script=dirname(__DIR__).'/docs/examples/agent_single_request_post.sh';
+            $command='sh '.escapeshellarg($script).' --site '.escapeshellarg($server->url).' --bundle-dir '.escapeshellarg($root.'/bundle').' --body-file '.escapeshellarg($root.'/body.txt').' --subject Example';
+            exec($command.' 2>&1',$output,$code); assertSame(0,$code,implode("\n",$output));
+            assertStringContains('Status: ok',implode("\n",$output));
+            $before=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
+            exec('sh '.escapeshellarg($script).' --retry '.escapeshellarg($root.'/bundle').' 2>&1',$retry,$code);
+            assertSame(0,$code,implode("\n",$retry)); assertStringContains('Replayed: True',implode("\n",$retry));
+            assertSame($before,(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']));
+            $meta=[]; foreach(file($root.'/bundle/request.txt',FILE_IGNORE_NEW_LINES) as $line) { [$k,$v]=explode(': ',$line,2); $meta[$k]=$v; }
+            $replyCommand='sh '.escapeshellarg($script).' --site '.escapeshellarg($server->url).' --bundle-dir '.escapeshellarg($root.'/reply').' --body-file '.escapeshellarg($root.'/body.txt').' --thread '.escapeshellarg($meta['Post-ID']).' --key '.escapeshellarg(substr($meta['Identity-ID'],8)).' --homedir '.escapeshellarg($root.'/bundle/keyring').' --known';
+            exec($replyCommand.' 2>&1',$replyOutput,$code); assertSame(0,$code,implode("\n",$replyOutput));
+            assertSame(false,is_file($root.'/reply/bootstrap_record.txt'));
+            \ForumRewrite\Security\GpgHomeCleaner::dispose($root.'/bundle/keyring');
+        } finally { $server->close(); }
+    }
     public function testMembersOnlyDenialIsJson(): void
     {
         [$server]=self::server(['FORUM_APPROVED_MEMBERS_ONLY'=>'true']);

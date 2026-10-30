@@ -57,3 +57,13 @@ Verification: php tests/run.php SingleRequestHttpTest ApiRouteCatalogTest — 6/
 Notes: S4 commit 03f538a4c. Existing route error contracts unchanged. Failures before PHP FrontController entry remain outside this handler's control.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 6 - Provide the standalone signing example
+
+Original estimate: 0.10
+Retrospective stage work: 0.10
+Changes: Executable shell/Python-standard-library/curl/GPG example constructs and signs both records locally, saves exact retry artifacts and submits once. Existing keys and known-key bootstrap omission supported; generated keys stay in a private bundle-local keyring. No automatic retry or draft rewriting. Legacy example cross-linked.
+Verification: SingleRequestHttpTest and AgentApiWorkedExampleTest — 5/5 passed. Additional executable-example rerun passed with initial thread, exact saved replay and known-key reply without bootstrap. The old prepare/sign/finalize example still publishes successfully.
+Notes: S5 commit e230c1686. Example-generated keys are unencrypted and protected by local directory permissions, explicitly documented in script help/source. No new packages.
+
+*— Codex · 2026-10-30 UTC*
