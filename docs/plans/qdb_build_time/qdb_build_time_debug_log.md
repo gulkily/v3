@@ -123,3 +123,39 @@ Suggestion: Treat scanability separately from mandatory evidence fields.
 Checkpoint: Step 4 Stage 7, 2026-10-30 UTC
 Observation: S1–S6 committed. Initial matched evidence measurements expose many-small-commit scratch overhead despite exact output parity. Retain all samples; tune only disposable scratch transaction/locking/requested-path retention, preserving journal rollback and bounded memory, then repeat before acceptance.
 Estimate: S7 original 0.15 retained, revised whole-stage 0.22; independent cycle 1.25 revised 1.35, same v2/C scope, R1/P2, single exposed Codex rater. No measured labor or successful acceptance inferred.
+
+## Step 4 handoff — 2026-10-30T21:12:07Z
+
+### Necessary/useful instructions
+
+Source: Step 4 planning-only gate, stage boundary protocol and scoped commit requirements.
+Observation: Planning f526da98 precedes the implementation summary. Eight stage-scoped commits each include their summary update; final stage 1d9ef5b6 includes scoped ledger closeout. Nine commits through closeout verified. Unrelated audit drafts, their ledger entries and prior-cycle host report remain uncommitted.
+Suggestion: Preserve this separation for subsequent merge/review; no merge or push was performed.
+
+Source: Approved fixed-workload timing, parity, bounded-memory and runtime recovery requirements.
+Observation: All three fixed targets pass improvement-beyond-range checks, complete output parity and memory budgets. Normal CLI full build activates with exact posts/profiles/activity/commits parity. Final focused suite 80/80; browser profile/control evidence includes JS on/off, phone/desktop and 16 profile themes. Candidate failure/retry and signed/key/missing-history behavior are covered. Initial benchmark failures and scratch regression remain in findings/samples; final tuning preserves savepoint rollback and operation cleanup.
+Suggestion: Treat the measured fixture outcomes as local evidence, not predicted QDB runtime. Keep the supplemental small-commit overhead and static-hit/runtime latency tradeoff visible.
+
+Source: Dependency approval, human-readable formats and read-model schema guidance.
+Observation: Zero dependencies; human evidence/configuration records remain plain text. Machine benchmark row streams are comparison artifacts. Core read-model tables and queries are unchanged; schema remains 39. Scratch SQLite settings affect only disposable operation storage.
+Suggestion: Do not extend scratch durability/locking settings to live or canonical data.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Source: Production deployment, host replay and merge/push actions.
+Observation: Not authorized/performed in this cycle; QDB PHP 8.3 access and original build argument list were not supplied. Guidance preserves the operator's existing command/settings and records comparison fields. No full-suite or physical-device outcome is claimed.
+Suggestion: Keep production timing and maintainer acceptance pending until supplied evidence.
+
+### Uncertain assessments
+
+Source: Generalizing local performance and the relative effort study.
+Observation: Supplemental 1000-small-commit evidence has a 0.0407s/8.7% median overhead; it does not share the large-import speedup. One timing-progress test fails identically in baseline and branch. Entry cycle 1.25, S7 revision/cycle 0.22/1.35, retrospective cycle 1.40 and all stage originals/retrospectives are retained as non-additive judgments, not measured labor. Maintainer fit and acceptance remain pending; no accepted-outcome increment.
+Suggestion: Review actual QDB corpus/configuration and repeat production timing before judging host benefit; retain these limits in handoff.
+
+Final checks: Planning-only inventory, eight summary-bearing stages, cycle-scoped ledger, local documentation links, syntax, whitespace and dependency inventory verified. Remaining dirty files match the preserved unrelated work.
+
+*— Codex · 2026-10-30 UTC*
