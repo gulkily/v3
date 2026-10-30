@@ -14,7 +14,7 @@ final class SignedPostIdentity
 
     public function resolve(array $input): array
     {
-        $post = $this->validator->validateRecord((string) ($input['canonical_record'] ?? ''));
+        $post = $this->validator->validateRecord((string) ($input['canonical_record'] ?? ''), false, false);
         $fingerprint = strtoupper(substr($post->authorIdentityId, 8));
         $identityPath = CanonicalPathResolver::identity(strtolower($fingerprint));
         $keyPath = CanonicalPathResolver::publicKey($fingerprint);

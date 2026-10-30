@@ -14,7 +14,7 @@ final class SignedPostBundleValidator
 {
     public function __construct(private readonly bool $unicode = false, private readonly bool $emoji = false) {}
 
-    public function validateRecord(string $bytes, bool $bootstrap = false): PostRecord
+    public function validateRecord(string $bytes, bool $bootstrap = false, bool $enforcePolicy = true): PostRecord
     {
         $record = (new PostRecordParser())->parse($bytes);
         $kind = $bootstrap ? 'bootstrap' : ($record->threadId === null ? 'thread' : 'reply');
@@ -32,7 +32,7 @@ final class SignedPostBundleValidator
                 || $record->body !== "Automatic account bootstrap anchor.\n") {
                 throw new RuntimeException('Bootstrap must be the dedicated internal account bootstrap record.');
             }
-        } else {
+        } elseif ($enforcePolicy) {
             if (!preg_match('/^[a-z0-9-]+(?: [a-z0-9-]+)*$/D', $tags) || in_array('identity', $record->boardTags, true)) {
                 throw new RuntimeException('Invalid ordinary post board tags. Identity records require their dedicated contract.');
             }

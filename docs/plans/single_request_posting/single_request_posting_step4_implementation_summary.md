@@ -37,3 +37,13 @@ Verification: php tests/run.php SignedPostTransactionTest — 2/2 passed; inject
 Notes: S2 commit 4191c636f. No scope/estimate revision. Journal is private recovery state, not a new canonical record family. No schema/dependency delta.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 4 - Reconcile retries and refresh derived state
+
+Original estimate: 0.18
+Retrospective stage work: 0.18
+Changes: Added locked createSignedPost integration, committed-byte replay/original-commit response, deletion/conflict checks, atomic label side effects and known-key omission. Post-commit refresh failures return accepted with recovery guidance. A full existing rebuild synchronizes the combined bundle once; this favors correctness over an unproven combined incremental update and is a latency limitation to measure in S8.
+Verification: php tests/run.php SingleRequestPostingTest SignedPostBundleValidatorTest SignedPostIdentityTest — 6/6 passed. Real GPG first thread/reply, separate anchor, exact replay/key omission, one canonical commit, count stability, invalid bootstrap signature and injected refresh failure/recovery. Concurrency, aged replay and removal remain in S8 integration.
+Notes: S3 commit 35c23c142. No schema or scope change. Text policy applies to new submissions; committed replay remains independent of later mode changes.
+
+*— Codex · 2026-10-30 UTC*

@@ -5,10 +5,11 @@ use ForumRewrite\Write\{SignedPostIdentity,SignedPostBundleValidator};
 use ForumRewrite\Security\OpenPgpKeyInspector;
 final class SignedPostIdentityTest
 {
+    public static string $home;
     public static function helper(string $method, ...$args): mixed { return (new ReflectionMethod(WriteApiSmokeTest::class,$method))->invoke(new WriteApiSmokeTest(),...$args); }
     public static function bundle(): array
     {
-        $key=self::helper('createSigningKey','bundle-agent');
+        $key=self::helper('createSigningKey','bundle-agent'); self::$home=$key['home'];
         $f=(new OpenPgpKeyInspector())->inspect($key['public_key'])['fingerprint'];
         $time=gmdate('Y-m-d\TH:i:s\Z'); $idtime=gmdate('YmdHis');
         $post='Post-ID: thread-'.$idtime.'-'.bin2hex(random_bytes(16))."\nCreated-At: {$time}\nBoard-Tags: general\nAuthor-Identity-ID: openpgp:".strtolower($f)."\nSubject: Test\n\nHello\n";
