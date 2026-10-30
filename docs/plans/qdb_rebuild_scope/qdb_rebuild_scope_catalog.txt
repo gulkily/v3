@@ -1,0 +1,75 @@
+Catalog: QDB interface exposure and rebuild cost
+Date: 2026-10-30 UTC
+Baseline: 0392dd59c0646bebc37042455ecaccf825b13889
+Status: Initial source-backed inventory; live configuration, production costs and complete indirect-consumer coverage unverified
+Scope: Distinguish read-model rebuild from static rendering inside build-static. Navigation visibility is not permission to remove data or functionality.
+
+Feature: Quote reading, ranking, search, random and submission
+Exposure: Main QDB navigation: Welcome, Latest, Top, 1337, Random, Add Quote, Search.
+Cost: Core posts/threads, scores and authors in phase 1; welcome and listing HTML in phase 2. Other readers still materialize whole collections (M02).
+Disposition: Required. Bound work by requested results; do not remove quote records, scoring or numeric links.
+Source: src/ForumRewrite/Qdb/QdbPresentation.php; src/ForumRewrite/Qdb/QdbExperience.php; src/ForumRewrite/ReadModel/ReadModelBuilder.php
+
+Feature: Tag index and tag pages
+Exposure: General Tags is absent from primary QDB navigation; welcome links to /tags/news when more news exists. Tag pages remain direct routes.
+Cost: /tags/ is generated among ten shared pages; every visible tag is then rendered. Index now streams and keeps five previews. Per-tag controller still loads/groups every thread, and tag.php renders every match into buffered HTML. Cost can grow with tags times corpus, plus page output size.
+Incident: User reports Rendering tag pages (0/24), followed by a 128 MiB fatal in templates/pages/tag.php:10. Zero completed means the first route failed; the output does not identify which tag. Source explains unbounded allocation, but exact production row count/tag and PHP heap breakdown are unknown.
+Disposition: Immediate candidate: paginated per-tag pages with complete traversal through links, filtering before limiting, native navigation, static first-page/query bypass and offline parity. Skipping tag prebuild alone would leave direct requests vulnerable. Preserve /tags/news and existing tag URLs.
+Source: src/ForumRewrite/Http/TagsPageController.php; src/ForumRewrite/ReadModel/TagGrouping.php; templates/pages/tag.php; templates/pages/qdb_welcome.php; src/ForumRewrite/Host/StaticArtifactBuilder.php; src/ForumRewrite/View/TemplateRenderer.php
+
+Feature: Activity, commits and evidence views
+Exposure: Not in main QDB navigation; shared/direct routes still exist.
+Cost: Phase 1 always builds activity, commits, signature and activity evidence and verified attribution; phase 2 prebuilds /activity/.
+Disposition: Review optional HTML prebuilding first. Do not disable trust/evidence indexing based on navigation: signed votes, authorship, moderation and API consumers need a separate dependency trace. Large commit evidence remains M03.
+Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php; src/ForumRewrite/ReadModel/ActivityEvidenceIndex.php; src/ForumRewrite/Host/StaticArtifactBuilder.php
+
+Feature: User directory and profile pages
+Exposure: Users is absent from primary QDB navigation. Author attribution can lead to profiles; direct routes remain supported.
+Cost: Phase 1 indexes profiles, approvals, counts and author links. Phase 2 prebuilds /users/ and every profile.
+Disposition: Profile HTML is a candidate for on-demand serving after fallback verification. Preserve identity, approval and author derivation needed by core actions.
+Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php; src/ForumRewrite/Host/StaticArtifactBuilder.php; src/ForumRewrite/View/TemplateRenderer.php
+
+Feature: Account and invitations
+Exposure: Explicitly omitted from QDB navigation; accessible by direct URL.
+Cost: Shared identity/approval derivation. No account/invite page enumeration in the inspected static builder.
+Disposition: Do not claim savings from disabling screens that are not prebuilt. Keep key custody, signatures and authorization working.
+Source: src/ForumRewrite/View/TemplateRenderer.php; src/ForumRewrite/ReadModel/ReadModelBuilder.php
+
+Feature: Private messages
+Exposure: Conditionally appended to navigation when enabled; shown for remembered approved members. Not universally hidden on QDB.
+Cost: No private-message phase or page enumeration in the inspected public rebuild/static pipeline. Separate stores and runtime work require separate inspection.
+Disposition: No demonstrated public-rebuild saving from disabling messages. Verify actual instance flag before classifying exposure.
+Source: src/ForumRewrite/View/TemplateRenderer.php; src/ForumRewrite/ReadModel/ReadModelBuilder.php; src/ForumRewrite/Host/StaticArtifactBuilder.php
+
+Feature: Tools, bookmarklets, feature flags, About and Instance
+Exposure: Absent from primary QDB navigation; direct operator/shared routes remain available.
+Cost: Shared page generation includes these routes on every full build. Their actual share of production time/memory is unmeasured.
+Disposition: Candidate for profile-aware optional HTML prebuilding; preserve direct URLs, missing-artifact fallback and static-only deployment expectations.
+Source: src/ForumRewrite/Host/StaticArtifactBuilder.php; src/ForumRewrite/Host/FrontController.php
+
+Feature: Forte and other alternate readers
+Exposure: Not in main QDB navigation; direct application routes exist.
+Cost: No Forte prebuild loop found. Uses shared derived data; hiding it does not eliminate an independent rebuild phase.
+Disposition: Preserve shared data dependencies; no speculative saving assigned.
+Source: src/ForumRewrite/Application.php; src/ForumRewrite/Host/StaticArtifactBuilder.php
+
+Feature: Thread/post detail prebuilding
+Exposure: Quote permalinks are core; generic detail views can also be reached directly.
+Cost: Existing FORUM_STATIC_DETAIL_PAGES_ENABLED controls enumeration. It does not control tag/profile generation or the offline snapshot.
+Disposition: Reuse existing opt-in behavior; verify the live setting rather than invent a second switch. Keep runtime detail routes and numeric aliases.
+Source: src/ForumRewrite/Host/StaticArtifactBuilder.php
+
+Feature: Offline reading
+Exposure: Browser capability, not a primary navigation destination.
+Cost: Every full static build constructs the public offline snapshot. Recent-thread selection and large thread loading have known memory risks (M04).
+Disposition: Bound selection first; making the capability optional needs an explicit offline/cache/recovery contract. Do not merely omit a file the browser expects.
+Source: src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php; src/ForumRewrite/Host/StaticArtifactBuilder.php
+
+Feature: Agents, Fastmod and background queues
+Exposure: Mostly tools/direct/API surfaces; derived labels and scores may affect quotes.
+Cost: No inference/job-execution phase in the inspected public rebuild. Stored agent metadata and generated reactions are still indexed as content/effects.
+Disposition: Distinguish consuming existing results from running models/jobs. No measured saving or permission to discard derived vote/label effects.
+Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php; src/ForumRewrite/Host/StaticArtifactBuilder.php
+
+Priority: First bound per-tag input and output. Then propose optional prebuilding for secondary HTML, preserving direct access. Treat selective read-model derivation as a separate higher-risk change after tracing all consumers.
+Verification needed: Production phase timings and memory, route/dependency matrix, profile switches, full rebuild versus incremental parity, static/runtime/offline serving, and interrupted-build recovery. No runtime changes or new capacity measurements were made for this catalog.

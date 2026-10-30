@@ -354,3 +354,5 @@ and repair its navigation and affected references. See the
 - [Single-request signed posting](single_request_posting/single_request_posting_step3_development_plan.md) — separate signed bootstrap and post; implemented locally, release verification pending.
 
 - [Agent posting](agent_posting/agent_posting_step3_development_plan.md): Seven stages complete locally: frm.py, text diagnostics and API recovery; deployment/live acceptance pending.
+
+- [Bounded tag pages and QDB rebuild catalog](./qdb_rebuild_scope/qdb_rebuild_scope_step1_solution_assessment.md) — approved implementation plan; all sites.
