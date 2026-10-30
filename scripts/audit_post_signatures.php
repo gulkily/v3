@@ -7,6 +7,7 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\GenericTextRecordParser;
+use ForumRewrite\Canonical\ReactionRecordParser;
 use ForumRewrite\Security\ReactionSignature;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
@@ -88,7 +89,7 @@ $reactionCounts = [
     'scored_label_unsigned_named' => 0,
 ];
 $reactionRows = [];
-foreach (['thread-labels' => 'Labels', 'post-reactions' => 'Tags'] as $family => $tagHeader) {
+foreach (['thread-labels' => ReactionRecordParser::THREAD, 'post-reactions' => ReactionRecordParser::POST] as $family => $kind) {
     foreach (glob($repositoryRoot . '/records/' . $family . '/*.txt') ?: [] as $file) {
         $relativePath = 'records/' . $family . '/' . basename($file);
         $contents = (string) file_get_contents($file);
@@ -102,7 +103,11 @@ foreach (['thread-labels' => 'Labels', 'post-reactions' => 'Tags'] as $family =>
             $status = 'invalid';
         }
 
-        $tags = array_values(array_filter(explode(' ', trim((string) ($headers[$tagHeader] ?? ''))), static fn (string $tag): bool => $tag !== ''));
+        try {
+            $tags = (new ReactionRecordParser())->parse($contents, $kind)['tags'];
+        } catch (RuntimeException) {
+            $tags = [];
+        }
         $category = match (true) {
             $status === 'verified' => 'reaction_verified',
             $status === 'invalid' => 'reaction_invalid',

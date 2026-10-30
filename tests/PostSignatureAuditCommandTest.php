@@ -80,6 +80,7 @@ final class PostSignatureAuditCommandTest
         file_put_contents($repositoryRoot . '/records/thread-labels/anonymous.txt', "Record-ID: thread-label-anonymous\nCreated-At: 2026-10-23T00:00:00Z\nThread-ID: t1\nOperation: add\nLabels: like\n\n");
         file_put_contents($repositoryRoot . '/records/post-reactions/invalid.txt', "Record-ID: post-reaction-invalid\nCreated-At: 2026-10-23T00:00:00Z\nPost-ID: p1\nOperation: add\nTags: like\n{$named}\n");
         file_put_contents($repositoryRoot . '/records/post-reactions/invalid.txt.asc', "not a signature\n");
+        file_put_contents($repositoryRoot . '/records/thread-labels/unified.txt', "Record-ID: thread-label-unified\nCreated-At: 2026-10-23T00:00:00Z\nTarget-Kind: thread\nTarget-ID: t1\nOperation: add\nTags: like\n{$named}\n");
 
         [$exitCode, $output] = $this->runCommandAllowFailure(sprintf(
             'php %s %s',
@@ -88,14 +89,15 @@ final class PostSignatureAuditCommandTest
         ));
 
         assertSame(0, $exitCode);
-        assertStringContains('total_reactions: 4', $output);
+        assertStringContains('total_reactions: 5', $output);
         assertStringContains('reaction_verified: 0', $output);
-        assertStringContains('reaction_unsigned_named: 2', $output);
+        assertStringContains('reaction_unsigned_named: 3', $output);
         assertStringContains('reaction_invalid: 1', $output);
         assertStringContains('reaction_anonymous: 1', $output);
-        assertStringContains('scored_label_unsigned_named: 1', $output);
+        assertStringContains('scored_label_unsigned_named: 2', $output);
         assertStringContains("reaction_unsigned_named\trecords/thread-labels/scored.txt\topenpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919\tlike", $output);
         assertStringContains("reaction_invalid\trecords/post-reactions/invalid.txt", $output);
+        assertStringContains("reaction_unsigned_named\trecords/thread-labels/unified.txt\topenpgp:15c2ef95baee78f4c635a43323b6ae7ec7af9919\tlike", $output);
     }
 
     private function installKnownIdentity(string $repositoryRoot): void

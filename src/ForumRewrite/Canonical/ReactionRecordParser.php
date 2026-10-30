@@ -7,9 +7,9 @@ namespace ForumRewrite\Canonical;
 /**
  * Shared parser for thread-label and post-reaction records.
  *
- * Reads the unified format (Target-Kind/Target-ID/Tags) and both legacy
- * header sets (Thread-ID/Labels and Post-ID/Tags) without rewriting bytes.
- * The caller's record family fixes the expected scope.
+ * Reads the unified format (Target-Kind/Target-ID/Tags). Legacy header sets
+ * are mapped by the deprecated LegacyReactionHeaders adapter. The caller's
+ * record family fixes the expected scope.
  */
 final class ReactionRecordParser
 {
@@ -17,9 +17,6 @@ final class ReactionRecordParser
     public const POST = 'post';
 
     private const FAMILY_NAMES = [self::THREAD => 'thread-label', self::POST => 'post-reaction'];
-    private const LEGACY_TARGET = [self::THREAD => 'Thread-ID', self::POST => 'Post-ID'];
-    private const LEGACY_TOKENS = [self::THREAD => 'Labels', self::POST => 'Tags'];
-    private const UNIFIED_ONLY = ['Target-Kind', 'Target-ID'];
     private const LEGACY_ONLY = ['Thread-ID', 'Post-ID', 'Labels'];
 
     public function __construct(
@@ -38,30 +35,23 @@ final class ReactionRecordParser
         $record = $this->parser->parse($contents);
         $headers = $record->headers;
         $family = self::FAMILY_NAMES[$kind];
-        $unified = isset($headers['Target-Kind']) || isset($headers['Target-ID']);
 
-        if ($unified) {
+        if (LegacyReactionHeaders::applies($headers)) {
+            $headers = LegacyReactionHeaders::toUnified($headers, $kind, $family);
+        } else {
             foreach (self::LEGACY_ONLY as $header) {
                 if (isset($headers[$header])) {
                     throw new CanonicalRecordParseException('Reaction record mixes unified and legacy headers: ' . $header);
                 }
             }
-            $targetHeader = 'Target-ID';
-            $tokenHeader = 'Tags';
-            $required = ['Record-ID', 'Created-At', 'Target-Kind', 'Target-ID', 'Operation', 'Tags'];
-        } else {
-            $targetHeader = self::LEGACY_TARGET[$kind];
-            $tokenHeader = self::LEGACY_TOKENS[$kind];
-            $required = ['Record-ID', 'Created-At', $targetHeader, 'Operation', $tokenHeader];
-        }
-
-        foreach ($required as $header) {
-            if (!isset($headers[$header]) || $headers[$header] === '') {
-                throw new CanonicalRecordParseException('Missing required ' . $family . ' header: ' . $header);
+            foreach (['Record-ID', 'Created-At', 'Target-Kind', 'Target-ID', 'Operation', 'Tags'] as $header) {
+                if (!isset($headers[$header]) || $headers[$header] === '') {
+                    throw new CanonicalRecordParseException('Missing required ' . $family . ' header: ' . $header);
+                }
             }
         }
 
-        if ($unified && $headers['Target-Kind'] !== $kind) {
+        if ($headers['Target-Kind'] !== $kind) {
             throw new CanonicalRecordParseException('Reaction Target-Kind must be ' . $kind . ' in the ' . $family . ' family.');
         }
 
@@ -86,16 +76,16 @@ final class ReactionRecordParser
                     || !preg_match('/^[a-f0-9]{64}$/D', $sourceHash)))) {
                 throw new CanonicalRecordParseException('Label source requires a valid post ID and SHA-256 together.');
             }
-        } elseif ($unified && (isset($headers['Source-Post-ID']) || isset($headers['Source-Post-SHA256']))) {
+        } elseif (isset($headers['Source-Post-ID']) || isset($headers['Source-Post-SHA256'])) {
             throw new CanonicalRecordParseException('Label source headers apply only to thread scope.');
         }
 
         return [
             'recordId' => $headers['Record-ID'],
             'createdAt' => $createdAt,
-            'targetId' => $headers[$targetHeader],
+            'targetId' => $headers['Target-ID'],
             'operation' => $operation,
-            'tags' => $this->parseTokens($headers[$tokenHeader], $tokenHeader, $kind === self::THREAD ? 'label' : 'tag'),
+            'tags' => $this->parseTokens($headers['Tags'], $kind === self::THREAD ? 'label' : 'tag'),
             'authorIdentityId' => $authorIdentityId,
             'reason' => $headers['Reason'] ?? null,
             'body' => $record->body,
@@ -171,7 +161,7 @@ final class ReactionRecordParser
     /**
      * @return list<string>
      */
-    private function parseTokens(string $value, string $header, string $noun): array
+    private function parseTokens(string $value, string $noun): array
     {
         $normalized = [];
         foreach (explode(' ', trim($value)) as $token) {
@@ -186,7 +176,7 @@ final class ReactionRecordParser
             }
         }
         if ($normalized === []) {
-            throw new CanonicalRecordParseException($header . ' must include at least one ' . $noun . ' token.');
+            throw new CanonicalRecordParseException('Tags must include at least one ' . $noun . ' token.');
         }
 
         return $normalized;

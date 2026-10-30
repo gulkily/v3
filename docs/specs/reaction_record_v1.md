@@ -66,6 +66,12 @@ records are verified over their original bytes and are never rewritten.
 
 ## Compatibility
 
+Legacy header sets are deprecated. They are read only through
+`LegacyReactionHeaders`, which also accepts the exact legacy bytes signed by
+older cached browser clients. No producer writes them. Removing legacy support
+later means deleting that class and its callers; what then happens to existing
+legacy records, especially signed ones, is a separate decision.
+
 Application versions released before this format read only the legacy header
 sets. They reject a new-format record as unparseable rather than counting it;
 importing new records into such an instance requires upgrading it first.

@@ -460,12 +460,18 @@ final class WriteApiSmokeTest
                 $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
                 $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
                 $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
-                $record = "Record-ID: {$family}-historical\nCreated-At: 2020-01-01T00:00:00Z\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
-                $path = 'records/' . $family . 's/' . $family . '-historical.txt';
-                if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0777, true);
-                file_put_contents($root . '/' . $path, $record);
-                file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($key['home'], $record));
-                $paths[] = $path;
+                $records = [
+                    $family . '-historical' => "Record-ID: {$family}-historical\nCreated-At: 2020-01-01T00:00:00Z\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n",
+                    $family . '-historical-unified' => \ForumRewrite\Canonical\ReactionRecordParser::build($kind, $family . '-historical-unified',
+                        '2020-01-01T00:00:01Z', 'root-001', ['like'], $identity),
+                ];
+                foreach ($records as $id => $record) {
+                    $path = 'records/' . $family . 's/' . $id . '.txt';
+                    if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0777, true);
+                    file_put_contents($root . '/' . $path, $record);
+                    file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($key['home'], $record));
+                    $paths[] = $path;
+                }
             }
             $planner = new \ForumRewrite\Import\ContentImportPlanner();
             $plan = $planner->plan($root, $destination);
@@ -493,7 +499,7 @@ final class WriteApiSmokeTest
             $builder->rebuild();
             assertSame(0, (int) $pdo->query("SELECT post_score_total FROM posts WHERE post_id = 'root-001'")->fetchColumn());
             foreach (['thread_label_invalid_count', 'post_reaction_invalid_count'] as $metric) {
-                assertSame('1', $pdo->query("SELECT value FROM metadata WHERE key = '{$metric}'")->fetchColumn());
+                assertSame('2', $pdo->query("SELECT value FROM metadata WHERE key = '{$metric}'")->fetchColumn());
             }
             $plan = $planner->plan($root, $destination);
             foreach ($paths as $path) {
@@ -526,7 +532,14 @@ final class WriteApiSmokeTest
                 $kind === 'thread' ? $writer->applyThreadTag($input) : $writer->applyPostTag($input);
                 $path = 'records/' . $family . 's/' . $family . '-archive.txt';
                 $pairs[$path] = $record; $pairs[$path . '.asc'] = $signature;
+                $unified = \ForumRewrite\Canonical\ReactionRecordParser::build($kind, $family . '-archive-unified', $created, 'root-001', ['like'], $identity);
+                $unifiedPath = 'records/' . $family . 's/' . $family . '-archive-unified.txt';
+                $pairs[$unifiedPath] = $unified;
+                $pairs[$unifiedPath . '.asc'] = $this->signCanonicalRecord($key['home'], $unified);
+                file_put_contents($root . '/' . $unifiedPath, $unified);
+                file_put_contents($root . '/' . $unifiedPath . '.asc', $pairs[$unifiedPath . '.asc']);
             }
+            $this->runCommand($root, 'git add records && git commit -qm "unified reaction fixtures"');
             $output = $this->runCommand($root, 'php ' . escapeshellarg(__DIR__ . '/../scripts/archive_thread.php')
                 . ' root-001 ' . escapeshellarg($root) . ' ' . escapeshellarg($database)
                 . ' ' . escapeshellarg($artifacts) . ' ' . escapeshellarg($archive));
@@ -536,7 +549,7 @@ final class WriteApiSmokeTest
             foreach ($pairs as $path => $bytes) assertSame($bytes, file_get_contents($root . '/' . $path));
             (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
             $pdo = new PDO('sqlite:' . $database);
-            assertSame(2, (int) $pdo->query("SELECT COUNT(*) FROM reaction_signatures WHERE signature_status = 'verified'")->fetchColumn());
+            assertSame(4, (int) $pdo->query("SELECT COUNT(*) FROM reaction_signatures WHERE signature_status = 'verified'")->fetchColumn());
         } finally {
             $this->deleteTree($key['home']); $this->deleteTree($root);
         }
