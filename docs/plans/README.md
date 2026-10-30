@@ -348,3 +348,5 @@ and repair its navigation and affected references. See the
 
 - [Agent response text](agent_response_text/agent_response_text_step4_implementation_summary.md) — F05; implemented and verified, maintainer acceptance pending.
 - [Private-message idle synchronization](private_message_sync_idle/private_message_sync_idle_step1_solution_assessment.md) — account history gate and combined work check.
+
+- [Message sync activity and limits](message_sync_activity/message_sync_activity_step1_solution_assessment.md) — recent-device priority and bounded, quiet recovery.
