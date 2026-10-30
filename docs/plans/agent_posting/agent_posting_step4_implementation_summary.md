@@ -19,3 +19,13 @@ Verification: UnicodeTextPolicyTest, CanonicalTextBoundsTest, SignedPostBundleVa
 Notes: Server positions on signed bundles are body/subject-relative; original client-file mapping follows in the client stage. No estimate revision.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 2 - Rule discovery and API failure recovery
+
+Original estimate: 0.18
+Retrospective stage work: 0.18
+Changes: Public GET /api/text_rules reports active policy and normalization; route catalog includes discovery. Shared JSON/text response boundaries promote caught lock failures to JSON 503 with Retry-After. Host failures for /api and /api/ descendants are sanitized JSON while retaining schema-recovery scheduling; unknown API and membership errors are JSON. Legacy ordinary text errors and browser HTML remain.
+Verification: AgentPostingApiTest, ApiRouteCatalogTest and SingleRequestHttpTest: 11/11 passed over actual HTTP. Covers Unicode diagnostics, members-only discovery/denial, caught write lock failures on prepared/legacy routes, unknown/query paths, /api and /api/ startup errors, unchanged legacy method text and browser HTML. No dependency/schema delta.
+Notes: PHP-controlled responses only; upstream proxy/runtime failures can still be non-JSON. No estimate revision.
+
+*— Codex · 2026-10-30 UTC*

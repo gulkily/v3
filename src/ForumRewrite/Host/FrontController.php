@@ -48,13 +48,14 @@ final class FrontController
     {
         try { $this->handleRequest($method,$requestUri,$cookies); }
         catch (Throwable $error) {
-            if (parse_url($requestUri,PHP_URL_PATH) !== '/api/create_signed_post') throw $error;
-            error_log('Signed posting host failure: ' . $error->getMessage());
+            if (!\ForumRewrite\Http\ApiErrors::isApi($requestUri)) throw $error;
+            error_log('API host failure: ' . $error->getMessage());
+            $this->requestReadModelSchemaRecovery($error);
             $busy = str_contains($error->getMessage(),'Timed out waiting for execution lock:');
             header('Content-Type: application/json; charset=utf-8');
             header('Cache-Control: no-store');
             http_response_code(503);
-            $payload=['status'=>$busy ? 'busy' : 'error','code'=>$busy ? 'busy' : 'temporarily_unavailable','error'=>'Posting is temporarily unavailable. Keep and retry the same signed bundle.'];
+            $payload=['status'=>$busy ? 'busy' : 'error','code'=>$busy ? 'busy' : 'temporarily_unavailable','error'=>'The instance is temporarily unavailable. Keep your draft or saved operation; check its status before retrying.'];
             if($busy) { header('Retry-After: 10'); $payload['retry_after']=10; }
             echo json_encode($payload, JSON_THROW_ON_ERROR);
         }
@@ -195,7 +196,7 @@ final class FrontController
             );
             $application->handle($method, $requestUri);
         } catch (Throwable $throwable) {
-            if (parse_url($requestUri,PHP_URL_PATH) === '/api/create_signed_post') throw $throwable;
+            if (\ForumRewrite\Http\ApiErrors::isApi($requestUri)) throw $throwable;
             if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')) {
                 $this->sendHtml($this->renderBusyError(), 503);
                 return;

@@ -8,6 +8,20 @@ use RuntimeException;
 
 final class UnicodeTextPolicy
 {
+    public static function rules(bool $unicode, bool $emoji): array
+    {
+        return [
+            'status' => 'ok', 'mode' => $unicode ? 'unicode' : 'ascii', 'emoji' => $unicode && $emoji,
+            'accepted' => $unicode ? ['ASCII printable', 'L', 'M after NFC', 'N', 'P', 'LF in body'] : ['ASCII U+0020–U+007E', 'LF in body'],
+            'rejected_categories' => $unicode ? ['Sm', 'Sc', 'Sk', 'So', 'Z outside ASCII space', 'C outside body LF'] : ['non-ASCII', 'controls outside body LF'],
+            'emoji_exceptions' => $unicode && $emoji ? 'Recognized emoji bases, variation selectors, joiners and modifiers in supported context; not every Unicode symbol.' : 'none',
+            'noncharacters' => 'rejected', 'normalization' => 'Trim outer ASCII whitespace; body CRLF to LF; Unicode mode also converts lone CR and normalizes NFC.',
+            'normalization_available' => class_exists(\Normalizer::class),
+            'without_normalizer' => 'Unicode combining marks are rejected when NFC support is unavailable.',
+            'positions' => 'Zero-based Unicode code-point indices in the submitted field before normalization; signed records use body/subject-relative indices.',
+        ];
+    }
+
     public function __construct(
         private readonly bool $allowEmoji = false,
     ) {

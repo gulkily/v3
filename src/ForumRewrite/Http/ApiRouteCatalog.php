@@ -30,6 +30,7 @@ final class ApiRouteCatalog
     {
         $rows = [
             // Discovery and reads
+            ['GET', '/api/text_rules', 'public', 'json', 'Active authored-text policy and original character position semantics.'],
             ['GET', '/api/', 'public', 'text', 'This index.'],
             ['GET', '/api/version', 'public', 'text', 'Application version.'],
             ['GET', '/api/list_index', 'public', 'text', 'Threads, one per line: thread ID, title, reply count (tab-separated).'],

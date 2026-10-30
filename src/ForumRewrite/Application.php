@@ -136,6 +136,14 @@ final class Application
             $this->routeServices = null;
         }
         $this->docsPage = $docsPage;
+        if ($path === '/api/text_rules') {
+            if ($method !== 'GET') { $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405); return; }
+            $this->sendJson(\ForumRewrite\Support\UnicodeTextPolicy::rules(
+                $this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
+                $this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EMOJI_AUTHORED_TEXT)
+            ), 200);
+            return;
+        }
         if ($path === '/api/docs-version') {
             (new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->docsStaticRoot()))->serve($method, $requestUri);
             return;
@@ -231,7 +239,7 @@ final class Application
         }
 
         if ($this->approvedMembersOnlyEnabled() && !$this->membersOnlyRequestAllowed($method, $path)) {
-            if ($path === '/api/create_signed_post') {
+            if (\ForumRewrite\Http\ApiErrors::isApi($path)) {
                 $this->sendJson(['status'=>'error','code'=>'access_denied','error'=>'This instance requires an authenticated approved session. Use the existing registration, approval and authentication flow first.'],403);
                 return;
             }
@@ -1084,6 +1092,10 @@ final class Application
             return;
         }
 
+        if (\ForumRewrite\Http\ApiErrors::isApi($path)) {
+            $this->sendJson(['status' => 'error', 'error' => 'Unknown API route. See /api/.'], 404);
+            return;
+        }
         $this->notFound();
     }
 
