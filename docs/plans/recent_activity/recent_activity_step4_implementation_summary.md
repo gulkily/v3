@@ -41,3 +41,14 @@ Request: Delete mockups rather than save them in repository. Disposition: Entire
 - Notes: Navigation/static acceptance follows. No dependency changes; estimates unchanged.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 4 - Navigation and themes
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes: Recent in canonical forum/app main navigation; existing destinations retained. Shared icon mapping covers Recent links/tool buttons in Word97/Chicago/Midnight. Application route classification supports normal session/access recovery. S3 commit 93539d722.
+- Verification: Navigation/auth/Recent PHP checks 16/16; Chromium actual front-controller flow passes 13 themes at 390/1280px, long content without overflow, icon background checks and native no-JavaScript keyboard paging. Phone screenshots for three icon themes visually reviewed; screenshots kept only in /tmp, not repository.
+- Notes: Initial browser fixture omitted the templates symlink and failed; corrected fixture, complete rerun passed. No production/iPhone-device claim. Zero dependencies; estimates unchanged.
+
+*— Codex · 2026-10-30 UTC*
