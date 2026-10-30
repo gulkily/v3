@@ -282,7 +282,7 @@ final class StaticArtifactBuilder
     public function buildSingleRoute(string $route): bool
     {
         $normalizedRoute = $this->normalizeRoute($route);
-        if ($normalizedRoute === null) {
+        if ($normalizedRoute === null || (str_starts_with($normalizedRoute, '/profiles/') && !$this->prebuildProfilePages())) {
             return false;
         }
 

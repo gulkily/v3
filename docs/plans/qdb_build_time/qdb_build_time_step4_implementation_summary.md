@@ -28,3 +28,14 @@ Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, 
 - Notes: Runtime/stale-artifact transitions and browser flow belong to Stage 3. Dependencies added: zero. Scope/estimate unchanged; labor unmeasured.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 3 — Profile transitions and recovery
+
+**Original stage-work estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Disabled profiles bypass both public-root and release artifacts in PHP; shared refresh excludes copied profiles; single-route regeneration skips them. Added operator mode/rebuild/recovery guidance and concept entry.
+- Verification: Four focused PHP checks pass: both transitions, stale public/current artifacts, repeated runtime reads, changed profile, failed candidate retaining prior release and retry, shared refresh, approved and pending viewer access. Real Chromium browser flow passes directory → account → profile, disabled runtime delivery and flag presentation with JavaScript on/off, phone/desktop and 16 profile themes; no page overflow. Initial browser failures were incorrect test selectors (directory links to accounts first; flag title contains badges), corrected without product changes. Enabled artifacts remain covered by Stage 2 and transition tests. Diff/lint checks pass.
+- Notes: Direct physical HTML requests bypass PHP, documented for old exported public trees. No dependency delta, no UI navigation additions. Original scope/estimate unchanged; labor unmeasured.
+
+*— Codex · 2026-10-30 UTC*

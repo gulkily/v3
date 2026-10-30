@@ -4838,6 +4838,60 @@ PHP;
         }
     }
 
+    public function testProfileDeliveryTransitionsIgnoreStaleArtifactsAndRecover(): void
+    {
+        $root = sys_get_temp_dir() . '/profile-transition-' . bin2hex(random_bytes(6));
+        $previous = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
+        mkdir($root . '/public/profiles', 0777, true);
+        try {
+            (new ReadModelBuilder($this->repositoryRoot, $this->databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
+            $pdo = new PDO('sqlite:' . $this->databasePath);
+            $slug = $pdo->query('SELECT profile_slug FROM profiles LIMIT 1')->fetchColumn();
+            $route = '/profiles/' . $slug;
+            $publisher = new StaticArtifactReleasePublisher(dirname(__DIR__), $this->repositoryRoot, $root . '/static');
+            $render = function () use ($root, $route): string {
+                return $this->renderFrontController(new FrontController(dirname(__DIR__), $this->repositoryRoot, $this->databasePath, $root . '/static', $root . '/public'), 'GET', $route, []);
+            };
+            putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=true');
+            $publisher->activate($publisher->build($this->databasePath));
+            assertStringContains('route-source: static-html', $render());
+            file_put_contents($root . '/public' . $route . '.html', 'stale-public-profile');
+            putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=false');
+            foreach ([1, 2] as $_) {
+                $html = $render();
+                assertSame(200, http_response_code());
+                assertStringNotContains('stale-public-profile', $html);
+                assertStringNotContains('route-source: static-html', $html);
+            }
+            $publisher->activate($publisher->buildSharedRefresh($this->databasePath));
+            assertFalse(is_dir($root . '/static/current/profiles'));
+            assertFalse((new StaticArtifactBuilder(dirname(__DIR__), $this->repositoryRoot, $this->databasePath, $root . '/static/current'))->buildSingleRoute($route));
+            $publisher->activate($publisher->build($this->databasePath));
+            $active = realpath($root . '/static/current');
+            try {
+                $publisher->build($this->databasePath, static function (): void { throw new RuntimeException('profile candidate failure'); });
+                throw new RuntimeException('Failure injection did not run');
+            } catch (RuntimeException $error) {
+                assertSame('profile candidate failure', $error->getMessage());
+            }
+            assertSame($active, realpath($root . '/static/current'));
+            assertSame([], glob($root . '/static/.candidate-*'));
+            $pdo->exec("UPDATE profiles SET username = 'Updated profile' WHERE profile_slug = " . $pdo->quote($slug));
+            assertStringContains('Updated profile', $render());
+            unlink($root . '/public' . $route . '.html');
+            putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=true');
+            // Shared refresh does not invent missing detail artifacts; runtime remains available until full build.
+            $publisher->activate($publisher->buildSharedRefresh($this->databasePath));
+            assertSame(200, http_response_code());
+            assertStringContains('Updated profile', $render());
+            $publisher->activate($publisher->build($this->databasePath));
+            assertStringContains('route-source: static-html', $render());
+        } finally {
+            putenv($previous === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $previous);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testStaticProfileControlIsIndependentAndPreservesReadModel(): void
     {
         $root = sys_get_temp_dir() . '/profile-control-' . bin2hex(random_bytes(6));

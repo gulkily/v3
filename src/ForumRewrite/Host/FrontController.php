@@ -171,7 +171,9 @@ final class FrontController
             return;
         }
 
-        $staticArtifact = $approvedMembersOnly ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
+        $runtimeProfile = preg_match('#^/profiles/[^/]+/?$#', parse_url($requestUri, PHP_URL_PATH) ?: '/') === 1
+            && !$featureFlags->isEnabled(FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED);
+        $staticArtifact = ($approvedMembersOnly || $runtimeProfile) ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             (new VisitorStatisticsObserver($this->projectRoot))->record($method, parse_url($requestUri, PHP_URL_PATH) ?: '/');
             $contents = file_get_contents($staticArtifact);
