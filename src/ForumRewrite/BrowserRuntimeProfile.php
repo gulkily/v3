@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 final class BrowserRuntimeProfile
 {
-    private const OFFLINE_CACHE_VERSION = 14;
+    private const OFFLINE_CACHE_VERSION = 15;
 
     /**
      * @param array<string, mixed> $profile

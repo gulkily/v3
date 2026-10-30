@@ -3812,7 +3812,7 @@ PHP;
         assertStringContains('force: true', (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_health.js'));
         assertStringContains('networkFirstNavigation', $serviceWorker);
         assertStringContains('offlineCachePrefix', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v14', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v15', $serviceWorker);
         assertStringContains('[offline reading] fetch failed', $serviceWorker);
         assertStringContains('offline reader shell', $serviceWorker);
         assertStringContains('__offline_bootstrap', $serviceWorker);

@@ -45,3 +45,15 @@ Entry: Step 3 approved, 2026-10-30 UTC; branch feature/bounded-tag-pages; planni
 - Notes: Original scope/estimate unchanged. Publication is verified locally with fixtures; live host remains pending.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 4 - Offline saved tag pages
+
+**Original estimate: 0.18**
+
+**Retrospective stage work: 0.18**
+
+- Changes: Saved tag cards paginate in groups of 25 using native navigation classes, snapshot/tag-scoped positions, explicit foreign/stale/online recovery and popstate handling. Cache revision 14 to 15 delivers the updated reader without changing snapshot schema/generation. Stage 3 commit: 1f6ee8b5.
+- Verification: Offline presentation/worker/profile tests 25/25 plus new saved-tag regression 1/1; 65 saved matches traverse and reverse, changed membership/generation/tag and malformed/online positions reject without rendering unrelated cards. JavaScript syntax passed.
+- Notes: Original scope/estimate unchanged. Existing saved grouping remains; this stage bounds rendered cards, not snapshot generation. Full browser offline/reconnect evidence belongs to Stage 6.
+
+*— Codex · 2026-10-30 UTC*

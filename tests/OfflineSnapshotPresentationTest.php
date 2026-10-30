@@ -368,4 +368,30 @@ NODE;
         assertSame('A reply with a &lt;script&gt; tag &amp; an &quot;quote&quot;.', $result['replyBody']);
         assertSame('Image unavailable offline — &lt;pixel&gt;', $result['imageBody']);
     }
+    public function testSavedTagPaginationIsBoundedAndRejectsOtherSnapshots(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs'), vm = require('vm'), assert = require('assert/strict');
+global.window = {}; global.document = {addEventListener(){}};
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const api = window.forumOfflineSnapshot;
+const group = {tag:'news', threads:Array.from({length:65},(_,i)=>({id:'id-'+i,lastActivityAt:'2026-10-30'}))};
+const a = api.savedTagPage(group, null, 'snapshot-1');
+const b = api.savedTagPage(group, a.next, 'snapshot-1');
+const c = api.savedTagPage(group, b.next, 'snapshot-1');
+assert.deepEqual([a.items.length,b.items.length,c.items.length],[25,25,15]);
+assert.equal(new Set([...a.items,...b.items,...c.items].map(t=>t.id)).size,65);
+assert.deepEqual(api.savedTagPage(group,c.previous,'snapshot-1').items,b.items);
+assert.equal(api.savedTagPage(group,a.next,'snapshot-2').invalid,true);
+assert.equal(api.savedTagPage({...group,tag:'other'},a.next,'snapshot-1').invalid,true);
+assert.equal(api.savedTagPage({...group,threads:group.threads.slice(1)},a.next,'snapshot-1').invalid,true);
+for (const token of ['', 'bad', 'a'.repeat(8193), [], btoa(JSON.stringify({version:1,context:'tag:news:activity:desc',direction:'next',boundary:{activity:'x',id:'y'}}))]) {
+ const page=api.savedTagPage(group,token,'snapshot-1');assert.equal(page.invalid,true);assert.equal(page.items.length,0);
+}
+console.log('saved tag pagination ok');
+NODE;
+        exec('node -e ' . escapeshellarg($script) . ' ' . escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js') . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+    }
+
 }

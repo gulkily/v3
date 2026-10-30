@@ -107,7 +107,7 @@ final class SiteProfileRegistryTest
             assertSame('forum-' . $profile['browserNamespace'] . '-theme', $runtime['themeStorageKey']);
             assertSame('forum-' . $profile['browserNamespace'] . '-thread-density', $runtime['threadDensityStorageKey']);
             assertSame($profile['browserNamespace'] . '-offline-reader-', $runtime['offlineCachePrefix']);
-            assertSame($runtime['offlineCachePrefix'] . 'v14', $runtime['offlineCacheName']);
+            assertSame($runtime['offlineCachePrefix'] . 'v15', $runtime['offlineCacheName']);
         }
     }
 

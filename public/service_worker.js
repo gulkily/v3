@@ -1,7 +1,7 @@
 const RUNTIME = self.__forumBrowserRuntime || {
   namespace: "zenmemes",
   offlineCachePrefix: "zenmemes-offline-reader-",
-  offlineCacheName: "zenmemes-offline-reader-v14"
+  offlineCacheName: "zenmemes-offline-reader-v15"
 };
 const CACHE_NAME = RUNTIME.offlineCacheName;
 const CACHE_PREFIX = RUNTIME.offlineCachePrefix;
