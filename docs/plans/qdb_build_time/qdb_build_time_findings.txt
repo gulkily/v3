@@ -1,0 +1,35 @@
+Investigation: QDB successful-build time reduction
+Date: 2026-10-30 UTC
+Application inspection baseline: 4abda3dbd144370a3353781b29e8690e46d47d88
+Evidence: User-reported production log and local source inspection; no production access or new benchmark campaign
+
+Production result: Activated release /home/qdb/v3/state/static_html/releases/release-20261030201011-af62aa46
+Wall elapsed reported by application: 314.961 seconds
+Commit indexing: 39.1605 seconds
+Activity evidence indexing: 44.503 seconds
+Combined measured phases: 83.6635 seconds, about 26.6 percent of total
+Remaining time: 231.2975 seconds across all other phases, not attributable solely to profiles
+Artifacts: 5253 HTML files and 53 assets; profile enumeration reported 5215 total
+Shell timing: real 315.077 seconds; user CPU 99.683 seconds; sys CPU 168.179 seconds
+Interpretation: High kernel CPU warrants investigating process/filesystem overhead. It is not a direct disk-wait measurement or proof of one cause.
+
+Finding: T01
+Source: src/ForumRewrite/Host/StaticArtifactBuilder.php, buildFromReadModel profile loop
+Evidence: Profiles are always enumerated and rendered once each. The existing prebuildDetailPages flag only guards thread/post detail loops. There is one artifact path per profile, so the reported profile count corresponds to about 99.3 percent of HTML output count, not measured elapsed time.
+Direction: Explicit profile-prebuild control; preserve profile routes and shared identity data. Reduce eager artifacts only where runtime serving is available; static-only export needs opt-in retention. Validate full release replacing old artifacts, shared refresh, stale public-root fallback, cold request latency and private/member-only handling before enabling on QDB.
+Unknown: Profile pass duration and cost distribution within individual profile renders. The log's 675/5215 is intermediate progress, not a timing sample.
+
+Finding: T02
+Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php, indexCommits
+Evidence: One git log --shortstat history walk computes commit headers and short statistics; PHP retains all lines and stores only the number of changed files, not added/deleted line counts.
+Direction: Investigate a bounded file-count-only history stream, retaining current commit metadata/count semantics, including root commits, merges, renames, binary changes and failures. Avoid merely dropping file_count.
+Unknown: How much of the reported 39.1605 seconds is Git diff work versus output parsing/insertion; source suggests avoidable work, not a quantified speedup.
+
+Finding: T03
+Source: src/ForumRewrite/ReadModel/ActivityEvidenceIndex.php, refresh/refreshBatch; src/ForumRewrite/Activity/ActivityService.php, primeCommitEvidence
+Evidence: Pending activity is fetched in 200-row batches ordered by source commit. Each batch constructs fresh services, each priming up to 32 commit manifests through Git. A commit spanning several 200-row batches can be read repeatedly; the previous service's manifest cache is discarded. Each manifest itself is fully materialized.
+Direction: Reduce repeated commit reads without restoring corpus-sized retention or retaining a giant manifest indefinitely. Preserve relevant-file mapping, rename behavior, missing-history recovery, signatures and attribution. Reuse M03 evidence from the QDB memory audit; do not count as a newly discovered independent defect.
+Unknown: Number/size of production commits, batch overlap frequency and actual Git invocations. These are needed to quantify the opportunity within 44.503 seconds.
+
+Measurement approach proposed: Same corpus/revision, PHP binary, limits, feature settings and output destination; separate full rebuild from render phase. Record full wall/CPU time, each phase, HTML counts, peak PHP memory and profile request latency. Identify cold versus warm repeats; do not attribute all remaining time to profiles. Compare full read-model/evidence results for history changes and published/direct/authorized profile behavior for artifact changes.
+Boundaries: No source/runtime/config changes, benchmarks, deployment, new dependencies or history suppression performed. Follow-up is distinct from completed tag pagination and still-pending capacity/load-before-selection audits.
