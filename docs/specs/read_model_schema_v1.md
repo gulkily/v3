@@ -587,3 +587,11 @@ Counts and page/existence queries share `identityEligibility`; existing username
 aggregate interfaces retain their previous behavior. A deleted boundary remains
 usable through key comparisons. An empty positioned list offers first-page
 recovery and a return direction when eligible rows remain.
+
+## Version 39 — Bounded tag selection
+
+Tag pages select eligible roots by board tags or thread labels, with hidden-bootstrap
+and retracted roots excluded before pagination. Membership is case-insensitive and
+deduplicated per root. Activity time and root ID descending are stable page boundaries;
+only 25 selected roots are hydrated. Tables are unchanged. Prior-version startup
+rebuilds before the new query executes, following the core-query version contract.

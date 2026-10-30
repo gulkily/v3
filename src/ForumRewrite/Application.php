@@ -1039,7 +1039,7 @@ final class Application
         }
 
         if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
-            $html = $this->tagsPageController()->tag($matches[1]);
+            $html = $this->tagsPageController()->tag($matches[1], $query['position'] ?? null);
             if ($html === null) {
                 $this->notFound();
                 return;

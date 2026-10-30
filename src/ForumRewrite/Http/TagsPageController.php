@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\ReadModel\TagGrouping;
+use ForumRewrite\ReadModel\TagPage;
+use ForumRewrite\Pagination\PageNavigation;
 use ForumRewrite\ReadModel\ThreadRepository;
 
 /**
@@ -44,18 +46,29 @@ final class TagsPageController
         );
     }
 
-    public function tag(string $tag): ?string
+    public function tag(string $tag, mixed $position = null): ?string
     {
-        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
-        $group = TagGrouping::find(TagGrouping::byTag($threads), $tag);
-        if ($group === null) {
-            return null;
+        $tag = strtolower($tag);
+        $error = null;
+        try {
+            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
+            $cursor = $position === null ? null : PageNavigation::decode($position, TagPage::context($tag));
+            $page = TagPage::page($this->routeServices->pdo(), $tag, $cursor['boundary'] ?? null, $cursor['direction'] ?? 'next');
+        } catch (\InvalidArgumentException $exception) {
+            $error = $exception->getMessage();
+            $page = ['items' => [], 'previous' => null, 'next' => null, 'exists' => true];
         }
+        if (!$page['exists'] && $position === null) return null;
+        $group = ['tag' => $tag, 'threads' => $page['items']];
+        $pagination = PageNavigation::links('/tags/' . $tag, [], TagPage::context($tag), $page['previous'], $page['next'],
+            $error !== null || ($position !== null && $page['items'] === []));
 
         return $this->routeServices->renderPageTemplate(
             'tag.php',
             [
                 'group' => $group,
+                'pagination' => $pagination,
+                'paginationError' => $error,
             ],
             '#' . $group['tag'] . ' - Tag',
             'board',
