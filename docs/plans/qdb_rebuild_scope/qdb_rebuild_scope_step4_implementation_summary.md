@@ -69,3 +69,15 @@ Entry: Step 3 approved, 2026-10-30 UTC; branch feature/bounded-tag-pages; planni
 - Notes: Original scope/estimate unchanged. Hydration/output bounded; SQLite candidate examination not instrumented and may scale with corpus. Legacy index failure reproduced in predecessor fix; current index and first-tag paths both exercised. Live failing tag is unknown, production retry pending; no full-scale build capacity claim.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 6 - Verification checkpoint before requested merge
+
+**Original estimate: 0.14**
+
+Status: In progress; no retrospective assessment or completed-cycle claim.
+Request: User explicitly requested merge and push now, then continued testing. This authorizes an early integration checkpoint before Stage 6 completion; remaining verification and corrective work continue afterward.
+Changes: Added real-browser fixture and pagination flow covering native online and service-worker offline navigation.
+Verification so far: Browser online checks pass with JavaScript disabled/enabled, keyboard, history and failed-navigation retry; 16 themes at phone/desktop pass overflow and pagination stability checks. Real-worker offline check is still running. Stages 1–5 remain locally verified; production host recovery and full-suite results are not claimed.
+Next: Complete offline/browser checks, fix findings, finish catalog/concepts/ledger and final focused regression evidence. Unrelated audit drafts remain outside integration.
+
+*— Codex · 2026-10-30 UTC*
