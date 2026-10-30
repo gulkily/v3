@@ -6,6 +6,16 @@ use ForumRewrite\Support\UnicodeTextPolicy;
 
 final class UnicodeTextPolicyTest
 {
+    public function testComposedClusterRetainsFormatCharacterPosition(): void
+    {
+        if (!class_exists(\Normalizer::class)) return;
+        try { (new UnicodeTextPolicy())->normalizeBody("e\u{0301}\u{200D}x", 'body'); }
+        catch (\ForumRewrite\Support\TextValidationException $error) {
+            assertSame(2, $error->chars[0]['index']); return;
+        }
+        throw new RuntimeException('Expected joiner rejection.');
+    }
+
     public function testDiagnosticsUseOriginalCodePointPositions(): void
     {
         $prefix = class_exists(\Normalizer::class) ? "  Cafe\u{0301}\r\n" : "  Café\r\n";

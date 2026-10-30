@@ -49,3 +49,13 @@ Verification: FrmClientTest: 2/2 passed, including downloaded client first threa
 Notes: Replay/recovery orchestration and detailed failure tests follow in S5/S7. Generated keys are unencrypted, confined to private local directories; no private material sent. No estimate revision.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 5 - Bounded retries and resumable recovery
+
+Original estimate: 0.18
+Retrospective stage work: 0.20
+Changes: Default two busy retries (configurable 0–5), honored Retry-After with waits above 60 seconds left to explicit resumption; exact payload persistence and thread/reply --resume. In-flight operations block new writes. Signed bundles replay unchanged; legacy finalization reconciles readback and stops when missing/unknown, while interrupted registration resolves the same key. Rejected signed validation permits a corrected new draft. Errors show original-file positions through NFC/newlines; corrected composed-grapheme mapping for a format character after an accent.
+Verification: FrmClientTest 7/7 and UnicodeTextPolicyTest 13/13 passed. Real HTTP/GPG tests inject accepted-but-lost responses on both protocols, bounded busy/exact payload retries, interrupted legacy registration, missing/expired legacy token, blocked duplicate write and original-coordinate character correction. Commit HEAD remains unchanged on accepted retry. No protocol fallback after submission.
+Notes: Older prepared API cannot prove non-acceptance from a missing read; operator reconciliation is the explicit recovery boundary. A killed process may leave writing.lock; help/error names the empty directory to remove only after confirming no client is active. Stage retrospective increased for recovery integration; whole-cycle projection remains 0.95, no scope change or measured labor claim.
+
+*— Codex · 2026-10-30 UTC*

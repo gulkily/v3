@@ -7,6 +7,110 @@ final class FrmClientTest
         $cmd='python3 '.escapeshellarg($script).' '.implode(' ',array_map('escapeshellarg',$args));
         exec($cmd.' 2>&1',$output,$code); return [$code,implode("\n",$output)];
     }
+    public function testLostResponseResumeWithoutDuplicateForBothProtocols(): void
+    {
+        foreach ([false,true] as $legacy) {
+            [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+            try {
+                $marker=$root.'/lose-response'; file_put_contents($marker,'yes');
+                $router=$server->directory.'/public/router.php';
+                $route=$legacy?'/api/create_prepared_post':'/api/create_signed_post';
+                $hook='if ($_SERVER["REQUEST_URI"] === '.var_export($route,true).') ob_start(function($body) { if (is_file('.var_export($marker,true).')) { unlink('.var_export($marker,true).'); http_response_code(502); return "response lost"; } return $body; });';
+                if ($legacy) $hook.='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body));';
+                file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
+                $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+                file_put_contents($root.'/body.txt',"Recovery body.\n");
+                $base=['--site',$server->url,'--state-dir',$root.'/client','--retries','0'];
+                $write=['thread','--subject','Recovery','--body-file',$root.'/body.txt'];
+                [$code,$out]=self::run($script,array_merge($base,$write)); assertSame(2,$code,$out); assertStringContains('Resume:',$out);
+                $operation=glob($root.'/client/*/operation-*')[0];
+                $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$head=$tx->git(['rev-parse','HEAD']);
+                [$code,$out]=self::run($script,array_merge($base,$write));assertSame(2,$code,$out);assertStringContains('Unresolved operation',$out);
+                [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);
+                assertSame($head,$tx->git(['rev-parse','HEAD']));
+                \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+            } finally {$server->close();}
+        }
+    }
+
+    public function testBusyRetriesAreBoundedAndExact(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        try {
+            $counter=$root.'/attempts';$hashes=$root.'/hashes';
+            $hook='if ($_SERVER["REQUEST_URI"] === "/api/create_signed_post") { $n=is_file('.var_export($counter,true).')?(int)file_get_contents('.var_export($counter,true).'):0; file_put_contents('.var_export($counter,true).', $n+1); file_put_contents('.var_export($hashes,true).',hash("sha256",file_get_contents("php://input"))."\n",FILE_APPEND); if($n<3) {http_response_code(503);header("Retry-After: 0");echo json_encode(["status"=>"busy","error"=>"busy","retry_after"=>0]);return;} }';
+            $router=$server->directory.'/public/router.php';file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            file_put_contents($root.'/body.txt',"Busy body.\n");
+            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Busy','--body-file',$root.'/body.txt']));
+            assertSame(2,$code,$out);assertSame('3',file_get_contents($counter));
+            $operation=glob($root.'/client/*/operation-*')[0];
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);
+            assertSame(1,count(array_unique(file($hashes,FILE_IGNORE_NEW_LINES))));
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
+    public function testCharacterCorrectionPreservesOriginalPositionsAndKey(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
+        try {
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $body="  Cafe\u{0301}\r\nx→\n";file_put_contents($root.'/body.txt',$body);
+            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $write=['thread','--subject','Correction','--body-file',$root.'/body.txt'];
+            [$code,$out]=self::run($script,array_merge($base,$write)); assertSame(2,$code,$out);assertStringContains('U+2192 at body index 10',$out);
+            $operation=glob($root.'/client/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
+            file_put_contents($root.'/body.txt',"Café accepted.\n");
+            [$code,$out]=self::run($script,array_merge($base,$write));assertSame(0,$code,$out);
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
+    public function testInterruptedLegacyRegistrationResolvesSameIdentity(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        try {
+            $marker=$root.'/lose-registration';file_put_contents($marker,'yes');
+            $router=$server->directory.'/public/router.php';
+            $hook='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body)); if($_SERVER["REQUEST_URI"] === "/api/create_identity") ob_start(function($body) { if(is_file('.var_export($marker,true).')) {unlink('.var_export($marker,true).');http_response_code(502);return "lost";}return $body;});';
+            file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            file_put_contents($root.'/body.txt',"Registered then resumed.\n");
+            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $before=count(glob($repo.'/records/identity/*'));
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Recovery','--body-file',$root.'/body.txt'])); assertSame(2,$code,$out);
+            $operation=glob($root.'/client/*/operation-*')[0]; assertStringContains('registration-sending',file_get_contents($operation.'/operation.txt'));
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);
+            assertSame($before+1,count(glob($repo.'/records/identity/*')));
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
+    public function testLegacyMissingTokenAndUnknownReadDoNotReprepare(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        try {
+            $marker=$root.'/block';file_put_contents($marker,'yes');
+            $router=$server->directory.'/public/router.php';
+            $hook='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body)); if($_SERVER["REQUEST_URI"] === "/api/create_prepared_post" && is_file('.var_export($marker,true).')) {http_response_code(503);echo "busy";return;}';
+            file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            file_put_contents($root.'/body.txt',"Uncertain.\n");
+            $base=['--site',$server->url,'--state-dir',$root.'/client','--retries','0'];
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Recovery','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
+            $operation=glob($root.'/client/*/operation-*')[0];
+            $head=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(2,$code,$out);assertStringContains('outcome is unresolved',$out);
+            // Simulate saved ready state after interruption before its first finalization, with an expired token.
+            unlink($marker);$meta=$operation.'/operation.txt';file_put_contents($meta,str_replace('State: sending','State: ready',file_get_contents($meta)));file_put_contents($operation.'/prepare_token.txt','expired');
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(2,$code,$out);
+            assertSame($head,(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']));
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
     public function testFirstWriteReuseAndLegacyFallback(): void
     {
         foreach ([false,true] as $legacy) {

@@ -40,9 +40,15 @@ final class TextValidationException extends RuntimeException
         foreach ($groups[0] as $group) {
             $normalized = \Normalizer::normalize($group, \Normalizer::FORM_C);
             $length = mb_strlen($group, 'UTF-8');
-            // Unchanged clusters retain each position; composed clusters point to their start.
-            for ($j = 0; $j < mb_strlen($normalized, 'UTF-8'); $j++) {
-                $result[] = $map[$at + ($normalized === $group ? $j : 0)];
+            $decomposedMap = [];
+            foreach (preg_split('//u', $group, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $j => $char) {
+                $decomposed = \Normalizer::normalize($char, \Normalizer::FORM_D);
+                for ($k = 0; $k < mb_strlen($decomposed, 'UTF-8'); $k++) $decomposedMap[] = $map[$at + $j];
+            }
+            $position = 0;
+            foreach (preg_split('//u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+                $result[] = $decomposedMap[$position];
+                $position += mb_strlen(\Normalizer::normalize($char, \Normalizer::FORM_D), 'UTF-8');
             }
             $at += $length;
         }
