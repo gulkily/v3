@@ -1,5 +1,13 @@
 # Agent instructions
 
+## Implementation standards apply to every workflow
+
+Staged Railspike, Railspike one-shot, and Direct work use the same implementation standards. One-shot or Direct execution can skip multiple planning steps; it does not waive component reuse, scope boundaries, risk handling, or verification. Keep the selected workflow's approval and record requirements; this clarification does not require restarting Direct work as a staged cycle or enroll it in the effort study.
+
+- Before adding markup, CSS, behavior, or API payloads, inspect existing implementations and identify the canonical components/contracts to reuse or extend. Record the relevant paths and reuse decisions in the task's existing checklist or implementation record. If a new component is necessary, explain why existing ones do not fit; do not duplicate them merely because planning steps were skipped.
+- Define completion through the ordinary UI/CLI entry, the end-to-end result, and required failure/retry recovery. Resolve material risks before dependent implementation and keep changes within the authorized scope.
+- Apply the same relevant project checks in every workflow, including affected shared consumers, themes, roles, and applicable migration/deployment dependencies. For a reported user/environment failure, replay that condition or explicitly report it unverified; a pass elsewhere does not establish recovery. Record checks and limitations honestly before calling the work complete.
+
 ## Current retraction coordination
 
 Before work involving retraction, publication guards, or registration's retraction requirements, read [the 2026-10-24 handoff](docs/plans/retraction_simplification_handoff.md). The user wants immediate content deletion with a retained retraction record, followed by later history purge, and canceled the sweep diagnostics plan. The handoff records the intended simplification and its approval boundaries.

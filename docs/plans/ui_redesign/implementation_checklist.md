@@ -123,6 +123,8 @@ Mockup: `thread.html`. Templates: `pages/thread.php`, `partials/thread_root_card
 - [ ] Hooks: `data-sky` (original poster) on the page, `--person` on posts and replies.
 - Done when: reading, liking, replying and the agent states work on phone without the keyboard hiding the reply box.
 
+Built 2026-10-27 on `feat/ui-thread-reply-dock` (six stages, not merged). After trying it the user asked to remove the docked reply bar; scope revision v2 (in `docs/plans/ui_thread_reply_dock/` on that branch) drops the dock and keeps in-place replies, tag-only lines, agent wording and hooks. **Paused 2026-10-28** at the user's request ("skip this one for now, keep the plan"); resume with renewed Step 2 approval. Open question: whether the post-send floating reply field also goes on ZenMemes.
+
 ### Cycle 4: `ui_account_states`
 
 **Process: Railspike, no Step 1.**
@@ -210,7 +212,7 @@ Mockups: `messages.html`, `conversation.html`. Templates: `pages/private_message
 - [x] Hooks: `--person` on the conversation, a starfield slot on the first-message screen, a hook on incoming messages for the decrypt effect.
 - Done when: reading, sending and recovering from each failure work on phone and desktop.
 
-Built 2026-10-29 on `feat/ui-messages` (six stages, not merged); see the [Step 4 summary](../ui_messages/ui_messages_step4_implementation_summary.md). Split at Step 2: two panes on desktop, a new-message member picker and loading more as you scroll are the proposed follow-up `ui_messages_panes`. Not built: "Seen" under your last message (would tell senders when it was read; a privacy decision and new API), Outbox queueing of messages (deferred 2026-10-26), avatars.
+Built 2026-10-29 on `feat/ui-messages` (six stages), merged into `main` 2026-10-29 (`3c404b302`) with the Account Continue and testing Approve fixes; see the [Step 4 summary](../ui_messages/ui_messages_step4_implementation_summary.md). Split at Step 2: two panes on desktop, a new-message member picker and loading more as you scroll are the proposed follow-up `ui_messages_panes`. Not built: "Seen" under your last message (would tell senders when it was read; a privacy decision and new API), Outbox queueing of messages (deferred 2026-10-26), avatars.
 
 ### Cycle 9: `ui_tools_launcher`
 
