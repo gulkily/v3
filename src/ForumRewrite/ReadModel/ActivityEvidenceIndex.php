@@ -25,9 +25,21 @@ final class ActivityEvidenceIndex
 
     public static function refresh(PDO $pdo, string $root, string $database): void
     {
-        $rows = $pdo->query('SELECT * FROM activity WHERE evidence_json IS NULL ORDER BY source_commit_sha, id')->fetchAll(PDO::FETCH_ASSOC);
         $update = $pdo->prepare('UPDATE activity SET evidence_json = ? WHERE id = ?');
-        if ($rows === []) return;
+        // Completed rows leave the existing pending-evidence index. Fetch a
+        // bounded batch and close its cursor before updating the same table.
+        while (true) {
+            $query = $pdo->query('SELECT * FROM activity WHERE evidence_json IS NULL ORDER BY source_commit_sha, id LIMIT 200');
+            $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+            $query->closeCursor();
+            if ($rows === []) return;
+            self::refreshBatch($pdo, $root, $database, $rows, $update);
+            unset($rows);
+        }
+    }
+
+    private static function refreshBatch(PDO $pdo, string $root, string $database, array $rows, \PDOStatement $update): void
+    {
         $signatures = [];
         foreach (array_chunk(array_unique(array_column($rows, 'source_path')), 200) as $paths) {
             $query = $pdo->prepare('SELECT source_path, signature_status FROM reaction_signatures WHERE source_path IN (' . implode(',', array_fill(0, count($paths), '?')) . ')');
