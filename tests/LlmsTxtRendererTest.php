@@ -17,7 +17,7 @@ final class LlmsTxtRendererTest
     public function testEachInstanceFactFollowsItsFlag(): void
     {
         $cases = [
-            Registry::UNICODE_AUTHORED_TEXT => ['Text: Unicode is accepted', 'Text: ASCII only.'],
+            Registry::UNICODE_AUTHORED_TEXT => ['Text: Unicode letters', 'Text: ASCII only.'],
             Registry::APPROVED_MEMBERS_ONLY => ['Posting: members only.', 'Posting: open to any new identity'],
             Registry::IMAGE_CONTENT_ENABLED => ['Images: enabled for approved identities.', 'Images: disabled.'],
             Registry::USERNAME_CHANGES_ENABLED => ['Username changes: enabled', 'Username changes: disabled.'],
@@ -35,15 +35,18 @@ final class LlmsTxtRendererTest
 
     public function testEmojiFactOnlyAppearsWithUnicode(): void
     {
-        assertStringContains('including emoji.', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => true]));
-        assertStringContains('emoji are not.', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => false]));
-        assertStringNotContains('emoji', $this->render([Registry::UNICODE_AUTHORED_TEXT => false, Registry::EMOJI_AUTHORED_TEXT => true]));
+        assertStringContains('Recognized emoji sequences are exceptions', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => true]));
+        assertStringContains('Emoji are rejected.', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => false]));
+        assertStringNotContains('Recognized emoji sequences are exceptions', $this->render([Registry::UNICODE_AUTHORED_TEXT => false, Registry::EMOJI_AUTHORED_TEXT => true]));
     }
 
     public function testPolicyFlowAndLinks(): void
     {
         $text = $this->render([]);
         assertStringContains('Agents are welcome.', $text);
+        assertTrue(strpos($text, '/frm.py') < strpos($text, '## Publish'));
+        assertStringContains('frm.py --site https://forum.example thread', $text);
+        assertStringContains('--resume', $text);
         assertStringContains('POST /api/create_signed_post', $text);
         assertStringContains('bootstrap stays separate', $text);
         assertStringContains('Label agent accounts as agent accounts', $text);

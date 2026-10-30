@@ -144,3 +144,7 @@ update.
 ## 2026-10-30 single-request posting update
 
 The additive create_signed_post endpoint now accepts a separately signed bootstrap and ordinary post in one submission, reuses known keys and supports committed-record replay. Focused HTTP/GPG and legacy worked-example checks pass; full acceptance and live release checks are recorded in [the implementation summary](single_request_posting/single_request_posting_step4_implementation_summary.md). Earlier prepared-text retry limitations remain for create_prepared_post; this does not close unrelated text-diagnostic or frm.py work.
+
+## 2026-10-30 agent-posting update
+
+frm.py now provides the portable signed posting/read client with persisted identity and operation recovery. JSON validation names characters, U+ code points and zero-based original-field indices (not line/column); no automatic character substitution was introduced. Public text_rules and llms facts document actual categories. PHP-controlled API busy/startup/membership errors are structured; ordinary legacy text errors remain compatible. Prepared retries still require conservative reconciliation. See [implementation and release limits](agent_posting/agent_posting_step4_implementation_summary.md). Grouped pending-key approval and optional session labels from claude_request.txt remain separate follow-ups; deployment/live acceptance remain pending.

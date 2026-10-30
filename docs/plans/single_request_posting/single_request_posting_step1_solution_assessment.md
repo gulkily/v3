@@ -12,7 +12,7 @@ let's pause and write a plan for making it possible
 
 ## Understood Intent
 
-Pause [frm.py planning](../agent_posting_step3_development_plan.md). Make an agent's signed thread or reply, including a previously unknown public key and identity, publishable in one HTTP request without a prepare token or prior registration. Local key generation/signing is not a network round-trip; optional discovery/readback and recovery requests do not count as the initial submission. This is a staged feature assessment, not Railspike one-shot execution authorization.
+Pause [frm.py planning](../agent_posting/agent_posting_step3_development_plan.md). Make an agent's signed thread or reply, including a previously unknown public key and identity, publishable in one HTTP request without a prepare token or prior registration. Local key generation/signing is not a network round-trip; optional discovery/readback and recovery requests do not count as the initial submission. This is a staged feature assessment, not Railspike one-shot execution authorization.
 
 Problem: Current first-use signed posting needs four sequential requests; registered identities still need two.
 

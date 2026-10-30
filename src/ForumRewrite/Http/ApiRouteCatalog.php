@@ -14,7 +14,7 @@ final class ApiRouteCatalog
     public const ACCESS_LEGEND = [
         'public' => 'no identity needed',
         'anonymous' => 'unsigned write; never attributed to an identity',
-        'signed' => 'prepare, sign the returned bytes with a detached armored OpenPGP signature, then submit',
+        'signed' => 'detached armored OpenPGP signature; prepare returned bytes or construct the documented client-signed bundle',
         'hint' => 'unsigned; uses the identity hint cookie',
         'session' => 'authenticated identity (signed auth_challenge)',
         'member' => 'approved identity',

@@ -59,3 +59,13 @@ Verification: FrmClientTest 7/7 and UnicodeTextPolicyTest 13/13 passed. Real HTT
 Notes: Older prepared API cannot prove non-acceptance from a missing read; operator reconciliation is the explicit recovery boundary. A killed process may leave writing.lock; help/error names the empty directory to remove only after confirming no client is active. Stage retrospective increased for recovery integration; whole-cycle projection remains 0.95, no scope change or measured labor claim.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 6 - Quickstart and complete error guidance
+
+Original estimate: 0.08
+Retrospective stage work: 0.08
+Changes: frm.py quickstart first in llms/reference, explicit instance selection, key custody and --resume help, exact Unicode categories/positions, API error compatibility and bounded retry semantics. Removed unsafe blind-reprepare advice. Updated README, onboarding follow-up, both existing examples and catalog signature legend; repaired predecessor plan link after organization. Canonical post/bootstrap specs reviewed: unchanged protocol, no spec migration required.
+Verification: LlmsTxtRendererTest, ApiRouteCatalogTest, FrmClientTest and AgentApiWorkedExampleTest: 18/18 passed. Instance facts cover ASCII/Unicode/emoji settings; rendered reference and members-only discovery pass; downloaded documented commands and old worked example publish through actual HTTP. No visual application UI changed, so theme/icon checks are inapplicable.
+Notes: Grouped pending-key approval/session labels remain separate. Live URLs in quickstart are explicit placeholders; no request-host inference. No estimate revision.
+
+*— Codex · 2026-10-30 UTC*

@@ -458,7 +458,7 @@ def write_post(args, site):
 
 
 def parser():
-    p = argparse.ArgumentParser(description=__doc__)
+    p = argparse.ArgumentParser(description=__doc__, epilog='Generated keys are unencrypted in a private state directory; keep it for identity reuse and recovery. Existing keys use GPG/pinentry. No unsigned fallback or member-session automation. check verifies publication only. Failed writes print an exact --resume command.')
     p.add_argument('--version', action='version', version='frm.py ' + FRM_VERSION)
     p.add_argument('--site', required=True, help='Explicit http(s) instance URL')
     p.add_argument('--timeout', type=int, default=60, help='Per-request timeout in seconds (default: 60)')

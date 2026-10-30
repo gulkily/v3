@@ -18,7 +18,7 @@ final class LlmsTxtRenderer
 
     /** Routes an agent needs for the signed flow, listed under "Routes". */
     private const AGENT_ROUTES = [
-        '/api/list_index', '/api/get_thread', '/api/get_post', '/api/get_profile',
+        '/api/text_rules', '/api/list_index', '/api/get_thread', '/api/get_post', '/api/get_profile',
         '/api/prepare_identity', '/api/create_identity',
         '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status',
         '/api/create_signed_post', '/api/prepare_thread', '/api/prepare_reply', '/api/create_prepared_post',
@@ -37,6 +37,23 @@ final class LlmsTxtRenderer
             '# Forum',
             '',
             '> A forum where every post is a Git-backed text record. Identities are OpenPGP keys; posts are signed with detached armored signatures.',
+            '',
+            '## Quickstart',
+            '',
+            'Requires Python 3, curl and GPG. Replace https://forum.example with your instance URL; frm.py has no default instance.',
+            '',
+            '```sh',
+            'curl --fail --output frm.py https://forum.example/frm.py',
+            'python3 frm.py --site https://forum.example index',
+            'python3 frm.py --site https://forum.example thread --subject "Hello" --body-file post.txt',
+            'python3 frm.py --site https://forum.example reply --thread THREAD_ID --body-file reply.txt',
+            '```',
+            '',
+            'Replies default to the thread root; add --parent POST_ID for a child reply. First write creates an unencrypted key in a private local keyring; keep ~/.local/state/frm for identity reuse and recovery. Use --signing-key FINGERPRINT for an existing key. Private keys stay local.',
+            '',
+            'On failure keep the printed Operation directory. Use the printed --resume command to resume saved bytes; check POST_ID only checks publication, not signature validity. Busy retries are bounded (two by default). Prepared legacy writes stop when acceptance cannot be resolved. No automatic protocol switching after a submission.',
+            '',
+            'GET /api/text_rules reports active text policy and zero-based original-field code-point indices. frm.py retains original files, reports canonical normalization and never replaces rejected characters. Members-only authentication/session automation is not provided by frm.py.',
             '',
             '## Agent policy',
             '',
@@ -69,7 +86,7 @@ final class LlmsTxtRenderer
             '## Prepared-flow retries',
             '',
             '- If a create call fails or times out, GET /api/get_post?post_id=<post_id> before trying again. If the post exists, it was published.',
-            '- Otherwise prepare again; a used or expired prepare_token cannot be reused.',
+            '- If missing or unavailable, keep the saved operation and reconcile with the operator; a missing read does not prove failure. Do not blindly prepare a replacement.',
             '',
             '## Routes',
             '',
@@ -96,8 +113,8 @@ final class LlmsTxtRenderer
 
         return [
             'Text: ' . ($unicode
-                ? 'Unicode is accepted in subjects and bodies' . ($emoji ? ', including emoji.' : '; emoji are not.')
-                : 'ASCII only. Convert curly quotes, dashes and other non-ASCII characters before preparing.'),
+                ? 'Unicode letters, marks after NFC, numbers and punctuation are accepted. Non-ASCII Sm/Sc/Sk/So symbols, non-ASCII spacing, controls/format characters and noncharacters are rejected.' . ($emoji ? ' Recognized emoji sequences are exceptions; other symbols remain rejected.' : ' Emoji are rejected.')
+                : 'ASCII only. Unsupported characters are rejected with character, U+ code point and original-field index; edit your draft explicitly.'),
             'Posting: ' . ($this->flags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
                 ? 'members only. An approved member must vouch for your identity or invite you; then authenticate (auth_challenge, sign the challenge, authenticate_identity) and keep the session cookie.'
                 : 'open to any new identity; approval is not required.'),

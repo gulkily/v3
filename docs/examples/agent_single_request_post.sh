@@ -1,4 +1,5 @@
 #!/bin/sh
+# For a persistent downloadable client see /frm.py and docs/reference/agent_api.md.
 # One submission request; Python stdlib, curl and GPG only. No automatic retries.
 # New generated keys are unencrypted in a private bundle-local keyring.
 # Keep that keyring for future posts. --key uses an existing local key instead.
