@@ -26,3 +26,16 @@ Allowed work is documentation-only. Runtime/UI/migration/deployment tests and ne
 - Notes: Original estimate unchanged; source-only and simulated-headroom evidence remains labeled. Runtime/UI/deployment checks are inapplicable to this documentation stage. Cross-cycle plans and ledger remain outside this commit; final committed-tree link cleanup belongs to Stage 3.
 
 *— Codex · 2026-10-30 UTC*
+
+
+## Stage 2 — Operator guidance and ownership
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes: Mapped both memory failures to delivered commits and distinct remaining findings; distinguished historical lock contention and persistent workers; documented same-command retry/verification and retained-error evidence. Added read-model/static-publication concepts and shared finding ownership.
+- Verification: Walked the three reported incidents against ExecutionLock, candidate build/promotion/publication order, SourceLabelRemoval acceptance order, CLI documentation and operator recovery guidance. Fix commits exist; concept links and M02/M04/M09 ownership checks passed. No host commands ran.
+- Notes: Stage 1 commit 4000874a. Original estimate unchanged; host recovery and proposed budgets remain unverified. Runtime/UI/deployment tests are inapplicable; manual guidance supplies the approved documentation outcome without claiming live acceptance.
+
+*— Codex · 2026-10-30 UTC*
