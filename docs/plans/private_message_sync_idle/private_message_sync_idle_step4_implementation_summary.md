@@ -86,3 +86,12 @@ Retrospective cycle scope: 0.80; R1/P2, 2026-10-29 UTC, Codex single exposed rat
 Acceptance: Local focused checks passed with one reproduced baseline failure in the broader list suite. Production ordinary-entry and recovery replay, physical devices, full suite and maintainer comfortable-fit/acceptance remain pending. No accepted-count increment or invented measurements. Roll out matching PHP/assets and use the linked production checks; retain both private databases on rollback.
 
 *— Codex · 2026-10-29 UTC*
+
+## Rebase onto current main — 2026-10-30
+
+Request: Rebase onto main. Fetched origin/main at 2e17c9713 and rebased all eight cycle commits from e614fbd9b; original evidence and estimates above remain historical.
+Resolution: Preserved both plan-index/ledger additions. Kept upstream shared-page viewer discovery and authentication refresh alongside history eligibility, with viewer binding preceding eligibility notification. Browser acceptance waits for both initialization conditions. No change to the combined protocol, donor evidence or recovery rules.
+Verification: 42/42 focused PHP tests pass; added shared-page eligibility lifecycle case and its registered focused test pass. Full same-account and sender-assisted browser suites pass, including idle counts, partial donors, later devices, backup/restore, outage and signed feature toggles. Artifacts: /tmp/history-sync-browser-tDtXUx and /tmp/history-sync-browser-DnsDll. Range-diff confirms remaining implementation patches unchanged apart from conflict context; git diff --check passes.
+Rebased commits: 91fb3a7d1 planning; 8ef953bc6 gate; 29157909b donor evidence; a1ba719e9 discovery; a98097ca7 coordinator; 4c125f86d acceptance; 9949cbdb4 documentation; 285fbad64 diagnostics. This follow-up commit records rebase verification and the shared-page regression test. No push, merge or deployment performed; prior full-suite/production limits remain.
+
+*— Codex · 2026-10-30 UTC*

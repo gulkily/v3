@@ -31,7 +31,7 @@ final class PrivateMessageHistoryCryptoTest
     }
     public function testCombinedSchedulingAndHistoryEligibility(): void
     {
-        foreach ([['tests/browser/private_message_history_scheduling.cjs','--combined','--paired'],['tests/browser/private_message_history_scheduling.cjs','--combined'],['tests/browser/private_message_history_gate.cjs']] as $args) {
+        foreach ([['tests/browser/private_message_history_scheduling.cjs','--combined','--paired'],['tests/browser/private_message_history_scheduling.cjs','--combined'],['tests/browser/private_message_history_gate.cjs'],['tests/browser/private_message_history_gate.cjs','--shared']] as $args) {
             $process=proc_open(array_merge(['node'],$args),[1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__));
             $output=stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);
             assertSame(0,proc_close($process),$output);

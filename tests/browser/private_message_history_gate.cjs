@@ -1,13 +1,14 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const listeners={},values=new Map(),requests=[];
 let hasHistory=false,username='alice',fail=false;
-const nav={isConnected:true,dataset:{viewer:'alice'},querySelector:()=>({})};
+const shared=process.argv.includes('--shared');
+const nav={isConnected:true,dataset:shared?{}:{viewer:'alice'},querySelector:()=>({})};
 global.localStorage={getItem:k=>k==='forum_pki_username'?username:'key'};
 global.sessionStorage={getItem:()=>null,setItem:()=>{}};
 global.CustomEvent=class {constructor(type){this.type=type;}};
 function on(type,fn){(listeners[type]??=[]).push(fn);}
 function emit(type){for(const fn of listeners[type]||[])fn({type});}
-global.document={hidden:false,querySelector:()=>nav,querySelectorAll:()=>[],addEventListener:on,dispatchEvent:e=>emit(e.type)};
+global.document={hidden:false,querySelector:selector=>selector==='[data-private-message-unread]'?nav:null,querySelectorAll:()=>[],addEventListener:on,dispatchEvent:e=>emit(e.type)};
 global.window={addEventListener:on,__forumBrowserIdentity:{ensureOpenPgpApi:async()=>({readPrivateKey:async()=>({getFingerprint:()=> 'a'.repeat(40)})})},ForumPrivateMessageHistoryCrypto:{}};
 window.ForumPrivateMessageAvailability={isDisabled:()=>false,request:async(url)=>{
  requests.push(url);
