@@ -33,3 +33,22 @@ Unknown: Number/size of production commits, batch overlap frequency and actual G
 
 Measurement approach proposed: Same corpus/revision, PHP binary, limits, feature settings and output destination; separate full rebuild from render phase. Record full wall/CPU time, each phase, HTML counts, peak PHP memory and profile request latency. Identify cold versus warm repeats; do not attribute all remaining time to profiles. Compare full read-model/evidence results for history changes and published/direct/authorized profile behavior for artifact changes.
 Boundaries: No source/runtime/config changes, benchmarks, deployment, new dependencies or history suppression performed. Follow-up is distinct from completed tag pagination and still-pending capacity/load-before-selection audits.
+
+Stage 1 setup: 2026-10-30 UTC
+Baseline checkout: /tmp/qdb-build-time-baseline at 4abda3db
+Fixture command: python3 tests/Support/qdb_build_time_fixture.py /tmp/qdb-build-time-corpus
+Harness: tests/Support/qdb_build_time_benchmark.php PROJECT REPOSITORY DATABASE MODE OUTPUT
+Modes: prepare initializes 5215 profiles and 10000 events; commits, evidence and profiles measure independent operations.
+Corpus: ordinary 1000 updates of 4000 lines, large 20000 paths, edge root/merge/rename/delete/binary/empty and quoted filenames.
+Outputs: /tmp/qdb-build-time-results; machine row streams retained for exact comparisons; disposable output, not canonical records.
+Initial invalid samples: Evidence and profile exploratory runs shared a database concurrently; evidence failed with database locked, profile was terminated. Profile harness originally held a live SQL cursor across rendering, unlike production's fetchAll. Corrected to production fetchAll and transaction-wrapped history operations, run serially. These samples are excluded from acceptance, not counted as successes.
+Baseline preliminary: ordinary commits 14.809716675 seconds, PHP peak 2097152 bytes (initial exploratory run before transaction adjustment). Edge repeated full row output identical. Evidence corrected run 1.852803854 seconds, PHP peak 16777216 bytes. RSS inherited high-water reading needs independent /usr/bin/time verification.
+Invalid profile sample: 70.635080221 seconds produced files but repository_root mismatch rebuilt the synthetic model; this is NOT a 5215-profile baseline. Evidence repeat then showed five rows, correctly failing exact parity. Corrected by using the baseline model's exact repository path, isolating profile DB from evidence DB, and asserting HTTP status. Invalid samples retained here.
+Baseline trust verification: php tests/run.php ActivityProjectionTest in frozen checkout: 8/8 passed, including late public-key arrival/removal, incremental refresh/rollback, missing repository, prior-schema recovery and 128 MiB cap.
+Corrected evidence repeat: 5.327162355 seconds, PHP peak 16777216 bytes; exact output matches the corrected first baseline. Large timing variation means these preliminary runs do not establish an acceptance median.
+Environment: PHP 8.1.2-1ubuntu2.28, Git 2.34.1, Linux WSL2; production PHP 8.3 remains unmeasured.
+Frozen output SHA-256 edge: 99ee31c7e51a22abd6d49aa1b70d28bbe1e8ed368ab38433ad51af64293d6d6c
+Frozen output SHA-256 ordinary: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Frozen output SHA-256 evidence: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Empty/missing Git: Baseline produces no commit rows and succeeds; retained zero-byte expected streams.
+Valid preliminary profiles baseline: 5215 successful profile artifacts, 115.463300506 seconds, PHP peak 10485760 bytes; synthetic model retained. Matched repeated acceptance is deferred to Stage 7, not inferred from this one sample.

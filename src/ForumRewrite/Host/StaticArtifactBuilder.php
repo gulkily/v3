@@ -394,6 +394,7 @@ final class StaticArtifactBuilder
      */
     private function renderRouteBatch(string $description, array $items, callable $renderer): void
     {
+        $started = hrtime(true);
         $total = count($items);
         $this->reportProgress("Rendering {$description} (0/{$total}).");
 
@@ -404,6 +405,7 @@ final class StaticArtifactBuilder
                 $this->reportProgress("Rendering {$description} ({$completed}/{$total}).");
             }
         }
+        $this->reportProgress(sprintf('Rendering %s complete (%.1f ms).', $description, (hrtime(true) - $started) / 1e6));
     }
 
     private function reportProgress(string $message): void
