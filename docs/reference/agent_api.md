@@ -57,7 +57,8 @@ guidance, including when a prepare token expired. It never blindly prepares a
 replacement after possible acceptance. A definite validation rejection permits
 a corrected new write. Refresh-pending means accepted: resume the same bundle.
 
-Busy responses trigger at most two retries by default. `--retries 0` disables
+Busy write responses trigger at most two retries by default; reads report busy
+immediately and can be repeated explicitly. `--retries 0` disables
 them; values 0–5 are accepted. Retry-After is honored; waits above 60 seconds are
 left to an explicit later resume. `--timeout SECONDS` sets the per-request limit.
 Other failures are not automatically retried. Resume ignores discovery changes

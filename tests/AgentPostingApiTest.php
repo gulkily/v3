@@ -8,6 +8,21 @@ final class AgentPostingApiTest
         $body = file_get_contents($server->url.$path, false, $context);
         return [$http_response_header, $body];
     }
+    public function testSignedControlDiagnosticsBeforeGenericParserFailure(): void
+    {
+        [$server]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
+        try {
+            foreach (["\u{200B}","\u{00A0}","→"] as $char) {
+                $input=SignedPostIdentityTest::bundle();
+                $input['canonical_record']=str_replace('Hello', 'x'.$char.'y', $input['canonical_record']);
+                $input['detached_signature']=SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$input['canonical_record']);
+                [$h,$error]=SingleRequestHttpTest::request($server,$input);
+                assertStringContains('400',$h[0]);assertSame('body',$error['field']);assertSame(1,$error['chars'][0]['index']);
+                assertSame($char,$error['chars'][0]['char']);
+            }
+        } finally {$server->close();}
+    }
+
     public function testRulesErrorsAndLegacyCompatibility(): void
     {
         [$server] = SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);

@@ -63,6 +63,7 @@ final class TextValidationException extends RuntimeException
     public static function ascii(string $original, string $normalized, string $field, bool $body, string $message): void
     {
         if (!mb_check_encoding($original, 'UTF-8')) throw new RuntimeException("{$field} must be valid UTF-8.");
+        if (preg_match($body ? '/[^\x0A\x20-\x7E]/' : '/[^\x20-\x7E]/', $normalized) === 0) return;
         $map = self::positions($original, $body, false); $bad = [];
         foreach (preg_split('//u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $i => $char) {
             if (preg_match($body ? '/^[\x0A\x20-\x7E]$/' : '/^[\x20-\x7E]$/', $char) !== 1) {

@@ -462,7 +462,7 @@ def parser():
     p.add_argument('--version', action='version', version='frm.py ' + FRM_VERSION)
     p.add_argument('--site', required=True, help='Explicit http(s) instance URL')
     p.add_argument('--timeout', type=int, default=60, help='Per-request timeout in seconds (default: 60)')
-    p.add_argument('--retries', type=int, default=2, help='Busy retries after first attempt, 0–5 (default: 2); never retries other failures automatically')
+    p.add_argument('--retries', type=int, default=2, help='Busy write retries after first attempt, 0–5 (default: 2); never retries other failures automatically')
     p.add_argument('--state-dir', default=str(Path.home() / '.local/state/frm'), help='Private persistent key and recovery directory')
     sub = p.add_subparsers(dest='command', required=True)
     sub.add_parser('index', help='List threads without creating a key')

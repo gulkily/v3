@@ -16,7 +16,26 @@ final class SignedPostBundleValidator
 
     public function validateRecord(string $bytes, bool $bootstrap = false, bool $enforcePolicy = true): PostRecord
     {
-        $record = (new PostRecordParser())->parse($bytes);
+        try {
+            $record = (new PostRecordParser())->parse($bytes);
+        } catch (\ForumRewrite\Canonical\CanonicalRecordParseException $error) {
+            // The generic parser can reject controls before authored-text validation.
+            // Report field-relative diagnostics without accepting or rewriting the record.
+            $parts = explode("\n\n", $bytes, 2);
+            if (count($parts) === 2) {
+                $fields = ['body' => $parts[1]];
+                if (preg_match('/^Subject: (.*)$/m', $parts[0], $match)) $fields['subject'] = $match[1];
+                foreach ($fields as $field => $value) {
+                    if ($this->unicode) {
+                        $policy = new UnicodeTextPolicy($this->emoji);
+                        $field === 'body' ? $policy->normalizeBody($value, $field) : $policy->normalizeLine($value, $field);
+                    } else {
+                        \ForumRewrite\Support\TextValidationException::ascii($value, trim($value), $field, $field === 'body', "{$field} must be ASCII only.");
+                    }
+                }
+            }
+            throw $error;
+        }
         $kind = $bootstrap ? 'bootstrap' : ($record->threadId === null ? 'thread' : 'reply');
         if (!preg_match('/^' . $kind . '-([0-9]{14})-[a-f0-9]{32}$/D', $record->postId, $match)
             || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/D', $record->createdAt)

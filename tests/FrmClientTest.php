@@ -111,6 +111,45 @@ final class FrmClientTest
         } finally {$server->close();}
     }
 
+    public function testMemberDenialAndSigningFailurePreserveWork(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_APPROVED_MEMBERS_ONLY'=>'true']);
+        try {
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $body="Retained draft.\n";file_put_contents($root.'/body.txt',$body);
+            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $before=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Denied','--body-file',$root.'/body.txt']));
+            assertSame(2,$code,$out);assertStringContains('HTTP 403',$out);
+            $operation=glob($root.'/client/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','No key','--body-file',$root.'/body.txt','--signing-key','NO-SUCH-KEY','--gpg-home',dirname($operation).'/keyring']));
+            assertSame(2,$code,$out);assertStringContains('GPG failed',$out);
+            assertSame($before,(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']));
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
+    public function testSubmissionRedirectNeverSwitchesProtocolAndRefreshPendingReplays(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        try {
+            $marker=$root.'/redirect';file_put_contents($marker,'yes');
+            $router=$server->directory.'/public/router.php';
+            $hook='if($_SERVER["REQUEST_URI"] === "/api/create_signed_post") { if(is_file('.var_export($marker,true).')) {http_response_code(302);header("Location: /api/create_thread");return;} ob_start(function($body) {$p=json_decode($body,true); if(is_array($p)&&($p["status"]??"")==="ok") {$p["refresh_pending"]=true;return json_encode($p);}return $body;});}';
+            file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));file_put_contents($root.'/body.txt',"Redirect draft.\n");
+            $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$before=$tx->git(['rev-parse','HEAD']);
+            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Redirect','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
+            assertSame($before,$tx->git(['rev-parse','HEAD']));
+            $operation=glob($root.'/client/*/operation-*')[0];unlink($marker);
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);assertStringContains('Refresh: pending',$out);
+            $head=$tx->git(['rev-parse','HEAD']);
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);assertSame($head,$tx->git(['rev-parse','HEAD']));
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
     public function testFirstWriteReuseAndLegacyFallback(): void
     {
         foreach ([false,true] as $legacy) {
