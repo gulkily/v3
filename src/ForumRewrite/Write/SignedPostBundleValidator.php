@@ -39,6 +39,10 @@ final class SignedPostBundleValidator
             if (str_contains($record->body, \ForumRewrite\Images\ImageReference::PREFIX)) {
                 throw new RuntimeException('Image attachments require the prepared posting flow.');
             }
+            if (!$this->unicode) {
+                \ForumRewrite\Support\TextValidationException::ascii($record->body, str_replace("\r\n", "\n", trim($record->body)), 'body', true, 'body must be ASCII only.');
+                if ($record->subject !== null) \ForumRewrite\Support\TextValidationException::ascii($record->subject, trim($record->subject), 'subject', false, 'subject must be printable ASCII.');
+            }
             $body = $this->unicode ? (new UnicodeTextPolicy($this->emoji))->normalizeBody($record->body, 'body')
                 : str_replace("\r\n", "\n", trim($record->body)) . "\n";
             if ($body !== $record->body || trim($body) === '' || (!$this->unicode && preg_match('/[^\x0A\x20-\x7E]/', $body))) {

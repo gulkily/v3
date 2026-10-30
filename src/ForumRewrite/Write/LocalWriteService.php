@@ -4048,14 +4048,13 @@ class LocalWriteService
 
     private function normalizeAsciiLine(string $value, string $field): string
     {
+        $original = $value;
         $value = trim($value);
         if ($value === '') {
             return '';
         }
 
-        if (preg_match('/[^\x20-\x7E]/', $value)) {
-            throw new RuntimeException("{$field} must be printable ASCII.");
-        }
+        \ForumRewrite\Support\TextValidationException::ascii($original, $value, $field, false, "{$field} must be printable ASCII.");
 
         return $value;
     }
@@ -4193,14 +4192,13 @@ class LocalWriteService
 
     private function normalizeAsciiBody(string $value, string $field): string
     {
+        $original = $value;
         $value = str_replace("\r\n", "\n", trim($value));
         if ($value === '') {
             throw new RuntimeException("{$field} is required.");
         }
 
-        if (preg_match('/[^\x0A\x20-\x7E]/', $value)) {
-            throw new RuntimeException("{$field} must be ASCII only.");
-        }
+        \ForumRewrite\Support\TextValidationException::ascii($original, $value, $field, true, "{$field} must be ASCII only.");
 
         return $value . "\n";
     }

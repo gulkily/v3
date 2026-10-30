@@ -15,6 +15,7 @@ final class UnicodeTextPolicy
 
     public function normalizeLine(string $value, string $field): string
     {
+        $original = $value;
         $value = trim($value);
         if ($value === '') {
             return '';
@@ -24,21 +25,22 @@ final class UnicodeTextPolicy
             throw new RuntimeException("{$field} must be a single line.");
         }
 
-        return $this->normalizeVisibleUnicode($value, $field, false);
+        return $this->normalizeVisibleUnicode($value, $field, false, $original);
     }
 
     public function normalizeBody(string $value, string $field): string
     {
+        $original = $value;
         $value = str_replace("\r\n", "\n", trim($value));
         $value = str_replace("\r", "\n", $value);
         if ($value === '') {
             throw new RuntimeException("{$field} is required.");
         }
 
-        return $this->normalizeVisibleUnicode($value, $field, true) . "\n";
+        return $this->normalizeVisibleUnicode($value, $field, true, $original) . "\n";
     }
 
-    private function normalizeVisibleUnicode(string $value, string $field, bool $allowNewlines): string
+    private function normalizeVisibleUnicode(string $value, string $field, bool $allowNewlines, string $original): string
     {
         if (!mb_check_encoding($value, 'UTF-8')) {
             throw new RuntimeException("{$field} must be valid UTF-8.");
@@ -55,14 +57,20 @@ final class UnicodeTextPolicy
         }
 
         $characters = preg_split('//u', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $bad = []; $message = null;
         foreach ($characters as $index => $character) {
-            $this->assertVisibleCharacter(
-                $character,
-                $field,
-                $allowNewlines,
-                $characters[$index - 1] ?? null,
-                $characters[$index + 1] ?? null,
-            );
+            try {
+                $this->assertVisibleCharacter($character, $field, $allowNewlines, $characters[$index - 1] ?? null, $characters[$index + 1] ?? null);
+            } catch (RuntimeException $error) {
+                $message ??= $error->getMessage();
+                if ($message === $error->getMessage()) $bad[$index] = $character;
+            }
+        }
+        if ($bad !== []) {
+            $map = TextValidationException::positions($original, $allowNewlines, true);
+            $details = [];
+            foreach ($bad as $index => $character) $details[] = TextValidationException::character($character, $map[$index]);
+            throw new TextValidationException($message, $field, $details);
         }
 
         return $value;

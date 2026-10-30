@@ -81,7 +81,7 @@ final class IdentityApprovalAndInvitationApiController
             $this->routeServices->sendJson($result, 200, $this->routeServices->serverTimingHeaders($result));
         } catch (RuntimeException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -147,7 +147,7 @@ final class IdentityApprovalAndInvitationApiController
             $this->routeServices->sendJson($result, 200, $this->routeServices->serverTimingHeaders($result));
         } catch (RuntimeException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -181,7 +181,7 @@ final class IdentityApprovalAndInvitationApiController
             ]);
             $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -198,7 +198,7 @@ final class IdentityApprovalAndInvitationApiController
             $input = $this->routeServices->requestData($query);
             $this->routeServices->sendJson($this->routeServices->writer()->finalizePreparedInvitation($input), 200, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -241,7 +241,7 @@ final class IdentityApprovalAndInvitationApiController
                 'invite_token' => (string) ($input['invite_token'] ?? ''),
             ]), 200, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         }
     }
 }

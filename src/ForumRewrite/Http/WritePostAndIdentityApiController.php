@@ -164,7 +164,7 @@ final class WritePostAndIdentityApiController
             $this->routeServices->sendJson($result, 200, $headers);
         } catch (RuntimeException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -221,7 +221,7 @@ final class WritePostAndIdentityApiController
             $this->routeServices->sendJson($result, 200, $headers);
         } catch (RuntimeException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -251,6 +251,7 @@ final class WritePostAndIdentityApiController
             $status = $busy || $infrastructure ? 503 : (in_array($error->getCode(),[409,410],true) ? $error->getCode() : 400);
             $code = $busy ? 'busy' : ($status === 503 ? 'temporarily_unavailable' : ($status === 409 ? 'conflict' : ($status === 410 ? 'removed' : 'invalid_post')));
             $payload=['status'=>$busy ? 'busy' : 'error','code'=>$code,'error'=>$status===503 ? 'Posting is temporarily unavailable. Keep and retry the same signed bundle.' : $error->getMessage()];
+            $payload += $error instanceof \ForumRewrite\Support\TextValidationException ? $error->details() : [];
             $headers=[];
             if($busy) { $payload['retry_after']=10; $headers=['Retry-After: 10']; }
             $this->routeServices->sendJson($payload,$status,$headers);
@@ -320,7 +321,7 @@ final class WritePostAndIdentityApiController
             $this->routeServices->sendJson($result, 200, $headers);
         } catch (RuntimeException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -350,13 +351,13 @@ final class WritePostAndIdentityApiController
             $this->routeServices->sendJson($result, 200, $headers);
         } catch (IdentityBootstrapTimingException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
             );
         } catch (RuntimeException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -386,13 +387,13 @@ final class WritePostAndIdentityApiController
             $this->routeServices->sendJson($result, 200, $headers);
         } catch (IdentityBootstrapTimingException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal(array_merge($timings, $exception->timings()), $totalStartedAt)])
             );
         } catch (RuntimeException $exception) {
             $this->routeServices->sendJson(
-                ['status' => 'error', 'error' => $exception->getMessage()],
+                $this->routeServices->errorPayload($exception),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );

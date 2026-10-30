@@ -637,6 +637,11 @@ final class RouteServices
         echo $text;
     }
 
+    public function errorPayload(\Throwable $error): array
+    {
+        return ['status' => 'error', 'error' => $error->getMessage()] + ($error instanceof \ForumRewrite\Support\TextValidationException ? $error->details() : []);
+    }
+
     /** @param array<string, mixed> $payload
      * @param string[] $headers */
     public function sendJson(array $payload, int $statusCode, array $headers = []): void
