@@ -587,3 +587,7 @@ Counts and page/existence queries share `identityEligibility`; existing username
 aggregate interfaces retain their previous behavior. A deleted boundary remains
 usable through key comparisons. An empty positioned list offers first-page
 recovery and a return direction when eligible rows remain.
+
+## Version 39 — Recent public conversation
+
+Adds posts_recent_idx on posts(created_at DESC, post_id DESC), restricted to non-hidden, non-retracted posts. Recent uses bounded text projections and canonical post/date cursor keys; identity/bootstrap and expansion records remain excluded. No canonical format or table columns change. Normal startup rebuilds older read models before the Recent query; CLI rebuild recreates the index.

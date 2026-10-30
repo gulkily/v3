@@ -19,3 +19,14 @@ Request: Delete mockups rather than save them in repository. Disposition: Entire
 - Notes: No approval/count restriction on feed membership. No changed deletion policy. No dependency changes; runtime route acceptance belongs to subsequent stages. Estimates unchanged.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 2 - Bounded read and startup compatibility
+
+**Original estimate: 0.18**
+**Retrospective stage work: 0.18**
+
+- Changes: RecentPostRepository selects 50 rows maximum, bounded subject/body/context projections and date/post-ID positions; shared pagination tokens will wrap these boundaries. Schema 39 adds a partial ordering index; schema specification updated. S1 commit 171f43a31.
+- Verification: RecentPostTest and ReadModelSchemaTest 6/6, covering exclusions/unsigned membership, safe context, ties, forward/back, deleted anchor, arrival, invalid/empty position and prior-version startup rebuilding missing index. Actual isolated CLI rebuild passed. In-memory 1k/10k/40k large-body probe returned 50 rows and 51,200 body bytes at every size; ordering query uses posts_recent_idx. Exact timing is local evidence, not production latency.
+- Notes: Initial schema inventory assertion failed until the expected index was added, then passed. Runtime page startup check will extend the API-startup check in Stage 3. No new dependencies; estimates unchanged.
+
+*— Codex · 2026-10-30 UTC*
