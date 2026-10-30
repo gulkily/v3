@@ -762,6 +762,11 @@ final class Application
             return;
         }
 
+        if ($path === '/recent/' || $path === '/recent') {
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['position'] ?? null), 200);
+            return;
+        }
+
         if ($path === '/activity/' || $path === '/activity') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->activityPageController()->rss((string) ($query['view'] ?? 'all')), 200);

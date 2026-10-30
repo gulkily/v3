@@ -1,0 +1,14 @@
+.recent h1 { margin: 1rem 0; font: bold 1.65rem var(--ui-font); }
+.recent-list { border-top: 1px solid var(--line); }
+.recent-entry { padding: 1.25rem 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.recent-byline { margin: 0 0 .5rem; }
+.recent-context { margin: 0 0 .5rem; color: var(--ink-soft); font: .8rem var(--ui-font); }
+.recent-context a, .recent-excerpt a { text-decoration: none; }
+.recent-context a:hover, .recent-excerpt a:hover { text-decoration: underline; text-underline-offset: .2em; }
+.recent-excerpt { margin: 0; font-size: 1.125rem; line-height: 1.5; }
+.recent .pagination-nav { margin: 1.25rem 0; justify-content: flex-end; }
+@media (max-width: 639px) {
+  .recent h1 { font-size: 1.45rem; }
+  .recent-entry { padding: 1rem 0; }
+  .recent-excerpt { font-size: 1.0625rem; }
+}

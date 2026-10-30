@@ -62,11 +62,34 @@ final class RecentPostTest
         $file=sys_get_temp_dir().'/recent-upgrade-'.bin2hex(random_bytes(5)).'.sqlite3';
         $root=__DIR__.'/fixtures/parity_minimal_v1';
         try {
-            $app=new Application(dirname(__DIR__),$root,$file);ob_start();$app->handle('GET','/api/read_model_status');ob_end_clean();
+            $app=new Application(dirname(__DIR__),$root,$file);ob_start();$app->handle('GET','/recent/');ob_end_clean();
             $pdo=new PDO('sqlite:'.$file);$pdo->exec("UPDATE metadata SET value='38' WHERE key='schema_version'; DROP INDEX posts_recent_idx");
-            $app=new Application(dirname(__DIR__),$root,$file);ob_start();$app->handle('GET','/api/read_model_status');ob_end_clean();
+            $app=new Application(dirname(__DIR__),$root,$file);ob_start();$app->handle('GET','/recent/');ob_end_clean();
             assertSame(1,(int)$pdo->query("SELECT count(*) FROM sqlite_master WHERE name='posts_recent_idx'")->fetchColumn());
             RecentPostRepository::page($pdo);
         } finally {unset($pdo,$app);@unlink($file);}
     }
+    public function testNormalPageRendersSafePreviewsAndRecovery(): void
+    {
+        $file=sys_get_temp_dir().'/recent-page-'.bin2hex(random_bytes(5)).'.sqlite3';
+        $app=new Application(dirname(__DIR__),__DIR__.'/fixtures/parity_minimal_v1',$file);
+        $render=static function(string $uri) use ($app): string {ob_start();$app->handle('GET',$uri);return (string)ob_get_clean();};
+        $render('/recent/');$pdo=new PDO('sqlite:'.$file);$pdo->exec('DELETE FROM posts');RecentPostFixture::seed($pdo);
+        $html=$render('/recent/');
+        assertSame(12,substr_count($html,'class="recent-entry"'));
+        assertStringContains('/posts/reply-5',$html);
+        assertStringContains('(unsigned)',$html);
+        assertStringContains('Unavailable thread',$html);
+        assertStringContains('>Image</a>',$html);
+        assertStringNotContains('Hidden secret',$html);
+        assertStringNotContains('Removed secret',$html);
+        assertStringNotContains('data-role="thread-compose"',$html);
+        $pdo->exec("UPDATE posts SET body='<script>alert(1)</script>' WHERE post_id='unsigned'");
+        assertStringContains('&lt;script&gt;', $render('/recent/'));
+        assertStringContains('First page',$render('/recent/?position=broken'));
+        assertStringContains('role="alert"',$render('/recent/?position[]=x'));
+        $pdo->exec('DELETE FROM posts');assertStringContains('No posts yet.', $render('/recent/'));
+        unset($pdo,$app);@unlink($file);
+    }
+
 }

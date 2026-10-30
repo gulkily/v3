@@ -30,3 +30,14 @@ Request: Delete mockups rather than save them in repository. Disposition: Entire
 - Notes: Initial schema inventory assertion failed until the expected index was added, then passed. Runtime page startup check will extend the API-startup check in Stage 3. No new dependencies; estimates unchanged.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 3 - Readable route and recovery
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes: /recent/ controller, compact entry/page, theme-variable CSS and Application wiring. Reuses contentMeta, ThreadTitle, exact-post URLs and PageNavigation; no copied full-card controls. S2 commit 0b10168d5.
+- Verification: RecentPostTest 5/5 including normal route startup from version 38, safe previews/escaping, image fallback, unsigned labels, invalid/array positions and empty state. First test run caught a missing sendHtml status argument; corrected and rerun passed.
+- Notes: Navigation/static acceptance follows. No dependency changes; estimates unchanged.
+
+*— Codex · 2026-10-30 UTC*
