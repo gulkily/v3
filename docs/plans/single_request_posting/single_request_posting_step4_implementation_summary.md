@@ -17,3 +17,13 @@ Verification: php tests/run.php SignedPostBundleValidatorTest — 2/2 passed, in
 Notes: Scope unchanged; original estimates retained. No dependency addition.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 2 - Resolve new and known identities
+
+Original estimate: 0.12
+Retrospective stage work: 0.12
+Changes: Mutation-free key/bootstrap resolution, two-signature verification, derived registration files, legacy lowercase key lookup and known-identity reuse. Existing identity state is never overwritten.
+Verification: php tests/run.php SignedPostIdentityTest — 1/1 passed with actual GPG, fresh registration bundle, known-key/bootstrap reuse, omission and tampered signature rejection.
+Notes: Stage 1 commit efa0734f1. No estimate revision or dependencies. Transaction lock and atomic storage follow in S3.
+
+*— Codex · 2026-10-30 UTC*
