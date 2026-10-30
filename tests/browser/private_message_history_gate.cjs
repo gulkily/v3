@@ -23,6 +23,9 @@ for(const file of ['private_message_unread.js','private_message_history_sync.js'
  await window.ForumPrivateMessageUnread.refresh();
  await window.ForumPrivateMessageHistorySync.refresh();
  assert.equal(requests.filter(u=>u.includes('/history_sync/')).length,0);
+ assert(requests.some(u=>u.includes('foreground=1')),'Visible entry records activity through unread');
+ const beforeRefresh=requests.length;await window.ForumPrivateMessageUnread.refresh();
+ assert(!requests.slice(beforeRefresh).some(u=>u.includes('foreground=1')),'Background/status refresh does not promote activity');
  hasHistory=true;
  await window.ForumPrivateMessageUnread.refresh();
  await window.ForumPrivateMessageHistorySync.refresh();

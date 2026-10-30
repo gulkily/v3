@@ -25,6 +25,21 @@ final class PrivateMessageHistorySyncTest
         $syncDb=new PDO('sqlite::memory:');$sync=new PrivateMessageHistorySyncStore($syncDb);
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
     }
+    public function testActivityIsPrivateCoalescedAndNotPromotedBySync(): void
+    {
+        [,,$sync,$service]=$this->fixture();
+        $source=str_repeat('a',40);
+        $sync->recordActivity('alice',$source,100);
+        $sync->recordActivity('alice',$source,103);
+        assertSame(100,(int)$sync->recentActivity('alice')[0]['active_at']);
+        $sync->recordActivity('alice',str_repeat('b',40),104);
+        assertSame(str_repeat('b',40),$sync->recentActivity('alice')[0]['source']);
+        $service->combinedWork($this->viewer());
+        assertSame(100,(int)$sync->recentActivity('alice')[1]['active_at']);
+        assertSame([],$sync->recentActivity('bob'));
+        $sync->recordActivity('alice',$source,106);
+        assertSame($source,$sync->recentActivity('alice')[0]['source']);
+    }
     public function testLargeAccountFixtureAndConcurrentAdmission(): void
     {
         [$profiles]=$this->fixture(115);

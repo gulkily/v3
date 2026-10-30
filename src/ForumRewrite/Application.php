@@ -2317,11 +2317,24 @@ final class Application
         return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot);
     }
 
+    private function recordHistoryActivity(array $viewer): void
+    {
+        if (($viewer['is_approved']??0)!=1 || !$this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) return;
+        $identity=(string)($viewer['identity_id']??'');
+        if (!str_starts_with($identity,'openpgp:')) return;
+        // Scheduling hints must not make authentication or unread status depend on sync storage.
+        try {
+            $pdo=\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot,PrivateConfig::load($this->projectRoot));
+            (new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo))->recordActivity(strtolower($viewer['username_token']),substr($identity,8),time());
+        } catch (\Throwable $e) { /* Ordinary auth/reading remains available during sync outages. */ }
+    }
+
     private function authApiController(): AuthApiController
     {
         return new AuthApiController(
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
+            $this->recordHistoryActivity(...),
         );
     }
 
@@ -2331,6 +2344,7 @@ final class Application
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
+            $this->recordHistoryActivity(...),
         );
     }
 

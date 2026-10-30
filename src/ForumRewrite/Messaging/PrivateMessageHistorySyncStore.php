@@ -8,6 +8,8 @@ final class PrivateMessageHistorySyncStore
     {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_activity (account TEXT NOT NULL, source TEXT NOT NULL, active_at INTEGER NOT NULL, PRIMARY KEY(account,source))');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_activity_recent ON history_sync_activity(account,active_at DESC,source)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_admission (account TEXT PRIMARY KEY, events TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_transfers (transfer_id TEXT PRIMARY KEY, account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, ciphertext TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_items (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, message_id TEXT NOT NULL, digest TEXT NOT NULL, transfer_id TEXT NOT NULL, PRIMARY KEY(account,source,target,message_id))');
@@ -17,6 +19,16 @@ final class PrivateMessageHistorySyncStore
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_coverage_transfer ON history_sync_coverage(transfer_id)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_sender_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
+    }
+    public function recordActivity(string $account, string $source, int $now): void
+    {
+        $q=$this->pdo->prepare('INSERT INTO history_sync_activity VALUES (?,?,?) ON CONFLICT(account,source) DO UPDATE SET active_at=excluded.active_at WHERE excluded.active_at>=active_at+5 OR excluded.active_at<active_at');
+        $q->execute([$account,$source,$now]);
+    }
+    public function recentActivity(string $account, int $limit = 16): array
+    {
+        $q=$this->pdo->prepare('SELECT source,active_at FROM history_sync_activity WHERE account=? ORDER BY active_at DESC,source LIMIT '.min(64,max(1,$limit)));
+        $q->execute([$account]);return $q->fetchAll();
     }
     /** One bounded row per account; rejected attempts do not extend a lockout. */
     public function admit(string $account, string $source, float $now): float

@@ -21,6 +21,7 @@ final class PrivateMessageApiController
         private readonly RouteServices $routeServices,
         private readonly \Closure $authenticatedViewerProfile,
         private readonly \Closure $privateMessageStore,
+        private readonly ?\Closure $recordHistoryActivity = null,
     ) {
     }
 
@@ -181,6 +182,7 @@ final class PrivateMessageApiController
             $counterparts = $query['counterparts'] ?? [];
             if (!is_array($counterparts)) throw new InvalidArgumentException('Conversation states must be a list.');
             $state = $this->service()->unreadState($viewer, $counterparts);
+            if (($query['foreground'] ?? '') === '1' && $this->recordHistoryActivity) ($this->recordHistoryActivity)($viewer);
             $this->routeServices->sendJson(['status' => 'ok'] + $state, 200, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $error) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());

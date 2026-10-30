@@ -21,3 +21,14 @@ Entry: 2026-10-30 UTC; projection 0.95 reaffirmed, scope v1/A, baseline 4b14e622
 - Notes: Private admission table is additive; no public read-model or dependency change. Browser pacing/429 recovery arrives in Stage 6; no new release claim until the full slice is complete. Original scope and estimate unchanged.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 2 - Private foreground activity
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes: Add private coalesced activity keyed by authenticated account/fingerprint, ordered by server time. Record on approved sign-in and explicit foreground unread refresh; no extra heartbeat. Background unread refresh, sync and acknowledgments do not promote activity. A sync-store outage cannot block sign-in or unread status, and disabled messaging does not touch sync storage.
+- Verification: 33/33 focused history/feature-flag/mailbox tests pass; shared-page gate test checks activity on visible entry but not background refresh. Tests cover five-second coalescing, account isolation and no activity promotion by combined discovery. Static shared-page identity checks remain passing.
+- Notes: Prior stage 68167edd2; additive private activity table/index, no canonical record or public read-model changes. No estimate revision. Cross-account sender activity is not exposed.
+
+*— Codex · 2026-10-30 UTC*
