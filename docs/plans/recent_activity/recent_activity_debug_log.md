@@ -79,3 +79,30 @@ Step 4 execution is not authorized. No branch, planning commit, application edit
 Before/Do/After instructions reviewed in order. Step 2 approval and unchanged v1/A outcome recovered; debug/extended state inherited. All three R1 hashes verified. Plan local links/whitespace checked, future Step 4 link intentionally pending. Deferred enhancements retained; no dependencies. Physical-device and production latency acceptance remain explicit limitations, not inferred from proposed local checks.
 
 *— Codex · 2026-10-30 UTC*
+
+## 2026-10-30 UTC — Step 4 handoff
+
+### Necessary/useful instructions
+
+- Source: AGENTS.md canonical reuse and Railspike staged implementation. Reused contentMeta, ThreadTitle, PageNavigation and existing release/invalidator paths. The planning commit preceded code; seven stage commits each contain their summary. Retain these review boundaries.
+- Source: Step 3 completion contract and CONTRIBUTING.md UI verification. Actual front-controller/browser tests covered ordinary navigation, exact-post/Back, no-JavaScript paging, themes/icons and offline reconnect. Static queries and failed-release retention needed separate tests. Retain.
+- Source: Step 4 After evidence reporting. Broader tests caught two stale progress expectations (corrected) and three unrelated failures reproduced in a baseline worktree. Recording the distinction prevents a focused pass from becoming a full-suite claim. Retain.
+- Source: R1/P2 study closeout. Original projections and stage work retained, separate retrospective recorded, maintainer judgment pending. Frozen reference hashes match; no invented labor or acceptance.
+
+### Redundant/unnecessary instructions
+
+No supported additional finding. Per-stage records and final debug log overlap in chronology; the log summarizes instruction effects and links implementation evidence rather than duplicating all results.
+
+### Inapplicable instructions
+
+No new dependencies or API payloads required; dependency approval flow inapplicable. Production deployment, merge and push were not requested. The mockups were deleted as explicitly requested; other features' mockups were outside scope.
+
+### Uncertain assessments
+
+Physical-phone and production latency recovery cannot be inferred from local viewport and in-memory scale checks. The separate Activity latency feedback remains open. Existing private-site copy and archive-method tests fail at the baseline; no unrelated fixes were included.
+
+### Verification record
+
+Approved Step 3 restored; debug/extended modes inherited. Planning de4ba1433 plus seven stage commits through c7df42ef2 verified. [Summary](recent_activity_step4_implementation_summary.md) records browser, bounded query, migration, publication, affected-suite results, three baseline failures and release/recovery steps. Touched local links and whitespace checked; zero dependency delta; no todo.txt changes. Recent mockups absent; screenshots only outside repo. Temporary baseline worktree removed. Original feedback catalog remains separately uncommitted. Seven local stages complete; maintainer acceptance/deployment pending. This is the required log-only handoff commit after the final stage, without amending prior commits.
+
+*— Codex · 2026-10-30 UTC*
