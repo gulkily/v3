@@ -21,3 +21,15 @@ Entry: Step 3 approved, 2026-10-30 UTC; branch feature/bounded-tag-pages; planni
 - Notes: Original scope/estimate unchanged; traversal, serving, offline and resource acceptance belong to later stages. Production host unverified. No dependencies added.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 2 - Complete traversal and recovery
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.12**
+
+- Changes: Locked in the adapter/controller recovery contract with forward/back traversal, deleted anchors, changed activity, mixed-case cursor URLs, malformed/oversized/array/foreign-tag positions and empty-page restart tests. Stage 1 commit: fface7d9.
+- Verification: TagPaginationTest 4/4; all 65 eligible roots traverse in 25/25/15 pages exactly once and reverse correctly. Invalid/exhausted positions show First page without silently showing initial results.
+- Notes: Existing Stage 1 primitives satisfy these cases; no duplicate paginator added. Original scope/estimate unchanged; no production acceptance claimed.
+
+*— Codex · 2026-10-30 UTC*
