@@ -63,10 +63,27 @@ Branch: `feat/unified-reaction-records`; planning commit `59c663e4`
 
 *— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
 
+## Stage 4 - Signed browser path
+
+**Original estimate: 0.20**
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `thread_reactions.js` builds unified bytes through a named `reactionRecord()` (exposed as `ForumThreadReactions.reactionRecord` for tests).
+  - `LocalWriteService::signedReactionInput()` accepts the exact unified layout, or the exact legacy layout via `LegacyReactionHeaders::signedClientRecord()` (ER1: cached older clients, removable with the adapter). The skew-fallback prepared record keeps whichever layout was submitted (Stage 3).
+  - `signed_reaction_submission_v1.md` describes the unified layout, the deprecated legacy acceptance and the new hashtag/offline output.
+  - Tests: byte agreement between JS and PHP builders (`ReactionRecordFormatParityTest`); the tampering test now runs for both layouts and adds wrong-scope and mixed-header rejections; the clock-fallback test runs for both layouts and asserts the prepared record keeps the client layout; the browser test asserts unified bytes.
+- Verification:
+  - `node tests/browser/signed_reactions.mjs` (local Chrome): all 7 scenarios passed — classic, Forte (including clock fallback) and QDB signed buttons with exact source bytes and verified status, guest setup, legacy keyless client, Activity/RSS across phone/desktop and four themes.
+  - `WriteApiSmokeTest` 190/190, `BrowserSigningNormalizationTest` 82/82, `ForteBoardReaderTest` 4/4, `AssetFingerprintTest` 2/2, `OfflineOutboxSendTest` 4/4, `FeatureFlagsBehaviorTest` 4/4, `ReactionRecordFormatParityTest` 3/3 passed; `LocalAppSmokeTest` 154/155 with only the baseline failure.
+- Notes: no visible UI change. Navigation icons and UI copy are not applicable.
+
+*— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
+
 ## Enhancement requests
 
 - **ER1 — easy deprecation and later removal of legacy support** (2026-10-30, during Stage 2)
   - Request: keep supporting old-style records, but make it easy to deprecate and later remove that support.
   - Disposition: in-scope refinement after the user chose "isolate only for now". Isolating legacy reading and the legacy client layout behind one removable adapter fits Stages 1–4 as an in-scope refinement. A legacy inventory or conversion path, and any rule about removing readers for signed legacy records, would change scope and conflict with Step 2 ("legacy header sets remain valid indefinitely") and PRINCIPLES "Keep our own backward compatibility".
   - Approval status: user chose "isolate only for now" (2026-10-30); the end state for existing legacy records (conversion, signed records) is deferred to a separate future cycle. No change to approved scope.
-  - Outcome: adapter introduced in Stage 2; the legacy client layout moves into it in Stage 4.
+  - Outcome: adapter introduced in Stage 2 (`0012ca21`); legacy signed client layout added to it in Stage 4. Removal later = delete `LegacyReactionHeaders` and its two call sites.

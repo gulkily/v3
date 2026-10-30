@@ -11,6 +11,7 @@ use ForumRewrite\Canonical\AttributionCutoffRecordParser;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
+use ForumRewrite\Canonical\LegacyReactionHeaders;
 use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
@@ -3522,10 +3523,9 @@ class LocalWriteService
         if (!preg_match('/^' . $prefix . '-[a-zA-Z0-9][a-zA-Z0-9_-]{0,100}$/D', $record->recordId)) {
             throw new RuntimeException('Invalid signed reaction record identifier.');
         }
-        $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
-        $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
-        $expected = "Record-ID: {$record->recordId}\nCreated-At: {$record->createdAt}\n{$targetHeader}: {$target}\nOperation: add\n{$tagHeader}: {$tag}\nAuthor-Identity-ID: {$author}\n\n";
-        if ($contents !== $expected) {
+        $expected = ReactionRecordParser::build($kind, $record->recordId, $record->createdAt, $target, [$tag], $author);
+        if ($contents !== $expected
+            && $contents !== LegacyReactionHeaders::signedClientRecord($kind, $record->recordId, $record->createdAt, $target, $tag, $author)) {
             throw new RuntimeException('Signed reaction must match the requested author, target, and tag exactly.');
         }
         [$key, $fingerprint] = $this->publicKeyForIdentity($author);

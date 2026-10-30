@@ -66,6 +66,30 @@ final class ReactionRecordFormatParityTest
         }
     }
 
+    public function testBrowserAndServerBuildIdenticalSignedBytes(): void
+    {
+        $script = <<<'NODE'
+global.window = {};
+global.document = { addEventListener(){}, querySelectorAll(){ return []; }, querySelector(){ return null; } };
+const fs = require('fs');
+require('vm').runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const build = window.ForumThreadReactions.reactionRecord;
+process.stdout.write(JSON.stringify([
+  build('thread', 'thread-label-0a1b', '2026-10-30T15:30:00Z', 'root-001', 'like', 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+  build('post', 'post-reaction-0a1b', '2026-10-30T15:30:00Z', 'reply-001', 'flag', 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'),
+]));
+NODE;
+        $output = [];
+        $exitCode = 0;
+        exec(sprintf('node -e %s %s 2>&1', escapeshellarg($script), escapeshellarg(__DIR__ . '/../public/assets/thread_reactions.js')), $output, $exitCode);
+        assertSame(0, $exitCode);
+        [$thread, $post] = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame(ReactionRecordParser::build('thread', 'thread-label-0a1b', '2026-10-30T15:30:00Z', 'root-001', ['like'], self::APPROVED), $thread);
+        assertSame(ReactionRecordParser::build('post', 'post-reaction-0a1b', '2026-10-30T15:30:00Z', 'reply-001', ['flag'], self::APPROVED), $post);
+        assertSame('reply-001', (new \ForumRewrite\Canonical\PostReactionRecordParser())->parse($post)->postId);
+    }
+
     /**
      * @param callable(int):bool $unified
      */

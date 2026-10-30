@@ -10,6 +10,7 @@ use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\ReactionRecordParser;
 use ForumRewrite\Security\AttributionCutoff;
 use ForumRewrite\ReadModel\VerifiedAttribution;
 use ForumRewrite\Canonical\CanonicalPathResolver;
@@ -338,9 +339,17 @@ final class WriteApiSmokeTest
         try {
             $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
-            $id = 'thread-label-signed-test';
+            foreach (['legacy', 'unified'] as $layout) {
+            $id = 'thread-label-signed-' . $layout;
             $created = gmdate('Y-m-d\TH:i:s\Z');
-            $record = "Record-ID: {$id}\nCreated-At: {$created}\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$identity}\n\n";
+            $record = $layout === 'legacy'
+                ? "Record-ID: {$id}\nCreated-At: {$created}\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$identity}\n\n"
+                : ReactionRecordParser::build('thread', $id, $created, 'root-001', ['like'], $identity);
+            if ($layout === 'unified') {
+                // The legacy record already counted this vote; clear it so the unified one is new.
+                unlink($root . '/records/thread-labels/thread-label-signed-legacy.txt');
+                unlink($root . '/records/thread-labels/thread-label-signed-legacy.txt.asc');
+            }
             $signature = $this->signCanonicalRecord($key['home'], $record);
             $input = ['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity,
                 'canonical_record' => $record, 'detached_signature' => $signature];
@@ -352,14 +361,18 @@ final class WriteApiSmokeTest
             foreach ([
                 ['canonical_record' => str_replace($id, 'thread-label-changed', $record)],
                 ['canonical_record' => str_replace($id, 'thread-label-../bad', $record)],
-                ['canonical_record' => str_replace('Labels: like', 'Labels: flag', $record)],
+                ['canonical_record' => str_replace(['Labels: like', 'Tags: like'], ['Labels: flag', 'Tags: flag'], $record)],
+                ['canonical_record' => str_replace('Target-Kind: thread', 'Target-Kind: post', $record)],
+                ['canonical_record' => str_replace("Target-Kind: thread\nTarget-ID: root-001\n", "Thread-ID: root-001\n", $record)],
                 ['detached_signature' => 'invalid'],
                 ['detached_signature' => ''],
             ] as $change) {
+                if (($change['canonical_record'] ?? null) === $record) continue;
                 $rejected = false;
                 try { $writer->applyThreadTag(array_replace($input, $change)); }
                 catch (RuntimeException) { $rejected = true; }
                 assertTrue($rejected);
+            }
             }
         } finally {
             $this->deleteTree($key['home']);
@@ -443,16 +456,20 @@ final class WriteApiSmokeTest
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
             $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
             $_COOKIE = ['identity_hint' => $identity];
-            foreach (['thread', 'post'] as $kind) {
+            foreach ([['thread', 'legacy'], ['post', 'legacy'], ['thread', 'unified'], ['post', 'unified']] as [$kind, $layout]) {
                 $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
                 $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
                 $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
                 $created = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
-                $record = "Record-ID: {$family}-skew\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
-                $_POST = [$kind . '_id' => 'root-001', 'tag' => 'like', 'canonical_record' => $record,
+                $tag = $layout === 'legacy' ? 'like' : 'upvote';
+                $record = $layout === 'legacy'
+                    ? "Record-ID: {$family}-skew\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: {$tag}\nAuthor-Identity-ID: {$identity}\n\n"
+                    : ReactionRecordParser::build($kind, $family . '-skew-unified', $created, 'root-001', [$tag], $identity);
+                $_POST = [$kind . '_id' => 'root-001', 'tag' => $tag, 'canonical_record' => $record,
                     'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
                 $prepared = json_decode($this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'), true, 512, JSON_THROW_ON_ERROR);
                 assertSame('clock_skew', $prepared['error_code']);
+                assertSame(array_slice(explode("\n", $record), 2), array_slice(explode("\n", $prepared['canonical_record']), 2));
                 $_POST['canonical_record'] = $prepared['canonical_record'];
                 $_POST['prepare_token'] = $prepared['prepare_token'];
                 $_POST['detached_signature'] = $this->signCanonicalRecord($key['home'], $_POST['canonical_record']);
